@@ -1033,310 +1033,310 @@ msgstr "选择负责人"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
-msgstr "Choisissez comment regrouper et trier les tâches."
+msgstr "选择任务的分组和排序方式。"
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record in Connect"
-msgstr "Choisir ou créer votre document de personne dans Connect"
+msgstr "在 Connect 中选择或创建你的人物记录"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
-msgstr "Choisissez le mode du calendrier et les dates de tâches qui deviennent des événements."
+msgstr "选择日历模式，以及哪些任务日期会显示为日历事件。"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the information shown beneath each task."
-msgstr "Choisissez les informations affichées sous chaque tâche."
+msgstr "选择每个任务下方显示的信息。"
 
 #: src/app/views-screen.tsx
 msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "Choisissez les éléments de navigation, changez leur ordre et gérez les vues enregistrées."
+msgstr "选择导航中显示的内容、调整顺序并管理已保存的视图。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
-msgstr "Choisir ce qui devient une tâche"
+msgstr "选择要转换为任务的内容"
 
 #: src/app/collection-picker.tsx
 msgid "Choose where to work"
-msgstr "Choisir où travailler"
+msgstr "选择工作位置"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose which tasks belong in this view."
-msgstr "Choisissez les tâches à inclure dans cette vue."
+msgstr "选择要包含在此视图中的任务。"
 
 #: src/components/expression-builder.tsx
 msgid "Choose…"
-msgstr "Choisir…"
+msgstr "选择…"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
-msgstr "Effacer"
+msgstr "清除"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
-msgstr "Effacer l’échéance"
+msgstr "清除截止日期"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
-msgstr "Effacer la date planifiée"
+msgstr "清除计划日期"
 
 #: src/app/search-screen.tsx
 msgid "Clear search"
-msgstr "Effacer la recherche"
+msgstr "清除搜索"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
-msgstr "Effacer la sélection"
+msgstr "清除选择"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
-msgstr "Effacer la valeur"
+msgstr "清除值"
 
 #: src/components/task-actions.tsx
 msgid "Clipboard access is not available."
-msgstr "L’accès au presse-papiers n’est pas disponible."
+msgstr "无法使用剪贴板。"
 
 #: src/i18n/editor-phrases.ts
 msgid "close"
-msgstr "fermer"
+msgstr "关闭"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
-msgstr "Fermer"
+msgstr "关闭"
 
 #. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
-msgstr "Fermer : {0}"
+msgstr "关闭 {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {accessibleName} calendar"
-msgstr "Fermer le calendrier : {accessibleName}"
+msgstr "关闭 {accessibleName} 日历"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
-msgstr "Fermer : {ariaLabel}"
+msgstr "关闭 {ariaLabel}"
 
 #: src/app/use-calendar-overflow.ts
 msgid "Close additional tasks"
-msgstr "Fermer les tâches supplémentaires"
+msgstr "关闭其他任务"
 
 #: src/app/collection-picker.tsx
 msgid "Close collection picker"
-msgstr "Fermer le sélecteur de collection"
+msgstr "关闭集合选择器"
 
 #: src/app/collection-picker.tsx
 msgid "Close collections"
-msgstr "Fermer les collections"
+msgstr "关闭集合"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
-msgstr "Fermer l’ajout d’images"
+msgstr "关闭图片捕获"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
-msgstr "Fermer la nouvelle tâche"
+msgstr "关闭新建任务"
 
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
-msgstr "Fermer l’éditeur de propriétés"
+msgstr "关闭属性编辑器"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
-msgstr "Fermer l’éditeur de vues"
+msgstr "关闭视图编辑器"
 
 #: src/i18n/ui-copy.ts
 msgid "Collapse"
-msgstr "Replier"
+msgstr "折叠"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
-msgstr "Replier l’image"
+msgstr "关闭图片"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
 msgctxt "settings section title"
 msgid "Collection"
-msgstr "Collection"
+msgstr "集合"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
-msgstr "Connexion à la collection"
+msgstr "集合连接"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
-msgstr "Ordre de la collection"
+msgstr "集合顺序"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
-msgstr "L’ordre de la collection est utilisé."
+msgstr "正在使用集合顺序。"
 
 #: src/components/task-model-settings.tsx
 msgid "Collection settings"
-msgstr "Paramètres de la collection"
+msgstr "集合设置"
 
 #: src/app/collection-settings.tsx
 msgid "Collection unavailable"
-msgstr "Collection indisponible"
+msgstr "集合不可用"
 
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
-msgstr "Collection indisponible. Affichage des tâches chargées précédemment ; les modifications ne peuvent pas être enregistrées."
+msgstr "集合不可用。正在显示之前加载的任务；无法保存更改。"
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
-msgstr "Thème de couleurs"
+msgstr "颜色主题"
 
 #: src/app/task-screen.tsx
 msgid "Comma-separated values"
-msgstr "Valeurs séparées par des virgules"
+msgstr "逗号分隔的值"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
-msgstr "Lignes compactes"
+msgstr "紧凑行"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr "Terminer"
+msgstr "完成"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr "Terminées"
+msgstr "完成"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr "Terminée"
+msgstr "完成"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
-msgstr "Terminer l’occurrence"
+msgstr "完成此重复项"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
-msgstr "Terminer la tâche"
+msgstr "完成任务"
 
 #: src/app/cloud-collection.tsx
 msgid "Complete this collection’s setup, or choose a different collection."
-msgstr "Terminez la configuration de cette collection ou choisissez une autre collection."
+msgstr "完成此集合的设置，或选择其他集合。"
 
 #: src/app/cloud-collection.tsx
 msgid "Complete your selection in the mdbase window."
-msgstr "Terminez votre sélection dans la fenêtre mdbase."
+msgstr "在 mdbase 窗口中完成选择。"
 
 #: src/i18n/default-labels.ts
 msgid "Completed"
-msgstr "Terminées"
+msgstr "已完成"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
-msgstr "Brouillon terminé"
+msgstr "已完成的草稿"
 
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
-msgstr "Occurrences récurrentes terminées"
+msgstr "已完成的重复任务实例"
 
 #: src/app/task-screen.tsx
 msgid "Completion"
-msgstr "Fin de la tâche"
+msgstr "完成情况"
 
 #: src/components/recurrence-field.tsx
 msgid "Completion date"
-msgstr "Date de fin de la tâche"
+msgstr "完成日期"
 
 #: src/app/task-screen.tsx
 msgid "Completion or skip"
-msgstr "Fin de la tâche ou occurrence ignorée"
+msgstr "完成或跳过"
 
 #: src/i18n/editor-phrases.ts
 msgid "Completions"
-msgstr "Suggestions de saisie"
+msgstr "完成次数"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
-msgstr "Les propriétés calculées sont valides"
+msgstr "计算属性有效"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property expression {0}"
-msgstr "Expression de la propriété calculée {0}"
+msgstr "计算属性表达式 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property name {0}"
-msgstr "Nom de la propriété calculée {0}"
+msgstr "计算属性名称 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property scope {0}"
-msgstr "Portée de la propriété calculée {0}"
+msgstr "计算属性范围 {0}"
 
 #: src/app/task-screen.tsx
 msgid "Computer, Errands"
-msgstr "Ordinateur, Courses"
+msgstr "电脑、差事"
 
 #: src/components/expression-builder.tsx
 msgid "Condition"
-msgstr "Condition"
+msgstr "条件"
 
 #: src/app/app-shell.tsx
 #: src/app/cloud-collection.tsx
 msgid "Confirm discard and disconnect"
-msgstr "Confirmer l’abandon et la déconnexion"
+msgstr "确认放弃并断开连接"
 
 #: src/app/cloud-collection.tsx
 msgid "Confirm recovery"
-msgstr "Confirmer la récupération"
+msgstr "确认恢复"
 
 #: src/app/collection-picker.tsx
 msgid "Connect another collection"
-msgstr "Connecter une autre collection"
+msgstr "连接其他集合"
 
 #: src/app/notification-label.ts
 msgid "Connect mdbase first"
-msgstr "Connectez d’abord mdbase"
+msgstr "请先连接 mdbase"
 
 #: src/app/cloud-collection.tsx
 msgid "Connect TaskNotes to your tasks"
-msgstr "Connecter TaskNotes à vos tâches"
+msgstr "将 TaskNotes 连接到你的任务"
 
 #: src/app/collection-settings.tsx
 msgid "Connected"
-msgstr "Connexion établie"
+msgstr "已连接"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 msgid "Connected computer"
-msgstr "Ordinateur connecté"
+msgstr "已连接的电脑"
 
 #: src/app/collection-settings.tsx
 msgid "Connecting"
-msgstr "Connexion en cours"
+msgstr "正在连接"
 
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
-msgstr "Connexion en cours…"
+msgstr "正在连接…"
 
 #: src/app/collection-settings.tsx
 msgctxt "mdbase authority status"
 msgid "Connection"
-msgstr "Connexion"
+msgstr "连接"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
-msgstr "Paramètres de connexion"
+msgstr "连接设置"
 
 #: src/components/expression-builder.tsx
 msgid "contains"
-msgstr "contient"
+msgstr "包含"
 
 #: src/app/search-match-context.ts
 msgid "contexts"
-msgstr "contextes"
+msgstr "上下文"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -1345,207 +1345,207 @@ msgstr "contextes"
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
-msgstr "Contextes"
+msgstr "上下文"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
-msgstr "Continuer sur la chronologie"
+msgstr "沿时间线继续"
 
 #: src/i18n/editor-phrases.ts
 msgid "Control character"
-msgstr "Caractère de contrôle"
+msgstr "控制字符"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
-msgstr "Convertir {0} en note"
+msgstr "将 {0} 转换为笔记"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
-msgstr "Convertir en note"
+msgstr "转换为笔记"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
-msgstr "Copier"
+msgstr "复制"
 
 #. placeholder {0}: view?.name
 #: src/app/view-editor.tsx
 msgid "Copy {0}"
-msgstr "Copie de {0}"
+msgstr "复制 {0}"
 
 #: src/components/task-actions.tsx
 msgid "Copy path"
-msgstr "Copier le chemin"
+msgstr "复制路径"
 
 #: src/components/task-actions.tsx
 msgid "Copy task link"
-msgstr "Copier le lien de la tâche"
+msgstr "复制任务链接"
 
 #: src/components/task-actions.tsx
 msgid "Copy title"
-msgstr "Copier le titre"
+msgstr "复制标题"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
-msgstr "Corrigez la règle avant de pouvoir planifier des occurrences."
+msgstr "请先更正规则，然后才能安排。"
 
 #. placeholder {0}: Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")
 #. placeholder {1}: dragged.task.title
 #. placeholder {2}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not {0} “{1}”. {2}"
-msgstr "Impossible de {0} « {1} ». {2}"
+msgstr "无法执行 {0}“{1}”。{2}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not move “{0}”. {1}"
-msgstr "Impossible de déplacer « {0} ». {1}"
+msgstr "无法移动“{0}”。{1}"
 
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
-msgstr "Impossible de rétablir la connexion. Réessayez ou vérifiez les paramètres de connexion."
+msgstr "无法重新连接。请重试或检查连接设置。"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Could not save the default mode on this device."
-msgstr "Impossible d’enregistrer le mode par défaut sur cet appareil."
+msgstr "无法在此设备上保存默认模式。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create {selectedReviewCount} task notes"
-msgstr "Créer {selectedReviewCount} notes de tâche"
+msgstr "创建 {selectedReviewCount} 条任务记录"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
-msgstr "Créer une sous-tâche de {0}"
+msgstr "创建 {0} 的子任务"
 
 #: src/components/task-model-settings.tsx
 msgid "Create after completion"
-msgstr "Créer après la fin de la tâche"
+msgstr "完成后创建"
 
 #: src/components/task-model-settings.tsx
 msgid "Create next occurrence"
-msgstr "Créer l’occurrence suivante"
+msgstr "创建下一次重复项"
 
 #: src/app/view-editor.tsx
 msgid "Create saved view"
-msgstr "Créer une vue enregistrée"
+msgstr "创建已保存视图"
 
 #: src/components/task-actions.tsx
 msgid "Create subtask"
-msgstr "Créer une sous-tâche"
+msgstr "创建子任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task"
-msgstr "Créer une tâche"
+msgstr "创建任务"
 
 #. placeholder {0}: node.text
 #: src/app/scratchpad-screen.tsx
 msgid "Create task for {0}"
-msgstr "Créer une tâche pour {0}"
+msgstr "为 {0} 创建任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task notes"
-msgstr "Créer des notes de tâche"
+msgstr "创建任务记录"
 
 #: src/app/task-screen.tsx
 msgid "Create the next after completion"
-msgstr "Créer la suivante après la fin de la tâche"
+msgstr "完成后创建下一次"
 
 #: src/app/views-screen.tsx
 msgid "Create view"
-msgstr "Créer une vue"
+msgstr "创建视图"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Created"
-msgstr "Création effectuée"
+msgstr "已创建"
 
 #. placeholder {0}: converted.task.title
 #: src/app/scratchpad-screen.tsx
 msgid "Created “{0}”"
-msgstr "Création de « {0} » effectuée"
+msgstr "已创建“{0}”"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
-msgstr "Création en cours…"
+msgstr "正在创建…"
 
 #: src/app/collection-picker.tsx
 msgid "Current"
-msgstr "Actuelle"
+msgstr "当前"
 
 #: src/i18n/editor-phrases.ts
 msgid "current match"
-msgstr "correspondance actuelle"
+msgstr "当前匹配项"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
-msgstr "Note actuelle"
+msgstr "当前笔记"
 
 #: src/i18n/ui-copy.ts
 msgid "current scratchpad"
-msgstr "bloc-notes actuel"
+msgstr "当前随手记"
 
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
-msgstr "Filtre personnalisé"
+msgstr "自定义筛选器"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Daily"
-msgstr "Tous les jours"
+msgstr "每日"
 
 #: src/app/more-screen.tsx
 msgid "Dark"
-msgstr "Sombre"
+msgstr "深色"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
-msgstr "Date"
+msgstr "日期"
 
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
-msgstr "Date et agenda"
+msgstr "日期与议程"
 
 #: src/components/task-actions.tsx
 msgid "Dates"
-msgstr "Dates"
+msgstr "日期"
 
 #: src/components/task-capture.tsx
 msgid "Dates and estimate"
-msgstr "Dates et estimation"
+msgstr "日期和预计时长"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Day"
-msgstr "Jour"
+msgstr "日"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
-msgstr "Début de la journée"
+msgstr "一天开始时间"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day ends"
-msgstr "Fin de la journée"
+msgstr "一天结束时间"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Days"
-msgstr "Jours"
+msgstr "天"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
-msgstr "Mode par défaut des nouvelles notes"
+msgstr "新笔记的默认模式"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
-msgstr "Priorité par défaut"
+msgstr "默认优先级"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Default Scratchpad mode"
-msgstr "Mode par défaut du Bloc-notes"
+msgstr "默认随手记模式"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
