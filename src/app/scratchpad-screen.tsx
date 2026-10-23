@@ -615,7 +615,7 @@ export function ScratchpadScreen({
       setError("");
       setStreamNotice(
         plural(files.length, {
-          one: "Adding image…",
+          "=1": "Adding image…",
           other: "Adding # images…",
         }),
       );
@@ -646,7 +646,7 @@ export function ScratchpadScreen({
       setStreamNotice(
         created.length
           ? plural(created.length, {
-              one: "Image added",
+              "=1": "Image added",
               other: "# images added",
             })
           : "",

@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import { t as translate } from "@lingui/core/macro";
+import { plural, t as translate } from "@lingui/core/macro";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import "./private-account-settings.css";
 import type {
@@ -188,7 +188,11 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
         setAction("unlock");
         setNotice(
           result.incomplete?.length
-            ? `Recovery is set up. ${result.incomplete.length} private collections still need to finish key access.`
+            ? plural(result.incomplete.length, {
+                one: "Recovery is set up. # private collection still needs to finish key access.",
+                other:
+                  "Recovery is set up. # private collections still need to finish key access.",
+              })
             : translate({
                 message:
                   "Recovery is set up. Save your recovery key before leaving this screen.",
@@ -214,7 +218,11 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
         if (signal.aborted) return;
         setNotice(
           result.incomplete?.length
-            ? `Account unlocked. ${result.incomplete.length} private collections still need to finish key access; retry unlock when they are current.`
+            ? plural(result.incomplete.length, {
+                one: "Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.",
+                other:
+                  "Account unlocked. # private collections still need to finish key access; retry unlock when they are current.",
+              })
             : translate({
                 message:
                   "Account unlocked. Private collection keys are available on this device.",
@@ -241,7 +249,11 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
               message:
                 "mdbase confirmed strict-mode completion. The recovery key was removed from this device.",
             })
-          : `Strict mode is pending in ${result.pending.length} recovery ${result.pending.length === 1 ? "target" : "targets"}. The recovery key stays on this device until mdbase confirms completion.`,
+          : plural(result.pending.length, {
+              one: "Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.",
+              other:
+                "Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.",
+            }),
       );
     });
   }

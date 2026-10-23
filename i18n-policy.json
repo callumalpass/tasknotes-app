@@ -28,7 +28,6 @@
       "L565X2",
       "JE2anO",
       "gBtOfg",
-      "xRM0Vh",
       "Ix2ub1",
       "-2Tgrj",
       "8J32PY",
@@ -55,7 +54,6 @@
       "LLAa_9",
       "JE2anO",
       "gBtOfg",
-      "xRM0Vh",
       "opree_",
       "uAQUqI",
       "D-NlUC",
@@ -74,20 +72,11 @@
       "1UzENP",
       "JE2anO",
       "gBtOfg",
-      "xRM0Vh",
       "3-s08M",
       "mXS2YG"
     ],
-    "ja": ["JE2anO", "gBtOfg", "xRM0Vh", "3-s08M", "mXS2YG"],
-    "ko": [
-      "pZ4VIt",
-      "fHSAmz",
-      "JE2anO",
-      "gBtOfg",
-      "xRM0Vh",
-      "3-s08M",
-      "mXS2YG"
-    ],
+    "ja": ["JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
+    "ko": ["pZ4VIt", "fHSAmz", "JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
     "pt": [
       "pZ4VIt",
       "fHSAmz",
@@ -95,23 +84,14 @@
       "lWkKSO",
       "JE2anO",
       "gBtOfg",
-      "xRM0Vh",
       "uAQUqI",
       "3-s08M",
       "mXS2YG",
       "Ul_zfa",
       "CDo193"
     ],
-    "ru": [
-      "pZ4VIt",
-      "fHSAmz",
-      "JE2anO",
-      "gBtOfg",
-      "xRM0Vh",
-      "3-s08M",
-      "mXS2YG"
-    ],
-    "zh": ["JE2anO", "gBtOfg", "xRM0Vh", "3-s08M", "mXS2YG"]
+    "ru": ["pZ4VIt", "fHSAmz", "JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
+    "zh": ["JE2anO", "gBtOfg", "3-s08M", "mXS2YG"]
   },
   "source": {
     "include": ["src/app", "src/components", "src/i18n"]

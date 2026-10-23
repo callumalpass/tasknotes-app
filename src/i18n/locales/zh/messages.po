@@ -75,6 +75,16 @@ msgstr "“{title}”仍在集合中。"
 msgid "(unsaved changes)"
 msgstr "（有未保存的更改）"
 
+#. placeholder {0}: files.length
+#: src/app/scratchpad-screen.tsx
+msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
+msgstr ""
+
+#. placeholder {0}: created.length
+#: src/app/scratchpad-screen.tsx
+msgid "{0, plural, =1 {Image added} other {# images added}}"
+msgstr ""
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {# image was added.} other {# images were added.}}"
@@ -85,25 +95,30 @@ msgstr "{0, plural, other {已添加 # 张图片。}}"
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, other {# 个未完成}}"
 
-#. placeholder {0}: files.length
-#: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Adding image…} other {Adding # images…}}"
-msgstr "{0, plural, other {正在添加 # 张图片…}}"
+#. placeholder {0}: result.incomplete.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
+msgstr ""
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {已创建 # 条任务记录}}"
 
-#. placeholder {0}: created.length
-#: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Image added} other {# images added}}"
-msgstr "{0, plural, other {已添加 # 张图片}}"
-
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
+
+#. placeholder {0}: result.incomplete.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
+msgstr ""
+
+#. placeholder {0}: result.pending.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
+msgstr ""
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -324,10 +339,6 @@ msgid "{count, plural, one {# day ago} other {# days ago}}"
 msgstr "{count, plural, other {# 天前}}"
 
 #: src/i18n/presentation.ts
-msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, other {从末尾数第 # 天}}"
-
-#: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
 msgstr "{count, plural, other {# 次}}"
 
@@ -347,6 +358,10 @@ msgstr "{count, plural, other {周}}"
 msgid "{count, plural, one {year} other {years}}"
 msgstr "{count, plural, other {年}}"
 
+#: src/i18n/presentation.ts
+msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
+msgstr ""
+
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "预计 {estimate} 分钟"
@@ -356,20 +371,20 @@ msgid "{hours}h {minutes}m"
 msgstr "{hours} 小时 {minutes} 分钟"
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, other {每 # 天}}"
+msgid "{interval, plural, =1 {Every day} other {Every # days}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, other {每 # 个月}}"
+msgid "{interval, plural, =1 {Every month} other {Every # months}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, other {每 # 周}}"
+msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, other {每 # 年}}"
+msgid "{interval, plural, =1 {Every year} other {Every # years}}"
+msgstr ""
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3543,9 +3558,11 @@ msgstr "无法加载人员。现有分配保持不变。{0}"
 msgid "Planned dates"
 msgstr "计划日期"
 
+#. Generic planning layout label, not the external Planner app name.
 #: src/app/view-editor-form.tsx
+msgctxt "view layout option"
 msgid "Planner"
-msgstr "Planner"
+msgstr ""
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."

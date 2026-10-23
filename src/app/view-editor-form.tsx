@@ -1171,7 +1171,12 @@ const layouts: Array<{
   {
     value: "tasknotes.planner",
     get label() {
-      return t({ message: "Planner" });
+      return t({
+        message: "Planner",
+        context: "view layout option",
+        comment:
+          "Generic planning layout label, not the external Planner app name.",
+      });
     },
     get description() {
       return t({ message: "External app" });

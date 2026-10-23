@@ -75,6 +75,16 @@ msgstr "“{title}”은(는) 아직 컬렉션에 있습니다."
 msgid "(unsaved changes)"
 msgstr "(저장되지 않은 변경 사항)"
 
+#. placeholder {0}: files.length
+#: src/app/scratchpad-screen.tsx
+msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
+msgstr ""
+
+#. placeholder {0}: created.length
+#: src/app/scratchpad-screen.tsx
+msgid "{0, plural, =1 {Image added} other {# images added}}"
+msgstr ""
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {# image was added.} other {# images were added.}}"
@@ -85,25 +95,30 @@ msgstr "{0, plural, other {이미지 #개를 추가했습니다.}}"
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, other {미완료 #개}}"
 
-#. placeholder {0}: files.length
-#: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Adding image…} other {Adding # images…}}"
-msgstr "{0, plural, other {이미지 #개 추가 중…}}"
+#. placeholder {0}: result.incomplete.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
+msgstr ""
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {작업 노트 #개를 만들었습니다.}}"
 
-#. placeholder {0}: created.length
-#: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Image added} other {# images added}}"
-msgstr "{0, plural, other {이미지 #개 추가됨}}"
-
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {모든 작업을 오늘로 이동, 기한 초과 #개}}"
+
+#. placeholder {0}: result.incomplete.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
+msgstr ""
+
+#. placeholder {0}: result.pending.length
+#: src/components/private-account-settings.tsx
+msgid "{0, plural, one {Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.} other {Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.}}"
+msgstr ""
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -324,10 +339,6 @@ msgid "{count, plural, one {# day ago} other {# days ago}}"
 msgstr "{count, plural, other {#일 전}}"
 
 #: src/i18n/presentation.ts
-msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, other {월말에서 #번째 날}}"
-
-#: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
 msgstr "{count, plural, other {#회}}"
 
@@ -347,6 +358,10 @@ msgstr "{count, plural, other {주}}"
 msgid "{count, plural, one {year} other {years}}"
 msgstr "{count, plural, other {년}}"
 
+#: src/i18n/presentation.ts
+msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
+msgstr ""
+
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "예상 시간 {estimate}분"
@@ -356,20 +371,20 @@ msgid "{hours}h {minutes}m"
 msgstr "{hours}시간 {minutes}분"
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, other {#일마다}}"
+msgid "{interval, plural, =1 {Every day} other {Every # days}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, other {#개월마다}}"
+msgid "{interval, plural, =1 {Every month} other {Every # months}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, other {#주마다}}"
+msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
+msgstr ""
 
 #: src/i18n/presentation.ts
-msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, other {#년마다}}"
+msgid "{interval, plural, =1 {Every year} other {Every # years}}"
+msgstr ""
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -3543,9 +3558,11 @@ msgstr "사람 목록을 불러오지 못했습니다. 기존 할당은 변경�
 msgid "Planned dates"
 msgstr "계획된 날짜"
 
+#. Generic planning layout label, not the external Planner app name.
 #: src/app/view-editor-form.tsx
+msgctxt "view layout option"
 msgid "Planner"
-msgstr "Planner"
+msgstr ""
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."

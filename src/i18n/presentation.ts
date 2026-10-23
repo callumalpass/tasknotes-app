@@ -141,9 +141,13 @@ function monthDay(value: number): string {
   if (value === -1) return t`last day`;
   if (value < 0) {
     const count = Math.abs(value);
-    return plural(count, {
-      one: "# day from the end",
-      other: "# days from the end",
+    // Negative BYMONTHDAY is inclusive: -2 is the penultimate day, not
+    // two days before month end. Keep the entire ordinal phrase translatable.
+    return selectOrdinal(count, {
+      one: "#st-to-last day of the month",
+      two: "#nd-to-last day of the month",
+      few: "#rd-to-last day of the month",
+      other: "#th-to-last day of the month",
     });
   }
   return ordinal(value);
@@ -170,19 +174,25 @@ export function recurrenceRuleSummary(draft: RecurrenceRuleDraft): string {
   let summary: string;
   switch (draft.frequency) {
     case "DAILY":
-      summary = plural(interval, { one: "Every day", other: "Every # days" });
+      summary = plural(interval, { "=1": "Every day", other: "Every # days" });
       break;
     case "WEEKLY":
-      summary = plural(interval, { one: "Every week", other: "Every # weeks" });
+      summary = plural(interval, {
+        "=1": "Every week",
+        other: "Every # weeks",
+      });
       break;
     case "MONTHLY":
       summary = plural(interval, {
-        one: "Every month",
+        "=1": "Every month",
         other: "Every # months",
       });
       break;
     case "YEARLY":
-      summary = plural(interval, { one: "Every year", other: "Every # years" });
+      summary = plural(interval, {
+        "=1": "Every year",
+        other: "Every # years",
+      });
       break;
   }
   if (
