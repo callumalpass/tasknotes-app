@@ -176,6 +176,63 @@ describe("application localization", () => {
     },
   );
 
+  it.each([
+    {
+      locale: "de",
+      expected: [
+        "0 Aufgaben",
+        "1 Aufgabe",
+        "2 Aufgaben",
+        "5 Aufgaben",
+        "21 Aufgaben",
+      ],
+    },
+    {
+      locale: "es",
+      expected: ["0 tareas", "1 tarea", "2 tareas", "5 tareas", "21 tareas"],
+    },
+    {
+      locale: "ja",
+      expected: [
+        "タスク0件",
+        "タスク1件",
+        "タスク2件",
+        "タスク5件",
+        "タスク21件",
+      ],
+    },
+    {
+      locale: "ko",
+      expected: ["작업 0개", "작업 1개", "작업 2개", "작업 5개", "작업 21개"],
+    },
+    {
+      locale: "pt",
+      expected: [
+        "0 tarefas",
+        "1 tarefa",
+        "2 tarefas",
+        "5 tarefas",
+        "21 tarefas",
+      ],
+    },
+    {
+      locale: "ru",
+      expected: ["0 задач", "1 задача", "2 задачи", "5 задач", "21 задача"],
+    },
+    {
+      locale: "zh",
+      expected: ["0 个任务", "1 个任务", "2 个任务", "5 个任务", "21 个任务"],
+    },
+  ])(
+    "renders authored zero/one/few/many counts in $locale",
+    async ({ locale, expected }) => {
+      await activateAppLocale(locale as Locale);
+      expect(
+        [0, 1, 2, 5, 21].map((count) => countLabel(count, "task")),
+      ).toEqual(expected);
+    },
+  );
+
   it("formats authored French ordinals with CLDR instead of English suffix assumptions", async () => {
     expect([1, 2, 3, 11, 21].map(ordinal)).toEqual([
       "1st",
