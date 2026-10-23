@@ -1,3 +1,4 @@
+/* global self, caches, URL */
 self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
