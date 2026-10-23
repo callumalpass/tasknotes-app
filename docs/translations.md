@@ -71,7 +71,11 @@ The guard covers application, component and i18n UI directories; test fixtures,
 tests and locale data are excluded. Extraction also includes `src/main.tsx`.
 This is a structural guard, not proof that every dependency's copy is translated.
 The app retains contract/source regression tests against the kit's real validators.
-CI runs the check and rejects generated catalogue drift before its normal gates.
+Kit `096d80bf` has a symlink-sensitive bin entry guard that can silently skip commands
+under pnpm. The tiny `scripts/i18n.mjs` adapter invokes its exported `main` directly;
+it contains no duplicated validation logic. Remove it when adopting a corrected kit
+tarball. CI runs the check and rejects generated catalogue drift before its normal
+gates.
 
 Browser acceptance uses isolated Playwright contexts, blocked external traffic,
 and app-lane ports. `e2e/i18n.spec.ts` covers local collection controls, data and
