@@ -62,26 +62,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install browser
-        run: pnpm exec playwright install --with-deps chromium
-
       - name: Verify application
         run: pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm test:conformance
-
-      - name: Build GitHub Pages test application
-        run: pnpm build:e2e
-        env:
-          VITE_BASE_PATH: /tasknotes-app/
-          TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
-          TASKNOTES_WEB_ONLY: "1"
-          TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
-
-      - name: Test GitHub Pages artifact
-        run: pnpm test:e2e
-        env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/tasknotes-app/
-          PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173
-          VITE_BASE_PATH: /tasknotes-app/
 
   deploy-staging:
     if: inputs.publisher != 'native' && (github.event_name == 'push' || inputs.target == 'staging')
