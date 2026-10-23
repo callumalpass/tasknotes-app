@@ -140,7 +140,7 @@ msgstr "{0} 看板"
 #. placeholder {0}: propertyLabel(property)
 #: src/app/views-screen.tsx
 msgid "{0} is calculated by this view and cannot be changed here."
-msgstr "此视图根据 {0} 计算，无法在此处更改。"
+msgstr "{0} 由此视图计算得出，无法在此处更改。"
 
 #. placeholder {0}: destinationLane.label ?? uiCopy("That section")
 #: src/app/views/task-list-view.tsx
@@ -440,11 +440,11 @@ msgstr "{summary}，星期：{names}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr "{summary}，{day}日"
+msgstr "{summary}，日期：{day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr "{summary}，{day}日第 {rank} 个"
+msgstr "{summary}，{rank}{day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
@@ -1143,7 +1143,7 @@ msgstr "子项"
 
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
-msgstr "选择已提交，但可能仍在等待同步；请检查已确认、待处理和暂存的数量。"
+msgstr "选择已提交，但可能仍在等待同步；请检查已确认、待同步和受保护的编辑数量。"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
@@ -1179,7 +1179,7 @@ msgstr "选择任务的分组和排序方式。"
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record"
-msgstr "在 Connect 中选择或创建你的人物记录"
+msgstr "选择或创建你的人员记录"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
@@ -1212,7 +1212,7 @@ msgstr "清除"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "每次重复时清除笔记中的清单项"
+msgstr "每次重复时取消勾选笔记中的清单项"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -1767,7 +1767,7 @@ msgstr "删除“{name}”？"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr "删除项目"
+msgstr "删除条目"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete note"
@@ -3219,7 +3219,7 @@ msgstr "还没有视图。"
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "没有。TaskNotes 直接读取和写入权威 mdbase 集合。托管集合需要网络连接；电脑上的集合还需要该电脑可连接。"
+msgstr "不可以。TaskNotes 直接读取和写入权威 mdbase 集合。托管集合需要网络连接；电脑上的集合还需要该电脑可连接。"
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
@@ -3342,7 +3342,7 @@ msgstr "离线"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "开启"
+msgstr "重复日期"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
@@ -3351,7 +3351,7 @@ msgstr "开启"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr "在"
+msgstr "指定日期"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
