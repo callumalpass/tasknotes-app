@@ -1325,7 +1325,7 @@ msgstr "Sammlung"
 
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
-msgstr ""
+msgstr "Der Zugriff auf die Sammlung ist nicht verfügbar."
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1351,7 +1351,7 @@ msgstr "Die Sammlungsreihenfolge wird verwendet."
 #: src/components/task-model-settings.tsx
 msgctxt "settings access source label"
 msgid "Collection settings"
-msgstr ""
+msgstr "Sammlungseinstellungen"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
