@@ -40,6 +40,18 @@ for (const locale of locales) {
   test(`${locale} requires complete authored PO before compiler fallback`, async () => {
     const target = await parse(locale);
     const allowed = policy.allowIdentical?.[locale] ?? [];
+    // Report every broken ICU/rich-text contract in this locale in one round,
+    // rather than bouncing translators through the remote queue one ID at a time.
+    const contractErrors = [];
+    for (const [id, entry] of Object.entries(english)) {
+      if (entry.obsolete || !target[id]?.translation) continue;
+      try {
+        assertMessageContract(entry.message, target[id].translation, locale);
+      } catch (error) {
+        contractErrors.push(`${id}: ${error.message}`);
+      }
+    }
+    assert.deepEqual(contractErrors, [], `${locale} translation contracts`);
     assert.equal(
       assertCompleteCatalogue(english, target, locale, allowed),
       Object.values(english).filter((entry) => !entry.obsolete).length,
