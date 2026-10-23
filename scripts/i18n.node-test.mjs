@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { formatter } from "@lingui/format-po";
@@ -21,6 +23,16 @@ const english = await parse("en");
 const policy = JSON.parse(
   await readFile(new URL("../i18n-policy.json", import.meta.url), "utf8"),
 );
+
+test("the shared-kit CLI adapter executes commands instead of silently skipping them", () => {
+  const result = spawnSync(
+    process.execPath,
+    [fileURLToPath(new URL("./i18n.mjs", import.meta.url)), "not-a-command"],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Usage: mdbase-i18n/);
+});
 
 test("committed PO source/context pairs use generated compiler JSON IDs", async () => {
   const compiled = JSON.parse(
