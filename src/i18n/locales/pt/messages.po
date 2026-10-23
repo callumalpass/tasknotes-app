@@ -1212,7 +1212,7 @@ msgstr "Limpar"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "Limpar os itens da lista de verificação na nota a cada repetição"
+msgstr "Desmarcar as caixas de seleção da nota a cada repetição"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -1375,17 +1375,17 @@ msgstr "A comparação não está disponível neste backend."
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr "Concluídas"
+msgstr "Concluir"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr "Concluída"
+msgstr "Concluídas"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr "Concluir"
+msgstr "Concluída"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
@@ -3049,7 +3049,7 @@ msgstr "Nova tarefa ({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr "Novo título da tarefa"
+msgstr "Título da nova tarefa"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
@@ -3342,12 +3342,12 @@ msgstr "Sem conexão"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "Ativado"
+msgstr "Em"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr "Em"
+msgstr "Ativado"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
@@ -3371,12 +3371,12 @@ msgstr "Somente quando eu criar uma"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr "Abertas"
+msgstr "Abrir"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "Abrir"
+msgstr "Abertas"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
@@ -4023,7 +4023,7 @@ msgstr "Tentar novamente a verificação de notificações"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "Tentar novamente o carregamento de pessoas"
+msgstr "Recarregar pessoas"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
@@ -5049,7 +5049,7 @@ msgstr "Hora"
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
-msgstr "Horário"
+msgstr "Tempo"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time format"
