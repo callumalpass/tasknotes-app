@@ -1845,7 +1845,7 @@ msgstr "Editar vista"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr "Editable"
+msgstr "Se puede editar"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
@@ -4747,11 +4747,11 @@ msgstr "Cuál"
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr "Wikilink"
+msgstr "Enlace wiki"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr "Wikilinks"
+msgstr "Enlaces wiki"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
