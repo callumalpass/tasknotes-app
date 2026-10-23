@@ -79,7 +79,7 @@
     "@mdbase-dev/i18n": "file:vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz",
     "@mdbase-dev/obsidian-runtime": "file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz",
     "@mdbase-dev/sdk": "file:vendor/sdk-eaa4e697-production-beta141.tgz",
-    "@mdbase-dev/ui": "file:vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz",
+    "@mdbase-dev/ui": "file:vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tanstack/react-virtual": "3.14.11",
     "@tasknotes/model": "file:vendor/tasknotes-model-0.3.0-rc.15.tgz",

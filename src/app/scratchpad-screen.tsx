@@ -421,7 +421,9 @@ export function ScratchpadScreen({
         return next;
       });
     } catch (reason) {
-      setError(t`The note was not deleted. ${message(reason)}`);
+      // Use the current singleton without changing this lifecycle callback on
+      // locale switches: its effect cleanup accepts the pending deletion.
+      setError(translate`The note was not deleted. ${message(reason)}`);
     } finally {
       setPendingDeletion((current) =>
         current?.id === document.id ? undefined : current,

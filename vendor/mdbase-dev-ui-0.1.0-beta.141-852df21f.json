@@ -1,0 +1,21 @@
+{
+  "repository": "mdbase-dev/mdbase-connect",
+  "sourceCommit": "852df21f2a45f7decf1eda1f8967c2029a658828",
+  "package": "@mdbase-dev/ui",
+  "version": "0.1.0-beta.141",
+  "artifact": "mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz",
+  "bytes": 128913,
+  "sha256": "5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7",
+  "integrity": "sha512-VgmjpOGY7OqEmDPycLGS4UD2i2DKby5GI1+PdsZy6LhzkLT7swKuj8llupQHCiiiVMJNAq6XvMQYf/78GIhuMQ==",
+  "extendsArtifact": "mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz",
+  "sourceIncludesPrs": [888, 889, 892, 893, 895, 899, 902],
+  "consumerEntries": [
+    "@mdbase-dev/ui/collections",
+    "@mdbase-dev/ui/collections.css",
+    "@mdbase-dev/ui/collections/testing",
+    "@mdbase-dev/ui/i18n"
+  ],
+  "label": "strict authored library catalogue refresh; consumer composition/release qualification separate",
+  "noPublication": true,
+  "originalArchiveUnchanged": true
+}

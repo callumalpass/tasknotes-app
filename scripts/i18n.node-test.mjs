@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { formatter } from "@lingui/format-po";
 import { setupI18n } from "@lingui/core";
+import { mergeCatalogues } from "@mdbase-dev/i18n";
+import { uiCatalogues } from "@mdbase-dev/ui/i18n";
 import { compileMessageOrThrow } from "@lingui/message-utils/compileMessage";
 import { generateMessageId } from "@lingui/message-utils/generateMessageId";
 import {
@@ -56,6 +58,23 @@ test("committed PO source/context pairs use generated compiler JSON IDs", async 
 });
 
 for (const locale of locales) {
+  test(`${locale} application and public UI compiled catalogues compose without overrides`, async () => {
+    const app = JSON.parse(
+      await readFile(
+        new URL(`../src/i18n/locales/${locale}/messages.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    const library =
+      locale === "en"
+        ? uiCatalogues.english
+        : await uiCatalogues.loadLocale(locale);
+    const composed = mergeCatalogues([app, library]);
+    assert.ok(
+      Object.keys(composed.messages).length >= Object.keys(app.messages).length,
+    );
+  });
+
   test(`${locale} requires complete authored PO before compiler fallback`, async () => {
     const target = await parse(locale);
     const allowed = policy.allowIdentical?.[locale] ?? [];

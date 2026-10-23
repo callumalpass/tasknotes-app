@@ -370,10 +370,40 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
   );
   assert.equal(successor.extendsArtifact, manifest.artifact);
   assert.deepEqual(successor.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const refreshed = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(
+    refreshed.sourceCommit,
+    "852df21f2a45f7decf1eda1f8967c2029a658828",
+  );
+  assert.equal(refreshed.extendsArtifact, successor.artifact);
+  assert.deepEqual(refreshed.sourceIncludesPrs, manifest.sourceIncludesPrs);
   assert.equal(
     pkg.dependencies["@mdbase-dev/ui"],
-    `file:vendor/${successor.artifact}`,
+    `file:vendor/${refreshed.artifact}`,
   );
+  const refreshedBytes = await readFile(
+    new URL(`vendor/${refreshed.artifact}`, root),
+  );
+  assert.equal(refreshedBytes.byteLength, 128913);
+  assert.equal(refreshed.bytes, refreshedBytes.byteLength);
+  assert.equal(
+    refreshed.sha256,
+    "5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7",
+  );
+  assert.equal(
+    createHash("sha256").update(refreshedBytes).digest("hex"),
+    refreshed.sha256,
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(refreshedBytes).digest("base64")}`,
+    refreshed.integrity,
+  );
+  // Keep the previous integration intake byte-for-byte too.
   const currentBytes = await readFile(
     new URL(`vendor/${successor.artifact}`, root),
   );

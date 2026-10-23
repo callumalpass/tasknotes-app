@@ -26,10 +26,12 @@ translation branches are merged; the follow-up source adds 13 IDs and retires ei
 13 targets per language remain blank until the coordinator routes translator authoring. This is not native-speaker certification or permission
 to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
-copied into application PO files. The current integration tarball still needs a
-complete, obsolete-free library catalogue refresh: conflicts fail closed and retain
-the current language rather than overriding authored app translations. Complete
-shared-library translation remains a product release gate.
+copied into application PO files. The refreshed `852df21f` library tarball has
+strict-authored active targets, including de/ru, but still compiles three obsolete
+messages. Its English `Close {0}` (`nzHlj8`) conflicts with all eight authored app
+targets. Conflicts fail closed and retain the current language rather than
+overriding translations. Upstream must clean obsolete entries before compile/pack;
+successful composition remains a product release gate.
 
 ## Authoring
 
@@ -102,9 +104,11 @@ The app adopted and hash-verified kit `b4134d71` (SHA256
 then advanced to its source-guard/composition successor `8785bd19`, same version
 `0.1.0-beta.141`, as `vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz`
 (SHA256 `4eae06666795c7d7e8c24d5eb35ead06686e6f351b3d76d39f2b95f402c91af6`).
-Public UI is vendored from `9041442d` in
-`vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.tgz` (SHA256
-`65b7ab3754fe840e04c0128e00f4b9f81dbbf999e0eb987acf97ee72c6b3b55b`).
+Public UI is vendored from `852df21f` in
+`vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz` (SHA256
+`5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7`).
+The original predecessor and earlier integration archive retain their independent
+byte/hash/integrity regressions.
 Swap this file dependency for the published package at merge time, after the
 coordinated Connect release. This branch does not publish or deploy anything.
 Agent-authored translations have not received native-speaker certification.
