@@ -21,7 +21,7 @@ msgstr " (sans lien avec un membre actif)"
 
 #: src/components/private-account-settings.tsx
 msgid " (or use your password)"
-msgstr ""
+msgstr " (ou utilisez votre mot de passe)"
 
 #. placeholder {0}: ordered[0].name
 #: src/app/views/navigation-view-order.tsx
@@ -34,33 +34,33 @@ msgstr ", désormais l’accueil"
 
 #: src/app/more-screen.tsx
 msgid ". Pending edits are not yet synced."
-msgstr ""
+msgstr ". Modifications en attente de synchronisation."
 
 #: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
-msgstr ""
+msgstr ". Elles restent dans ce navigateur jusqu’à leur restauration ou leur abandon."
 
 #: src/app/scratchpad-screen.tsx
 msgid ". Undo is available for 30 seconds."
-msgstr ""
+msgstr ". Annulation possible pendant 30 secondes."
 
 #. placeholder {0}: stats.open
 #. placeholder {1}: stats.total
 #: src/app/more-screen.tsx
 msgid "· {0} open · {1} total"
-msgstr ""
+msgstr "· {0} ouvertes · {1} au total"
 
 #: src/app/more-screen.tsx
 msgid "· Details need attention"
-msgstr ""
+msgstr "· Détails à vérifier"
 
 #: src/app/more-screen.tsx
 msgid "· Opening"
-msgstr ""
+msgstr "· Ouverture en cours"
 
 #: src/components/task-capture.tsx
 msgid "” was saved…"
-msgstr ""
+msgstr "» a bien été enregistrée…"
 
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
@@ -73,7 +73,7 @@ msgstr "« {title} » est toujours dans la collection."
 
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
-msgstr ""
+msgstr "(modifications non enregistrées)"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -83,7 +83,7 @@ msgstr "{0, plural, one {# image a été ajoutée.} other {# images ont été aj
 #. placeholder {0}: stats.open
 #: src/app/more-screen.tsx
 msgid "{0, plural, one {# open} other {# open}}"
-msgstr ""
+msgstr "{0, plural, one {# ouverte} other {# ouvertes}}"
 
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
@@ -103,7 +103,7 @@ msgstr "{0, plural, one {Image ajoutée} other {# images ajoutées}}"
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr ""
+msgstr "{0, plural, one {Tout déplacer pour aujourd’hui : # tâche en retard} other {Tout déplacer pour aujourd’hui : # tâches en retard}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
@@ -151,7 +151,7 @@ msgstr "{0} est en lecture seule."
 #. placeholder {1}: edits[0].cause
 #: src/components/held-edits.tsx
 msgid "{0} is waiting for your choice. {1}"
-msgstr ""
+msgstr "{0} attend votre décision. {1}"
 
 #. placeholder {0}: source.name
 #. placeholder {0}: view.name
@@ -203,7 +203,7 @@ msgstr "{0}. Faites glisser pour déplacer. Utilisez les flèches pour réorgani
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
 msgid "{0}{1} copied"
-msgstr ""
+msgstr "Copie de {0}{1}"
 
 #. placeholder {0}: tasks.length
 #: src/app/search-screen.tsx
@@ -460,7 +460,7 @@ msgstr "{taskCount, plural, =0 {# tâches sont prêtes dans cette vue.} one {# t
 
 #: src/components/held-edits.tsx
 msgid "{total} edits are waiting for your choice."
-msgstr ""
+msgstr "{total} modifications attendent votre décision."
 
 # Calendar day ordinal: 1er, then 2e, 3e, etc.; kept cases preserve the source contract.
 #: src/i18n/presentation.ts
@@ -478,7 +478,7 @@ msgstr "+{0} autres"
 
 #: src/app/full-calendar-view.tsx
 msgid "+{count} more"
-msgstr ""
+msgstr "+{count} autres"
 
 #: src/components/calendar-preferences.tsx
 msgid "1 hour"
@@ -515,11 +515,11 @@ msgstr "Cette vue utilise une valeur calculée pour le tri. Cette collection ne 
 
 #: src/components/task-model-settings.tsx
 msgid "A task scheduled Monday and due Wednesday stays two days apart on each repeat."
-msgstr ""
+msgstr "Une tâche planifiée le lundi et dont l’échéance est le mercredi conserve un écart de deux jours à chaque répétition."
 
 #: src/components/app-update-notice.tsx
 msgid "A TaskNotes update is ready. Save your changes, then reload."
-msgstr ""
+msgstr "Une mise à jour de TaskNotes est prête. Enregistrez vos modifications, puis rechargez la page."
 
 #: src/components/recurrence-field.tsx
 msgid "A weekday position"
@@ -527,19 +527,19 @@ msgstr "Un jour de semaine à une position donnée"
 
 #: src/app/settings-sections.ts
 msgid "About & help"
-msgstr ""
+msgstr "À propos et aide"
 
 #: src/app/settings-sections.ts
 msgid "Account"
-msgstr ""
+msgstr "Compte"
 
 #: src/components/private-account-settings.tsx
 msgid "Account recovery changed on another device. Check its status before trying again."
-msgstr ""
+msgstr "La récupération du compte a été modifiée sur un autre appareil. Vérifiez son état avant de réessayer."
 
 #: src/components/private-account-settings.tsx
 msgid "Account unlocked. Private collection keys are available on this device."
-msgstr ""
+msgstr "Compte déverrouillé. Les clés des collections privées sont disponibles sur cet appareil."
 
 #: src/app/search-screen.tsx
 msgid "Across this collection"
@@ -646,7 +646,7 @@ msgstr "Ajoutez d’abord un titre de tâche."
 
 #: src/app/today-clear.tsx
 msgid "Add a task to start planning your day."
-msgstr ""
+msgstr "Ajoutez une tâche pour commencer à organiser votre journée."
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
@@ -699,7 +699,7 @@ msgstr "Ajouter un rappel"
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
-msgstr ""
+msgstr "Ajouter les vues de départ"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
@@ -759,7 +759,7 @@ msgstr "Ajout de « {pendingTitle} »…"
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Adding starter views…"
-msgstr ""
+msgstr "Ajout des vues de départ…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
@@ -767,7 +767,7 @@ msgstr "Ajout en cours…"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds Today, Upcoming, Calendar, Projects, and Archive."
-msgstr ""
+msgstr "Ajoute les vues Today, Upcoming, Calendar, Projects et Archive."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -820,6 +820,10 @@ msgstr "Après un nombre d’occurrences"
 msgid "Agenda"
 msgstr "Agenda"
 
+#: src/i18n/editor-phrases.ts
+msgid "all"
+msgstr "tout"
+
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "Toutes"
@@ -850,7 +854,7 @@ msgstr "Autoriser la création de tâches"
 
 #: src/components/task-model-settings.tsx
 msgid "Also create the next file when an occurrence is skipped"
-msgstr ""
+msgstr "Créer aussi le fichier suivant lorsqu’une occurrence est ignorée"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
@@ -870,15 +874,15 @@ msgstr "Sans date"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Anywhere"
-msgstr ""
+msgstr "Partout"
 
 #: src/i18n/language-settings.tsx
 msgid "App language"
-msgstr ""
+msgstr "Langue de l’application"
 
 #: src/components/app-update-notice.tsx
 msgid "App update"
-msgstr ""
+msgstr "Mise à jour de l’application"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
@@ -899,11 +903,11 @@ msgstr "Archiver"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive a task once it has been in a chosen status for a while. Repeating tasks are never archived automatically."
-msgstr ""
+msgstr "Archiver une tâche après qu’elle a conservé un statut choisi pendant un certain temps. Les tâches récurrentes ne sont jamais archivées automatiquement."
 
 #: src/components/task-model-settings.tsx
 msgid "Archive automatically"
-msgstr ""
+msgstr "Archiver automatiquement"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
@@ -975,7 +979,7 @@ msgstr "Revenir aux actions précédentes"
 
 #: src/app/more-screen.tsx
 msgid "Back to Settings"
-msgstr ""
+msgstr "Retour aux paramètres"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
@@ -1021,6 +1025,10 @@ msgstr "Éditeur visuel"
 msgid "Built-in working spaces"
 msgstr "Espaces de travail intégrés"
 
+#: src/i18n/editor-phrases.ts
+msgid "by word"
+msgstr "par mot"
+
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
@@ -1032,7 +1040,7 @@ msgstr "Disposition du calendrier"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar markers"
-msgstr ""
+msgstr "Légende du calendrier"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
@@ -1054,7 +1062,7 @@ msgstr "Déplacement de {title} annulé."
 
 #: src/app/model-setup-screen.tsx
 msgid "Catching up"
-msgstr ""
+msgstr "Rattrapage en cours"
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
@@ -1067,28 +1075,28 @@ msgstr "Changer de collection"
 
 #: src/components/private-account-settings.tsx
 msgid "Change password"
-msgstr ""
+msgstr "Changer le mot de passe"
 
 #: src/components/private-account-settings.tsx
 msgid "Change recovery password"
-msgstr ""
+msgstr "Changer le mot de passe de récupération"
 
 #: src/components/collection-write-status.tsx
 msgid "Change rejected"
-msgstr ""
+msgstr "Modification refusée"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
-msgstr ""
+msgstr "Modification refusée : {0}"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
-msgstr ""
+msgstr "Modification : "
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
-msgstr ""
+msgstr "Impossible d’enregistrer les modifications. Gardez cette page ouverte et réessayez."
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
@@ -1096,23 +1104,23 @@ msgstr "Modifie chaque occurrence"
 
 #: src/components/collection-write-status.tsx
 msgid "changes need review"
-msgstr ""
+msgstr "modifications à vérifier"
 
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
-msgstr ""
+msgstr "Vérifier l’état du compte"
 
 #: src/app/model-setup-screen.tsx
 msgid "Check setup"
-msgstr ""
+msgstr "Vérifier la configuration"
 
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
-msgstr ""
+msgstr "Vérifier l’achèvement du mode strict"
 
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
-msgstr ""
+msgstr "Vérifiez que la collection est connectée, puis réessayez."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1120,23 +1128,23 @@ msgstr "Vérification en cours"
 
 #: src/components/private-account-settings.tsx
 msgid "Checking account recovery…"
-msgstr ""
+msgstr "Vérification de la récupération du compte…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking collection access…"
-msgstr ""
+msgstr "Vérification de l’accès à la collection…"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
-msgstr ""
+msgstr "Vérification des paramètres de la collection…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking TaskNotes setup…"
-msgstr ""
+msgstr "Vérification de la configuration TaskNotes…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking whether setup finished…"
-msgstr ""
+msgstr "Vérification de la fin de la configuration…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
@@ -1144,7 +1152,7 @@ msgstr "Sous-élément"
 
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
-msgstr ""
+msgstr "Choix envoyé. Il peut être encore en attente de synchronisation ; vérifiez les nombres de modifications confirmées, en attente et protégées."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
@@ -1152,7 +1160,7 @@ msgstr "Choisir"
 
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
-msgstr ""
+msgstr "Choisir une autre collection"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
@@ -1168,7 +1176,7 @@ msgstr "Choisir une valeur"
 
 #: src/app/model-setup-screen.tsx
 msgid "Choose another collection"
-msgstr ""
+msgstr "Choisir une autre collection"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1180,7 +1188,7 @@ msgstr "Choisissez comment regrouper et trier les tâches."
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record"
-msgstr ""
+msgstr "Choisir ou créer votre document de personne"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
@@ -1213,7 +1221,7 @@ msgstr "Effacer"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr ""
+msgstr "Réinitialiser les cases à cocher de la note à chaque répétition"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -1221,11 +1229,11 @@ msgstr "Effacer l’échéance"
 
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
-msgstr ""
+msgstr "Effacer les recherches récentes"
 
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
-msgstr ""
+msgstr "Effacer les tâches récemment ouvertes"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -1242,6 +1250,10 @@ msgstr "Effacer la sélection"
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
 msgstr "Effacer la valeur"
+
+#: src/i18n/editor-phrases.ts
+msgid "close"
+msgstr "fermer"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
@@ -1268,7 +1280,7 @@ msgstr "Fermer les tâches supplémentaires"
 
 #: src/components/held-edits.tsx
 msgid "Close comparison"
-msgstr ""
+msgstr "Fermer la comparaison"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
@@ -1276,7 +1288,7 @@ msgstr "Fermer l’ajout d’images"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Close keyboard shortcuts"
-msgstr ""
+msgstr "Fermer les raccourcis clavier"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
@@ -1300,7 +1312,7 @@ msgstr "Replier l’image"
 
 #: src/app/settings-sections.ts
 msgid "Collection"
-msgstr ""
+msgstr "Collection"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
@@ -1311,7 +1323,7 @@ msgstr "Collection"
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
-msgstr ""
+msgstr "Comportement de la collection"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
@@ -1319,7 +1331,7 @@ msgstr "Connexion à la collection"
 
 #: src/app/more-screen.tsx
 msgid "Collection details could not be loaded. "
-msgstr ""
+msgstr "Impossible de charger les détails de la collection. "
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
@@ -1349,16 +1361,16 @@ msgstr "Valeurs séparées par des virgules"
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
-msgstr ""
+msgstr "Palette de commandes"
 
 #: src/app/app-shell.tsx
 msgid "Commands"
-msgstr ""
+msgstr "Commandes"
 
 #. placeholder {0}: shortcutLabel("K")
 #: src/app/app-shell.tsx
 msgid "Commands ({0})"
-msgstr ""
+msgstr "Commandes ({0})"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
@@ -1366,11 +1378,11 @@ msgstr "Lignes compactes"
 
 #: src/components/held-edits.tsx
 msgid "Compare side by side"
-msgstr ""
+msgstr "Comparer côte à côte"
 
 #: src/components/held-edits.tsx
 msgid "Comparison is not available from this backend."
-msgstr ""
+msgstr "Ce fournisseur ne permet pas la comparaison."
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -1390,7 +1402,7 @@ msgstr "Terminée"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
-msgstr ""
+msgstr "Terminer « {title} »"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
@@ -1398,7 +1410,7 @@ msgstr "Terminer l’occurrence"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
-msgstr ""
+msgstr "Terminer ou rouvrir"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
@@ -1420,7 +1432,7 @@ msgstr "Occurrences récurrentes terminées"
 
 #: src/components/task-model-settings.tsx
 msgid "Completing an occurrence's task file creates the file for the next date."
-msgstr ""
+msgstr "Terminer le fichier de tâche d’une occurrence crée celui de la date suivante."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion"
@@ -1433,6 +1445,10 @@ msgstr "Date de fin de la tâche"
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion or skip"
 msgstr "Fin de la tâche ou occurrence ignorée"
+
+#: src/i18n/editor-phrases.ts
+msgid "Completions"
+msgstr "Suggestions"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
@@ -1463,7 +1479,7 @@ msgstr "Condition"
 
 #: src/components/held-edits.tsx
 msgid "Confirm "
-msgstr ""
+msgstr "Confirmer "
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
@@ -1471,19 +1487,19 @@ msgstr "Confirmer l’abandon et la déconnexion"
 
 #: src/components/private-account-settings.tsx
 msgid "Confirm new recovery password"
-msgstr ""
+msgstr "Confirmer le nouveau mot de passe de récupération"
 
 #: src/components/held-edits.tsx
 msgid "Confirm protected-version replacement"
-msgstr ""
+msgstr "Confirmer le remplacement de la version protégée"
 
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
-msgstr ""
+msgstr "Vérification : la tâche « "
 
 #: src/components/collection-write-status.tsx
 msgid "Conflicting changes"
-msgstr ""
+msgstr "Modifications en conflit"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1530,6 +1546,10 @@ msgstr "Contextes"
 msgid "Continue on the timeline"
 msgstr "Continuer sur la chronologie"
 
+#: src/i18n/editor-phrases.ts
+msgid "Control character"
+msgstr "Caractère de contrôle"
+
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
@@ -1545,7 +1565,7 @@ msgstr "Copier"
 
 #: src/components/task-record-file.tsx
 msgid "Copy "
-msgstr ""
+msgstr "Copier "
 
 #. placeholder {0}: view?.name
 #: src/app/view-editor.tsx
@@ -1578,11 +1598,11 @@ msgstr "Impossible de {0} « {1} ». {2}"
 
 #: src/components/private-account-settings.tsx
 msgid "Could not check account recovery. Check the connection and try again."
-msgstr ""
+msgstr "Impossible de vérifier la récupération du compte. Vérifiez la connexion et réessayez."
 
 #: src/components/held-edits.tsx
 msgid "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again."
-msgstr ""
+msgstr "Impossible de confirmer le résultat de votre choix. Actualisez et vérifiez la modification actuellement protégée avant de réessayer."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
@@ -1600,20 +1620,20 @@ msgstr "Impossible d’enregistrer le mode par défaut sur cet appareil."
 
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
-msgstr ""
+msgstr "Impossible d’ajouter les vues de départ."
 
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
-msgstr ""
+msgstr "Copie impossible"
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
 msgid "Couldn't load your views."
-msgstr ""
+msgstr "Impossible de charger vos vues."
 
 #: src/components/recurrence-field.tsx
 msgid "Count the interval from when you finish the task."
-msgstr ""
+msgstr "Calculer l’intervalle à partir du moment où vous terminez la tâche."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create {selectedReviewCount} task notes"
@@ -1626,15 +1646,15 @@ msgstr "Créer une sous-tâche de {0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Create a task file for each date"
-msgstr ""
+msgstr "Créer un fichier de tâche pour chaque date"
 
 #: src/app/app-shell.tsx
 msgid "Create a view"
-msgstr ""
+msgstr "Créer une vue"
 
 #: src/components/task-model-settings.tsx
 msgid "Create files ahead"
-msgstr ""
+msgstr "Créer les fichiers à l’avance"
 
 #: src/app/view-editor.tsx
 msgid "Create saved view"
@@ -1677,6 +1697,10 @@ msgstr "Création de « {0} » effectuée"
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
 msgstr "Création en cours…"
+
+#: src/i18n/editor-phrases.ts
+msgid "current match"
+msgstr "correspondance actuelle"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -1772,7 +1796,7 @@ msgstr "Supprimer l’élément"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete note"
-msgstr ""
+msgstr "Supprimer la note"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
@@ -1858,11 +1882,11 @@ msgstr "Désactivées dans les paramètres système"
 
 #: src/components/task-model-settings.tsx
 msgid "Discard"
-msgstr ""
+msgstr "Abandonner"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard and load latest"
-msgstr ""
+msgstr "Abandonner et charger la version la plus récente"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
@@ -1878,11 +1902,11 @@ msgstr "Abandonner le brouillon"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard my edit"
-msgstr ""
+msgstr "Abandonner ma modification"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Discard recovered edits"
-msgstr ""
+msgstr "Abandonner les modifications récupérées"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
@@ -1899,7 +1923,7 @@ msgstr "Masquer"
 
 #: src/components/task-completed-notice.tsx
 msgid "Dismiss completion notice"
-msgstr ""
+msgstr "Masquer la confirmation de fin de tâche"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
@@ -1919,7 +1943,7 @@ msgstr "TaskNotes fonctionne-t-il hors ligne ?"
 
 #: src/app/views-screen.tsx
 msgid "done"
-msgstr ""
+msgstr "terminées"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2008,7 +2032,7 @@ msgstr "Dupliquer la vue enregistrée"
 
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
-msgstr ""
+msgstr "Chaque date est suivie dans la tâche récurrente. Un fichier de tâche distinct est créé uniquement si vous le demandez."
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
@@ -2041,7 +2065,7 @@ msgstr "Modifier les détails"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
-msgstr ""
+msgstr "Modification non enregistrée"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
@@ -2092,7 +2116,7 @@ msgstr "tâche vide"
 
 #: src/components/private-account-settings.tsx
 msgid "Enable strict mode"
-msgstr ""
+msgstr "Activer le mode strict"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
@@ -2197,6 +2221,10 @@ msgstr "Valeur du filtre"
 msgid "Filter views"
 msgstr "Filtrer les vues"
 
+#: src/i18n/editor-phrases.ts
+msgid "Find"
+msgstr "Rechercher"
+
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "Rechercher une tâche"
@@ -2211,20 +2239,20 @@ msgstr "Rechercher des tâches dans toute votre collection"
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
-msgstr ""
+msgstr "Terminez ou fermez l’éditeur de vues avant de recharger la page."
 
 #: src/app/repository-context.tsx
 #: src/components/task-capture.tsx
 msgid "Finish or discard the task you are adding before reloading."
-msgstr ""
+msgstr "Terminez ou abandonnez la tâche en cours de création avant de recharger la page."
 
 #: src/components/private-account-settings.tsx
 msgid "Finish strict mode on this device"
-msgstr ""
+msgstr "Terminer l’activation du mode strict sur cet appareil"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Finish the note action in progress before reloading."
-msgstr ""
+msgstr "Terminez l’action en cours sur la note avant de recharger la page."
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
@@ -2252,11 +2280,23 @@ msgstr "Date et heure fixes"
 
 #: src/app/command-palette-model.ts
 msgid "Focused task"
-msgstr ""
+msgstr "Tâche ciblée"
+
+#: src/i18n/editor-phrases.ts
+msgid "Fold line"
+msgstr "Replier la ligne"
+
+#: src/i18n/editor-phrases.ts
+msgid "folded code"
+msgstr "code replié"
+
+#: src/i18n/editor-phrases.ts
+msgid "Folded lines"
+msgstr "Lignes repliées"
 
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
-msgstr ""
+msgstr "Pour une période à venir"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
@@ -2264,7 +2304,7 @@ msgstr "Par exemple P1D"
 
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
-msgstr ""
+msgstr "Mot de passe oublié"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
@@ -2302,9 +2342,13 @@ msgstr "Horizon futur"
 msgid "Gap"
 msgstr "Décalage"
 
+#: src/i18n/editor-phrases.ts
+msgid "go"
+msgstr "aller"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
-msgstr ""
+msgstr "Revenez en arrière et actualisez la collection avant de la modifier."
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
@@ -2312,11 +2356,15 @@ msgstr "Revenez en arrière et actualisez la collection."
 
 #: src/app/command-palette-model.ts
 msgid "Go to"
-msgstr ""
+msgstr "Aller à"
+
+#: src/i18n/editor-phrases.ts
+msgid "Go to line"
+msgstr "Aller à la ligne"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
-msgstr ""
+msgstr "Aller à une destination, lancer une action ou rechercher une tâche…"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
@@ -2392,11 +2440,11 @@ msgstr "Comment installer"
 
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
-msgstr ""
+msgstr "J’ai enregistré ma clé de récupération"
 
 #: src/components/private-account-settings.tsx
 msgid "I understand that existing devices must finish applying strict mode."
-msgstr ""
+msgstr "Je comprends que les appareils déjà configurés doivent terminer l’activation du mode strict."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
@@ -2456,7 +2504,7 @@ msgstr "Installer l’application"
 
 #: src/app/more-screen.tsx
 msgid "Install on this device"
-msgstr ""
+msgstr "Installer sur cet appareil"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
@@ -2464,11 +2512,11 @@ msgstr "Installer TaskNotes"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
-msgstr ""
+msgstr "Installez TaskNotes pour l’ouvrir depuis l’écran d’accueil."
 
 #: src/app/model-setup-screen.tsx
 msgid "Installing TaskNotes setup…"
-msgstr ""
+msgstr "Installation de la configuration TaskNotes…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
@@ -2528,7 +2576,7 @@ msgstr "Conserver comme note"
 
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
-msgstr ""
+msgstr "Choisissez plutôt « Conserver les deux » pour garder votre modification sous forme de fichier."
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
@@ -2536,7 +2584,7 @@ msgstr "Continuer la modification"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep files for past dates"
-msgstr ""
+msgstr "Conserver les fichiers des dates passées"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
@@ -2544,15 +2592,15 @@ msgstr "Conserver des notes Markdown individuelles pour les dates récurrentes."
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
-msgstr ""
+msgstr "Choisissez plutôt « Conserver la mienne » pour garder votre modification."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep my edit"
-msgstr ""
+msgstr "Conserver ma modification"
 
 #: src/app/task-screen.tsx
 msgid "Keep or discard your unsaved edit before making another change."
-msgstr ""
+msgstr "Conservez ou abandonnez votre modification non enregistrée avant d’en effectuer une autre."
 
 #: src/app/app-shell.tsx
 msgid "Keep saved recovery"
@@ -2564,11 +2612,11 @@ msgstr "Conserver la tâche"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep the gap between scheduled and due dates"
-msgstr ""
+msgstr "Conserver l’écart entre la date planifiée et l’échéance"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep the planned dates, even if you finish late."
-msgstr ""
+msgstr "Conserver les dates prévues, même si vous terminez en retard."
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
@@ -2580,17 +2628,17 @@ msgstr "Continuer à écrire"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep your edit to apply it on top of the latest version, or discard it and load the latest version."
-msgstr ""
+msgstr "Conservez votre modification pour l’appliquer par-dessus la version la plus récente, ou abandonnez-la et chargez cette version."
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Raccourcis clavier"
 
 #: src/i18n/language-settings.tsx
 msgid "Language"
-msgstr ""
+msgstr "Langue"
 
 #: src/i18n/presentation.ts
 msgid "last"
@@ -2620,7 +2668,7 @@ msgstr "Dernier jour"
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "Dernière actualisation : {0} documents vérifiés en {1} ms."
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
@@ -2642,7 +2690,7 @@ msgstr "Disposition : {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "En savoir plus"
 
 #: src/app/more-screen.tsx
 msgid "Light"
@@ -2650,7 +2698,7 @@ msgstr "Clair"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "Format des liens"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
@@ -2662,7 +2710,7 @@ msgstr "Liée"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "Liens et suivi du temps"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
@@ -2730,11 +2778,11 @@ msgstr "Chargement…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "Verrouiller la clé de récupération sur cet appareil"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "Compte verrouillé sur cet appareil"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
@@ -2787,7 +2835,7 @@ msgstr "Marquer comme ouverte"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Fichier Markdown"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
@@ -2797,6 +2845,10 @@ msgstr "Lien Markdown"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Liens Markdown"
+
+#: src/i18n/editor-phrases.ts
+msgid "match case"
+msgstr "respecter la casse"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -2814,11 +2866,11 @@ msgstr "Collection mdbase"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase a confirmé l’activation complète du mode strict. La clé de récupération a été supprimée de cet appareil."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase a confirmé que le mode strict a été appliqué à toutes les cibles de récupération."
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
@@ -2831,23 +2883,23 @@ msgstr "mdbase est la source de référence. Les modifications nécessitent une 
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase conserve vos tâches sous forme de fichiers Markdown portables et fournit aux applications compatibles un moyen commun de les comprendre. Dans mdbase, vous choisissez une collection et autorisez TaskNotes à y accéder, qu’elle soit hébergée par mdbase ou accessible depuis un ordinateur connecté."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase a protégé votre modification"
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase a refusé la modification."
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "Mise à jour de mdbase"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "mdbase a été mis à niveau. Autorisez TaskNotes une fois pour continuer. Vos collections et vos notes n’ont pas changé."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
@@ -2928,11 +2980,11 @@ msgstr "Remonter {label}"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "Tout déplacer pour aujourd’hui"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "Déplacer les fichiers des tâches archivées dans un dossier"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
@@ -2948,7 +3000,7 @@ msgstr "Placez « Ordre manuel » en première position pour activer les poigné
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "Déplacement de "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -3021,7 +3073,7 @@ msgstr "Jamais"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "Les nouveaux appareils devront être approuvés depuis un appareil déjà autorisé. Le déverrouillage par mot de passe ou clé de récupération ne sera plus possible. Une personne disposant de l’ancien mot de passe et du paquet de clés pourra encore lire les anciens contenus tant que les collections n’auront pas appliqué les révocations et renouvelé leurs clés."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3029,7 +3081,7 @@ msgstr "Nouvelle note"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "Nouveau mot de passe de récupération"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
@@ -3046,7 +3098,7 @@ msgstr "Nouvelle tâche"
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "Nouvelle tâche ({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
@@ -3059,11 +3111,15 @@ msgstr "Nouvelles tâches"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "Nouvelles tâches, tâches récurrentes et archivage"
 
 #: src/app/view-editor.tsx
 msgid "New view"
 msgstr "Nouvelle vue"
+
+#: src/i18n/editor-phrases.ts
+msgid "next"
+msgstr "suivant"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3076,15 +3132,15 @@ msgstr "Période suivante"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "Tâche suivante"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "la semaine prochaine"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "Ensuite : "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
@@ -3133,7 +3189,7 @@ msgstr "Aucun regroupement"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "Aucune commande correspondante."
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
@@ -3157,7 +3213,7 @@ msgstr "Aucune projection"
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "Aucune clé de récupération n’est conservée sur cet appareil."
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
@@ -3173,7 +3229,7 @@ msgstr "Sans statut"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "Aucune tâche"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
@@ -3198,7 +3254,7 @@ msgstr "Aucune tâche ce jour-là. Utilisez « Ajouter une tâche » pour en pla
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "Aucune tâche pour le moment"
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
@@ -3216,7 +3272,7 @@ msgstr "Aucune valeur"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "Aucune vue pour le moment."
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
@@ -3229,7 +3285,7 @@ msgstr "Aucun"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "Indisponible"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
@@ -3246,11 +3302,11 @@ msgstr "Non enregistré"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "Modification non enregistrée · Vérifier"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "Modification non enregistrée. Vérifiez-la."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
@@ -3258,11 +3314,11 @@ msgstr "Note"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "Actions de la note"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "Note supprimée"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
@@ -3279,7 +3335,7 @@ msgstr "Notes"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "Rien n’est planifié après aujourd’hui."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
@@ -3291,7 +3347,7 @@ msgstr "Les notifications ne sont pas disponibles ici"
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "Les notifications de TaskNotes sont désactivées dans les paramètres système. Activez-les dans ces paramètres pour recevoir des rappels."
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
@@ -3327,11 +3383,11 @@ msgstr "Occurrences"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr "sur "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr "sur 4"
 
 #: src/app/notification-label.ts
 msgid "Off"
@@ -3339,7 +3395,7 @@ msgstr "Désactivées"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "Hors ligne"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
@@ -3353,6 +3409,10 @@ msgstr "Activées"
 #: src/components/recurrence-field.tsx
 msgid "On a date"
 msgstr "À une date"
+
+#: src/i18n/editor-phrases.ts
+msgid "on line"
+msgstr "à la ligne"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
@@ -3368,7 +3428,7 @@ msgstr "Seul le titre de la tâche est affiché."
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "Uniquement lorsque j’en crée un"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
@@ -3381,7 +3441,7 @@ msgstr "Ouvertes"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "Ouvrir « {title} »"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
@@ -3390,7 +3450,7 @@ msgstr "Ouvrir {0}"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "Ouvrez d’abord une collection"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
@@ -3398,7 +3458,7 @@ msgstr "Ouvrez une vue ou choisissez si elle apparaît dans la navigation."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr "Ouvrir d’abord"
+msgstr "Ouvrir en premier"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
@@ -3424,7 +3484,7 @@ msgstr "Ouverture"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "Ouverture de la collection"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
@@ -3468,7 +3528,7 @@ msgstr "options"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "ou"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -3509,7 +3569,7 @@ msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "Robustesse du mot de passe : "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
@@ -3525,7 +3585,7 @@ msgstr "Chemin"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "Chemin copié"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
@@ -3542,7 +3602,7 @@ msgstr "Impossible de charger les personnes. Les assignations existantes restent
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "Dates planifiées"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
@@ -3572,6 +3632,10 @@ msgstr "Aperçu des tâches"
 msgid "Preview updates after saving"
 msgstr "L’aperçu s’actualise après l’enregistrement"
 
+#: src/i18n/editor-phrases.ts
+msgid "previous"
+msgstr "précédent"
+
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
@@ -3592,7 +3656,7 @@ msgstr "Période précédente"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "Tâche précédente"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
@@ -3619,15 +3683,15 @@ msgstr "Priorité, projets, dépendances, contextes et étiquettes"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "Récupération du compte privé"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "Récupération des collections privées"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "Vos collections privées nécessitent que votre ordinateur de bureau soit en ligne."
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
@@ -3666,7 +3730,7 @@ msgstr "Propriété à trier"
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "Modifications protégées"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
@@ -3682,19 +3746,19 @@ msgstr "Citation"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "Recherches récentes"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "Tâches récemment ouvertes"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr "Détails de tâche reconnus"
+msgstr "Informations de tâche reconnues"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "Reconnexion en cours"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
@@ -3702,7 +3766,7 @@ msgstr "Reconnexion en cours…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "Récupérer l’accès au compte"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -3710,47 +3774,47 @@ msgstr "Récupérer la tâche"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "La récupération n’est pas configurée"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "La récupération est configurée. Enregistrez votre clé de récupération avant de quitter cet écran."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "Clé de récupération"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "Clé de récupération (affichée une seule fois)"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "Impossible de vérifier où la clé de récupération est conservée."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "Clé de récupération masquée. TaskNotes n’en conserve pas de copie affichable."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "Clé de récupération verrouillée sur cet appareil. Les clés des collections restent disponibles."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "Mot de passe de récupération"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "Mot de passe de récupération modifié. Votre clé de récupération reste inchangée."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "État de la récupération indisponible"
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "cibles de récupération en attente."
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
@@ -3777,6 +3841,10 @@ msgstr "Actualisation des résultats…"
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
 msgstr "Actualisation en cours…"
+
+#: src/i18n/editor-phrases.ts
+msgid "regexp"
+msgstr "expression régulière"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
@@ -3817,7 +3885,7 @@ msgstr "Date du rappel"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "Les détails des rappels sont enregistrés dans les tâches, mais cette version de TaskNotes n’envoie pas de notifications de rappel."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
@@ -3825,7 +3893,7 @@ msgstr "Les détails des rappels restent dans le Markdown, mais les tâches stoc
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "Configuration des rappels"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
@@ -3900,7 +3968,7 @@ msgstr "Rouvrir"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "Rouvrir « {title} »"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
@@ -3955,11 +4023,33 @@ msgstr "Actions de la tâche récurrente"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "Tâches récurrentes"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
 msgstr "Se répète"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace"
+msgstr "remplacer"
+
+#: src/i18n/editor-phrases.ts
+msgid "Replace"
+msgstr "Remplacer"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace all"
+msgstr "tout remplacer"
+
+#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced {count} matches"
+msgstr "{count} correspondances remplacées"
+
+#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced match on line {line}"
+msgstr "correspondance remplacée à la ligne {line}"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -3971,7 +4061,7 @@ msgstr "Restaurer"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
-msgstr ""
+msgstr "Restaurer les modifications non enregistrées"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -3979,7 +4069,7 @@ msgstr "Restauration de votre vue d’accueil"
 
 #: src/components/command-palette.tsx
 msgid "Results"
-msgstr ""
+msgstr "Résultats"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
@@ -3987,7 +4077,7 @@ msgstr "Reprendre comme note actuelle"
 
 #: src/app/model-setup-screen.tsx
 msgid "Resume original setup"
-msgstr ""
+msgstr "Reprendre la configuration initiale"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
@@ -4012,7 +4102,7 @@ msgstr "La nouvelle tentative vérifie la requête enregistrée sans envoyer une
 
 #: src/app/more-screen.tsx
 msgid "Retry collection details"
-msgstr ""
+msgstr "Réessayer de charger les détails de la collection"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
@@ -4020,7 +4110,7 @@ msgstr "Réessayer la connexion"
 
 #: src/app/more-screen.tsx
 msgid "Retry notification check"
-msgstr ""
+msgstr "Réessayer la vérification des notifications"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
@@ -4040,7 +4130,7 @@ msgstr "Réessayez ou annulez pour restaurer la tâche ici."
 
 #: src/app/app-shell.tsx
 msgid "Retrying…"
-msgstr ""
+msgstr "Nouvelle tentative…"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
@@ -4052,11 +4142,11 @@ msgstr "Valeurs réutilisables pour le regroupement et les champs affichés."
 
 #: src/app/app-shell.tsx
 msgid "Review access"
-msgstr ""
+msgstr "Vérifier l’accès"
 
 #: src/app/model-setup-screen.tsx
 msgid "Review collection permission"
-msgstr ""
+msgstr "Vérifier l’autorisation de la collection"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4064,31 +4154,31 @@ msgstr "Vérifier l’accès aux notifications"
 
 #: src/components/held-edits.tsx
 msgid "Review protected edits"
-msgstr ""
+msgstr "Vérifier les modifications protégées"
 
 #: src/components/collection-write-status.tsx
 msgid "Review record"
-msgstr ""
+msgstr "Consulter le document"
 
 #: src/app/task-screen.tsx
 msgid "Review save"
-msgstr ""
+msgstr "Vérifier l’enregistrement"
 
 #: src/components/private-account-settings.tsx
 msgid "Review strict mode"
-msgstr ""
+msgstr "Vérifier le mode strict"
 
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
-msgstr ""
+msgstr "Vérifier les autorisations d’accès de TaskNotes"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
-msgstr ""
+msgstr "Vérifiez la tâche avant d’effectuer une autre modification."
 
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
-msgstr ""
+msgstr "Vérifiez vos modifications protégées avant de recharger la page."
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -4105,11 +4195,11 @@ msgstr "Enregistrez un rappel fixe ou relatif dans cette tâche."
 
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
-msgstr ""
+msgstr "Enregistrer et recharger TaskNotes"
 
 #: src/components/task-model-settings.tsx
 msgid "Save changes"
-msgstr ""
+msgstr "Enregistrer les modifications"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
@@ -4117,15 +4207,15 @@ msgstr "Échec de l’enregistrement · Réessayer"
 
 #: src/app/task-screen.tsx
 msgid "Save failed. {retrySaveLabel}"
-msgstr ""
+msgstr "Échec de l’enregistrement. {retrySaveLabel}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Save needs review"
-msgstr ""
+msgstr "Enregistrement à vérifier"
 
 #: src/components/collection-write-status.tsx
 msgid "Save outcome unknown"
-msgstr ""
+msgstr "Résultat de l’enregistrement inconnu"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
@@ -4137,7 +4227,7 @@ msgstr "Enregistrer la vue"
 
 #: src/components/private-account-settings.tsx
 msgid "Save your recovery key"
-msgstr ""
+msgstr "Enregistrez votre clé de récupération"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -4149,7 +4239,7 @@ msgstr "Enregistré"
 #: src/app/task-screen.tsx
 #: src/components/collection-write-status.tsx
 msgid "Saved on this device; waiting for sync"
-msgstr ""
+msgstr "Modifications enregistrées sur cet appareil ; synchronisation en attente"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
@@ -4161,7 +4251,7 @@ msgstr "Vues enregistrées"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
-msgstr ""
+msgstr "Enregistrés avec la collection et utilisés par toutes les applications qui l’ouvrent."
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
@@ -4173,11 +4263,11 @@ msgstr "Enregistrement en cours"
 
 #: src/components/app-update-notice.tsx
 msgid "Saving changes…"
-msgstr ""
+msgstr "Enregistrement des modifications…"
 
 #: src/components/task-model-settings.tsx
 msgid "Saving collection behavior"
-msgstr ""
+msgstr "Enregistrement du comportement de la collection"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
@@ -4193,7 +4283,7 @@ msgstr "Planification et statut"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Schedule next week"
-msgstr ""
+msgstr "Planifier la semaine prochaine"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4284,7 +4374,7 @@ msgstr "Rechercher"
 
 #: src/components/command-palette.tsx
 msgid "Search commands and tasks"
-msgstr ""
+msgstr "Rechercher des commandes et des tâches"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
@@ -4306,7 +4396,7 @@ msgstr "Rechercher des vues"
 
 #: src/components/command-palette.tsx
 msgid "Searching tasks…"
-msgstr ""
+msgstr "Recherche de tâches…"
 
 #: src/i18n/presentation.ts
 msgid "second"
@@ -4318,7 +4408,7 @@ msgstr "Deuxième"
 
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
-msgstr ""
+msgstr "Voir Upcoming"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -4342,7 +4432,11 @@ msgstr "Jour sélectionné"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "Les brouillons sélectionnés deviennent des notes de tâche liées, sur place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+msgstr "Les brouillons sélectionnés sont convertis en notes de tâche liées, sans changer de place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+
+#: src/i18n/editor-phrases.ts
+msgid "Selection deleted"
+msgstr "Sélection supprimée"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -4362,11 +4456,11 @@ msgstr "Début de la session"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
-msgstr ""
+msgstr "Configurer la récupération"
 
 #: src/app/model-setup-screen.tsx
 msgid "Set up TaskNotes"
-msgstr ""
+msgstr "Configurer TaskNotes"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
@@ -4380,7 +4474,7 @@ msgstr "Paramètres"
 
 #: src/app/more-screen.tsx
 msgid "Settings sections"
-msgstr ""
+msgstr "Sections des paramètres"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
@@ -4388,7 +4482,7 @@ msgstr "Configuration à vérifier"
 
 #: src/app/model-setup-screen.tsx
 msgid "Setup outcome unknown. "
-msgstr ""
+msgstr "Résultat de la configuration inconnu. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -4401,7 +4495,7 @@ msgstr "Structurer un plan avant de créer des tâches"
 
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
-msgstr ""
+msgstr "Partagé avec toutes les personnes qui utilisent cette collection"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
@@ -4476,7 +4570,7 @@ msgstr "Occurrences récurrentes ignorées"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "Certaines modifications sont encore en cours d’enregistrement. Gardez cette page ouverte et réessayez."
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
@@ -4484,7 +4578,7 @@ msgstr "Certains fichiers n’ont pas pu être lus et ont été omis de cette vu
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "Certaines modifications de la note ne sont pas enregistrées. Gardez cette page ouverte et réessayez."
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
@@ -4510,7 +4604,7 @@ msgstr "Démarrer"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "Créer les nouvelles tâches à partir d’un modèle"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
@@ -4526,7 +4620,7 @@ msgstr "Début à début"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "Vues de départ"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
@@ -4552,7 +4646,7 @@ msgstr "Arrêter"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "Arrêter le chronomètre en cours lorsque la tâche est terminée"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
@@ -4560,19 +4654,19 @@ msgstr "Arrêter le chronomètre"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "Mode strict"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "Le mode strict ne peut pas encore être désactivé. Configurer ou déverrouiller la récupération par mot de passe ne désactive pas le mode strict sur un appareil."
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "Le mode strict n’est pas encore confirmé sur toutes les cibles de récupération privées. Un appareil connecté disposant des clés nécessaires doit terminer l’application des modifications."
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "Envoi en cours…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
@@ -4592,19 +4686,19 @@ msgstr "Suggestions parmi les {limit} premières tâches. Recherchez pour en tro
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "Passer au mode strict"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "La synchronisation prend plus de temps que d’habitude"
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "Version synchronisée"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "Synchronisation en cours…"
 
 #: src/app/more-screen.tsx
 msgid "System"
@@ -4636,7 +4730,7 @@ msgstr "Appuyez pour réessayer."
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "tâche"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
@@ -4687,15 +4781,15 @@ msgstr "Suggestions de champs de tâche"
 
 #: src/components/task-model-settings.tsx
 msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
-msgstr ""
+msgstr "Les fichiers de tâche sont conservés sur une période fixe, par exemple les 14 prochains jours."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Task keys act on the focused row. Date keys keep any scheduled time."
-msgstr ""
+msgstr "Les raccourcis de tâche agissent sur la ligne ayant le focus. Les raccourcis de date conservent toute heure planifiée."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
-msgstr ""
+msgstr "Listes de tâches"
 
 #: src/app/task-screen.tsx
 msgid "Task not found. It may have been deleted or moved."
@@ -4727,7 +4821,7 @@ msgstr "TaskNotes n’a pas pu s’ouvrir."
 
 #: src/components/operation-error-notice.tsx
 msgid "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
-msgstr ""
+msgstr "TaskNotes continue de vérifier le résultat automatiquement tant que la collection est connectée. Vous pouvez poursuivre votre travail."
 
 #: src/components/app-error-boundary.tsx
 msgid "TaskNotes needs to restart."
@@ -4735,11 +4829,11 @@ msgstr "TaskNotes doit redémarrer."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
-msgstr ""
+msgstr "TaskNotes a de nouveau besoin de votre autorisation dans mdbase pour ouvrir cette collection."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
-msgstr ""
+msgstr "Outil TaskNotes"
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tools"
@@ -4748,15 +4842,15 @@ msgstr "Outils TaskNotes"
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
-msgstr ""
+msgstr "tâches"
 
 #: src/app/command-palette-model.ts
 msgid "Tasks"
-msgstr ""
+msgstr "Tâches"
 
 #: src/app/more-screen.tsx
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
-msgstr ""
+msgstr "Les tâches sont des documents Markdown portables au format mdbase v0.3."
 
 #. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
@@ -4779,7 +4873,7 @@ msgstr "Impossible de lire le modèle. "
 
 #: src/components/task-model-settings.tsx
 msgid "Template file"
-msgstr ""
+msgstr "Fichier de modèle"
 
 #: src/components/task-capture.tsx
 msgid "Template unavailable. "
@@ -4795,7 +4889,7 @@ msgstr "Templates/Task.md"
 
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
-msgstr ""
+msgstr "Ce mot de passe ou cette clé de récupération n’a pas permis de déverrouiller ce compte. Vérifiez la saisie et réessayez."
 
 #: src/i18n/ui-copy.ts
 msgid "That section"
@@ -4803,15 +4897,15 @@ msgstr "Cette section"
 
 #: src/components/private-account-settings.tsx
 msgid "The account recovery action could not be completed. Check the connection and account status before retrying."
-msgstr ""
+msgstr "Impossible de terminer l’opération de récupération du compte. Vérifiez la connexion et l’état du compte avant de réessayer."
 
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
-msgstr ""
+msgstr "L’action est terminée, mais l’état du compte n’a pas pu être actualisé. Vérifiez à nouveau son état."
 
 #: src/app/full-calendar-view.tsx
 msgid "The calendar change could not be saved. "
-msgstr ""
+msgstr "Impossible d’enregistrer la modification du calendrier. "
 
 #: src/components/task-property-editor.tsx
 msgid "The change could not be saved."
@@ -4847,7 +4941,7 @@ msgstr "La première vue est l’accueil. L’ordre et la visibilité sont enreg
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
-msgstr ""
+msgstr "Impossible de charger la langue. Vérifiez votre connexion et réessayez."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The linked TaskNote could not be found."
@@ -4868,7 +4962,7 @@ msgstr "Le jour de début du schéma de récurrence est utilisé."
 
 #: src/components/private-account-settings.tsx
 msgid "The recovery key is still kept on this device."
-msgstr ""
+msgstr "La clé de récupération est toujours conservée sur cet appareil."
 
 #: src/components/recurrence-field.tsx
 msgid "The rule is kept exactly as written. Apply only after it is valid."
@@ -4880,7 +4974,7 @@ msgstr "Le bloc-notes n’est pas ouvert."
 
 #: src/app/views-screen.tsx
 msgid "the task"
-msgstr ""
+msgstr "la tâche"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
@@ -4909,15 +5003,15 @@ msgstr "Impossible de mettre à jour la vue. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
-msgstr ""
+msgstr "Thème, Bloc-notes et calendrier"
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr ""
+msgstr "Ces choix s’appliquent dès que vous les faites et ne modifient pas la collection."
 
 #: src/app/task-screen.tsx
 msgid "These fields edit the series dates. The summary above shows this occurrence."
-msgstr ""
+msgstr "Ces champs modifient les dates de la série. Le récapitulatif ci-dessus concerne cette occurrence."
 
 #: src/app/view-editor-form.tsx
 msgid "These formulas are shared by views in the same source file."
@@ -4925,7 +5019,7 @@ msgstr "Ces formules sont partagées par les vues du même fichier source."
 
 #: src/components/held-edits.tsx
 msgid "These previews are shortened. Choices apply to the full versions, not the previews. Keep both to preserve your full edit."
-msgstr ""
+msgstr "Ces aperçus sont abrégés. Les choix s’appliquent aux versions complètes, pas aux aperçus. Choisissez « Conserver les deux » pour préserver votre modification complète."
 
 #: src/app/views/task-list-view.tsx
 msgid "These sections are calculated, so tasks can only be reordered within them."
@@ -4941,7 +5035,7 @@ msgstr "Troisième"
 
 #: src/components/private-account-settings.tsx
 msgid "This account uses strict mode. Approve this device from an existing device."
-msgstr ""
+msgstr "Ce compte utilise le mode strict. Autorisez cet appareil depuis un appareil déjà autorisé."
 
 #: src/components/recurrence-field.tsx
 msgid "This anchors the pattern. Scheduled remains the next date you plan to do the task."
@@ -4957,15 +5051,15 @@ msgstr "Cette collection ne définit pas de statut pour les tâches terminées."
 
 #: src/app/model-setup-screen.tsx
 msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr ""
+msgstr "Cette collection doit être configurée pour TaskNotes avant de pouvoir ouvrir les tâches et les vues. La nouvelle configuration installe les modèles publiés et ajoute Today, Upcoming, Calendar, Projects et Archive. Les sources des vues existantes restent inchangées ; une configuration interrompue ne reprend que ses propres modifications."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
-msgstr ""
+msgstr "Cet appareil uniquement"
 
 #: src/components/held-edits.tsx
 msgid "This discards your protected version."
-msgstr ""
+msgstr "Cette action abandonne votre version protégée."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This draft is no longer in the scratchpad."
@@ -4985,7 +5079,7 @@ msgstr "Ce filtre utilise une syntaxe que l’éditeur visuel ne peut pas modifi
 
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
-msgstr ""
+msgstr "Cette clé ne s’affiche qu’une seule fois. Conservez-la en lieu sûr, en dehors de TaskNotes. Toute personne qui la détient peut récupérer l’accès à vos collections privées."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
@@ -5005,15 +5099,15 @@ msgstr "Cette section"
 
 #: src/app/palette-commands.ts
 msgid "this task"
-msgstr ""
+msgstr "cette tâche"
 
 #: src/components/write-rejection-notice.tsx
 msgid "This task changed somewhere else, so your edit wasn't saved."
-msgstr ""
+msgstr "Cette tâche a été modifiée ailleurs ; votre modification n’a pas été enregistrée."
 
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
-msgstr ""
+msgstr "Cette tâche n’est plus disponible."
 
 #: src/components/duration-field.tsx
 msgid "This task uses an advanced duration: <0>{value}</0>"
@@ -5088,23 +5182,24 @@ msgstr "Titre requis"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Title: “{title}”. "
-msgstr ""
+msgstr "Titre : « {title} ». "
 
+#: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "à"
 
 #: src/app/views-screen.tsx
 msgid "to today"
-msgstr ""
+msgstr "vers aujourd’hui"
 
 #: src/app/views-screen.tsx
 msgid "to today."
-msgstr ""
+msgstr "vers aujourd’hui."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"
-msgstr ""
+msgstr "aujourd’hui"
 
 #: src/app/full-calendar-view.tsx
 #: src/components/task-property-editor.tsx
@@ -5116,11 +5211,11 @@ msgstr "Aujourd’hui"
 
 #: src/app/today-clear.tsx
 msgid "Today is clear"
-msgstr ""
+msgstr "Aujourd’hui est libre"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "tomorrow"
-msgstr ""
+msgstr "demain"
 
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
@@ -5129,7 +5224,7 @@ msgstr "Demain"
 
 #: src/components/private-account-settings.tsx
 msgid "Too many attempts. Wait before trying again."
-msgstr ""
+msgstr "Trop de tentatives. Attendez avant de réessayer."
 
 #: src/app/full-calendar-view.tsx
 msgid "Tracked time"
@@ -5174,7 +5269,19 @@ msgstr "Annuler"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
-msgstr ""
+msgstr "Annuler la suppression d’une tâche"
+
+#: src/i18n/editor-phrases.ts
+msgid "unfold"
+msgstr "déplier"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfold line"
+msgstr "Déplier la ligne"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfolded lines"
+msgstr "Lignes dépliées"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
@@ -5182,43 +5289,43 @@ msgstr "Unité"
 
 #: src/components/private-account-settings.tsx
 msgid "Unknown"
-msgstr ""
+msgstr "Inconnu"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock"
-msgstr ""
+msgstr "Déverrouiller"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock private collections"
-msgstr ""
+msgstr "Déverrouiller les collections privées"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlocked on this device"
-msgstr ""
+msgstr "Déverrouillé sur cet appareil"
 
 #: src/app/more-screen.tsx
 msgid "Unsaved changes"
-msgstr ""
+msgstr "Modifications non enregistrées"
 
 #: src/components/task-model-settings.tsx
 msgid "Unsaved changes for everyone using this collection"
-msgstr ""
+msgstr "Modifications non enregistrées pour toutes les personnes qui utilisent cette collection"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Unsaved edit recovery"
-msgstr ""
+msgstr "Récupération des modifications non enregistrées"
 
 #: src/app/task-screen.tsx
 msgid "Unsaved edits cannot be backed up in this browser. Keep this tab open until saving finishes."
-msgstr ""
+msgstr "Impossible de sauvegarder les modifications non enregistrées dans ce navigateur. Gardez cet onglet ouvert jusqu’à la fin de l’enregistrement."
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits found"
-msgstr ""
+msgstr "Modifications non enregistrées trouvées"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits from an earlier session are available."
-msgstr ""
+msgstr "Des modifications non enregistrées d’une session précédente sont disponibles."
 
 #: src/app/task-screen.tsx
 msgid "Unskip"
@@ -5251,7 +5358,7 @@ msgstr "Utiliser « {0} »"
 
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
-msgstr ""
+msgstr "Utilisez une phrase secrète plus longue et moins prévisible."
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx
@@ -5276,7 +5383,7 @@ msgstr "Utiliser l’éditeur visuel"
 
 #: src/components/task-model-settings.tsx
 msgid "Used when TaskNotes writes links to projects, people, and other tasks, for example "
-msgstr ""
+msgstr "Utilisé lorsque TaskNotes crée des liens vers les projets, les personnes et les autres tâches, par exemple "
 
 #: src/components/expression-builder.tsx
 msgid "Value"
@@ -5284,7 +5391,7 @@ msgstr "Valeur"
 
 #: src/app/more-screen.tsx
 msgid "Version "
-msgstr ""
+msgstr "Version "
 
 #: src/app/more-screen.tsx
 msgid "Version {__APP_VERSION__}"
@@ -5293,7 +5400,7 @@ msgstr "Version {__APP_VERSION__}"
 #. placeholder {0}: edit.path
 #: src/components/held-edits.tsx
 msgid "Versions of {0}"
-msgstr ""
+msgstr "Versions de {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "View details"
@@ -5314,7 +5421,7 @@ msgstr "Vues"
 
 #: src/app/app-shell.tsx
 msgid "Views availability"
-msgstr ""
+msgstr "Disponibilité des vues"
 
 #: src/app/views/view-catalog.tsx
 msgid "Views stored in your collection"
@@ -5327,23 +5434,23 @@ msgstr "L’édition visuelle est indisponible car cette règle utilise {0}."
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for access"
-msgstr ""
+msgstr "En attente d’accès"
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for setup confirmation…"
-msgstr ""
+msgstr "En attente de la confirmation de la configuration…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"
-msgstr ""
+msgstr "En attente de votre ordinateur"
 
 #: src/components/collection-availability.tsx
 msgid "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects."
-msgstr ""
+msgstr "En attente de votre ordinateur. Les tâches déjà chargées restent affichées ; elles seront actualisées lorsque l’ordinateur se reconnectera."
 
 #: src/components/operation-error-notice.tsx
 msgid "Waiting for your computer. Try this action again when it reconnects."
-msgstr ""
+msgstr "En attente de votre ordinateur. Réessayez cette action lorsqu’il sera reconnecté."
 
 #: src/app/task-screen.tsx
 msgid "Website, Home"
@@ -5395,7 +5502,7 @@ msgstr "Quand je choisis"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
-msgstr ""
+msgstr "Lorsque la précédente est terminée"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
@@ -5404,11 +5511,11 @@ msgstr "Position"
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr "Wikilink"
+msgstr "Lien wiki"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr "Wikilinks"
+msgstr "Liens wiki"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
@@ -5420,7 +5527,7 @@ msgstr "travail, important"
 
 #: src/components/private-account-settings.tsx
 msgid "Working…"
-msgstr ""
+msgstr "Opération en cours…"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -5443,7 +5550,7 @@ msgstr "Oui"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
-msgstr ""
+msgstr "Oui. Utilisez « Changer de collection », dans la section « Collection », pour ouvrir une autre collection mdbase. Changer de collection ne déplace pas les documents."
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
@@ -5451,7 +5558,7 @@ msgstr "Hier"
 
 #: src/main.tsx
 msgid "You can close this window."
-msgstr ""
+msgstr "Vous pouvez fermer cette fenêtre."
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
@@ -5467,7 +5574,7 @@ msgstr "Vos modifications de cette vue n’ont pas été enregistrées."
 
 #: src/components/held-edits.tsx
 msgid "Your choice was submitted, but the latest status could not be read. Refresh before making another choice."
-msgstr ""
+msgstr "Votre choix a été envoyé, mais l’état le plus récent n’a pas pu être lu. Actualisez avant de faire un autre choix."
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
@@ -5479,23 +5586,23 @@ msgstr "Votre brouillon est toujours ici. Vérifiez-le et réessayez."
 
 #: src/app/task-screen.tsx
 msgid "Your edit is no longer available on this device. Discard it to load the latest version."
-msgstr ""
+msgstr "Votre modification n’est plus disponible sur cet appareil. Abandonnez-la pour charger la version la plus récente."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
-msgstr ""
+msgstr "Votre modification n’a pas été enregistrée."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
-msgstr ""
+msgstr "Votre note a changé pendant l’enregistrement. Enregistrez-la à nouveau avant de recharger la page."
 
 #: src/components/private-account-settings.tsx
 msgid "Your password unlocks private collections on approved devices. It is processed on this device, not sent to mdbase."
-msgstr ""
+msgstr "Votre mot de passe déverrouille les collections privées sur les appareils autorisés. Il est traité sur cet appareil et n’est pas envoyé à mdbase."
 
 #: src/app/search-screen.tsx
 msgid "Your person record could not be loaded. Check your connection, then reload people to try again."
-msgstr ""
+msgstr "Impossible de charger votre document de personne. Vérifiez votre connexion, puis rechargez la liste des personnes pour réessayer."
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -5504,7 +5611,7 @@ msgstr "Votre document de personne doit être corrigé avant de filtrer les tâc
 
 #: src/components/held-edits.tsx
 msgid "Your protected version"
-msgstr ""
+msgstr "Votre version protégée"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
