@@ -536,418 +536,418 @@ msgstr "컨텍스트 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr "Ajouter un projet"
+msgstr "프로젝트 추가"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr "Ajoutez un projet à une tâche pour le voir ici."
+msgstr "작업에 프로젝트를 추가하면 여기에 표시됩니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr "Ajouter une propriété"
+msgstr "속성 추가"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr "Ajoutez une date planifiée ou une échéance à une tâche active."
+msgstr "활성 작업에 예정일 또는 마감일을 추가하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr "Ajouter une règle de tri"
+msgstr "정렬 규칙 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr "Ajouter une étiquette"
+msgstr "태그 추가"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "Ajouter une tâche — tomorrow 9am, #tag, +project"
+msgstr "작업 추가 — 내일 오전 9시, #태그, +프로젝트"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
-msgstr "Ajoutez d’abord un titre de tâche."
+msgstr "먼저 작업 제목을 추가하세요."
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
-msgstr "Ajoutez une tâche quand vous en avez besoin."
+msgstr "필요할 때 언제든 작업을 추가하세요."
 
 #: src/app/task-screen.tsx
 msgid "Add a title before leaving this task."
-msgstr "Ajoutez un titre avant de quitter cette tâche."
+msgstr "이 작업을 나가기 전에 제목을 추가하세요."
 
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
-msgstr "Ajouter une personne assignée"
+msgstr "담당자 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add child"
-msgstr "Ajouter un sous-élément"
+msgstr "하위 항목 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add context…"
-msgstr "Ajouter un contexte…"
+msgstr "컨텍스트 추가…"
 
 #: src/components/task-capture.tsx
 msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Ajoutez des dates et des étiquettes naturellement — essayez « Call Sam tomorrow 9am #work »."
+msgstr "날짜와 태그를 자연스럽게 추가하세요. “내일 오전 9시에 샘에게 전화 #업무”를 입력해 보세요."
 
 #: src/components/task-capture.tsx
 msgid "Add details"
-msgstr "Ajouter des détails"
+msgstr "세부정보 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
-msgstr "Ajouter une formule"
+msgstr "수식 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
-msgstr "Ajouter une image"
+msgstr "이미지 추가"
 
 #: src/components/task-capture.tsx
 msgid "Add notes"
-msgstr "Ajouter des notes"
+msgstr "노트 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr "Ajouter une projection"
+msgstr "투영 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
-msgstr "Ajouter un rappel"
+msgstr "리마인더 추가"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
-msgstr "Ajouter une sous-tâche"
+msgstr "하위 작업 추가"
 
 #: src/app/app-shell.tsx
 #: src/app/full-calendar-view.tsx
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "Add task"
-msgstr "Ajouter une tâche"
+msgstr "작업 추가"
 
 #. placeholder {0}: agendaLabel(selected)
 #: src/app/views/mini-calendar-view.tsx
 msgid "Add task on {0}"
-msgstr "Ajouter une tâche le {0}"
+msgstr "{0}에 작업 추가"
 
 #. placeholder {0}: project.label
 #: src/app/views/projects-view.tsx
 msgid "Add task to {0}"
-msgstr "Ajouter une tâche à {0}"
+msgstr "{0}에 작업 추가"
 
 #: src/app/views/kanban-view.tsx
 msgid "Add task to {label}"
-msgstr "Ajouter une tâche à {label}"
+msgstr "{label}에 작업 추가"
 
 #: src/app/task-screen.tsx
 msgid "Add thoughts, links, or supporting details…"
-msgstr "Ajoutez des réflexions, des liens ou des détails utiles…"
+msgstr "생각, 링크 또는 보충 내용을 추가하세요…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add title"
-msgstr "Ajouter un titre"
+msgstr "제목 추가"
 
 #. placeholder {0}: currentCreationContext.label
 #. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
-msgstr "Ajouter à {0}"
+msgstr "{0}에 추가"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
-msgstr "Ajoutez les tâches qui doivent être réalisées avant celle-ci."
+msgstr "이 작업 전에 완료해야 하는 작업을 추가하세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Added"
-msgstr "Ajouté"
+msgstr "추가됨"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
-msgstr "Ajout en cours"
+msgstr "추가 중"
 
 #: src/components/task-capture.tsx
 msgid "Adding “{pendingTitle}”…"
-msgstr "Ajout de « {pendingTitle} »…"
+msgstr "“{pendingTitle}” 추가 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
-msgstr "Ajout en cours…"
+msgstr "추가 중…"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
-msgstr "Ajustez les filtres de cette vue ou choisissez une autre vue."
+msgstr "이 뷰의 필터를 조정하거나 다른 뷰를 선택하세요."
 
 #: src/app/task-screen.tsx
 msgid "Advance after"
-msgstr "Passer à la suivante après"
+msgstr "다음으로 진행하는 기준"
 
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
-msgstr "Avancé"
+msgstr "고급"
 
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
-msgstr "Durée avancée"
+msgstr "고급 기간"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced recurrence"
-msgstr "Récurrence avancée"
+msgstr "고급 반복"
 
 #: src/i18n/presentation.ts
 msgid "Advanced recurrence rule"
-msgstr "Règle de récurrence avancée"
+msgstr "고급 반복 규칙"
 
 #: src/app/task-editor-draft.ts
 msgid "Advanced repeat"
-msgstr "Répétition avancée"
+msgstr "고급 반복"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced rule"
-msgstr "Règle avancée"
+msgstr "고급 규칙"
 
 #: src/i18n/ui-copy.ts
 msgid "after"
-msgstr "après"
+msgstr "이후"
 
 #: src/components/reminder-editor.tsx
 msgid "After"
-msgstr "Après"
+msgstr "이후"
 
 #: src/components/recurrence-field.tsx
 msgid "After a number of times"
-msgstr "Après un nombre d’occurrences"
+msgstr "횟수 이후"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion"
-msgstr "Après la fin de la tâche"
+msgstr "완료 후"
 
 #: src/components/task-model-settings.tsx
 msgid "After completion or skip"
-msgstr "Après la fin de la tâche ou une occurrence ignorée"
+msgstr "완료 또는 건너뛴 후"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Agenda"
-msgstr "Agenda"
+msgstr "일정"
 
 #: src/i18n/editor-phrases.ts
 msgid "all"
-msgstr "tout"
+msgstr "모두"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
-msgstr "Toutes"
+msgstr "전체"
 
 #: src/components/expression-builder.tsx
 msgid "All conditions match"
-msgstr "Toutes les conditions correspondent"
+msgstr "모든 조건 일치"
 
 #: src/app/full-calendar-view.tsx
 msgid "All day"
-msgstr "Toute la journée"
+msgstr "종일"
 
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
-msgstr "Toutes les tâches correspondantes sont chargées"
+msgstr "일치하는 작업을 모두 불러왔습니다"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
-msgstr "Toutes les tâches"
+msgstr "모든 작업"
 
 #: src/app/views/view-catalog.tsx
 msgid "All views"
-msgstr "Toutes les vues"
+msgstr "모든 뷰"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
-msgstr "Autoriser la création de tâches"
+msgstr "작업 생성 허용"
 
 #. placeholder {0}: String(configuration.value)
 #: src/app/cloud-collection.tsx
 msgid "Allow TaskNotes Base views at {0}"
-msgstr "Autoriser les vues Base de TaskNotes à {0}"
+msgstr "{0}에서 TaskNotes 베이스 뷰 허용"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
-msgstr "Quantité"
+msgstr "수량"
 
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
-msgstr "Au moins une condition correspond"
+msgstr "조건 중 하나라도 일치"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
-msgstr "À toute heure"
+msgstr "언제든"
 
 #: src/i18n/default-labels.ts
 msgid "Anytime"
-msgstr "Sans date"
+msgstr "기한 없음"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
-msgstr "Apparence"
+msgstr "모양"
 
 #: src/app/cloud-collection.tsx
 msgid "Apply reviewed setup"
-msgstr "Appliquer la configuration vérifiée"
+msgstr "검토한 설정 적용"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
-msgstr "Appliquer la règle"
+msgstr "규칙 적용"
 
 #: src/app/notification-label.ts
 msgid "Approval required"
-msgstr "Approbation requise"
+msgstr "승인 필요"
 
 #: src/components/task-actions.tsx
 msgid "Archive"
-msgstr "Archiver"
+msgstr "보관"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
-msgstr "Dossier d’archives"
+msgstr "보관 폴더"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive tasks after they enter a selected status. Recurring series are always excluded."
-msgstr "Archivez les tâches lorsqu’elles prennent un statut choisi. Les séries récurrentes sont toujours exclues."
+msgstr "선택한 상태가 되면 작업을 보관합니다. 반복 작업 시리즈는 항상 제외됩니다."
 
 #: src/app/views/kanban-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Archived"
-msgstr "Archivées"
+msgstr "보관됨"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
-msgstr "Les tâches archivées sont conservées, pas supprimées. Vous pouvez les restaurer depuis leur menu."
+msgstr "보관된 작업은 삭제되지 않고 유지됩니다. 작업 메뉴에서 복원할 수 있습니다."
 
 #: src/components/arrange-tasks-option.tsx
 msgid "Arrange tasks"
-msgstr "Réorganiser les tâches"
+msgstr "작업 정렬"
 
 #: src/app/view-editor-form.tsx
 msgid "Ascending"
-msgstr "Croissant"
+msgstr "오름차순"
 
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
-msgstr "Assignée à"
+msgstr "담당자"
 
 #: src/app/search-screen.tsx
 msgid "Assigned to me"
-msgstr "Assignées à moi"
+msgstr "내 담당 작업"
 
 #: src/components/assignee-editor.tsx
 msgid "Assignments link to person notes, which list them as backlinks. They do not grant collection access."
-msgstr "Les assignations renvoient aux notes de personnes, où elles apparaissent comme liens entrants. Elles ne donnent pas accès à la collection."
+msgstr "할당은 백링크로 표시되는 사람 노트에 연결됩니다. 컬렉션 접근 권한을 부여하지는 않습니다."
 
 #: src/app/search-screen.tsx
 msgid "Assignments use your linked person record."
-msgstr "Les assignations utilisent votre document de personne lié."
+msgstr "할당에는 연결된 사람 레코드를 사용합니다."
 
 #: src/components/task-attachments.tsx
 msgid "Attach image"
-msgstr "Joindre une image"
+msgstr "이미지 첨부"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
-msgstr "Image jointe"
+msgstr "첨부된 이미지"
 
 #: src/app/search-match-context.ts
 msgid "attachments"
-msgstr "pièces jointes"
+msgstr "첨부 파일"
 
 #: src/components/task-attachments.tsx
 msgid "Attachments"
-msgstr "Pièces jointes"
+msgstr "첨부 파일"
 
 #: src/components/task-model-settings.tsx
 msgid "Auto archive"
-msgstr "Archivage automatique"
+msgstr "자동 보관"
 
 #: src/app/collection-picker.tsx
 msgid "Available collections"
-msgstr "Collections disponibles"
+msgstr "사용 가능한 컬렉션"
 
 #: src/app/view-editor-form.tsx
 msgid "Available in"
-msgstr "Disponible dans"
+msgstr "사용 가능 위치"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Back"
-msgstr "Retour"
+msgstr "뒤로"
 
 #: src/components/task-actions.tsx
 msgid "Back to previous actions"
-msgstr "Revenir aux actions précédentes"
+msgstr "이전 작업으로 돌아가기"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
-msgstr "avant"
+msgstr "이전"
 
 #: src/components/reminder-editor.tsx
 msgid "Before"
-msgstr "Avant"
+msgstr "이전"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
-msgstr "Bloquée par"
+msgstr "차단 작업"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocking"
-msgstr "Bloque"
+msgstr "차단 중"
 
 #: src/app/view-editor-form.tsx
 msgid "Board"
-msgstr "Tableau"
+msgstr "보드"
 
 #: src/app/view-editor-form.tsx
 msgid "Board column"
-msgstr "Colonne du tableau"
+msgstr "보드 열"
 
 #: src/components/kanban-column-jump.tsx
 msgid "Board columns"
-msgstr "Colonnes du tableau"
+msgstr "보드 열"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Bold"
-msgstr "Gras"
+msgstr "굵게"
 
 #: src/app/app-shell.tsx
 msgid "Browse"
-msgstr "Parcourir"
+msgstr "찾아보기"
 
 #: src/components/expression-builder.tsx
 msgid "Builder"
-msgstr "Éditeur visuel"
+msgstr "빌더"
 
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
-msgstr "Espaces de travail intégrés"
+msgstr "기본 작업 공간"
 
 #: src/i18n/editor-phrases.ts
 msgid "by word"
-msgstr "par mot"
+msgstr "단어 기준"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
-msgstr "Calendrier"
+msgstr "캘린더"
 
 #: src/components/calendar-preferences.tsx
 msgid "Calendar display"
-msgstr "Affichage du calendrier"
+msgstr "캘린더 표시"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar layout"
-msgstr "Disposition du calendrier"
+msgstr "캘린더 레이아웃"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr "Puis-je changer de collection plus tard ?"
+msgstr "나중에 컬렉션을 변경할 수 있나요?"
 
 #: src/app/cloud-collection.tsx
 #: src/app/task-time-tracking.tsx
