@@ -61,7 +61,7 @@
     "@fullcalendar/react": "6.1.17",
     "@fullcalendar/timegrid": "6.1.17",
     "@lezer/highlight": "^1.2.3",
-    "@mdbase-dev/connect": "0.1.0-beta.125",
+    "@mdbase-dev/connect": "file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz",
     "@mdbase-dev/connect-protocol": "0.1.0-beta.125",
     "@mdbase-dev/sdk": "file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz",
     "@mdbase-dev/ui": "0.1.0-beta.125",
@@ -115,7 +115,7 @@
   "pnpm": {
     "overrides": {
       "@mdbase-dev/connect-protocol": "0.1.0-beta.125",
-      "@mdbase-dev/connect": "0.1.0-beta.125",
+      "@mdbase-dev/connect": "file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz",
       "@mdbase-dev/connect-sync": "0.1.0-beta.125"
     }
   }

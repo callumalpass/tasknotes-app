@@ -13,6 +13,11 @@ on:
         options:
           - staging
           - production
+      expected_sha:
+        description: Required for release/legacy-query; exact reviewed 40-hex release HEAD
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -27,10 +32,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Require main
-        if: github.ref != 'refs/heads/main'
+      - name: Require approved publication ref
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          TARGET: ${{ inputs.target }}
         run: |
-          echo "::error::Pages deployments only run from main (got ${GITHUB_REF})."
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then exit 0; fi
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch &&
+                "$GITHUB_REF" == refs/heads/release/legacy-query &&
+                "$TARGET" == production &&
+                "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ &&
+                "$GITHUB_SHA" == "$EXPECTED_SHA" ]]; then exit 0; fi
+          echo "::error::Require main, or exact approved release/legacy-query production SHA."
           exit 1
 
       - name: Check out repository
@@ -103,7 +116,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    # The existing github-pages environment admits main only. Keep the mirror
+    # unchanged on this isolated release rather than changing its branch policy.
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production' && github.ref == 'refs/heads/main'
     needs: verify
     permissions:
       contents: read
@@ -161,8 +176,8 @@ jobs:
           TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
 
   deploy-cloudflare:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
-    needs: deploy
+    if: always() && needs.verify.result == 'success' && github.event_name == 'workflow_dispatch' && inputs.target == 'production' && (needs.deploy.result == 'success' || github.ref == 'refs/heads/release/legacy-query')
+    needs: [verify, deploy]
     environment:
       name: cloudflare-pages
       url: https://app.tasknotes.dev/
@@ -205,7 +220,7 @@ jobs:
         run: node -e 'const manifest = require("./dist/.well-known/mdbase-app.json"); if (manifest.homepage !== "https://app.tasknotes.dev/" || manifest.redirect_uris?.[0] !== "https://app.tasknotes.dev/auth/mdbase/callback" || manifest.redirect_uris?.length !== 1) process.exit(1)'
 
       - name: Deploy Cloudflare Pages
-        run: pnpm dlx wrangler@4.114.0 pages deploy dist --project-name=tasknotes-app --branch=main
+        run: pnpm dlx wrangler@4.114.0 pages deploy dist --project-name=tasknotes-app --branch=main --commit-hash="$GITHUB_SHA"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

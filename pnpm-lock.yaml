@@ -6,7 +6,7 @@ settings:
 
 overrides:
   '@mdbase-dev/connect-protocol': 0.1.0-beta.125
-  '@mdbase-dev/connect': 0.1.0-beta.125
+  '@mdbase-dev/connect': file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz
   '@mdbase-dev/connect-sync': 0.1.0-beta.125
 
 importers:
@@ -77,8 +77,8 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@mdbase-dev/connect':
-        specifier: 0.1.0-beta.125
-        version: 0.1.0-beta.125
+        specifier: file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz
+        version: file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz
       '@mdbase-dev/connect-protocol':
         specifier: 0.1.0-beta.125
         version: 0.1.0-beta.125
@@ -906,8 +906,9 @@ packages:
   '@mdbase-dev/connect-testing@0.1.0-beta.125':
     resolution: {integrity: sha512-o9tJZNPRsClsbP6n7OqzDZ0Ijm3xrlXmVmZ1LniK4e6Yed2asYU+7QYJuIbCp7iXFyfuwdiFj9Z+qMG00Rxvlg==}
 
-  '@mdbase-dev/connect@0.1.0-beta.125':
-    resolution: {integrity: sha512-vEH4NQfu3dBQgMw0YQxG7LDtOOLxDyxET4DQhrWuHqtgr9qoch/H0QLzel9tFSqkyH+QWxuvW3Bet6ae1+qVyQ==}
+  '@mdbase-dev/connect@file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz':
+    resolution: {integrity: sha512-DbmsalmFBZg1sKn3WQ92WtHsZwDUVGtQAV2MzkC3F4kJmJGY1w+TBGWMlE1YLIxiVNKHo9eL4qeGErMpJPYJbg==, tarball: file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz}
+    version: 0.1.0-beta.125
 
   '@mdbase-dev/sdk@file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz':
     resolution: {integrity: sha512-8Nb47aw4bhViBuK/Q47hB8TxafM9/0ezgMWCcC9DqqLMtR6Lp/bn09BtFdiHgWDAxCg9+oW+Q/XDr1DrvuiyNQ==, tarball: file:vendor/mdbase-dev-sdk-0.0.0-956c80d9.tgz}
@@ -4801,7 +4802,7 @@ snapshots:
 
   '@mdbase-dev/connect-dev@0.1.0-beta.125':
     dependencies:
-      '@mdbase-dev/connect': 0.1.0-beta.125
+      '@mdbase-dev/connect': file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
       ajv: 8.20.0
       yaml: 2.9.1
@@ -4814,10 +4815,10 @@ snapshots:
 
   '@mdbase-dev/connect-testing@0.1.0-beta.125':
     dependencies:
-      '@mdbase-dev/connect': 0.1.0-beta.125
+      '@mdbase-dev/connect': file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
 
-  '@mdbase-dev/connect@0.1.0-beta.125':
+  '@mdbase-dev/connect@file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz':
     dependencies:
       '@mdbase-dev/connect-protocol': 0.1.0-beta.125
 
