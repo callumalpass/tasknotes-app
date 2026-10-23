@@ -2540,7 +2540,7 @@ msgstr "Medianoche"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
-msgstr "min"
+msgstr "minutos"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
