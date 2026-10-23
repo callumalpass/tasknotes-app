@@ -3605,7 +3605,7 @@ msgstr "Fechas previstas"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
-msgstr "Planner"
+msgstr "Planificador"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
