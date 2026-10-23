@@ -1039,497 +1039,497 @@ msgstr "Layout do calendário"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar markers"
-msgstr ""
+msgstr "Marcadores do calendário"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr ""
+msgstr "Posso mudar de coleção mais tarde?"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
 msgid "Cancel"
-msgstr ""
+msgstr "Cancelar"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr ""
+msgstr "Cancelar confirmação"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr ""
+msgstr "Movendo {title} foi cancelado."
 
 #: src/app/model-setup-screen.tsx
 msgid "Catching up"
-msgstr ""
+msgstr "Atualizando"
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr ""
+msgstr "Expressão CEL"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
-msgstr ""
+msgstr "Mudar coleção"
 
 #: src/components/private-account-settings.tsx
 msgid "Change password"
-msgstr ""
+msgstr "Mudar senha"
 
 #: src/components/private-account-settings.tsx
 msgid "Change recovery password"
-msgstr ""
+msgstr "Mudar senha de recuperação"
 
 #: src/components/collection-write-status.tsx
 msgid "Change rejected"
-msgstr ""
+msgstr "Alteração rejeitada"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
-msgstr ""
+msgstr "Alteração rejeitada: {0}"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
-msgstr ""
+msgstr "Alterado: "
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
-msgstr ""
+msgstr "Não foi possível salvar as alterações. Mantenha esta página aberta e tente novamente."
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr ""
+msgstr "Altera cada ocorrência"
 
 #: src/components/collection-write-status.tsx
 msgid "changes need review"
-msgstr ""
+msgstr "alterações precisam ser revisadas"
 
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
-msgstr ""
+msgstr "Verificar o estado da conta"
 
 #: src/app/model-setup-screen.tsx
 msgid "Check setup"
-msgstr ""
+msgstr "Verificar configuração"
 
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
-msgstr ""
+msgstr "Verificar conclusão estrita"
 
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
-msgstr ""
+msgstr "Verifique se a coleção está conectada e tente novamente."
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr ""
+msgstr "Verificando"
 
 #: src/components/private-account-settings.tsx
 msgid "Checking account recovery…"
-msgstr ""
+msgstr "Verificando a recuperação da conta…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking collection access…"
-msgstr ""
+msgstr "Verificando o acesso à coleção…"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
-msgstr ""
+msgstr "Verificando as configurações da coleção…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking TaskNotes setup…"
-msgstr ""
+msgstr "Verificando a configuração do TaskNotes…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking whether setup finished…"
-msgstr ""
+msgstr "Verificando se a configuração foi concluída…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr ""
+msgstr "Item filho"
 
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
-msgstr ""
+msgstr "Escolha enviada. Ela ainda pode estar aguardando sincronização; confira as contagens confirmadas, pendentes e retidas."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr ""
+msgstr "Escolher"
 
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
-msgstr ""
+msgstr "Escolher outra coleção"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr ""
+msgstr "Escolher uma pessoa…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr ""
+msgstr "Escolher uma propriedade"
 
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
-msgstr ""
+msgstr "Escolher um valor"
 
 #: src/app/model-setup-screen.tsx
 msgid "Choose another collection"
-msgstr ""
+msgstr "Escolher outra coleção"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr ""
+msgstr "Escolher responsáveis"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
-msgstr ""
+msgstr "Escolha como as tarefas serão agrupadas e ordenadas."
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record"
-msgstr ""
+msgstr "Escolha ou crie seu registro de pessoa"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
-msgstr ""
+msgstr "Escolha o modo de calendário e quais datas das tarefas se tornam eventos."
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the information shown beneath each task."
-msgstr ""
+msgstr "Escolha as informações exibidas abaixo de cada tarefa."
 
 #: src/app/views-screen.tsx
 msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr ""
+msgstr "Escolha o que aparece na navegação, altere a ordem e gerencie as visualizações salvas."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
-msgstr ""
+msgstr "Escolha o que se torna uma tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose which tasks belong in this view."
-msgstr ""
+msgstr "Escolha quais tarefas pertencem a esta visualização."
 
 #: src/components/expression-builder.tsx
 msgid "Choose…"
-msgstr ""
+msgstr "Escolher…"
 
 #: src/app/search-screen.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
-msgstr ""
+msgstr "Limpar"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr ""
+msgstr "Limpar os itens da lista de verificação na nota a cada repetição"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
-msgstr ""
+msgstr "Limpar data de vencimento"
 
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
-msgstr ""
+msgstr "Limpar pesquisas recentes"
 
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
-msgstr ""
+msgstr "Limpar tarefas abertas recentemente"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
-msgstr ""
+msgstr "Limpar data agendada"
 
 #: src/app/search-screen.tsx
 msgid "Clear search"
-msgstr ""
+msgstr "Limpar pesquisa"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
-msgstr ""
+msgstr "Limpar seleção"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
-msgstr ""
+msgstr "Limpar valor"
 
 #: src/i18n/editor-phrases.ts
 msgid "close"
-msgstr ""
+msgstr "fechar"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
-msgstr ""
+msgstr "Fechar"
 
 #. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
-msgstr ""
+msgstr "Fechar {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {accessibleName} calendar"
-msgstr ""
+msgstr "Fechar o calendário de {accessibleName}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
-msgstr ""
+msgstr "Fechar {ariaLabel}"
 
 #: src/app/use-calendar-overflow.ts
 msgid "Close additional tasks"
-msgstr ""
+msgstr "Fechar tarefas adicionais"
 
 #: src/components/held-edits.tsx
 msgid "Close comparison"
-msgstr ""
+msgstr "Fechar comparação"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
-msgstr ""
+msgstr "Fechar captura de imagem"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Close keyboard shortcuts"
-msgstr ""
+msgstr "Fechar atalhos de teclado"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
-msgstr ""
+msgstr "Fechar nova tarefa"
 
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
-msgstr ""
+msgstr "Fechar editor de propriedade"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
-msgstr ""
+msgstr "Fechar editor de visualização"
 
 #: src/i18n/ui-copy.ts
 msgid "Collapse"
-msgstr ""
+msgstr "Recolher"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
-msgstr ""
+msgstr "Recolher imagem"
 
 #: src/app/settings-sections.ts
 msgid "Collection"
-msgstr ""
+msgstr "Coleção"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
 msgctxt "settings section title"
 msgid "Collection"
-msgstr ""
+msgstr "Coleção"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
-msgstr ""
+msgstr "Comportamento da coleção"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
-msgstr ""
+msgstr "Conexão da coleção"
 
 #: src/app/more-screen.tsx
 msgid "Collection details could not be loaded. "
-msgstr ""
+msgstr "Não foi possível carregar os detalhes da coleção. "
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
-msgstr ""
+msgstr "Ordem da coleção"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
-msgstr ""
+msgstr "A ordem da coleção está sendo usada."
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
-msgstr ""
+msgstr "Coleção indisponível"
 
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
-msgstr ""
+msgstr "Coleção indisponível. Exibindo tarefas carregadas anteriormente; não é possível salvar alterações."
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
-msgstr ""
+msgstr "Tema de cores"
 
 #: src/app/task-custom-field.tsx
 msgid "Comma-separated values"
-msgstr ""
+msgstr "Valores separados por vírgula"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
-msgstr ""
+msgstr "Paleta de comandos"
 
 #: src/app/app-shell.tsx
 msgid "Commands"
-msgstr ""
+msgstr "Comandos"
 
 #. placeholder {0}: shortcutLabel("K")
 #: src/app/app-shell.tsx
 msgid "Commands ({0})"
-msgstr ""
+msgstr "Comandos ({0})"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
-msgstr ""
+msgstr "Linhas compactas"
 
 #: src/components/held-edits.tsx
 msgid "Compare side by side"
-msgstr ""
+msgstr "Comparar lado a lado"
 
 #: src/components/held-edits.tsx
 msgid "Comparison is not available from this backend."
-msgstr ""
+msgstr "A comparação não está disponível neste backend."
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr ""
+msgstr "Concluídas"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr ""
+msgstr "Concluída"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr ""
+msgstr "Concluir"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
-msgstr ""
+msgstr "Concluir “{title}”"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
-msgstr ""
+msgstr "Concluir ocorrência"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
-msgstr ""
+msgstr "Concluir ou reabrir"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
-msgstr ""
+msgstr "Concluir tarefa"
 
 #: src/app/keyboard-layer.tsx
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "Completed"
-msgstr ""
+msgstr "Concluída"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
-msgstr ""
+msgstr "Rascunho concluído"
 
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
-msgstr ""
+msgstr "Ocorrências recorrentes concluídas"
 
 #: src/components/task-model-settings.tsx
 msgid "Completing an occurrence's task file creates the file for the next date."
-msgstr ""
+msgstr "Concluir o arquivo de tarefa de uma ocorrência cria o arquivo para a próxima data."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion"
-msgstr ""
+msgstr "Conclusão"
 
 #: src/components/recurrence-field.tsx
 msgid "Completion date"
-msgstr ""
+msgstr "Data de conclusão"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion or skip"
-msgstr ""
+msgstr "Conclusão ou pular"
 
 #: src/i18n/editor-phrases.ts
 msgid "Completions"
-msgstr ""
+msgstr "Conclusões"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
-msgstr ""
+msgstr "As propriedades calculadas são válidas"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property expression {0}"
-msgstr ""
+msgstr "Expressão da propriedade calculada {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property name {0}"
-msgstr ""
+msgstr "Nome da propriedade calculada {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property scope {0}"
-msgstr ""
+msgstr "Escopo da propriedade calculada {0}"
 
 #: src/app/task-screen.tsx
 msgid "Computer, Errands"
-msgstr ""
+msgstr "Computador, tarefas fora de casa"
 
 #: src/components/expression-builder.tsx
 msgid "Condition"
-msgstr ""
+msgstr "Condição"
 
 #: src/components/held-edits.tsx
 msgid "Confirm "
-msgstr ""
+msgstr "Confirmar "
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
-msgstr ""
+msgstr "Confirmar descarte e desconexão"
 
 #: src/components/private-account-settings.tsx
 msgid "Confirm new recovery password"
-msgstr ""
+msgstr "Confirmar nova senha de recuperação"
 
 #: src/components/held-edits.tsx
 msgid "Confirm protected-version replacement"
-msgstr ""
+msgstr "Confirmar substituição da versão protegida"
 
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
-msgstr ""
+msgstr "Confirmando que “"
 
 #: src/components/collection-write-status.tsx
 msgid "Conflicting changes"
-msgstr ""
+msgstr "Alterações conflitantes"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
-msgstr ""
+msgstr "Conectado"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
-msgstr ""
+msgstr "Conectando"
 
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "Conectando…"
 
 #: src/app/collection-settings.tsx
 msgctxt "mdbase authority status"
 msgid "Connection"
-msgstr ""
+msgstr "Conexão"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
-msgstr ""
+msgstr "Configurações de conexão"
 
 #: src/components/expression-builder.tsx
 msgid "contains"
-msgstr ""
+msgstr "contém"
 
 #: src/app/search-match-context.ts
 msgid "contexts"
-msgstr ""
+msgstr "contextos"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -1539,7 +1539,7 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
-msgstr ""
+msgstr "Contextos"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
