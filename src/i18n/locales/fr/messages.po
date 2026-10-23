@@ -1823,12 +1823,12 @@ msgstr "Supprimer la vue"
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Deleted “{0}”"
-msgstr "« {0} » supprimé"
+msgstr "« {0} » : suppression effectuée"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr "« {0} » supprimé. Vous pouvez annuler pendant 30 secondes."
+msgstr "« {0} » : suppression effectuée. Vous pouvez annuler pendant 30 secondes."
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
@@ -4114,7 +4114,7 @@ msgstr "Réessayer la vérification des notifications"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "Réessayer le chargement des personnes"
+msgstr "Recharger les personnes"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
