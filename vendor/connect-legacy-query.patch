@@ -21,10 +21,10 @@ index 74fa0481..a9082762 100644
      return captured.ok ? captured.value : captured;
    }
 diff --git a/packages/client/src/query-wire.ts b/packages/client/src/query-wire.ts
-index 868040e5..faf4733f 100644
+index 868040e5..f79abefd 100644
 --- a/packages/client/src/query-wire.ts
 +++ b/packages/client/src/query-wire.ts
-@@ -15,33 +15,54 @@ export interface WireQueryResult<Frontmatter extends JsonObject> {
+@@ -15,33 +15,55 @@ export interface WireQueryResult<Frontmatter extends JsonObject> {
    };
  }
  
@@ -43,7 +43,8 @@ index 868040e5..faf4733f 100644
 +    let alias = `connect_select_${index}`;
 +    while (occupied.has(alias)) alias += "_";
 +    occupied.add(alias);
-+    projections[alias] = { expression: selection.expression };
++    // Selections run after filtering; don't evaluate them on rejected rows.
++    projections[alias] = { expression: input.where ? `(${input.where}) ? (${selection.expression}) : null` : selection.expression };
 +    aliases.set(alias, selection.name);
 +    return `projection.${alias}`;
 +  });
@@ -91,7 +92,7 @@ index 868040e5..faf4733f 100644
      ...(input.limit === undefined ? {} : { limit: input.limit }),
      ...(input.offset === undefined ? {} : { offset: input.offset }),
      ...(input.pagination ? { pagination: input.pagination } : {}),
-@@ -85,11 +106,16 @@ function metadataRecord(value: import("@mdbase-dev/connect-protocol").QueryMetad
+@@ -85,11 +107,16 @@ function metadataRecord(value: import("@mdbase-dev/connect-protocol").QueryMetad
  }
  
  export function wireQueryResult<Frontmatter extends JsonObject>(
