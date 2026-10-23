@@ -4829,4 +4829,4 @@ msgstr "Sua barra lateral, em ordem.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
-msgstr "Vos choix non enregistrés sont toujours ici. Vérifiez-les et réessayez."
+msgstr "Suas escolhas não salvas continuam aqui. Revise-as e tente novamente."
