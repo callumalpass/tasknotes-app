@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0;url=https://app.tasknotes.dev/" />
+    <title>TaskNotes has moved</title>
+    <script>
+      const path = location.pathname.replace(/^\/tasknotes-app(?=\/|$)/, "");
+      location.replace(
+        "https://app.tasknotes.dev" + path + location.search + location.hash,
+      );
+    </script>
+  </head>
+  <body>
+    <p>
+      TaskNotes has moved to <a href="https://app.tasknotes.dev/">app.tasknotes.dev</a>.
+    </p>
+  </body>
+</html>
