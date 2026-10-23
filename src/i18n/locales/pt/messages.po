@@ -3394,7 +3394,7 @@ msgstr "Desativado"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr "Offline"
+msgstr "Sem conexão"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
