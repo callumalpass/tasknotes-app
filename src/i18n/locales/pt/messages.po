@@ -5466,156 +5466,156 @@ msgstr "A semana começa"
 
 #: src/components/recurrence-field.tsx
 msgid "Weekday"
-msgstr ""
+msgstr "Dia da semana"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekdays"
-msgstr ""
+msgstr "Dias da semana"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekly"
-msgstr ""
+msgstr "Semanal"
 
 #: src/components/duration-field.tsx
 msgid "Weeks"
-msgstr ""
+msgstr "Semanas"
 
 #: src/app/task-time-tracking.tsx
 msgid "What are you working on?"
-msgstr ""
+msgstr "No que você está trabalhando?"
 
 #: src/app/tasknotes-app.tsx
 msgid "What is mdbase?"
-msgstr ""
+msgstr "O que é mdbase?"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "What needs doing?"
-msgstr ""
+msgstr "O que precisa ser feito?"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
-msgstr ""
+msgstr "Quando eu escolher"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
-msgstr ""
+msgstr "Quando a anterior for concluída"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr ""
+msgstr "Qual"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr ""
+msgstr "Wikilink"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr ""
+msgstr "Wikilinks"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
-msgstr ""
+msgstr "Sessão de trabalho"
 
 #: src/app/task-screen.tsx
 msgid "work, important"
-msgstr ""
+msgstr "trabalho, importante"
 
 #: src/components/private-account-settings.tsx
 msgid "Working…"
-msgstr ""
+msgstr "Trabalhando…"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
-msgstr ""
+msgstr "Escrever"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
-msgstr ""
+msgstr "Ferramentas de escrita"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"
-msgstr ""
+msgstr "Anual"
 
 #: src/i18n/view-presentation.ts
 msgid "Yes"
-msgstr ""
+msgstr "Sim"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
-msgstr ""
+msgstr "Sim. Use Alterar coleção em Coleção para abrir outra coleção mdbase. Alterar a coleção não move registros entre elas."
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
-msgstr ""
+msgstr "Ontem"
 
 #: src/main.tsx
 msgid "You can close this window."
-msgstr ""
+msgstr "Você pode fechar esta janela."
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
-msgstr ""
+msgstr "Por hoje, você terminou."
 
 #: src/components/task-attachments.tsx
 msgid "Your browser blocked the image window. Allow pop-ups and try again."
-msgstr ""
+msgstr "Seu navegador bloqueou a janela da imagem. Permita pop-ups e tente novamente."
 
 #: src/app/view-editor.tsx
 msgid "Your changes to this view have not been saved."
-msgstr ""
+msgstr "Suas alterações nesta visualização não foram salvas."
 
 #: src/components/held-edits.tsx
 msgid "Your choice was submitted, but the latest status could not be read. Refresh before making another choice."
-msgstr ""
+msgstr "Sua escolha foi enviada, mas não foi possível ler o status mais recente. Atualize antes de fazer outra escolha."
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
-msgstr ""
+msgstr "Sua coleção não foi removida. Reinicie o aplicativo para abrir suas tarefas novamente."
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr ""
+msgstr "Seu rascunho ainda está aqui. Confira e tente novamente."
 
 #: src/app/task-screen.tsx
 msgid "Your edit is no longer available on this device. Discard it to load the latest version."
-msgstr ""
+msgstr "Sua edição não está mais disponível neste dispositivo. Descarte-a para carregar a versão mais recente."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
-msgstr ""
+msgstr "Sua edição não foi salva."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
-msgstr ""
+msgstr "Sua nota foi alterada durante o salvamento. Salve-a novamente antes de recarregar."
 
 #: src/components/private-account-settings.tsx
 msgid "Your password unlocks private collections on approved devices. It is processed on this device, not sent to mdbase."
-msgstr ""
+msgstr "Sua senha desbloqueia coleções privadas em dispositivos aprovados. Ela é processada neste dispositivo, não é enviada ao mdbase."
 
 #: src/app/search-screen.tsx
 msgid "Your person record could not be loaded. Check your connection, then reload people to try again."
-msgstr ""
+msgstr "Não foi possível carregar seu registro de pessoa. Verifique sua conexão e recarregue as pessoas para tentar novamente."
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr ""
+msgstr "Seu registro de pessoa precisa ser corrigido antes de filtrar tarefas: {0}."
 
 #: src/components/held-edits.tsx
 msgid "Your protected version"
-msgstr ""
+msgstr "Sua versão protegida"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr ""
+msgstr "Sua barra lateral, em ordem.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
