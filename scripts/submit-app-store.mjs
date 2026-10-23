@@ -14,6 +14,7 @@ const submittedStates = new Set([
   "WAITING_FOR_REVIEW",
   "IN_REVIEW",
   "PENDING_APPLE_RELEASE",
+  "PENDING_DEVELOPER_RELEASE",
 ]);
 
 function requireValue(value, label) {

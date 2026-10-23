@@ -354,6 +354,7 @@ test("already submitted same build verifies credentials read-only and rejects mi
     "WAITING_FOR_REVIEW",
     "IN_REVIEW",
     "PENDING_APPLE_RELEASE",
+    "PENDING_DEVELOPER_RELEASE",
     "READY_FOR_SALE",
   ]) {
     f.versions[1].attributes.appStoreState = appStoreState;
@@ -377,6 +378,25 @@ test("already submitted same build verifies credentials read-only and rejects mi
       f.review.attributes.demoAccountRequired = true;
     }
   }
+  assert.equal(f.writes.length, 0);
+});
+
+test("approved MANUAL state is a verified read-only success on reruns", async () => {
+  const f = fixture();
+  const held = { ...metadata, releaseType: "MANUAL" };
+  await f.run({ commit: true, metadata: held, env: reviewEnv });
+  f.versions[1].attributes.appStoreState = "PENDING_DEVELOPER_RELEASE";
+  f.writes = [];
+  for (const commit of [false, true]) {
+    const result = await f.run({ commit, metadata: held, env: reviewEnv });
+    assert.equal(result.state, "PENDING_DEVELOPER_RELEASE");
+    assert.equal(result.releaseType, "MANUAL");
+    assert.equal(result.alreadySubmitted, true);
+    assert.equal(result.demoAccountNameVerified, true);
+    assert.equal(result.demoAccountRequired, true);
+    assertSafeResult(result);
+  }
+  await assert.rejects(f.run(), /expected release policy/);
   assert.equal(f.writes.length, 0);
 });
 
