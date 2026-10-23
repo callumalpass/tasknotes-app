@@ -204,7 +204,7 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
-    await dependencies.run(pnpm, ["build"], deploymentEnvironment);
+    await dependencies.run(pnpm, ["build:assets"], deploymentEnvironment);
     await dependencies.verifyBuild(deployment);
   } finally {
     await Promise.all(
@@ -270,7 +270,7 @@ async function verifyDevelopmentBuild(deployment = developmentDeployment) {
   );
   for (const expected of [
     deployment.connectOrigin,
-    deployment.loopbackOrigin,
+    ...(deployment.loopbackOrigin ? [deployment.loopbackOrigin] : []),
   ]) {
     if (!sources.some((source) => source.includes(expected))) {
       throw new Error(

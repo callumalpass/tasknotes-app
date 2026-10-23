@@ -29,6 +29,16 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("reads projects: null as an empty project list", () => {
+    const created = model.create({ title: "No project" }, { id: "no-project" });
+    const task = model.read({
+      path: created.path,
+      frontmatter: { ...created.frontmatter, projects: null },
+      body: "",
+    });
+    expect(task.projects).toEqual([]);
+  });
+
   it("persists the first planned date for a due-only repeating task", () => {
     const task = model.create(
       {

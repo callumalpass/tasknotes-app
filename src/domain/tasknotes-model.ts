@@ -186,6 +186,8 @@ export class TaskNotesTaskModel {
     body?: string;
   }): TaskInfo {
     const readable = this.canonicalizeAliases(input.frontmatter, false);
+    const projectsField = this.config.fieldMapping.projects;
+    if (readable[projectsField] === null) readable[projectsField] = [];
     const mapped = mapTaskFromFrontmatter(
       this.config.fieldMapping,
       readable,

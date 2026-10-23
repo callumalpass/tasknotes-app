@@ -148,6 +148,22 @@ describe("TaskNotes development deployment", () => {
     ).toThrow("Candidate B TaskNotes requires");
   });
 
+  it("builds staging assets without the production-only wrapper", async () => {
+    const run = vi.fn(async () => undefined);
+    const verifyBuild = vi.fn(async () => undefined);
+    await deployDevelopmentTaskNotes(
+      { MDBASE_ENV: "staging" },
+      { run, verifyBuild },
+    );
+    expect(run.mock.calls[0]).toEqual([
+      expect.stringMatching(/^pnpm/),
+      ["build:assets"],
+      expect.objectContaining({ VITE_TASKNOTES_ENVIRONMENT: "staging" }),
+    ]);
+    expect(verifyBuild).toHaveBeenCalledWith(developmentDeployments.staging);
+    expect(run.mock.calls[1][1]).toContain("--branch=staging");
+  });
+
   it("deploys only the LAB branch and smokes the same origins by default", async () => {
     const run = vi.fn(async () => undefined);
     const verifyBuild = vi.fn(async () => undefined);
@@ -156,7 +172,7 @@ describe("TaskNotes development deployment", () => {
 
     expect(verifyBuild).toHaveBeenCalledOnce();
     expect(run).toHaveBeenCalledTimes(3);
-    expect(run.mock.calls[0][1]).toEqual(["build"]);
+    expect(run.mock.calls[0][1]).toEqual(["build:assets"]);
     expect(run.mock.calls[1][1]).toEqual(
       expect.arrayContaining([
         `wrangler@${developmentDeployment.wranglerVersion}`,
