@@ -9,149 +9,149 @@ msgstr ""
 
 #: src/app/search-screen.tsx
 msgid " — previously loaded"
-msgstr ""
+msgstr " — 이전에 불러옴"
 
 #: src/app/view-editor-form.tsx
 msgid " (external app)"
-msgstr ""
+msgstr " (외부 앱)"
 
 #: src/components/assignee-editor.tsx
 msgid " (not linked to an active member)"
-msgstr ""
+msgstr " (활성 구성원과 연결되지 않음)"
 
 #: src/components/private-account-settings.tsx
 msgid " (or use your password)"
-msgstr ""
+msgstr " (또는 비밀번호 사용)"
 
 #. placeholder {0}: ordered[0].name
 #: src/app/views/navigation-view-order.tsx
 msgid " {0} opens first as Home."
-msgstr ""
+msgstr " {0}이(가) 홈으로 가장 먼저 열립니다."
 
 #: src/i18n/ui-copy.ts
 msgid ", now Home"
-msgstr ""
+msgstr ", 이제 홈"
 
 #: src/app/more-screen.tsx
 msgid ". Pending edits are not yet synced."
-msgstr ""
+msgstr ". 보류 중인 편집 내용은 아직 동기화되지 않았습니다."
 
 #: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
-msgstr ""
+msgstr ". 복원하거나 폐기할 때까지 이 브라우저에 보관됩니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid ". Undo is available for 30 seconds."
-msgstr ""
+msgstr ". 30초 동안 실행 취소할 수 있습니다."
 
 #. placeholder {0}: stats.open
 #. placeholder {1}: stats.total
 #: src/app/more-screen.tsx
 msgid "· {0} open · {1} total"
-msgstr ""
+msgstr "· 열림 {0}개 · 전체 {1}개"
 
 #: src/app/more-screen.tsx
 msgid "· Details need attention"
-msgstr ""
+msgstr "· 세부정보 확인 필요"
 
 #: src/app/more-screen.tsx
 msgid "· Opening"
-msgstr ""
+msgstr "· 여는 중"
 
 #: src/components/task-capture.tsx
 msgid "” was saved…"
-msgstr ""
+msgstr "”이(가) 저장되었습니다…"
 
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
-msgstr ""
+msgstr "“{0}”은(는) 계산된 값이므로 작업을 이동할 수 없습니다."
 
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
-msgstr ""
+msgstr "“{title}”은(는) 아직 컬렉션에 있습니다."
 
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
-msgstr ""
+msgstr "(저장되지 않은 변경 사항)"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {# image was added.} other {# images were added.}}"
-msgstr ""
+msgstr "{0, plural, other {이미지 #개를 추가했습니다.}}"
 
 #. placeholder {0}: stats.open
 #: src/app/more-screen.tsx
 msgid "{0, plural, one {# open} other {# open}}"
-msgstr ""
+msgstr "{0, plural, other {열림 #개}}"
 
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, other {이미지 #개 추가 중…}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
-msgstr ""
+msgstr "{0, plural, other {작업 노트 #개를 만들었습니다.}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, other {이미지 #개 추가됨}}"
 
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr ""
+msgstr "{0, plural, other {모든 작업을 오늘로 이동, 기한 초과 #개}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
 msgid "{0} (ambiguous account link)"
-msgstr ""
+msgstr "{0} (계정 링크가 모호함)"
 
 #. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
 #. placeholder {1}: node.text || uiCopy("item")
 #. placeholder {2}: nestedItemCount(descendantCount)
 #: src/app/scratchpad-screen.tsx
 msgid "{0} {1}, {2}"
-msgstr ""
+msgstr "{0} {1}, {2}"
 
 #. placeholder {0}: label ?? labelFor(next)
 #: src/components/multi-value-field.tsx
 msgid "{0} added"
-msgstr ""
+msgstr "{0} 추가됨"
 
 #. placeholder {0}: draft.assignees.length
 #: src/app/task-editor-draft.ts
 msgid "{0} assigned"
-msgstr ""
+msgstr "{0}개 할당됨"
 
 #. placeholder {0}: status.label
 #: src/components/task-model-settings.tsx
 msgid "{0} auto-archive delay in minutes"
-msgstr ""
+msgstr "{0} 자동 보관 지연 시간(분)"
 
 #. placeholder {0}: execution.view.name
 #: src/app/views/kanban-view.tsx
 msgid "{0} board"
-msgstr ""
+msgstr "{0} 보드"
 
 #. placeholder {0}: propertyLabel(property)
 #: src/app/views-screen.tsx
 msgid "{0} is calculated by this view and cannot be changed here."
-msgstr ""
+msgstr "{0}은(는) 이 뷰에서 계산되므로 여기서 변경할 수 없습니다."
 
 #. placeholder {0}: destinationLane.label ?? uiCopy("That section")
 #: src/app/views/task-list-view.tsx
 msgid "{0} is read-only."
-msgstr ""
+msgstr "{0}은(는) 읽기 전용입니다."
 
 #. placeholder {0}: edits[0].path
 #. placeholder {1}: edits[0].cause
 #: src/components/held-edits.tsx
 msgid "{0} is waiting for your choice. {1}"
-msgstr ""
+msgstr "{0}에서 선택을 기다리고 있습니다. {1}"
 
 #. placeholder {0}: source.name
 #. placeholder {0}: view.name
@@ -161,393 +161,393 @@ msgstr ""
 #. placeholder {2}: target?.name
 #: src/app/views/navigation-view-order.tsx
 msgid "{0} moved {1} {2}."
-msgstr ""
+msgstr "{0}을(를) {1} {2} 이동했습니다."
 
 #. placeholder {0}: humanizeValue(draft.priority)
 #: src/app/task-editor-draft.ts
 msgid "{0} priority"
-msgstr ""
+msgstr "우선순위 {0}"
 
 #. placeholder {0}: labelFor(removed)
 #. placeholder {0}: labelFor(value)
 #: src/components/multi-value-field.tsx
 msgid "{0} removed"
-msgstr ""
+msgstr "{0} 삭제됨"
 
 #. placeholder {0}: result.current.title?.trim() || uiCopy("Previous note")
 #: src/app/scratchpad-screen.tsx
 msgid "{0} resumed"
-msgstr ""
+msgstr "{0}을(를) 이어서 작성합니다."
 
 #. placeholder {0}: formatMinutes(totals.liveMinutes)
 #: src/app/task-time-tracking.tsx
 msgid "{0} tracked"
-msgstr ""
+msgstr "{0} 기록됨"
 
 #. placeholder {0}: virtualOccurrence ? t({ message: "Delete this repeating task and all of its occurrences?", }) : t({ message: "Delete this task?" })
 #: src/components/task-actions.tsx
 msgid "{0} You’ll have 30 seconds to undo."
-msgstr ""
+msgstr "{0} 실행 취소할 수 있는 시간은 30초입니다."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr ""
+msgstr "{0}. 드래그하여 열 사이에서 이동하세요. 왼쪽 및 오른쪽 화살표 키를 사용할 수도 있습니다."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr ""
+msgstr "{0}. 드래그하여 이동하세요. 화살표 키로 순서를 바꿀 수도 있습니다."
 
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
 msgid "{0}{1} copied"
-msgstr ""
+msgstr "{0}{1} 복사됨"
 
 #. placeholder {0}: tasks.length
 #: src/app/search-screen.tsx
 msgid "{0}+ tasks"
-msgstr ""
+msgstr "작업 {0}+개"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{accessibleName} calendar"
-msgstr ""
+msgstr "{accessibleName} 캘린더"
 
 #. placeholder {0}: inNavigation ? uiCopy("from") : uiCopy("to")
 #: src/app/views/view-catalog.tsx
 msgid "{action} {name} {0} navigation"
-msgstr ""
+msgstr "{action} {name}을(를) 탐색 {0}"
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} contains a value the collection cannot accept."
-msgstr ""
+msgstr "{action}에 컬렉션에서 허용하지 않는 값이 있습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish because the record no longer exists."
-msgstr ""
+msgstr "레코드가 더 이상 존재하지 않아 {action}을(를) 완료할 수 없습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish because the task changed elsewhere."
-msgstr ""
+msgstr "다른 곳에서 작업이 변경되어 {action}을(를) 완료할 수 없습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish while the collection was unavailable."
-msgstr ""
+msgstr "컬렉션을 사용할 수 없어 {action}을(를) 완료할 수 없습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
-msgstr ""
+msgstr "{action}을(를) 완료할 수 없습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
-msgstr ""
+msgstr "{action}에 컬렉션 접근 권한이 필요합니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} was cancelled."
-msgstr ""
+msgstr "{action}이(가) 취소되었습니다."
 
 #: src/components/tasknotes-controls.tsx
 msgid "{ariaLabel} suggestions"
-msgstr ""
+msgstr "{ariaLabel} 제안"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# contexts} one {# context} other {# contexts}}"
-msgstr ""
+msgstr "{count, plural, =0 {컨텍스트 없음} other {컨텍스트 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# defaults} one {# default} other {# defaults}}"
-msgstr ""
+msgstr "{count, plural, =0 {기본값 없음} other {기본값 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# dependencies} one {# dependency} other {# dependencies}}"
-msgstr ""
+msgstr "{count, plural, =0 {의존성 없음} other {의존성 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# fields} one {# field} other {# fields}}"
-msgstr ""
+msgstr "{count, plural, =0 {필드 없음} other {필드 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# formulas} one {# formula} other {# formulas}}"
-msgstr ""
+msgstr "{count, plural, =0 {수식 없음} other {수식 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# nested items} one {# nested item} other {# nested items}}"
-msgstr ""
+msgstr "{count, plural, =0 {중첩 항목 없음} other {중첩 항목 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projections} one {# projection} other {# projections}}"
-msgstr ""
+msgstr "{count, plural, =0 {투영 없음} other {투영 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projects} one {# project} other {# projects}}"
-msgstr ""
+msgstr "{count, plural, =0 {프로젝트 없음} other {프로젝트 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# properties} one {# property} other {# properties}}"
-msgstr ""
+msgstr "{count, plural, =0 {속성 없음} other {속성 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# reminders} one {# reminder} other {# reminders}}"
-msgstr ""
+msgstr "{count, plural, =0 {리마인더 없음} other {리마인더 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sessions} one {# session} other {# sessions}}"
-msgstr ""
+msgstr "{count, plural, =0 {세션 없음} other {세션 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sorts} one {# sort} other {# sorts}}"
-msgstr ""
+msgstr "{count, plural, =0 {정렬 없음} other {정렬 기준 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tags} one {# tag} other {# tags}}"
-msgstr ""
+msgstr "{count, plural, =0 {태그 없음} other {태그 #개}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks currently in this view} one {# task currently in this view} other {# tasks currently in this view}}"
-msgstr ""
+msgstr "{count, plural, =0 {이 뷰에 작업 없음} other {이 뷰의 작업 #개}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks match this draft} one {# task match this draft} other {# tasks match this draft}}"
-msgstr ""
+msgstr "{count, plural, =0 {이 초안과 일치하는 작업 없음} other {이 초안과 일치하는 작업 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tasks} one {# task} other {# tasks}}"
-msgstr ""
+msgstr "{count, plural, =0 {작업 없음} other {작업 #개}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# views} one {# view} other {# views}}"
-msgstr ""
+msgstr "{count, plural, =0 {뷰 없음} other {뷰 #개}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day ago} other {# days ago}}"
-msgstr ""
+msgstr "{count, plural, other {#일 전}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr ""
+msgstr "{count, plural, other {끝에서 #일 전}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
-msgstr ""
+msgstr "{count, plural, other {#회}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {day} other {days}}"
-msgstr ""
+msgstr "{count, plural, other {일}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {month} other {months}}"
-msgstr ""
+msgstr "{count, plural, other {개월}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
-msgstr ""
+msgstr "{count, plural, other {주}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {year} other {years}}"
-msgstr ""
+msgstr "{count, plural, other {년}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
-msgstr ""
+msgstr "예상 시간 {estimate}분"
 
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
-msgstr ""
+msgstr "{hours}시간 {minutes}분"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, other {#일마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, other {#개월마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, other {#주마다}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, other {#년마다}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
-msgstr ""
+msgstr "{label} 고급 기간"
 
 #: src/components/duration-field.tsx
 msgid "{label} amount"
-msgstr ""
+msgstr "{label} 수량"
 
 #: src/app/views/kanban-view.tsx
 msgid "{label} column"
-msgstr ""
+msgstr "{label} 열"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
-msgstr ""
+msgstr "{label} 날짜"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved {0}{1}."
-msgstr ""
+msgstr "{label}을(를) {0}{1} 이동했습니다."
 
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved."
-msgstr ""
+msgstr "{label}을(를) 이동했습니다."
 
 #: src/components/multi-value-field.tsx
 msgid "{label} suggestions"
-msgstr ""
+msgstr "{label} 제안"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
-msgstr ""
+msgstr "{label} 시간"
 
 #: src/components/duration-field.tsx
 msgid "{label} unit"
-msgstr ""
+msgstr "{label} 단위"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
-msgstr ""
+msgstr "{name} (일치하는 사람 레코드 없음)"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (not a person record)"
-msgstr ""
+msgstr "{name} (사람 레코드가 아님)"
 
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
-msgstr ""
+msgstr "다른 뷰를 추가할 때까지 {name}을(를) 탐색 메뉴에 유지해야 합니다."
 
 #: src/app/collection-settings.tsx
 msgid "{open} open · {total} total"
-msgstr ""
+msgstr "열림 {open}개 · 전체 {total}개"
 
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
-msgstr ""
+msgstr "{0}개 중 {selectedReviewCount}개 선택됨"
 
 #: src/i18n/presentation.ts
 msgid "{summary} of {month}"
-msgstr ""
+msgstr "{month} 중 {summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on {names}"
-msgstr ""
+msgstr "{names}에 {summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr ""
+msgstr "{day}일에 {summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr ""
+msgstr "{day}일 {rank}번째에 {summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
-msgstr ""
+msgstr "{summary}, {ending}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, until {until}"
-msgstr ""
+msgstr "{summary}, {until}까지"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "{taskCount, plural, =0 {# tasks are ready in this view.} one {# task is ready in this view.} other {# tasks are ready in this view.}}"
-msgstr ""
+msgstr "{taskCount, plural, =0 {이 뷰에 준비된 작업이 없습니다.} other {이 뷰에 작업 #개가 준비되었습니다.}}"
 
 #: src/components/held-edits.tsx
 msgid "{total} edits are waiting for your choice."
-msgstr ""
+msgstr "편집 {total}개가 선택을 기다리고 있습니다."
 
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr ""
+msgstr "{value, selectordinal, other {#번째}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"
-msgstr ""
+msgstr "뷰 {visibleCount}개 표시"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
 msgid "+{0} more"
-msgstr ""
+msgstr "+{0}개 더"
 
 #: src/app/full-calendar-view.tsx
 msgid "+{count} more"
-msgstr ""
+msgstr "+{count}개 더"
 
 #: src/components/calendar-preferences.tsx
 msgid "1 hour"
-msgstr ""
+msgstr "1시간"
 
 #: src/components/calendar-preferences.tsx
 msgid "12 hour"
-msgstr ""
+msgstr "12시간제"
 
 #: src/components/calendar-preferences.tsx
 msgid "15 minutes"
-msgstr ""
+msgstr "15분"
 
 #: src/components/calendar-preferences.tsx
 msgid "24 hour"
-msgstr ""
+msgstr "24시간제"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "3 days"
-msgstr ""
+msgstr "3일"
 
 #: src/components/calendar-preferences.tsx
 msgid "30 minutes"
-msgstr ""
+msgstr "30분"
 
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
-msgstr ""
+msgstr "캘린더 날짜"
 
 #: src/components/view-execution-error-notice.tsx
 msgid "A computed value is being used to sort this view. This collection cannot order results by computed values yet. Choose a stored property instead."
-msgstr ""
+msgstr "이 뷰는 계산된 값으로 정렬하고 있습니다. 이 컬렉션은 아직 계산된 값으로 결과를 정렬할 수 없습니다. 저장된 속성을 선택하세요."
 
 #: src/components/task-model-settings.tsx
 msgid "A task scheduled Monday and due Wednesday stays two days apart on each repeat."
-msgstr ""
+msgstr "월요일이 예정일이고 수요일이 마감일인 작업은 반복할 때마다 두 날짜의 간격이 이틀로 유지됩니다."
 
 #: src/components/app-update-notice.tsx
 msgid "A TaskNotes update is ready. Save your changes, then reload."
-msgstr ""
+msgstr "TaskNotes 업데이트가 준비되었습니다. 변경 사항을 저장한 다음 새로고침하세요."
 
 #: src/components/recurrence-field.tsx
 msgid "A weekday position"
-msgstr ""
+msgstr "요일 순서"
 
 #: src/app/settings-sections.ts
 msgid "About & help"
-msgstr ""
+msgstr "정보 및 도움말"
 
 #: src/app/settings-sections.ts
 msgid "Account"
-msgstr ""
+msgstr "계정"
 
 #: src/components/private-account-settings.tsx
 msgid "Account recovery changed on another device. Check its status before trying again."
-msgstr ""
+msgstr "다른 기기에서 계정 복구 정보가 변경되었습니다. 다시 시도하기 전에 상태를 확인하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Account unlocked. Private collection keys are available on this device."
-msgstr ""
+msgstr "계정 잠금이 해제되었습니다. 이 기기에서 비공개 컬렉션 키를 사용할 수 있습니다."
 
 #: src/app/search-screen.tsx
 msgid "Across this collection"
-msgstr ""
+msgstr "이 컬렉션 전체"
 
 #: src/app/command-palette-model.ts
 #: src/components/task-row.tsx
 msgid "Actions"
-msgstr ""
+msgstr "작업"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #. placeholder {0}: node.text || uiCopy("item")
@@ -556,964 +556,980 @@ msgstr ""
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
-msgstr ""
+msgstr "{0} 작업"
 
 #: src/app/views/kanban-view.tsx
 msgid "Active"
-msgstr ""
+msgstr "활성"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
-msgstr ""
+msgstr "추가"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Add {0}"
-msgstr ""
+msgstr "{0} 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before due"
-msgstr ""
+msgstr "마감일 하루 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before scheduled"
-msgstr ""
+msgstr "예정일 하루 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before due"
-msgstr ""
+msgstr "마감일 1시간 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before scheduled"
-msgstr ""
+msgstr "예정일 1시간 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before due"
-msgstr ""
+msgstr "마감일 15분 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before scheduled"
-msgstr ""
+msgstr "예정일 15분 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before due"
-msgstr ""
+msgstr "마감일 5분 전 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before scheduled"
-msgstr ""
+msgstr "예정일 5분 전 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a context"
-msgstr ""
+msgstr "컨텍스트 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr ""
+msgstr "프로젝트 추가"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr ""
+msgstr "작업에 프로젝트를 추가하면 여기에 표시됩니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr ""
+msgstr "속성 추가"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr ""
+msgstr "활성 작업에 예정일 또는 마감일을 추가하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr ""
+msgstr "정렬 규칙 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr ""
+msgstr "태그 추가"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr ""
+msgstr "작업 추가 — 내일 오전 9시, #태그, +프로젝트"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
-msgstr ""
+msgstr "먼저 작업 제목을 추가하세요."
 
 #: src/app/today-clear.tsx
 msgid "Add a task to start planning your day."
-msgstr ""
+msgstr "작업을 추가해 하루 계획을 시작하세요."
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
-msgstr ""
+msgstr "필요할 때 언제든 작업을 추가하세요."
 
 #: src/app/task-screen.tsx
 msgid "Add a title before leaving this task."
-msgstr ""
+msgstr "이 작업을 나가기 전에 제목을 추가하세요."
 
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
-msgstr ""
+msgstr "담당자 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add child"
-msgstr ""
+msgstr "하위 항목 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add context…"
-msgstr ""
+msgstr "컨텍스트 추가…"
 
 #: src/components/task-capture.tsx
 msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr ""
+msgstr "날짜와 태그를 자연스럽게 추가하세요. “내일 오전 9시에 샘에게 전화 #업무”를 입력해 보세요."
 
 #: src/components/task-capture.tsx
 msgid "Add details"
-msgstr ""
+msgstr "세부정보 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
-msgstr ""
+msgstr "수식 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
-msgstr ""
+msgstr "이미지 추가"
 
 #: src/components/task-capture.tsx
 msgid "Add notes"
-msgstr ""
+msgstr "노트 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr ""
+msgstr "투영 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
-msgstr ""
+msgstr "리마인더 추가"
 
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
-msgstr ""
+msgstr "기본 뷰 추가"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
-msgstr ""
+msgstr "하위 작업 추가"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
-msgstr ""
+msgstr "작업 추가"
 
 #. placeholder {0}: agendaLabel(selected)
 #: src/app/views/mini-calendar-view.tsx
 msgid "Add task on {0}"
-msgstr ""
+msgstr "{0}에 작업 추가"
 
 #. placeholder {0}: project.label
 #: src/app/views/projects-view.tsx
 msgid "Add task to {0}"
-msgstr ""
+msgstr "{0}에 작업 추가"
 
 #: src/app/views/kanban-view.tsx
 msgid "Add task to {label}"
-msgstr ""
+msgstr "{label}에 작업 추가"
 
 #: src/app/task-screen.tsx
 msgid "Add thoughts, links, or supporting details…"
-msgstr ""
+msgstr "생각, 링크 또는 보충 내용을 추가하세요…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add title"
-msgstr ""
+msgstr "제목 추가"
 
 #. placeholder {0}: currentCreationContext.label
 #. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
-msgstr ""
+msgstr "{0}에 추가"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
-msgstr ""
+msgstr "이 작업 전에 완료해야 하는 작업을 추가하세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Added"
-msgstr ""
+msgstr "추가됨"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
-msgstr ""
+msgstr "추가 중"
 
 #: src/components/task-capture.tsx
 msgid "Adding “{pendingTitle}”…"
-msgstr ""
+msgstr "“{pendingTitle}” 추가 중…"
 
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Adding starter views…"
-msgstr ""
+msgstr "기본 뷰 추가 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
-msgstr ""
+msgstr "추가 중…"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds Today, Upcoming, Calendar, Projects, and Archive."
-msgstr ""
+msgstr "오늘, 예정, 캘린더, 프로젝트 및 보관 뷰를 추가합니다."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
-msgstr ""
+msgstr "이 뷰의 필터를 조정하거나 다른 뷰를 선택하세요."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Advance after"
-msgstr ""
+msgstr "다음으로 진행하는 기준"
 
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
-msgstr ""
+msgstr "고급"
 
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
-msgstr ""
+msgstr "고급 기간"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced recurrence"
-msgstr ""
+msgstr "고급 반복"
 
 #: src/i18n/presentation.ts
 msgid "Advanced recurrence rule"
-msgstr ""
+msgstr "고급 반복 규칙"
 
 #: src/app/task-editor-draft.ts
 msgid "Advanced repeat"
-msgstr ""
+msgstr "고급 반복"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced rule"
-msgstr ""
+msgstr "고급 규칙"
 
 #: src/components/task-model-settings.tsx
 #: src/i18n/ui-copy.ts
 msgid "after"
-msgstr ""
+msgstr "이후"
 
 #: src/components/reminder-editor.tsx
 msgid "After"
-msgstr ""
+msgstr "이후"
 
 #: src/components/recurrence-field.tsx
 msgid "After a number of times"
-msgstr ""
+msgstr "횟수 이후"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Agenda"
-msgstr ""
+msgstr "일정"
+
+#: src/i18n/editor-phrases.ts
+msgid "all"
+msgstr "모두"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
-msgstr ""
+msgstr "전체"
 
 #: src/components/expression-builder.tsx
 msgid "All conditions match"
-msgstr ""
+msgstr "모든 조건 일치"
 
 #: src/app/full-calendar-view.tsx
 msgid "All day"
-msgstr ""
+msgstr "종일"
 
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
-msgstr ""
+msgstr "일치하는 작업을 모두 불러왔습니다"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
-msgstr ""
+msgstr "모든 작업"
 
 #: src/app/views/view-catalog.tsx
 msgid "All views"
-msgstr ""
+msgstr "모든 뷰"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
-msgstr ""
+msgstr "작업 생성 허용"
 
 #: src/components/task-model-settings.tsx
 msgid "Also create the next file when an occurrence is skipped"
-msgstr ""
+msgstr "반복 항목을 건너뛸 때도 다음 파일 만들기"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
-msgstr ""
+msgstr "수량"
 
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
-msgstr ""
+msgstr "조건 중 하나라도 일치"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
-msgstr ""
+msgstr "언제든"
 
 #: src/i18n/default-labels.ts
 msgid "Anytime"
-msgstr ""
+msgstr "기한 없음"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Anywhere"
-msgstr ""
+msgstr "어디서나"
 
 #: src/i18n/language-settings.tsx
 msgid "App language"
-msgstr ""
+msgstr "앱 언어"
 
 #: src/components/app-update-notice.tsx
 msgid "App update"
-msgstr ""
+msgstr "앱 업데이트"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
-msgstr ""
+msgstr "모양"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
-msgstr ""
+msgstr "규칙 적용"
 
 #: src/app/notification-label.ts
 msgid "Approval required"
-msgstr ""
+msgstr "승인 필요"
 
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 msgid "Archive"
-msgstr ""
+msgstr "보관"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive a task once it has been in a chosen status for a while. Repeating tasks are never archived automatically."
-msgstr ""
+msgstr "작업이 선택한 상태로 일정 시간 유지되면 보관합니다. 반복 작업은 자동으로 보관되지 않습니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Archive automatically"
-msgstr ""
+msgstr "자동 보관"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
-msgstr ""
+msgstr "보관 폴더"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views/kanban-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Archived"
-msgstr ""
+msgstr "보관됨"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
-msgstr ""
+msgstr "보관된 작업은 삭제되지 않고 유지됩니다. 작업 메뉴에서 복원할 수 있습니다."
 
 #: src/components/arrange-tasks-option.tsx
 msgid "Arrange tasks"
-msgstr ""
+msgstr "작업 정렬"
 
 #: src/app/view-editor-form.tsx
 msgid "Ascending"
-msgstr ""
+msgstr "오름차순"
 
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
-msgstr ""
+msgstr "담당자"
 
 #: src/app/search-screen.tsx
 msgid "Assigned to me"
-msgstr ""
+msgstr "내 담당 작업"
 
 #: src/components/assignee-editor.tsx
 msgid "Assignments link to person notes, which list them as backlinks. They do not grant collection access."
-msgstr ""
+msgstr "할당은 백링크로 표시되는 사람 노트에 연결됩니다. 컬렉션 접근 권한을 부여하지는 않습니다."
 
 #: src/app/search-screen.tsx
 msgid "Assignments use your linked person record."
-msgstr ""
+msgstr "할당에는 연결된 사람 레코드를 사용합니다."
 
 #: src/components/task-attachments.tsx
 msgid "Attach image"
-msgstr ""
+msgstr "이미지 첨부"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
-msgstr ""
+msgstr "첨부된 이미지"
 
 #: src/app/search-match-context.ts
 msgid "attachments"
-msgstr ""
+msgstr "첨부 파일"
 
 #: src/components/task-attachments.tsx
 msgid "Attachments"
-msgstr ""
+msgstr "첨부 파일"
 
 #: src/app/view-editor-form.tsx
 msgid "Available in"
-msgstr ""
+msgstr "사용 가능 위치"
 
 #: src/app/search-screen.tsx
 #: src/app/task-edit-recovery-boundary.tsx
 #: src/app/task-screen.tsx
 msgid "Back"
-msgstr ""
+msgstr "뒤로"
 
 #: src/components/task-actions.tsx
 msgid "Back to previous actions"
-msgstr ""
+msgstr "이전 작업으로 돌아가기"
 
 #: src/app/more-screen.tsx
 msgid "Back to Settings"
-msgstr ""
+msgstr "설정으로 돌아가기"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
-msgstr ""
+msgstr "이전"
 
 #: src/components/reminder-editor.tsx
 msgid "Before"
-msgstr ""
+msgstr "이전"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
-msgstr ""
+msgstr "차단 작업"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocking"
-msgstr ""
+msgstr "차단 중"
 
 #: src/app/view-editor-form.tsx
 msgid "Board"
-msgstr ""
+msgstr "보드"
 
 #: src/app/view-editor-form.tsx
 msgid "Board column"
-msgstr ""
+msgstr "보드 열"
 
 #: src/components/kanban-column-jump.tsx
 msgid "Board columns"
-msgstr ""
+msgstr "보드 열"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Bold"
-msgstr ""
+msgstr "굵게"
 
 #: src/app/app-shell.tsx
 msgid "Browse"
-msgstr ""
+msgstr "찾아보기"
 
 #: src/components/expression-builder.tsx
 msgid "Builder"
-msgstr ""
+msgstr "빌더"
 
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
-msgstr ""
+msgstr "기본 작업 공간"
+
+#: src/i18n/editor-phrases.ts
+msgid "by word"
+msgstr "단어 기준"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
-msgstr ""
+msgstr "캘린더"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar layout"
-msgstr ""
+msgstr "캘린더 레이아웃"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar markers"
-msgstr ""
+msgstr "캘린더 표시"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr ""
+msgstr "나중에 컬렉션을 변경할 수 있나요?"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
 msgid "Cancel"
-msgstr ""
+msgstr "취소"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr ""
+msgstr "취소 확인"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr ""
+msgstr "{title} 이동을 취소했습니다."
 
 #: src/app/model-setup-screen.tsx
 msgid "Catching up"
-msgstr ""
+msgstr "동기화 중"
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr ""
+msgstr "CEL 표현식"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
-msgstr ""
+msgstr "컬렉션 변경"
 
 #: src/components/private-account-settings.tsx
 msgid "Change password"
-msgstr ""
+msgstr "비밀번호 변경"
 
 #: src/components/private-account-settings.tsx
 msgid "Change recovery password"
-msgstr ""
+msgstr "복구 비밀번호 변경"
 
 #: src/components/collection-write-status.tsx
 msgid "Change rejected"
-msgstr ""
+msgstr "변경 거부됨"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
-msgstr ""
+msgstr "변경 거부됨: {0}"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
-msgstr ""
+msgstr "변경됨: "
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
-msgstr ""
+msgstr "변경 사항을 저장하지 못했습니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr ""
+msgstr "모든 반복 항목 변경"
 
 #: src/components/collection-write-status.tsx
 msgid "changes need review"
-msgstr ""
+msgstr "변경 사항 검토 필요"
 
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
-msgstr ""
+msgstr "계정 상태 확인"
 
 #: src/app/model-setup-screen.tsx
 msgid "Check setup"
-msgstr ""
+msgstr "설정 확인"
 
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
-msgstr ""
+msgstr "엄격 모드 완료 상태 확인"
 
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
-msgstr ""
+msgstr "컬렉션이 연결되어 있는지 확인한 후 다시 시도하세요."
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr ""
+msgstr "확인 중"
 
 #: src/components/private-account-settings.tsx
 msgid "Checking account recovery…"
-msgstr ""
+msgstr "계정 복구 확인 중…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking collection access…"
-msgstr ""
+msgstr "컬렉션 접근 권한 확인 중…"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
-msgstr ""
+msgstr "컬렉션 설정 확인 중…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking TaskNotes setup…"
-msgstr ""
+msgstr "TaskNotes 설정 확인 중…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking whether setup finished…"
-msgstr ""
+msgstr "설정이 완료되었는지 확인 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr ""
+msgstr "하위 항목"
 
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
-msgstr ""
+msgstr "선택 내용을 제출했습니다. 아직 동기화 대기 중일 수 있습니다. 확인됨, 대기 중 및 보류됨 수를 확인하세요."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr ""
+msgstr "선택"
 
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
-msgstr ""
+msgstr "다른 컬렉션 선택"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr ""
+msgstr "사람 선택…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr ""
+msgstr "속성 선택"
 
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
-msgstr ""
+msgstr "값 선택"
 
 #: src/app/model-setup-screen.tsx
 msgid "Choose another collection"
-msgstr ""
+msgstr "다른 컬렉션 선택"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr ""
+msgstr "담당자 선택"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
-msgstr ""
+msgstr "작업의 그룹화 및 정렬 방식을 선택하세요."
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record"
-msgstr ""
+msgstr "사람 레코드를 선택하거나 만들기"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
-msgstr ""
+msgstr "캘린더 모드와 이벤트로 표시할 작업 날짜를 선택하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the information shown beneath each task."
-msgstr ""
+msgstr "각 작업 아래에 표시할 정보를 선택하세요."
 
 #: src/app/views-screen.tsx
 msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr ""
+msgstr "탐색 메뉴에 표시할 항목과 순서를 선택하고 저장된 뷰를 관리하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
-msgstr ""
+msgstr "작업으로 만들 항목 선택"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose which tasks belong in this view."
-msgstr ""
+msgstr "이 뷰에 포함할 작업을 선택하세요."
 
 #: src/components/expression-builder.tsx
 msgid "Choose…"
-msgstr ""
+msgstr "선택…"
 
 #: src/app/search-screen.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
-msgstr ""
+msgstr "지우기"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr ""
+msgstr "반복할 때마다 노트의 체크리스트 항목 지우기"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
-msgstr ""
+msgstr "마감일 지우기"
 
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
-msgstr ""
+msgstr "최근 검색 지우기"
 
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
-msgstr ""
+msgstr "최근 연 작업 지우기"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
-msgstr ""
+msgstr "예정일 지우기"
 
 #: src/app/search-screen.tsx
 msgid "Clear search"
-msgstr ""
+msgstr "검색 지우기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
-msgstr ""
+msgstr "선택 항목 지우기"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
-msgstr ""
+msgstr "값 지우기"
+
+#: src/i18n/editor-phrases.ts
+msgid "close"
+msgstr "닫기"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
-msgstr ""
+msgstr "닫기"
 
 #. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
-msgstr ""
+msgstr "{0} 닫기"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {accessibleName} calendar"
-msgstr ""
+msgstr "{accessibleName} 캘린더 닫기"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
-msgstr ""
+msgstr "{ariaLabel} 닫기"
 
 #: src/app/use-calendar-overflow.ts
 msgid "Close additional tasks"
-msgstr ""
+msgstr "추가 작업 닫기"
 
 #: src/components/held-edits.tsx
 msgid "Close comparison"
-msgstr ""
+msgstr "비교 닫기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
-msgstr ""
+msgstr "이미지 캡처 닫기"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Close keyboard shortcuts"
-msgstr ""
+msgstr "키보드 단축키 닫기"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
-msgstr ""
+msgstr "새 작업 닫기"
 
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
-msgstr ""
+msgstr "속성 편집기 닫기"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
-msgstr ""
+msgstr "뷰 편집기 닫기"
 
 #: src/i18n/ui-copy.ts
 msgid "Collapse"
-msgstr ""
+msgstr "접기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
-msgstr ""
+msgstr "이미지 접기"
 
 #: src/app/settings-sections.ts
 msgid "Collection"
-msgstr ""
+msgstr "컬렉션"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
 msgctxt "settings section title"
 msgid "Collection"
-msgstr ""
+msgstr "컬렉션"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
-msgstr ""
+msgstr "컬렉션 동작"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
-msgstr ""
+msgstr "컬렉션 연결"
 
 #: src/app/more-screen.tsx
 msgid "Collection details could not be loaded. "
-msgstr ""
+msgstr "컬렉션 세부정보를 불러오지 못했습니다. "
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
-msgstr ""
+msgstr "컬렉션 순서"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
-msgstr ""
+msgstr "컬렉션 순서를 사용합니다."
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
-msgstr ""
+msgstr "컬렉션을 사용할 수 없음"
 
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
-msgstr ""
+msgstr "컬렉션을 사용할 수 없습니다. 이전에 불러온 작업을 표시하며 변경 사항은 저장할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
-msgstr ""
+msgstr "색상 테마"
 
 #: src/app/task-custom-field.tsx
 msgid "Comma-separated values"
-msgstr ""
+msgstr "쉼표로 구분된 값"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
-msgstr ""
+msgstr "명령 팔레트"
 
 #: src/app/app-shell.tsx
 msgid "Commands"
-msgstr ""
+msgstr "명령"
 
 #. placeholder {0}: shortcutLabel("K")
 #: src/app/app-shell.tsx
 msgid "Commands ({0})"
-msgstr ""
+msgstr "명령({0})"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
-msgstr ""
+msgstr "간결한 행"
 
 #: src/components/held-edits.tsx
 msgid "Compare side by side"
-msgstr ""
+msgstr "나란히 비교"
 
 #: src/components/held-edits.tsx
 msgid "Comparison is not available from this backend."
-msgstr ""
+msgstr "이 백엔드에서는 비교를 사용할 수 없습니다."
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr ""
+msgstr "완료"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr ""
+msgstr "완료"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr ""
+msgstr "완료"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
-msgstr ""
+msgstr "“{title}” 완료"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
-msgstr ""
+msgstr "반복 항목 완료"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
-msgstr ""
+msgstr "완료 또는 다시 열기"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
-msgstr ""
+msgstr "작업 완료"
 
 #: src/app/keyboard-layer.tsx
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "Completed"
-msgstr ""
+msgstr "완료됨"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
-msgstr ""
+msgstr "완료된 초안"
 
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
-msgstr ""
+msgstr "완료된 반복 항목"
 
 #: src/components/task-model-settings.tsx
 msgid "Completing an occurrence's task file creates the file for the next date."
-msgstr ""
+msgstr "반복 항목의 작업 파일을 완료하면 다음 날짜의 파일이 만들어집니다."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion"
-msgstr ""
+msgstr "완료"
 
 #: src/components/recurrence-field.tsx
 msgid "Completion date"
-msgstr ""
+msgstr "완료일"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion or skip"
-msgstr ""
+msgstr "완료 또는 건너뛰기"
+
+#: src/i18n/editor-phrases.ts
+msgid "Completions"
+msgstr "완료 횟수"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
-msgstr ""
+msgstr "계산된 속성이 유효합니다"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property expression {0}"
-msgstr ""
+msgstr "계산된 속성 표현식 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property name {0}"
-msgstr ""
+msgstr "계산된 속성 이름 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property scope {0}"
-msgstr ""
+msgstr "계산된 속성 범위 {0}"
 
 #: src/app/task-screen.tsx
 msgid "Computer, Errands"
-msgstr ""
+msgstr "컴퓨터, 볼일"
 
 #: src/components/expression-builder.tsx
 msgid "Condition"
-msgstr ""
+msgstr "조건"
 
 #: src/components/held-edits.tsx
 msgid "Confirm "
-msgstr ""
+msgstr "확인 "
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
-msgstr ""
+msgstr "변경 사항 폐기 및 연결 해제 확인"
 
 #: src/components/private-account-settings.tsx
 msgid "Confirm new recovery password"
-msgstr ""
+msgstr "새 복구 비밀번호 확인"
 
 #: src/components/held-edits.tsx
 msgid "Confirm protected-version replacement"
-msgstr ""
+msgstr "보호된 버전 교체 확인"
 
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
-msgstr ""
+msgstr "확인 중: “"
 
 #: src/components/collection-write-status.tsx
 msgid "Conflicting changes"
-msgstr ""
+msgstr "충돌하는 변경 사항"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
-msgstr ""
+msgstr "연결됨"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
-msgstr ""
+msgstr "연결 중"
 
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "연결 중…"
 
 #: src/app/collection-settings.tsx
 msgctxt "mdbase authority status"
 msgid "Connection"
-msgstr ""
+msgstr "연결"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
-msgstr ""
+msgstr "연결 설정"
 
 #: src/components/expression-builder.tsx
 msgid "contains"
-msgstr ""
+msgstr "포함"
 
 #: src/app/search-match-context.ts
 msgid "contexts"
-msgstr ""
+msgstr "컨텍스트"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -1523,437 +1539,445 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
-msgstr ""
+msgstr "컨텍스트"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
-msgstr ""
+msgstr "타임라인에서 계속"
+
+#: src/i18n/editor-phrases.ts
+msgid "Control character"
+msgstr "제어 문자"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
-msgstr ""
+msgstr "{0}을(를) 노트로 변환"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
-msgstr ""
+msgstr "노트로 변환"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
-msgstr ""
+msgstr "복사"
 
 #: src/components/task-record-file.tsx
 msgid "Copy "
-msgstr ""
+msgstr "복사 "
 
 #. placeholder {0}: view?.name
 #: src/app/view-editor.tsx
 msgid "Copy {0}"
-msgstr ""
+msgstr "{0} 복사"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
 msgid "Copy path"
-msgstr ""
+msgstr "경로 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy task link"
-msgstr ""
+msgstr "작업 링크 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy title"
-msgstr ""
+msgstr "제목 복사"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
-msgstr ""
+msgstr "예약하기 전에 규칙을 수정하세요."
 
 #. placeholder {0}: Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")
 #. placeholder {1}: dragged.task.title
 #. placeholder {2}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not {0} “{1}”. {2}"
-msgstr ""
+msgstr "“{1}”을(를) {0}하지 못했습니다. {2}"
 
 #: src/components/private-account-settings.tsx
 msgid "Could not check account recovery. Check the connection and try again."
-msgstr ""
+msgstr "계정 복구를 확인하지 못했습니다. 연결을 확인한 후 다시 시도하세요."
 
 #: src/components/held-edits.tsx
 msgid "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again."
-msgstr ""
+msgstr "선택 결과를 확인하지 못했습니다. 다시 시도하기 전에 새로고침하고 현재 보호된 편집 내용을 검토하세요."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not move “{0}”. {1}"
-msgstr ""
+msgstr "“{0}”을(를) 이동하지 못했습니다. {1}"
 
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
-msgstr ""
+msgstr "다시 연결하지 못했습니다. 다시 시도하거나 연결 설정을 확인하세요."
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Could not save the default mode on this device."
-msgstr ""
+msgstr "이 기기에 기본 모드를 저장하지 못했습니다."
 
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
-msgstr ""
+msgstr "기본 뷰를 추가하지 못했습니다."
 
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
-msgstr ""
+msgstr "복사하지 못했습니다."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
 msgid "Couldn't load your views."
-msgstr ""
+msgstr "뷰를 불러오지 못했습니다."
 
 #: src/components/recurrence-field.tsx
 msgid "Count the interval from when you finish the task."
-msgstr ""
+msgstr "작업을 완료한 시점부터 간격을 계산합니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create {selectedReviewCount} task notes"
-msgstr ""
+msgstr "작업 노트 {selectedReviewCount}개 만들기"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
-msgstr ""
+msgstr "{0}의 하위 작업 만들기"
 
 #: src/components/task-model-settings.tsx
 msgid "Create a task file for each date"
-msgstr ""
+msgstr "날짜마다 작업 파일 만들기"
 
 #: src/app/app-shell.tsx
 msgid "Create a view"
-msgstr ""
+msgstr "뷰 만들기"
 
 #: src/components/task-model-settings.tsx
 msgid "Create files ahead"
-msgstr ""
+msgstr "파일 미리 만들기"
 
 #: src/app/view-editor.tsx
 msgid "Create saved view"
-msgstr ""
+msgstr "저장된 뷰 만들기"
 
 #: src/components/task-actions.tsx
 msgid "Create subtask"
-msgstr ""
+msgstr "하위 작업 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task"
-msgstr ""
+msgstr "작업 만들기"
 
 #. placeholder {0}: node.text
 #: src/app/scratchpad-screen.tsx
 msgid "Create task for {0}"
-msgstr ""
+msgstr "{0} 작업 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task notes"
-msgstr ""
+msgstr "작업 노트 만들기"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Create the next after completion"
-msgstr ""
+msgstr "완료 후 다음 항목 만들기"
 
 #: src/app/views-screen.tsx
 msgid "Create view"
-msgstr ""
+msgstr "뷰 만들기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Created"
-msgstr ""
+msgstr "만들었습니다"
 
 #. placeholder {0}: converted.task.title
 #: src/app/scratchpad-screen.tsx
 msgid "Created “{0}”"
-msgstr ""
+msgstr "“{0}”을(를) 만들었습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
-msgstr ""
+msgstr "만드는 중…"
+
+#: src/i18n/editor-phrases.ts
+msgid "current match"
+msgstr "현재 일치 항목"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
-msgstr ""
+msgstr "현재 노트"
 
 #: src/i18n/ui-copy.ts
 msgid "current scratchpad"
-msgstr ""
+msgstr "현재 스크래치패드"
 
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
-msgstr ""
+msgstr "사용자 지정 필터"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Daily"
-msgstr ""
+msgstr "매일"
 
 #: src/app/more-screen.tsx
 msgid "Dark"
-msgstr ""
+msgstr "어둡게"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
-msgstr ""
+msgstr "날짜"
 
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
-msgstr ""
+msgstr "날짜 및 일정"
 
 #: src/components/task-actions.tsx
 msgid "Dates"
-msgstr ""
+msgstr "날짜"
 
 #: src/components/task-capture.tsx
 msgid "Dates and estimate"
-msgstr ""
+msgstr "날짜 및 예상 시간"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Day"
-msgstr ""
+msgstr "일"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
-msgstr ""
+msgstr "하루 시작"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day ends"
-msgstr ""
+msgstr "하루 종료"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Days"
-msgstr ""
+msgstr "일"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
-msgstr ""
+msgstr "새 노트의 기본 모드"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
-msgstr ""
+msgstr "기본 우선순위"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Default Scratchpad mode"
-msgstr ""
+msgstr "기본 스크래치패드 모드"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default status"
-msgstr ""
+msgstr "기본 상태"
 
 #: src/app/view-editor-form.tsx
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
-msgstr ""
+msgstr "간단한 필터 조건에서 추론한 기본값은 작업을 만들 때 추가됩니다."
 
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
-msgstr ""
+msgstr "삭제"
 
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
-msgstr ""
+msgstr "“{name}”을(를) 삭제할까요?"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr ""
+msgstr "항목 삭제"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete note"
-msgstr ""
+msgstr "노트 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
-msgstr ""
+msgstr "반복 작업 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete task"
-msgstr ""
+msgstr "작업 삭제"
 
 #: src/components/task-actions.tsx
 msgid "Delete this repeating task and all of its occurrences?"
-msgstr ""
+msgstr "이 반복 작업과 모든 반복 항목을 삭제할까요?"
 
 #: src/components/task-actions.tsx
 msgid "Delete this task?"
-msgstr ""
+msgstr "이 작업을 삭제할까요?"
 
 #: src/app/view-editor.tsx
 msgid "Delete view"
-msgstr ""
+msgstr "뷰 삭제"
 
 #. placeholder {0}: pendingDeletion.title
 #. placeholder {0}: pendingDeletion.title.trim()
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Deleted “{0}”"
-msgstr ""
+msgstr "“{0}”을(를) 삭제했습니다."
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr ""
+msgstr "“{0}”을(를) 삭제했습니다. 30초 동안 실행 취소할 수 있습니다."
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
-msgstr ""
+msgstr "삭제 결과 확인 필요"
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
-msgstr ""
+msgstr "삭제 대기 중"
 
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
-msgstr ""
+msgstr "의존성"
 
 #: src/app/view-editor-form.tsx
 msgid "Descending"
-msgstr ""
+msgstr "내림차순"
 
 #: src/components/reminder-editor.tsx
 msgid "Description"
-msgstr ""
+msgstr "설명"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
-msgstr ""
+msgstr "분리"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Detach {0}"
-msgstr ""
+msgstr "{0} 분리"
 
 #: src/components/task-attachments.tsx
 msgid "Detach from task"
-msgstr ""
+msgstr "작업에서 분리"
 
 #: src/components/task-attachments.tsx
 msgid "Detaching keeps the image file in your collection."
-msgstr ""
+msgstr "분리해도 이미지 파일은 컬렉션에 유지됩니다."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
-msgstr ""
+msgstr "기기 설정"
 
 #: src/components/reminder-editor.tsx
 msgid "Direction"
-msgstr ""
+msgstr "방향"
 
 #: src/app/notification-label.ts
 msgid "Disabled in system settings"
-msgstr ""
+msgstr "시스템 설정에서 비활성화됨"
 
 #: src/components/task-model-settings.tsx
 msgid "Discard"
-msgstr ""
+msgstr "폐기"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard and load latest"
-msgstr ""
+msgstr "폐기하고 최신 버전 불러오기"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
-msgstr ""
+msgstr "변경 사항 폐기"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes?"
-msgstr ""
+msgstr "변경 사항을 폐기할까요?"
 
 #: src/components/global-task-capture.tsx
 msgid "Discard draft"
-msgstr ""
+msgstr "초안 폐기"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard my edit"
-msgstr ""
+msgstr "내 편집 내용 폐기"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Discard recovered edits"
-msgstr ""
+msgstr "복구된 편집 내용 폐기"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
-msgstr ""
+msgstr "복구 정보 폐기"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr ""
+msgstr "폐기하면 저장된 복구 정보가 모두 제거되고 이 컬렉션의 연결이 해제됩니다. 이미 완료되었을 수 있는 삭제는 되돌리지 않습니다."
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 msgid "Dismiss"
-msgstr ""
+msgstr "닫기"
 
 #: src/components/task-completed-notice.tsx
 msgid "Dismiss completion notice"
-msgstr ""
+msgstr "완료 알림 닫기"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
-msgstr ""
+msgstr "작업 추가 확인 닫기"
 
 #: src/app/view-editor-form.tsx
 msgid "Displayed properties"
-msgstr ""
+msgstr "표시 속성"
 
 #: src/components/expression-builder.tsx
 msgid "does not contain"
-msgstr ""
+msgstr "포함하지 않음"
 
 #: src/app/more-screen.tsx
 msgid "Does TaskNotes work offline?"
-msgstr ""
+msgstr "TaskNotes는 오프라인에서도 작동하나요?"
 
 #: src/app/views-screen.tsx
 msgid "done"
-msgstr ""
+msgstr "완료"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
-msgstr ""
+msgstr "완료"
 
 #: src/components/assignee-editor.tsx
 msgid "Done choosing assignees"
-msgstr ""
+msgstr "담당자 선택 완료"
 
 #: src/i18n/ui-copy.ts
 msgid "down"
-msgstr ""
+msgstr "아래"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
-msgstr ""
+msgstr "작업 초안"
 
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
-msgstr ""
+msgstr "여기에 놓기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images here, paste them, upload files, or take a photo."
-msgstr ""
+msgstr "이미지를 여기에 놓거나 붙여넣고, 파일을 업로드하거나 사진을 찍으세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images to add them"
-msgstr ""
+msgstr "이미지를 놓아 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "due"
-msgstr ""
+msgstr "마감"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/task-screen.tsx
@@ -1964,62 +1988,62 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Due"
-msgstr ""
+msgstr "마감"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr ""
+msgstr "마감일(설정 안 됨)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-editor-draft.ts
 #: src/i18n/presentation.ts
 msgid "Due {0}"
-msgstr ""
+msgstr "마감 {0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr ""
+msgstr "마감 및 예정"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
-msgstr ""
+msgstr "마감일"
 
 #: src/components/task-actions.tsx
 msgid "Due set"
-msgstr ""
+msgstr "마감일 설정됨"
 
 #: src/components/task-actions.tsx
 msgid "Due today"
-msgstr ""
+msgstr "오늘 마감"
 
 #: src/components/task-actions.tsx
 msgid "Due tomorrow"
-msgstr ""
+msgstr "내일 마감"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
-msgstr ""
+msgstr "복제"
 
 #: src/app/view-editor.tsx
 msgid "Duplicate saved view"
-msgstr ""
+msgstr "저장된 뷰 복제"
 
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
-msgstr ""
+msgstr "각 날짜는 반복 작업에서 추적합니다. 요청한 경우에만 별도의 작업 파일을 만듭니다."
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
-msgstr ""
+msgstr "매월"
 
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
-msgstr ""
+msgstr "앞에 있는 규칙이 우선 적용됩니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
-msgstr ""
+msgstr "편집"
 
 #. placeholder {0}: detail.label
 #. placeholder {0}: item.key
@@ -2028,949 +2052,977 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Edit {0}"
-msgstr ""
+msgstr "{0} 편집"
 
 #: src/components/task-actions.tsx
 msgid "Edit dates and reminders"
-msgstr ""
+msgstr "날짜 및 리마인더 편집"
 
 #: src/components/task-actions.tsx
 msgid "Edit details"
-msgstr ""
+msgstr "세부정보 편집"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
-msgstr ""
+msgstr "편집 내용이 저장되지 않음"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
-msgstr ""
+msgstr "패턴 편집"
 
 #: src/components/task-property-editor.tsx
 msgid "Edit property"
-msgstr ""
+msgstr "속성 편집"
 
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
-msgstr ""
+msgstr "반복 작업 편집"
 
 #: src/app/view-editor.tsx
 msgid "Edit saved view"
-msgstr ""
+msgstr "저장된 뷰 편집"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Edit view"
-msgstr ""
+msgstr "뷰 편집"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr ""
+msgstr "편집 가능"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
-msgstr ""
+msgstr "{0} 편집기"
 
 #: src/app/task-screen.tsx
 msgid "Editor mode"
-msgstr ""
+msgstr "편집기 모드"
 
 #: src/app/scratchpad-screen.tsx
 msgid "empty"
-msgstr ""
+msgstr "비어 있음"
 
 #: src/i18n/ui-copy.ts
 msgid "empty item"
-msgstr ""
+msgstr "빈 항목"
 
 #: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
-msgstr ""
+msgstr "빈 작업"
 
 #: src/components/private-account-settings.tsx
 msgid "Enable strict mode"
-msgstr ""
+msgstr "엄격 모드 활성화"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
-msgstr ""
+msgstr "종료"
 
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
-msgstr ""
+msgstr "CEL 표현식을 입력하세요."
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
-msgstr ""
+msgstr "예상 시간(분)"
 
 #: src/app/task-editor-draft.ts
 msgid "Estimate and work sessions"
-msgstr ""
+msgstr "예상 시간 및 작업 세션"
 
 #: src/components/recurrence-field.tsx
 msgid "Every"
-msgstr ""
+msgstr "매"
 
 #: src/components/expression-builder.tsx
 msgid "Every task will be included"
-msgstr ""
+msgstr "모든 작업이 포함됩니다"
 
 #: src/app/view-editor-form.tsx
 msgid "Every view in this file"
-msgstr ""
+msgstr "이 파일의 모든 뷰"
 
 #: src/i18n/ui-copy.ts
 msgid "Expand"
-msgstr ""
+msgstr "펼치기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Expand image"
-msgstr ""
+msgstr "이미지 펼치기"
 
 #: src/app/view-editor-form.tsx
 msgid "Expression"
-msgstr ""
+msgstr "표현식"
 
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
-msgstr ""
+msgstr "표현식 또는 필터 YAML"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
-msgstr ""
+msgstr "외부 앱"
 
 #: src/components/task-capture.tsx
 msgid "Extra context for the task"
-msgstr ""
+msgstr "작업의 추가 컨텍스트"
 
 #: src/app/view-editor-form.tsx
 msgid "Fields shown"
-msgstr ""
+msgstr "표시할 필드"
 
 #: src/components/task-attachments.tsx
 msgid "File missing"
-msgstr ""
+msgstr "파일 없음"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File name"
-msgstr ""
+msgstr "파일 이름"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File path"
-msgstr ""
+msgstr "파일 경로"
 
 #: src/app/view-editor-form.tsx
 msgid "Filter"
-msgstr ""
+msgstr "필터"
 
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
-msgstr ""
+msgstr "필터 조건"
 
 #: src/components/expression-builder.tsx
 msgid "Filter editor mode"
-msgstr ""
+msgstr "필터 편집기 모드"
 
 #: src/components/expression-builder.tsx
 msgid "Filter expression"
-msgstr ""
+msgstr "필터 표현식"
 
 #: src/components/expression-builder.tsx
 msgid "Filter is valid"
-msgstr ""
+msgstr "필터가 유효합니다"
 
 #: src/components/expression-builder.tsx
 msgid "Filter property"
-msgstr ""
+msgstr "필터 속성"
 
 #: src/components/expression-builder.tsx
 msgid "Filter value"
-msgstr ""
+msgstr "필터 값"
 
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
-msgstr ""
+msgstr "뷰 필터링"
+
+#: src/i18n/editor-phrases.ts
+msgid "Find"
+msgstr "찾기"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
-msgstr ""
+msgstr "작업 찾기"
 
 #: src/app/search-screen.tsx
 msgid "Find a task."
-msgstr ""
+msgstr "작업을 찾으세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
-msgstr ""
+msgstr "컬렉션 전체에서 작업 검색"
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
-msgstr ""
+msgstr "새로고침하기 전에 뷰 편집을 완료하거나 편집기를 닫으세요."
 
 #: src/app/repository-context.tsx
 #: src/components/task-capture.tsx
 msgid "Finish or discard the task you are adding before reloading."
-msgstr ""
+msgstr "새로고침하기 전에 추가 중인 작업을 완료하거나 폐기하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Finish strict mode on this device"
-msgstr ""
+msgstr "이 기기에서 엄격 모드 완료"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Finish the note action in progress before reloading."
-msgstr ""
+msgstr "새로고침하기 전에 진행 중인 노트 작업을 완료하세요."
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
-msgstr ""
+msgstr "완료-완료"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to start"
-msgstr ""
+msgstr "완료-시작"
 
 #: src/app/notification-label.ts
 msgid "Firebase setup required"
-msgstr ""
+msgstr "Firebase 설정 필요"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr ""
+msgstr "첫 번째"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
-msgstr ""
+msgstr "첫 번째"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
-msgstr ""
+msgstr "고정 날짜 및 시간"
 
 #: src/app/command-palette-model.ts
 msgid "Focused task"
-msgstr ""
+msgstr "포커스된 작업"
+
+#: src/i18n/editor-phrases.ts
+msgid "Fold line"
+msgstr "줄 접기"
+
+#: src/i18n/editor-phrases.ts
+msgid "folded code"
+msgstr "접힌 코드"
+
+#: src/i18n/editor-phrases.ts
+msgid "Folded lines"
+msgstr "접힌 줄"
 
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
-msgstr ""
+msgstr "다가오는 기간 기준"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
-msgstr ""
+msgstr "예: P1D"
 
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
-msgstr ""
+msgstr "비밀번호를 잊으셨나요?"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
-msgstr ""
+msgstr "수식"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas and source details for this saved view."
-msgstr ""
+msgstr "이 저장된 뷰의 수식 및 원본 세부정보."
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr ""
+msgstr "네 번째"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
-msgstr ""
+msgstr "네 번째"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
-msgstr ""
+msgstr "부터"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
-msgstr ""
+msgstr "작업 양식에서"
 
 #: src/app/view-editor-form.tsx
 msgid "Full schedule"
-msgstr ""
+msgstr "전체 일정"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Future horizon"
-msgstr ""
+msgstr "미래 범위"
 
 #: src/components/dependency-editor.tsx
 msgid "Gap"
-msgstr ""
+msgstr "간격"
+
+#: src/i18n/editor-phrases.ts
+msgid "go"
+msgstr "이동"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
-msgstr ""
+msgstr "편집하기 전에 돌아가서 컬렉션을 새로고침하세요."
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
-msgstr ""
+msgstr "돌아가서 컬렉션을 새로고침하세요."
 
 #: src/app/command-palette-model.ts
 msgid "Go to"
-msgstr ""
+msgstr "이동"
+
+#: src/i18n/editor-phrases.ts
+msgid "Go to line"
+msgstr "줄로 이동"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
-msgstr ""
+msgstr "이동, 작업 실행 또는 작업 찾기…"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
-msgstr ""
+msgstr "그룹"
 
 #: src/app/view-editor-form.tsx
 msgid "Group & sort"
-msgstr ""
+msgstr "그룹 및 정렬"
 
 #: src/app/view-editor-form.tsx
 msgid "Group by"
-msgstr ""
+msgstr "그룹 기준"
 
 #: src/app/view-editor-form.tsx
 msgid "Group direction"
-msgstr ""
+msgstr "그룹 방향"
 
 #. placeholder {0}: humanize(draft.groupProperty)
 #: src/app/view-editor-form.tsx
 msgid "Grouped by {0}"
-msgstr ""
+msgstr "{0} 기준으로 그룹화됨"
 
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
-msgstr ""
+msgstr "그룹화된 열"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
-msgstr ""
+msgstr "제목"
 
 #: src/i18n/pilot-fixture.tsx
 msgctxt "translation pilot rich-text example"
 msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr ""
+msgstr "안녕하세요, {name}님. <0>문서</0>를 읽어보세요."
 
 #: src/app/more-screen.tsx
 msgid "Help"
-msgstr ""
+msgstr "도움말"
 
 #: src/components/task-capture.tsx
 msgid "Hide details"
-msgstr ""
+msgstr "세부정보 숨기기"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
-msgstr ""
+msgstr "설치 단계 숨기기"
 
 #: src/app/task-time-tracking.tsx
 msgid "Hide sessions"
-msgstr ""
+msgstr "세션 숨기기"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Home"
-msgstr ""
+msgstr "홈"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Hour"
-msgstr ""
+msgstr "시간"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Hours"
-msgstr ""
+msgstr "시간"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
-msgstr ""
+msgstr "작업 저장 방식"
 
 #: src/app/more-screen.tsx
 msgid "How to install"
-msgstr ""
+msgstr "설치 방법"
 
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
-msgstr ""
+msgstr "복구 키를 저장했습니다"
 
 #: src/components/private-account-settings.tsx
 msgid "I understand that existing devices must finish applying strict mode."
-msgstr ""
+msgstr "기존 기기에서 엄격 모드 적용을 완료해야 한다는 점을 확인했습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
-msgstr ""
+msgstr "이미지 작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image could not be loaded"
-msgstr ""
+msgstr "이미지를 불러오지 못했습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image file is unavailable"
-msgstr ""
+msgstr "이미지 파일을 사용할 수 없습니다."
 
 #: src/components/markdown-preview.tsx
 msgid "Image preview unavailable"
-msgstr ""
+msgstr "이미지 미리보기를 사용할 수 없습니다."
 
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
-msgstr ""
+msgstr "오프라인에서는 이미지를 사용할 수 없습니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
-msgstr ""
+msgstr "탐색 메뉴에 있음"
 
 #: src/components/task-property-editor.tsx
 msgid "In one week"
-msgstr ""
+msgstr "1주 후"
 
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
-msgstr ""
+msgstr "완료된 반복 항목을 포함합니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Include skipped occurrences."
-msgstr ""
+msgstr "건너뛴 반복 항목을 포함합니다."
 
 #: src/components/expression-builder.tsx
 msgid "Include tasks when"
-msgstr ""
+msgstr "다음 조건에 해당하는 작업 포함"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Indent"
-msgstr ""
+msgstr "들여쓰기"
 
 #: src/components/task-attachments.tsx
 msgid "Insert"
-msgstr ""
+msgstr "삽입"
 
 #: src/components/task-attachments.tsx
 msgid "Insert in Notes"
-msgstr ""
+msgstr "노트에 삽입"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
-msgstr ""
+msgstr "앱 설치"
 
 #: src/app/more-screen.tsx
 msgid "Install on this device"
-msgstr ""
+msgstr "이 기기에 설치"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
-msgstr ""
+msgstr "TaskNotes 설치"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
-msgstr ""
+msgstr "홈 화면에서 열 수 있도록 TaskNotes를 설치하세요."
 
 #: src/app/model-setup-screen.tsx
 msgid "Installing TaskNotes setup…"
-msgstr ""
+msgstr "TaskNotes 설정 설치 중…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
-msgstr ""
+msgstr "반복 규칙이 올바르지 않습니다."
 
 #: src/components/expression-builder.tsx
 msgid "is"
-msgstr ""
+msgstr "같음"
 
 #: src/components/expression-builder.tsx
 msgid "is after"
-msgstr ""
+msgstr "이후"
 
 #: src/components/expression-builder.tsx
 msgid "is before"
-msgstr ""
+msgstr "이전"
 
 #: src/components/expression-builder.tsx
 msgid "is empty"
-msgstr ""
+msgstr "비어 있음"
 
 #: src/components/expression-builder.tsx
 msgid "is not"
-msgstr ""
+msgstr "같지 않음"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
-msgstr ""
+msgstr "비어 있지 않음"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
-msgstr ""
+msgstr "ISO 8601 값"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Italic"
-msgstr ""
+msgstr "기울임꼴"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr ""
+msgstr "항목"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
-msgstr ""
+msgstr "프로젝트로 이동"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep a rolling window"
-msgstr ""
+msgstr "이동 기간 유지"
 
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
-msgstr ""
+msgstr "작업 계속 추가"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep as note"
-msgstr ""
+msgstr "노트로 유지"
 
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
-msgstr ""
+msgstr "편집 내용을 파일로 보관하려면 대신 둘 다 유지하세요."
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
-msgstr ""
+msgstr "계속 편집"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep files for past dates"
-msgstr ""
+msgstr "지난 날짜의 파일 유지"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
-msgstr ""
+msgstr "반복 날짜마다 개별 Markdown 노트를 유지합니다."
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
-msgstr ""
+msgstr "편집 내용을 유지하려면 대신 내 편집 내용을 유지하세요."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep my edit"
-msgstr ""
+msgstr "내 편집 내용 유지"
 
 #: src/app/task-screen.tsx
 msgid "Keep or discard your unsaved edit before making another change."
-msgstr ""
+msgstr "다른 변경을 하기 전에 저장되지 않은 편집 내용을 유지하거나 폐기하세요."
 
 #: src/app/app-shell.tsx
 msgid "Keep saved recovery"
-msgstr ""
+msgstr "저장된 복구 정보 유지"
 
 #: src/components/task-actions.tsx
 msgid "Keep task"
-msgstr ""
+msgstr "작업 유지"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep the gap between scheduled and due dates"
-msgstr ""
+msgstr "예정일과 마감일 사이 간격 유지"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep the planned dates, even if you finish late."
-msgstr ""
+msgstr "늦게 완료하더라도 계획된 날짜를 유지합니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
-msgstr ""
+msgstr "이 뷰에 빠른 추가 입력란 유지"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
-msgstr ""
+msgstr "계속 작성"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep your edit to apply it on top of the latest version, or discard it and load the latest version."
-msgstr ""
+msgstr "최신 버전에 편집 내용을 적용하려면 편집 내용을 유지하고, 최신 버전을 불러오려면 폐기하세요."
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "키보드 단축키"
 
 #: src/i18n/language-settings.tsx
 msgid "Language"
-msgstr ""
+msgstr "언어"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr ""
+msgstr "마지막"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
-msgstr ""
+msgstr "마지막"
 
 #: src/app/views-screen.tsx
 msgid "Last available result"
-msgstr ""
+msgstr "마지막으로 사용 가능한 결과"
 
 #: src/components/recurrence-field.tsx
 msgid "Last date"
-msgstr ""
+msgstr "마지막 날짜"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr ""
+msgstr "마지막 날"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
-msgstr ""
+msgstr "마지막 날"
 
 #. placeholder {0}: lastRefresh.scanned.toLocaleString()
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "마지막 새로고침에서 {1}ms 동안 레코드 {0}개를 확인했습니다."
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr ""
+msgstr "마지막 새로고침에서 {elapsed}ms 동안 레코드 {scanned, plural, other {#개}}를 확인했습니다."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
-msgstr ""
+msgstr "나중"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr ""
+msgstr "레이아웃"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr ""
+msgstr "레이아웃: {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "자세히 알아보기"
 
 #: src/app/more-screen.tsx
 msgid "Light"
-msgstr ""
+msgstr "밝게"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "링크 형식"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
-msgstr ""
+msgstr "내 담당 작업을 사용하려면 계정을 사람 레코드에 연결하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Linked"
-msgstr ""
+msgstr "연결됨"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "링크 및 시간 추적"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
-msgstr ""
+msgstr "목록"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
-msgstr ""
+msgstr "작업 더 불러오기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Load older"
-msgstr ""
+msgstr "이전 항목 불러오기"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks"
-msgstr ""
+msgstr "나머지 작업 불러오기"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks to change manual order."
-msgstr ""
+msgstr "수동 순서를 변경하려면 나머지 작업을 불러오세요."
 
 #. placeholder {0}: presentedExecution.rows.length
 #. placeholder {1}: presentedExecution.totalCount
 #. placeholder {2}: manualOrder ? t({ message: "Load remaining tasks to change manual order." }) : ""
 #: src/app/views-screen.tsx
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
-msgstr ""
+msgstr "일치하는 작업 {1}개 중 {0}개를 불러왔습니다. 섹션 수는 불러온 작업만 포함합니다. {2}"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr ""
+msgstr "이미지 불러오는 중…"
 
 #: src/components/task-attachments.tsx
 msgid "Loading images…"
-msgstr ""
+msgstr "이미지 불러오는 중…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
-msgstr ""
+msgstr "더 불러오는 중…"
 
 #: src/components/assignee-editor.tsx
 msgid "Loading people…"
-msgstr ""
+msgstr "사람 불러오는 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading previous notes…"
-msgstr ""
+msgstr "이전 노트 불러오는 중…"
 
 #: src/components/loading.tsx
 msgid "Loading tasks"
-msgstr ""
+msgstr "작업 불러오는 중"
 
 #: src/app/views-screen.tsx
 msgid "Loading tasks…"
-msgstr ""
+msgstr "작업 불러오는 중…"
 
 #: src/app/search-screen.tsx
 msgid "Loading your person identity…"
-msgstr ""
+msgstr "사용자 사람 정보 불러오는 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
-msgstr ""
+msgstr "불러오는 중…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "이 기기에서 복구 키 잠그기"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "이 기기에서 잠김"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
-msgstr ""
+msgstr "컬렉션에서 찾는 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
-msgstr ""
+msgstr "작업 만들기"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
-msgstr ""
+msgstr "반복 항목 노트 만들기"
 
 #: src/app/app-shell.tsx
 msgid "Manage"
-msgstr ""
+msgstr "관리"
 
 #: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/views-screen.tsx
 msgid "Manage views"
-msgstr ""
+msgstr "뷰 관리"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views-screen.tsx
 msgid "Manual order"
-msgstr ""
+msgstr "수동 순서"
 
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
-msgstr ""
+msgstr "수동 순서가 활성화되었습니다. 작업에 드래그 핸들이 표시됩니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark complete"
-msgstr ""
+msgstr "완료로 표시"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark incomplete"
-msgstr ""
+msgstr "미완료로 표시"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
-msgstr ""
+msgstr "반복 항목을 미완료로 표시"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Mark open"
-msgstr ""
+msgstr "미완료로 표시"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Markdown 파일"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
 msgid "Markdown link"
-msgstr ""
+msgstr "Markdown 링크"
 
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
-msgstr ""
+msgstr "Markdown 링크"
+
+#: src/i18n/editor-phrases.ts
+msgid "match case"
+msgstr "대소문자 구분"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
-msgstr ""
+msgstr "일치 방식"
 
 #. placeholder {0}: matches.join(", ")
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
-msgstr ""
+msgstr "{0}에서 일치"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
-msgstr ""
+msgstr "mdbase 컬렉션"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase에서 엄격 모드 적용을 확인했습니다. 이 기기에서 복구 키가 제거되었습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase에서 복구 대상에 엄격 모드가 적용되었음을 확인했습니다."
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-msgstr ""
+msgstr "TaskNotes가 닫혀 있어도 mdbase가 리마인더를 전달합니다. 알림에는 작업 내용이 포함되지 않습니다."
 
 #: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
-msgstr ""
+msgstr "mdbase가 권한 원본입니다. 변경하려면 연결이 필요합니다."
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase는 작업을 이식 가능한 Markdown 파일로 보관하며 호환 앱이 이를 공통된 방식으로 이해하도록 합니다. mdbase에서 컬렉션을 선택하고 TaskNotes의 접근을 승인할 수 있습니다. 컬렉션은 mdbase에서 호스팅하거나 연결된 컴퓨터에서 제공될 수 있습니다."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase에서 편집 내용을 보호했습니다."
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase에서 변경을 거부했습니다."
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "mdbase 업데이트"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "mdbase가 업그레이드되었습니다. 계속하려면 TaskNotes를 한 번 승인하세요. 컬렉션과 노트는 변경되지 않았습니다."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
-msgstr ""
+msgstr "자정"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
-msgstr ""
+msgstr "분"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
-msgstr ""
+msgstr "미니 캘린더"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Minute"
-msgstr ""
+msgstr "분"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr ""
+msgstr "분"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr ""
+msgstr "월"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Monthly"
-msgstr ""
+msgstr "매월"
 
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
-msgstr ""
+msgstr "{0} 추가 작업"
 
 #: src/components/task-actions.tsx
 msgid "More task actions"
-msgstr ""
+msgstr "작업 추가 작업"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
-msgstr ""
+msgstr "이동"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move"
-msgstr ""
+msgstr "이동"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
-msgstr ""
+msgstr "{0} 이동"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
-msgstr ""
+msgstr "{0}을(를) 앞으로 이동"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} later"
-msgstr ""
+msgstr "{0}을(를) 뒤로 이동"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "{0} 이동. 드래그하거나 위쪽 및 아래쪽 화살표 키를 사용하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} down"
-msgstr ""
+msgstr "{label} 아래로 이동"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} up"
-msgstr ""
+msgstr "{label} 위로 이동"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "모두 오늘로 이동"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "보관된 작업 파일을 폴더로 이동"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
-msgstr ""
+msgstr "날짜를 하루 늦추기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
-msgstr ""
+msgstr "포커스된 항목 이동"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
-msgstr ""
+msgstr "드래그 핸들을 사용하려면 수동 순서를 첫 번째 위치로 옮기세요."
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "이동됨 "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
-msgstr ""
+msgstr "{0}을(를) {1} 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} after {1}."
-msgstr ""
+msgstr "{0}을(를) {1} 뒤로 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} before {1}."
-msgstr ""
+msgstr "{0}을(를) {1} 앞으로 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} down."
-msgstr ""
+msgstr "{0}을(를) 아래로 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
@@ -2978,61 +3030,61 @@ msgstr ""
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
-msgstr ""
+msgstr "{0}을(를) {1}(으)로 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
-msgstr ""
+msgstr "{0}을(를) 위로 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
-msgstr ""
+msgstr "{0}을(를) 이동했습니다."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
 msgid "Moving {0}."
-msgstr ""
+msgstr "{0} 이동 중."
 
 #: src/app/view-editor-form.tsx
 #: src/i18n/view-presentation.ts
 msgid "Name"
-msgstr ""
+msgstr "이름"
 
 #: src/app/view-editor-form.tsx
 msgid "Name this view and choose its layout."
-msgstr ""
+msgstr "이 뷰의 이름과 레이아웃을 선택하세요."
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
-msgstr ""
+msgstr "중첩 그룹"
 
 #: src/components/expression-builder.tsx
 msgid "Nested match mode"
-msgstr ""
+msgstr "중첩 일치 방식"
 
 #: src/components/recurrence-field.tsx
 msgid "Never"
-msgstr ""
+msgstr "안 함"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "새 기기는 기존 기기의 승인을 받아야 합니다. 비밀번호와 복구 키를 통한 잠금 해제는 중단됩니다. 컬렉션에서 권한 취소와 키 재설정을 적용할 때까지 이전 비밀번호와 키 자료를 가진 사람이 이전 콘텐츠를 읽을 수 있습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
-msgstr ""
+msgstr "새 노트"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "새 복구 비밀번호"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
-msgstr ""
+msgstr "새 하위 작업"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
@@ -3040,566 +3092,578 @@ msgstr ""
 #: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
-msgstr ""
+msgstr "새 작업"
 
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "새 작업({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr ""
+msgstr "새 작업 제목"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "New tasks"
-msgstr ""
+msgstr "새 작업"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "새 작업, 반복 작업 및 보관"
 
 #: src/app/view-editor.tsx
 msgid "New view"
-msgstr ""
+msgstr "새 뷰"
+
+#: src/i18n/editor-phrases.ts
+msgid "next"
+msgstr "다음"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
-msgstr ""
+msgstr "다음 달"
 
 #: src/app/full-calendar-view.tsx
 msgid "Next period"
-msgstr ""
+msgstr "다음 기간"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "다음 작업"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "다음 주"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "다음: "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
 msgid "Next: {0}"
-msgstr ""
+msgstr "다음: {0}"
 
 #: src/i18n/view-presentation.ts
 msgid "No"
-msgstr ""
+msgstr "아니요"
 
 #: src/i18n/view-presentation.ts
 msgid "No {label}"
-msgstr ""
+msgstr "{label} 없음"
 
 #: src/app/views/projects-view.tsx
 msgid "No active projects"
-msgstr ""
+msgstr "활성 프로젝트가 없습니다."
 
 #: src/app/view-empty-state.tsx
 msgid "No archived tasks here."
-msgstr ""
+msgstr "보관된 작업이 없습니다."
 
 #: src/app/view-empty-state.tsx
 msgid "No cached tasks for this view."
-msgstr ""
+msgstr "이 뷰에 캐시된 작업이 없습니다."
 
 #: src/app/view-editor-form.tsx
 msgid "No computed properties."
-msgstr ""
+msgstr "계산된 속성이 없습니다."
 
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
-msgstr ""
+msgstr "날짜 없음"
 
 #: src/app/task-editor-draft.ts
 msgid "No dates"
-msgstr ""
+msgstr "날짜 없음"
 
 #: src/app/view-editor-form.tsx
 msgid "No formulas"
-msgstr ""
+msgstr "수식 없음"
 
 #: src/app/view-editor-form.tsx
 msgid "No grouping"
-msgstr ""
+msgstr "그룹화 안 함"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "일치하는 명령이 없습니다."
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
-msgstr ""
+msgstr "할당된 작업 중 일치하는 항목이 없습니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "No matching views"
-msgstr ""
+msgstr "일치하는 뷰가 없습니다."
 
 #: src/components/assignee-editor.tsx
 msgid "No other people are available to assign."
-msgstr ""
+msgstr "할당할 수 있는 다른 사람이 없습니다."
 
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
-msgstr ""
+msgstr "우선순위 없음"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
-msgstr ""
+msgstr "투영이 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "이 기기에 보관된 복구 키가 없습니다."
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
-msgstr ""
+msgstr "리마인더가 설정되지 않았습니다."
 
 #: src/app/task-editor-draft.ts
 msgid "No repeat or reminder"
-msgstr ""
+msgstr "반복 또는 리마인더 없음"
 
 #: src/app/views/kanban-columns.ts
 msgid "No status"
-msgstr ""
+msgstr "상태 없음"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "작업 없음"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
-msgstr ""
+msgstr "이 기간에 작업이 없습니다."
 
 #: src/app/view-editor.tsx
 msgid "No tasks match this draft."
-msgstr ""
+msgstr "이 초안과 일치하는 작업이 없습니다."
 
 #: src/app/view-empty-state.tsx
 msgid "No tasks match this view"
-msgstr ""
+msgstr "이 뷰와 일치하는 작업이 없습니다."
 
 #: src/app/search-screen.tsx
 msgid "No tasks matched."
-msgstr ""
+msgstr "일치하는 작업이 없습니다."
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
-msgstr ""
+msgstr "이 날짜에 작업이 없습니다. 작업 추가를 사용해 일정을 등록하세요."
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "아직 작업이 없습니다."
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
-msgstr ""
+msgstr "이 패턴에 예정된 날짜가 없습니다."
 
 #: src/app/view-empty-state.tsx
 msgid "No upcoming tasks here."
-msgstr ""
+msgstr "예정된 작업이 없습니다."
 
 #: src/app/task-custom-field.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
-msgstr ""
+msgstr "값 없음"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "아직 뷰가 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr ""
+msgstr "아니요. TaskNotes는 권한 원본인 mdbase 컬렉션을 직접 읽고 씁니다. 호스팅된 컬렉션에는 네트워크 연결이 필요하며, 컴퓨터 컬렉션은 해당 컴퓨터에도 연결할 수 있어야 합니다."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
-msgstr ""
+msgstr "없음"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "사용할 수 없음"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
-msgstr ""
+msgstr "이 브라우저에서는 사용할 수 없음"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
 msgid "Not now"
-msgstr ""
+msgstr "나중에"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Not saved"
-msgstr ""
+msgstr "저장되지 않음"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "저장되지 않음 · 검토"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "저장되지 않았습니다. 편집 내용을 검토하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
-msgstr ""
+msgstr "노트"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "노트 작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "노트 삭제됨"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
-msgstr ""
+msgstr "노트 제목"
 
 #: src/app/search-match-context.ts
 msgid "notes"
-msgstr ""
+msgstr "노트"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
-msgstr ""
+msgstr "노트"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "오늘 이후로 예정된 항목이 없습니다."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr ""
+msgstr "미리 볼 내용이 없습니다. 작성을 선택해 노트를 추가하세요."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
-msgstr ""
+msgstr "여기서는 알림을 사용할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "시스템 설정에서 TaskNotes 알림이 꺼져 있습니다. 리마인더를 받으려면 시스템 설정에서 알림을 켜세요."
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
-msgstr ""
+msgstr "정해진 시간 또는 이 작업을 기준으로 알립니다."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
-msgstr ""
+msgstr "지금"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence"
-msgstr ""
+msgstr "반복 항목"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note"
-msgstr ""
+msgstr "반복 항목 노트"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence note policy"
-msgstr ""
+msgstr "반복 항목 노트 정책"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence notes"
-msgstr ""
+msgstr "반복 항목 노트"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence template"
-msgstr ""
+msgstr "반복 항목 템플릿"
 
 #: src/components/recurrence-field.tsx
 msgid "Occurrences"
-msgstr ""
+msgstr "반복 항목"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr "중 "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr "4개 중"
 
 #: src/app/notification-label.ts
 msgid "Off"
-msgstr ""
+msgstr "끔"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "오프라인"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr ""
+msgstr "켬"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr ""
+msgstr "켬"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr ""
+msgstr "날짜 기준"
+
+#: src/i18n/editor-phrases.ts
+msgid "on line"
+msgstr "줄에서"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
-msgstr ""
+msgstr "이 기기에서"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Only draft items can become TaskNotes."
-msgstr ""
+msgstr "초안 항목만 TaskNotes로 만들 수 있습니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Only the task title is shown."
-msgstr ""
+msgstr "작업 제목만 표시됩니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "직접 만들 때만"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr ""
+msgstr "열기"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr ""
+msgstr "열기"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "“{title}” 열기"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
-msgstr ""
+msgstr "{0} 열기"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "먼저 컬렉션을 여세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
-msgstr ""
+msgstr "뷰를 열거나 탐색 메뉴에 표시할지 선택하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr ""
+msgstr "첫 번째로 열기"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
-msgstr ""
+msgstr "이미지 열기"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
-msgstr ""
+msgstr "Planner에서 열기"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
-msgstr ""
+msgstr "작업 열기"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
-msgstr ""
+msgstr "브라우저의 공유 메뉴를 열고 홈 화면에 추가를 선택하세요."
 
 #: src/app/collection-settings.tsx
 msgid "Opening"
-msgstr ""
+msgstr "여는 중"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "컬렉션 여는 중"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
-msgstr ""
+msgstr "현재 노트 여는 중…"
 
 #: src/app/more-screen.tsx
 msgid "Opening install prompt…"
-msgstr ""
+msgstr "설치 안내 여는 중…"
 
 #: src/app/view-editor.tsx
 msgid "Opening view editor"
-msgstr ""
+msgstr "뷰 편집기 여는 중"
 
 #: src/app/app-shell.tsx
 msgid "Opening your tasks"
-msgstr ""
+msgstr "작업 여는 중"
 
 #: src/app/app-shell.tsx
 msgid "Opening your view"
-msgstr ""
+msgstr "뷰 여는 중"
 
 #: src/app/view-editor-form.tsx
 msgid "Opens as"
-msgstr ""
+msgstr "다음으로 열림"
 
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
-msgstr ""
+msgstr "새 탭에서 열림"
 
 #: src/components/duration-field.tsx
 msgid "Optional"
-msgstr ""
+msgstr "선택 사항"
 
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
-msgstr ""
+msgstr "선택적 알림 문구"
 
 #: src/i18n/ui-copy.ts
 msgid "options"
-msgstr ""
+msgstr "옵션"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "또는"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
-msgstr ""
+msgstr "정리"
 
 #: src/app/views/task-list-view.tsx
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
-msgstr ""
+msgstr "기타"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Outdent"
-msgstr ""
+msgstr "내어쓰기"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Outline"
-msgstr ""
+msgstr "개요"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Outline controls for {0}"
-msgstr ""
+msgstr "{0} 개요 제어"
 
 #: src/i18n/default-labels.ts
 msgid "Overdue"
-msgstr ""
+msgstr "기한 초과"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P0D"
-msgstr ""
+msgstr "P0D"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P14D"
-msgstr ""
+msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "비밀번호 강도: "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
-msgstr ""
+msgstr "과거 범위"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
-msgstr ""
+msgstr "스크래치패드에 붙여넣은 이미지"
 
 #: src/i18n/view-presentation.ts
 msgid "Path"
-msgstr ""
+msgstr "경로"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "경로 복사됨"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
-msgstr ""
+msgstr "패턴 시작"
 
 #: src/app/use-people.ts
 msgid "People could not be loaded."
-msgstr ""
+msgstr "사람 목록을 불러오지 못했습니다."
 
 #. placeholder {0}: error.message
 #: src/components/assignee-editor.tsx
 msgid "People could not be loaded. Existing assignments are unchanged. {0}"
-msgstr ""
+msgstr "사람 목록을 불러오지 못했습니다. 기존 할당은 변경되지 않았습니다. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "계획된 날짜"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
-msgstr ""
+msgstr "Planner"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
-msgstr ""
+msgstr "Planner는 별도 앱입니다. 이 뷰를 저장한 다음 Planner에서 열기를 선택하세요."
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Planner will open this saved view."
-msgstr ""
+msgstr "Planner에서 이 저장된 뷰를 엽니다."
 
 #: src/app/task-screen.tsx
 msgid "Preview"
-msgstr ""
+msgstr "미리보기"
 
 #: src/app/view-editor.tsx
 msgid "Preview "
-msgstr ""
+msgstr "미리보기 "
 
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
-msgstr ""
+msgstr "작업 미리보기"
 
 #: src/app/view-editor.tsx
 msgid "Preview updates after saving"
-msgstr ""
+msgstr "저장 후 미리보기가 업데이트됩니다."
+
+#: src/i18n/editor-phrases.ts
+msgid "previous"
+msgstr "이전"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
-msgstr ""
+msgstr "이전 달"
 
 #: src/i18n/ui-copy.ts
 msgid "Previous note"
-msgstr ""
+msgstr "이전 노트"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "Previous notes could not be loaded. {0}"
-msgstr ""
+msgstr "이전 노트를 불러오지 못했습니다. {0}"
 
 #: src/app/full-calendar-view.tsx
 msgid "Previous period"
-msgstr ""
+msgstr "이전 기간"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "이전 작업"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
-msgstr ""
+msgstr "이전에 불러온 결과가 최신이 아닐 수 있습니다."
 
 #: src/app/app-shell.tsx
 msgid "Primary"
-msgstr ""
+msgstr "기본"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -3610,31 +3674,31 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Priority"
-msgstr ""
+msgstr "우선순위"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
-msgstr ""
+msgstr "우선순위, 프로젝트, 의존성, 컨텍스트 및 태그"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "비공개 계정 복구"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "비공개 컬렉션 복구"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "비공개 컬렉션을 사용하려면 데스크톱이 온라인 상태여야 합니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
-msgstr ""
+msgstr "투영"
 
 #: src/app/search-match-context.ts
 msgid "projects"
-msgstr ""
+msgstr "프로젝트"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -3644,202 +3708,206 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Projects"
-msgstr ""
+msgstr "프로젝트"
 
 #: src/app/task-screen.tsx
 msgid "Properties"
-msgstr ""
+msgstr "속성"
 
 #: src/components/expression-builder.tsx
 msgid "Property"
-msgstr ""
+msgstr "속성"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to display"
-msgstr ""
+msgstr "표시할 속성"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to sort"
-msgstr ""
+msgstr "정렬할 속성"
 
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "보호된 편집 내용"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
-msgstr ""
+msgstr "빠른 날짜"
 
 #: src/components/reminder-editor.tsx
 msgid "Quick reminders"
-msgstr ""
+msgstr "빠른 리마인더"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Quote"
-msgstr ""
+msgstr "인용"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "최근 검색"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "최근에 연 항목"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr ""
+msgstr "인식된 작업 세부정보"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "다시 연결 중"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
-msgstr ""
+msgstr "다시 연결 중…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "계정 접근 복구"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
-msgstr ""
+msgstr "작업 복구"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "복구가 설정되지 않았습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "복구가 설정되었습니다. 이 화면을 나가기 전에 복구 키를 저장하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "복구 키"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "복구 키(한 번만 표시)"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "복구 키 보관 상태를 확인할 수 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "복구 키 표시를 닫았습니다. TaskNotes는 표시용 사본을 보관하지 않습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "이 기기의 복구 키가 잠겼습니다. 기존 컬렉션 키는 계속 사용할 수 있습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "복구 비밀번호"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "복구 비밀번호가 변경되었습니다. 복구 키는 변경되지 않았습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "복구 상태를 확인할 수 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "개의 복구 대상이 대기 중입니다."
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
-msgstr ""
+msgstr "반복 및 템플릿"
 
 #: src/components/recurrence-field.tsx
 msgid "Recurrence rule"
-msgstr ""
+msgstr "반복 규칙"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
-msgstr ""
+msgstr "지금 새로고침"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
-msgstr ""
+msgstr "새로고침 중"
 
 #: src/app/search-screen.tsx
 msgid "Refreshing results…"
-msgstr ""
+msgstr "결과 새로고침 중…"
 
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
-msgstr ""
+msgstr "새로고침 중…"
+
+#: src/i18n/editor-phrases.ts
+msgid "regexp"
+msgstr "정규식"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
-msgstr ""
+msgstr "관련 작업"
 
 #: src/components/dependency-editor.tsx
 msgid "Relationship"
-msgstr ""
+msgstr "관계"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
-msgstr ""
+msgstr "관계"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative"
-msgstr ""
+msgstr "상대적"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
-msgstr ""
+msgstr "기준"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
-msgstr ""
+msgstr "다시 불러오기"
 
 #: src/app/search-screen.tsx
 msgid "Reload people"
-msgstr ""
+msgstr "사람 목록 다시 불러오기"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Reminder {0}"
-msgstr ""
+msgstr "리마인더 {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder date"
-msgstr ""
+msgstr "리마인더 날짜"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "리마인더 세부정보는 작업에 저장되지만, 이 버전의 TaskNotes는 리마인더 알림을 보내지 않습니다."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
-msgstr ""
+msgstr "리마인더 세부정보는 Markdown에 저장되지만, 이 기기에 저장된 작업은 알림을 전달할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "리마인더 설정"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
-msgstr ""
+msgstr "리마인더 시간"
 
 #: src/app/settings-sections.ts
 #: src/components/reminder-editor.tsx
 msgid "Reminders"
-msgstr ""
+msgstr "리마인더"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
 msgid "Remove"
-msgstr ""
+msgstr "제거"
 
 #. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: entry.description || uiCopy("session")
@@ -3848,367 +3916,389 @@ msgstr ""
 #: src/components/multi-value-field.tsx
 #: src/components/task-capture.tsx
 msgid "Remove {0}"
-msgstr ""
+msgstr "{0} 제거"
 
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
-msgstr ""
+msgstr "{label} 제거"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
 msgid "Remove assignment to {0}"
-msgstr ""
+msgstr "{0} 할당 제거"
 
 #. placeholder {0}: property.name || index + 1
 #: src/app/view-editor-form.tsx
 msgid "Remove computed property {0}"
-msgstr ""
+msgstr "계산된 속성 {0} 제거"
 
 #: src/components/expression-builder.tsx
 msgid "Remove condition"
-msgstr ""
+msgstr "조건 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
-msgstr ""
+msgstr "스크래치패드에서 제거"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
-msgstr ""
+msgstr "그룹 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove image card"
-msgstr ""
+msgstr "이미지 카드 제거"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Remove reminder {0}"
-msgstr ""
+msgstr "리마인더 {0} 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove this image card from Scratchpad? The image file will be kept."
-msgstr ""
+msgstr "이 이미지 카드를 스크래치패드에서 제거할까요? 이미지 파일은 유지됩니다."
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
-msgstr ""
+msgstr "렌더링 중…"
 
 #: src/components/task-row.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "다시 열기"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "“{title}” 다시 열기"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
-msgstr ""
+msgstr "작업 다시 열기"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
-msgstr ""
+msgstr "순서 변경"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Reorder"
-msgstr ""
+msgstr "순서 변경"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "{0} 순서 변경. 드래그하거나 위쪽 및 아래쪽 화살표 키를 사용하세요."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
-msgstr ""
+msgstr "{0}의 순서를 변경했습니다."
 
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
-msgstr ""
+msgstr "반복"
 
 #: src/app/task-screen.tsx
 msgid "Repeat and reminders"
-msgstr ""
+msgstr "반복 및 리마인더"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr ""
+msgstr "반복 빈도"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
-msgstr ""
+msgstr "반복 기준"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat interval"
-msgstr ""
+msgstr "반복 간격"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task"
-msgstr ""
+msgstr "반복 작업"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr ""
+msgstr "반복 작업 작업"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "반복 작업"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
-msgstr ""
+msgstr "반복"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace"
+msgstr "바꾸기"
+
+#: src/i18n/editor-phrases.ts
+msgid "Replace"
+msgstr "바꾸기"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace all"
+msgstr "모두 바꾸기"
+
+#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced {count} matches"
+msgstr "일치 항목 {count}개 바꿈"
+
+#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced match on line {line}"
+msgstr "{line}행의 일치 항목 바꿈"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
-msgstr ""
+msgstr "TaskNotes 다시 시작"
 
 #: src/components/task-actions.tsx
 msgid "Restore"
-msgstr ""
+msgstr "복원"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
-msgstr ""
+msgstr "저장되지 않은 편집 내용 복원"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
-msgstr ""
+msgstr "홈 뷰 복원 중"
 
 #: src/components/command-palette.tsx
 msgid "Results"
-msgstr ""
+msgstr "결과"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
-msgstr ""
+msgstr "현재 항목으로 이어서 사용"
 
 #: src/app/model-setup-screen.tsx
 msgid "Resume original setup"
-msgstr ""
+msgstr "원래 설정 이어서 진행"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
-msgstr ""
+msgstr "이어서 여는 중…"
 
 #: src/app/app-shell.tsx
 #: src/components/task-row.tsx
 msgid "Retry"
-msgstr ""
+msgstr "다시 시도"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Retry {selectedReviewCount} task notes"
-msgstr ""
+msgstr "작업 노트 {selectedReviewCount}개 다시 시도"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
-msgstr ""
+msgstr "뷰 관리에서 다시 열거나 컬렉션을 새로고침하여 다시 시도하세요."
 
 #: src/app/app-shell.tsx
 msgid "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-msgstr ""
+msgstr "다시 시도하면 새로 삭제하지 않고 저장된 요청을 확인합니다. 폐기하려면 확인이 필요하며 이 컬렉션의 연결이 해제됩니다."
 
 #: src/app/more-screen.tsx
 msgid "Retry collection details"
-msgstr ""
+msgstr "컬렉션 세부정보 다시 시도"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
-msgstr ""
+msgstr "연결 다시 시도"
 
 #: src/app/more-screen.tsx
 msgid "Retry notification check"
-msgstr ""
+msgstr "알림 확인 다시 시도"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr ""
+msgstr "사람 목록 다시 시도"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
-msgstr ""
+msgstr "검색 다시 시도"
 
 #: src/app/view-empty-state.tsx
 msgid "Retry this view to check for tasks."
-msgstr ""
+msgstr "작업을 확인하려면 이 뷰를 다시 시도하세요."
 
 #: src/app/app-shell.tsx
 msgid "Retry, or undo to restore the task here."
-msgstr ""
+msgstr "다시 시도하거나 실행 취소하여 작업을 여기로 복원하세요."
 
 #: src/app/app-shell.tsx
 msgid "Retrying…"
-msgstr ""
+msgstr "다시 시도 중…"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
-msgstr ""
+msgstr "필터, 그룹화, 정렬 및 필드에서 재사용할 값입니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for grouping and displayed fields."
-msgstr ""
+msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 
 #: src/app/app-shell.tsx
 msgid "Review access"
-msgstr ""
+msgstr "접근 권한 검토"
 
 #: src/app/model-setup-screen.tsx
 msgid "Review collection permission"
-msgstr ""
+msgstr "컬렉션 권한 검토"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
-msgstr ""
+msgstr "알림 접근 검토"
 
 #: src/components/held-edits.tsx
 msgid "Review protected edits"
-msgstr ""
+msgstr "보호된 편집 내용 검토"
 
 #: src/components/collection-write-status.tsx
 msgid "Review record"
-msgstr ""
+msgstr "레코드 검토"
 
 #: src/app/task-screen.tsx
 msgid "Review save"
-msgstr ""
+msgstr "저장 내용 검토"
 
 #: src/components/private-account-settings.tsx
 msgid "Review strict mode"
-msgstr ""
+msgstr "엄격 모드 검토"
 
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
-msgstr ""
+msgstr "TaskNotes 접근 권한 검토"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
-msgstr ""
+msgstr "다른 변경을 하기 전에 작업을 검토하세요."
 
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
-msgstr ""
+msgstr "새로고침하기 전에 보호된 편집 내용을 검토하세요."
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
-msgstr ""
+msgstr "저장"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 msgid "Save {0}"
-msgstr ""
+msgstr "{0} 저장"
 
 #: src/components/reminder-editor.tsx
 msgid "Save a fixed or relative reminder in this task."
-msgstr ""
+msgstr "이 작업에 고정 또는 상대 리마인더를 저장합니다."
 
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
-msgstr ""
+msgstr "TaskNotes 저장 후 새로고침"
 
 #: src/components/task-model-settings.tsx
 msgid "Save changes"
-msgstr ""
+msgstr "변경 사항 저장"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
-msgstr ""
+msgstr "저장 실패 · 다시 시도"
 
 #: src/app/task-screen.tsx
 msgid "Save failed. {retrySaveLabel}"
-msgstr ""
+msgstr "저장하지 못했습니다. {retrySaveLabel}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Save needs review"
-msgstr ""
+msgstr "저장 내용 검토 필요"
 
 #: src/components/collection-write-status.tsx
 msgid "Save outcome unknown"
-msgstr ""
+msgstr "저장 결과를 알 수 없음"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
-msgstr ""
+msgstr "세션 저장"
 
 #: src/app/view-editor.tsx
 msgid "Save view"
-msgstr ""
+msgstr "뷰 저장"
 
 #: src/components/private-account-settings.tsx
 msgid "Save your recovery key"
-msgstr ""
+msgstr "복구 키 저장"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
-msgstr ""
+msgstr "저장됨"
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/collection-write-status.tsx
 msgid "Saved on this device; waiting for sync"
-msgstr ""
+msgstr "이 기기에 저장됨; 동기화 대기 중"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr ""
+msgstr "저장된 뷰"
 
 #: src/app/views/view-catalog.tsx
 msgid "Saved views"
-msgstr ""
+msgstr "저장된 뷰"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
-msgstr ""
+msgstr "컬렉션에 저장되며 이를 여는 모든 앱에서 사용됩니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
-msgstr ""
+msgstr "컬렉션에 저장되었습니다."
 
 #: src/app/task-screen.tsx
 msgid "Saving"
-msgstr ""
+msgstr "저장 중"
 
 #: src/components/app-update-notice.tsx
 msgid "Saving changes…"
-msgstr ""
+msgstr "변경 사항 저장 중…"
 
 #: src/components/task-model-settings.tsx
 msgid "Saving collection behavior"
-msgstr ""
+msgstr "컬렉션 동작 저장 중"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
 msgid "Saving…"
-msgstr ""
+msgstr "저장 중…"
 
 #: src/app/task-screen.tsx
 msgid "Schedule and status"
-msgstr ""
+msgstr "일정 및 상태"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Schedule next week"
-msgstr ""
+msgstr "다음 주로 일정 지정"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Schedule today"
-msgstr ""
+msgstr "오늘로 예약"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Schedule tomorrow"
-msgstr ""
+msgstr "내일로 예약"
 
 #: src/app/view-editor-form.tsx
 msgid "scheduled"
-msgstr ""
+msgstr "예정"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -4219,28 +4309,28 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Scheduled"
-msgstr ""
+msgstr "예정"
 
 #: src/components/task-capture.tsx
 msgid "Scheduled "
-msgstr ""
+msgstr "예정 "
 
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
-msgstr ""
+msgstr "예정일(설정 안 됨)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.scheduled)
 #: src/app/task-editor-draft.ts
 msgid "Scheduled {0}"
-msgstr ""
+msgstr "{0} 예정"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
-msgstr ""
+msgstr "예정일"
 
 #: src/i18n/ui-copy.ts
 msgid "scratchpad"
-msgstr ""
+msgstr "스크래치패드"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
@@ -4248,288 +4338,292 @@ msgstr ""
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Scratchpad"
-msgstr ""
+msgstr "스크래치패드"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad editing mode"
-msgstr ""
+msgstr "스크래치패드 편집 모드"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
-msgstr ""
+msgstr "스크래치패드 기록"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad Markdown"
-msgstr ""
+msgstr "스크래치패드 Markdown"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad outline"
-msgstr ""
+msgstr "스크래치패드 개요"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is not available for this collection."
-msgstr ""
+msgstr "이 컬렉션에서는 스크래치패드 저장소를 사용할 수 없습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is unavailable."
-msgstr ""
+msgstr "스크래치패드 저장소를 사용할 수 없습니다."
 
 #: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
-msgstr ""
+msgstr "검색"
 
 #: src/components/command-palette.tsx
 msgid "Search commands and tasks"
-msgstr ""
+msgstr "명령 및 작업 검색"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
 msgid "Search could not be loaded. {0}"
-msgstr ""
+msgstr "검색을 불러오지 못했습니다. {0}"
 
 #: src/app/search-screen.tsx
 #: src/app/views-screen.tsx
 msgid "Search tasks"
-msgstr ""
+msgstr "작업 검색"
 
 #: src/app/search-screen.tsx
 msgid "Search titles, notes, projects, contexts, and tags."
-msgstr ""
+msgstr "제목, 노트, 프로젝트, 컨텍스트 및 태그 검색"
 
 #: src/app/views/view-catalog.tsx
 msgid "Search views"
-msgstr ""
+msgstr "뷰 검색"
 
 #: src/components/command-palette.tsx
 msgid "Searching tasks…"
-msgstr ""
+msgstr "작업 검색 중…"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr ""
+msgstr "두 번째"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
-msgstr ""
+msgstr "초"
 
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
-msgstr ""
+msgstr "예정 보기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
-msgstr ""
+msgstr "모두 선택"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select branch"
-msgstr ""
+msgstr "분기 선택"
 
 #: src/i18n/ui-copy.ts
 msgid "selected collection"
-msgstr ""
+msgstr "선택한 컬렉션"
 
 #: src/i18n/ui-copy.ts
 msgid "selected day"
-msgstr ""
+msgstr "선택한 날짜"
 
 #: src/app/full-calendar-view.tsx
 msgid "Selected day"
-msgstr ""
+msgstr "선택한 날짜"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr ""
+msgstr "선택한 초안은 현재 위치에서 연결된 TaskNotes가 됩니다. 나머지는 계속 작업할 수 있도록 이 스크래치패드에 남습니다."
+
+#: src/i18n/editor-phrases.ts
+msgid "Selection deleted"
+msgstr "선택 항목 삭제됨"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
-msgstr ""
+msgstr "세션"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session description"
-msgstr ""
+msgstr "세션 설명"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session end"
-msgstr ""
+msgstr "세션 종료"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session start"
-msgstr ""
+msgstr "세션 시작"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
-msgstr ""
+msgstr "복구 설정"
 
 #: src/app/model-setup-screen.tsx
 msgid "Set up TaskNotes"
-msgstr ""
+msgstr "TaskNotes 설정"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
-msgstr ""
+msgstr "이 뷰에서 작업을 추가할 때 수행할 동작을 설정하세요."
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 msgid "Settings"
-msgstr ""
+msgstr "설정"
 
 #: src/app/more-screen.tsx
 msgid "Settings sections"
-msgstr ""
+msgstr "설정 섹션"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
-msgstr ""
+msgstr "설정을 확인해야 합니다."
 
 #: src/app/model-setup-screen.tsx
 msgid "Setup outcome unknown. "
-msgstr ""
+msgstr "설정 결과를 알 수 없습니다. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Several person records match your account: {0}. Resolve those duplicates before filtering tasks."
-msgstr ""
+msgstr "계정과 일치하는 사람 레코드가 여러 개 있습니다: {0}. 작업을 필터링하기 전에 중복 항목을 해결하세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Shape an outline before creating tasks"
-msgstr ""
+msgstr "작업을 만들기 전에 개요를 구성하세요."
 
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
-msgstr ""
+msgstr "이 컬렉션을 사용하는 모든 사람과 공유됨"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
 msgid "Show all {0}"
-msgstr ""
+msgstr "모두 표시: {0}"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show all-day area"
-msgstr ""
+msgstr "종일 영역 표시"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show current time"
-msgstr ""
+msgstr "현재 시간 표시"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show each task’s project on Today?"
-msgstr ""
+msgstr "오늘 뷰에 각 작업의 프로젝트를 표시할까요?"
 
 #: src/app/search-screen.tsx
 msgid "Show fewer"
-msgstr ""
+msgstr "간략히 표시"
 
 #: src/app/view-editor-form.tsx
 msgid "Show future virtual occurrences."
-msgstr ""
+msgstr "향후 가상 반복 항목을 표시합니다."
 
 #: src/app/search-screen.tsx
 msgid "Show more results"
-msgstr ""
+msgstr "결과 더 보기"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show projects"
-msgstr ""
+msgstr "프로젝트 표시"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
-msgstr ""
+msgstr "기록된 시간 표시"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show weekends"
-msgstr ""
+msgstr "주말 표시"
 
 #. placeholder {0}: visibleEntries.length
 #. placeholder {1}: entries.length
 #: src/app/task-time-tracking.tsx
 msgid "Showing the latest {0} of {1}sessions."
-msgstr ""
+msgstr "최근 세션 {0}개를 표시합니다. 전체 {1}개."
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Shown in navigation"
-msgstr ""
+msgstr "탐색 메뉴에 표시"
 
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
-msgstr ""
+msgstr "각 항목 아래에 이 순서로 표시됩니다."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
-msgstr ""
+msgstr "건너뛰기"
 
 #: src/components/task-actions.tsx
 msgid "Skip occurrence"
-msgstr ""
+msgstr "반복 항목 건너뛰기"
 
 #: src/app/app-shell.tsx
 msgid "Skip to content"
-msgstr ""
+msgstr "콘텐츠로 건너뛰기"
 
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
-msgstr ""
+msgstr "건너뛴 반복 항목"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "일부 변경 사항이 아직 저장 중입니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
-msgstr ""
+msgstr "일부 파일을 읽을 수 없어 이 뷰에서 제외했습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "일부 노트 변경 사항이 저장되지 않았습니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
-msgstr ""
+msgstr "정렬"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort direction {0}"
-msgstr ""
+msgstr "정렬 방향 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort property {0}"
-msgstr ""
+msgstr "정렬 속성 {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Source file"
-msgstr ""
+msgstr "원본 파일"
 
 #: src/app/task-time-tracking.tsx
 msgid "Start"
-msgstr ""
+msgstr "시작"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "템플릿으로 새 작업 시작"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
-msgstr ""
+msgstr "타이머 시작"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to finish"
-msgstr ""
+msgstr "시작-완료"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to start"
-msgstr ""
+msgstr "시작-시작"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "기본 뷰"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
-msgstr ""
+msgstr "시작 중…"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -4539,79 +4633,79 @@ msgstr ""
 #: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
-msgstr ""
+msgstr "상태"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
-msgstr ""
+msgstr "상태, 우선순위 및 관계"
 
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
-msgstr ""
+msgstr "중지"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "작업이 완료되면 실행 중인 타이머 중지"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
-msgstr ""
+msgstr "타이머 중지"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "엄격 모드"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "아직 엄격 모드를 끌 수 없습니다. 비밀번호 복구를 설정하거나 잠금 해제해도 기기의 엄격 모드는 꺼지지 않습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "모든 비공개 복구 대상에서 엄격 모드 적용이 아직 확인되지 않았습니다. 키가 있는 온라인 기기에서 변경 사항 적용을 완료해야 합니다."
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "제출 중…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
-msgstr ""
+msgstr "하위 작업 제목"
 
 #: src/components/dependency-editor.tsx
 msgid "Subtasks"
-msgstr ""
+msgstr "하위 작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"
-msgstr ""
+msgstr "제안"
 
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
-msgstr ""
+msgstr "처음 {limit}개 작업에서 제안합니다. 다른 항목은 검색하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "엄격 모드로 전환"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "동기화가 평소보다 오래 걸립니다."
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "동기화된 버전"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "동기화 중…"
 
 #: src/app/more-screen.tsx
 msgid "System"
-msgstr ""
+msgstr "시스템"
 
 #: src/app/search-match-context.ts
 msgid "tags"
-msgstr ""
+msgstr "태그"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -4621,489 +4715,490 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
-msgstr ""
+msgstr "태그"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Take photo"
-msgstr ""
+msgstr "사진 촬영"
 
 #: src/app/task-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "Tap to retry."
-msgstr ""
+msgstr "탭하여 다시 시도하세요."
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
-msgstr ""
+msgstr "작업"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
-msgstr ""
+msgstr "{0} 작업 동작"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
-msgstr ""
+msgstr "작업 추가됨: {0}"
 
 #: src/app/views-screen.tsx
 msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr ""
+msgstr "작업을 만들었지만 이 뷰에 표시되지 않습니다. 필터 또는 결과 제한으로 제외되었을 수 있습니다."
 
 #: src/app/views-screen.tsx
 msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr ""
+msgstr "작업을 만들었습니다. 아직 불러오지 않은 페이지에 있거나 이 뷰의 필터에서 제외되었을 수 있습니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
-msgstr ""
+msgstr "작업 생성 끔"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation on"
-msgstr ""
+msgstr "작업 생성 켬"
 
 #: src/app/app-shell.tsx
 #: src/app/task-screen.tsx
 msgid "Task details"
-msgstr ""
+msgstr "작업 세부정보"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task draft"
-msgstr ""
+msgstr "작업 초안"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task drafts"
-msgstr ""
+msgstr "작업 초안"
 
 #: src/components/task-capture.tsx
 msgid "Task field suggestions"
-msgstr ""
+msgstr "작업 필드 제안"
 
 #: src/components/task-model-settings.tsx
 msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
-msgstr ""
+msgstr "작업 파일은 향후 14일과 같이 정해진 날짜 범위 동안 유지됩니다."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Task keys act on the focused row. Date keys keep any scheduled time."
-msgstr ""
+msgstr "작업 키는 포커스된 행에 적용됩니다. 날짜 키를 사용해도 예정된 시간은 유지됩니다."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
-msgstr ""
+msgstr "작업 목록"
 
 #: src/app/task-screen.tsx
 msgid "Task not found. It may have been deleted or moved."
-msgstr ""
+msgstr "작업을 찾을 수 없습니다. 삭제되었거나 이동되었을 수 있습니다."
 
 #: src/app/more-screen.tsx
 msgid "Task reminders"
-msgstr ""
+msgstr "작업 리마인더"
 
 #: src/app/task-screen.tsx
 msgid "Task title"
-msgstr ""
+msgstr "작업 제목"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
-msgstr ""
+msgstr "작업: "
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not confirm whether “{title}” was deleted."
-msgstr ""
+msgstr "TaskNotes에서 “{title}”의 삭제 여부를 확인할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "TaskNotes could not open the install prompt."
-msgstr ""
+msgstr "TaskNotes에서 설치 안내를 열지 못했습니다."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not open."
-msgstr ""
+msgstr "TaskNotes를 열지 못했습니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
-msgstr ""
+msgstr "컬렉션이 연결되어 있는 동안 TaskNotes가 자동으로 계속 확인합니다. 작업을 계속할 수 있습니다."
 
 #: src/components/app-error-boundary.tsx
 msgid "TaskNotes needs to restart."
-msgstr ""
+msgstr "TaskNotes를 다시 시작해야 합니다."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
-msgstr ""
+msgstr "이 컬렉션을 열려면 mdbase에서 TaskNotes를 다시 승인해야 합니다."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
-msgstr ""
+msgstr "TaskNotes 도구"
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tools"
-msgstr ""
+msgstr "TaskNotes 도구"
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
-msgstr ""
+msgstr "작업"
 
 #: src/app/command-palette-model.ts
 msgid "Tasks"
-msgstr ""
+msgstr "작업"
 
 #: src/app/more-screen.tsx
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
-msgstr ""
+msgstr "작업은 mdbase v0.3 형식의 이식 가능한 Markdown 레코드입니다."
 
 #. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
-msgstr ""
+msgstr "{0} 작업"
 
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
-msgstr ""
+msgstr "작업, 태그, 프로젝트"
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Technical details"
-msgstr ""
+msgstr "기술 세부정보"
 
 #: src/components/task-capture.tsx
 msgid "Template could not be read. "
-msgstr ""
+msgstr "템플릿을 읽을 수 없습니다. "
 
 #: src/components/task-model-settings.tsx
 msgid "Template file"
-msgstr ""
+msgstr "템플릿 파일"
 
 #: src/components/task-capture.tsx
 msgid "Template unavailable. "
-msgstr ""
+msgstr "템플릿을 사용할 수 없습니다. "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Templates/Occurrence.md"
-msgstr ""
+msgstr "Templates/Occurrence.md"
 
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
-msgstr ""
+msgstr "Templates/Task.md"
 
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
-msgstr ""
+msgstr "비밀번호 또는 복구 키로 이 계정의 잠금을 해제하지 못했습니다. 확인한 후 다시 시도하세요."
 
 #: src/i18n/ui-copy.ts
 msgid "That section"
-msgstr ""
+msgstr "해당 섹션"
 
 #: src/components/private-account-settings.tsx
 msgid "The account recovery action could not be completed. Check the connection and account status before retrying."
-msgstr ""
+msgstr "계정 복구 작업을 완료하지 못했습니다. 다시 시도하기 전에 연결과 계정 상태를 확인하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
-msgstr ""
+msgstr "작업이 완료되었지만 계정 상태를 새로고침하지 못했습니다. 상태를 다시 확인하세요."
 
 #: src/app/full-calendar-view.tsx
 msgid "The calendar change could not be saved. "
-msgstr ""
+msgstr "캘린더 변경 사항을 저장하지 못했습니다. "
 
 #: src/components/task-property-editor.tsx
 msgid "The change could not be saved."
-msgstr ""
+msgstr "변경 사항을 저장하지 못했습니다."
 
 #: src/app/app-shell.tsx
 msgid "The collection is unavailable right now."
-msgstr ""
+msgstr "현재 컬렉션을 사용할 수 없습니다."
 
 #: src/app/views-screen.tsx
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
-msgstr ""
+msgstr "전체 수동 순서를 불러오지 못했습니다. 초안은 유지됩니다. 다시 시도하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The created TaskNote could not be found."
-msgstr ""
+msgstr "생성된 TaskNote를 찾을 수 없습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The current scratchpad is unavailable."
-msgstr ""
+msgstr "현재 스크래치패드를 사용할 수 없습니다."
 
 #: src/app/app-shell.tsx
 msgid "The deletion"
-msgstr ""
+msgstr "삭제"
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"
-msgstr ""
+msgstr "대상 섹션"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
-msgstr ""
+msgstr "첫 번째 뷰가 홈입니다. 순서와 표시 여부는 이 기기의 이 컬렉션에 저장됩니다."
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
-msgstr ""
+msgstr "언어를 불러오지 못했습니다. 연결을 확인한 후 다시 시도하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The linked TaskNote could not be found."
-msgstr ""
+msgstr "연결된 TaskNote를 찾을 수 없습니다."
 
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
-msgstr ""
+msgstr "다시 시도할 수 있도록 메뉴가 계속 열려 있습니다."
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was resumed, but history could not refresh. {0}"
-msgstr ""
+msgstr "노트를 이어서 열었지만 기록을 새로고침하지 못했습니다. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "The pattern start day is used."
-msgstr ""
+msgstr "패턴의 시작일을 사용합니다."
 
 #: src/components/private-account-settings.tsx
 msgid "The recovery key is still kept on this device."
-msgstr ""
+msgstr "복구 키는 이 기기에 계속 보관됩니다."
 
 #: src/components/recurrence-field.tsx
 msgid "The rule is kept exactly as written. Apply only after it is valid."
-msgstr ""
+msgstr "규칙은 입력한 그대로 유지됩니다. 유효한 경우에만 적용하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The scratchpad is not open."
-msgstr ""
+msgstr "스크래치패드가 열려 있지 않습니다."
 
 #: src/app/views-screen.tsx
 msgid "the task"
-msgstr ""
+msgstr "작업"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "The task"
-msgstr ""
+msgstr "작업"
 
 #: src/components/task-actions.tsx
 msgid "The task action"
-msgstr ""
+msgstr "작업 동작"
 
 #: src/app/full-calendar-view.tsx
 msgid "The task date is unavailable."
-msgstr ""
+msgstr "작업 날짜를 사용할 수 없습니다."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
-msgstr ""
+msgstr "작업은 컬렉션에 남아 있습니다. 다시 시도하세요."
 
 #: src/app/views-screen.tsx
 msgid "The view change"
-msgstr ""
+msgstr "뷰 변경"
 
 #: src/app/views/project-property-offer.tsx
 msgid "The view could not be updated. {error}"
-msgstr ""
+msgstr "뷰를 업데이트하지 못했습니다. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
-msgstr ""
+msgstr "테마, 스크래치패드 및 캘린더"
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr ""
+msgstr "선택 사항은 즉시 적용되며 컬렉션을 변경하지 않습니다."
 
 #: src/app/task-screen.tsx
 msgid "These fields edit the series dates. The summary above shows this occurrence."
-msgstr ""
+msgstr "이 필드에서는 시리즈 날짜를 편집합니다. 위 요약에는 이 반복 항목이 표시됩니다."
 
 #: src/app/view-editor-form.tsx
 msgid "These formulas are shared by views in the same source file."
-msgstr ""
+msgstr "이 수식은 같은 원본 파일의 뷰에서 공유됩니다."
 
 #: src/components/held-edits.tsx
 msgid "These previews are shortened. Choices apply to the full versions, not the previews. Keep both to preserve your full edit."
-msgstr ""
+msgstr "미리보기는 축약되어 있습니다. 선택 사항은 미리보기가 아닌 전체 내용에 적용됩니다. 편집 내용을 온전히 보존하려면 둘 다 유지하세요."
 
 #: src/app/views/task-list-view.tsx
 msgid "These sections are calculated, so tasks can only be reordered within them."
-msgstr ""
+msgstr "이 섹션은 계산된 항목이므로 작업은 섹션 안에서만 순서를 변경할 수 있습니다."
 
 #: src/i18n/presentation.ts
 msgid "third"
-msgstr ""
+msgstr "세 번째"
 
 #: src/components/recurrence-field.tsx
 msgid "Third"
-msgstr ""
+msgstr "세 번째"
 
 #: src/components/private-account-settings.tsx
 msgid "This account uses strict mode. Approve this device from an existing device."
-msgstr ""
+msgstr "이 계정은 엄격 모드를 사용합니다. 기존 기기에서 이 기기를 승인하세요."
 
 #: src/components/recurrence-field.tsx
 msgid "This anchors the pattern. Scheduled remains the next date you plan to do the task."
-msgstr ""
+msgstr "이 날짜가 패턴의 기준이 됩니다. 예정일은 작업을 다음에 수행할 계획 날짜로 유지됩니다."
 
 #: src/app/views/kanban-view.tsx
 msgid "This board groups by a calculated property, so cards cannot move between columns."
-msgstr ""
+msgstr "이 보드는 계산된 속성으로 그룹화되어 카드 간 열 이동이 불가능합니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
-msgstr ""
+msgstr "이 컬렉션에는 완료된 작업 상태가 정의되어 있지 않습니다."
 
 #: src/app/model-setup-screen.tsx
 msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr ""
+msgstr "작업과 뷰를 열기 전에 이 컬렉션에 TaskNotes 설정이 필요합니다. 새 설정은 게시된 모델을 설치하고 오늘, 예정, 캘린더, 프로젝트 및 보관 뷰를 추가합니다. 기존 뷰 원본은 변경되지 않으며, 중단된 설정은 원래 변경 사항만 이어서 적용합니다."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
-msgstr ""
+msgstr "이 기기에서만"
 
 #: src/components/held-edits.tsx
 msgid "This discards your protected version."
-msgstr ""
+msgstr "보호된 버전을 폐기합니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This draft is no longer in the scratchpad."
-msgstr ""
+msgstr "이 초안은 더 이상 스크래치패드에 없습니다."
 
 #: src/components/task-property-editor.tsx
 msgid "This edits the repeating task, including future occurrences."
-msgstr ""
+msgstr "향후 반복 항목을 포함해 반복 작업을 편집합니다."
 
 #: src/components/expression-builder.tsx
 msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
-msgstr ""
+msgstr "이 필터는 고급 구문을 사용합니다. 구문을 그대로 유지하려면 여기서 편집하세요."
 
 #: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
-msgstr ""
+msgstr "이 필터는 빌더에서 안전하게 편집할 수 없는 구문을 사용합니다."
 
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
-msgstr ""
+msgstr "이 키는 한 번만 표시됩니다. TaskNotes 외부의 안전한 곳에 보관하세요. 이 키가 있으면 누구나 비공개 컬렉션에 다시 접근할 수 있습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
-msgstr ""
+msgstr "이 Markdown에는 개요에서 표현할 수 없는 블록이 포함되어 있습니다. 저장되었습니다. Markdown으로 계속 편집하세요."
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
-msgstr ""
+msgstr "저장된 뷰만 제거되며 작업은 삭제되지 않습니다."
 
 #: src/components/recurrence-field.tsx
 msgid "This rule can also be edited with the visual controls."
-msgstr ""
+msgstr "이 규칙은 시각적 컨트롤로도 편집할 수 있습니다."
 
 #: src/i18n/ui-copy.ts
 msgid "This section"
-msgstr ""
+msgstr "이 섹션"
 
 #: src/app/palette-commands.ts
 msgid "this task"
-msgstr ""
+msgstr "이 작업"
 
 #: src/components/write-rejection-notice.tsx
 msgid "This task changed somewhere else, so your edit wasn't saved."
-msgstr ""
+msgstr "다른 곳에서 이 작업이 변경되어 편집 내용이 저장되지 않았습니다."
 
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
-msgstr ""
+msgstr "이 작업은 더 이상 사용할 수 없습니다."
 
 #: src/components/duration-field.tsx
 msgid "This task uses an advanced duration: <0>{value}</0>"
-msgstr ""
+msgstr "이 작업은 고급 기간을 사용합니다: <0>{value}</0>"
 
 #: src/components/task-property-editor.tsx
 msgid "This value is calculated by the view and cannot be edited here."
-msgstr ""
+msgstr "이 값은 뷰에서 계산되므로 여기서 편집할 수 없습니다."
 
 #: src/app/view-editor.tsx
 #: src/i18n/ui-copy.ts
 msgid "this view"
-msgstr ""
+msgstr "이 뷰"
 
 #: src/app/view-editor-form.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "This view"
-msgstr ""
+msgstr "이 뷰"
 
 #: src/components/view-execution-error-notice.tsx
 msgid "This view couldn’t load."
-msgstr ""
+msgstr "이 뷰를 불러오지 못했습니다."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "This view uses an unavailable sort."
-msgstr ""
+msgstr "이 뷰는 사용할 수 없는 정렬 기준을 사용합니다."
 
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
-msgstr ""
+msgstr "시간"
 
 #: src/app/task-screen.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
-msgstr ""
+msgstr "시간"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time format"
-msgstr ""
+msgstr "시간 형식"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time slot size"
-msgstr ""
+msgstr "시간 슬롯 간격"
 
 #: src/app/task-time-tracking.tsx
 msgid "Timer description"
-msgstr ""
+msgstr "타이머 설명"
 
 #: src/app/task-editor-draft.ts
 #: src/components/task-row.tsx
 msgid "Timer running"
-msgstr ""
+msgstr "타이머 실행 중"
 
 #: src/components/task-capture.tsx
 msgid "Timing"
-msgstr ""
+msgstr "시간 설정"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "Title"
-msgstr ""
+msgstr "제목"
 
 #: src/app/view-editor-form.tsx
 msgid "Title only"
-msgstr ""
+msgstr "제목만"
 
 #: src/app/task-screen.tsx
 msgid "Title required"
-msgstr ""
+msgstr "제목 필수"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Title: “{title}”. "
-msgstr ""
+msgstr "제목: “{title}”. "
 
+#: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
-msgstr ""
+msgstr "까지"
 
 #: src/app/views-screen.tsx
 msgid "to today"
-msgstr ""
+msgstr "오늘로"
 
 #: src/app/views-screen.tsx
 msgid "to today."
-msgstr ""
+msgstr "오늘로."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"
-msgstr ""
+msgstr "오늘"
 
 #: src/app/full-calendar-view.tsx
 #: src/components/task-property-editor.tsx
@@ -5111,405 +5206,417 @@ msgstr ""
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
-msgstr ""
+msgstr "오늘"
 
 #: src/app/today-clear.tsx
 msgid "Today is clear"
-msgstr ""
+msgstr "오늘은 할 일이 없습니다."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "tomorrow"
-msgstr ""
+msgstr "내일"
 
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
 msgid "Tomorrow"
-msgstr ""
+msgstr "내일"
 
 #: src/components/private-account-settings.tsx
 msgid "Too many attempts. Wait before trying again."
-msgstr ""
+msgstr "시도 횟수가 너무 많습니다. 잠시 기다렸다가 다시 시도하세요."
 
 #: src/app/full-calendar-view.tsx
 msgid "Tracked time"
-msgstr ""
+msgstr "기록된 시간"
 
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
-msgstr ""
+msgstr "다시 시도"
 
 #: src/app/views/view-catalog.tsx
 msgid "Try another search or filter."
-msgstr ""
+msgstr "다른 검색어나 필터를 시도하세요."
 
 #: src/app/search-screen.tsx
 msgid "Try fewer words or another spelling."
-msgstr ""
+msgstr "검색어를 줄이거나 다른 철자를 시도하세요."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
-msgstr ""
+msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집하거나 다른 뷰를 선택하세요."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
-msgstr ""
+msgstr "유형"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
-msgstr ""
+msgstr "미할당"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
-msgstr ""
+msgstr "해석 중…"
 
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Undo"
-msgstr ""
+msgstr "실행 취소"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
-msgstr ""
+msgstr "삭제된 작업 실행 취소"
+
+#: src/i18n/editor-phrases.ts
+msgid "unfold"
+msgstr "펼치기"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfold line"
+msgstr "줄 펼치기"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfolded lines"
+msgstr "펼친 줄"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
-msgstr ""
+msgstr "단위"
 
 #: src/components/private-account-settings.tsx
 msgid "Unknown"
-msgstr ""
+msgstr "알 수 없음"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock"
-msgstr ""
+msgstr "잠금 해제"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock private collections"
-msgstr ""
+msgstr "비공개 컬렉션 잠금 해제"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlocked on this device"
-msgstr ""
+msgstr "이 기기에서 잠금 해제됨"
 
 #: src/app/more-screen.tsx
 msgid "Unsaved changes"
-msgstr ""
+msgstr "저장되지 않은 변경 사항"
 
 #: src/components/task-model-settings.tsx
 msgid "Unsaved changes for everyone using this collection"
-msgstr ""
+msgstr "이 컬렉션을 사용하는 모든 사람에게 적용되는 저장되지 않은 변경 사항"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Unsaved edit recovery"
-msgstr ""
+msgstr "저장되지 않은 편집 내용 복구"
 
 #: src/app/task-screen.tsx
 msgid "Unsaved edits cannot be backed up in this browser. Keep this tab open until saving finishes."
-msgstr ""
+msgstr "이 브라우저에서는 저장되지 않은 편집 내용을 백업할 수 없습니다. 저장이 끝날 때까지 이 탭을 열어 두세요."
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits found"
-msgstr ""
+msgstr "저장되지 않은 편집 내용을 찾았습니다."
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits from an earlier session are available."
-msgstr ""
+msgstr "이전 세션에서 저장되지 않은 편집 내용을 사용할 수 있습니다."
 
 #: src/app/task-screen.tsx
 msgid "Unskip"
-msgstr ""
+msgstr "건너뛰기 취소"
 
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
-msgstr ""
+msgstr "반복 항목 건너뛰기 취소"
 
 #: src/i18n/ui-copy.ts
 msgid "up"
-msgstr ""
+msgstr "위"
 
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
-msgstr ""
+msgstr "예정된 반복 항목"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"
-msgstr ""
+msgstr "뷰 업데이트 중"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Upload images"
-msgstr ""
+msgstr "이미지 업로드"
 
 #. placeholder {0}: query.trim()
 #: src/components/multi-value-field.tsx
 msgid "Use “{0}”"
-msgstr ""
+msgstr "“{0}” 사용"
 
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
-msgstr ""
+msgstr "더 길고 예측하기 어려운 암호 문구를 사용하세요."
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx
 msgid "Use template{0}"
-msgstr ""
+msgstr "템플릿{0} 사용"
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured due field."
-msgstr ""
+msgstr "구성된 마감일 필드를 사용합니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured scheduled field."
-msgstr ""
+msgstr "구성된 예정일 필드를 사용합니다."
 
 #: src/app/task-screen.tsx
 msgid "Use the occurrence actions above to change this state."
-msgstr ""
+msgstr "이 상태를 변경하려면 위의 반복 항목 작업을 사용하세요."
 
 #: src/components/recurrence-field.tsx
 msgid "Use visual editor"
-msgstr ""
+msgstr "시각적 편집기 사용"
 
 #: src/components/task-model-settings.tsx
 msgid "Used when TaskNotes writes links to projects, people, and other tasks, for example "
-msgstr ""
+msgstr "TaskNotes가 프로젝트, 사람 및 다른 작업으로 연결되는 링크를 작성할 때 사용합니다. 예: "
 
 #: src/components/expression-builder.tsx
 msgid "Value"
-msgstr ""
+msgstr "값"
 
 #: src/app/more-screen.tsx
 msgid "Version "
-msgstr ""
+msgstr "버전 "
 
 #: src/app/more-screen.tsx
 msgid "Version {__APP_VERSION__}"
-msgstr ""
+msgstr "버전 {__APP_VERSION__}"
 
 #. placeholder {0}: edit.path
 #: src/components/held-edits.tsx
 msgid "Versions of {0}"
-msgstr ""
+msgstr "{0} 버전"
 
 #: src/app/view-editor-form.tsx
 msgid "View details"
-msgstr ""
+msgstr "뷰 세부정보"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"
-msgstr ""
+msgstr "뷰 이름"
 
 #: src/components/view-options.tsx
 msgid "View options"
-msgstr ""
+msgstr "뷰 옵션"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Views"
-msgstr ""
+msgstr "뷰"
 
 #: src/app/app-shell.tsx
 msgid "Views availability"
-msgstr ""
+msgstr "뷰 사용 가능 여부"
 
 #: src/app/views/view-catalog.tsx
 msgid "Views stored in your collection"
-msgstr ""
+msgstr "컬렉션에 저장된 뷰"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
-msgstr ""
+msgstr "이 규칙은 {0}을(를) 사용하므로 시각적 편집을 사용할 수 없습니다."
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for access"
-msgstr ""
+msgstr "접근 권한 대기 중"
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for setup confirmation…"
-msgstr ""
+msgstr "설정 확인 대기 중…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"
-msgstr ""
+msgstr "컴퓨터 연결 대기 중"
 
 #: src/components/collection-availability.tsx
 msgid "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects."
-msgstr ""
+msgstr "컴퓨터 연결을 기다리는 중입니다. 이전에 불러온 작업은 여기에 유지되며 컴퓨터가 다시 연결되면 새로고침됩니다."
 
 #: src/components/operation-error-notice.tsx
 msgid "Waiting for your computer. Try this action again when it reconnects."
-msgstr ""
+msgstr "컴퓨터 연결을 기다리는 중입니다. 다시 연결되면 이 작업을 다시 시도하세요."
 
 #: src/app/task-screen.tsx
 msgid "Website, Home"
-msgstr ""
+msgstr "웹사이트, 홈"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Week"
-msgstr ""
+msgstr "주"
 
 #: src/components/calendar-preferences.tsx
 msgid "Week starts"
-msgstr ""
+msgstr "주 시작"
 
 #: src/components/recurrence-field.tsx
 msgid "Weekday"
-msgstr ""
+msgstr "요일"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekdays"
-msgstr ""
+msgstr "평일"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekly"
-msgstr ""
+msgstr "매주"
 
 #: src/components/duration-field.tsx
 msgid "Weeks"
-msgstr ""
+msgstr "주"
 
 #: src/app/task-time-tracking.tsx
 msgid "What are you working on?"
-msgstr ""
+msgstr "무엇을 하고 있나요?"
 
 #: src/app/tasknotes-app.tsx
 msgid "What is mdbase?"
-msgstr ""
+msgstr "mdbase란 무엇인가요?"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "What needs doing?"
-msgstr ""
+msgstr "무엇을 해야 하나요?"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
-msgstr ""
+msgstr "선택할 때"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
-msgstr ""
+msgstr "이전 작업이 완료되었을 때"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr ""
+msgstr "항목 선택"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr ""
+msgstr "위키링크"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr ""
+msgstr "위키링크"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
-msgstr ""
+msgstr "작업 세션"
 
 #: src/app/task-screen.tsx
 msgid "work, important"
-msgstr ""
+msgstr "업무, 중요"
 
 #: src/components/private-account-settings.tsx
 msgid "Working…"
-msgstr ""
+msgstr "작업 중…"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
-msgstr ""
+msgstr "쓰기"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
-msgstr ""
+msgstr "작성 도구"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"
-msgstr ""
+msgstr "매년"
 
 #: src/i18n/view-presentation.ts
 msgid "Yes"
-msgstr ""
+msgstr "예"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
-msgstr ""
+msgstr "예. 컬렉션 아래의 컬렉션 변경을 사용해 다른 mdbase 컬렉션을 여세요. 컬렉션을 변경해도 레코드는 이동하지 않습니다."
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
-msgstr ""
+msgstr "어제"
 
 #: src/main.tsx
 msgid "You can close this window."
-msgstr ""
+msgstr "이 창을 닫아도 됩니다."
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
-msgstr ""
+msgstr "오늘 할 일을 모두 마쳤습니다."
 
 #: src/components/task-attachments.tsx
 msgid "Your browser blocked the image window. Allow pop-ups and try again."
-msgstr ""
+msgstr "브라우저에서 이미지 창을 차단했습니다. 팝업을 허용한 후 다시 시도하세요."
 
 #: src/app/view-editor.tsx
 msgid "Your changes to this view have not been saved."
-msgstr ""
+msgstr "이 뷰의 변경 사항이 저장되지 않았습니다."
 
 #: src/components/held-edits.tsx
 msgid "Your choice was submitted, but the latest status could not be read. Refresh before making another choice."
-msgstr ""
+msgstr "선택 내용을 제출했지만 최신 상태를 읽지 못했습니다. 다른 선택을 하기 전에 새로고침하세요."
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
-msgstr ""
+msgstr "컬렉션은 제거되지 않았습니다. 작업을 다시 열려면 앱을 재시작하세요."
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr ""
+msgstr "초안이 그대로 있습니다. 확인한 후 다시 시도하세요."
 
 #: src/app/task-screen.tsx
 msgid "Your edit is no longer available on this device. Discard it to load the latest version."
-msgstr ""
+msgstr "이 기기에서 편집 내용을 더 이상 사용할 수 없습니다. 최신 버전을 불러오려면 편집 내용을 폐기하세요."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
-msgstr ""
+msgstr "편집 내용이 저장되지 않았습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
-msgstr ""
+msgstr "저장하는 동안 노트가 변경되었습니다. 새로고침하기 전에 다시 저장하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Your password unlocks private collections on approved devices. It is processed on this device, not sent to mdbase."
-msgstr ""
+msgstr "비밀번호는 승인된 기기에서 비공개 컬렉션의 잠금을 해제합니다. 비밀번호는 이 기기에서 처리되며 mdbase로 전송되지 않습니다."
 
 #: src/app/search-screen.tsx
 msgid "Your person record could not be loaded. Check your connection, then reload people to try again."
-msgstr ""
+msgstr "사람 레코드를 불러오지 못했습니다. 연결을 확인한 후 사람 목록을 다시 불러오세요."
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr ""
+msgstr "작업을 필터링하기 전에 사람 레코드를 수정해야 합니다: {0}."
 
 #: src/components/held-edits.tsx
 msgid "Your protected version"
-msgstr ""
+msgstr "보호된 버전"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr ""
+msgstr "사이드바 순서입니다.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
-msgstr ""
+msgstr "저장되지 않은 선택 사항이 그대로 있습니다. 검토한 후 다시 시도하세요."
