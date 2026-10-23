@@ -240,7 +240,9 @@ export async function deployDevelopmentTaskNotes(
   console.log(`Development TaskNotes deployed: ${deployment.appOrigin}/`);
 }
 
-export async function verifyDevelopmentBuild(deployment = developmentDeployment) {
+export async function verifyDevelopmentBuild(
+  deployment = developmentDeployment,
+) {
   const manifestPath = resolve(
     projectRoot,
     "dist",
