@@ -2667,7 +2667,7 @@ msgstr "마지막 날"
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "마지막 새로고침에서 {1}ms 동안 레코드 {0}개를 확인했습니다."
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
@@ -2689,7 +2689,7 @@ msgstr "레이아웃: {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "자세히 알아보기"
 
 #: src/app/more-screen.tsx
 msgid "Light"
@@ -2697,7 +2697,7 @@ msgstr "밝게"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "링크 형식"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
@@ -2709,7 +2709,7 @@ msgstr "연결됨"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "링크 및 시간 추적"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
@@ -2777,11 +2777,11 @@ msgstr "불러오는 중…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "이 기기에서 복구 키 잠그기"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "이 기기에서 잠김"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
@@ -2834,7 +2834,7 @@ msgstr "미완료로 표시"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Markdown 파일"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
@@ -2865,11 +2865,11 @@ msgstr "mdbase 컬렉션"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase에서 엄격 모드 적용을 확인했습니다. 이 기기에서 복구 키가 제거되었습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase에서 복구 대상에 엄격 모드가 적용되었음을 확인했습니다."
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
@@ -2882,23 +2882,23 @@ msgstr "mdbase가 권한 원본입니다. 변경하려면 연결이 필요합니
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase는 작업을 이식 가능한 Markdown 파일로 보관하며 호환 앱이 이를 공통된 방식으로 이해하도록 합니다. mdbase에서 컬렉션을 선택하고 TaskNotes의 접근을 승인할 수 있습니다. 컬렉션은 mdbase에서 호스팅하거나 연결된 컴퓨터에서 제공될 수 있습니다."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase에서 편집 내용을 보호했습니다."
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase에서 변경을 거부했습니다."
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "mdbase 업데이트"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "mdbase가 업그레이드되었습니다. 계속하려면 TaskNotes를 한 번 승인하세요. 컬렉션과 노트는 변경되지 않았습니다."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
@@ -2979,11 +2979,11 @@ msgstr "{label} 위로 이동"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "모두 오늘로 이동"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "보관된 작업 파일을 폴더로 이동"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
@@ -2999,7 +2999,7 @@ msgstr "드래그 핸들을 사용하려면 수동 순서를 첫 번째 위치�
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "이동됨 "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -3072,7 +3072,7 @@ msgstr "안 함"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "새 기기는 기존 기기의 승인을 받아야 합니다. 비밀번호와 복구 키를 통한 잠금 해제는 중단됩니다. 컬렉션에서 권한 취소와 키 재설정을 적용할 때까지 이전 비밀번호와 키 자료를 가진 사람이 이전 콘텐츠를 읽을 수 있습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3080,7 +3080,7 @@ msgstr "새 노트"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "새 복구 비밀번호"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
@@ -3097,7 +3097,7 @@ msgstr "새 작업"
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "새 작업({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
@@ -3110,7 +3110,7 @@ msgstr "새 작업"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "새 작업, 반복 작업 및 보관"
 
 #: src/app/view-editor.tsx
 msgid "New view"
@@ -3131,15 +3131,15 @@ msgstr "다음 기간"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "다음 작업"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "다음 주"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "다음: "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
@@ -3188,7 +3188,7 @@ msgstr "그룹화 안 함"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "일치하는 명령이 없습니다."
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
@@ -3212,7 +3212,7 @@ msgstr "투영이 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "이 기기에 보관된 복구 키가 없습니다."
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
@@ -3228,7 +3228,7 @@ msgstr "상태 없음"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "작업 없음"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
@@ -3253,7 +3253,7 @@ msgstr "이 날짜에 작업이 없습니다. 작업 추가를 사용해 일정�
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "아직 작업이 없습니다."
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
@@ -3271,7 +3271,7 @@ msgstr "값 없음"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "아직 뷰가 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
@@ -3284,7 +3284,7 @@ msgstr "없음"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "사용할 수 없음"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
@@ -3301,11 +3301,11 @@ msgstr "저장되지 않음"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "저장되지 않음 · 검토"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "저장되지 않았습니다. 편집 내용을 검토하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
@@ -3313,11 +3313,11 @@ msgstr "노트"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "노트 작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "노트 삭제됨"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
@@ -3334,7 +3334,7 @@ msgstr "노트"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "오늘 이후로 예정된 항목이 없습니다."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
@@ -3346,7 +3346,7 @@ msgstr "여기서는 알림을 사용할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "시스템 설정에서 TaskNotes 알림이 꺼져 있습니다. 리마인더를 받으려면 시스템 설정에서 알림을 켜세요."
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
@@ -3382,11 +3382,11 @@ msgstr "반복 항목"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr "중 "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr "4개 중"
 
 #: src/app/notification-label.ts
 msgid "Off"
@@ -3394,7 +3394,7 @@ msgstr "끔"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "오프라인"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
@@ -3427,7 +3427,7 @@ msgstr "작업 제목만 표시됩니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "직접 만들 때만"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
@@ -3440,7 +3440,7 @@ msgstr "열기"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "“{title}” 열기"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
@@ -3449,7 +3449,7 @@ msgstr "{0} 열기"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "먼저 컬렉션을 여세요."
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
@@ -3483,7 +3483,7 @@ msgstr "여는 중"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "컬렉션 여는 중"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
@@ -3527,7 +3527,7 @@ msgstr "옵션"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "또는"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -3568,7 +3568,7 @@ msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "비밀번호 강도: "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
@@ -3584,7 +3584,7 @@ msgstr "경로"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "경로 복사됨"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
@@ -3601,7 +3601,7 @@ msgstr "사람 목록을 불러오지 못했습니다. 기존 할당은 변경�
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "계획된 날짜"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
@@ -3655,7 +3655,7 @@ msgstr "이전 기간"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "이전 작업"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
@@ -3682,15 +3682,15 @@ msgstr "우선순위, 프로젝트, 의존성, 컨텍스트 및 태그"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "비공개 계정 복구"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "비공개 컬렉션 복구"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "비공개 컬렉션을 사용하려면 데스크톱이 온라인 상태여야 합니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
@@ -3729,7 +3729,7 @@ msgstr "정렬할 속성"
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "보호된 편집 내용"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
@@ -3745,11 +3745,11 @@ msgstr "인용"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "최근 검색"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "최근에 연 항목"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
@@ -3757,7 +3757,7 @@ msgstr "인식된 작업 세부정보"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "다시 연결 중"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
@@ -3765,7 +3765,7 @@ msgstr "다시 연결 중…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "계정 접근 복구"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -3773,47 +3773,47 @@ msgstr "작업 복구"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "복구가 설정되지 않았습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "복구가 설정되었습니다. 이 화면을 나가기 전에 복구 키를 저장하세요."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "복구 키"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "복구 키(한 번만 표시)"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "복구 키 보관 상태를 확인할 수 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "복구 키 표시를 닫았습니다. TaskNotes는 표시용 사본을 보관하지 않습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "이 기기의 복구 키가 잠겼습니다. 기존 컬렉션 키는 계속 사용할 수 있습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "복구 비밀번호"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "복구 비밀번호가 변경되었습니다. 복구 키는 변경되지 않았습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "복구 상태를 확인할 수 없습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "개의 복구 대상이 대기 중입니다."
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
@@ -3884,7 +3884,7 @@ msgstr "리마인더 날짜"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "리마인더 세부정보는 작업에 저장되지만, 이 버전의 TaskNotes는 리마인더 알림을 보내지 않습니다."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
@@ -3892,7 +3892,7 @@ msgstr "리마인더 세부정보는 Markdown에 저장되지만, 이 기기에 
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "리마인더 설정"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
@@ -3967,7 +3967,7 @@ msgstr "다시 열기"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "“{title}” 다시 열기"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
@@ -4022,7 +4022,7 @@ msgstr "반복 작업 작업"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "반복 작업"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
@@ -4060,7 +4060,7 @@ msgstr "복원"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
-msgstr ""
+msgstr "저장되지 않은 편집 내용 복원"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -4068,7 +4068,7 @@ msgstr "홈 뷰 복원 중"
 
 #: src/components/command-palette.tsx
 msgid "Results"
-msgstr ""
+msgstr "결과"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
@@ -4076,7 +4076,7 @@ msgstr "현재 항목으로 이어서 사용"
 
 #: src/app/model-setup-screen.tsx
 msgid "Resume original setup"
-msgstr ""
+msgstr "원래 설정 이어서 진행"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
@@ -4101,7 +4101,7 @@ msgstr "다시 시도하면 새로 삭제하지 않고 저장된 요청을 확�
 
 #: src/app/more-screen.tsx
 msgid "Retry collection details"
-msgstr ""
+msgstr "컬렉션 세부정보 다시 시도"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
@@ -4109,7 +4109,7 @@ msgstr "연결 다시 시도"
 
 #: src/app/more-screen.tsx
 msgid "Retry notification check"
-msgstr ""
+msgstr "알림 확인 다시 시도"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
@@ -4129,7 +4129,7 @@ msgstr "다시 시도하거나 실행 취소하여 작업을 여기로 복원하
 
 #: src/app/app-shell.tsx
 msgid "Retrying…"
-msgstr ""
+msgstr "다시 시도 중…"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
@@ -4141,11 +4141,11 @@ msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 
 #: src/app/app-shell.tsx
 msgid "Review access"
-msgstr ""
+msgstr "접근 권한 검토"
 
 #: src/app/model-setup-screen.tsx
 msgid "Review collection permission"
-msgstr ""
+msgstr "컬렉션 권한 검토"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4153,31 +4153,31 @@ msgstr "알림 접근 검토"
 
 #: src/components/held-edits.tsx
 msgid "Review protected edits"
-msgstr ""
+msgstr "보호된 편집 내용 검토"
 
 #: src/components/collection-write-status.tsx
 msgid "Review record"
-msgstr ""
+msgstr "레코드 검토"
 
 #: src/app/task-screen.tsx
 msgid "Review save"
-msgstr ""
+msgstr "저장 내용 검토"
 
 #: src/components/private-account-settings.tsx
 msgid "Review strict mode"
-msgstr ""
+msgstr "엄격 모드 검토"
 
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
-msgstr ""
+msgstr "TaskNotes 접근 권한 검토"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
-msgstr ""
+msgstr "다른 변경을 하기 전에 작업을 검토하세요."
 
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
-msgstr ""
+msgstr "새로고침하기 전에 보호된 편집 내용을 검토하세요."
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -4194,11 +4194,11 @@ msgstr "이 작업에 고정 또는 상대 리마인더를 저장합니다."
 
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
-msgstr ""
+msgstr "TaskNotes 저장 후 새로고침"
 
 #: src/components/task-model-settings.tsx
 msgid "Save changes"
-msgstr ""
+msgstr "변경 사항 저장"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
@@ -4206,15 +4206,15 @@ msgstr "저장 실패 · 다시 시도"
 
 #: src/app/task-screen.tsx
 msgid "Save failed. {retrySaveLabel}"
-msgstr ""
+msgstr "저장하지 못했습니다. {retrySaveLabel}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Save needs review"
-msgstr ""
+msgstr "저장 내용 검토 필요"
 
 #: src/components/collection-write-status.tsx
 msgid "Save outcome unknown"
-msgstr ""
+msgstr "저장 결과를 알 수 없음"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
@@ -4226,7 +4226,7 @@ msgstr "뷰 저장"
 
 #: src/components/private-account-settings.tsx
 msgid "Save your recovery key"
-msgstr ""
+msgstr "복구 키 저장"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -4238,7 +4238,7 @@ msgstr "저장됨"
 #: src/app/task-screen.tsx
 #: src/components/collection-write-status.tsx
 msgid "Saved on this device; waiting for sync"
-msgstr ""
+msgstr "이 기기에 저장됨; 동기화 대기 중"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
@@ -4250,7 +4250,7 @@ msgstr "저장된 뷰"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
-msgstr ""
+msgstr "컬렉션에 저장되며 이를 여는 모든 앱에서 사용됩니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
@@ -4262,11 +4262,11 @@ msgstr "저장 중"
 
 #: src/components/app-update-notice.tsx
 msgid "Saving changes…"
-msgstr ""
+msgstr "변경 사항 저장 중…"
 
 #: src/components/task-model-settings.tsx
 msgid "Saving collection behavior"
-msgstr ""
+msgstr "컬렉션 동작 저장 중"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
@@ -4282,7 +4282,7 @@ msgstr "일정 및 상태"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Schedule next week"
-msgstr ""
+msgstr "다음 주로 일정 지정"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4373,7 +4373,7 @@ msgstr "검색"
 
 #: src/components/command-palette.tsx
 msgid "Search commands and tasks"
-msgstr ""
+msgstr "명령 및 작업 검색"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
@@ -4395,7 +4395,7 @@ msgstr "뷰 검색"
 
 #: src/components/command-palette.tsx
 msgid "Searching tasks…"
-msgstr ""
+msgstr "작업 검색 중…"
 
 #: src/i18n/presentation.ts
 msgid "second"
@@ -4407,7 +4407,7 @@ msgstr "초"
 
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
-msgstr ""
+msgstr "예정 보기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -4455,11 +4455,11 @@ msgstr "세션 시작"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
-msgstr ""
+msgstr "복구 설정"
 
 #: src/app/model-setup-screen.tsx
 msgid "Set up TaskNotes"
-msgstr ""
+msgstr "TaskNotes 설정"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
@@ -4473,7 +4473,7 @@ msgstr "설정"
 
 #: src/app/more-screen.tsx
 msgid "Settings sections"
-msgstr ""
+msgstr "설정 섹션"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
@@ -4481,7 +4481,7 @@ msgstr "설정을 확인해야 합니다."
 
 #: src/app/model-setup-screen.tsx
 msgid "Setup outcome unknown. "
-msgstr ""
+msgstr "설정 결과를 알 수 없습니다. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -4494,7 +4494,7 @@ msgstr "작업을 만들기 전에 개요를 구성하세요."
 
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
-msgstr ""
+msgstr "이 컬렉션을 사용하는 모든 사람과 공유됨"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
@@ -4569,7 +4569,7 @@ msgstr "건너뛴 반복 항목"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "일부 변경 사항이 아직 저장 중입니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
@@ -4577,7 +4577,7 @@ msgstr "일부 파일을 읽을 수 없어 이 뷰에서 제외했습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "일부 노트 변경 사항이 저장되지 않았습니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
@@ -4603,7 +4603,7 @@ msgstr "시작"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "템플릿으로 새 작업 시작"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
@@ -4619,7 +4619,7 @@ msgstr "시작-시작"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "기본 뷰"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
@@ -4645,7 +4645,7 @@ msgstr "중지"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "작업이 완료되면 실행 중인 타이머 중지"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
@@ -4653,19 +4653,19 @@ msgstr "타이머 중지"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "엄격 모드"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "아직 엄격 모드를 끌 수 없습니다. 비밀번호 복구를 설정하거나 잠금 해제해도 기기의 엄격 모드는 꺼지지 않습니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "모든 비공개 복구 대상에서 엄격 모드 적용이 아직 확인되지 않았습니다. 키가 있는 온라인 기기에서 변경 사항 적용을 완료해야 합니다."
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "제출 중…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
@@ -4685,19 +4685,19 @@ msgstr "처음 {limit}개 작업에서 제안합니다. 다른 항목은 검색�
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "엄격 모드로 전환"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "동기화가 평소보다 오래 걸립니다."
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "동기화된 버전"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "동기화 중…"
 
 #: src/app/more-screen.tsx
 msgid "System"
@@ -4729,7 +4729,7 @@ msgstr "탭하여 다시 시도하세요."
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "작업"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
