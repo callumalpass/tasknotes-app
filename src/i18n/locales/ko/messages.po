@@ -953,390 +953,390 @@ msgstr "나중에 컬렉션을 변경할 수 있나요?"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 msgid "Cancel"
-msgstr "Annuler"
+msgstr "취소"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr "Annuler la confirmation"
+msgstr "취소 확인"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr "Déplacement de {title} annulé."
+msgstr "{title} 이동을 취소했습니다."
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr "Expression CEL"
+msgstr "CEL 표현식"
 
 #: src/app/collection-settings.tsx
 msgid "Change collection"
-msgstr "Changer de collection"
+msgstr "컬렉션 변경"
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr "Modifie chaque occurrence"
+msgstr "모든 반복 항목 변경"
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr "Vérification en cours"
+msgstr "확인 중"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings"
-msgstr "Vérification des paramètres de la collection"
+msgstr "컬렉션 설정 확인 중"
 
 #: src/app/cloud-collection.tsx
 msgid "Checking this collection’s TaskNotes setup…"
-msgstr "Vérification de la configuration TaskNotes de cette collection…"
+msgstr "이 컬렉션의 TaskNotes 설정 확인 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr "Sous-élément"
+msgstr "하위 항목"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr "Choisir"
+msgstr "선택"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection"
-msgstr "Choisir une collection"
+msgstr "컬렉션 선택"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a collection to open your tasks."
-msgstr "Choisissez une collection pour ouvrir vos tâches."
+msgstr "작업을 열 컬렉션을 선택하세요."
 
 #: src/app/cloud-collection.tsx
 msgid "Choose a different collection in mdbase"
-msgstr "Choisir une collection différente dans mdbase"
+msgstr "mdbase에서 다른 컬렉션 선택"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr "Choisir une personne…"
+msgstr "사람 선택…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr "Choisir une propriété"
+msgstr "속성 선택"
 
 #: src/app/task-screen.tsx
 msgid "Choose a value"
-msgstr "Choisir une valeur"
+msgstr "값 선택"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose another collection in mdbase"
-msgstr "Choisir une autre collection dans mdbase"
+msgstr "mdbase에서 다른 컬렉션 선택"
 
 #: src/app/app-shell.tsx
 msgid "Choose another mdbase collection"
-msgstr "Choisir une autre collection mdbase"
+msgstr "다른 mdbase 컬렉션 선택"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr "Choisir les personnes assignées"
+msgstr "담당자 선택"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
-msgstr "Choisissez comment regrouper et trier les tâches."
+msgstr "작업의 그룹화 및 정렬 방식을 선택하세요."
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record in Connect"
-msgstr "Choisir ou créer votre document de personne dans Connect"
+msgstr "Connect에서 사람 레코드를 선택하거나 만드세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
-msgstr "Choisissez le mode du calendrier et les dates de tâches qui deviennent des événements."
+msgstr "캘린더 모드와 이벤트로 표시할 작업 날짜를 선택하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the information shown beneath each task."
-msgstr "Choisissez les informations affichées sous chaque tâche."
+msgstr "각 작업 아래에 표시할 정보를 선택하세요."
 
 #: src/app/views-screen.tsx
 msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "Choisissez les éléments de navigation, changez leur ordre et gérez les vues enregistrées."
+msgstr "탐색 메뉴에 표시할 항목과 순서를 선택하고 저장된 뷰를 관리하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
-msgstr "Choisir ce qui devient une tâche"
+msgstr "작업으로 만들 항목 선택"
 
 #: src/app/collection-picker.tsx
 msgid "Choose where to work"
-msgstr "Choisir où travailler"
+msgstr "작업할 위치 선택"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose which tasks belong in this view."
-msgstr "Choisissez les tâches à inclure dans cette vue."
+msgstr "이 뷰에 포함할 작업을 선택하세요."
 
 #: src/components/expression-builder.tsx
 msgid "Choose…"
-msgstr "Choisir…"
+msgstr "선택…"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
-msgstr "Effacer"
+msgstr "지우기"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
-msgstr "Effacer l’échéance"
+msgstr "마감일 지우기"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
-msgstr "Effacer la date planifiée"
+msgstr "예정일 지우기"
 
 #: src/app/search-screen.tsx
 msgid "Clear search"
-msgstr "Effacer la recherche"
+msgstr "검색 지우기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
-msgstr "Effacer la sélection"
+msgstr "선택 항목 지우기"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
-msgstr "Effacer la valeur"
+msgstr "값 지우기"
 
 #: src/components/task-actions.tsx
 msgid "Clipboard access is not available."
-msgstr "L’accès au presse-papiers n’est pas disponible."
+msgstr "클립보드에 접근할 수 없습니다."
 
 #: src/i18n/editor-phrases.ts
 msgid "close"
-msgstr "fermer"
+msgstr "닫기"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
-msgstr "Fermer"
+msgstr "닫기"
 
 #. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
-msgstr "Fermer : {0}"
+msgstr "{0} 닫기"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {accessibleName} calendar"
-msgstr "Fermer le calendrier : {accessibleName}"
+msgstr "{accessibleName} 캘린더 닫기"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
-msgstr "Fermer : {ariaLabel}"
+msgstr "{ariaLabel} 닫기"
 
 #: src/app/use-calendar-overflow.ts
 msgid "Close additional tasks"
-msgstr "Fermer les tâches supplémentaires"
+msgstr "추가 작업 닫기"
 
 #: src/app/collection-picker.tsx
 msgid "Close collection picker"
-msgstr "Fermer le sélecteur de collection"
+msgstr "컬렉션 선택기 닫기"
 
 #: src/app/collection-picker.tsx
 msgid "Close collections"
-msgstr "Fermer les collections"
+msgstr "컬렉션 닫기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
-msgstr "Fermer l’ajout d’images"
+msgstr "이미지 캡처 닫기"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
-msgstr "Fermer la nouvelle tâche"
+msgstr "새 작업 닫기"
 
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
-msgstr "Fermer l’éditeur de propriétés"
+msgstr "속성 편집기 닫기"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
-msgstr "Fermer l’éditeur de vues"
+msgstr "뷰 편집기 닫기"
 
 #: src/i18n/ui-copy.ts
 msgid "Collapse"
-msgstr "Replier"
+msgstr "접기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
-msgstr "Replier l’image"
+msgstr "이미지 접기"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
 msgctxt "settings section title"
 msgid "Collection"
-msgstr "Collection"
+msgstr "컬렉션"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
-msgstr "Connexion à la collection"
+msgstr "컬렉션 연결"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
-msgstr "Ordre de la collection"
+msgstr "컬렉션 순서"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
-msgstr "L’ordre de la collection est utilisé."
+msgstr "컬렉션 순서를 사용합니다."
 
 #: src/components/task-model-settings.tsx
 msgid "Collection settings"
-msgstr "Paramètres de la collection"
+msgstr "컬렉션 설정"
 
 #: src/app/collection-settings.tsx
 msgid "Collection unavailable"
-msgstr "Collection indisponible"
+msgstr "컬렉션을 사용할 수 없음"
 
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
-msgstr "Collection indisponible. Affichage des tâches chargées précédemment ; les modifications ne peuvent pas être enregistrées."
+msgstr "컬렉션을 사용할 수 없습니다. 이전에 불러온 작업을 표시하며 변경 사항은 저장할 수 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
-msgstr "Thème de couleurs"
+msgstr "색상 테마"
 
 #: src/app/task-screen.tsx
 msgid "Comma-separated values"
-msgstr "Valeurs séparées par des virgules"
+msgstr "쉼표로 구분된 값"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
-msgstr "Lignes compactes"
+msgstr "간결한 행"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr "Terminer"
+msgstr "완료"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr "Terminées"
+msgstr "완료"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr "Terminée"
+msgstr "완료"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
-msgstr "Terminer l’occurrence"
+msgstr "반복 항목 완료"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
-msgstr "Terminer la tâche"
+msgstr "작업 완료"
 
 #: src/app/cloud-collection.tsx
 msgid "Complete this collection’s setup, or choose a different collection."
-msgstr "Terminez la configuration de cette collection ou choisissez une autre collection."
+msgstr "이 컬렉션 설정을 완료하거나 다른 컬렉션을 선택하세요."
 
 #: src/app/cloud-collection.tsx
 msgid "Complete your selection in the mdbase window."
-msgstr "Terminez votre sélection dans la fenêtre mdbase."
+msgstr "mdbase 창에서 선택을 완료하세요."
 
 #: src/i18n/default-labels.ts
 msgid "Completed"
-msgstr "Terminées"
+msgstr "완료됨"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
-msgstr "Brouillon terminé"
+msgstr "완료된 초안"
 
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
-msgstr "Occurrences récurrentes terminées"
+msgstr "완료된 반복 항목"
 
 #: src/app/task-screen.tsx
 msgid "Completion"
-msgstr "Fin de la tâche"
+msgstr "완료"
 
 #: src/components/recurrence-field.tsx
 msgid "Completion date"
-msgstr "Date de fin de la tâche"
+msgstr "완료일"
 
 #: src/app/task-screen.tsx
 msgid "Completion or skip"
-msgstr "Fin de la tâche ou occurrence ignorée"
+msgstr "완료 또는 건너뛰기"
 
 #: src/i18n/editor-phrases.ts
 msgid "Completions"
-msgstr "Suggestions de saisie"
+msgstr "완료 횟수"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
-msgstr "Les propriétés calculées sont valides"
+msgstr "계산된 속성이 유효합니다"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property expression {0}"
-msgstr "Expression de la propriété calculée {0}"
+msgstr "계산된 속성 표현식 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property name {0}"
-msgstr "Nom de la propriété calculée {0}"
+msgstr "계산된 속성 이름 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property scope {0}"
-msgstr "Portée de la propriété calculée {0}"
+msgstr "계산된 속성 범위 {0}"
 
 #: src/app/task-screen.tsx
 msgid "Computer, Errands"
-msgstr "Ordinateur, Courses"
+msgstr "컴퓨터, 볼일"
 
 #: src/components/expression-builder.tsx
 msgid "Condition"
-msgstr "Condition"
+msgstr "조건"
 
 #: src/app/app-shell.tsx
 #: src/app/cloud-collection.tsx
 msgid "Confirm discard and disconnect"
-msgstr "Confirmer l’abandon et la déconnexion"
+msgstr "변경 사항 폐기 및 연결 해제 확인"
 
 #: src/app/cloud-collection.tsx
 msgid "Confirm recovery"
-msgstr "Confirmer la récupération"
+msgstr "복구 확인"
 
 #: src/app/collection-picker.tsx
 msgid "Connect another collection"
-msgstr "Connecter une autre collection"
+msgstr "다른 컬렉션 연결"
 
 #: src/app/notification-label.ts
 msgid "Connect mdbase first"
-msgstr "Connectez d’abord mdbase"
+msgstr "먼저 mdbase에 연결하세요."
 
 #: src/app/cloud-collection.tsx
 msgid "Connect TaskNotes to your tasks"
-msgstr "Connecter TaskNotes à vos tâches"
+msgstr "TaskNotes를 작업에 연결"
 
 #: src/app/collection-settings.tsx
 msgid "Connected"
-msgstr "Connexion établie"
+msgstr "연결됨"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 msgid "Connected computer"
-msgstr "Ordinateur connecté"
+msgstr "연결된 컴퓨터"
 
 #: src/app/collection-settings.tsx
 msgid "Connecting"
-msgstr "Connexion en cours"
+msgstr "연결 중"
 
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
-msgstr "Connexion en cours…"
+msgstr "연결 중…"
 
 #: src/app/collection-settings.tsx
 msgctxt "mdbase authority status"
 msgid "Connection"
-msgstr "Connexion"
+msgstr "연결"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
-msgstr "Paramètres de connexion"
+msgstr "연결 설정"
 
 #: src/components/expression-builder.tsx
 msgid "contains"
-msgstr "contient"
+msgstr "포함"
 
 #: src/app/search-match-context.ts
 msgid "contexts"
-msgstr "contextes"
+msgstr "컨텍스트"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -1345,33 +1345,33 @@ msgstr "contextes"
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
-msgstr "Contextes"
+msgstr "컨텍스트"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
-msgstr "Continuer sur la chronologie"
+msgstr "타임라인에서 계속"
 
 #: src/i18n/editor-phrases.ts
 msgid "Control character"
-msgstr "Caractère de contrôle"
+msgstr "제어 문자"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
-msgstr "Convertir {0} en note"
+msgstr "{0}을(를) 노트로 변환"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
-msgstr "Convertir en note"
+msgstr "노트로 변환"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
-msgstr "Copier"
+msgstr "복사"
 
 #. placeholder {0}: view?.name
 #: src/app/view-editor.tsx
 msgid "Copy {0}"
-msgstr "Copie de {0}"
+msgstr "{0} 복사"
 
 #: src/components/task-actions.tsx
 msgid "Copy path"
