@@ -29,7 +29,9 @@ for (const locale of ["en", "fr"]) {
       }),
     ).toContainText(locale === "fr" ? "dim." : "Sun");
     await page.goto("more/collection?demo=12");
-    const panel = page.getByRole("region", { name: "Collection", exact: true });
+    const panel = page
+      .getByRole("region", { name: "Collection", exact: true })
+      .and(page.locator("#settings-collection"));
     await expect(panel).toContainText("TaskNotes demo");
     await expect(panel).toContainText(locale === "fr" ? "au total" : "total");
     const refresh = panel.getByRole("button", {
@@ -119,6 +121,10 @@ test("French interface preserves user edits and stored English view names", asyn
     page.getByRole("button", { name: "Nouvelle note", exact: true }),
   ).toBeVisible();
   await openNavigationItem(page, "Paramètres");
+  const collectionSection = page
+    .getByRole("navigation", { name: "Sections des paramètres" })
+    .getByRole("button", { name: /^Collection / });
+  if (await collectionSection.isVisible()) await collectionSection.click();
   await expect(
     page.getByRole("button", { name: "Actualiser maintenant", exact: true }),
   ).toBeVisible();
