@@ -305,19 +305,19 @@ msgstr "{hours}時間{minutes}分"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, one {毎日} other {#日ごと}}"
+msgstr "{interval, plural, other {毎日（#日ごと）}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, one {毎月} other {#か月ごと}}"
+msgstr "{interval, plural, other {毎月（#か月ごと）}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, one {毎週} other {#週間ごと}}"
+msgstr "{interval, plural, other {毎週（#週間ごと）}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, one {毎年} other {#年ごと}}"
+msgstr "{interval, plural, other {毎年（#年ごと）}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -1009,27 +1009,27 @@ msgstr "mdbaseで別のコレクションを選択"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr "mdbaseで別のコレクションを選択"
+msgstr "人物を選択…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr "人物を選択…"
+msgstr "プロパティを選択"
 
 #: src/app/task-screen.tsx
 msgid "Choose a value"
-msgstr "プロパティを選択"
+msgstr "値を選択"
 
 #: src/app/cloud-collection.tsx
 msgid "Choose another collection in mdbase"
-msgstr "値を選択"
+msgstr "mdbaseで別のコレクションを選択"
 
 #: src/app/app-shell.tsx
 msgid "Choose another mdbase collection"
-msgstr "mdbaseで別のコレクションを選択"
+msgstr "別のmdbaseコレクションを選択"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr "別のmdbaseコレクションを選択"
+msgstr "担当者を選択"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
@@ -2345,7 +2345,7 @@ msgstr "最終日"
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "最後の更新では{elapsed}ミリ秒で{scanned, plural, one {レコード#件} other {レコード#件}}を確認しました。"
+msgstr "最後の更新では{elapsed}ミリ秒で{scanned, plural, other {レコード#件}}を確認しました。"
 
 #: src/i18n/default-labels.ts
 msgid "Later"
