@@ -21,22 +21,21 @@ stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
 **Catalogue scope:** 1,294 active application messages. All eight QA-fixed v2
-branches and their 13-ID v3 deltas are merged. Kit `5be277b8` exposed two more
-unmarked fields: `Collection access is unavailable.` (`8fU7nk`) and
-`Collection settings` (`1WKqDd`, context `settings access source label`). The latter
-is displayed as provenance after settings-access failure, not as a navigation
-title. Both resolve at render time without restarting repository effects. These
-two targets per language remain blank for coordinator-routed translator authoring;
-this owner has not filled target translations. The exact handoff is
-`73e94521bf02afb7b4cca8d780a23640a481085a`. This is not native-speaker certification or permission
-to release. The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
+branches, their 13-ID v3 deltas and final two-ID v4 deltas are merged, with no
+missing authored targets. `Collection access is unavailable.` (`8fU7nk`) is the
+generic non-Error fallback; real authority diagnostics remain unchanged.
+`Collection settings` (`1WKqDd`, context `settings access source label`) is
+visible provenance after settings-access failure, not a navigation title. Both
+resolve at render time without restarting repository effects. This is not
+native-speaker certification or permission to release.
+
+The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
-copied into application PO files. The refreshed `852df21f` library tarball has
-strict-authored active targets, including de/ru, but still compiles three obsolete
-messages. Its English `Close {0}` (`nzHlj8`) conflicts with all eight authored app
-targets. Conflicts fail closed and retain the current language rather than
-overriding translations. Upstream must clean obsolete entries before compile/pack;
-successful composition remains a product release gate.
+copied into application PO files. Final UI/kit `a36fa009` prune obsolete entries
+before compiling: the library has exactly 197 active compiled messages per locale,
+without obsolete `nzHlj8`. Conflicts still fail closed and retain the current
+language rather than overriding translations; successful composition remains a
+product release gate.
 
 ## Authoring
 
@@ -102,7 +101,21 @@ and app-lane ports. `e2e/i18n.spec.ts` covers local collection controls, data an
 language persistence. `e2e/i18n-production.acceptance.ts`, run with
 `playwright.production-i18n.config.ts`, checks a normal production artifact:
 all nine saved locales, browser negotiation, explicit preference precedence and
-same-deployment lazy chunks. The retired `i18n-pilot` query has no authority.
+same-deployment lazy chunks. `e2e/i18n-final.spec.ts` checks real ja/de/ru rendering
+at 0/1/2/5/11/21/22/101, inclusive month-end summaries and all three account notices
+using isolated mock account ports (not real authority or native acceptance).
+The retired `i18n-pilot` query has no authority.
+
+**Vite compatibility:** the packed UI uses Node JSON import attributes. Vite's
+optimizer relocates those dynamic imports without their files, and its production
+bundler also leaves attributed imports unresolved. `uiCatalogueImports()`
+normalizes only literal JSON imports with the exact `with: { type: "json" }`
+option in the packed UI's `dist/i18n.js` before Vite analyzes them. The UI stays
+outside dependency prebundling so both dev and builds resolve the real JSON
+modules into same-deployment lazy chunks. Unknown attributes/options are untouched;
+regressions cover all eight imports, module scoping and Vite version queries.
+Authenticated archive bytes, catalogue values and fail-closed composition are
+unchanged. Requalify this bundler integration when replacing the npm pins.
 
 ## Shared-kit handoff
 
@@ -111,14 +124,18 @@ The app adopted and hash-verified kit `b4134d71` (SHA256
 then advanced to its source-guard/composition successor `8785bd19`, same version
 `0.1.0-beta.141`, as `vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz`
 (SHA256 `4eae06666795c7d7e8c24d5eb35ead06686e6f351b3d76d39f2b95f402c91af6`).
-The current field-aware successor is `5be277b8`, also `0.1.0-beta.141`, in
-`vendor/mdbase-dev-i18n-0.1.0-beta.141-5be277b8.tgz` (SHA256
-`953044eb06763e66b93032387a53ccdbe0e02cf524ccac126dd6396138493c5d`).
-Public UI is vendored from `852df21f` in
-`vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz` (SHA256
-`5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7`).
-The original predecessor and earlier integration archive retain their independent
-byte/hash/integrity regressions.
-Swap this file dependency for the published package at merge time, after the
-coordinated Connect release. This branch does not publish or deploy anything.
-Agent-authored translations have not received native-speaker certification.
+The field-aware successor `5be277b8` was subsequently superseded by final
+**`a36fa00914af2aacef03b8e23cb566bee5531e4a`**, also `0.1.0-beta.141`:
+
+- Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-a36fa009.tgz`, 21,683 bytes,
+  SHA256 `da2ae8145e5744733c29726a5b56f999c19f82bdd9d48c57d67da29cc18dd9b5`.
+- UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-a36fa009.tgz`, 129,246 bytes,
+  SHA256 `e7199463d7f4d282cfd6f5f16e71dc1aa1029330a634f43112ae5b2f63dea7a0`.
+
+Exact byte/hash/sha512 lockfile integrity regressions protect both final pins;
+all original predecessor and earlier UI integration checks remain intact.
+**Swap both vendored kit/UI file dependencies for published npm versions at merge
+time**, after the coordinated Connect release, and rerun gates. This branch does
+not publish or deploy anything. Agent-authored translations have not received
+native-speaker certification. iOS acceptance remains explicitly waived/unverified,
+not passed.
