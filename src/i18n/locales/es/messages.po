@@ -1752,7 +1752,7 @@ msgstr "Vencimiento"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr "Vencimiento (sin fecha) "
+msgstr "Vencimiento (sin fecha)"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
