@@ -3060,31 +3060,31 @@ msgstr "Dê um nome a esta visualização e escolha o layout."
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
-msgstr ""
+msgstr "Grupo aninhado"
 
 #: src/components/expression-builder.tsx
 msgid "Nested match mode"
-msgstr ""
+msgstr "Modo de correspondência aninhada"
 
 #: src/components/recurrence-field.tsx
 msgid "Never"
-msgstr ""
+msgstr "Nunca"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "Novos dispositivos precisarão da aprovação de um dispositivo existente. O desbloqueio por senha e chave de recuperação será interrompido. Conteúdo anterior pode continuar legível para quem tiver a senha e o pacote antigos até que as coleções apliquem as revogações e gerem novas chaves."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
-msgstr ""
+msgstr "Nova nota"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "Nova senha de recuperação"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
-msgstr ""
+msgstr "Nova subtarefa"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
@@ -3092,453 +3092,453 @@ msgstr ""
 #: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
-msgstr ""
+msgstr "Nova tarefa"
 
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "Nova tarefa ({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr ""
+msgstr "Novo título da tarefa"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "New tasks"
-msgstr ""
+msgstr "Novas tarefas"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "Novas tarefas, tarefas recorrentes e arquivo"
 
 #: src/app/view-editor.tsx
 msgid "New view"
-msgstr ""
+msgstr "Nova visualização"
 
 #: src/i18n/editor-phrases.ts
 msgid "next"
-msgstr ""
+msgstr "próxima"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
-msgstr ""
+msgstr "Próximo mês"
 
 #: src/app/full-calendar-view.tsx
 msgid "Next period"
-msgstr ""
+msgstr "Próximo período"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "Próxima tarefa"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "próxima semana"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "Próximo: "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
 msgid "Next: {0}"
-msgstr ""
+msgstr "Próximo: {0}"
 
 #: src/i18n/view-presentation.ts
 msgid "No"
-msgstr ""
+msgstr "Não"
 
 #: src/i18n/view-presentation.ts
 msgid "No {label}"
-msgstr ""
+msgstr "Sem {label}"
 
 #: src/app/views/projects-view.tsx
 msgid "No active projects"
-msgstr ""
+msgstr "Nenhum projeto ativo"
 
 #: src/app/view-empty-state.tsx
 msgid "No archived tasks here."
-msgstr ""
+msgstr "Não há tarefas arquivadas aqui."
 
 #: src/app/view-empty-state.tsx
 msgid "No cached tasks for this view."
-msgstr ""
+msgstr "Não há tarefas em cache para esta visualização."
 
 #: src/app/view-editor-form.tsx
 msgid "No computed properties."
-msgstr ""
+msgstr "Não há propriedades calculadas."
 
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
-msgstr ""
+msgstr "Sem data"
 
 #: src/app/task-editor-draft.ts
 msgid "No dates"
-msgstr ""
+msgstr "Sem datas"
 
 #: src/app/view-editor-form.tsx
 msgid "No formulas"
-msgstr ""
+msgstr "Sem fórmulas"
 
 #: src/app/view-editor-form.tsx
 msgid "No grouping"
-msgstr ""
+msgstr "Sem agrupamento"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "Nenhum comando correspondente."
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
-msgstr ""
+msgstr "Nenhuma tarefa correspondente atribuída a você."
 
 #: src/app/views/view-catalog.tsx
 msgid "No matching views"
-msgstr ""
+msgstr "Nenhuma visualização correspondente"
 
 #: src/components/assignee-editor.tsx
 msgid "No other people are available to assign."
-msgstr ""
+msgstr "Não há outras pessoas disponíveis para atribuição."
 
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
-msgstr ""
+msgstr "Sem prioridade"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
-msgstr ""
+msgstr "Sem projeções"
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "Nenhuma chave de recuperação está retida neste dispositivo."
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
-msgstr ""
+msgstr "Nenhum lembrete definido."
 
 #: src/app/task-editor-draft.ts
 msgid "No repeat or reminder"
-msgstr ""
+msgstr "Sem repetição ou lembrete"
 
 #: src/app/views/kanban-columns.ts
 msgid "No status"
-msgstr ""
+msgstr "Sem status"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "Nenhuma tarefa"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
-msgstr ""
+msgstr "Nenhuma tarefa neste período."
 
 #: src/app/view-editor.tsx
 msgid "No tasks match this draft."
-msgstr ""
+msgstr "Nenhuma tarefa corresponde a este rascunho."
 
 #: src/app/view-empty-state.tsx
 msgid "No tasks match this view"
-msgstr ""
+msgstr "Nenhuma tarefa corresponde a esta visualização"
 
 #: src/app/search-screen.tsx
 msgid "No tasks matched."
-msgstr ""
+msgstr "Nenhuma tarefa correspondente."
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
-msgstr ""
+msgstr "Nenhuma tarefa neste dia. Use Adicionar tarefa para agendar uma."
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "Ainda não há tarefas"
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
-msgstr ""
+msgstr "Não há próximas datas neste padrão."
 
 #: src/app/view-empty-state.tsx
 msgid "No upcoming tasks here."
-msgstr ""
+msgstr "Não há próximas tarefas aqui."
 
 #: src/app/task-custom-field.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
-msgstr ""
+msgstr "Nenhum valor"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "Ainda não há visualizações."
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr ""
+msgstr "Não. O TaskNotes lê e grava diretamente na coleção mdbase autoritativa. Coleções hospedadas precisam de conexão com a internet; uma coleção em computador também exige que esse computador esteja acessível."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
-msgstr ""
+msgstr "Nenhum"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "Indisponível"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
-msgstr ""
+msgstr "Indisponível neste navegador"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
 msgid "Not now"
-msgstr ""
+msgstr "Agora não"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Not saved"
-msgstr ""
+msgstr "Não salvo"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "Não salvo · Revisar"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "Não salvo. Revise sua edição."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
-msgstr ""
+msgstr "Nota"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "Ações da nota"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "Nota excluída"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
-msgstr ""
+msgstr "Título da nota"
 
 #: src/app/search-match-context.ts
 msgid "notes"
-msgstr ""
+msgstr "notas"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
-msgstr ""
+msgstr "Notas"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "Nada está agendado após hoje."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr ""
+msgstr "Ainda não há nada para visualizar. Escolha Escrever para adicionar notas."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
-msgstr ""
+msgstr "As notificações não estão disponíveis aqui"
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "As notificações do TaskNotes estão desativadas nas configurações do sistema. Ative-as lá para receber lembretes."
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
-msgstr ""
+msgstr "Notificar em um horário fixo ou relativo a esta tarefa."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
-msgstr ""
+msgstr "Agora"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence"
-msgstr ""
+msgstr "Ocorrência"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note"
-msgstr ""
+msgstr "Nota da ocorrência"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence note policy"
-msgstr ""
+msgstr "Política de notas de ocorrência"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence notes"
-msgstr ""
+msgstr "Notas de ocorrência"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence template"
-msgstr ""
+msgstr "Modelo de ocorrência"
 
 #: src/components/recurrence-field.tsx
 msgid "Occurrences"
-msgstr ""
+msgstr "Ocorrências"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr "de "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr "de 4"
 
 #: src/app/notification-label.ts
 msgid "Off"
-msgstr ""
+msgstr "Desativado"
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "Offline"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr ""
+msgstr "Ativado"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr ""
+msgstr "Em"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr ""
+msgstr "Em uma data"
 
 #: src/i18n/editor-phrases.ts
 msgid "on line"
-msgstr ""
+msgstr "na linha"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
-msgstr ""
+msgstr "Neste dispositivo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Only draft items can become TaskNotes."
-msgstr ""
+msgstr "Somente itens de rascunho podem se tornar tarefas do TaskNotes."
 
 #: src/app/view-editor-form.tsx
 msgid "Only the task title is shown."
-msgstr ""
+msgstr "Somente o título da tarefa é exibido."
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "Somente quando eu criar uma"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr ""
+msgstr "Abertas"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr ""
+msgstr "Abrir"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "Abrir “{title}”"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
-msgstr ""
+msgstr "Abrir {0}"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "Abra uma coleção primeiro"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
-msgstr ""
+msgstr "Abra uma visualização ou escolha se ela aparece na navegação."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr ""
+msgstr "Abrir primeiro"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
-msgstr ""
+msgstr "Abrir imagem"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
-msgstr ""
+msgstr "Abrir no Planner"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
-msgstr ""
+msgstr "Abrir tarefa"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
-msgstr ""
+msgstr "Abra o menu Compartilhar do navegador e escolha Adicionar à tela inicial."
 
 #: src/app/collection-settings.tsx
 msgid "Opening"
-msgstr ""
+msgstr "Abrindo"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "Abrindo coleção"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
-msgstr ""
+msgstr "Abrindo nota atual…"
 
 #: src/app/more-screen.tsx
 msgid "Opening install prompt…"
-msgstr ""
+msgstr "Abrindo prompt de instalação…"
 
 #: src/app/view-editor.tsx
 msgid "Opening view editor"
-msgstr ""
+msgstr "Abrindo editor de visualização"
 
 #: src/app/app-shell.tsx
 msgid "Opening your tasks"
-msgstr ""
+msgstr "Abrindo suas tarefas"
 
 #: src/app/app-shell.tsx
 msgid "Opening your view"
-msgstr ""
+msgstr "Abrindo sua visualização"
 
 #: src/app/view-editor-form.tsx
 msgid "Opens as"
-msgstr ""
+msgstr "Abre como"
 
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
-msgstr ""
+msgstr "Abre em uma nova aba"
 
 #: src/components/duration-field.tsx
 msgid "Optional"
-msgstr ""
+msgstr "Opcional"
 
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
-msgstr ""
+msgstr "Texto opcional da notificação"
 
 #: src/i18n/ui-copy.ts
 msgid "options"
-msgstr ""
+msgstr "opções"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "ou"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
-msgstr ""
+msgstr "Organizar"
 
 #: src/app/views/task-list-view.tsx
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
-msgstr ""
+msgstr "Outro"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Outdent"
