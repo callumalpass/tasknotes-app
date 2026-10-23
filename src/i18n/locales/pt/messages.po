@@ -2997,138 +2997,138 @@ msgstr "Abrir"
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
-msgstr "Ouvrir {0}"
+msgstr "Abrir {0}"
 
 #: src/app/app-shell.tsx
 msgid "Open a saved collection"
-msgstr "Ouvrir une collection enregistrée"
+msgstr "Abrir uma coleção salva"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
-msgstr "Ouvrez une vue ou choisissez si elle apparaît dans la navigation."
+msgstr "Abra uma visualização ou escolha se ela aparece na navegação."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr "Ouvrir d’abord"
+msgstr "Abrir primeiro"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
-msgstr "Ouvrir l’image"
+msgstr "Abrir imagem"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
-msgstr "Ouvrir dans Planner"
+msgstr "Abrir no Planner"
 
 #: src/app/more-screen.tsx
 msgid "Open it from your home screen"
-msgstr "Ouvrez-la depuis votre écran d’accueil"
+msgstr "Abra-o na tela inicial"
 
 #: src/app/collection-picker.tsx
 msgid "Open mdbase to choose and approve access."
-msgstr "Ouvrez mdbase pour choisir et approuver l’accès."
+msgstr "Abra o mdbase para escolher uma coleção e aprovar o acesso."
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
-msgstr "Ouvrir la tâche"
+msgstr "Abrir tarefa"
 
 #: src/app/cloud-collection.tsx
 msgid "Open TaskNotes"
-msgstr "Ouvrir TaskNotes"
+msgstr "Abrir o TaskNotes"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
-msgstr "Ouvrez le menu de partage de votre navigateur, puis choisissez « Sur l’écran d’accueil »."
+msgstr "Abra o menu Compartilhar do navegador e escolha Adicionar à tela inicial."
 
 #: src/app/collection-settings.tsx
 msgid "Opening"
-msgstr "Ouverture"
+msgstr "Abrindo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
-msgstr "Ouverture de la note actuelle…"
+msgstr "Abrindo nota atual…"
 
 #: src/app/more-screen.tsx
 msgid "Opening install prompt…"
-msgstr "Ouverture de la demande d’installation…"
+msgstr "Abrindo prompt de instalação…"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-gate.tsx
 msgid "Opening mdbase…"
-msgstr "Ouverture de mdbase…"
+msgstr "Abrindo o mdbase…"
 
 #: src/app/cloud-collection.tsx
 msgid "Opening TaskNotes…"
-msgstr "Ouverture de TaskNotes…"
+msgstr "Abrindo o TaskNotes…"
 
 #: src/app/view-editor.tsx
 msgid "Opening view editor"
-msgstr "Ouverture de l’éditeur de vues"
+msgstr "Abrindo editor de visualização"
 
 #: src/app/app-shell.tsx
 msgid "Opening your tasks"
-msgstr "Ouverture de vos tâches"
+msgstr "Abrindo suas tarefas"
 
 #: src/app/app-shell.tsx
 msgid "Opening your view"
-msgstr "Ouverture de votre vue"
+msgstr "Abrindo sua visualização"
 
 #: src/app/cloud-collection.tsx
 msgid "Opening…"
-msgstr "Ouverture…"
+msgstr "Abrindo…"
 
 #: src/app/view-editor-form.tsx
 msgid "Opens as"
-msgstr "S’ouvre en"
+msgstr "Abre como"
 
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
-msgstr "S’ouvre dans un nouvel onglet"
+msgstr "Abre em uma nova aba"
 
 #: src/components/duration-field.tsx
 msgid "Optional"
-msgstr "Facultatif"
+msgstr "Opcional"
 
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
-msgstr "Texte de notification facultatif"
+msgstr "Texto opcional da notificação"
 
 #: src/i18n/ui-copy.ts
 msgid "options"
-msgstr "options"
+msgstr "opções"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
-msgstr "Organiser"
+msgstr "Organizar"
 
 #: src/app/views/task-list-view.tsx
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
-msgstr "Autres"
+msgstr "Outro"
 
 #: src/app/cloud-collection.tsx
 msgid "Other collections"
-msgstr "Autres collections"
+msgstr "Outras coleções"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Outdent"
-msgstr "Désindenter"
+msgstr "Diminuir recuo"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Outline"
-msgstr "Plan"
+msgstr "Estrutura de tópicos"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Outline controls for {0}"
-msgstr "Commandes du plan pour {0}"
+msgstr "Controles da estrutura de tópicos para {0}"
 
 #: src/i18n/default-labels.ts
 msgid "Overdue"
-msgstr "En retard"
+msgstr "Atrasadas"
 
 #: src/app/task-screen.tsx
 #: src/components/task-model-settings.tsx
@@ -3142,32 +3142,32 @@ msgstr "P14D"
 
 #: src/app/task-screen.tsx
 msgid "Past horizon"
-msgstr "Horizon passé"
+msgstr "Horizonte passado"
 
 #: src/components/task-model-settings.tsx
 msgid "Past occurrence horizon"
-msgstr "Horizon des occurrences passées"
+msgstr "Horizonte de ocorrências anteriores"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
-msgstr "Image collée dans le Bloc-notes"
+msgstr "Imagem colada no Bloco de notas"
 
 #: src/i18n/view-presentation.ts
 msgid "Path"
-msgstr "Chemin"
+msgstr "Caminho"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
-msgstr "Début du schéma de récurrence"
+msgstr "Padrão começa"
 
 #: src/app/use-people.ts
 msgid "People could not be loaded."
-msgstr "Impossible de charger les personnes."
+msgstr "Não foi possível carregar as pessoas."
 
 #. placeholder {0}: error.message
 #: src/components/assignee-editor.tsx
 msgid "People could not be loaded. Existing assignments are unchanged. {0}"
-msgstr "Impossible de charger les personnes. Les assignations existantes restent inchangées. {0}"
+msgstr "Não foi possível carregar as pessoas. As atribuições existentes não foram alteradas. {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
@@ -3175,61 +3175,61 @@ msgstr "Planner"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
-msgstr "Planner est une application distincte. Enregistrez cette vue, puis choisissez « Ouvrir dans Planner »."
+msgstr "O Planner é um aplicativo separado. Salve esta visualização e escolha Abrir no Planner."
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Planner will open this saved view."
-msgstr "Planner ouvrira cette vue enregistrée."
+msgstr "O Planner abrirá esta visualização salva."
 
 #: src/app/more-screen.tsx
 msgid "Portable Markdown"
-msgstr "Markdown portable"
+msgstr "Markdown portátil"
 
 #: src/app/task-screen.tsx
 msgid "Preview"
-msgstr "Aperçu"
+msgstr "Prévia"
 
 #: src/app/view-editor.tsx
 msgid "Preview "
-msgstr "Aperçu "
+msgstr "Prévia "
 
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
-msgstr "Aperçu des tâches"
+msgstr "Visualizar tarefas"
 
 #: src/app/view-editor.tsx
 msgid "Preview updates after saving"
-msgstr "L’aperçu s’actualise après l’enregistrement"
+msgstr "A prévia é atualizada após salvar"
 
 #: src/i18n/editor-phrases.ts
 msgid "previous"
-msgstr "précédent"
+msgstr "anterior"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
-msgstr "Mois précédent"
+msgstr "Mês anterior"
 
 #: src/i18n/ui-copy.ts
 msgid "Previous note"
-msgstr "Note précédente"
+msgstr "Nota anterior"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "Previous notes could not be loaded. {0}"
-msgstr "Impossible de charger les notes précédentes. {0}"
+msgstr "Não foi possível carregar as notas anteriores. {0}"
 
 #: src/app/full-calendar-view.tsx
 msgid "Previous period"
-msgstr "Période précédente"
+msgstr "Período anterior"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
-msgstr "Les résultats chargés précédemment peuvent être obsolètes."
+msgstr "Os resultados carregados anteriormente podem estar desatualizados."
 
 #: src/app/app-shell.tsx
 msgid "Primary"
-msgstr "Principale"
+msgstr "Principal"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -3239,19 +3239,19 @@ msgstr "Principale"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Priority"
-msgstr "Priorité"
+msgstr "Prioridade"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
-msgstr "Priorité, projets, dépendances, contextes et étiquettes"
+msgstr "Prioridade, projetos, dependências, contextos e etiquetas"
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
-msgstr "Projections"
+msgstr "Projeções"
 
 #: src/app/search-match-context.ts
 msgid "projects"
-msgstr "projets"
+msgstr "projetos"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -3260,167 +3260,167 @@ msgstr "projets"
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Projects"
-msgstr "Projets"
+msgstr "Projetos"
 
 #: src/app/task-screen.tsx
 msgid "Properties"
-msgstr "Propriétés"
+msgstr "Propriedades"
 
 #: src/components/expression-builder.tsx
 msgid "Property"
-msgstr "Propriété"
+msgstr "Propriedade"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to display"
-msgstr "Propriété à afficher"
+msgstr "Propriedade a exibir"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to sort"
-msgstr "Propriété à trier"
+msgstr "Propriedade para ordenar"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
-msgstr "Dates rapides"
+msgstr "Datas rápidas"
 
 #: src/components/reminder-editor.tsx
 msgid "Quick reminders"
-msgstr "Rappels rapides"
+msgstr "Lembretes rápidos"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Quote"
-msgstr "Citation"
+msgstr "Citação"
 
 #: src/app/cloud-collection.tsx
 msgid "Recent collections"
-msgstr "Collections récentes"
+msgstr "Coleções recentes"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr "Détails de tâche reconnus"
+msgstr "Detalhes da tarefa reconhecidos"
 
 #. placeholder {0}: selectedConnection?.displayName ?? uiCopy("selected collection")
 #: src/app/cloud-collection.tsx
 msgid "Reconnect {0}"
-msgstr "Reconnecter {0}"
+msgstr "Reconectar {0}"
 
 #: src/app/app-shell.tsx
 msgid "Reconnect this collection"
-msgstr "Reconnecter cette collection"
+msgstr "Reconectar esta coleção"
 
 #: src/app/app-shell.tsx
 msgid "Reconnect to mdbase."
-msgstr "Reconnectez-vous à mdbase."
+msgstr "Reconectar ao mdbase."
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
-msgstr "Reconnexion en cours…"
+msgstr "Reconectando…"
 
 #: src/components/task-model-settings.tsx
 msgid "Record links"
-msgstr "Liens vers des documents"
+msgstr "Links de registros"
 
 #: src/app/cloud-collection.tsx
 msgid "Recover all {count} saved changes now?"
-msgstr "Récupérer les {count} modifications enregistrées maintenant ?"
+msgstr "Recuperar agora todas as {count} alterações salvas?"
 
 #: src/app/cloud-collection.tsx
 msgid "Recover checks each exact saved request, even if another check fails. An earlier change may already have applied. Discard removes the saved recovery, its grant keys, and disconnects this collection; it cannot undo a change."
-msgstr "La récupération vérifie chaque requête enregistrée à l’identique, même si une autre vérification échoue. Une modification précédente a peut-être déjà été appliquée. L’abandon supprime les données de récupération et leurs clés d’autorisation, puis déconnecte cette collection ; il ne peut pas annuler une modification."
+msgstr "A recuperação verifica cada solicitação salva exata, mesmo que outra verificação falhe. Uma alteração anterior talvez já tenha sido aplicada. Descartar remove a recuperação salva e suas chaves de autorização, além de desconectar esta coleção; não é possível desfazer uma alteração."
 
 #: src/app/cloud-collection.tsx
 msgid "Recover saved changes"
-msgstr "Récupérer les modifications enregistrées"
+msgstr "Recuperar alterações salvas"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
-msgstr "Récupérer la tâche"
+msgstr "Recuperar tarefa"
 
 #: src/app/cloud-collection.tsx
 msgid "Recovering…"
-msgstr "Récupération en cours…"
+msgstr "Recuperando…"
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
-msgstr "Récurrence et modèle"
+msgstr "Recorrência e modelo"
 
 #: src/components/recurrence-field.tsx
 msgid "Recurrence rule"
-msgstr "Règle de récurrence"
+msgstr "Regra de recorrência"
 
 #: src/app/collection-settings.tsx
 msgid "Refresh now"
-msgstr "Actualiser maintenant"
+msgstr "Atualizar agora"
 
 #: src/app/collection-settings.tsx
 msgid "Refreshing"
-msgstr "Actualisation"
+msgstr "Atualizando"
 
 #: src/app/search-screen.tsx
 msgid "Refreshing results…"
-msgstr "Actualisation des résultats…"
+msgstr "Atualizando resultados…"
 
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
-msgstr "Actualisation en cours…"
+msgstr "Atualizando…"
 
 #: src/i18n/editor-phrases.ts
 msgid "regexp"
-msgstr "expression régulière"
+msgstr "expressão regular"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
-msgstr "Tâches liées"
+msgstr "Trabalho relacionado"
 
 #: src/components/dependency-editor.tsx
 msgid "Relationship"
-msgstr "Relation"
+msgstr "Relacionamento"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
-msgstr "Relations"
+msgstr "Relacionamentos"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative"
-msgstr "Relatif"
+msgstr "Relativo"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
-msgstr "Par rapport à"
+msgstr "Relativo a"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
-msgstr "Recharger"
+msgstr "Recarregar"
 
 #: src/app/search-screen.tsx
 msgid "Reload people"
-msgstr "Recharger les personnes"
+msgstr "Recarregar pessoas"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Reminder {0}"
-msgstr "Rappel {0}"
+msgstr "Lembrete {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder date"
-msgstr "Date du rappel"
+msgstr "Data do lembrete"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
-msgstr "Les détails des rappels restent dans le Markdown, mais les tâches stockées sur cet appareil ne peuvent pas envoyer de notifications."
+msgstr "Os detalhes do lembrete permanecem no Markdown, mas tarefas armazenadas neste dispositivo não podem enviar notificações."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
-msgstr "Heure du rappel"
+msgstr "Horário do lembrete"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminders"
-msgstr "Rappels"
+msgstr "Lembretes"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
 msgid "Remove"
-msgstr "Retirer"
+msgstr "Remover"
 
 #. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: entry.description || uiCopy("session")
@@ -3429,66 +3429,66 @@ msgstr "Retirer"
 #: src/components/multi-value-field.tsx
 #: src/components/task-capture.tsx
 msgid "Remove {0}"
-msgstr "Retirer : {0}"
+msgstr "Remover {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
-msgstr "Retirer {label}"
+msgstr "Remover {label}"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
 msgid "Remove assignment to {0}"
-msgstr "Retirer l’assignation à {0}"
+msgstr "Remover atribuição de {0}"
 
 #. placeholder {0}: property.name || index + 1
 #: src/app/view-editor-form.tsx
 msgid "Remove computed property {0}"
-msgstr "Retirer la propriété calculée {0}"
+msgstr "Remover propriedade calculada {0}"
 
 #: src/components/expression-builder.tsx
 msgid "Remove condition"
-msgstr "Retirer la condition"
+msgstr "Remover condição"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
-msgstr "Retirer du Bloc-notes"
+msgstr "Remover do Bloco de notas"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
-msgstr "Retirer le groupe"
+msgstr "Remover grupo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove image card"
-msgstr "Retirer la carte image"
+msgstr "Remover cartão de imagem"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Remove reminder {0}"
-msgstr "Retirer le rappel {0}"
+msgstr "Remover lembrete {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove this image card from Scratchpad? The image file will be kept."
-msgstr "Retirer cette carte image du Bloc-notes ? Le fichier image sera conservé."
+msgstr "Remover este cartão de imagem do Bloco de notas? O arquivo de imagem será mantido."
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
-msgstr "Rendu en cours…"
+msgstr "Renderizando…"
 
 #: src/components/task-row.tsx
 msgid "Reopen"
-msgstr "Rouvrir"
+msgstr "Reabrir"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
-msgstr "Rouvrir la tâche"
+msgstr "Reabrir tarefa"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
-msgstr "réorganiser"
+msgstr "reordenar"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Reorder"
-msgstr "Réordonner"
+msgstr "Reordenar"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
