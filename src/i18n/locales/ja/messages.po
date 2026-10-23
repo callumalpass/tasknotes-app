@@ -325,7 +325,7 @@ msgstr "{count, plural, other {#日前}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, other {終了まであと#日}}"
+msgstr "{count, plural, other {月末から#日目}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
@@ -357,19 +357,19 @@ msgstr "{hours}時間{minutes}分"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, other {毎日（#日ごと）}}"
+msgstr "{interval, plural, other {#日ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, other {毎月（#か月ごと）}}"
+msgstr "{interval, plural, other {#か月ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, other {毎週（#週間ごと）}}"
+msgstr "{interval, plural, other {#週間ごと}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, other {毎年（#年ごと）}}"
+msgstr "{interval, plural, other {#年ごと}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -440,11 +440,11 @@ msgstr "{names}の{summary}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr "{day}日の{summary}"
+msgstr "{summary}（対象日：{day}）"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr "{rank}{day}曜日の{summary}"
+msgstr "{summary}（{rank}の{day}）"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
@@ -689,7 +689,7 @@ msgstr "ノートを追加"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr "投影を追加"
+msgstr "プロジェクションを追加"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -1220,7 +1220,7 @@ msgstr "クリア"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "繰り返しのたびにノートのチェックリスト項目をクリア"
+msgstr "繰り返しのたびにノートのチェックボックスをリセット"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -3398,7 +3398,7 @@ msgstr "オフライン"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "オン"
+msgstr "実行日"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
@@ -3436,7 +3436,7 @@ msgstr "開く"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "開く"
+msgstr "未完了"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
@@ -4113,7 +4113,7 @@ msgstr "通知の確認を再試行"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "人物を再試行"
+msgstr "人物の読み込みを再試行"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
@@ -4399,7 +4399,7 @@ msgstr "タスクを検索中…"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr "秒"
+msgstr "2番目"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
@@ -4431,7 +4431,7 @@ msgstr "選択した日"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "選択した下書きはその場でTaskNotesにリンクされます。それ以外はこのスクラッチパッドに残るため、作業を続けられます。"
+msgstr "選択した下書きは、その場でリンク付きのTaskNotesタスクに変換されます。それ以外の内容はこのスクラッチパッドに残るため、作業を続けられます。"
 
 #: src/i18n/editor-phrases.ts
 msgid "Selection deleted"
@@ -4661,7 +4661,7 @@ msgstr "厳格モードはまだオフにできません。パスワードによ
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr "プライベートコレクションの復元先すべてで、厳格モードの適用はまだ確認されていません。オンラインで復元キーを持つデバイスが変更の適用を完了する必要があります。"
+msgstr "プライベートコレクションのすべての復元先で、厳格モードの適用はまだ確認されていません。オンラインでコレクションのキーを持つデバイスが、変更の適用を完了する必要があります。"
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
