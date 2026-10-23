@@ -2999,7 +2999,7 @@ msgstr "ドラッグ用ハンドルを有効にするには、手動順序を最
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr "今日に移動しました："
+msgstr "今日への移動："
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -3690,7 +3690,7 @@ msgstr "プライベートコレクションの復元"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr "プライベートコレクションを利用するには、デスクトップをオンラインにしてください。"
+msgstr "プライベートコレクションを利用するには、パソコンをオンラインにしてください。"
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
@@ -4089,7 +4089,7 @@ msgstr "再試行"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Retry {selectedReviewCount} task notes"
-msgstr "タスクノートを{selectedReviewCount}件再試行"
+msgstr "タスクノート{selectedReviewCount}件の作成を再試行"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
@@ -4657,7 +4657,7 @@ msgstr "厳格モード"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr "厳格モードはまだオフにできません。パスワード復元の設定やロック解除では、デバイスの厳格モードは解除されません。"
+msgstr "厳格モードはまだオフにできません。パスワードによる復元を設定したり、アカウントのロックを解除したりしても、デバイスの厳格モードは解除されません。"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
