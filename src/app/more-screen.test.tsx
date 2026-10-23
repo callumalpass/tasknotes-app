@@ -360,6 +360,26 @@ it("offers cleanup immediately when an explicit registration has an unknown outc
   expect(fixture.disable).not.toHaveBeenCalled();
 });
 
+it("offers the original approval flow when the SDK cannot unregister an uncertain registration", async () => {
+  fixture.status.mockResolvedValueOnce({ state: "error", optedIn: false });
+  fixture.disable.mockRejectedValueOnce(
+    Object.assign(new Error("Allow reminders again"), {
+      code: "outcome_unknown",
+      reason: "timer_channel_reapproval_required",
+    }),
+  );
+  render(settings());
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Review notification access" }),
+  );
+  expect(fixture.reauthorize).toHaveBeenCalledOnce();
+  expect(fixture.enable).not.toHaveBeenCalled();
+  expect(fixture.disable).toHaveBeenCalledOnce();
+});
+
 it("retains an actionable approval result from explicit registration", async () => {
   fixture.enable.mockResolvedValueOnce({
     state: "reauthorization_required",

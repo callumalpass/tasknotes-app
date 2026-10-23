@@ -532,7 +532,15 @@ function useReminderSettings() {
           : await mdbaseNotifications.disable(),
       );
     } catch (reason) {
-      setStatus({ state: "error", optedIn: false });
+      const needsApproval =
+        typeof reason === "object" &&
+        reason !== null &&
+        "reason" in reason &&
+        reason.reason === "timer_channel_reapproval_required";
+      setStatus({
+        state: needsApproval ? "reauthorization_required" : "error",
+        optedIn: false,
+      });
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       busyRef.current = false;
