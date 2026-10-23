@@ -1,17 +1,17 @@
 import { reminderFireTime } from "./reminder";
 import type { TaskSummary } from "./task";
 
-/** Content-free desired timer membership; delivery remains authority-owned. */
+/** Complete content-free membership, including overdue reminders. The authority
+ * preserves known overdue/fired history without backfilling unseen past timers. */
 export async function desiredTaskTimers(
   tasks: TaskSummary[],
-  now = Date.now(),
 ): Promise<Array<{ id: string; fireAt: string }>> {
   const desired = tasks.flatMap((task) => {
     if (task.completed || task.archived) return [];
     return task.reminders.flatMap((reminder) => {
       const fireAt = reminderFireTime(task, reminder);
       const timestamp = fireAt ? Date.parse(fireAt) : Number.NaN;
-      if (!fireAt || !Number.isFinite(timestamp) || timestamp <= now) return [];
+      if (!fireAt || !Number.isFinite(timestamp)) return [];
       return [
         {
           sourceId: JSON.stringify([task.id, reminder.id]),

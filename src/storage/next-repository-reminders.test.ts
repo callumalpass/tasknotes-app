@@ -105,9 +105,14 @@ async function fixture(
 async function seed(
   f: Awaited<ReturnType<typeof fixture>>,
   title = "Private task title",
+  absoluteTime = future,
 ) {
   const task = new TaskNotesTaskModel().create(
-    { title, body: "Private task body", reminders: [reminder] },
+    {
+      title,
+      body: "Private task body",
+      reminders: [{ ...reminder, absoluteTime }],
+    },
     { id: crypto.randomUUID() },
   );
   const write = await f.client.create({
@@ -235,6 +240,38 @@ describe("native repository reminder reconciliation", () => {
     await f.repository.toggle(task.id);
     await vi.waitFor(() =>
       expect(submit.mock.calls.at(-1)![1].timers).toHaveLength(1),
+    );
+    await f.repository.delete(task.id);
+    await vi.waitFor(() =>
+      expect(submit.mock.calls.at(-1)![1].timers).toEqual([]),
+    );
+  });
+
+  it("keeps overdue membership on refresh but removes completed or deleted tasks", async () => {
+    const f = await fixture();
+    const past = "2000-01-01T00:00:00.000Z";
+    const task = await seed(f, "Overdue active task", past);
+    await f.repository.initialize({ deferTaskIndex: true });
+    const submit = await schedule(f);
+    const expected = (await desiredTaskTimers([task])).map(
+      ({ id, fireAt }) => ({
+        id,
+        fire_at: fireAt,
+      }),
+    );
+    expect(expected).toHaveLength(1);
+    expect(expected[0]!.fire_at).toBe(past);
+    expect(submit.mock.calls.at(-1)![1].timers).toEqual(expected);
+    await f.repository.refresh();
+    await f.repository.reconcileReminders();
+    expect(submit.mock.calls.at(-1)![1].timers).toEqual(expected);
+    await f.repository.toggle(task.id);
+    await vi.waitFor(() =>
+      expect(submit.mock.calls.at(-1)![1].timers).toEqual([]),
+    );
+    await f.repository.toggle(task.id);
+    await vi.waitFor(() =>
+      expect(submit.mock.calls.at(-1)![1].timers).toEqual(expected),
     );
     await f.repository.delete(task.id);
     await vi.waitFor(() =>
