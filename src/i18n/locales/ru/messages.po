@@ -9,149 +9,149 @@ msgstr ""
 
 #: src/app/search-screen.tsx
 msgid " — previously loaded"
-msgstr ""
+msgstr " — загружено ранее"
 
 #: src/app/view-editor-form.tsx
 msgid " (external app)"
-msgstr ""
+msgstr " (внешнее приложение)"
 
 #: src/components/assignee-editor.tsx
 msgid " (not linked to an active member)"
-msgstr ""
+msgstr " (не связан с активным участником)"
 
 #: src/components/private-account-settings.tsx
 msgid " (or use your password)"
-msgstr ""
+msgstr " (или используйте пароль)"
 
 #. placeholder {0}: ordered[0].name
 #: src/app/views/navigation-view-order.tsx
 msgid " {0} opens first as Home."
-msgstr ""
+msgstr " {0} открывается первым и становится главной страницей."
 
 #: src/i18n/ui-copy.ts
 msgid ", now Home"
-msgstr ""
+msgstr ", теперь главная страница"
 
 #: src/app/more-screen.tsx
 msgid ". Pending edits are not yet synced."
-msgstr ""
+msgstr ". Ожидающие изменения ещё не синхронизированы."
 
 #: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
-msgstr ""
+msgstr ". Они останутся в этом браузере, пока вы не восстановите или не удалите их."
 
 #: src/app/scratchpad-screen.tsx
 msgid ". Undo is available for 30 seconds."
-msgstr ""
+msgstr ". Действие можно отменить в течение 30 секунд."
 
 #. placeholder {0}: stats.open
 #. placeholder {1}: stats.total
 #: src/app/more-screen.tsx
 msgid "· {0} open · {1} total"
-msgstr ""
+msgstr "· незавершённых: {0} · всего: {1}"
 
 #: src/app/more-screen.tsx
 msgid "· Details need attention"
-msgstr ""
+msgstr "· Требуется проверить сведения"
 
 #: src/app/more-screen.tsx
 msgid "· Opening"
-msgstr ""
+msgstr "· Открывается"
 
 #: src/components/task-capture.tsx
 msgid "” was saved…"
-msgstr ""
+msgstr "»…"
 
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
-msgstr ""
+msgstr "В представлении «{0}» значение вычисляется; переместить сюда задачи нельзя."
 
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
-msgstr ""
+msgstr "«{title}» всё ещё находится в коллекции."
 
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
-msgstr ""
+msgstr "(несохранённые изменения)"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {# image was added.} other {# images were added.}}"
-msgstr ""
+msgstr "{0, plural, one {Добавлено # изображение.} few {Добавлено # изображения.} many {Добавлено # изображений.} other {Добавлено # изображения.}}"
 
 #. placeholder {0}: stats.open
 #: src/app/more-screen.tsx
 msgid "{0, plural, one {# open} other {# open}}"
-msgstr ""
+msgstr "{0, plural, one {# незавершённая} few {# незавершённых} many {# незавершённых} other {# незавершённых}}"
 
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Adding image…} other {Adding # images…}}"
-msgstr ""
+msgstr "{0, plural, one {Добавление изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
-msgstr ""
+msgstr "{0, plural, one {Создана заметка о # задаче} few {Созданы заметки о # задачах} many {Созданы заметки о # задачах} other {Созданы заметки о # задаче}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Image added} other {# images added}}"
-msgstr ""
+msgstr "{0, plural, one {Изображение добавлено} few {Добавлено # изображения} many {Добавлено # изображений} other {Добавлено # изображения}}"
 
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr ""
+msgstr "{0, plural, one {Перенести на сегодня все просроченные задачи: # задача} few {Перенести на сегодня все просроченные задачи: # задачи} many {Перенести на сегодня все просроченные задачи: # задач} other {Перенести на сегодня все просроченные задачи: # задачи}}"
 
 #. placeholder {0}: person.name
 #: src/components/assignee-editor.tsx
 msgid "{0} (ambiguous account link)"
-msgstr ""
+msgstr "{0} (неоднозначная привязка учётной записи)"
 
 #. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
 #. placeholder {1}: node.text || uiCopy("item")
 #. placeholder {2}: nestedItemCount(descendantCount)
 #: src/app/scratchpad-screen.tsx
 msgid "{0} {1}, {2}"
-msgstr ""
+msgstr "{0} {1}, {2}"
 
 #. placeholder {0}: label ?? labelFor(next)
 #: src/components/multi-value-field.tsx
 msgid "{0} added"
-msgstr ""
+msgstr "Добавлено: {0}"
 
 #. placeholder {0}: draft.assignees.length
 #: src/app/task-editor-draft.ts
 msgid "{0} assigned"
-msgstr ""
+msgstr "Назначено: {0}"
 
 #. placeholder {0}: status.label
 #: src/components/task-model-settings.tsx
 msgid "{0} auto-archive delay in minutes"
-msgstr ""
+msgstr "{0}: задержка автоархивации в минутах"
 
 #. placeholder {0}: execution.view.name
 #: src/app/views/kanban-view.tsx
 msgid "{0} board"
-msgstr ""
+msgstr "Доска: {0}"
 
 #. placeholder {0}: propertyLabel(property)
 #: src/app/views-screen.tsx
 msgid "{0} is calculated by this view and cannot be changed here."
-msgstr ""
+msgstr "В представлении значение {0} вычисляется и не может быть изменено здесь."
 
 #. placeholder {0}: destinationLane.label ?? uiCopy("That section")
 #: src/app/views/task-list-view.tsx
 msgid "{0} is read-only."
-msgstr ""
+msgstr "{0} доступно только для чтения."
 
 #. placeholder {0}: edits[0].path
 #. placeholder {1}: edits[0].cause
 #: src/components/held-edits.tsx
 msgid "{0} is waiting for your choice. {1}"
-msgstr ""
+msgstr "Для {0} требуется ваш выбор. {1}"
 
 #. placeholder {0}: source.name
 #. placeholder {0}: view.name
@@ -161,393 +161,393 @@ msgstr ""
 #. placeholder {2}: target?.name
 #: src/app/views/navigation-view-order.tsx
 msgid "{0} moved {1} {2}."
-msgstr ""
+msgstr "{0}: перемещено {1} {2}."
 
 #. placeholder {0}: humanizeValue(draft.priority)
 #: src/app/task-editor-draft.ts
 msgid "{0} priority"
-msgstr ""
+msgstr "Приоритет: {0}"
 
 #. placeholder {0}: labelFor(removed)
 #. placeholder {0}: labelFor(value)
 #: src/components/multi-value-field.tsx
 msgid "{0} removed"
-msgstr ""
+msgstr "Удалено: {0}"
 
 #. placeholder {0}: result.current.title?.trim() || uiCopy("Previous note")
 #: src/app/scratchpad-screen.tsx
 msgid "{0} resumed"
-msgstr ""
+msgstr "Возобновлено: {0}"
 
 #. placeholder {0}: formatMinutes(totals.liveMinutes)
 #: src/app/task-time-tracking.tsx
 msgid "{0} tracked"
-msgstr ""
+msgstr "Учтено времени: {0}"
 
 #. placeholder {0}: virtualOccurrence ? t({ message: "Delete this repeating task and all of its occurrences?", }) : t({ message: "Delete this task?" })
 #: src/components/task-actions.tsx
 msgid "{0} You’ll have 30 seconds to undo."
-msgstr ""
+msgstr "{0} Отменить действие можно в течение 30 секунд."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr ""
+msgstr "{0}. Перетащите задачу в другой столбец или используйте клавиши со стрелками влево и вправо."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr ""
+msgstr "{0}. Перетащите, чтобы переместить. Для изменения порядка используйте клавиши со стрелками."
 
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
 msgid "{0}{1} copied"
-msgstr ""
+msgstr "Скопировано: {0}{1}"
 
 #. placeholder {0}: tasks.length
 #: src/app/search-screen.tsx
 msgid "{0}+ tasks"
-msgstr ""
+msgstr "Задач: более {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{accessibleName} calendar"
-msgstr ""
+msgstr "Календарь: {accessibleName}"
 
 #. placeholder {0}: inNavigation ? uiCopy("from") : uiCopy("to")
 #: src/app/views/view-catalog.tsx
 msgid "{action} {name} {0} navigation"
-msgstr ""
+msgstr "{action} {name} {0} навигации"
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} contains a value the collection cannot accept."
-msgstr ""
+msgstr "В действии «{action}» указано значение, которое коллекция не принимает."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish because the record no longer exists."
-msgstr ""
+msgstr "Не удалось выполнить действие «{action}»: запись больше не существует."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish because the task changed elsewhere."
-msgstr ""
+msgstr "Не удалось выполнить действие «{action}»: задача была изменена в другом месте."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish while the collection was unavailable."
-msgstr ""
+msgstr "Не удалось выполнить действие «{action}»: коллекция недоступна."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
-msgstr ""
+msgstr "Не удалось выполнить действие «{action}»."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
-msgstr ""
+msgstr "Для действия «{action}» требуется доступ к коллекции."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} was cancelled."
-msgstr ""
+msgstr "Действие «{action}» отменено."
 
 #: src/components/tasknotes-controls.tsx
 msgid "{ariaLabel} suggestions"
-msgstr ""
+msgstr "Варианты для «{ariaLabel}»"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# contexts} one {# context} other {# contexts}}"
-msgstr ""
+msgstr "{count, plural, =0 {# контекстов} one {# контекст} few {# контекста} many {# контекстов} other {# контекста}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# defaults} one {# default} other {# defaults}}"
-msgstr ""
+msgstr "{count, plural, =0 {# значений по умолчанию} one {# значение по умолчанию} few {# значения по умолчанию} many {# значений по умолчанию} other {# значения по умолчанию}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# dependencies} one {# dependency} other {# dependencies}}"
-msgstr ""
+msgstr "{count, plural, =0 {# зависимостей} one {# зависимость} few {# зависимости} many {# зависимостей} other {# зависимости}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# fields} one {# field} other {# fields}}"
-msgstr ""
+msgstr "{count, plural, =0 {# полей} one {# поле} few {# поля} many {# полей} other {# поля}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# formulas} one {# formula} other {# formulas}}"
-msgstr ""
+msgstr "{count, plural, =0 {# формул} one {# формула} few {# формулы} many {# формул} other {# формулы}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# nested items} one {# nested item} other {# nested items}}"
-msgstr ""
+msgstr "{count, plural, =0 {# вложенных элементов} one {# вложенный элемент} few {# вложенных элемента} many {# вложенных элементов} other {# вложенных элемента}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projections} one {# projection} other {# projections}}"
-msgstr ""
+msgstr "{count, plural, =0 {# проекций} one {# проекция} few {# проекции} many {# проекций} other {# проекции}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# projects} one {# project} other {# projects}}"
-msgstr ""
+msgstr "{count, plural, =0 {# проектов} one {# проект} few {# проекта} many {# проектов} other {# проекта}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# properties} one {# property} other {# properties}}"
-msgstr ""
+msgstr "{count, plural, =0 {# свойств} one {# свойство} few {# свойства} many {# свойств} other {# свойства}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# reminders} one {# reminder} other {# reminders}}"
-msgstr ""
+msgstr "{count, plural, =0 {# напоминаний} one {# напоминание} few {# напоминания} many {# напоминаний} other {# напоминания}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sessions} one {# session} other {# sessions}}"
-msgstr ""
+msgstr "{count, plural, =0 {# сеансов} one {# сеанс} few {# сеанса} many {# сеансов} other {# сеанса}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# sorts} one {# sort} other {# sorts}}"
-msgstr ""
+msgstr "{count, plural, =0 {# способов сортировки} one {# способ сортировки} few {# способа сортировки} many {# способов сортировки} other {# способа сортировки}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tags} one {# tag} other {# tags}}"
-msgstr ""
+msgstr "{count, plural, =0 {# тегов} one {# тег} few {# тега} many {# тегов} other {# тега}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks currently in this view} one {# task currently in this view} other {# tasks currently in this view}}"
-msgstr ""
+msgstr "{count, plural, =0 {В представлении сейчас нет задач} one {В представлении сейчас # задача} few {В представлении сейчас # задачи} many {В представлении сейчас # задач} other {В представлении сейчас # задачи}}"
 
 #: src/app/view-editor.tsx
 msgid "{count, plural, =0 {# tasks match this draft} one {# task match this draft} other {# tasks match this draft}}"
-msgstr ""
+msgstr "{count, plural, =0 {Черновику не соответствует ни одной задачи} one {Черновику соответствует # задача} few {Черновику соответствуют # задачи} many {Черновику соответствуют # задач} other {Черновику соответствуют # задачи}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# tasks} one {# task} other {# tasks}}"
-msgstr ""
+msgstr "{count, plural, =0 {# задач} one {# задача} few {# задачи} many {# задач} other {# задачи}}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# views} one {# view} other {# views}}"
-msgstr ""
+msgstr "{count, plural, =0 {# представлений} one {# представление} few {# представления} many {# представлений} other {# представления}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day ago} other {# days ago}}"
-msgstr ""
+msgstr "{count, plural, one {# день назад} few {# дня назад} many {# дней назад} other {# дня назад}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr ""
+msgstr "{count, plural, one {До конца: # день} few {До конца: # дня} many {До конца: # дней} other {До конца: # дня}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
-msgstr ""
+msgstr "{count, plural, one {# раз} few {# раза} many {# раз} other {# раза}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {day} other {days}}"
-msgstr ""
+msgstr "{count, plural, one {день} few {дня} many {дней} other {дня}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {month} other {months}}"
-msgstr ""
+msgstr "{count, plural, one {месяц} few {месяца} many {месяцев} other {месяца}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
-msgstr ""
+msgstr "{count, plural, one {неделю} few {недели} many {недель} other {недели}}"
 
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {year} other {years}}"
-msgstr ""
+msgstr "{count, plural, one {год} few {года} many {лет} other {года}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
-msgstr ""
+msgstr "Оценка: {estimate} мин"
 
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
-msgstr ""
+msgstr "{hours} ч {minutes} мин"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr ""
+msgstr "{interval, plural, one {Каждый день} few {Каждые # дня} many {Каждые # дней} other {Каждые # дня}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr ""
+msgstr "{interval, plural, one {Каждый месяц} few {Каждые # месяца} many {Каждые # месяцев} other {Каждые # месяца}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr ""
+msgstr "{interval, plural, one {Каждую неделю} few {Каждые # недели} many {Каждые # недель} other {Каждые # недели}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr ""
+msgstr "{interval, plural, one {Каждый год} few {Каждые # года} many {Каждые # лет} other {Каждые # года}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
-msgstr ""
+msgstr "{label}: расширенная длительность"
 
 #: src/components/duration-field.tsx
 msgid "{label} amount"
-msgstr ""
+msgstr "Количество: {label}"
 
 #: src/app/views/kanban-view.tsx
 msgid "{label} column"
-msgstr ""
+msgstr "Столбец: {label}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
-msgstr ""
+msgstr "Дата: {label}"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved {0}{1}."
-msgstr ""
+msgstr "{label}: перемещено {0}{1}."
 
 #: src/app/use-sidebar-reorder.ts
 msgid "{label} moved."
-msgstr ""
+msgstr "{label} перемещено."
 
 #: src/components/multi-value-field.tsx
 msgid "{label} suggestions"
-msgstr ""
+msgstr "Варианты для «{label}»"
 
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
-msgstr ""
+msgstr "Время: {label}"
 
 #: src/components/duration-field.tsx
 msgid "{label} unit"
-msgstr ""
+msgstr "Единица измерения: {label}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
-msgstr ""
+msgstr "{name} (соответствующая запись участника не найдена)"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (not a person record)"
-msgstr ""
+msgstr "{name} (не является записью участника)"
 
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
-msgstr ""
+msgstr "{name} должно оставаться в навигации, пока не будет добавлено другое представление"
 
 #: src/app/collection-settings.tsx
 msgid "{open} open · {total} total"
-msgstr ""
+msgstr "Открыто: {open} · всего: {total}"
 
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
-msgstr ""
+msgstr "Выбрано {selectedReviewCount} из {0}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} of {month}"
-msgstr ""
+msgstr "{summary} за {month}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on {names}"
-msgstr ""
+msgstr "{summary}: {names}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr ""
+msgstr "{summary}: {day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"
-msgstr ""
+msgstr "{summary}: {rank} {day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, {ending}"
-msgstr ""
+msgstr "{summary}, {ending}"
 
 #: src/i18n/presentation.ts
 msgid "{summary}, until {until}"
-msgstr ""
+msgstr "{summary}, до {until}"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "{taskCount, plural, =0 {# tasks are ready in this view.} one {# task is ready in this view.} other {# tasks are ready in this view.}}"
-msgstr ""
+msgstr "{taskCount, plural, =0 {В этом представлении нет готовых задач.} one {В этом представлении готова # задача.} few {В этом представлении готовы # задачи.} many {В этом представлении готово # задач.} other {В этом представлении готовы # задачи.}}"
 
 #: src/components/held-edits.tsx
 msgid "{total} edits are waiting for your choice."
-msgstr ""
+msgstr "Ожидают вашего решения: изменений — {total}."
 
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
-msgstr ""
+msgstr "{value, selectordinal, other {#-й}}"
 
 #: src/app/views/view-catalog.tsx
 msgid "{visibleCount} views shown"
-msgstr ""
+msgstr "Показано представлений: {visibleCount}"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
 msgid "+{0} more"
-msgstr ""
+msgstr "Ещё: +{0}"
 
 #: src/app/full-calendar-view.tsx
 msgid "+{count} more"
-msgstr ""
+msgstr "Ещё: +{count}"
 
 #: src/components/calendar-preferences.tsx
 msgid "1 hour"
-msgstr ""
+msgstr "1 час"
 
 #: src/components/calendar-preferences.tsx
 msgid "12 hour"
-msgstr ""
+msgstr "12-часовой формат"
 
 #: src/components/calendar-preferences.tsx
 msgid "15 minutes"
-msgstr ""
+msgstr "15 минут"
 
 #: src/components/calendar-preferences.tsx
 msgid "24 hour"
-msgstr ""
+msgstr "24-часовой формат"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "3 days"
-msgstr ""
+msgstr "3 дня"
 
 #: src/components/calendar-preferences.tsx
 msgid "30 minutes"
-msgstr ""
+msgstr "30 минут"
 
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
-msgstr ""
+msgstr "Календарная дата"
 
 #: src/components/view-execution-error-notice.tsx
 msgid "A computed value is being used to sort this view. This collection cannot order results by computed values yet. Choose a stored property instead."
-msgstr ""
+msgstr "Для сортировки представления используется вычисляемое значение. Эта коллекция пока не поддерживает сортировку по вычисляемым значениям. Выберите сохранённое свойство."
 
 #: src/components/task-model-settings.tsx
 msgid "A task scheduled Monday and due Wednesday stays two days apart on each repeat."
-msgstr ""
+msgstr "Если задача запланирована на понедельник и срок у неё в среду, при каждом повторении между датами останется два дня."
 
 #: src/components/app-update-notice.tsx
 msgid "A TaskNotes update is ready. Save your changes, then reload."
-msgstr ""
+msgstr "Доступно обновление TaskNotes. Сохраните изменения и перезагрузите страницу."
 
 #: src/components/recurrence-field.tsx
 msgid "A weekday position"
-msgstr ""
+msgstr "Порядковый номер дня недели"
 
 #: src/app/settings-sections.ts
 msgid "About & help"
-msgstr ""
+msgstr "Справка и информация"
 
 #: src/app/settings-sections.ts
 msgid "Account"
-msgstr ""
+msgstr "Учётная запись"
 
 #: src/components/private-account-settings.tsx
 msgid "Account recovery changed on another device. Check its status before trying again."
-msgstr ""
+msgstr "Восстановление учётной записи изменено на другом устройстве. Проверьте его состояние, прежде чем повторить попытку."
 
 #: src/components/private-account-settings.tsx
 msgid "Account unlocked. Private collection keys are available on this device."
-msgstr ""
+msgstr "Учётная запись разблокирована. Ключи закрытых коллекций доступны на этом устройстве."
 
 #: src/app/search-screen.tsx
 msgid "Across this collection"
-msgstr ""
+msgstr "Во всей коллекции"
 
 #: src/app/command-palette-model.ts
 #: src/components/task-row.tsx
 msgid "Actions"
-msgstr ""
+msgstr "Действия"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #. placeholder {0}: node.text || uiCopy("item")
@@ -556,964 +556,980 @@ msgstr ""
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
-msgstr ""
+msgstr "Действия для {0}"
 
 #: src/app/views/kanban-view.tsx
 msgid "Active"
-msgstr ""
+msgstr "Активные"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
-msgstr ""
+msgstr "Добавить"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Add {0}"
-msgstr ""
+msgstr "Добавить: {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before due"
-msgstr ""
+msgstr "За 1 день до срока"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 day before scheduled"
-msgstr ""
+msgstr "За 1 день до запланированной даты"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before due"
-msgstr ""
+msgstr "За 1 час до срока"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 1 hour before scheduled"
-msgstr ""
+msgstr "За 1 час до запланированной даты"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before due"
-msgstr ""
+msgstr "За 15 минут до срока"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 15 minutes before scheduled"
-msgstr ""
+msgstr "За 15 минут до запланированной даты"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before due"
-msgstr ""
+msgstr "За 5 минут до срока"
 
 #: src/components/reminder-editor.tsx
 msgid "Add 5 minutes before scheduled"
-msgstr ""
+msgstr "За 5 минут до запланированной даты"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a context"
-msgstr ""
+msgstr "Добавить контекст"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a project"
-msgstr ""
+msgstr "Добавить проект"
 
 #: src/app/views/projects-view.tsx
 msgid "Add a project to a task and it will appear here."
-msgstr ""
+msgstr "Добавьте проект к задаче, и он появится здесь."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a property"
-msgstr ""
+msgstr "Добавить свойство"
 
 #: src/app/view-empty-state.tsx
 msgid "Add a Scheduled or Due date to an active task."
-msgstr ""
+msgstr "Добавьте запланированную дату или срок к активной задаче."
 
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
-msgstr ""
+msgstr "Добавить правило сортировки"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
-msgstr ""
+msgstr "Добавить тег"
 
 #. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
 #: src/components/task-capture.tsx
 msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr ""
+msgstr "Добавить задачу — завтра в 9:00, #тег, +проект"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
-msgstr ""
+msgstr "Сначала добавьте название задачи."
 
 #: src/app/today-clear.tsx
 msgid "Add a task to start planning your day."
-msgstr ""
+msgstr "Добавьте задачу, чтобы спланировать день."
 
 #: src/app/view-empty-state.tsx
 msgid "Add a task whenever you need to."
-msgstr ""
+msgstr "Добавляйте задачи, когда это необходимо."
 
 #: src/app/task-screen.tsx
 msgid "Add a title before leaving this task."
-msgstr ""
+msgstr "Добавьте название, прежде чем закрыть задачу."
 
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
-msgstr ""
+msgstr "Добавить исполнителя"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add child"
-msgstr ""
+msgstr "Добавить дочерний элемент"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add context…"
-msgstr ""
+msgstr "Добавить контекст…"
 
 #: src/components/task-capture.tsx
 msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr ""
+msgstr "Добавляйте даты и теги обычным текстом — например: «Позвонить Сэму завтра в 9:00 #работа»."
 
 #: src/components/task-capture.tsx
 msgid "Add details"
-msgstr ""
+msgstr "Добавить подробности"
 
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
-msgstr ""
+msgstr "Добавить формулу"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add image"
-msgstr ""
+msgstr "Добавить изображение"
 
 #: src/components/task-capture.tsx
 msgid "Add notes"
-msgstr ""
+msgstr "Добавить заметки"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
-msgstr ""
+msgstr "Добавить проекцию"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
-msgstr ""
+msgstr "Добавить напоминание"
 
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
-msgstr ""
+msgstr "Добавить начальные представления"
 
 #: src/components/task-actions.tsx
 msgid "Add subtask"
-msgstr ""
+msgstr "Добавить подзадачу"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
-msgstr ""
+msgstr "Добавить задачу"
 
 #. placeholder {0}: agendaLabel(selected)
 #: src/app/views/mini-calendar-view.tsx
 msgid "Add task on {0}"
-msgstr ""
+msgstr "Добавить задачу на {0}"
 
 #. placeholder {0}: project.label
 #: src/app/views/projects-view.tsx
 msgid "Add task to {0}"
-msgstr ""
+msgstr "Добавить задачу в {0}"
 
 #: src/app/views/kanban-view.tsx
 msgid "Add task to {label}"
-msgstr ""
+msgstr "Добавить задачу в {label}"
 
 #: src/app/task-screen.tsx
 msgid "Add thoughts, links, or supporting details…"
-msgstr ""
+msgstr "Добавьте мысли, ссылки или пояснения…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Add title"
-msgstr ""
+msgstr "Добавить название"
 
 #. placeholder {0}: currentCreationContext.label
 #. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
-msgstr ""
+msgstr "Добавить в {0}"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
-msgstr ""
+msgstr "Добавьте задачу, которую нужно выполнить раньше."
 
 #: src/app/views/view-catalog.tsx
 msgid "Added"
-msgstr ""
+msgstr "Добавлено"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
-msgstr ""
+msgstr "Добавление"
 
 #: src/components/task-capture.tsx
 msgid "Adding “{pendingTitle}”…"
-msgstr ""
+msgstr "Добавление «{pendingTitle}»…"
 
 #: src/app/app-shell.tsx
 #: src/app/views/starter-views-offer.tsx
 msgid "Adding starter views…"
-msgstr ""
+msgstr "Добавление начальных представлений…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
-msgstr ""
+msgstr "Добавление…"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds Today, Upcoming, Calendar, Projects, and Archive."
-msgstr ""
+msgstr "Добавляет представления «Сегодня», «Предстоящие», «Календарь», «Проекты» и «Архив»."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
-msgstr ""
+msgstr "Измените фильтры этого представления или выберите другое."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Advance after"
-msgstr ""
+msgstr "Перейти к следующему после"
 
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
-msgstr ""
+msgstr "Дополнительно"
 
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
-msgstr ""
+msgstr "Расширенная длительность"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced recurrence"
-msgstr ""
+msgstr "Расширенное повторение"
 
 #: src/i18n/presentation.ts
 msgid "Advanced recurrence rule"
-msgstr ""
+msgstr "Расширенное правило повторения"
 
 #: src/app/task-editor-draft.ts
 msgid "Advanced repeat"
-msgstr ""
+msgstr "Расширенное повторение"
 
 #: src/components/recurrence-field.tsx
 msgid "Advanced rule"
-msgstr ""
+msgstr "Расширенное правило"
 
 #: src/components/task-model-settings.tsx
 #: src/i18n/ui-copy.ts
 msgid "after"
-msgstr ""
+msgstr "после"
 
 #: src/components/reminder-editor.tsx
 msgid "After"
-msgstr ""
+msgstr "После"
 
 #: src/components/recurrence-field.tsx
 msgid "After a number of times"
-msgstr ""
+msgstr "После указанного количества повторений"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Agenda"
-msgstr ""
+msgstr "План"
+
+#: src/i18n/editor-phrases.ts
+msgid "all"
+msgstr "все"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
-msgstr ""
+msgstr "Все"
 
 #: src/components/expression-builder.tsx
 msgid "All conditions match"
-msgstr ""
+msgstr "Все условия совпадают"
 
 #: src/app/full-calendar-view.tsx
 msgid "All day"
-msgstr ""
+msgstr "Весь день"
 
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
-msgstr ""
+msgstr "Все подходящие задачи загружены"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
-msgstr ""
+msgstr "Все задачи"
 
 #: src/app/views/view-catalog.tsx
 msgid "All views"
-msgstr ""
+msgstr "Все представления"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
-msgstr ""
+msgstr "Разрешить создание задач"
 
 #: src/components/task-model-settings.tsx
 msgid "Also create the next file when an occurrence is skipped"
-msgstr ""
+msgstr "Также создавать следующий файл, если повторение пропущено"
 
 #: src/components/reminder-editor.tsx
 msgid "Amount"
-msgstr ""
+msgstr "Количество"
 
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
-msgstr ""
+msgstr "Любое условие совпадает"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
-msgstr ""
+msgstr "В любое время"
 
 #: src/i18n/default-labels.ts
 msgid "Anytime"
-msgstr ""
+msgstr "Когда угодно"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Anywhere"
-msgstr ""
+msgstr "Везде"
 
 #: src/i18n/language-settings.tsx
 msgid "App language"
-msgstr ""
+msgstr "Язык приложения"
 
 #: src/components/app-update-notice.tsx
 msgid "App update"
-msgstr ""
+msgstr "Обновление приложения"
 
 #: src/app/more-screen.tsx
 msgid "Appearance"
-msgstr ""
+msgstr "Внешний вид"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
-msgstr ""
+msgstr "Применить правило"
 
 #: src/app/notification-label.ts
 msgid "Approval required"
-msgstr ""
+msgstr "Требуется подтверждение"
 
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 msgid "Archive"
-msgstr ""
+msgstr "Архивировать"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive a task once it has been in a chosen status for a while. Repeating tasks are never archived automatically."
-msgstr ""
+msgstr "Архивировать задачу, если она некоторое время находится в выбранном статусе. Повторяющиеся задачи не архивируются автоматически."
 
 #: src/components/task-model-settings.tsx
 msgid "Archive automatically"
-msgstr ""
+msgstr "Архивировать автоматически"
 
 #: src/components/task-model-settings.tsx
 msgid "Archive folder"
-msgstr ""
+msgstr "Папка архива"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views/kanban-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Archived"
-msgstr ""
+msgstr "В архиве"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
-msgstr ""
+msgstr "Задачи в архиве сохраняются, а не удаляются. Их можно восстановить из меню задачи."
 
 #: src/components/arrange-tasks-option.tsx
 msgid "Arrange tasks"
-msgstr ""
+msgstr "Упорядочить задачи"
 
 #: src/app/view-editor-form.tsx
 msgid "Ascending"
-msgstr ""
+msgstr "По возрастанию"
 
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
-msgstr ""
+msgstr "Назначено"
 
 #: src/app/search-screen.tsx
 msgid "Assigned to me"
-msgstr ""
+msgstr "Назначено мне"
 
 #: src/components/assignee-editor.tsx
 msgid "Assignments link to person notes, which list them as backlinks. They do not grant collection access."
-msgstr ""
+msgstr "Назначения связаны с заметками участников, где отображаются как обратные ссылки. Они не предоставляют доступ к коллекции."
 
 #: src/app/search-screen.tsx
 msgid "Assignments use your linked person record."
-msgstr ""
+msgstr "Для назначений используется связанная с вами запись участника."
 
 #: src/components/task-attachments.tsx
 msgid "Attach image"
-msgstr ""
+msgstr "Прикрепить изображение"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
-msgstr ""
+msgstr "Прикреплённое изображение"
 
 #: src/app/search-match-context.ts
 msgid "attachments"
-msgstr ""
+msgstr "вложения"
 
 #: src/components/task-attachments.tsx
 msgid "Attachments"
-msgstr ""
+msgstr "Вложения"
 
 #: src/app/view-editor-form.tsx
 msgid "Available in"
-msgstr ""
+msgstr "Доступно в"
 
 #: src/app/search-screen.tsx
 #: src/app/task-edit-recovery-boundary.tsx
 #: src/app/task-screen.tsx
 msgid "Back"
-msgstr ""
+msgstr "Назад"
 
 #: src/components/task-actions.tsx
 msgid "Back to previous actions"
-msgstr ""
+msgstr "Вернуться к предыдущим действиям"
 
 #: src/app/more-screen.tsx
 msgid "Back to Settings"
-msgstr ""
+msgstr "Назад к настройкам"
 
 #: src/i18n/ui-copy.ts
 msgid "before"
-msgstr ""
+msgstr "до"
 
 #: src/components/reminder-editor.tsx
 msgid "Before"
-msgstr ""
+msgstr "До"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
-msgstr ""
+msgstr "Заблокировано задачей"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocking"
-msgstr ""
+msgstr "Блокирует"
 
 #: src/app/view-editor-form.tsx
 msgid "Board"
-msgstr ""
+msgstr "Доска"
 
 #: src/app/view-editor-form.tsx
 msgid "Board column"
-msgstr ""
+msgstr "Столбец доски"
 
 #: src/components/kanban-column-jump.tsx
 msgid "Board columns"
-msgstr ""
+msgstr "Столбцы доски"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Bold"
-msgstr ""
+msgstr "Полужирный"
 
 #: src/app/app-shell.tsx
 msgid "Browse"
-msgstr ""
+msgstr "Обзор"
 
 #: src/components/expression-builder.tsx
 msgid "Builder"
-msgstr ""
+msgstr "Конструктор"
 
 #: src/app/views/view-catalog.tsx
 msgid "Built-in working spaces"
-msgstr ""
+msgstr "Встроенные рабочие области"
+
+#: src/i18n/editor-phrases.ts
+msgid "by word"
+msgstr "по словам"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
-msgstr ""
+msgstr "Календарь"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar layout"
-msgstr ""
+msgstr "Макет календаря"
 
 #: src/app/full-calendar-view.tsx
 msgid "Calendar markers"
-msgstr ""
+msgstr "Маркеры календаря"
 
 #: src/app/more-screen.tsx
 msgid "Can I change collections later?"
-msgstr ""
+msgstr "Можно ли сменить коллекцию позже?"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
 msgid "Cancel"
-msgstr ""
+msgstr "Отмена"
 
 #: src/app/view-editor.tsx
 msgid "Cancel confirmation"
-msgstr ""
+msgstr "Подтверждение отмены"
 
 #: src/app/views/kanban-view.tsx
 msgid "Cancelled moving {title}."
-msgstr ""
+msgstr "Перемещение задачи «{title}» отменено."
 
 #: src/app/model-setup-screen.tsx
 msgid "Catching up"
-msgstr ""
+msgstr "Синхронизация изменений"
 
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
-msgstr ""
+msgstr "Выражение CEL"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
-msgstr ""
+msgstr "Сменить коллекцию"
 
 #: src/components/private-account-settings.tsx
 msgid "Change password"
-msgstr ""
+msgstr "Изменить пароль"
 
 #: src/components/private-account-settings.tsx
 msgid "Change recovery password"
-msgstr ""
+msgstr "Изменить пароль восстановления"
 
 #: src/components/collection-write-status.tsx
 msgid "Change rejected"
-msgstr ""
+msgstr "Изменение отклонено"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
-msgstr ""
+msgstr "Изменение отклонено: {0}"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
-msgstr ""
+msgstr "Изменено: "
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
-msgstr ""
+msgstr "Не удалось сохранить изменения. Не закрывайте эту страницу и попробуйте ещё раз."
 
 #: src/components/task-actions.tsx
 msgid "Changes every occurrence"
-msgstr ""
+msgstr "Изменить все повторения"
 
 #: src/components/collection-write-status.tsx
 msgid "changes need review"
-msgstr ""
+msgstr "изменений требуют проверки"
 
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
-msgstr ""
+msgstr "Проверить состояние учётной записи"
 
 #: src/app/model-setup-screen.tsx
 msgid "Check setup"
-msgstr ""
+msgstr "Проверить настройку"
 
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
-msgstr ""
+msgstr "Проверить завершение строгого режима"
 
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
-msgstr ""
+msgstr "Убедитесь, что коллекция подключена, и попробуйте ещё раз."
 
 #: src/app/notification-label.ts
 msgid "Checking"
-msgstr ""
+msgstr "Проверка"
 
 #: src/components/private-account-settings.tsx
 msgid "Checking account recovery…"
-msgstr ""
+msgstr "Проверка восстановления учётной записи…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking collection access…"
-msgstr ""
+msgstr "Проверка доступа к коллекции…"
 
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
-msgstr ""
+msgstr "Проверка настроек коллекции…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking TaskNotes setup…"
-msgstr ""
+msgstr "Проверка настройки TaskNotes…"
 
 #: src/app/model-setup-screen.tsx
 msgid "Checking whether setup finished…"
-msgstr ""
+msgstr "Проверка завершения настройки…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
-msgstr ""
+msgstr "Дочерний элемент"
 
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
-msgstr ""
+msgstr "Выбор отправлен. Он ещё может ожидать синхронизации; проверьте число подтверждённых, ожидающих и защищённых изменений."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Choose"
-msgstr ""
+msgstr "Выбрать"
 
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
-msgstr ""
+msgstr "Выбрать другую коллекцию"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose a person…"
-msgstr ""
+msgstr "Выбрать участника…"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose a property"
-msgstr ""
+msgstr "Выберите свойство"
 
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
-msgstr ""
+msgstr "Выберите значение"
 
 #: src/app/model-setup-screen.tsx
 msgid "Choose another collection"
-msgstr ""
+msgstr "Выбрать другую коллекцию"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
-msgstr ""
+msgstr "Выбрать исполнителей"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
-msgstr ""
+msgstr "Выберите способ группировки и сортировки задач."
 
 #: src/components/person-setup-link.tsx
 msgid "Choose or create your person record"
-msgstr ""
+msgstr "Выберите или создайте свою запись участника"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the calendar mode and which task dates become events."
-msgstr ""
+msgstr "Выберите режим календаря и даты задач, которые будут отображаться как события."
 
 #: src/app/view-editor-form.tsx
 msgid "Choose the information shown beneath each task."
-msgstr ""
+msgstr "Выберите сведения, отображаемые под каждой задачей."
 
 #: src/app/views-screen.tsx
 msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr ""
+msgstr "Выберите элементы навигации, измените их порядок и управляйте сохранёнными представлениями."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
-msgstr ""
+msgstr "Выберите, что станет задачей"
 
 #: src/app/view-editor-form.tsx
 msgid "Choose which tasks belong in this view."
-msgstr ""
+msgstr "Выберите задачи для этого представления."
 
 #: src/components/expression-builder.tsx
 msgid "Choose…"
-msgstr ""
+msgstr "Выбрать…"
 
 #: src/app/search-screen.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
-msgstr ""
+msgstr "Очистить"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr ""
+msgstr "Сбрасывать флажки списка в заметке при каждом повторении"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
-msgstr ""
+msgstr "Очистить срок"
 
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
-msgstr ""
+msgstr "Очистить недавние запросы"
 
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
-msgstr ""
+msgstr "Очистить список недавно открытых задач"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
-msgstr ""
+msgstr "Очистить запланированную дату"
 
 #: src/app/search-screen.tsx
 msgid "Clear search"
-msgstr ""
+msgstr "Очистить поиск"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
-msgstr ""
+msgstr "Снять выделение"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
-msgstr ""
+msgstr "Очистить значение"
+
+#: src/i18n/editor-phrases.ts
+msgid "close"
+msgstr "закрыть"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
-msgstr ""
+msgstr "Закрыть"
 
 #. placeholder {0}: ariaLabel ?? uiCopy("options")
 #: src/components/tasknotes-controls.tsx
 msgid "Close {0}"
-msgstr ""
+msgstr "Закрыть: {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {accessibleName} calendar"
-msgstr ""
+msgstr "Закрыть календарь {accessibleName}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
-msgstr ""
+msgstr "Закрыть: {ariaLabel}"
 
 #: src/app/use-calendar-overflow.ts
 msgid "Close additional tasks"
-msgstr ""
+msgstr "Закрыть дополнительные задачи"
 
 #: src/components/held-edits.tsx
 msgid "Close comparison"
-msgstr ""
+msgstr "Закрыть сравнение"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
-msgstr ""
+msgstr "Закрыть окно добавления изображения"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Close keyboard shortcuts"
-msgstr ""
+msgstr "Закрыть список сочетаний клавиш"
 
 #: src/components/global-task-capture.tsx
 msgid "Close new task"
-msgstr ""
+msgstr "Закрыть новую задачу"
 
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
-msgstr ""
+msgstr "Закрыть редактор свойств"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
-msgstr ""
+msgstr "Закрыть редактор представления"
 
 #: src/i18n/ui-copy.ts
 msgid "Collapse"
-msgstr ""
+msgstr "Свернуть"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
-msgstr ""
+msgstr "Свернуть изображение"
 
 #: src/app/settings-sections.ts
 msgid "Collection"
-msgstr ""
+msgstr "Коллекция"
 
 #. The selected mdbase collection, not a group of interface controls.
 #: src/app/collection-settings.tsx
 msgctxt "settings section title"
 msgid "Collection"
-msgstr ""
+msgstr "Коллекция"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
-msgstr ""
+msgstr "Поведение коллекции"
 
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
-msgstr ""
+msgstr "Подключение к коллекции"
 
 #: src/app/more-screen.tsx
 msgid "Collection details could not be loaded. "
-msgstr ""
+msgstr "Не удалось загрузить сведения о коллекции. "
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order"
-msgstr ""
+msgstr "Порядок коллекции"
 
 #: src/app/view-editor-form.tsx
 msgid "Collection order is used."
-msgstr ""
+msgstr "Используется порядок коллекции."
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
-msgstr ""
+msgstr "Коллекция недоступна"
 
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
-msgstr ""
+msgstr "Коллекция недоступна. Показаны ранее загруженные задачи; сохранить изменения нельзя."
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
-msgstr ""
+msgstr "Цветовая тема"
 
 #: src/app/task-custom-field.tsx
 msgid "Comma-separated values"
-msgstr ""
+msgstr "Значения, разделённые запятыми"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
-msgstr ""
+msgstr "Палитра команд"
 
 #: src/app/app-shell.tsx
 msgid "Commands"
-msgstr ""
+msgstr "Команды"
 
 #. placeholder {0}: shortcutLabel("K")
 #: src/app/app-shell.tsx
 msgid "Commands ({0})"
-msgstr ""
+msgstr "Команды ({0})"
 
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
-msgstr ""
+msgstr "Компактные строки"
 
 #: src/components/held-edits.tsx
 msgid "Compare side by side"
-msgstr ""
+msgstr "Сравнить рядом"
 
 #: src/components/held-edits.tsx
 msgid "Comparison is not available from this backend."
-msgstr ""
+msgstr "Сравнение недоступно для этого источника данных."
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Complete"
-msgstr ""
+msgstr "Выполнить"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr ""
+msgstr "Выполнить"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr ""
+msgstr "Выполнить"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
-msgstr ""
+msgstr "Выполнить «{title}»"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
-msgstr ""
+msgstr "Выполнить это повторение"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
-msgstr ""
+msgstr "Выполнить или возобновить"
 
 #: src/app/task-screen.tsx
 msgid "Complete task"
-msgstr ""
+msgstr "Выполнить задачу"
 
 #: src/app/keyboard-layer.tsx
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "Completed"
-msgstr ""
+msgstr "Выполнено"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
-msgstr ""
+msgstr "Выполненный черновик"
 
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
-msgstr ""
+msgstr "Выполненные повторения"
 
 #: src/components/task-model-settings.tsx
 msgid "Completing an occurrence's task file creates the file for the next date."
-msgstr ""
+msgstr "При выполнении файла задачи для повторения создаётся файл для следующей даты."
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion"
-msgstr ""
+msgstr "Выполнение"
 
 #: src/components/recurrence-field.tsx
 msgid "Completion date"
-msgstr ""
+msgstr "Дата выполнения"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Completion or skip"
-msgstr ""
+msgstr "Выполнение или пропуск"
+
+#: src/i18n/editor-phrases.ts
+msgid "Completions"
+msgstr "Выполнения"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
-msgstr ""
+msgstr "Вычисляемые свойства корректны"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property expression {0}"
-msgstr ""
+msgstr "Выражение вычисляемого свойства {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property name {0}"
-msgstr ""
+msgstr "Название вычисляемого свойства {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Computed property scope {0}"
-msgstr ""
+msgstr "Область вычисляемого свойства {0}"
 
 #: src/app/task-screen.tsx
 msgid "Computer, Errands"
-msgstr ""
+msgstr "Компьютер, поручения"
 
 #: src/components/expression-builder.tsx
 msgid "Condition"
-msgstr ""
+msgstr "Условие"
 
 #: src/components/held-edits.tsx
 msgid "Confirm "
-msgstr ""
+msgstr "Подтвердить "
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
-msgstr ""
+msgstr "Подтвердить удаление данных и отключение"
 
 #: src/components/private-account-settings.tsx
 msgid "Confirm new recovery password"
-msgstr ""
+msgstr "Подтвердите новый пароль восстановления"
 
 #: src/components/held-edits.tsx
 msgid "Confirm protected-version replacement"
-msgstr ""
+msgstr "Подтвердите замену защищённой версии"
 
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
-msgstr ""
+msgstr "Проверяем, сохранена ли «"
 
 #: src/components/collection-write-status.tsx
 msgid "Conflicting changes"
-msgstr ""
+msgstr "Конфликтующие изменения"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
-msgstr ""
+msgstr "Подключено"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
-msgstr ""
+msgstr "Подключение"
 
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "Подключение…"
 
 #: src/app/collection-settings.tsx
 msgctxt "mdbase authority status"
 msgid "Connection"
-msgstr ""
+msgstr "Подключение"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
-msgstr ""
+msgstr "Настройки подключения"
 
 #: src/components/expression-builder.tsx
 msgid "contains"
-msgstr ""
+msgstr "содержит"
 
 #: src/app/search-match-context.ts
 msgid "contexts"
-msgstr ""
+msgstr "контексты"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -1523,437 +1539,445 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
-msgstr ""
+msgstr "Контексты"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
-msgstr ""
+msgstr "Продолжить на временной шкале"
+
+#: src/i18n/editor-phrases.ts
+msgid "Control character"
+msgstr "Управляющий символ"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
-msgstr ""
+msgstr "Преобразовать {0} в заметку"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
-msgstr ""
+msgstr "Преобразовать в заметку"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
-msgstr ""
+msgstr "Копировать"
 
 #: src/components/task-record-file.tsx
 msgid "Copy "
-msgstr ""
+msgstr "Копировать "
 
 #. placeholder {0}: view?.name
 #: src/app/view-editor.tsx
 msgid "Copy {0}"
-msgstr ""
+msgstr "Копировать: {0}"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
 msgid "Copy path"
-msgstr ""
+msgstr "Копировать путь"
 
 #: src/components/task-actions.tsx
 msgid "Copy task link"
-msgstr ""
+msgstr "Копировать ссылку на задачу"
 
 #: src/components/task-actions.tsx
 msgid "Copy title"
-msgstr ""
+msgstr "Копировать название"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
-msgstr ""
+msgstr "Исправьте правило, прежде чем планировать повторение."
 
 #. placeholder {0}: Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")
 #. placeholder {1}: dragged.task.title
 #. placeholder {2}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not {0} “{1}”. {2}"
-msgstr ""
+msgstr "Не удалось выполнить действие «{0}» для «{1}». {2}"
 
 #: src/components/private-account-settings.tsx
 msgid "Could not check account recovery. Check the connection and try again."
-msgstr ""
+msgstr "Не удалось проверить восстановление учётной записи. Проверьте подключение и попробуйте ещё раз."
 
 #: src/components/held-edits.tsx
 msgid "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again."
-msgstr ""
+msgstr "Не удалось подтвердить результат выбора. Обновите данные и проверьте текущее защищённое изменение, прежде чем повторить попытку."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
 msgid "Could not move “{0}”. {1}"
-msgstr ""
+msgstr "Не удалось переместить «{0}». {1}"
 
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
-msgstr ""
+msgstr "Не удалось подключиться повторно. Попробуйте ещё раз или проверьте настройки подключения."
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Could not save the default mode on this device."
-msgstr ""
+msgstr "Не удалось сохранить режим по умолчанию на этом устройстве."
 
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
-msgstr ""
+msgstr "Не удалось добавить начальные представления."
 
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
-msgstr ""
+msgstr "Не удалось скопировать"
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
 msgid "Couldn't load your views."
-msgstr ""
+msgstr "Не удалось загрузить представления."
 
 #: src/components/recurrence-field.tsx
 msgid "Count the interval from when you finish the task."
-msgstr ""
+msgstr "Отсчитывать интервал с момента выполнения задачи."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create {selectedReviewCount} task notes"
-msgstr ""
+msgstr "Создать заметки для задач: {selectedReviewCount}"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
-msgstr ""
+msgstr "Создать подзадачу для {0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Create a task file for each date"
-msgstr ""
+msgstr "Создавать файл задачи для каждой даты"
 
 #: src/app/app-shell.tsx
 msgid "Create a view"
-msgstr ""
+msgstr "Создать представление"
 
 #: src/components/task-model-settings.tsx
 msgid "Create files ahead"
-msgstr ""
+msgstr "Создавать файлы заранее"
 
 #: src/app/view-editor.tsx
 msgid "Create saved view"
-msgstr ""
+msgstr "Создать сохранённое представление"
 
 #: src/components/task-actions.tsx
 msgid "Create subtask"
-msgstr ""
+msgstr "Создать подзадачу"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task"
-msgstr ""
+msgstr "Создать задачу"
 
 #. placeholder {0}: node.text
 #: src/app/scratchpad-screen.tsx
 msgid "Create task for {0}"
-msgstr ""
+msgstr "Создать задачу для {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Create task notes"
-msgstr ""
+msgstr "Создать заметки о задачах"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Create the next after completion"
-msgstr ""
+msgstr "Создать следующее после выполнения"
 
 #: src/app/views-screen.tsx
 msgid "Create view"
-msgstr ""
+msgstr "Создать представление"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Created"
-msgstr ""
+msgstr "Создано"
 
 #. placeholder {0}: converted.task.title
 #: src/app/scratchpad-screen.tsx
 msgid "Created “{0}”"
-msgstr ""
+msgstr "Создано: «{0}»"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Creating…"
-msgstr ""
+msgstr "Создание…"
+
+#: src/i18n/editor-phrases.ts
+msgid "current match"
+msgstr "текущее совпадение"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
-msgstr ""
+msgstr "Текущая заметка"
 
 #: src/i18n/ui-copy.ts
 msgid "current scratchpad"
-msgstr ""
+msgstr "текущий блокнот"
 
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
-msgstr ""
+msgstr "Настраиваемый фильтр"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Daily"
-msgstr ""
+msgstr "Ежедневно"
 
 #: src/app/more-screen.tsx
 msgid "Dark"
-msgstr ""
+msgstr "Тёмная"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
-msgstr ""
+msgstr "Дата"
 
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
-msgstr ""
+msgstr "Дата и план"
 
 #: src/components/task-actions.tsx
 msgid "Dates"
-msgstr ""
+msgstr "Даты"
 
 #: src/components/task-capture.tsx
 msgid "Dates and estimate"
-msgstr ""
+msgstr "Даты и оценка времени"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Day"
-msgstr ""
+msgstr "День"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
-msgstr ""
+msgstr "Начало дня"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day ends"
-msgstr ""
+msgstr "Конец дня"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Days"
-msgstr ""
+msgstr "Дни"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
-msgstr ""
+msgstr "Режим по умолчанию для новых заметок"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
-msgstr ""
+msgstr "Приоритет по умолчанию"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Default Scratchpad mode"
-msgstr ""
+msgstr "Режим блокнота по умолчанию"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default status"
-msgstr ""
+msgstr "Статус по умолчанию"
 
 #: src/app/view-editor-form.tsx
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
-msgstr ""
+msgstr "Значения по умолчанию, определённые по простым условиям фильтра, добавляются при создании задачи."
 
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
-msgstr ""
+msgstr "Удалить"
 
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
-msgstr ""
+msgstr "Удалить «{name}»?"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr ""
+msgstr "Удалить элемент"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete note"
-msgstr ""
+msgstr "Удалить заметку"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
-msgstr ""
+msgstr "Удалить повторяющуюся задачу"
 
 #: src/components/task-actions.tsx
 msgid "Delete task"
-msgstr ""
+msgstr "Удалить задачу"
 
 #: src/components/task-actions.tsx
 msgid "Delete this repeating task and all of its occurrences?"
-msgstr ""
+msgstr "Удалить эту повторяющуюся задачу и все её повторения?"
 
 #: src/components/task-actions.tsx
 msgid "Delete this task?"
-msgstr ""
+msgstr "Удалить эту задачу?"
 
 #: src/app/view-editor.tsx
 msgid "Delete view"
-msgstr ""
+msgstr "Удалить представление"
 
 #. placeholder {0}: pendingDeletion.title
 #. placeholder {0}: pendingDeletion.title.trim()
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Deleted “{0}”"
-msgstr ""
+msgstr "Удалено: «{0}»"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr ""
+msgstr "«{0}» удалено. Действие можно отменить в течение 30 секунд."
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
-msgstr ""
+msgstr "Удаление требует проверки"
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
-msgstr ""
+msgstr "Ожидание удаления"
 
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
-msgstr ""
+msgstr "Зависимости"
 
 #: src/app/view-editor-form.tsx
 msgid "Descending"
-msgstr ""
+msgstr "По убыванию"
 
 #: src/components/reminder-editor.tsx
 msgid "Description"
-msgstr ""
+msgstr "Описание"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
-msgstr ""
+msgstr "Отвязать"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Detach {0}"
-msgstr ""
+msgstr "Отвязать: {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach from task"
-msgstr ""
+msgstr "Отвязать от задачи"
 
 #: src/components/task-attachments.tsx
 msgid "Detaching keeps the image file in your collection."
-msgstr ""
+msgstr "При отвязке файл изображения остаётся в коллекции."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
-msgstr ""
+msgstr "Настройка устройства"
 
 #: src/components/reminder-editor.tsx
 msgid "Direction"
-msgstr ""
+msgstr "Направление"
 
 #: src/app/notification-label.ts
 msgid "Disabled in system settings"
-msgstr ""
+msgstr "Отключено в настройках системы"
 
 #: src/components/task-model-settings.tsx
 msgid "Discard"
-msgstr ""
+msgstr "Отменить"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard and load latest"
-msgstr ""
+msgstr "Отменить и загрузить последнюю версию"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
-msgstr ""
+msgstr "Отменить изменения"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes?"
-msgstr ""
+msgstr "Отменить изменения?"
 
 #: src/components/global-task-capture.tsx
 msgid "Discard draft"
-msgstr ""
+msgstr "Удалить черновик"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard my edit"
-msgstr ""
+msgstr "Отменить мои изменения"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Discard recovered edits"
-msgstr ""
+msgstr "Удалить восстановленные изменения"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
-msgstr ""
+msgstr "Удалить данные восстановления"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr ""
+msgstr "Удаление данных восстановления отключит коллекцию и удалит все сохранённые данные. Оно не отменяет удаление, которое уже могло завершиться."
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 msgid "Dismiss"
-msgstr ""
+msgstr "Закрыть"
 
 #: src/components/task-completed-notice.tsx
 msgid "Dismiss completion notice"
-msgstr ""
+msgstr "Закрыть уведомление о выполнении"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
-msgstr ""
+msgstr "Закрыть подтверждение добавления задачи"
 
 #: src/app/view-editor-form.tsx
 msgid "Displayed properties"
-msgstr ""
+msgstr "Отображаемые свойства"
 
 #: src/components/expression-builder.tsx
 msgid "does not contain"
-msgstr ""
+msgstr "не содержит"
 
 #: src/app/more-screen.tsx
 msgid "Does TaskNotes work offline?"
-msgstr ""
+msgstr "Работает ли TaskNotes без подключения к интернету?"
 
 #: src/app/views-screen.tsx
 msgid "done"
-msgstr ""
+msgstr "выполнено"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
-msgstr ""
+msgstr "Готово"
 
 #: src/components/assignee-editor.tsx
 msgid "Done choosing assignees"
-msgstr ""
+msgstr "Выбор исполнителей завершён"
 
 #: src/i18n/ui-copy.ts
 msgid "down"
-msgstr ""
+msgstr "вниз"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
-msgstr ""
+msgstr "Черновик задачи"
 
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
-msgstr ""
+msgstr "Перетащите сюда"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images here, paste them, upload files, or take a photo."
-msgstr ""
+msgstr "Перетащите сюда изображения, вставьте их из буфера обмена, загрузите файлы или сделайте снимок."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images to add them"
-msgstr ""
+msgstr "Перетащите изображения, чтобы добавить их"
 
 #: src/app/view-editor-form.tsx
 msgid "due"
-msgstr ""
+msgstr "срок"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/task-screen.tsx
@@ -1964,62 +1988,62 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Due"
-msgstr ""
+msgstr "Срок"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr ""
+msgstr "Срок (не задан)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-editor-draft.ts
 #: src/i18n/presentation.ts
 msgid "Due {0}"
-msgstr ""
+msgstr "Срок: {0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr ""
+msgstr "Срок и запланированная дата"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
-msgstr ""
+msgstr "Сроки"
 
 #: src/components/task-actions.tsx
 msgid "Due set"
-msgstr ""
+msgstr "Срок задан"
 
 #: src/components/task-actions.tsx
 msgid "Due today"
-msgstr ""
+msgstr "Срок сегодня"
 
 #: src/components/task-actions.tsx
 msgid "Due tomorrow"
-msgstr ""
+msgstr "Срок завтра"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
-msgstr ""
+msgstr "Создать копию"
 
 #: src/app/view-editor.tsx
 msgid "Duplicate saved view"
-msgstr ""
+msgstr "Дублировать сохранённое представление"
 
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
-msgstr ""
+msgstr "Каждая дата учитывается в повторяющейся задаче. Отдельный файл задачи создаётся только по вашему запросу."
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
-msgstr ""
+msgstr "Каждый месяц"
 
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
-msgstr ""
+msgstr "Более ранние правила имеют приоритет."
 
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
-msgstr ""
+msgstr "Изменить"
 
 #. placeholder {0}: detail.label
 #. placeholder {0}: item.key
@@ -2028,949 +2052,977 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Edit {0}"
-msgstr ""
+msgstr "Изменить: {0}"
 
 #: src/components/task-actions.tsx
 msgid "Edit dates and reminders"
-msgstr ""
+msgstr "Изменить даты и напоминания"
 
 #: src/components/task-actions.tsx
 msgid "Edit details"
-msgstr ""
+msgstr "Изменить подробности"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
-msgstr ""
+msgstr "Изменения не сохранены"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
-msgstr ""
+msgstr "Изменить шаблон"
 
 #: src/components/task-property-editor.tsx
 msgid "Edit property"
-msgstr ""
+msgstr "Изменить свойство"
 
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
-msgstr ""
+msgstr "Изменить повторяющуюся задачу"
 
 #: src/app/view-editor.tsx
 msgid "Edit saved view"
-msgstr ""
+msgstr "Изменить сохранённое представление"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Edit view"
-msgstr ""
+msgstr "Изменить представление"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr ""
+msgstr "Можно редактировать"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
-msgstr ""
+msgstr "Редактор: {0}"
 
 #: src/app/task-screen.tsx
 msgid "Editor mode"
-msgstr ""
+msgstr "Режим редактора"
 
 #: src/app/scratchpad-screen.tsx
 msgid "empty"
-msgstr ""
+msgstr "пусто"
 
 #: src/i18n/ui-copy.ts
 msgid "empty item"
-msgstr ""
+msgstr "пустой элемент"
 
 #: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
-msgstr ""
+msgstr "пустая задача"
 
 #: src/components/private-account-settings.tsx
 msgid "Enable strict mode"
-msgstr ""
+msgstr "Включить строгий режим"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
-msgstr ""
+msgstr "Завершается"
 
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
-msgstr ""
+msgstr "Введите выражение CEL."
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
-msgstr ""
+msgstr "Оценка (минуты)"
 
 #: src/app/task-editor-draft.ts
 msgid "Estimate and work sessions"
-msgstr ""
+msgstr "Оценка и рабочие сеансы"
 
 #: src/components/recurrence-field.tsx
 msgid "Every"
-msgstr ""
+msgstr "Каждые"
 
 #: src/components/expression-builder.tsx
 msgid "Every task will be included"
-msgstr ""
+msgstr "Будут включены все задачи"
 
 #: src/app/view-editor-form.tsx
 msgid "Every view in this file"
-msgstr ""
+msgstr "Все представления в этом файле"
 
 #: src/i18n/ui-copy.ts
 msgid "Expand"
-msgstr ""
+msgstr "Развернуть"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Expand image"
-msgstr ""
+msgstr "Развернуть изображение"
 
 #: src/app/view-editor-form.tsx
 msgid "Expression"
-msgstr ""
+msgstr "Выражение"
 
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
-msgstr ""
+msgstr "Выражение или YAML-фильтр"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
-msgstr ""
+msgstr "Внешнее приложение"
 
 #: src/components/task-capture.tsx
 msgid "Extra context for the task"
-msgstr ""
+msgstr "Дополнительный контекст задачи"
 
 #: src/app/view-editor-form.tsx
 msgid "Fields shown"
-msgstr ""
+msgstr "Отображаемые поля"
 
 #: src/components/task-attachments.tsx
 msgid "File missing"
-msgstr ""
+msgstr "Файл не найден"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File name"
-msgstr ""
+msgstr "Имя файла"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "File path"
-msgstr ""
+msgstr "Путь к файлу"
 
 #: src/app/view-editor-form.tsx
 msgid "Filter"
-msgstr ""
+msgstr "Фильтр"
 
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
-msgstr ""
+msgstr "Условие фильтра"
 
 #: src/components/expression-builder.tsx
 msgid "Filter editor mode"
-msgstr ""
+msgstr "Режим редактора фильтра"
 
 #: src/components/expression-builder.tsx
 msgid "Filter expression"
-msgstr ""
+msgstr "Выражение фильтра"
 
 #: src/components/expression-builder.tsx
 msgid "Filter is valid"
-msgstr ""
+msgstr "Фильтр корректен"
 
 #: src/components/expression-builder.tsx
 msgid "Filter property"
-msgstr ""
+msgstr "Свойство фильтра"
 
 #: src/components/expression-builder.tsx
 msgid "Filter value"
-msgstr ""
+msgstr "Значение фильтра"
 
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
-msgstr ""
+msgstr "Фильтровать представления"
+
+#: src/i18n/editor-phrases.ts
+msgid "Find"
+msgstr "Найти"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
-msgstr ""
+msgstr "Найти задачу"
 
 #: src/app/search-screen.tsx
 msgid "Find a task."
-msgstr ""
+msgstr "Найдите задачу."
 
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
-msgstr ""
+msgstr "Поиск задач во всей коллекции"
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
-msgstr ""
+msgstr "Завершите редактирование представления или закройте редактор перед перезагрузкой."
 
 #: src/app/repository-context.tsx
 #: src/components/task-capture.tsx
 msgid "Finish or discard the task you are adding before reloading."
-msgstr ""
+msgstr "Завершите создание задачи или отмените его перед перезагрузкой."
 
 #: src/components/private-account-settings.tsx
 msgid "Finish strict mode on this device"
-msgstr ""
+msgstr "Завершить настройку строгого режима на этом устройстве"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Finish the note action in progress before reloading."
-msgstr ""
+msgstr "Завершите текущее действие с заметкой перед перезагрузкой."
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
-msgstr ""
+msgstr "От завершения до завершения"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to start"
-msgstr ""
+msgstr "От завершения до начала"
 
 #: src/app/notification-label.ts
 msgid "Firebase setup required"
-msgstr ""
+msgstr "Требуется настроить Firebase"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr ""
+msgstr "первый"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
-msgstr ""
+msgstr "Первый"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
-msgstr ""
+msgstr "Фиксированные дата и время"
 
 #: src/app/command-palette-model.ts
 msgid "Focused task"
-msgstr ""
+msgstr "Выбранная задача"
+
+#: src/i18n/editor-phrases.ts
+msgid "Fold line"
+msgstr "Свернуть строку"
+
+#: src/i18n/editor-phrases.ts
+msgid "folded code"
+msgstr "свёрнутый код"
+
+#: src/i18n/editor-phrases.ts
+msgid "Folded lines"
+msgstr "Свёрнутые строки"
 
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
-msgstr ""
+msgstr "Для предстоящего периода"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
-msgstr ""
+msgstr "Например, P1D"
 
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
-msgstr ""
+msgstr "Забыли пароль"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
-msgstr ""
+msgstr "Формулы"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas and source details for this saved view."
-msgstr ""
+msgstr "Формулы и сведения об источнике этого сохранённого представления."
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr ""
+msgstr "четвёртый"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
-msgstr ""
+msgstr "Четвёртый"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
-msgstr ""
+msgstr "из"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
-msgstr ""
+msgstr "Из формы задачи"
 
 #: src/app/view-editor-form.tsx
 msgid "Full schedule"
-msgstr ""
+msgstr "Полное расписание"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Future horizon"
-msgstr ""
+msgstr "Горизонт планирования"
 
 #: src/components/dependency-editor.tsx
 msgid "Gap"
-msgstr ""
+msgstr "Интервал"
+
+#: src/i18n/editor-phrases.ts
+msgid "go"
+msgstr "перейти"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
-msgstr ""
+msgstr "Вернитесь и обновите коллекцию перед редактированием."
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
-msgstr ""
+msgstr "Вернитесь и обновите коллекцию."
 
 #: src/app/command-palette-model.ts
 msgid "Go to"
-msgstr ""
+msgstr "Перейти"
+
+#: src/i18n/editor-phrases.ts
+msgid "Go to line"
+msgstr "Перейти к строке"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
-msgstr ""
+msgstr "Перейти, выполнить действие или найти задачу…"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
-msgstr ""
+msgstr "Группа"
 
 #: src/app/view-editor-form.tsx
 msgid "Group & sort"
-msgstr ""
+msgstr "Группировка и сортировка"
 
 #: src/app/view-editor-form.tsx
 msgid "Group by"
-msgstr ""
+msgstr "Группировать по"
 
 #: src/app/view-editor-form.tsx
 msgid "Group direction"
-msgstr ""
+msgstr "Порядок групп"
 
 #. placeholder {0}: humanize(draft.groupProperty)
 #: src/app/view-editor-form.tsx
 msgid "Grouped by {0}"
-msgstr ""
+msgstr "Сгруппировано по {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
-msgstr ""
+msgstr "Сгруппированные столбцы"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
-msgstr ""
+msgstr "Заголовок"
 
 #: src/i18n/pilot-fixture.tsx
 msgctxt "translation pilot rich-text example"
 msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr ""
+msgstr "Здравствуйте, {name}. Ознакомьтесь с <0>документацией</0>."
 
 #: src/app/more-screen.tsx
 msgid "Help"
-msgstr ""
+msgstr "Справка"
 
 #: src/components/task-capture.tsx
 msgid "Hide details"
-msgstr ""
+msgstr "Скрыть подробности"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
-msgstr ""
+msgstr "Скрыть шаги установки"
 
 #: src/app/task-time-tracking.tsx
 msgid "Hide sessions"
-msgstr ""
+msgstr "Скрыть сеансы"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Home"
-msgstr ""
+msgstr "Главная"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Hour"
-msgstr ""
+msgstr "Час"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Hours"
-msgstr ""
+msgstr "Часы"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
-msgstr ""
+msgstr "Как хранятся задачи"
 
 #: src/app/more-screen.tsx
 msgid "How to install"
-msgstr ""
+msgstr "Инструкция по установке"
 
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
-msgstr ""
+msgstr "Ключ восстановления сохранён"
 
 #: src/components/private-account-settings.tsx
 msgid "I understand that existing devices must finish applying strict mode."
-msgstr ""
+msgstr "Я понимаю, что на существующих устройствах применение строгого режима должно завершиться."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
-msgstr ""
+msgstr "Действия с изображением"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image could not be loaded"
-msgstr ""
+msgstr "Не удалось загрузить изображение"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image file is unavailable"
-msgstr ""
+msgstr "Файл изображения недоступен"
 
 #: src/components/markdown-preview.tsx
 msgid "Image preview unavailable"
-msgstr ""
+msgstr "Предпросмотр изображения недоступен"
 
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
-msgstr ""
+msgstr "Изображение недоступно без подключения к интернету"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
-msgstr ""
+msgstr "В навигации"
 
 #: src/components/task-property-editor.tsx
 msgid "In one week"
-msgstr ""
+msgstr "Через неделю"
 
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
-msgstr ""
+msgstr "Включать выполненные повторения."
 
 #: src/app/view-editor-form.tsx
 msgid "Include skipped occurrences."
-msgstr ""
+msgstr "Включать пропущенные повторения."
 
 #: src/components/expression-builder.tsx
 msgid "Include tasks when"
-msgstr ""
+msgstr "Включать задачи, если"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Indent"
-msgstr ""
+msgstr "Увеличить отступ"
 
 #: src/components/task-attachments.tsx
 msgid "Insert"
-msgstr ""
+msgstr "Вставить"
 
 #: src/components/task-attachments.tsx
 msgid "Insert in Notes"
-msgstr ""
+msgstr "Вставить в заметки"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
-msgstr ""
+msgstr "Установить приложение"
 
 #: src/app/more-screen.tsx
 msgid "Install on this device"
-msgstr ""
+msgstr "Установить на это устройство"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
-msgstr ""
+msgstr "Установить TaskNotes"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
-msgstr ""
+msgstr "Установите TaskNotes, чтобы открывать приложение с главного экрана."
 
 #: src/app/model-setup-screen.tsx
 msgid "Installing TaskNotes setup…"
-msgstr ""
+msgstr "Установка TaskNotes…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
-msgstr ""
+msgstr "Недопустимое правило повторения"
 
 #: src/components/expression-builder.tsx
 msgid "is"
-msgstr ""
+msgstr "равно"
 
 #: src/components/expression-builder.tsx
 msgid "is after"
-msgstr ""
+msgstr "позже"
 
 #: src/components/expression-builder.tsx
 msgid "is before"
-msgstr ""
+msgstr "раньше"
 
 #: src/components/expression-builder.tsx
 msgid "is empty"
-msgstr ""
+msgstr "пусто"
 
 #: src/components/expression-builder.tsx
 msgid "is not"
-msgstr ""
+msgstr "не равно"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
-msgstr ""
+msgstr "не пусто"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
-msgstr ""
+msgstr "Значение ISO 8601"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Italic"
-msgstr ""
+msgstr "Курсив"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr ""
+msgstr "элемент"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
-msgstr ""
+msgstr "Перейти к проекту"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep a rolling window"
-msgstr ""
+msgstr "Использовать скользящий интервал"
 
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
-msgstr ""
+msgstr "Продолжить добавлять задачи"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep as note"
-msgstr ""
+msgstr "Оставить заметкой"
 
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
-msgstr ""
+msgstr "Чтобы сохранить изменение отдельным файлом, выберите «Сохранить оба варианта»."
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
-msgstr ""
+msgstr "Продолжить редактирование"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep files for past dates"
-msgstr ""
+msgstr "Сохранять файлы для прошедших дат"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
-msgstr ""
+msgstr "Создавать отдельные Markdown-заметки для повторяющихся дат."
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
-msgstr ""
+msgstr "Чтобы сохранить своё изменение, выберите «Оставить мою версию»."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep my edit"
-msgstr ""
+msgstr "Оставить моё изменение"
 
 #: src/app/task-screen.tsx
 msgid "Keep or discard your unsaved edit before making another change."
-msgstr ""
+msgstr "Сохраните или отмените несохранённое изменение, прежде чем вносить следующее."
 
 #: src/app/app-shell.tsx
 msgid "Keep saved recovery"
-msgstr ""
+msgstr "Сохранить данные восстановления"
 
 #: src/components/task-actions.tsx
 msgid "Keep task"
-msgstr ""
+msgstr "Оставить задачу"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep the gap between scheduled and due dates"
-msgstr ""
+msgstr "Сохранять интервал между запланированной датой и сроком"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep the planned dates, even if you finish late."
-msgstr ""
+msgstr "Сохранять запланированные даты, даже если задача выполнена с опозданием."
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
-msgstr ""
+msgstr "Оставить поле быстрого добавления в этом представлении."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
-msgstr ""
+msgstr "Продолжить писать"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep your edit to apply it on top of the latest version, or discard it and load the latest version."
-msgstr ""
+msgstr "Сохраните своё изменение, чтобы применить его поверх последней версии, или отмените его и загрузите последнюю версию."
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Сочетания клавиш"
 
 #: src/i18n/language-settings.tsx
 msgid "Language"
-msgstr ""
+msgstr "Язык"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr ""
+msgstr "последний"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
-msgstr ""
+msgstr "Последний"
 
 #: src/app/views-screen.tsx
 msgid "Last available result"
-msgstr ""
+msgstr "Последний доступный результат"
 
 #: src/components/recurrence-field.tsx
 msgid "Last date"
-msgstr ""
+msgstr "Последняя дата"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr ""
+msgstr "последний день"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
-msgstr ""
+msgstr "Последний день"
 
 #. placeholder {0}: lastRefresh.scanned.toLocaleString()
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "При последнем обновлении проверено записей: {0}; время — {1} мс."
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr ""
+msgstr "При последнем обновлении {scanned, plural, one {проверена # запись} few {проверены # записи} many {проверено # записей} other {проверено # записи}} за {elapsed} мс."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
-msgstr ""
+msgstr "Позже"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr ""
+msgstr "Макет"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr ""
+msgstr "Макет: {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "Подробнее"
 
 #: src/app/more-screen.tsx
 msgid "Light"
-msgstr ""
+msgstr "Светлая"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "Формат ссылок"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
-msgstr ""
+msgstr "Свяжите учётную запись с записью участника, чтобы использовать фильтр «Назначено мне»."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Linked"
-msgstr ""
+msgstr "Связано"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "Ссылки и учёт времени"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
-msgstr ""
+msgstr "Список"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
-msgstr ""
+msgstr "Загрузить ещё задачи"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Load older"
-msgstr ""
+msgstr "Загрузить более ранние"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks"
-msgstr ""
+msgstr "Загрузить остальные задачи"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks to change manual order."
-msgstr ""
+msgstr "Загрузите остальные задачи, чтобы изменить порядок вручную."
 
 #. placeholder {0}: presentedExecution.rows.length
 #. placeholder {1}: presentedExecution.totalCount
 #. placeholder {2}: manualOrder ? t({ message: "Load remaining tasks to change manual order." }) : ""
 #: src/app/views-screen.tsx
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
-msgstr ""
+msgstr "Загружено подходящих задач: {0} из {1}. В счётчиках разделов учитываются только загруженные задачи. {2}"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr ""
+msgstr "Загрузка изображения…"
 
 #: src/components/task-attachments.tsx
 msgid "Loading images…"
-msgstr ""
+msgstr "Загрузка изображений…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
-msgstr ""
+msgstr "Загрузка…"
 
 #: src/components/assignee-editor.tsx
 msgid "Loading people…"
-msgstr ""
+msgstr "Загрузка участников…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading previous notes…"
-msgstr ""
+msgstr "Загрузка предыдущих заметок…"
 
 #: src/components/loading.tsx
 msgid "Loading tasks"
-msgstr ""
+msgstr "Загрузка задач"
 
 #: src/app/views-screen.tsx
 msgid "Loading tasks…"
-msgstr ""
+msgstr "Загрузка задач…"
 
 #: src/app/search-screen.tsx
 msgid "Loading your person identity…"
-msgstr ""
+msgstr "Загрузка записи участника…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
-msgstr ""
+msgstr "Загрузка…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "Заблокировать ключ восстановления на этом устройстве"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "Заблокировано на этом устройстве"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
-msgstr ""
+msgstr "Поиск в коллекции…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
-msgstr ""
+msgstr "Создать задачу"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
-msgstr ""
+msgstr "Создать заметку о повторении"
 
 #: src/app/app-shell.tsx
 msgid "Manage"
-msgstr ""
+msgstr "Управление"
 
 #: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/views-screen.tsx
 msgid "Manage views"
-msgstr ""
+msgstr "Управление представлениями"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views-screen.tsx
 msgid "Manual order"
-msgstr ""
+msgstr "Ручной порядок"
 
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
-msgstr ""
+msgstr "Включён ручной порядок. На задачах появятся маркеры для перетаскивания."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark complete"
-msgstr ""
+msgstr "Отметить как выполненную"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark incomplete"
-msgstr ""
+msgstr "Отметить как невыполненную"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
-msgstr ""
+msgstr "Отметить повторение как незавершённое"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Mark open"
-msgstr ""
+msgstr "Отметить как незавершённую"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Файл Markdown"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
 msgid "Markdown link"
-msgstr ""
+msgstr "Ссылка Markdown"
 
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
-msgstr ""
+msgstr "Ссылки Markdown"
+
+#: src/i18n/editor-phrases.ts
+msgid "match case"
+msgstr "с учётом регистра"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
-msgstr ""
+msgstr "Режим соответствия"
 
 #. placeholder {0}: matches.join(", ")
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
-msgstr ""
+msgstr "Совпадение в разделе «{0}»"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
-msgstr ""
+msgstr "Коллекция mdbase"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase подтвердил завершение строгого режима. Ключ восстановления удалён с этого устройства."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase подтвердил, что целевые коллекции применили строгий режим."
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-msgstr ""
+msgstr "mdbase доставляет напоминания, даже когда TaskNotes закрыт. Уведомления не содержат текст задач."
 
 #: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
-msgstr ""
+msgstr "mdbase — основной источник данных. Для внесения изменений требуется подключение."
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase хранит задачи в переносимых файлах Markdown и позволяет совместимым приложениям одинаково работать с ними. В mdbase выберите коллекцию и разрешите TaskNotes доступ к ней — в облаке mdbase или на подключённом компьютере."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase защитил ваше изменение"
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase отклонил изменение."
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "Обновление mdbase"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "mdbase обновлён. Разрешите доступ TaskNotes, чтобы продолжить. Коллекции и заметки не изменились."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
-msgstr ""
+msgstr "Полночь"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
-msgstr ""
+msgstr "мин"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
-msgstr ""
+msgstr "Мини-календарь"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Minute"
-msgstr ""
+msgstr "Минута"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr ""
+msgstr "Минуты"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr ""
+msgstr "Месяц"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Monthly"
-msgstr ""
+msgstr "Ежемесячно"
 
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
-msgstr ""
+msgstr "Другие действия для {0}"
 
 #: src/components/task-actions.tsx
 msgid "More task actions"
-msgstr ""
+msgstr "Другие действия с задачей"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
-msgstr ""
+msgstr "переместить"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move"
-msgstr ""
+msgstr "Переместить"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
-msgstr ""
+msgstr "Переместить: {0}"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
-msgstr ""
+msgstr "Переместить {0} выше"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} later"
-msgstr ""
+msgstr "Переместить {0} ниже"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "Переместить {0}. Перетащите элемент или используйте клавиши со стрелками вверх и вниз."
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} down"
-msgstr ""
+msgstr "Переместить {label} вниз"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} up"
-msgstr ""
+msgstr "Переместить {label} вверх"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "Перенести все задачи на сегодня"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "Перемещать файлы архивированных задач в папку"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
-msgstr ""
+msgstr "Перенести даты на один день позже"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
-msgstr ""
+msgstr "Переместить выбранный элемент"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
-msgstr ""
+msgstr "Переместите «Ручной порядок» на первое место, чтобы включить перетаскивание."
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "Перенесено "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
-msgstr ""
+msgstr "Перемещено: {0} {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} after {1}."
-msgstr ""
+msgstr "{0} перемещено после {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} before {1}."
-msgstr ""
+msgstr "{0} перемещено перед {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} down."
-msgstr ""
+msgstr "{0} перемещено вниз."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
@@ -2978,61 +3030,61 @@ msgstr ""
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
-msgstr ""
+msgstr "{0} перемещено в {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
-msgstr ""
+msgstr "{0} перемещено вверх."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
-msgstr ""
+msgstr "{0} перемещено."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
 msgid "Moving {0}."
-msgstr ""
+msgstr "Перемещение: {0}."
 
 #: src/app/view-editor-form.tsx
 #: src/i18n/view-presentation.ts
 msgid "Name"
-msgstr ""
+msgstr "Название"
 
 #: src/app/view-editor-form.tsx
 msgid "Name this view and choose its layout."
-msgstr ""
+msgstr "Укажите название представления и выберите макет."
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
-msgstr ""
+msgstr "Вложенная группа"
 
 #: src/components/expression-builder.tsx
 msgid "Nested match mode"
-msgstr ""
+msgstr "Режим вложенных условий"
 
 #: src/components/recurrence-field.tsx
 msgid "Never"
-msgstr ""
+msgstr "Никогда"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr ""
+msgstr "Для новых устройств потребуется разрешение с уже настроенного устройства. Разблокировка с помощью пароля или ключа восстановления будет отключена. Старые данные могут оставаться доступными тому, кто знает прежний пароль и располагает старым пакетом ключей, пока коллекции не применят отзыв доступа и не сменят ключи шифрования."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
-msgstr ""
+msgstr "Новая заметка"
 
 #: src/components/private-account-settings.tsx
 msgid "New recovery password"
-msgstr ""
+msgstr "Новый пароль восстановления"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
-msgstr ""
+msgstr "Новая подзадача"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
@@ -3040,566 +3092,578 @@ msgstr ""
 #: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
-msgstr ""
+msgstr "Новая задача"
 
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
 msgid "New task ({0})"
-msgstr ""
+msgstr "Новая задача ({0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr ""
+msgstr "Название новой задачи"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "New tasks"
-msgstr ""
+msgstr "Новые задачи"
 
 #: src/app/more-screen.tsx
 msgid "New tasks, repeating tasks, and archive"
-msgstr ""
+msgstr "Новые задачи, повторяющиеся задачи и архив"
 
 #: src/app/view-editor.tsx
 msgid "New view"
-msgstr ""
+msgstr "Новое представление"
+
+#: src/i18n/editor-phrases.ts
+msgid "next"
+msgstr "следующий"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
-msgstr ""
+msgstr "Следующий месяц"
 
 #: src/app/full-calendar-view.tsx
 msgid "Next period"
-msgstr ""
+msgstr "Следующий период"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Next task"
-msgstr ""
+msgstr "Следующая задача"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
-msgstr ""
+msgstr "на следующей неделе"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
-msgstr ""
+msgstr "Далее: "
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
 msgid "Next: {0}"
-msgstr ""
+msgstr "Далее: {0}"
 
 #: src/i18n/view-presentation.ts
 msgid "No"
-msgstr ""
+msgstr "Нет"
 
 #: src/i18n/view-presentation.ts
 msgid "No {label}"
-msgstr ""
+msgstr "Нет: {label}"
 
 #: src/app/views/projects-view.tsx
 msgid "No active projects"
-msgstr ""
+msgstr "Нет активных проектов"
 
 #: src/app/view-empty-state.tsx
 msgid "No archived tasks here."
-msgstr ""
+msgstr "Здесь нет архивированных задач."
 
 #: src/app/view-empty-state.tsx
 msgid "No cached tasks for this view."
-msgstr ""
+msgstr "Для этого представления нет задач в кэше."
 
 #: src/app/view-editor-form.tsx
 msgid "No computed properties."
-msgstr ""
+msgstr "Нет вычисляемых свойств."
 
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
-msgstr ""
+msgstr "Нет даты"
 
 #: src/app/task-editor-draft.ts
 msgid "No dates"
-msgstr ""
+msgstr "Нет дат"
 
 #: src/app/view-editor-form.tsx
 msgid "No formulas"
-msgstr ""
+msgstr "Нет формул"
 
 #: src/app/view-editor-form.tsx
 msgid "No grouping"
-msgstr ""
+msgstr "Без группировки"
 
 #: src/components/command-palette.tsx
 msgid "No matching commands."
-msgstr ""
+msgstr "Подходящих команд нет."
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
-msgstr ""
+msgstr "Нет подходящих задач, назначенных вам."
 
 #: src/app/views/view-catalog.tsx
 msgid "No matching views"
-msgstr ""
+msgstr "Подходящих представлений нет"
 
 #: src/components/assignee-editor.tsx
 msgid "No other people are available to assign."
-msgstr ""
+msgstr "Нет других участников, которым можно назначить задачу."
 
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
-msgstr ""
+msgstr "Без приоритета"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
-msgstr ""
+msgstr "Нет проекций"
 
 #: src/components/private-account-settings.tsx
 msgid "No recovery key is held on this device."
-msgstr ""
+msgstr "Ключ восстановления на этом устройстве не хранится."
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
-msgstr ""
+msgstr "Напоминания не заданы."
 
 #: src/app/task-editor-draft.ts
 msgid "No repeat or reminder"
-msgstr ""
+msgstr "Без повторения и напоминания"
 
 #: src/app/views/kanban-columns.ts
 msgid "No status"
-msgstr ""
+msgstr "Без статуса"
 
 #: src/app/views/task-list-view.tsx
 msgid "No tasks"
-msgstr ""
+msgstr "Нет задач"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
-msgstr ""
+msgstr "В этот период задач нет."
 
 #: src/app/view-editor.tsx
 msgid "No tasks match this draft."
-msgstr ""
+msgstr "Черновику не соответствует ни одной задачи."
 
 #: src/app/view-empty-state.tsx
 msgid "No tasks match this view"
-msgstr ""
+msgstr "Нет задач для этого представления"
 
 #: src/app/search-screen.tsx
 msgid "No tasks matched."
-msgstr ""
+msgstr "Подходящих задач нет."
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
-msgstr ""
+msgstr "На этот день задач нет. Нажмите «Добавить задачу», чтобы запланировать её."
 
 #: src/app/today-clear.tsx
 msgid "No tasks yet"
-msgstr ""
+msgstr "Задач пока нет"
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
-msgstr ""
+msgstr "В этом шаблоне нет будущих дат."
 
 #: src/app/view-empty-state.tsx
 msgid "No upcoming tasks here."
-msgstr ""
+msgstr "Здесь нет предстоящих задач."
 
 #: src/app/task-custom-field.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
-msgstr ""
+msgstr "Нет значения"
 
 #: src/app/app-shell.tsx
 msgid "No views yet."
-msgstr ""
+msgstr "Представлений пока нет."
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr ""
+msgstr "Нет. TaskNotes напрямую читает и изменяет основную коллекцию mdbase. Для облачных коллекций требуется подключение к интернету; коллекция на компьютере также требует, чтобы этот компьютер был доступен."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
-msgstr ""
+msgstr "Нет"
 
 #: src/app/more-screen.tsx
 msgid "Not available"
-msgstr ""
+msgstr "Недоступно"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
-msgstr ""
+msgstr "Недоступно в этом браузере"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
 msgid "Not now"
-msgstr ""
+msgstr "Не сейчас"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Not saved"
-msgstr ""
+msgstr "Не сохранено"
 
 #: src/app/task-screen.tsx
 msgid "Not saved · Review"
-msgstr ""
+msgstr "Не сохранено · Проверить"
 
 #: src/app/task-screen.tsx
 msgid "Not saved. Review your edit."
-msgstr ""
+msgstr "Не сохранено. Проверьте изменение."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
-msgstr ""
+msgstr "Заметка"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note actions"
-msgstr ""
+msgstr "Действия с заметкой"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note deleted"
-msgstr ""
+msgstr "Заметка удалена"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
-msgstr ""
+msgstr "Название заметки"
 
 #: src/app/search-match-context.ts
 msgid "notes"
-msgstr ""
+msgstr "заметки"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
-msgstr ""
+msgstr "Заметки"
 
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
-msgstr ""
+msgstr "После сегодняшнего дня задач не запланировано."
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr ""
+msgstr "Пока нечего просматривать. Выберите «Писать», чтобы добавить заметки."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
-msgstr ""
+msgstr "Уведомления здесь недоступны"
 
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
-msgstr ""
+msgstr "Уведомления TaskNotes отключены в настройках системы. Включите их там, чтобы получать напоминания."
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
-msgstr ""
+msgstr "Отправить уведомление в указанное время или относительно срока задачи."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
-msgstr ""
+msgstr "Сейчас"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence"
-msgstr ""
+msgstr "Повторение"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note"
-msgstr ""
+msgstr "Заметка о повторении"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence note policy"
-msgstr ""
+msgstr "Правило заметок о повторениях"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence notes"
-msgstr ""
+msgstr "Заметки о повторениях"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Occurrence template"
-msgstr ""
+msgstr "Шаблон повторения"
 
 #: src/components/recurrence-field.tsx
 msgid "Occurrences"
-msgstr ""
+msgstr "Повторения"
 
 #: src/app/views-screen.tsx
 msgid "of "
-msgstr ""
+msgstr "из "
 
 #: src/components/private-account-settings.tsx
 msgid "of 4"
-msgstr ""
+msgstr "из 4"
 
 #: src/app/notification-label.ts
 msgid "Off"
-msgstr ""
+msgstr "Выкл."
 
 #: src/app/connection-notice.ts
 msgid "Offline"
-msgstr ""
+msgstr "Не в сети"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr ""
+msgstr "Вкл."
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr ""
+msgstr "Вкл."
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr ""
+msgstr "В определённую дату"
+
+#: src/i18n/editor-phrases.ts
+msgid "on line"
+msgstr "в строке"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
-msgstr ""
+msgstr "На этом устройстве"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Only draft items can become TaskNotes."
-msgstr ""
+msgstr "Только элементы черновика можно преобразовать в TaskNotes."
 
 #: src/app/view-editor-form.tsx
 msgid "Only the task title is shown."
-msgstr ""
+msgstr "Отображается только название задачи."
 
 #: src/components/task-model-settings.tsx
 msgid "Only when I create one"
-msgstr ""
+msgstr "Создавать только по моему запросу"
 
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr ""
+msgstr "Открыть"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr ""
+msgstr "Открыть"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
-msgstr ""
+msgstr "Открыть «{title}»"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
-msgstr ""
+msgstr "Открыть: {0}"
 
 #: src/app/notification-label.ts
 msgid "Open a collection first"
-msgstr ""
+msgstr "Сначала откройте коллекцию"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
-msgstr ""
+msgstr "Откройте представление или укажите, показывать ли его в навигации."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr ""
+msgstr "Открывать первым"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
-msgstr ""
+msgstr "Открыть изображение"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
-msgstr ""
+msgstr "Открыть в Planner"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
-msgstr ""
+msgstr "Открыть задачу"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
-msgstr ""
+msgstr "Откройте меню «Поделиться» в браузере и выберите «На экран „Домой“»."
 
 #: src/app/collection-settings.tsx
 msgid "Opening"
-msgstr ""
+msgstr "Открытие"
 
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
-msgstr ""
+msgstr "Открытие коллекции"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
-msgstr ""
+msgstr "Открытие текущей заметки…"
 
 #: src/app/more-screen.tsx
 msgid "Opening install prompt…"
-msgstr ""
+msgstr "Открытие запроса на установку…"
 
 #: src/app/view-editor.tsx
 msgid "Opening view editor"
-msgstr ""
+msgstr "Открытие редактора представления"
 
 #: src/app/app-shell.tsx
 msgid "Opening your tasks"
-msgstr ""
+msgstr "Открытие задач"
 
 #: src/app/app-shell.tsx
 msgid "Opening your view"
-msgstr ""
+msgstr "Открытие представления"
 
 #: src/app/view-editor-form.tsx
 msgid "Opens as"
-msgstr ""
+msgstr "Открывается как"
 
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
-msgstr ""
+msgstr "Открывается в новой вкладке"
 
 #: src/components/duration-field.tsx
 msgid "Optional"
-msgstr ""
+msgstr "Необязательно"
 
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
-msgstr ""
+msgstr "Необязательный текст уведомления"
 
 #: src/i18n/ui-copy.ts
 msgid "options"
-msgstr ""
+msgstr "параметры"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "or"
-msgstr ""
+msgstr "или"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
-msgstr ""
+msgstr "Упорядочить"
 
 #: src/app/views/task-list-view.tsx
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
-msgstr ""
+msgstr "Другое"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Outdent"
-msgstr ""
+msgstr "Уменьшить отступ"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Outline"
-msgstr ""
+msgstr "Структура"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Outline controls for {0}"
-msgstr ""
+msgstr "Элементы управления структурой: {0}"
 
 #: src/i18n/default-labels.ts
 msgid "Overdue"
-msgstr ""
+msgstr "Просрочено"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P0D"
-msgstr ""
+msgstr "P0D"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P14D"
-msgstr ""
+msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "Надёжность пароля: "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
-msgstr ""
+msgstr "Прошедший период"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
-msgstr ""
+msgstr "Вставленное изображение в блокноте"
 
 #: src/i18n/view-presentation.ts
 msgid "Path"
-msgstr ""
+msgstr "Путь"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "Путь скопирован"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
-msgstr ""
+msgstr "Начало шаблона"
 
 #: src/app/use-people.ts
 msgid "People could not be loaded."
-msgstr ""
+msgstr "Не удалось загрузить список участников."
 
 #. placeholder {0}: error.message
 #: src/components/assignee-editor.tsx
 msgid "People could not be loaded. Existing assignments are unchanged. {0}"
-msgstr ""
+msgstr "Не удалось загрузить список участников. Существующие назначения не изменены. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "Запланированные даты"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
-msgstr ""
+msgstr "Planner"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
-msgstr ""
+msgstr "Planner — отдельное приложение. Сохраните представление, затем выберите «Открыть в Planner»."
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Planner will open this saved view."
-msgstr ""
+msgstr "Planner откроет это сохранённое представление."
 
 #: src/app/task-screen.tsx
 msgid "Preview"
-msgstr ""
+msgstr "Предпросмотр"
 
 #: src/app/view-editor.tsx
 msgid "Preview "
-msgstr ""
+msgstr "Предпросмотр "
 
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
-msgstr ""
+msgstr "Предпросмотр задач"
 
 #: src/app/view-editor.tsx
 msgid "Preview updates after saving"
-msgstr ""
+msgstr "Предпросмотр обновится после сохранения"
+
+#: src/i18n/editor-phrases.ts
+msgid "previous"
+msgstr "предыдущий"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
-msgstr ""
+msgstr "Предыдущий месяц"
 
 #: src/i18n/ui-copy.ts
 msgid "Previous note"
-msgstr ""
+msgstr "Предыдущая заметка"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "Previous notes could not be loaded. {0}"
-msgstr ""
+msgstr "Не удалось загрузить предыдущие заметки. {0}"
 
 #: src/app/full-calendar-view.tsx
 msgid "Previous period"
-msgstr ""
+msgstr "Предыдущий период"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "Предыдущая задача"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
-msgstr ""
+msgstr "Ранее загруженные результаты могут быть устаревшими."
 
 #: src/app/app-shell.tsx
 msgid "Primary"
-msgstr ""
+msgstr "Основное"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -3610,31 +3674,31 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Priority"
-msgstr ""
+msgstr "Приоритет"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
-msgstr ""
+msgstr "Приоритет, проекты, зависимости, контексты и теги"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "Восстановление доступа к учётной записи"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "Восстановление доступа к закрытой коллекции"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "Чтобы пользоваться закрытыми коллекциями, компьютер должен быть подключён к сети."
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
-msgstr ""
+msgstr "Проекции"
 
 #: src/app/search-match-context.ts
 msgid "projects"
-msgstr ""
+msgstr "проекты"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -3644,202 +3708,206 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Projects"
-msgstr ""
+msgstr "Проекты"
 
 #: src/app/task-screen.tsx
 msgid "Properties"
-msgstr ""
+msgstr "Свойства"
 
 #: src/components/expression-builder.tsx
 msgid "Property"
-msgstr ""
+msgstr "Свойство"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to display"
-msgstr ""
+msgstr "Отображаемое свойство"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to sort"
-msgstr ""
+msgstr "Свойство для сортировки"
 
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "Защищённые изменения"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
-msgstr ""
+msgstr "Быстрые даты"
 
 #: src/components/reminder-editor.tsx
 msgid "Quick reminders"
-msgstr ""
+msgstr "Быстрые напоминания"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Quote"
-msgstr ""
+msgstr "Цитата"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "Недавние запросы"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "Недавно открытые"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr ""
+msgstr "Распознанные сведения о задаче"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "Повторное подключение"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
-msgstr ""
+msgstr "Повторное подключение…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "Восстановить доступ к учётной записи"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
-msgstr ""
+msgstr "Восстановить задачу"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "Восстановление не настроено"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "Восстановление настроено. Сохраните ключ восстановления, прежде чем закрыть этот экран."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "Ключ восстановления"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "Ключ восстановления (показывается один раз)"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "Не удалось проверить, хранится ли ключ восстановления на этом устройстве."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "Отображение ключа восстановления закрыто. TaskNotes не хранит его копию для повторного показа."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "Ключ восстановления заблокирован на этом устройстве. Доступные ключи коллекций останутся доступны."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "Пароль восстановления"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "Пароль восстановления изменён. Ключ восстановления не изменился."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "Состояние восстановления недоступно"
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "ещё ожидают завершения."
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
-msgstr ""
+msgstr "Повторение и шаблон"
 
 #: src/components/recurrence-field.tsx
 msgid "Recurrence rule"
-msgstr ""
+msgstr "Правило повторения"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
-msgstr ""
+msgstr "Обновить сейчас"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
-msgstr ""
+msgstr "Обновление"
 
 #: src/app/search-screen.tsx
 msgid "Refreshing results…"
-msgstr ""
+msgstr "Обновление результатов…"
 
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
-msgstr ""
+msgstr "Обновление…"
+
+#: src/i18n/editor-phrases.ts
+msgid "regexp"
+msgstr "регулярное выражение"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
-msgstr ""
+msgstr "Связанные задачи"
 
 #: src/components/dependency-editor.tsx
 msgid "Relationship"
-msgstr ""
+msgstr "Связь"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
-msgstr ""
+msgstr "Связи"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative"
-msgstr ""
+msgstr "Относительное"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
-msgstr ""
+msgstr "Относительно"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
-msgstr ""
+msgstr "Перезагрузить"
 
 #: src/app/search-screen.tsx
 msgid "Reload people"
-msgstr ""
+msgstr "Загрузить список участников заново"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Reminder {0}"
-msgstr ""
+msgstr "Напоминание: {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder date"
-msgstr ""
+msgstr "Дата напоминания"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "Сведения о напоминаниях сохраняются в задачах, но эта версия TaskNotes не отправляет уведомления."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
-msgstr ""
+msgstr "Сведения о напоминании хранятся в Markdown, но задачи на этом устройстве не могут отправлять уведомления."
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "Настройка напоминаний"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
-msgstr ""
+msgstr "Время напоминания"
 
 #: src/app/settings-sections.ts
 #: src/components/reminder-editor.tsx
 msgid "Reminders"
-msgstr ""
+msgstr "Напоминания"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
 msgid "Remove"
-msgstr ""
+msgstr "Удалить"
 
 #. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: entry.description || uiCopy("session")
@@ -3848,367 +3916,389 @@ msgstr ""
 #: src/components/multi-value-field.tsx
 #: src/components/task-capture.tsx
 msgid "Remove {0}"
-msgstr ""
+msgstr "Удалить: {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
-msgstr ""
+msgstr "Удалить: {label}"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
 msgid "Remove assignment to {0}"
-msgstr ""
+msgstr "Снять назначение с {0}"
 
 #. placeholder {0}: property.name || index + 1
 #: src/app/view-editor-form.tsx
 msgid "Remove computed property {0}"
-msgstr ""
+msgstr "Удалить вычисляемое свойство {0}"
 
 #: src/components/expression-builder.tsx
 msgid "Remove condition"
-msgstr ""
+msgstr "Удалить условие"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
-msgstr ""
+msgstr "Удалить из блокнота"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
-msgstr ""
+msgstr "Удалить группу"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove image card"
-msgstr ""
+msgstr "Удалить карточку изображения"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Remove reminder {0}"
-msgstr ""
+msgstr "Удалить напоминание {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove this image card from Scratchpad? The image file will be kept."
-msgstr ""
+msgstr "Удалить эту карточку из блокнота? Файл изображения останется в коллекции."
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
-msgstr ""
+msgstr "Отображение…"
 
 #: src/components/task-row.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "Открыть заново"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "Открыть «{title}» повторно"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
-msgstr ""
+msgstr "Повторно открыть задачу"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
-msgstr ""
+msgstr "изменить порядок"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Reorder"
-msgstr ""
+msgstr "Изменить порядок"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "Изменить порядок: {0}. Перетащите или используйте клавиши со стрелками вверх и вниз."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
-msgstr ""
+msgstr "Порядок изменён: {0}."
 
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
-msgstr ""
+msgstr "Повторять"
 
 #: src/app/task-screen.tsx
 msgid "Repeat and reminders"
-msgstr ""
+msgstr "Повторение и напоминания"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr ""
+msgstr "Частота повторения"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
-msgstr ""
+msgstr "Отсчитывать повторение от"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat interval"
-msgstr ""
+msgstr "Интервал повторения"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task"
-msgstr ""
+msgstr "Повторяющаяся задача"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr ""
+msgstr "Действия с повторяющейся задачей"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "Повторяющиеся задачи"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
-msgstr ""
+msgstr "Повторяется"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace"
+msgstr "заменить"
+
+#: src/i18n/editor-phrases.ts
+msgid "Replace"
+msgstr "Заменить"
+
+#: src/i18n/editor-phrases.ts
+msgid "replace all"
+msgstr "заменить все"
+
+#. CodeMirror replaces the supplied token with the match count. Keep the count argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced {count} matches"
+msgstr "заменено совпадений: {count}"
+
+#. CodeMirror replaces the supplied token with a line number. Keep the line argument.
+#: src/i18n/editor-phrases.ts
+msgid "replaced match on line {line}"
+msgstr "совпадение в строке {line} заменено"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
-msgstr ""
+msgstr "Перезапустить TaskNotes"
 
 #: src/components/task-actions.tsx
 msgid "Restore"
-msgstr ""
+msgstr "Восстановить"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
-msgstr ""
+msgstr "Восстановить несохранённые изменения"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
-msgstr ""
+msgstr "Восстановление главного представления"
 
 #: src/components/command-palette.tsx
 msgid "Results"
-msgstr ""
+msgstr "Результаты"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
-msgstr ""
+msgstr "Сделать текущей"
 
 #: src/app/model-setup-screen.tsx
 msgid "Resume original setup"
-msgstr ""
+msgstr "Продолжить исходную настройку"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
-msgstr ""
+msgstr "Возобновление…"
 
 #: src/app/app-shell.tsx
 #: src/components/task-row.tsx
 msgid "Retry"
-msgstr ""
+msgstr "Повторить попытку"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Retry {selectedReviewCount} task notes"
-msgstr ""
+msgstr "Повторить попытку для заметок о задачах: {selectedReviewCount}"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
-msgstr ""
+msgstr "Повторите попытку, снова открыв раздел «Управление представлениями» или обновив коллекцию."
 
 #: src/app/app-shell.tsx
 msgid "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-msgstr ""
+msgstr "Повторная попытка проверяет сохранённый запрос, не отправляя новое удаление. Для отказа требуется подтверждение; коллекция будет отключена."
 
 #: src/app/more-screen.tsx
 msgid "Retry collection details"
-msgstr ""
+msgstr "Повторить загрузку сведений о коллекции"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
-msgstr ""
+msgstr "Повторить подключение"
 
 #: src/app/more-screen.tsx
 msgid "Retry notification check"
-msgstr ""
+msgstr "Повторить проверку уведомлений"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr ""
+msgstr "Повторить загрузку участников"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
-msgstr ""
+msgstr "Повторить поиск"
 
 #: src/app/view-empty-state.tsx
 msgid "Retry this view to check for tasks."
-msgstr ""
+msgstr "Обновите это представление, чтобы проверить наличие задач."
 
 #: src/app/app-shell.tsx
 msgid "Retry, or undo to restore the task here."
-msgstr ""
+msgstr "Повторите попытку или отмените действие, чтобы вернуть задачу сюда."
 
 #: src/app/app-shell.tsx
 msgid "Retrying…"
-msgstr ""
+msgstr "Повторная попытка…"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
-msgstr ""
+msgstr "Повторно используемые значения фильтров, группировки, сортировки и полей."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for grouping and displayed fields."
-msgstr ""
+msgstr "Повторно используемые значения группировки и отображаемых полей."
 
 #: src/app/app-shell.tsx
 msgid "Review access"
-msgstr ""
+msgstr "Проверить разрешение"
 
 #: src/app/model-setup-screen.tsx
 msgid "Review collection permission"
-msgstr ""
+msgstr "Проверить разрешение для коллекции"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
-msgstr ""
+msgstr "Проверить доступ к уведомлениям"
 
 #: src/components/held-edits.tsx
 msgid "Review protected edits"
-msgstr ""
+msgstr "Проверить защищённые изменения"
 
 #: src/components/collection-write-status.tsx
 msgid "Review record"
-msgstr ""
+msgstr "Проверить запись"
 
 #: src/app/task-screen.tsx
 msgid "Review save"
-msgstr ""
+msgstr "Проверить сохранение"
 
 #: src/components/private-account-settings.tsx
 msgid "Review strict mode"
-msgstr ""
+msgstr "Проверить настройки строгого режима"
 
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
-msgstr ""
+msgstr "Проверить разрешения TaskNotes"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
-msgstr ""
+msgstr "Проверьте задачу, прежде чем вносить следующее изменение."
 
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
-msgstr ""
+msgstr "Проверьте защищённые изменения перед перезагрузкой."
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
-msgstr ""
+msgstr "Сохранить"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 msgid "Save {0}"
-msgstr ""
+msgstr "Сохранить: {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Save a fixed or relative reminder in this task."
-msgstr ""
+msgstr "Сохранить фиксированное или относительное напоминание для этой задачи."
 
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
-msgstr ""
+msgstr "Сохранить изменения и перезагрузить TaskNotes"
 
 #: src/components/task-model-settings.tsx
 msgid "Save changes"
-msgstr ""
+msgstr "Сохранить изменения"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
-msgstr ""
+msgstr "Не удалось сохранить · Повторить"
 
 #: src/app/task-screen.tsx
 msgid "Save failed. {retrySaveLabel}"
-msgstr ""
+msgstr "Не удалось сохранить. {retrySaveLabel}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Save needs review"
-msgstr ""
+msgstr "Сохранение требует проверки"
 
 #: src/components/collection-write-status.tsx
 msgid "Save outcome unknown"
-msgstr ""
+msgstr "Результат сохранения не подтверждён"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
-msgstr ""
+msgstr "Сохранить сеанс"
 
 #: src/app/view-editor.tsx
 msgid "Save view"
-msgstr ""
+msgstr "Сохранить представление"
 
 #: src/components/private-account-settings.tsx
 msgid "Save your recovery key"
-msgstr ""
+msgstr "Сохраните ключ восстановления"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
-msgstr ""
+msgstr "Сохранено"
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/collection-write-status.tsx
 msgid "Saved on this device; waiting for sync"
-msgstr ""
+msgstr "Сохранено на устройстве; ожидает синхронизации"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr ""
+msgstr "Сохранённое представление"
 
 #: src/app/views/view-catalog.tsx
 msgid "Saved views"
-msgstr ""
+msgstr "Сохранённые представления"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
-msgstr ""
+msgstr "Настройки сохраняются в коллекции и используются всеми приложениями, которые её открывают."
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
-msgstr ""
+msgstr "Сохранено в коллекции."
 
 #: src/app/task-screen.tsx
 msgid "Saving"
-msgstr ""
+msgstr "Сохранение"
 
 #: src/components/app-update-notice.tsx
 msgid "Saving changes…"
-msgstr ""
+msgstr "Сохранение изменений…"
 
 #: src/components/task-model-settings.tsx
 msgid "Saving collection behavior"
-msgstr ""
+msgstr "Сохранение настроек коллекции"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
 msgid "Saving…"
-msgstr ""
+msgstr "Сохранение…"
 
 #: src/app/task-screen.tsx
 msgid "Schedule and status"
-msgstr ""
+msgstr "Расписание и статус"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Schedule next week"
-msgstr ""
+msgstr "Запланировать на следующую неделю"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Schedule today"
-msgstr ""
+msgstr "Запланировать на сегодня"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Schedule tomorrow"
-msgstr ""
+msgstr "Запланировать на завтра"
 
 #: src/app/view-editor-form.tsx
 msgid "scheduled"
-msgstr ""
+msgstr "запланировано"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -4219,28 +4309,28 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Scheduled"
-msgstr ""
+msgstr "Запланировано"
 
 #: src/components/task-capture.tsx
 msgid "Scheduled "
-msgstr ""
+msgstr "Запланировано "
 
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
-msgstr ""
+msgstr "Запланированная дата (не задана)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.scheduled)
 #: src/app/task-editor-draft.ts
 msgid "Scheduled {0}"
-msgstr ""
+msgstr "Запланировано: {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
-msgstr ""
+msgstr "Запланированные даты"
 
 #: src/i18n/ui-copy.ts
 msgid "scratchpad"
-msgstr ""
+msgstr "блокнот"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
@@ -4248,288 +4338,292 @@ msgstr ""
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Scratchpad"
-msgstr ""
+msgstr "Блокнот"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad editing mode"
-msgstr ""
+msgstr "Режим редактирования блокнота"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
-msgstr ""
+msgstr "История блокнота"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad Markdown"
-msgstr ""
+msgstr "Markdown блокнота"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad outline"
-msgstr ""
+msgstr "Структура блокнота"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is not available for this collection."
-msgstr ""
+msgstr "Хранилище блокнота недоступно для этой коллекции."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is unavailable."
-msgstr ""
+msgstr "Хранилище блокнота недоступно."
 
 #: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
-msgstr ""
+msgstr "Поиск"
 
 #: src/components/command-palette.tsx
 msgid "Search commands and tasks"
-msgstr ""
+msgstr "Поиск команд и задач"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
 msgid "Search could not be loaded. {0}"
-msgstr ""
+msgstr "Не удалось загрузить поиск. {0}"
 
 #: src/app/search-screen.tsx
 #: src/app/views-screen.tsx
 msgid "Search tasks"
-msgstr ""
+msgstr "Поиск задач"
 
 #: src/app/search-screen.tsx
 msgid "Search titles, notes, projects, contexts, and tags."
-msgstr ""
+msgstr "Поиск по названиям, заметкам, проектам, контекстам и тегам."
 
 #: src/app/views/view-catalog.tsx
 msgid "Search views"
-msgstr ""
+msgstr "Поиск представлений"
 
 #: src/components/command-palette.tsx
 msgid "Searching tasks…"
-msgstr ""
+msgstr "Поиск задач…"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr ""
+msgstr "второй"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
-msgstr ""
+msgstr "Второй"
 
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
-msgstr ""
+msgstr "Открыть «Предстоящие»"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
-msgstr ""
+msgstr "Выбрать всё"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select branch"
-msgstr ""
+msgstr "Выбрать ветвь"
 
 #: src/i18n/ui-copy.ts
 msgid "selected collection"
-msgstr ""
+msgstr "выбранная коллекция"
 
 #: src/i18n/ui-copy.ts
 msgid "selected day"
-msgstr ""
+msgstr "выбранный день"
 
 #: src/app/full-calendar-view.tsx
 msgid "Selected day"
-msgstr ""
+msgstr "Выбранный день"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr ""
+msgstr "Выбранные черновики на месте преобразуются в связанные задачи TaskNotes. Остальное останется в блокноте, чтобы вы могли продолжить работу."
+
+#: src/i18n/editor-phrases.ts
+msgid "Selection deleted"
+msgstr "Выбранное удалено"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
-msgstr ""
+msgstr "сеанс"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session description"
-msgstr ""
+msgstr "Описание сеанса"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session end"
-msgstr ""
+msgstr "Конец сеанса"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session start"
-msgstr ""
+msgstr "Начало сеанса"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
-msgstr ""
+msgstr "Настроить восстановление"
 
 #: src/app/model-setup-screen.tsx
 msgid "Set up TaskNotes"
-msgstr ""
+msgstr "Настроить TaskNotes"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
-msgstr ""
+msgstr "Укажите, что делать при добавлении задачи из этого представления."
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 msgid "Settings"
-msgstr ""
+msgstr "Настройки"
 
 #: src/app/more-screen.tsx
 msgid "Settings sections"
-msgstr ""
+msgstr "Разделы настроек"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
-msgstr ""
+msgstr "Требуется проверить настройку"
 
 #: src/app/model-setup-screen.tsx
 msgid "Setup outcome unknown. "
-msgstr ""
+msgstr "Результат настройки не подтверждён. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Several person records match your account: {0}. Resolve those duplicates before filtering tasks."
-msgstr ""
+msgstr "С учётной записью связаны несколько записей участников: {0}. Устраните дубликаты, прежде чем фильтровать задачи."
 
 #: src/app/views/view-catalog.tsx
 msgid "Shape an outline before creating tasks"
-msgstr ""
+msgstr "Сначала составьте структуру, затем создавайте задачи"
 
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
-msgstr ""
+msgstr "Общие для всех, кто пользуется этой коллекцией"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
 msgid "Show all {0}"
-msgstr ""
+msgstr "Показать все: {0}"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show all-day area"
-msgstr ""
+msgstr "Показать область событий на весь день"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show current time"
-msgstr ""
+msgstr "Показать текущее время"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show each task’s project on Today?"
-msgstr ""
+msgstr "Показывать проект каждой задачи на странице «Сегодня»?"
 
 #: src/app/search-screen.tsx
 msgid "Show fewer"
-msgstr ""
+msgstr "Показать меньше"
 
 #: src/app/view-editor-form.tsx
 msgid "Show future virtual occurrences."
-msgstr ""
+msgstr "Показывать будущие виртуальные повторения."
 
 #: src/app/search-screen.tsx
 msgid "Show more results"
-msgstr ""
+msgstr "Показать больше результатов"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show projects"
-msgstr ""
+msgstr "Показать проекты"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
-msgstr ""
+msgstr "Показать учтённое время"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show weekends"
-msgstr ""
+msgstr "Показывать выходные"
 
 #. placeholder {0}: visibleEntries.length
 #. placeholder {1}: entries.length
 #: src/app/task-time-tracking.tsx
 msgid "Showing the latest {0} of {1}sessions."
-msgstr ""
+msgstr "Показаны последние {0} из {1} сеансов."
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Shown in navigation"
-msgstr ""
+msgstr "Показывается в навигации"
 
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
-msgstr ""
+msgstr "Отображается в этом порядке под каждым элементом."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
-msgstr ""
+msgstr "Пропустить"
 
 #: src/components/task-actions.tsx
 msgid "Skip occurrence"
-msgstr ""
+msgstr "Пропустить повторение"
 
 #: src/app/app-shell.tsx
 msgid "Skip to content"
-msgstr ""
+msgstr "Перейти к содержимому"
 
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
-msgstr ""
+msgstr "Пропущенные повторения"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "Некоторые изменения ещё сохраняются. Не закрывайте эту страницу и попробуйте ещё раз."
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
-msgstr ""
+msgstr "Некоторые файлы не удалось прочитать, поэтому они не отображаются в этом представлении."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "Некоторые изменения заметки не сохранены. Не закрывайте эту страницу и попробуйте ещё раз."
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
-msgstr ""
+msgstr "Сортировка"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort direction {0}"
-msgstr ""
+msgstr "Направление сортировки {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort property {0}"
-msgstr ""
+msgstr "Свойство сортировки {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Source file"
-msgstr ""
+msgstr "Исходный файл"
 
 #: src/app/task-time-tracking.tsx
 msgid "Start"
-msgstr ""
+msgstr "Начало"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "Создавать новые задачи по шаблону"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
-msgstr ""
+msgstr "Запустить таймер"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to finish"
-msgstr ""
+msgstr "От начала до завершения"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to start"
-msgstr ""
+msgstr "От начала до начала"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "Начальные представления"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
-msgstr ""
+msgstr "Запуск…"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -4539,79 +4633,79 @@ msgstr ""
 #: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
-msgstr ""
+msgstr "Статус"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
-msgstr ""
+msgstr "Статус, приоритет и связи"
 
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
-msgstr ""
+msgstr "Остановить"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "Останавливать запущенный таймер при выполнении задачи"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
-msgstr ""
+msgstr "Остановить таймер"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "Строгий режим"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "Строгий режим пока нельзя отключить. Настройка восстановления доступа или разблокировка с помощью пароля не отключают строгий режим на устройстве."
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "Строгий режим ещё не подтверждён для всех целевых закрытых коллекций. Устройство с ключом, подключённое к сети, должно завершить применение изменений."
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "Отправка…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
-msgstr ""
+msgstr "Название подзадачи"
 
 #: src/components/dependency-editor.tsx
 msgid "Subtasks"
-msgstr ""
+msgstr "Подзадачи"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"
-msgstr ""
+msgstr "Варианты"
 
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
-msgstr ""
+msgstr "Показаны варианты среди первых {limit} задач. Найдите остальные с помощью поиска."
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "Перейти в строгий режим"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "Синхронизация занимает больше времени, чем обычно"
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "Синхронизированная версия"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "Синхронизация…"
 
 #: src/app/more-screen.tsx
 msgid "System"
-msgstr ""
+msgstr "Системная"
 
 #: src/app/search-match-context.ts
 msgid "tags"
-msgstr ""
+msgstr "теги"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -4621,489 +4715,490 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
-msgstr ""
+msgstr "Теги"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Take photo"
-msgstr ""
+msgstr "Сделать снимок"
 
 #: src/app/task-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "Tap to retry."
-msgstr ""
+msgstr "Нажмите, чтобы повторить попытку."
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "задача"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
-msgstr ""
+msgstr "Задача"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
-msgstr ""
+msgstr "Действия с задачей {0}"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
-msgstr ""
+msgstr "Задача добавлена: {0}"
 
 #: src/app/views-screen.tsx
 msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr ""
+msgstr "Задача создана, но не отображается в этом представлении. Возможно, она исключена фильтрами или ограничением результатов."
 
 #: src/app/views-screen.tsx
 msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr ""
+msgstr "Задача создана. Возможно, она находится на незагруженной странице или исключена фильтрами представления."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
-msgstr ""
+msgstr "Создание задач выключено"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation on"
-msgstr ""
+msgstr "Создание задач включено"
 
 #: src/app/app-shell.tsx
 #: src/app/task-screen.tsx
 msgid "Task details"
-msgstr ""
+msgstr "Сведения о задаче"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task draft"
-msgstr ""
+msgstr "Черновик задачи"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task drafts"
-msgstr ""
+msgstr "Черновики задач"
 
 #: src/components/task-capture.tsx
 msgid "Task field suggestions"
-msgstr ""
+msgstr "Варианты значений полей задачи"
 
 #: src/components/task-model-settings.tsx
 msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
-msgstr ""
+msgstr "Файлы задач сохраняются в течение фиксированного периода, например следующих 14 дней."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Task keys act on the focused row. Date keys keep any scheduled time."
-msgstr ""
+msgstr "Сочетания клавиш для задач действуют на строку в фокусе. Клавиши для дат сохраняют запланированное время."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
-msgstr ""
+msgstr "Списки задач"
 
 #: src/app/task-screen.tsx
 msgid "Task not found. It may have been deleted or moved."
-msgstr ""
+msgstr "Задача не найдена. Возможно, её удалили или переместили."
 
 #: src/app/more-screen.tsx
 msgid "Task reminders"
-msgstr ""
+msgstr "Напоминания о задачах"
 
 #: src/app/task-screen.tsx
 msgid "Task title"
-msgstr ""
+msgstr "Название задачи"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
-msgstr ""
+msgstr "Задача: "
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not confirm whether “{title}” was deleted."
-msgstr ""
+msgstr "TaskNotes не удалось подтвердить, удалена ли задача «{title}»."
 
 #: src/app/more-screen.tsx
 msgid "TaskNotes could not open the install prompt."
-msgstr ""
+msgstr "TaskNotes не удалось открыть запрос на установку."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not open."
-msgstr ""
+msgstr "Не удалось открыть TaskNotes."
 
 #: src/components/operation-error-notice.tsx
 msgid "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
-msgstr ""
+msgstr "TaskNotes продолжает автоматически проверять состояние, пока коллекция подключена. Вы можете продолжать работу."
 
 #: src/components/app-error-boundary.tsx
 msgid "TaskNotes needs to restart."
-msgstr ""
+msgstr "Необходимо перезапустить TaskNotes."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
-msgstr ""
+msgstr "Чтобы открыть эту коллекцию, снова разрешите TaskNotes доступ в mdbase."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
-msgstr ""
+msgstr "Инструмент TaskNotes"
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tools"
-msgstr ""
+msgstr "Инструменты TaskNotes"
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
-msgstr ""
+msgstr "задачи"
 
 #: src/app/command-palette-model.ts
 msgid "Tasks"
-msgstr ""
+msgstr "Задачи"
 
 #: src/app/more-screen.tsx
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
-msgstr ""
+msgstr "Задачи — это переносимые записи Markdown в формате mdbase v0.3."
 
 #. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
-msgstr ""
+msgstr "Задачи для {0}"
 
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
-msgstr ""
+msgstr "Задачи, теги, проекты"
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Technical details"
-msgstr ""
+msgstr "Технические сведения"
 
 #: src/components/task-capture.tsx
 msgid "Template could not be read. "
-msgstr ""
+msgstr "Не удалось прочитать шаблон. "
 
 #: src/components/task-model-settings.tsx
 msgid "Template file"
-msgstr ""
+msgstr "Файл шаблона"
 
 #: src/components/task-capture.tsx
 msgid "Template unavailable. "
-msgstr ""
+msgstr "Шаблон недоступен. "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Templates/Occurrence.md"
-msgstr ""
+msgstr "Templates/Occurrence.md"
 
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
-msgstr ""
+msgstr "Templates/Task.md"
 
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
-msgstr ""
+msgstr "Не удалось разблокировать учётную запись с этим паролем или ключом восстановления. Проверьте введённые данные и попробуйте ещё раз."
 
 #: src/i18n/ui-copy.ts
 msgid "That section"
-msgstr ""
+msgstr "Этот раздел"
 
 #: src/components/private-account-settings.tsx
 msgid "The account recovery action could not be completed. Check the connection and account status before retrying."
-msgstr ""
+msgstr "Не удалось выполнить действие по восстановлению учётной записи. Проверьте подключение и состояние учётной записи, прежде чем повторить попытку."
 
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
-msgstr ""
+msgstr "Действие завершено, но не удалось обновить состояние учётной записи. Проверьте состояние ещё раз."
 
 #: src/app/full-calendar-view.tsx
 msgid "The calendar change could not be saved. "
-msgstr ""
+msgstr "Не удалось сохранить изменение календаря. "
 
 #: src/components/task-property-editor.tsx
 msgid "The change could not be saved."
-msgstr ""
+msgstr "Не удалось сохранить изменение."
 
 #: src/app/app-shell.tsx
 msgid "The collection is unavailable right now."
-msgstr ""
+msgstr "Коллекция сейчас недоступна."
 
 #: src/app/views-screen.tsx
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
-msgstr ""
+msgstr "Не удалось загрузить полный ручной порядок. Черновик сохранён; попробуйте ещё раз."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The created TaskNote could not be found."
-msgstr ""
+msgstr "Созданную задачу TaskNote не удалось найти."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The current scratchpad is unavailable."
-msgstr ""
+msgstr "Текущий блокнот недоступен."
 
 #: src/app/app-shell.tsx
 msgid "The deletion"
-msgstr ""
+msgstr "Удаление"
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"
-msgstr ""
+msgstr "целевой раздел"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
-msgstr ""
+msgstr "Первое представление становится главным. Порядок и видимость сохраняются для этой коллекции на устройстве."
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
-msgstr ""
+msgstr "Не удалось загрузить перевод для выбранного языка. Проверьте подключение и попробуйте ещё раз."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The linked TaskNote could not be found."
-msgstr ""
+msgstr "Связанную задачу TaskNote не удалось найти."
 
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
-msgstr ""
+msgstr "Меню осталось открытым, чтобы вы могли повторить попытку."
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was resumed, but history could not refresh. {0}"
-msgstr ""
+msgstr "Заметка сделана текущей, но не удалось обновить историю. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "The pattern start day is used."
-msgstr ""
+msgstr "Используется день начала шаблона."
 
 #: src/components/private-account-settings.tsx
 msgid "The recovery key is still kept on this device."
-msgstr ""
+msgstr "Ключ восстановления по-прежнему хранится на этом устройстве."
 
 #: src/components/recurrence-field.tsx
 msgid "The rule is kept exactly as written. Apply only after it is valid."
-msgstr ""
+msgstr "Правило сохраняется без изменений. Применить его можно, только если оно корректно."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The scratchpad is not open."
-msgstr ""
+msgstr "Блокнот не открыт."
 
 #: src/app/views-screen.tsx
 msgid "the task"
-msgstr ""
+msgstr "задачу"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "The task"
-msgstr ""
+msgstr "Задача"
 
 #: src/components/task-actions.tsx
 msgid "The task action"
-msgstr ""
+msgstr "Действие с задачей"
 
 #: src/app/full-calendar-view.tsx
 msgid "The task date is unavailable."
-msgstr ""
+msgstr "Дата задачи недоступна."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
-msgstr ""
+msgstr "Задача остаётся в коллекции. Попробуйте ещё раз."
 
 #: src/app/views-screen.tsx
 msgid "The view change"
-msgstr ""
+msgstr "Изменение представления"
 
 #: src/app/views/project-property-offer.tsx
 msgid "The view could not be updated. {error}"
-msgstr ""
+msgstr "Не удалось обновить представление. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
-msgstr ""
+msgstr "Тема, блокнот и календарь"
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr ""
+msgstr "Эти настройки применяются сразу и не изменяют коллекцию."
 
 #: src/app/task-screen.tsx
 msgid "These fields edit the series dates. The summary above shows this occurrence."
-msgstr ""
+msgstr "Эти поля изменяют даты серии. В сводке выше показано это повторение."
 
 #: src/app/view-editor-form.tsx
 msgid "These formulas are shared by views in the same source file."
-msgstr ""
+msgstr "Эти формулы используются всеми представлениями в одном исходном файле."
 
 #: src/components/held-edits.tsx
 msgid "These previews are shortened. Choices apply to the full versions, not the previews. Keep both to preserve your full edit."
-msgstr ""
+msgstr "Предварительные версии сокращены. Выбор применяется к полной версии, а не к её предварительному просмотру. Сохраните оба варианта, чтобы оставить изменение целиком."
 
 #: src/app/views/task-list-view.tsx
 msgid "These sections are calculated, so tasks can only be reordered within them."
-msgstr ""
+msgstr "Эти разделы вычисляются автоматически, поэтому менять порядок задач можно только внутри них."
 
 #: src/i18n/presentation.ts
 msgid "third"
-msgstr ""
+msgstr "третий"
 
 #: src/components/recurrence-field.tsx
 msgid "Third"
-msgstr ""
+msgstr "Третий"
 
 #: src/components/private-account-settings.tsx
 msgid "This account uses strict mode. Approve this device from an existing device."
-msgstr ""
+msgstr "Для этой учётной записи включён строгий режим. Подтвердите это устройство с помощью уже подключённого устройства."
 
 #: src/components/recurrence-field.tsx
 msgid "This anchors the pattern. Scheduled remains the next date you plan to do the task."
-msgstr ""
+msgstr "Эта дата служит началом шаблона. Запланированная дата по-прежнему указывает, когда вы собираетесь выполнить задачу в следующий раз."
 
 #: src/app/views/kanban-view.tsx
 msgid "This board groups by a calculated property, so cards cannot move between columns."
-msgstr ""
+msgstr "На этой доске задачи сгруппированы по вычисляемому свойству, поэтому перемещать карточки между столбцами нельзя."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
-msgstr ""
+msgstr "В этой коллекции не задан статус выполненной задачи."
 
 #: src/app/model-setup-screen.tsx
 msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr ""
+msgstr "Перед открытием задач и представлений необходимо настроить TaskNotes для этой коллекции. Настройка устанавливает опубликованные модели и добавляет представления «Сегодня», «Предстоящие», «Календарь», «Проекты» и «Архив». Источники существующих представлений останутся без изменений; после прерывания продолжится применение только исходных изменений настройки."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
-msgstr ""
+msgstr "Только на этом устройстве"
 
 #: src/components/held-edits.tsx
 msgid "This discards your protected version."
-msgstr ""
+msgstr "Ваша защищённая версия будет удалена."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This draft is no longer in the scratchpad."
-msgstr ""
+msgstr "Этого черновика больше нет в блокноте."
 
 #: src/components/task-property-editor.tsx
 msgid "This edits the repeating task, including future occurrences."
-msgstr ""
+msgstr "Изменение применяется к повторяющейся задаче, в том числе к будущим повторениям."
 
 #: src/components/expression-builder.tsx
 msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
-msgstr ""
+msgstr "В этом фильтре используется расширенный синтаксис. Изменяйте его здесь, чтобы сохранить без изменений."
 
 #: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
-msgstr ""
+msgstr "В фильтре используется синтаксис, который нельзя безопасно изменить в конструкторе."
 
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
-msgstr ""
+msgstr "Этот ключ показывается только один раз. Храните его в надёжном месте вне TaskNotes. Любой, у кого есть ключ, сможет восстановить доступ к вашим закрытым коллекциям."
 
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
-msgstr ""
+msgstr "Этот документ Markdown содержит блоки, которые нельзя представить в структуре. Изменения сохранены; продолжайте редактировать документ в формате Markdown."
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
-msgstr ""
+msgstr "Будет удалено только сохранённое представление. Задачи останутся на месте."
 
 #: src/components/recurrence-field.tsx
 msgid "This rule can also be edited with the visual controls."
-msgstr ""
+msgstr "Это правило также можно изменить с помощью визуальных элементов управления."
 
 #: src/i18n/ui-copy.ts
 msgid "This section"
-msgstr ""
+msgstr "Этот раздел"
 
 #: src/app/palette-commands.ts
 msgid "this task"
-msgstr ""
+msgstr "эта задача"
 
 #: src/components/write-rejection-notice.tsx
 msgid "This task changed somewhere else, so your edit wasn't saved."
-msgstr ""
+msgstr "Задача изменилась в другом месте, поэтому ваше изменение не сохранено."
 
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
-msgstr ""
+msgstr "Эта задача больше недоступна."
 
 #: src/components/duration-field.tsx
 msgid "This task uses an advanced duration: <0>{value}</0>"
-msgstr ""
+msgstr "Для этой задачи задана расширенная длительность: <0>{value}</0>"
 
 #: src/components/task-property-editor.tsx
 msgid "This value is calculated by the view and cannot be edited here."
-msgstr ""
+msgstr "Это значение вычисляется представлением, поэтому изменить его здесь нельзя."
 
 #: src/app/view-editor.tsx
 #: src/i18n/ui-copy.ts
 msgid "this view"
-msgstr ""
+msgstr "этого представления"
 
 #: src/app/view-editor-form.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "This view"
-msgstr ""
+msgstr "Это представление"
 
 #: src/components/view-execution-error-notice.tsx
 msgid "This view couldn’t load."
-msgstr ""
+msgstr "Не удалось загрузить это представление."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "This view uses an unavailable sort."
-msgstr ""
+msgstr "В этом представлении используется недоступный способ сортировки."
 
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
-msgstr ""
+msgstr "Время"
 
 #: src/app/task-screen.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
-msgstr ""
+msgstr "Время"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time format"
-msgstr ""
+msgstr "Формат времени"
 
 #: src/components/calendar-preferences.tsx
 msgid "Time slot size"
-msgstr ""
+msgstr "Размер временного интервала"
 
 #: src/app/task-time-tracking.tsx
 msgid "Timer description"
-msgstr ""
+msgstr "Описание таймера"
 
 #: src/app/task-editor-draft.ts
 #: src/components/task-row.tsx
 msgid "Timer running"
-msgstr ""
+msgstr "Таймер запущен"
 
 #: src/components/task-capture.tsx
 msgid "Timing"
-msgstr ""
+msgstr "Время выполнения"
 
 #: src/app/view-editor-fields.ts
 #: src/i18n/default-labels.ts
 msgid "Title"
-msgstr ""
+msgstr "Название"
 
 #: src/app/view-editor-form.tsx
 msgid "Title only"
-msgstr ""
+msgstr "Только название"
 
 #: src/app/task-screen.tsx
 msgid "Title required"
-msgstr ""
+msgstr "Название обязательно"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Title: “{title}”. "
-msgstr ""
+msgstr "Название: «{title}». "
 
+#: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
-msgstr ""
+msgstr "до"
 
 #: src/app/views-screen.tsx
 msgid "to today"
-msgstr ""
+msgstr "на сегодня"
 
 #: src/app/views-screen.tsx
 msgid "to today."
-msgstr ""
+msgstr "на сегодня."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"
-msgstr ""
+msgstr "сегодня"
 
 #: src/app/full-calendar-view.tsx
 #: src/components/task-property-editor.tsx
@@ -5111,405 +5206,417 @@ msgstr ""
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
-msgstr ""
+msgstr "Сегодня"
 
 #: src/app/today-clear.tsx
 msgid "Today is clear"
-msgstr ""
+msgstr "На сегодня задач нет"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "tomorrow"
-msgstr ""
+msgstr "завтра"
 
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
 msgid "Tomorrow"
-msgstr ""
+msgstr "Завтра"
 
 #: src/components/private-account-settings.tsx
 msgid "Too many attempts. Wait before trying again."
-msgstr ""
+msgstr "Слишком много попыток. Подождите, прежде чем попробовать ещё раз."
 
 #: src/app/full-calendar-view.tsx
 msgid "Tracked time"
-msgstr ""
+msgstr "Учтённое время"
 
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
-msgstr ""
+msgstr "Повторить попытку"
 
 #: src/app/views/view-catalog.tsx
 msgid "Try another search or filter."
-msgstr ""
+msgstr "Попробуйте другой запрос или фильтр."
 
 #: src/app/search-screen.tsx
 msgid "Try fewer words or another spelling."
-msgstr ""
+msgstr "Используйте меньше слов или попробуйте другое написание."
 
 #: src/components/view-execution-error-notice.tsx
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
-msgstr ""
+msgstr "Попробуйте загрузить представление ещё раз. Если проблема не исчезнет, измените его настройки или выберите другое представление."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
-msgstr ""
+msgstr "Тип"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
-msgstr ""
+msgstr "Не назначено"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
-msgstr ""
+msgstr "Анализ…"
 
 #: src/app/app-shell.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Undo"
-msgstr ""
+msgstr "Отменить"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Undo a deleted task"
-msgstr ""
+msgstr "Восстановить удалённую задачу"
+
+#: src/i18n/editor-phrases.ts
+msgid "unfold"
+msgstr "развернуть"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfold line"
+msgstr "Развернуть строку"
+
+#: src/i18n/editor-phrases.ts
+msgid "Unfolded lines"
+msgstr "Развёрнутые строки"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
-msgstr ""
+msgstr "Единица измерения"
 
 #: src/components/private-account-settings.tsx
 msgid "Unknown"
-msgstr ""
+msgstr "Неизвестно"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock"
-msgstr ""
+msgstr "Разблокировать"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlock private collections"
-msgstr ""
+msgstr "Разблокировать закрытые коллекции"
 
 #: src/components/private-account-settings.tsx
 msgid "Unlocked on this device"
-msgstr ""
+msgstr "Разблокировано на этом устройстве"
 
 #: src/app/more-screen.tsx
 msgid "Unsaved changes"
-msgstr ""
+msgstr "Несохранённые изменения"
 
 #: src/components/task-model-settings.tsx
 msgid "Unsaved changes for everyone using this collection"
-msgstr ""
+msgstr "Несохранённые изменения затронут всех, кто пользуется этой коллекцией"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Unsaved edit recovery"
-msgstr ""
+msgstr "Восстановление несохранённого изменения"
 
 #: src/app/task-screen.tsx
 msgid "Unsaved edits cannot be backed up in this browser. Keep this tab open until saving finishes."
-msgstr ""
+msgstr "В этом браузере нельзя создать резервную копию несохранённых изменений. Не закрывайте эту вкладку, пока сохранение не завершится."
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits found"
-msgstr ""
+msgstr "Найдены несохранённые изменения"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Unsaved edits from an earlier session are available."
-msgstr ""
+msgstr "Доступны несохранённые изменения из предыдущего сеанса."
 
 #: src/app/task-screen.tsx
 msgid "Unskip"
-msgstr ""
+msgstr "Восстановить пропущенное"
 
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
-msgstr ""
+msgstr "Восстановить пропущенное повторение"
 
 #: src/i18n/ui-copy.ts
 msgid "up"
-msgstr ""
+msgstr "вверх"
 
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
-msgstr ""
+msgstr "Предстоящие повторения"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"
-msgstr ""
+msgstr "Обновление представления"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Upload images"
-msgstr ""
+msgstr "Загрузить изображения"
 
 #. placeholder {0}: query.trim()
 #: src/components/multi-value-field.tsx
 msgid "Use “{0}”"
-msgstr ""
+msgstr "Использовать «{0}»"
 
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
-msgstr ""
+msgstr "Используйте более длинную и менее предсказуемую парольную фразу."
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx
 msgid "Use template{0}"
-msgstr ""
+msgstr "Использовать шаблон{0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured due field."
-msgstr ""
+msgstr "Использовать настроенное поле срока."
 
 #: src/app/view-editor-form.tsx
 msgid "Use the configured scheduled field."
-msgstr ""
+msgstr "Использовать настроенное поле планирования."
 
 #: src/app/task-screen.tsx
 msgid "Use the occurrence actions above to change this state."
-msgstr ""
+msgstr "Чтобы изменить это состояние, используйте действия с повторением выше."
 
 #: src/components/recurrence-field.tsx
 msgid "Use visual editor"
-msgstr ""
+msgstr "Использовать визуальный редактор"
 
 #: src/components/task-model-settings.tsx
 msgid "Used when TaskNotes writes links to projects, people, and other tasks, for example "
-msgstr ""
+msgstr "Используется, когда TaskNotes создаёт ссылки на проекты, участников и другие задачи, например "
 
 #: src/components/expression-builder.tsx
 msgid "Value"
-msgstr ""
+msgstr "Значение"
 
 #: src/app/more-screen.tsx
 msgid "Version "
-msgstr ""
+msgstr "Версия "
 
 #: src/app/more-screen.tsx
 msgid "Version {__APP_VERSION__}"
-msgstr ""
+msgstr "Версия {__APP_VERSION__}"
 
 #. placeholder {0}: edit.path
 #: src/components/held-edits.tsx
 msgid "Versions of {0}"
-msgstr ""
+msgstr "Версии файла {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "View details"
-msgstr ""
+msgstr "Сведения о представлении"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"
-msgstr ""
+msgstr "Название представления"
 
 #: src/components/view-options.tsx
 msgid "View options"
-msgstr ""
+msgstr "Параметры представления"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Views"
-msgstr ""
+msgstr "Представления"
 
 #: src/app/app-shell.tsx
 msgid "Views availability"
-msgstr ""
+msgstr "Состояние представлений"
 
 #: src/app/views/view-catalog.tsx
 msgid "Views stored in your collection"
-msgstr ""
+msgstr "Представления, сохранённые в коллекции"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
-msgstr ""
+msgstr "Визуальное редактирование недоступно, поскольку в правиле используется {0}."
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for access"
-msgstr ""
+msgstr "Ожидание доступа"
 
 #: src/app/model-setup-screen.tsx
 msgid "Waiting for setup confirmation…"
-msgstr ""
+msgstr "Ожидание подтверждения настройки…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"
-msgstr ""
+msgstr "Ожидание подключения компьютера"
 
 #: src/components/collection-availability.tsx
 msgid "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects."
-msgstr ""
+msgstr "Ожидание подключения компьютера. Ранее загруженные задачи останутся здесь и обновятся, когда компьютер снова будет в сети."
 
 #: src/components/operation-error-notice.tsx
 msgid "Waiting for your computer. Try this action again when it reconnects."
-msgstr ""
+msgstr "Дождитесь повторного подключения компьютера и попробуйте выполнить действие ещё раз."
 
 #: src/app/task-screen.tsx
 msgid "Website, Home"
-msgstr ""
+msgstr "Веб-сайт, главная"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Week"
-msgstr ""
+msgstr "Неделя"
 
 #: src/components/calendar-preferences.tsx
 msgid "Week starts"
-msgstr ""
+msgstr "Неделя начинается"
 
 #: src/components/recurrence-field.tsx
 msgid "Weekday"
-msgstr ""
+msgstr "День недели"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekdays"
-msgstr ""
+msgstr "Дни недели"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Weekly"
-msgstr ""
+msgstr "Еженедельно"
 
 #: src/components/duration-field.tsx
 msgid "Weeks"
-msgstr ""
+msgstr "Недели"
 
 #: src/app/task-time-tracking.tsx
 msgid "What are you working on?"
-msgstr ""
+msgstr "Над чем вы работаете?"
 
 #: src/app/tasknotes-app.tsx
 msgid "What is mdbase?"
-msgstr ""
+msgstr "Что такое mdbase?"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "What needs doing?"
-msgstr ""
+msgstr "Что нужно сделать?"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
-msgstr ""
+msgstr "Когда я выберу"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
-msgstr ""
+msgstr "После выполнения предыдущей задачи"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"
-msgstr ""
+msgstr "Какой"
 
 #: src/components/markdown-source-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
-msgstr ""
+msgstr "Вики-ссылка"
 
 #: src/components/task-model-settings.tsx
 msgid "Wikilinks"
-msgstr ""
+msgstr "Вики-ссылки"
 
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
-msgstr ""
+msgstr "Рабочий сеанс"
 
 #: src/app/task-screen.tsx
 msgid "work, important"
-msgstr ""
+msgstr "работа, важно"
 
 #: src/components/private-account-settings.tsx
 msgid "Working…"
-msgstr ""
+msgstr "Выполнение…"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
-msgstr ""
+msgstr "Писать"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
-msgstr ""
+msgstr "Инструменты для письма"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"
-msgstr ""
+msgstr "Ежегодно"
 
 #: src/i18n/view-presentation.ts
 msgid "Yes"
-msgstr ""
+msgstr "Да"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
-msgstr ""
+msgstr "Да. В разделе «Коллекция» выберите «Сменить коллекцию», чтобы открыть другую коллекцию mdbase. При смене коллекции записи не перемещаются."
 
 #: src/i18n/presentation.ts
 msgid "Yesterday"
-msgstr ""
+msgstr "Вчера"
 
 #: src/main.tsx
 msgid "You can close this window."
-msgstr ""
+msgstr "Теперь это окно можно закрыть."
 
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
-msgstr ""
+msgstr "На сегодня всё."
 
 #: src/components/task-attachments.tsx
 msgid "Your browser blocked the image window. Allow pop-ups and try again."
-msgstr ""
+msgstr "Браузер заблокировал окно изображения. Разрешите всплывающие окна и попробуйте ещё раз."
 
 #: src/app/view-editor.tsx
 msgid "Your changes to this view have not been saved."
-msgstr ""
+msgstr "Изменения представления не сохранены."
 
 #: src/components/held-edits.tsx
 msgid "Your choice was submitted, but the latest status could not be read. Refresh before making another choice."
-msgstr ""
+msgstr "Ваш выбор отправлен, но не удалось получить актуальное состояние. Обновите данные, прежде чем сделать другой выбор."
 
 #: src/components/app-error-boundary.tsx
 msgid "Your collection has not been removed. Restart the app to reopen your tasks."
-msgstr ""
+msgstr "Коллекция не удалена. Перезапустите приложение, чтобы снова открыть задачи."
 
 #: src/components/task-capture.tsx
 msgid "Your draft is still here. Check it and try again."
-msgstr ""
+msgstr "Черновик сохранён. Проверьте его и попробуйте ещё раз."
 
 #: src/app/task-screen.tsx
 msgid "Your edit is no longer available on this device. Discard it to load the latest version."
-msgstr ""
+msgstr "Ваше изменение больше недоступно на этом устройстве. Отмените его, чтобы загрузить последнюю версию."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
-msgstr ""
+msgstr "Ваше изменение не сохранено."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
-msgstr ""
+msgstr "Заметка изменилась во время сохранения. Сохраните её ещё раз перед перезагрузкой."
 
 #: src/components/private-account-settings.tsx
 msgid "Your password unlocks private collections on approved devices. It is processed on this device, not sent to mdbase."
-msgstr ""
+msgstr "Пароль разблокирует закрытые коллекции на одобренных устройствах. Он обрабатывается на этом устройстве и не отправляется в mdbase."
 
 #: src/app/search-screen.tsx
 msgid "Your person record could not be loaded. Check your connection, then reload people to try again."
-msgstr ""
+msgstr "Не удалось загрузить вашу запись участника. Проверьте подключение, затем обновите список участников и попробуйте ещё раз."
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Your person record needs fixing before filtering tasks: {0}."
-msgstr ""
+msgstr "Чтобы фильтровать задачи, сначала исправьте запись участника: {0}."
 
 #: src/components/held-edits.tsx
 msgid "Your protected version"
-msgstr ""
+msgstr "Ваша защищённая версия"
 
 #. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
-msgstr ""
+msgstr "Порядок элементов боковой панели.{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
-msgstr ""
+msgstr "Несохранённые настройки сохранены. Проверьте их и повторите попытку."
