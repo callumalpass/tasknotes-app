@@ -2553,102 +2553,102 @@ msgstr "分"
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "分"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr "Mois"
+msgstr "月"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Monthly"
-msgstr "Tous les mois"
+msgstr "毎月"
 
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
-msgstr "Autres actions pour {0}"
+msgstr "{0}のその他の操作"
 
 #: src/components/task-actions.tsx
 msgid "More task actions"
-msgstr "Autres actions de tâche"
+msgstr "その他のタスク操作"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
-msgstr "déplacer"
+msgstr "移動"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move"
-msgstr "Déplacer"
+msgstr "移動"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
-msgstr "Déplacer {0}"
+msgstr "{0}を移動"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
-msgstr "Remonter {0}"
+msgstr "{0}を前に移動"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} later"
-msgstr "Descendre {0}"
+msgstr "{0}を後に移動"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0}. Drag, or use up and down arrow keys."
-msgstr "Déplacer {0}. Faites glisser ou utilisez les flèches haut et bas."
+msgstr "{0}を移動。ドラッグするか、上下の矢印キーを使います。"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} down"
-msgstr "Descendre {label}"
+msgstr "{label}を下へ移動"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} up"
-msgstr "Remonter {label}"
+msgstr "{label}を上へ移動"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into the archive folder"
-msgstr "Déplacer les fichiers des tâches archivées dans le dossier d’archives"
+msgstr "アーカイブしたタスクファイルをアーカイブフォルダーに移動"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
-msgstr "Décaler les dates d’un jour"
+msgstr "日付を1日後に移動"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
-msgstr "Déplacer l’élément actif"
+msgstr "フォーカス中の項目を移動"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
-msgstr "Placez « Ordre manuel » en première position pour activer les poignées de déplacement."
+msgstr "ドラッグ用ハンドルを有効にするには、手動順序を最初に移動します。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
-msgstr "Déplacement de {0} {1}."
+msgstr "{0}を{1}移動しました。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} after {1}."
-msgstr "Déplacement de {0} après {1}."
+msgstr "{0}を{1}の後に移動しました。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} before {1}."
-msgstr "Déplacement de {0} avant {1}."
+msgstr "{0}を{1}の前に移動しました。"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} down."
-msgstr "Déplacement de {0} vers le bas."
+msgstr "{0}を下に移動しました。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
@@ -2656,17 +2656,17 @@ msgstr "Déplacement de {0} vers le bas."
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
-msgstr "Déplacement de {0} vers {1}."
+msgstr "{0}を{1}に移動しました。"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
-msgstr "Déplacement de {0} vers le haut."
+msgstr "{0}を上に移動しました。"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
-msgstr "Déplacement de {0}."
+msgstr "{0}を移動しました。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
@@ -2674,404 +2674,404 @@ msgstr "Déplacement de {0}."
 #: src/app/views/navigation-view-order.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moving {0}."
-msgstr "Déplacement de {0} en cours."
+msgstr "{0}を移動中。"
 
 #: src/app/view-editor-form.tsx
 #: src/i18n/view-presentation.ts
 msgid "Name"
-msgstr "Nom"
+msgstr "名前"
 
 #: src/app/view-editor-form.tsx
 msgid "Name this view and choose its layout."
-msgstr "Nommez cette vue et choisissez sa disposition."
+msgstr "このビューに名前を付け、レイアウトを選択します。"
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
-msgstr "Groupe imbriqué"
+msgstr "入れ子のグループ"
 
 #: src/components/expression-builder.tsx
 msgid "Nested match mode"
-msgstr "Mode de correspondance imbriqué"
+msgstr "入れ子の一致モード"
 
 #: src/components/recurrence-field.tsx
 msgid "Never"
-msgstr "Jamais"
+msgstr "なし"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
-msgstr "Nouvelle note"
+msgstr "新しいノート"
 
 #: src/components/task-model-settings.tsx
 msgid "New recurring tasks"
-msgstr "Nouvelles tâches récurrentes"
+msgstr "新しい繰り返しタスク"
 
 #: src/components/task-actions.tsx
 msgid "New subtask"
-msgstr "Nouvelle sous-tâche"
+msgstr "新しいサブタスク"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
-msgstr "Nouvelle tâche"
+msgstr "新しいタスク"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
-msgstr "Titre de la nouvelle tâche"
+msgstr "新しいタスク名"
 
 #: src/app/view-editor-form.tsx
 msgid "New tasks"
-msgstr "Nouvelles tâches"
+msgstr "新しいタスク"
 
 #: src/app/view-editor.tsx
 msgid "New view"
-msgstr "Nouvelle vue"
+msgstr "新しいビュー"
 
 #: src/i18n/editor-phrases.ts
 msgid "next"
-msgstr "suivant"
+msgstr "次"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
-msgstr "Mois suivant"
+msgstr "翌月"
 
 #: src/app/full-calendar-view.tsx
 msgid "Next period"
-msgstr "Période suivante"
+msgstr "次の期間"
 
 #. placeholder {0}: preview.join(" · ")
 #: src/components/recurrence-field.tsx
 msgid "Next: {0}"
-msgstr "Prochaines dates : {0}"
+msgstr "次：{0}"
 
 #: src/i18n/view-presentation.ts
 msgid "No"
-msgstr "Non"
+msgstr "いいえ"
 
 #: src/i18n/view-presentation.ts
 msgid "No {label}"
-msgstr "Sans {label}"
+msgstr "{label}なし"
 
 #: src/app/views/projects-view.tsx
 msgid "No active projects"
-msgstr "Aucun projet actif"
+msgstr "進行中のプロジェクトはありません"
 
 #: src/app/view-empty-state.tsx
 msgid "No archived tasks here."
-msgstr "Aucune tâche archivée ici."
+msgstr "ここにアーカイブ済みのタスクはありません。"
 
 #: src/app/view-empty-state.tsx
 msgid "No cached tasks for this view."
-msgstr "Aucune tâche en cache pour cette vue."
+msgstr "このビューのキャッシュ済みタスクはありません。"
 
 #: src/app/collection-picker.tsx
 msgid "No collections are connected to TaskNotes on this device yet."
-msgstr "Aucune collection n’est encore connectée à TaskNotes sur cet appareil."
+msgstr "このデバイスではTaskNotesに接続されたコレクションがまだありません。"
 
 #: src/app/view-editor-form.tsx
 msgid "No computed properties."
-msgstr "Aucune propriété calculée."
+msgstr "計算プロパティはありません。"
 
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
-msgstr "Aucune date"
+msgstr "日付なし"
 
 #: src/app/task-screen.tsx
 msgid "No dates"
-msgstr "Aucune date"
+msgstr "日付なし"
 
 #: src/app/view-editor-form.tsx
 msgid "No formulas"
-msgstr "Aucune formule"
+msgstr "数式はありません"
 
 #: src/app/view-editor-form.tsx
 msgid "No grouping"
-msgstr "Aucun regroupement"
+msgstr "グループ化なし"
 
 #: src/app/search-screen.tsx
 msgid "No matching tasks assigned to you."
-msgstr "Aucune tâche correspondante ne vous est assignée."
+msgstr "自分に割り当てられた一致するタスクはありません。"
 
 #: src/app/views/view-catalog.tsx
 msgid "No matching views"
-msgstr "Aucune vue correspondante"
+msgstr "一致するビューはありません"
 
 #: src/components/assignee-editor.tsx
 msgid "No other people are available to assign."
-msgstr "Aucune autre personne n’est disponible pour l’assignation."
+msgstr "割り当て可能な他のユーザーはいません。"
 
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
-msgstr "Sans priorité"
+msgstr "優先度なし"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
-msgstr "Aucune projection"
+msgstr "プロジェクションはありません"
 
 #: src/components/reminder-editor.tsx
 msgid "No reminders set."
-msgstr "Aucun rappel défini."
+msgstr "リマインダーは設定されていません。"
 
 #: src/app/task-editor-draft.ts
 msgid "No repeat or reminder"
-msgstr "Aucune répétition ni aucun rappel"
+msgstr "繰り返しまたはリマインダーなし"
 
 #: src/app/views/kanban-columns.ts
 msgid "No status"
-msgstr "Sans statut"
+msgstr "ステータスなし"
 
 #: src/app/full-calendar-view.tsx
 msgid "No tasks in this period."
-msgstr "Aucune tâche sur cette période."
+msgstr "この期間にタスクはありません。"
 
 #: src/app/view-editor.tsx
 msgid "No tasks match this draft."
-msgstr "Aucune tâche ne correspond à ce brouillon."
+msgstr "この下書きに一致するタスクはありません。"
 
 #: src/app/view-empty-state.tsx
 msgid "No tasks match this view"
-msgstr "Aucune tâche ne correspond à cette vue"
+msgstr "このビューに一致するタスクはありません"
 
 #: src/app/search-screen.tsx
 msgid "No tasks matched."
-msgstr "Aucune tâche correspondante."
+msgstr "一致するタスクはありませんでした。"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
-msgstr "Aucune tâche ce jour-là. Utilisez « Ajouter une tâche » pour en planifier une."
+msgstr "この日にタスクはありません。追加から予定を設定してください。"
 
 #: src/components/recurrence-field.tsx
 msgid "No upcoming dates in this pattern."
-msgstr "Aucune date à venir dans ce schéma de récurrence."
+msgstr "このパターンの今後の日付はありません。"
 
 #: src/app/view-empty-state.tsx
 msgid "No upcoming tasks here."
-msgstr "Aucune tâche à venir ici."
+msgstr "ここに今後のタスクはありません。"
 
 #: src/app/task-screen.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
-msgstr "Aucune valeur"
+msgstr "値なし"
 
 #: src/app/more-screen.tsx
 msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "Non. TaskNotes lit et modifie directement la collection mdbase de référence. Les collections hébergées nécessitent une connexion réseau ; une collection sur ordinateur nécessite aussi que cet ordinateur soit joignable."
+msgstr "いいえ。TaskNotesは正本であるmdbaseコレクションを直接読み書きします。ホストされたコレクションにはネットワーク接続が必要です。パソコンのコレクションでは、そのパソコンにも接続できる必要があります。"
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
-msgstr "Aucun"
+msgstr "なし"
 
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
-msgstr "Indisponibles dans ce navigateur"
+msgstr "このブラウザーでは利用できません"
 
 #: src/app/more-screen.tsx
 msgid "Not in the demo"
-msgstr "Pas dans la démo"
+msgstr "デモでは利用できません"
 
 #: src/app/cloud-collection.tsx
 msgid "not installed"
-msgstr "non installé"
+msgstr "インストールされていません"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Not now"
-msgstr "Pas maintenant"
+msgstr "後で"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Not saved"
-msgstr "Non enregistré"
+msgstr "未保存"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
-msgstr "Note"
+msgstr "ノート"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Note title"
-msgstr "Titre de la note"
+msgstr "ノートのタイトル"
 
 #: src/app/search-match-context.ts
 msgid "notes"
-msgstr "notes"
+msgstr "ノート"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
-msgstr "Notes"
+msgstr "ノート"
 
 #: src/app/views-screen.tsx
 msgid "Nothing else changed. Try again."
-msgstr "Rien d’autre n’a changé. Réessayez."
+msgstr "変更はありませんでした。もう一度お試しください。"
 
 #: src/components/markdown-preview.tsx
 msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "Rien à afficher pour le moment. Choisissez « Écrire » pour ajouter des notes."
+msgstr "まだプレビューする内容がありません。ノートを追加するには「書く」を選択してください。"
 
 #: src/app/more-screen.tsx
 msgid "Notifications"
-msgstr "Notifications"
+msgstr "通知"
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
-msgstr "Les notifications ne sont pas disponibles ici"
+msgstr "ここでは通知を利用できません"
 
 #: src/components/reminder-editor.tsx
 msgid "Notify at a fixed time or relative to this task."
-msgstr "Notifier à une heure fixe ou par rapport à cette tâche."
+msgstr "指定した時刻またはこのタスクを基準に通知します。"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
-msgstr "Maintenant"
+msgstr "今"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence"
-msgstr "Occurrence"
+msgstr "発生分"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note"
-msgstr "Note d’occurrence"
+msgstr "発生分のノート"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence note policy"
-msgstr "Politique des notes d’occurrence"
+msgstr "発生分のノートのポリシー"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence notes"
-msgstr "Notes d’occurrence"
+msgstr "発生分のノート"
 
 #: src/app/task-screen.tsx
 msgid "Occurrence template"
-msgstr "Modèle d’occurrence"
+msgstr "発生分のテンプレート"
 
 #: src/components/recurrence-field.tsx
 msgid "Occurrences"
-msgstr "Occurrences"
+msgstr "発生回数"
 
 #: src/app/notification-label.ts
 msgid "Off"
-msgstr "Désactivées"
+msgstr "オフ"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "Le"
+msgstr "オン"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr "Activées"
+msgstr "オン"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
-msgstr "À une date"
+msgstr "日付指定"
 
 #: src/i18n/editor-phrases.ts
 msgid "on line"
-msgstr "à la ligne"
+msgstr "行"
 
 #: src/components/calendar-preferences.tsx
 msgid "On this device"
-msgstr "Sur cet appareil"
+msgstr "このデバイス上"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Only draft items can become TaskNotes."
-msgstr "Seuls les éléments en brouillon peuvent devenir des notes de tâche."
+msgstr "下書き項目のみTaskNotesにできます。"
 
 #: src/app/view-editor-form.tsx
 msgid "Only the task title is shown."
-msgstr "Seul le titre de la tâche est affiché."
+msgstr "タスク名のみ表示されます。"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 #: src/components/task-added-notice.tsx
 msgid "Open"
-msgstr "Ouvrir"
+msgstr "開く"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "Ouvertes"
+msgstr "開く"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
-msgstr "Ouvrir {0}"
+msgstr "{0}を開く"
 
 #: src/app/app-shell.tsx
 msgid "Open a saved collection"
-msgstr "Ouvrir une collection enregistrée"
+msgstr "保存済みコレクションを開く"
 
 #: src/app/views/view-catalog.tsx
 msgid "Open a view or choose whether it appears in navigation."
-msgstr "Ouvrez une vue ou choisissez si elle apparaît dans la navigation."
+msgstr "ビューを開くか、ナビゲーションに表示するかを選択します。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
-msgstr "Ouvrir d’abord"
+msgstr "最初に開く"
 
 #: src/components/task-attachments.tsx
 msgid "Open image"
-msgstr "Ouvrir l’image"
+msgstr "画像を開く"
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
-msgstr "Ouvrir dans Planner"
+msgstr "Plannerで開く"
 
 #: src/app/more-screen.tsx
 msgid "Open it from your home screen"
-msgstr "Ouvrez-la depuis votre écran d’accueil"
+msgstr "ホーム画面から開いてください"
 
 #: src/app/collection-picker.tsx
 msgid "Open mdbase to choose and approve access."
-msgstr "Ouvrez mdbase pour choisir et approuver l’accès."
+msgstr "mdbaseを開いてアクセスを選択、承認します。"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
-msgstr "Ouvrir la tâche"
+msgstr "タスクを開く"
 
 #: src/app/cloud-collection.tsx
 msgid "Open TaskNotes"
-msgstr "Ouvrir TaskNotes"
+msgstr "TaskNotesを開く"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
-msgstr "Ouvrez le menu de partage de votre navigateur, puis choisissez « Sur l’écran d’accueil »."
+msgstr "ブラウザーの共有メニューを開き、「ホーム画面に追加」を選択します。"
 
 #: src/app/collection-settings.tsx
 msgid "Opening"
-msgstr "Ouverture"
+msgstr "開いています"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
-msgstr "Ouverture de la note actuelle…"
+msgstr "現在のノートを開いています…"
 
 #: src/app/more-screen.tsx
 msgid "Opening install prompt…"
-msgstr "Ouverture de la demande d’installation…"
+msgstr "インストールの確認画面を開いています…"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-gate.tsx
 msgid "Opening mdbase…"
-msgstr "Ouverture de mdbase…"
+msgstr "mdbaseを開いています…"
 
 #: src/app/cloud-collection.tsx
 msgid "Opening TaskNotes…"
-msgstr "Ouverture de TaskNotes…"
+msgstr "TaskNotesを開いています…"
 
 #: src/app/view-editor.tsx
 msgid "Opening view editor"
-msgstr "Ouverture de l’éditeur de vues"
+msgstr "ビューエディターを開く"
 
 #: src/app/app-shell.tsx
 msgid "Opening your tasks"
-msgstr "Ouverture de vos tâches"
+msgstr "タスクを開く"
 
 #: src/app/app-shell.tsx
 msgid "Opening your view"
-msgstr "Ouverture de votre vue"
+msgstr "ビューを開く"
 
 #: src/app/cloud-collection.tsx
 msgid "Opening…"
@@ -4830,4 +4830,3 @@ msgstr "Votre barre latérale, dans l’ordre.{0}"
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
 msgstr "Vos choix non enregistrés sont toujours ici. Vérifiez-les et réessayez."
-
