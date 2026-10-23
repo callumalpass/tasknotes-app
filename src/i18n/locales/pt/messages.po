@@ -2543,486 +2543,486 @@ msgstr "não é"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
-msgstr ""
+msgstr "não está vazio"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
-msgstr ""
+msgstr "Valor ISO 8601"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Italic"
-msgstr ""
+msgstr "Itálico"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr ""
+msgstr "item"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
-msgstr ""
+msgstr "Ir para o projeto"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep a rolling window"
-msgstr ""
+msgstr "Manter um período contínuo"
 
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
-msgstr ""
+msgstr "Continuar adicionando tarefas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep as note"
-msgstr ""
+msgstr "Manter como nota"
 
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
-msgstr ""
+msgstr "Mantenha ambos se quiser preservar sua edição como arquivo."
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
-msgstr ""
+msgstr "Continuar editando"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep files for past dates"
-msgstr ""
+msgstr "Manter arquivos de datas anteriores"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
-msgstr ""
+msgstr "Manter notas Markdown individuais para datas recorrentes."
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
-msgstr ""
+msgstr "Mantenha a minha se quiser preservar sua edição."
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep my edit"
-msgstr ""
+msgstr "Manter minha edição"
 
 #: src/app/task-screen.tsx
 msgid "Keep or discard your unsaved edit before making another change."
-msgstr ""
+msgstr "Mantenha ou descarte sua edição não salva antes de fazer outra alteração."
 
 #: src/app/app-shell.tsx
 msgid "Keep saved recovery"
-msgstr ""
+msgstr "Manter recuperação salva"
 
 #: src/components/task-actions.tsx
 msgid "Keep task"
-msgstr ""
+msgstr "Manter tarefa"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep the gap between scheduled and due dates"
-msgstr ""
+msgstr "Manter o intervalo entre as datas agendada e de vencimento"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep the planned dates, even if you finish late."
-msgstr ""
+msgstr "Manter as datas planejadas, mesmo que você conclua a tarefa com atraso."
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
-msgstr ""
+msgstr "Manter o campo de adição rápida nesta visualização."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
-msgstr ""
+msgstr "Continuar escrevendo"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Keep your edit to apply it on top of the latest version, or discard it and load the latest version."
-msgstr ""
+msgstr "Mantenha sua edição para aplicá-la sobre a versão mais recente ou descarte-a e carregue a versão mais recente."
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Atalhos de teclado"
 
 #: src/i18n/language-settings.tsx
 msgid "Language"
-msgstr ""
+msgstr "Idioma"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr ""
+msgstr "último"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
-msgstr ""
+msgstr "Último"
 
 #: src/app/views-screen.tsx
 msgid "Last available result"
-msgstr ""
+msgstr "Último resultado disponível"
 
 #: src/components/recurrence-field.tsx
 msgid "Last date"
-msgstr ""
+msgstr "Última data"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr ""
+msgstr "último dia"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
-msgstr ""
+msgstr "Último dia"
 
 #. placeholder {0}: lastRefresh.scanned.toLocaleString()
 #. placeholder {1}: lastRefresh.elapsedMs.toLocaleString()
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
-msgstr ""
+msgstr "A última atualização verificou {0} registros em {1} ms."
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr ""
+msgstr "A última atualização verificou {scanned, plural, one {# registro} other {# registros}} em {elapsed} ms."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
-msgstr ""
+msgstr "Mais tarde"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr ""
+msgstr "Layout"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr ""
+msgstr "Layout: {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
-msgstr ""
+msgstr "Saiba mais"
 
 #: src/app/more-screen.tsx
 msgid "Light"
-msgstr ""
+msgstr "Claro"
 
 #: src/components/task-model-settings.tsx
 msgid "Link format"
-msgstr ""
+msgstr "Formato do link"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
-msgstr ""
+msgstr "Vincule sua conta a um registro de pessoa antes de usar Atribuídas a mim."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Linked"
-msgstr ""
+msgstr "Vinculado"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
-msgstr ""
+msgstr "Links e controle de tempo"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
-msgstr ""
+msgstr "Lista"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
-msgstr ""
+msgstr "Carregar mais tarefas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Load older"
-msgstr ""
+msgstr "Carregar anteriores"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks"
-msgstr ""
+msgstr "Carregar tarefas restantes"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks to change manual order."
-msgstr ""
+msgstr "Carregue as tarefas restantes para alterar a ordem manual."
 
 #. placeholder {0}: presentedExecution.rows.length
 #. placeholder {1}: presentedExecution.totalCount
 #. placeholder {2}: manualOrder ? t({ message: "Load remaining tasks to change manual order." }) : ""
 #: src/app/views-screen.tsx
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
-msgstr ""
+msgstr "Carregadas {0} de {1} tarefas correspondentes. As contagens das seções abrangem as tarefas carregadas. {2}"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr ""
+msgstr "Carregando imagem…"
 
 #: src/components/task-attachments.tsx
 msgid "Loading images…"
-msgstr ""
+msgstr "Carregando imagens…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
-msgstr ""
+msgstr "Carregando mais…"
 
 #: src/components/assignee-editor.tsx
 msgid "Loading people…"
-msgstr ""
+msgstr "Carregando pessoas…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading previous notes…"
-msgstr ""
+msgstr "Carregando notas anteriores…"
 
 #: src/components/loading.tsx
 msgid "Loading tasks"
-msgstr ""
+msgstr "Carregando tarefas"
 
 #: src/app/views-screen.tsx
 msgid "Loading tasks…"
-msgstr ""
+msgstr "Carregando tarefas…"
 
 #: src/app/search-screen.tsx
 msgid "Loading your person identity…"
-msgstr ""
+msgstr "Carregando sua identidade de pessoa…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
-msgstr ""
+msgstr "Carregando…"
 
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
-msgstr ""
+msgstr "Bloquear a chave de recuperação neste dispositivo"
 
 #: src/components/private-account-settings.tsx
 msgid "Locked on this device"
-msgstr ""
+msgstr "Bloqueado neste dispositivo"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
-msgstr ""
+msgstr "Procurando na coleção…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
-msgstr ""
+msgstr "Criar uma tarefa"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
-msgstr ""
+msgstr "Criar nota da ocorrência"
 
 #: src/app/app-shell.tsx
 msgid "Manage"
-msgstr ""
+msgstr "Gerenciar"
 
 #: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/views-screen.tsx
 msgid "Manage views"
-msgstr ""
+msgstr "Gerenciar visualizações"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views-screen.tsx
 msgid "Manual order"
-msgstr ""
+msgstr "Ordem manual"
 
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
-msgstr ""
+msgstr "A ordem manual está ativa. Alças de arraste aparecerão nas tarefas."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark complete"
-msgstr ""
+msgstr "Marcar como concluída"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark incomplete"
-msgstr ""
+msgstr "Marcar como incompleta"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
-msgstr ""
+msgstr "Marcar ocorrência como aberta"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Mark open"
-msgstr ""
+msgstr "Marcar como aberta"
 
 #: src/components/task-record-file.tsx
 msgid "Markdown file"
-msgstr ""
+msgstr "Arquivo Markdown"
 
 #: src/components/task-actions.tsx
 #: src/components/task-record-file.tsx
 msgid "Markdown link"
-msgstr ""
+msgstr "Link Markdown"
 
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
-msgstr ""
+msgstr "Links Markdown"
 
 #: src/i18n/editor-phrases.ts
 msgid "match case"
-msgstr ""
+msgstr "diferenciar maiúsculas de minúsculas"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
-msgstr ""
+msgstr "Modo de correspondência"
 
 #. placeholder {0}: matches.join(", ")
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
-msgstr ""
+msgstr "Correspondência em {0}"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
-msgstr ""
+msgstr "Coleção mdbase"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr ""
+msgstr "mdbase confirmou a conclusão do modo estrito. A chave de recuperação foi removida deste dispositivo."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
-msgstr ""
+msgstr "mdbase confirmou que os destinos de recuperação aplicaram o modo estrito."
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-msgstr ""
+msgstr "mdbase envia lembretes enquanto o TaskNotes está fechado. As notificações nunca incluem o conteúdo das tarefas."
 
 #: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
-msgstr ""
+msgstr "mdbase é a fonte de verdade. As alterações exigem uma conexão."
 
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
-msgstr ""
+msgstr "mdbase mantém suas tarefas como arquivos Markdown portáteis e oferece aos aplicativos compatíveis uma forma compartilhada de entendê-las. No mdbase, você escolhe uma coleção e aprova o acesso do TaskNotes, seja ela hospedada pelo mdbase ou disponível em um computador conectado."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
-msgstr ""
+msgstr "mdbase protegeu sua edição"
 
 #: src/app/task-screen.tsx
 msgid "mdbase refused the change."
-msgstr ""
+msgstr "mdbase recusou a alteração."
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase update"
-msgstr ""
+msgstr "Atualização do mdbase"
 
 #: src/components/returning-user-notice.tsx
 msgid "mdbase was upgraded. Approve TaskNotes once to continue. Your collections and notes are unchanged."
-msgstr ""
+msgstr "O mdbase foi atualizado. Aprove o TaskNotes uma vez para continuar. Suas coleções e notas não foram alteradas."
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
-msgstr ""
+msgstr "Meia-noite"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
-msgstr ""
+msgstr "Mini calendário"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Minute"
-msgstr ""
+msgstr "Minuto"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr ""
+msgstr "Minutos"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr ""
+msgstr "Mês"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Monthly"
-msgstr ""
+msgstr "Mensal"
 
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
-msgstr ""
+msgstr "Mais ações para {0}"
 
 #: src/components/task-actions.tsx
 msgid "More task actions"
-msgstr ""
+msgstr "Mais ações da tarefa"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
-msgstr ""
+msgstr "mover"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move"
-msgstr ""
+msgstr "Mover"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Move {0}"
-msgstr ""
+msgstr "Mover {0}"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
-msgstr ""
+msgstr "Mover {0} para antes"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} later"
-msgstr ""
+msgstr "Mover {0} para depois"
 
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "Mover {0}. Arraste ou use as teclas de seta para cima e para baixo."
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} down"
-msgstr ""
+msgstr "Mover {label} para baixo"
 
 #: src/app/view-editor-form.tsx
 msgid "Move {label} up"
-msgstr ""
+msgstr "Mover {label} para cima"
 
 #: src/app/views-screen.tsx
 msgid "Move all to today"
-msgstr ""
+msgstr "Mover tudo para hoje"
 
 #: src/components/task-model-settings.tsx
 msgid "Move archived task files into a folder"
-msgstr ""
+msgstr "Mover arquivos de tarefas arquivadas para uma pasta"
 
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
-msgstr ""
+msgstr "Mover datas um dia para depois"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
-msgstr ""
+msgstr "Mover item em foco"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
-msgstr ""
+msgstr "Mova Ordem manual para a primeira posição para ativar as alças de arraste."
 
 #: src/app/views-screen.tsx
 msgid "Moved "
-msgstr ""
+msgstr "Movido "
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
 #: src/app/views/kanban-view.tsx
 msgid "Moved {0} {1}."
-msgstr ""
+msgstr "{0} movido {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} after {1}."
-msgstr ""
+msgstr "{0} movido para depois de {1}."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: target.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} before {1}."
-msgstr ""
+msgstr "{0} movido para antes de {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} down."
-msgstr ""
+msgstr "{0} movido para baixo."
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: destination.label ?? columnLabel(destination.value)
@@ -3030,33 +3030,33 @@ msgstr ""
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} to {1}."
-msgstr ""
+msgstr "{0} movido para {1}."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
-msgstr ""
+msgstr "{0} movido para cima."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
-msgstr ""
+msgstr "{0} movido."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
 #: src/app/views/kanban-view.tsx
 #: src/app/views/navigation-view-order.tsx
 msgid "Moving {0}."
-msgstr ""
+msgstr "Movendo {0}."
 
 #: src/app/view-editor-form.tsx
 #: src/i18n/view-presentation.ts
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: src/app/view-editor-form.tsx
 msgid "Name this view and choose its layout."
-msgstr ""
+msgstr "Dê um nome a esta visualização e escolha o layout."
 
 #: src/components/expression-builder.tsx
 msgid "Nested group"
