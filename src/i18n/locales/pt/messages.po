@@ -1514,231 +1514,231 @@ msgstr "Datas"
 
 #: src/components/task-capture.tsx
 msgid "Dates and estimate"
-msgstr "Dates et estimation"
+msgstr "Datas e estimativa"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 msgid "Day"
-msgstr "Jour"
+msgstr "Dia"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
-msgstr "Début de la journée"
+msgstr "Início do dia"
 
 #: src/components/calendar-preferences.tsx
 msgid "Day ends"
-msgstr "Fin de la journée"
+msgstr "Fim do dia"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Days"
-msgstr "Jours"
+msgstr "Dias"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
-msgstr "Mode par défaut des nouvelles notes"
+msgstr "Modo padrão para novas notas"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
-msgstr "Priorité par défaut"
+msgstr "Prioridade padrão"
 
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Default Scratchpad mode"
-msgstr "Mode par défaut du Bloc-notes"
+msgstr "Modo padrão do Bloco de notas"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default status"
-msgstr "Statut par défaut"
+msgstr "Status padrão"
 
 #: src/app/view-editor-form.tsx
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
-msgstr "Les valeurs par défaut déduites des conditions de filtre simples sont ajoutées à la création de la tâche."
+msgstr "Os padrões inferidos de condições simples de filtro são adicionados quando a tarefa é criada."
 
 #: src/components/task-model-settings.tsx
 msgid "Delay"
-msgstr "Délai"
+msgstr "Atraso"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
-msgstr "Supprimer"
+msgstr "Excluir"
 
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
-msgstr "Supprimer « {name} » ?"
+msgstr "Excluir “{name}”?"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr "Supprimer l’élément"
+msgstr "Excluir item"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
-msgstr "Supprimer la tâche récurrente"
+msgstr "Excluir tarefa recorrente"
 
 #: src/components/task-actions.tsx
 msgid "Delete task"
-msgstr "Supprimer la tâche"
+msgstr "Excluir tarefa"
 
 #: src/components/task-actions.tsx
 msgid "Delete this repeating task and all of its occurrences?"
-msgstr "Supprimer cette tâche récurrente et toutes ses occurrences ?"
+msgstr "Excluir esta tarefa recorrente e todas as ocorrências?"
 
 #: src/components/task-actions.tsx
 msgid "Delete this task?"
-msgstr "Supprimer cette tâche ?"
+msgstr "Excluir esta tarefa?"
 
 #: src/app/view-editor.tsx
 msgid "Delete view"
-msgstr "Supprimer la vue"
+msgstr "Excluir visualização"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”"
-msgstr "« {0} » supprimé"
+msgstr "“{0}” excluída"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr "« {0} » supprimé. Vous pouvez annuler pendant 30 secondes."
+msgstr "“{0}” excluída. É possível desfazer por 30 segundos."
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
-msgstr "Suppression à vérifier"
+msgstr "A exclusão precisa ser revisada"
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
-msgstr "Suppression en attente"
+msgstr "Exclusão aguardando"
 
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
-msgstr "Dépendances"
+msgstr "Dependências"
 
 #: src/app/view-editor-form.tsx
 msgid "Descending"
-msgstr "Décroissant"
+msgstr "Decrescente"
 
 #: src/components/reminder-editor.tsx
 msgid "Description"
-msgstr "Description"
+msgstr "Descrição"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
-msgstr "Détacher"
+msgstr "Desvincular"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Detach {0}"
-msgstr "Détacher {0}"
+msgstr "Desvincular {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach from task"
-msgstr "Détacher de la tâche"
+msgstr "Desvincular da tarefa"
 
 #: src/components/task-attachments.tsx
 msgid "Detaching keeps the image file in your collection."
-msgstr "Détacher l’image conserve son fichier dans votre collection."
+msgstr "Desvincular mantém o arquivo de imagem na coleção."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
-msgstr "Réglage de l’appareil"
+msgstr "Configuração do dispositivo"
 
 #: src/components/reminder-editor.tsx
 msgid "Direction"
-msgstr "Sens"
+msgstr "Direção"
 
 #: src/app/notification-label.ts
 msgid "Disabled in system settings"
-msgstr "Désactivées dans les paramètres système"
+msgstr "Desativado nas configurações do sistema"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard all saved recovery and disconnect this collection? This does not reverse changes that may already have reached mdbase."
-msgstr "Abandonner toutes les données de récupération enregistrées et déconnecter cette collection ? Cela n’annule pas les modifications qui ont peut-être déjà atteint mdbase."
+msgstr "Descartar toda a recuperação salva e desconectar esta coleção? Isso não desfaz alterações que talvez já tenham chegado ao mdbase."
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
-msgstr "Abandonner les modifications"
+msgstr "Descartar alterações"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes?"
-msgstr "Abandonner les modifications ?"
+msgstr "Descartar alterações?"
 
 #: src/components/global-task-capture.tsx
 msgid "Discard draft"
-msgstr "Abandonner le brouillon"
+msgstr "Descartar rascunho"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
-msgstr "Abandonner la récupération"
+msgstr "Descartar recuperação"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard recovery and disconnect"
-msgstr "Abandonner la récupération et déconnecter"
+msgstr "Descartar recuperação e desconectar"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr "L’abandon supprime toutes les données de récupération enregistrées et déconnecte cette collection. Cela n’annule pas une suppression qui a peut-être abouti."
+msgstr "Descartar remove todos os dados de recuperação salvos e desconecta esta coleção. Isso não desfaz uma exclusão que possa ter sido concluída."
 
 #: src/app/cloud-collection.tsx
 msgid "Discarding…"
-msgstr "Abandon en cours…"
+msgstr "Descartando…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Dismiss"
-msgstr "Masquer"
+msgstr "Dispensar"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
-msgstr "Masquer la confirmation d’ajout de tâche"
+msgstr "Dispensar confirmação de tarefa adicionada"
 
 #: src/app/view-editor-form.tsx
 msgid "Displayed properties"
-msgstr "Propriétés affichées"
+msgstr "Propriedades exibidas"
 
 #: src/components/expression-builder.tsx
 msgid "does not contain"
-msgstr "ne contient pas"
+msgstr "não contém"
 
 #: src/app/more-screen.tsx
 msgid "Does TaskNotes work offline?"
-msgstr "TaskNotes fonctionne-t-il hors ligne ?"
+msgstr "O TaskNotes funciona offline?"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
-msgstr "Terminé"
+msgstr "Concluído"
 
 #: src/components/assignee-editor.tsx
 msgid "Done choosing assignees"
-msgstr "Terminer le choix des personnes assignées"
+msgstr "Concluído: escolher responsáveis"
 
 #: src/i18n/ui-copy.ts
 msgid "down"
-msgstr "vers le bas"
+msgstr "para baixo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
-msgstr "Brouillon de tâche"
+msgstr "Tarefa em rascunho"
 
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
-msgstr "Déposer ici"
+msgstr "Soltar aqui"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images here, paste them, upload files, or take a photo."
-msgstr "Déposez des images ici, collez-les, importez des fichiers ou prenez une photo."
+msgstr "Solte imagens aqui, cole-as, envie arquivos ou tire uma foto."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images to add them"
-msgstr "Déposer des images pour les ajouter"
+msgstr "Solte imagens para adicioná-las"
 
 #: src/app/view-editor-form.tsx
 msgid "due"
-msgstr "échéance"
+msgstr "vencimento"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/task-screen.tsx
@@ -1748,58 +1748,58 @@ msgstr "échéance"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Due"
-msgstr "Échéance"
+msgstr "Vencimento"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr "Échéance (non définie)"
+msgstr "Vencimento (não definido)"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-screen.tsx
 #: src/i18n/presentation.ts
 msgid "Due {0}"
-msgstr "Échéance : {0}"
+msgstr "Vencimento em {0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr "Échéance et date planifiée"
+msgstr "Vencimento e agendamento"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
-msgstr "Échéances"
+msgstr "Datas de vencimento"
 
 #: src/components/task-actions.tsx
 msgid "Due set"
-msgstr "Échéance définie"
+msgstr "Vencimento definido"
 
 #: src/components/task-actions.tsx
 msgid "Due today"
-msgstr "Échéance aujourd’hui"
+msgstr "Vence hoje"
 
 #: src/components/task-actions.tsx
 msgid "Due tomorrow"
-msgstr "Échéance demain"
+msgstr "Vence amanhã"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
-msgstr "Dupliquer"
+msgstr "Duplicar"
 
 #: src/app/view-editor.tsx
 msgid "Duplicate saved view"
-msgstr "Dupliquer la vue enregistrée"
+msgstr "Duplicar visualização salva"
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
-msgstr "Chaque mois"
+msgstr "Todo mês"
 
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
-msgstr "Les premières règles sont prioritaires."
+msgstr "Regras anteriores têm prioridade."
 
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
-msgstr "Modifier"
+msgstr "Editar"
 
 #. placeholder {0}: detail.label
 #. placeholder {0}: item.key
@@ -1808,207 +1808,207 @@ msgstr "Modifier"
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Edit {0}"
-msgstr "Modifier : {0}"
+msgstr "Editar {0}"
 
 #: src/components/task-actions.tsx
 msgid "Edit dates and reminders"
-msgstr "Modifier les dates et les rappels"
+msgstr "Editar datas e lembretes"
 
 #: src/components/task-actions.tsx
 msgid "Edit details"
-msgstr "Modifier les détails"
+msgstr "Editar detalhes"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
-msgstr "Modifier le schéma de récurrence"
+msgstr "Editar padrão"
 
 #: src/components/task-property-editor.tsx
 msgid "Edit property"
-msgstr "Modifier la propriété"
+msgstr "Editar propriedade"
 
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
-msgstr "Modifier la tâche récurrente"
+msgstr "Editar tarefa recorrente"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit RRULE"
-msgstr "Modifier la RRULE"
+msgstr "Editar RRULE"
 
 #: src/app/view-editor.tsx
 msgid "Edit saved view"
-msgstr "Modifier la vue enregistrée"
+msgstr "Editar visualização salva"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Edit view"
-msgstr "Modifier la vue"
+msgstr "Editar visualização"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr "Modifiables"
+msgstr "Editável"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
-msgstr "Éditeur de {0}"
+msgstr "Editor de {0}"
 
 #: src/app/task-screen.tsx
 msgid "Editor mode"
-msgstr "Mode de l’éditeur"
+msgstr "Modo do editor"
 
 #: src/app/scratchpad-screen.tsx
 msgid "empty"
-msgstr "vide"
+msgstr "vazio"
 
 #: src/i18n/ui-copy.ts
 msgid "empty item"
-msgstr "élément vide"
+msgstr "item vazio"
 
 #: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
-msgstr "tâche vide"
+msgstr "tarefa vazia"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
-msgstr "Fin"
+msgstr "Termina"
 
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
-msgstr "Saisissez une expression CEL."
+msgstr "Insira uma expressão CEL."
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
-msgstr "Estimation (minutes)"
+msgstr "Estimativa (minutos)"
 
 #: src/app/task-editor-draft.ts
 msgid "Estimate and work sessions"
-msgstr "Estimation et sessions de travail"
+msgstr "Estimativa e sessões de trabalho"
 
 #: src/components/recurrence-field.tsx
 msgid "Every"
-msgstr "Intervalle :"
+msgstr "A cada"
 
 #: src/components/expression-builder.tsx
 msgid "Every task will be included"
-msgstr "Toutes les tâches seront incluses"
+msgstr "Todas as tarefas serão incluídas"
 
 #: src/app/view-editor-form.tsx
 msgid "Every view in this file"
-msgstr "Toutes les vues de ce fichier"
+msgstr "Todas as visualizações neste arquivo"
 
 #: src/i18n/ui-copy.ts
 msgid "Expand"
-msgstr "Déplier"
+msgstr "Expandir"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Expand image"
-msgstr "Déplier l’image"
+msgstr "Expandir imagem"
 
 #: src/app/view-editor-form.tsx
 msgid "Expression"
-msgstr "Expression"
+msgstr "Expressão"
 
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
-msgstr "Expression ou filtre YAML"
+msgstr "Expressão ou YAML de filtro"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
-msgstr "Application externe"
+msgstr "Aplicativo externo"
 
 #: src/components/task-capture.tsx
 msgid "Extra context for the task"
-msgstr "Informations complémentaires pour la tâche"
+msgstr "Contexto adicional para a tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "Fields shown"
-msgstr "Champs affichés"
+msgstr "Campos exibidos"
 
 #: src/components/task-attachments.tsx
 msgid "File missing"
-msgstr "Fichier introuvable"
+msgstr "Arquivo não encontrado"
 
 #: src/i18n/default-labels.ts
 msgid "File name"
-msgstr "Nom du fichier"
+msgstr "Nome do arquivo"
 
 #: src/i18n/default-labels.ts
 msgid "File path"
-msgstr "Chemin du fichier"
+msgstr "Caminho do arquivo"
 
 #: src/app/view-editor-form.tsx
 msgid "Filter"
-msgstr "Filtre"
+msgstr "Filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
-msgstr "Condition du filtre"
+msgstr "Condição do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter editor mode"
-msgstr "Mode de l’éditeur de filtres"
+msgstr "Modo do editor de filtros"
 
 #: src/components/expression-builder.tsx
 msgid "Filter expression"
-msgstr "Expression du filtre"
+msgstr "Expressão do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter is valid"
-msgstr "Le filtre est valide"
+msgstr "O filtro é válido"
 
 #: src/components/expression-builder.tsx
 msgid "Filter property"
-msgstr "Propriété du filtre"
+msgstr "Propriedade do filtro"
 
 #: src/components/expression-builder.tsx
 msgid "Filter value"
-msgstr "Valeur du filtre"
+msgstr "Valor do filtro"
 
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
-msgstr "Filtrer les vues"
+msgstr "Filtrar visualizações"
 
 #: src/i18n/editor-phrases.ts
 msgid "Find"
-msgstr "Rechercher"
+msgstr "Localizar"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
-msgstr "Rechercher une tâche"
+msgstr "Localizar uma tarefa"
 
 #: src/app/search-screen.tsx
 msgid "Find a task."
-msgstr "Recherchez une tâche."
+msgstr "Localize uma tarefa."
 
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
-msgstr "Rechercher des tâches dans toute votre collection"
+msgstr "Localizar tarefas em toda a coleção"
 
 #: src/app/cloud-collection.tsx
 msgid "Finish opening TaskNotes"
-msgstr "Terminer l’ouverture de TaskNotes"
+msgstr "Concluir a abertura do TaskNotes"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
-msgstr "Fin à fin"
+msgstr "Concluir para concluir"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to start"
-msgstr "Fin à début"
+msgstr "Concluir para iniciar"
 
 #: src/app/notification-label.ts
 msgid "Firebase setup required"
-msgstr "Configuration Firebase requise"
+msgstr "Configuração do Firebase necessária"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr "premier"
+msgstr "primeiro"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
-msgstr "Premier"
+msgstr "Primeiro"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
