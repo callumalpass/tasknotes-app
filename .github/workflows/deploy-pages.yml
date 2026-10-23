@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   verify:
-    # Legacy main/GitHub Pages route remains unchanged; native never enters it.
+    # Main route verification; native has its own build below.
     if: inputs.publisher != 'native'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -116,67 +116,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-  deploy:
-    if: inputs.publisher != 'native' && github.event_name == 'workflow_dispatch' && inputs.target == 'production'
-    needs: verify
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build GitHub Pages production application
-        run: pnpm build
-        env:
-          VITE_BASE_PATH: /tasknotes-app/
-          TASKNOTES_APP_URL: https://callumalpass.github.io/tasknotes-app
-          TASKNOTES_WEB_ONLY: "1"
-          TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
-
-      - name: Configure Pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: dist
-          include-hidden-files: true
-
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.0
-
-      - name: Smoke deployed Pages
-        run: |
-          pnpm test:production-smoke || {
-            echo "::error::GitHub Pages was deployed but its production smoke failed. Investigate before promoting Cloudflare."
-            exit 1
-          }
-        env:
-          TASKNOTES_PRODUCTION_URL: https://callumalpass.github.io/tasknotes-app
-
   deploy-cloudflare:
     if: inputs.publisher != 'native' && github.event_name == 'workflow_dispatch' && inputs.target == 'production'
-    needs: deploy
+    needs: verify
     environment:
       name: cloudflare-pages
       url: https://app.tasknotes.dev/

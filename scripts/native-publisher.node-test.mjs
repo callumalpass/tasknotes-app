@@ -650,7 +650,7 @@ test("deployment receipt uses actual Pages ID from structured Wrangler output, n
   );
 });
 
-test("workflow isolates native manual route and retains legacy GitHub Pages guards", async () => {
+test("workflow isolates native manual route and publishes production only to Cloudflare", async () => {
   const workflow = await readFile(
     new URL("../.github/workflows/deploy-pages.yml", import.meta.url),
     "utf8",
@@ -711,5 +711,10 @@ test("workflow isolates native manual route and retains legacy GitHub Pages guar
   assert.match(workflow, /if: always\(\)/);
   assert.match(workflow, /if: inputs.publisher != 'native'/);
   assert.match(workflow, /Pages deployments only run from main/);
-  assert.match(workflow, /callumalpass.github.io\/tasknotes-app/);
+  assert.doesNotMatch(workflow, /actions\/deploy-pages@/);
+  const cloudflare = workflow
+    .split("  deploy-cloudflare:")[1]
+    ?.split("  native-request:")[0];
+  assert.match(cloudflare, /needs: verify/);
+  assert.match(cloudflare, /TASKNOTES_APP_URL: https:\/\/app.tasknotes.dev/);
 });
