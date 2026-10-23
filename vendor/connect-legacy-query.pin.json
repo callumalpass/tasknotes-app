@@ -1,0 +1,12 @@
+{
+  "artifact": "connect-beta125-legacy-query-2d9c38ae.tgz",
+  "sha256": "e6701322d3b50633b3d3be25e15a24966b67a90aadd6503047d1e8063d5c1835",
+  "repository": "https://github.com/mdbase-dev/mdbase-connect",
+  "baseTag": "v0.1.0-beta.125",
+  "baseCommit": "5548e106a325710c89eace6d26985400e528a8e4",
+  "patchSourceCommit": "2d9c38aed371b818611b70a13955756cfcabb39b",
+  "patchPullRequest": "https://github.com/mdbase-dev/mdbase-connect/pull/949",
+  "patch": "connect-legacy-query.patch",
+  "patchSha256": "700e50222108b0e5a3e165502b1c8fac505e3948d0bc45fa6432a8d57cf7f1fa",
+  "note": "Only the shared query serializer/result mapping is backported to the existing beta.125 client. No daemon, native SDK, trust, protocol or publishing change. Build protocol then client with rpnpm; pnpm pack expands the workspace protocol dependency to 0.1.0-beta.125."
+}
