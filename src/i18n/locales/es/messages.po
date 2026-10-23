@@ -34,11 +34,11 @@ msgstr ", ahora es Inicio"
 
 #: src/app/more-screen.tsx
 msgid ". Pending edits are not yet synced."
-msgstr " . Los cambios pendientes aún no se han sincronizado."
+msgstr ". Los cambios pendientes aún no se han sincronizado."
 
 #: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
-msgstr " . Permanecen en este navegador hasta que se restauren o se descarten."
+msgstr ". Permanecen en este navegador hasta que se restauren o se descarten."
 
 #: src/app/scratchpad-screen.tsx
 msgid ". Undo is available for 30 seconds."
@@ -325,7 +325,7 @@ msgstr "{count, plural, one {Hace # día} other {Hace # días}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, one {# día antes del final} other {# días antes del final}}"
+msgstr "{count, plural, one {#.º día contando desde el final} other {#.º día contando desde el final}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
@@ -1220,7 +1220,7 @@ msgstr "Borrar"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "Borrar los elementos de la lista de comprobación de la nota en cada repetición"
+msgstr "Desmarcar las casillas de la nota en cada repetición"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -1392,12 +1392,12 @@ msgstr "Completar"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr "Completar"
+msgstr "Completadas"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr "Completar"
+msgstr "Completada"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
@@ -2267,7 +2267,7 @@ msgstr "Se requiere configurar Firebase"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr "primero"
+msgstr "primer"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
@@ -3398,12 +3398,12 @@ msgstr "Sin conexión"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "Activado"
+msgstr "Cuándo"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
 msgid "On"
-msgstr "En"
+msgstr "Activado"
 
 #: src/components/recurrence-field.tsx
 msgid "On a date"
@@ -3411,7 +3411,7 @@ msgstr "En una fecha"
 
 #: src/i18n/editor-phrases.ts
 msgid "on line"
-msgstr "en línea"
+msgstr "en la línea"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
@@ -3436,7 +3436,7 @@ msgstr "Abrir"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "Abrir"
+msgstr "Abiertas"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
@@ -5026,7 +5026,7 @@ msgstr "Estas secciones se calculan, por lo que las tareas solo se pueden reorde
 
 #: src/i18n/presentation.ts
 msgid "third"
-msgstr "tercero"
+msgstr "tercer"
 
 #: src/components/recurrence-field.tsx
 msgid "Third"
