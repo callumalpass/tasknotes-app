@@ -3542,128 +3542,128 @@ msgstr "Outro"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Outdent"
-msgstr ""
+msgstr "Diminuir recuo"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/scratchpad-mode-preference.tsx
 msgid "Outline"
-msgstr ""
+msgstr "Estrutura de tópicos"
 
 #. placeholder {0}: node.text || uiCopy("empty item")
 #: src/app/scratchpad-screen.tsx
 msgid "Outline controls for {0}"
-msgstr ""
+msgstr "Controles da estrutura de tópicos para {0}"
 
 #: src/i18n/default-labels.ts
 msgid "Overdue"
-msgstr ""
+msgstr "Atrasadas"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P0D"
-msgstr ""
+msgstr "P0D"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "P14D"
-msgstr ""
+msgstr "P14D"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
-msgstr ""
+msgstr "Nível de segurança da senha: "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
-msgstr ""
+msgstr "Horizonte passado"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
-msgstr ""
+msgstr "Imagem colada no Bloco de notas"
 
 #: src/i18n/view-presentation.ts
 msgid "Path"
-msgstr ""
+msgstr "Caminho"
 
 #: src/components/task-record-file.tsx
 msgid "Path copied"
-msgstr ""
+msgstr "Caminho copiado"
 
 #: src/components/recurrence-field.tsx
 msgid "Pattern starts"
-msgstr ""
+msgstr "Padrão começa"
 
 #: src/app/use-people.ts
 msgid "People could not be loaded."
-msgstr ""
+msgstr "Não foi possível carregar as pessoas."
 
 #. placeholder {0}: error.message
 #: src/components/assignee-editor.tsx
 msgid "People could not be loaded. Existing assignments are unchanged. {0}"
-msgstr ""
+msgstr "Não foi possível carregar as pessoas. As atribuições existentes não foram alteradas. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
-msgstr ""
+msgstr "Datas planejadas"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner"
-msgstr ""
+msgstr "Planner"
 
 #: src/app/view-editor-form.tsx
 msgid "Planner is a separate app. Save this view, then choose Open in Planner."
-msgstr ""
+msgstr "O Planner é um aplicativo separado. Salve esta visualização e escolha Abrir no Planner."
 
 #: src/app/views/planner-view-handoff.tsx
 msgid "Planner will open this saved view."
-msgstr ""
+msgstr "O Planner abrirá esta visualização salva."
 
 #: src/app/task-screen.tsx
 msgid "Preview"
-msgstr ""
+msgstr "Prévia"
 
 #: src/app/view-editor.tsx
 msgid "Preview "
-msgstr ""
+msgstr "Prévia "
 
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
-msgstr ""
+msgstr "Visualizar tarefas"
 
 #: src/app/view-editor.tsx
 msgid "Preview updates after saving"
-msgstr ""
+msgstr "A prévia é atualizada após salvar"
 
 #: src/i18n/editor-phrases.ts
 msgid "previous"
-msgstr ""
+msgstr "anterior"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
-msgstr ""
+msgstr "Mês anterior"
 
 #: src/i18n/ui-copy.ts
 msgid "Previous note"
-msgstr ""
+msgstr "Nota anterior"
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "Previous notes could not be loaded. {0}"
-msgstr ""
+msgstr "Não foi possível carregar as notas anteriores. {0}"
 
 #: src/app/full-calendar-view.tsx
 msgid "Previous period"
-msgstr ""
+msgstr "Período anterior"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Previous task"
-msgstr ""
+msgstr "Tarefa anterior"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
-msgstr ""
+msgstr "Os resultados carregados anteriormente podem estar desatualizados."
 
 #: src/app/app-shell.tsx
 msgid "Primary"
-msgstr ""
+msgstr "Principal"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -3674,31 +3674,31 @@ msgstr ""
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Priority"
-msgstr ""
+msgstr "Prioridade"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
-msgstr ""
+msgstr "Prioridade, projetos, dependências, contextos e etiquetas"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
-msgstr ""
+msgstr "Recuperação de conta privada"
 
 #: src/app/more-screen.tsx
 msgid "Private collection recovery"
-msgstr ""
+msgstr "Recuperação de coleção privada"
 
 #: src/components/returning-user-notice.tsx
 msgid "Private collections need your desktop online."
-msgstr ""
+msgstr "Coleções privadas precisam que seu computador esteja online."
 
 #: src/app/view-editor-form.tsx
 msgid "Projections"
-msgstr ""
+msgstr "Projeções"
 
 #: src/app/search-match-context.ts
 msgid "projects"
-msgstr ""
+msgstr "projetos"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -3708,206 +3708,206 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Projects"
-msgstr ""
+msgstr "Projetos"
 
 #: src/app/task-screen.tsx
 msgid "Properties"
-msgstr ""
+msgstr "Propriedades"
 
 #: src/components/expression-builder.tsx
 msgid "Property"
-msgstr ""
+msgstr "Propriedade"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to display"
-msgstr ""
+msgstr "Propriedade a exibir"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to sort"
-msgstr ""
+msgstr "Propriedade para ordenar"
 
 #: src/app/more-screen.tsx
 #: src/components/held-edits.tsx
 msgid "Protected edits"
-msgstr ""
+msgstr "Edições protegidas"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
-msgstr ""
+msgstr "Datas rápidas"
 
 #: src/components/reminder-editor.tsx
 msgid "Quick reminders"
-msgstr ""
+msgstr "Lembretes rápidos"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Quote"
-msgstr ""
+msgstr "Citação"
 
 #: src/app/search-screen.tsx
 msgid "Recent searches"
-msgstr ""
+msgstr "Pesquisas recentes"
 
 #: src/app/search-screen.tsx
 msgid "Recently opened"
-msgstr ""
+msgstr "Abertos recentemente"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr ""
+msgstr "Detalhes da tarefa reconhecidos"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
-msgstr ""
+msgstr "Reconectando"
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
-msgstr ""
+msgstr "Reconectando…"
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
-msgstr ""
+msgstr "Recuperar acesso à conta"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
-msgstr ""
+msgstr "Recuperar tarefa"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is not set up"
-msgstr ""
+msgstr "A recuperação não está configurada"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery is set up. Save your recovery key before leaving this screen."
-msgstr ""
+msgstr "A recuperação está configurada. Salve sua chave de recuperação antes de sair desta tela."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key"
-msgstr ""
+msgstr "Chave de recuperação"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key (shown once)"
-msgstr ""
+msgstr "Chave de recuperação (exibida uma vez)"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key custody could not be checked."
-msgstr ""
+msgstr "Não foi possível verificar a custódia da chave de recuperação."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key dismissed. TaskNotes does not keep a display copy."
-msgstr ""
+msgstr "Chave de recuperação dispensada. O TaskNotes não mantém uma cópia para exibição."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery key locked on this device. Existing collection keys remain available."
-msgstr ""
+msgstr "Chave de recuperação bloqueada neste dispositivo. As chaves de coleção existentes continuam disponíveis."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password"
-msgstr ""
+msgstr "Senha de recuperação"
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery password changed. Your recovery key is unchanged."
-msgstr ""
+msgstr "Senha de recuperação alterada. Sua chave de recuperação não foi alterada."
 
 #: src/components/private-account-settings.tsx
 msgid "Recovery status unavailable"
-msgstr ""
+msgstr "Status da recuperação indisponível"
 
 #: src/components/private-account-settings.tsx
 msgid "recovery targets pending."
-msgstr ""
+msgstr "destinos de recuperação pendentes."
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
-msgstr ""
+msgstr "Recorrência e modelo"
 
 #: src/components/recurrence-field.tsx
 msgid "Recurrence rule"
-msgstr ""
+msgstr "Regra de recorrência"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
-msgstr ""
+msgstr "Atualizar agora"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
-msgstr ""
+msgstr "Atualizando"
 
 #: src/app/search-screen.tsx
 msgid "Refreshing results…"
-msgstr ""
+msgstr "Atualizando resultados…"
 
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
-msgstr ""
+msgstr "Atualizando…"
 
 #: src/i18n/editor-phrases.ts
 msgid "regexp"
-msgstr ""
+msgstr "expressão regular"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
-msgstr ""
+msgstr "Trabalho relacionado"
 
 #: src/components/dependency-editor.tsx
 msgid "Relationship"
-msgstr ""
+msgstr "Relacionamento"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
-msgstr ""
+msgstr "Relacionamentos"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative"
-msgstr ""
+msgstr "Relativo"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
-msgstr ""
+msgstr "Relativo a"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
-msgstr ""
+msgstr "Recarregar"
 
 #: src/app/search-screen.tsx
 msgid "Reload people"
-msgstr ""
+msgstr "Recarregar pessoas"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Reminder {0}"
-msgstr ""
+msgstr "Lembrete {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder date"
-msgstr ""
+msgstr "Data do lembrete"
 
 #: src/app/more-screen.tsx
 msgid "Reminder details are saved on tasks, but this version of TaskNotes does not send reminder notifications."
-msgstr ""
+msgstr "Os detalhes do lembrete são salvos nas tarefas, mas esta versão do TaskNotes não envia notificações de lembrete."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
-msgstr ""
+msgstr "Os detalhes do lembrete permanecem no Markdown, mas tarefas armazenadas neste dispositivo não podem enviar notificações."
 
 #: src/app/more-screen.tsx
 msgid "Reminder setup"
-msgstr ""
+msgstr "Configuração de lembretes"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
-msgstr ""
+msgstr "Horário do lembrete"
 
 #: src/app/settings-sections.ts
 #: src/components/reminder-editor.tsx
 msgid "Reminders"
-msgstr ""
+msgstr "Lembretes"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
 msgid "Remove"
-msgstr ""
+msgstr "Remover"
 
 #. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: entry.description || uiCopy("session")
@@ -3916,121 +3916,121 @@ msgstr ""
 #: src/components/multi-value-field.tsx
 #: src/components/task-capture.tsx
 msgid "Remove {0}"
-msgstr ""
+msgstr "Remover {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
-msgstr ""
+msgstr "Remover {label}"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
 msgid "Remove assignment to {0}"
-msgstr ""
+msgstr "Remover atribuição de {0}"
 
 #. placeholder {0}: property.name || index + 1
 #: src/app/view-editor-form.tsx
 msgid "Remove computed property {0}"
-msgstr ""
+msgstr "Remover propriedade calculada {0}"
 
 #: src/components/expression-builder.tsx
 msgid "Remove condition"
-msgstr ""
+msgstr "Remover condição"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
-msgstr ""
+msgstr "Remover do Bloco de notas"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
-msgstr ""
+msgstr "Remover grupo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove image card"
-msgstr ""
+msgstr "Remover cartão de imagem"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Remove reminder {0}"
-msgstr ""
+msgstr "Remover lembrete {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove this image card from Scratchpad? The image file will be kept."
-msgstr ""
+msgstr "Remover este cartão de imagem do Bloco de notas? O arquivo de imagem será mantido."
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
-msgstr ""
+msgstr "Renderizando…"
 
 #: src/components/task-row.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "Reabrir"
 
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
-msgstr ""
+msgstr "Reabrir “{title}”"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
-msgstr ""
+msgstr "Reabrir tarefa"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
-msgstr ""
+msgstr "reordenar"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Reorder"
-msgstr ""
+msgstr "Reordenar"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
-msgstr ""
+msgstr "Reordenar {0}. Arraste ou use as teclas de seta para cima e para baixo."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
-msgstr ""
+msgstr "{0} reordenado."
 
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
-msgstr ""
+msgstr "Repetir"
 
 #: src/app/task-screen.tsx
 msgid "Repeat and reminders"
-msgstr ""
+msgstr "Repetição e lembretes"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr ""
+msgstr "Frequência de repetição"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
-msgstr ""
+msgstr "Repetir a partir de"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat interval"
-msgstr ""
+msgstr "Intervalo de repetição"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task"
-msgstr ""
+msgstr "Tarefa recorrente"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr ""
+msgstr "Ações da tarefa recorrente"
 
 #: src/components/task-model-settings.tsx
 msgid "Repeating tasks"
-msgstr ""
+msgstr "Tarefas recorrentes"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
-msgstr ""
+msgstr "Repetições"
 
 #: src/i18n/editor-phrases.ts
 msgid "replace"
-msgstr ""
+msgstr "substituir"
 
 #: src/i18n/editor-phrases.ts
 msgid "Replace"
