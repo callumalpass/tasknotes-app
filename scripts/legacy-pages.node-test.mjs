@@ -6,6 +6,7 @@ import vm from "node:vm";
 test("legacy worker retires caches and redirects installed clients", async () => {
   const events = {};
   const calls = [];
+  const navigations = [];
   const source = readFileSync(
     new URL("../legacy-pages/service-worker.js", import.meta.url),
     "utf8",
@@ -21,16 +22,18 @@ test("legacy worker retires caches and redirects installed clients", async () =>
       skipWaiting: () => calls.push("skipWaiting"),
       registration: { unregister: async () => calls.push("unregister") },
       clients: {
+        claim: async () => calls.push("claim"),
         matchAll: async (options) => {
           assert.equal(options.type, "window");
           return [
             ["/tasknotes-app/", "/"],
             ["/tasknotes-app/notes/abc?q=%2F#entry", "/notes/abc?q=%2F#entry"],
-          ].map(([path, target]) => ({
+          ].map(([path, target], index) => ({
             url: "https://callumalpass.github.io" + path,
             navigate: async (url) => {
-              assert.equal(url, "https://app.tasknotes.dev" + target);
+              navigations.push([url, "https://app.tasknotes.dev" + target]);
               calls.push("navigate");
+              if (index === 0) throw new Error("Tab closed");
             },
           }));
         },
@@ -45,10 +48,13 @@ test("legacy worker retires caches and redirects installed clients", async () =>
     "skipWaiting",
     "legacy-shell",
     "legacy-data",
+    "claim",
     "unregister",
     "navigate",
     "navigate",
   ]);
+  assert.equal(navigations.length, 2);
+  for (const [actual, expected] of navigations) assert.equal(actual, expected);
   const html = readFileSync(
     new URL("../legacy-pages/index.html", import.meta.url),
     "utf8",
