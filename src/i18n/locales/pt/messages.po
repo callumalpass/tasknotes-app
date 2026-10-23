@@ -3493,256 +3493,256 @@ msgstr "Reordenar"
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
-msgstr "Réordonner {0}. Faites glisser ou utilisez les flèches haut et bas."
+msgstr "Reordenar {0}. Arraste ou use as teclas de seta para cima e para baixo."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
-msgstr "Ordre de {0} modifié."
+msgstr "{0} reordenado."
 
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
-msgstr "Répéter"
+msgstr "Repetir"
 
 #: src/app/task-screen.tsx
 msgid "Repeat and reminders"
-msgstr "Répétition et rappels"
+msgstr "Repetição e lembretes"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr "Fréquence de répétition"
+msgstr "Frequência de repetição"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
-msgstr "Répéter à partir de"
+msgstr "Repetir a partir de"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat interval"
-msgstr "Intervalle de répétition"
+msgstr "Intervalo de repetição"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task"
-msgstr "Tâche récurrente"
+msgstr "Tarefa recorrente"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr "Actions de la tâche récurrente"
+msgstr "Ações da tarefa recorrente"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
-msgstr "Se répète"
+msgstr "Repetições"
 
 #: src/i18n/editor-phrases.ts
 msgid "replace"
-msgstr "remplacer"
+msgstr "substituir"
 
 #: src/i18n/editor-phrases.ts
 msgid "Replace"
-msgstr "Remplacer"
+msgstr "Substituir"
 
 #: src/i18n/editor-phrases.ts
 msgid "replace all"
-msgstr "tout remplacer"
+msgstr "substituir tudo"
 
 #. CodeMirror replaces the supplied token with the match count. Keep the count argument.
 #: src/i18n/editor-phrases.ts
 msgid "replaced {count} matches"
-msgstr "{count} correspondances remplacées"
+msgstr "{count} ocorrências substituídas"
 
 #. CodeMirror replaces the supplied token with a line number. Keep the line argument.
 #: src/i18n/editor-phrases.ts
 msgid "replaced match on line {line}"
-msgstr "correspondance remplacée à la ligne {line}"
+msgstr "ocorrência substituída na linha {line}"
 
 #. placeholder {0}: entry.requestId.slice(0, 8)
 #: src/app/cloud-collection.tsx
 msgid "Request {0}"
-msgstr "Requête {0}"
+msgstr "Solicitar {0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Reset note checkboxes when a task repeats"
-msgstr "Réinitialiser les cases à cocher des notes lorsqu’une tâche se répète"
+msgstr "Redefinir caixas de seleção das notas quando uma tarefa se repetir"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
-msgstr "Redémarrer TaskNotes"
+msgstr "Reiniciar o TaskNotes"
 
 #: src/components/task-actions.tsx
 msgid "Restore"
-msgstr "Restaurer"
+msgstr "Restaurar"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
-msgstr "Restauration de votre vue d’accueil"
+msgstr "Restaurando sua visualização inicial"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
-msgstr "Reprendre comme note actuelle"
+msgstr "Retomar como atual"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
-msgstr "Reprise en cours…"
+msgstr "Retomando…"
 
 #: src/app/app-shell.tsx
 #: src/components/task-row.tsx
 msgid "Retry"
-msgstr "Réessayer"
+msgstr "Tentar novamente"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Retry {selectedReviewCount} task notes"
-msgstr "Réessayer pour {selectedReviewCount} notes de tâche"
+msgstr "Tentar novamente {selectedReviewCount} notas de tarefa"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry authorization"
-msgstr "Réessayer l’autorisation"
+msgstr "Tentar autorização novamente"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
-msgstr "Réessayez en rouvrant « Gérer les vues » ou en actualisant la collection."
+msgstr "Tente novamente reabrindo Gerenciar visualizações ou atualizando a coleção."
 
 #: src/app/app-shell.tsx
 msgid "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-msgstr "La nouvelle tentative vérifie la requête enregistrée sans envoyer une nouvelle suppression. L’abandon exige une confirmation et déconnecte cette collection."
+msgstr "Tentar novamente verifica a solicitação salva sem enviar uma nova exclusão. Descartar exige confirmação e desconecta esta coleção."
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
-msgstr "Réessayer la connexion"
+msgstr "Tentar novamente a conexão"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry opening TaskNotes"
-msgstr "Réessayer l’ouverture de TaskNotes"
+msgstr "Tentar abrir o TaskNotes novamente"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "Réessayer le chargement des personnes"
+msgstr "Tentar novamente o carregamento de pessoas"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry recovery review"
-msgstr "Réessayer la vérification de récupération"
+msgstr "Tentar revisar a recuperação novamente"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
-msgstr "Réessayer la recherche"
+msgstr "Tentar novamente a pesquisa"
 
 #: src/app/view-empty-state.tsx
 msgid "Retry this view to check for tasks."
-msgstr "Réessayez cette vue pour vérifier la présence de tâches."
+msgstr "Tente novamente esta visualização para procurar tarefas."
 
 #: src/app/app-shell.tsx
 msgid "Retry, or undo to restore the task here."
-msgstr "Réessayez ou annulez pour restaurer la tâche ici."
+msgstr "Tente novamente ou desfaça para restaurar a tarefa aqui."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
-msgstr "Valeurs réutilisables pour les filtres, le regroupement, le tri et les champs."
+msgstr "Valores reutilizáveis para filtros, agrupamento, ordenação e campos."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for grouping and displayed fields."
-msgstr "Valeurs réutilisables pour le regroupement et les champs affichés."
+msgstr "Valores reutilizáveis para agrupamento e campos exibidos."
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
-msgstr "Vérifier l’accès aux notifications"
+msgstr "Revisar acesso às notificações"
 
 #: src/app/cloud-collection.tsx
 msgid "Review TaskNotes setup"
-msgstr "Vérifier la configuration TaskNotes"
+msgstr "Revisar configuração do TaskNotes"
 
 #: src/app/cloud-collection.tsx
 msgid "Review unconfirmed changes"
-msgstr "Vérifier les modifications non confirmées"
+msgstr "Revisar alterações não confirmadas"
 
 #: src/app/cloud-collection.tsx
 msgid "Review updated access"
-msgstr "Vérifier les autorisations mises à jour"
+msgstr "Revisar acesso atualizado"
 
 #: src/components/task-model-settings.tsx
 msgid "Rolling window"
-msgstr "Fenêtre glissante"
+msgstr "Período contínuo"
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
-msgstr "Enregistrer"
+msgstr "Salvar"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 msgid "Save {0}"
-msgstr "Enregistrer : {0}"
+msgstr "Salvar {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Save a fixed or relative reminder in this task."
-msgstr "Enregistrez un rappel fixe ou relatif dans cette tâche."
+msgstr "Salvar um lembrete fixo ou relativo nesta tarefa."
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
-msgstr "Échec de l’enregistrement · Réessayer"
+msgstr "Falha ao salvar · Tentar novamente"
 
 #. placeholder {0}: saveError ?? uiCopy("Tap to retry.")
 #: src/app/task-screen.tsx
 msgid "Save failed. {0}"
-msgstr "Échec de l’enregistrement. {0}"
+msgstr "Falha ao salvar. {0}"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
-msgstr "Enregistrer la session"
+msgstr "Salvar sessão"
 
 #: src/components/task-model-settings.tsx
 msgid "Save task settings"
-msgstr "Enregistrer les paramètres des tâches"
+msgstr "Salvar configurações da tarefa"
 
 #: src/app/view-editor.tsx
 msgid "Save view"
-msgstr "Enregistrer la vue"
+msgstr "Salvar visualização"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
-msgstr "Enregistré"
+msgstr "Salvo"
 
 #: src/app/cloud-collection.tsx
 msgid "Saved change recovery"
-msgstr "Récupération des modifications enregistrées"
+msgstr "Recuperação de alterações salvas"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "Vue enregistrée"
+msgstr "Visualização salva"
 
 #: src/app/views/view-catalog.tsx
 msgid "Saved views"
-msgstr "Vues enregistrées"
+msgstr "Visualizações salvas"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
-msgstr "Enregistré dans la collection."
+msgstr "Salvo com a coleção."
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-model-settings.tsx
 msgid "Saving"
-msgstr "Enregistrement en cours"
+msgstr "Salvando"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Saving…"
-msgstr "Enregistrement en cours…"
+msgstr "Salvando…"
 
 #: src/app/task-screen.tsx
 msgid "Schedule and status"
-msgstr "Planification et statut"
+msgstr "Agendamento e status"
 
 #: src/components/task-actions.tsx
 msgid "Schedule today"
-msgstr "Planifier pour aujourd’hui"
+msgstr "Agendar para hoje"
 
 #: src/components/task-actions.tsx
 msgid "Schedule tomorrow"
-msgstr "Planifier pour demain"
+msgstr "Agendar para amanhã"
 
 #: src/app/view-editor-form.tsx
 msgid "scheduled"
-msgstr "date planifiée"
+msgstr "agendado"
 
 #: src/app/task-screen.tsx
 #: src/components/reminder-editor.tsx
@@ -3752,224 +3752,224 @@ msgstr "date planifiée"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Scheduled"
-msgstr "Planifiée"
+msgstr "Agendado"
 
 #: src/components/task-capture.tsx
 msgid "Scheduled "
-msgstr "Planifiée "
+msgstr "Agendado "
 
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
-msgstr "Date planifiée (non définie)"
+msgstr "Agendado (não definido)"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.scheduled)
 #: src/app/task-screen.tsx
 msgid "Scheduled {0}"
-msgstr "Planifiée : {0}"
+msgstr "Agendado para {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
-msgstr "Dates planifiées"
+msgstr "Datas agendadas"
 
 #: src/i18n/ui-copy.ts
 msgid "scratchpad"
-msgstr "bloc-notes"
+msgstr "bloco de notas"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Scratchpad"
-msgstr "Bloc-notes"
+msgstr "Bloco de notas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad editing mode"
-msgstr "Mode d’édition du Bloc-notes"
+msgstr "Modo de edição do Bloco de notas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
-msgstr "Historique du Bloc-notes"
+msgstr "Histórico do Bloco de notas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad Markdown"
-msgstr "Markdown du Bloc-notes"
+msgstr "Markdown do Bloco de notas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad outline"
-msgstr "Plan du Bloc-notes"
+msgstr "Estrutura de tópicos do Bloco de notas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is not available for this collection."
-msgstr "Le stockage du Bloc-notes n’est pas disponible pour cette collection."
+msgstr "O armazenamento do Bloco de notas não está disponível para esta coleção."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is unavailable."
-msgstr "Le stockage du Bloc-notes est indisponible."
+msgstr "O armazenamento do Bloco de notas está indisponível."
 
 #: src/app/app-shell.tsx
 #: src/app/search-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
-msgstr "Rechercher"
+msgstr "Pesquisar"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
 msgid "Search could not be loaded. {0}"
-msgstr "Impossible de charger la recherche. {0}"
+msgstr "Não foi possível carregar a pesquisa. {0}"
 
 #: src/app/search-screen.tsx
 #: src/app/views-screen.tsx
 msgid "Search tasks"
-msgstr "Rechercher des tâches"
+msgstr "Pesquisar tarefas"
 
 #: src/app/search-screen.tsx
 msgid "Search titles, notes, projects, contexts, and tags."
-msgstr "Recherchez dans les titres, notes, projets, contextes et étiquettes."
+msgstr "Pesquisar títulos, notas, projetos, contextos e etiquetas."
 
 #: src/app/views/view-catalog.tsx
 msgid "Search views"
-msgstr "Rechercher des vues"
+msgstr "Pesquisar visualizações"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr "deuxième"
+msgstr "segundo"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
-msgstr "Deuxième"
+msgstr "Segundo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
-msgstr "Tout sélectionner"
+msgstr "Selecionar tudo"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select branch"
-msgstr "Sélectionner la branche"
+msgstr "Selecionar ramificação"
 
 #: src/i18n/ui-copy.ts
 msgid "selected collection"
-msgstr "la collection sélectionnée"
+msgstr "coleção selecionada"
 
 #: src/i18n/ui-copy.ts
 msgid "selected day"
-msgstr "le jour sélectionné"
+msgstr "dia selecionado"
 
 #: src/app/full-calendar-view.tsx
 msgid "Selected day"
-msgstr "Jour sélectionné"
+msgstr "Dia selecionado"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "Les brouillons sélectionnés deviennent des notes de tâche liées, sur place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+msgstr "Os rascunhos selecionados se tornam tarefas vinculadas do TaskNotes no local. Todo o resto permanece neste bloco de notas para você continuar trabalhando."
 
 #: src/i18n/editor-phrases.ts
 msgid "Selection deleted"
-msgstr "Sélection supprimée"
+msgstr "Seleção excluída"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
-msgstr "session"
+msgstr "sessão"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session description"
-msgstr "Description de la session"
+msgstr "Descrição da sessão"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session end"
-msgstr "Fin de la session"
+msgstr "Fim da sessão"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session start"
-msgstr "Début de la session"
+msgstr "Início da sessão"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
-msgstr "Définissez ce qui se passe lorsqu’une tâche est ajoutée depuis cette vue."
+msgstr "Defina o que acontece quando uma tarefa é adicionada por esta visualização."
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 msgid "Settings"
-msgstr "Paramètres"
+msgstr "Configurações"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
-msgstr "Configuration à vérifier"
+msgstr "A configuração precisa de atenção"
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Several person records match your account: {0}. Resolve those duplicates before filtering tasks."
-msgstr "Plusieurs documents de personne correspondent à votre compte : {0}. Résolvez ces doublons avant de filtrer les tâches."
+msgstr "Vários registros de pessoa correspondem à sua conta: {0}. Resolva as duplicatas antes de filtrar tarefas."
 
 #: src/app/views/view-catalog.tsx
 msgid "Shape an outline before creating tasks"
-msgstr "Structurer un plan avant de créer des tâches"
+msgstr "Estruture os tópicos antes de criar tarefas"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
 msgid "Show all {0}"
-msgstr "Afficher les {0} éléments"
+msgstr "Mostrar todos os {0}"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show all-day area"
-msgstr "Afficher la zone « Toute la journée »"
+msgstr "Mostrar área de dia inteiro"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show current time"
-msgstr "Afficher l’heure actuelle"
+msgstr "Mostrar horário atual"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show each task’s project on Today?"
-msgstr "Afficher le projet de chaque tâche dans Today ?"
+msgstr "Mostrar o projeto de cada tarefa em Hoje?"
 
 #: src/app/search-screen.tsx
 msgid "Show fewer"
-msgstr "Afficher moins"
+msgstr "Mostrar menos"
 
 #: src/app/view-editor-form.tsx
 msgid "Show future virtual occurrences."
-msgstr "Afficher les occurrences virtuelles futures."
+msgstr "Mostrar ocorrências virtuais futuras."
 
 #: src/app/search-screen.tsx
 msgid "Show more results"
-msgstr "Afficher plus de résultats"
+msgstr "Mostrar mais resultados"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show projects"
-msgstr "Afficher les projets"
+msgstr "Mostrar projetos"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
-msgstr "Afficher le temps enregistré"
+msgstr "Mostrar tempo registrado"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show weekends"
-msgstr "Afficher les week-ends"
+msgstr "Mostrar fins de semana"
 
 #. placeholder {0}: visibleEntries.length
 #. placeholder {1}: entries.length
 #: src/app/task-time-tracking.tsx
 msgid "Showing the latest {0} of {1}sessions."
-msgstr "Affichage des {0} dernières sessions sur {1}."
+msgstr "Exibindo os {0} mais recentes de {1} sessões."
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Shown in navigation"
-msgstr "Éléments de navigation"
+msgstr "Exibido na navegação"
 
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
-msgstr "Affichage dans cet ordre sous chaque élément."
+msgstr "Exibido nesta ordem abaixo de cada item."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
-msgstr "Ignorer"
+msgstr "Pular"
 
 #: src/components/task-actions.tsx
 msgid "Skip occurrence"
-msgstr "Ignorer l’occurrence"
+msgstr "Pular ocorrência"
 
 #: src/app/app-shell.tsx
 msgid "Skip to content"
-msgstr "Aller au contenu"
+msgstr "Pular para o conteúdo"
 
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
