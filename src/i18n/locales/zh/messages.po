@@ -2056,475 +2056,475 @@ msgstr "来自"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
-msgstr "Depuis le formulaire de tâche"
+msgstr "来自任务表单"
 
 #: src/app/view-editor-form.tsx
 msgid "Full schedule"
-msgstr "Calendrier complet"
+msgstr "完整计划"
 
 #: src/app/task-screen.tsx
 msgid "Future horizon"
-msgstr "Horizon futur"
+msgstr "未来范围"
 
 #: src/components/task-model-settings.tsx
 msgid "Future occurrence horizon"
-msgstr "Horizon des occurrences futures"
+msgstr "未来重复项范围"
 
 #: src/components/dependency-editor.tsx
 msgid "Gap"
-msgstr "Décalage"
+msgstr "间隔"
 
 #: src/i18n/editor-phrases.ts
 msgid "go"
-msgstr "aller"
+msgstr "转到"
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
-msgstr "Revenez en arrière et actualisez la collection."
+msgstr "返回并刷新集合。"
 
 #: src/i18n/editor-phrases.ts
 msgid "Go to line"
-msgstr "Aller à la ligne"
+msgstr "转到行"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
-msgstr "Groupe"
+msgstr "分组"
 
 #: src/app/view-editor-form.tsx
 msgid "Group & sort"
-msgstr "Regrouper et trier"
+msgstr "分组与排序"
 
 #: src/app/view-editor-form.tsx
 msgid "Group by"
-msgstr "Regrouper par"
+msgstr "分组依据"
 
 #: src/app/view-editor-form.tsx
 msgid "Group direction"
-msgstr "Sens du regroupement"
+msgstr "分组方向"
 
 #. placeholder {0}: humanize(draft.groupProperty)
 #: src/app/view-editor-form.tsx
 msgid "Grouped by {0}"
-msgstr "Regroupement par {0}"
+msgstr "按 {0} 分组"
 
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
-msgstr "Colonnes regroupées"
+msgstr "分组列"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
-msgstr "Titre"
+msgstr "标题"
 
 #: src/i18n/pilot-fixture.tsx
 msgctxt "translation pilot rich-text example"
 msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Bonjour {name}. Consultez <0>la documentation</0>."
+msgstr "你好，{name}。请阅读<0>文档</0>。"
 
 #: src/app/more-screen.tsx
 msgid "Help"
-msgstr "Aide"
+msgstr "帮助"
 
 #: src/components/task-capture.tsx
 msgid "Hide details"
-msgstr "Masquer les détails"
+msgstr "隐藏详情"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
-msgstr "Masquer les étapes d’installation"
+msgstr "隐藏安装步骤"
 
 #: src/app/task-time-tracking.tsx
 msgid "Hide sessions"
-msgstr "Masquer les sessions"
+msgstr "隐藏会话"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Home"
-msgstr "Accueil"
+msgstr "首页"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 msgid "Hosted by mdbase"
-msgstr "Hébergée par mdbase"
+msgstr "由 mdbase 托管"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Hour"
-msgstr "Heure"
+msgstr "小时"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Hours"
-msgstr "Heures"
+msgstr "小时"
 
 #: src/app/collection-settings.tsx
 msgid "How tasks are stored"
-msgstr "Comment les tâches sont stockées"
+msgstr "任务的存储方式"
 
 #: src/app/more-screen.tsx
 msgid "How to install"
-msgstr "Comment installer"
+msgstr "安装方法"
 
 #: src/app/cloud-collection.tsx
 msgid "If you do not approve this setup, TaskNotes cannot create its portable views in this collection. You can choose another collection below."
-msgstr "Si vous n’approuvez pas cette configuration, TaskNotes ne pourra pas créer ses vues portables dans cette collection. Vous pouvez choisir une autre collection ci-dessous."
+msgstr "如果你不批准此设置，TaskNotes 就无法在此集合中创建可移植视图。你可以在下方选择其他集合。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
-msgstr "Actions de l’image"
+msgstr "图片操作"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image could not be loaded"
-msgstr "Impossible de charger l’image"
+msgstr "无法加载图片"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image file is unavailable"
-msgstr "Le fichier image est indisponible"
+msgstr "图片文件不可用"
 
 #: src/components/markdown-preview.tsx
 msgid "Image preview unavailable"
-msgstr "Aperçu de l’image indisponible"
+msgstr "图片预览不可用"
 
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
-msgstr "Image indisponible hors ligne"
+msgstr "离线时图片不可用"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
-msgstr "Dans la navigation"
+msgstr "在导航中"
 
 #: src/components/task-property-editor.tsx
 msgid "In one week"
-msgstr "Dans une semaine"
+msgstr "一周后"
 
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
-msgstr "Inclure les occurrences terminées."
+msgstr "包含已完成的重复项。"
 
 #: src/app/view-editor-form.tsx
 msgid "Include skipped occurrences."
-msgstr "Inclure les occurrences ignorées."
+msgstr "包含已跳过的重复项。"
 
 #: src/components/expression-builder.tsx
 msgid "Include tasks when"
-msgstr "Inclure les tâches quand"
+msgstr "包含任务的条件"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Indent"
-msgstr "Indenter"
+msgstr "缩进"
 
 #: src/components/task-attachments.tsx
 msgid "Insert"
-msgstr "Insérer"
+msgstr "插入"
 
 #: src/components/task-attachments.tsx
 msgid "Insert in Notes"
-msgstr "Insérer dans les notes"
+msgstr "插入到笔记中"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
-msgstr "Installer l’application"
+msgstr "安装应用"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
-msgstr "Installer TaskNotes"
+msgstr "安装 TaskNotes"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
-msgstr "Règle de récurrence invalide"
+msgstr "重复规则无效"
 
 #: src/components/expression-builder.tsx
 msgid "is"
-msgstr "est égal à"
+msgstr "是"
 
 #: src/components/expression-builder.tsx
 msgid "is after"
-msgstr "est après"
+msgstr "晚于"
 
 #: src/components/expression-builder.tsx
 msgid "is before"
-msgstr "est avant"
+msgstr "早于"
 
 #: src/components/expression-builder.tsx
 msgid "is empty"
-msgstr "est vide"
+msgstr "为空"
 
 #: src/components/expression-builder.tsx
 msgid "is not"
-msgstr "n’est pas égal à"
+msgstr "不是"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
-msgstr "n’est pas vide"
+msgstr "不为空"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
-msgstr "Valeur ISO 8601"
+msgstr "ISO 8601 值"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Italic"
-msgstr "Italique"
+msgstr "斜体"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr "élément"
+msgstr "项目"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
-msgstr "Aller au projet"
+msgstr "跳转到项目"
 
 #: src/app/task-screen.tsx
 msgid "Keep a rolling window"
-msgstr "Maintenir une fenêtre glissante"
+msgstr "保留滚动时间范围"
 
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
-msgstr "Continuer à ajouter des tâches"
+msgstr "继续添加任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep as note"
-msgstr "Conserver comme note"
+msgstr "保留为笔记"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep dates anchored to the pattern."
-msgstr "Conserver les dates ancrées sur le schéma de récurrence."
+msgstr "日期保持与重复模式一致。"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep due-date offset when a task repeats"
-msgstr "Conserver le décalage de l’échéance lorsqu’une tâche se répète"
+msgstr "任务重复时保留截止日期偏移"
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
-msgstr "Continuer la modification"
+msgstr "继续编辑"
 
 #: src/app/task-screen.tsx
 msgid "Keep individual Markdown notes for recurring dates."
-msgstr "Conserver des notes Markdown individuelles pour les dates récurrentes."
+msgstr "为重复日期保留单独的 Markdown 笔记。"
 
 #: src/app/app-shell.tsx
 #: src/app/cloud-collection.tsx
 msgid "Keep saved recovery"
-msgstr "Conserver les données de récupération"
+msgstr "保留已保存的恢复数据"
 
 #: src/components/task-actions.tsx
 msgid "Keep task"
-msgstr "Conserver la tâche"
+msgstr "保留任务"
 
 #: src/components/operation-error-notice.tsx
 msgid "Keep the collection connected and review the earlier change’s exact result before making another change."
-msgstr "Gardez la collection connectée et vérifiez le résultat exact de la modification précédente avant d’en effectuer une autre."
+msgstr "保持集合连接，并先检查先前更改的确切结果，再进行其他更改。"
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
-msgstr "Conserver le champ d’ajout rapide dans cette vue."
+msgstr "在此视图中保留快速添加字段。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
-msgstr "Continuer à écrire"
+msgstr "继续书写"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr "dernier"
+msgstr "最后一个"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
-msgstr "Dernier"
+msgstr "最后"
 
 #: src/app/views-screen.tsx
 msgid "Last available result"
-msgstr "Dernier résultat disponible"
+msgstr "最后一个可用结果"
 
 #: src/components/recurrence-field.tsx
 msgid "Last date"
-msgstr "Dernière date"
+msgstr "最后日期"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr "dernier jour"
+msgstr "最后一天"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
-msgstr "Dernier jour"
+msgstr "最后一天"
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "La dernière actualisation a vérifié {scanned, plural, one {# document} other {# documents}} en {elapsed} ms."
+msgstr "上次刷新在 {elapsed} 毫秒内检查了 {scanned, plural, other {# 条记录}}。"
 
 #: src/i18n/default-labels.ts
 msgid "Later"
-msgstr "Plus tard"
+msgstr "稍后"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr "Disposition"
+msgstr "布局"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr "Disposition : {layoutLabel}{0}"
+msgstr "布局：{layoutLabel}{0}"
 
 #: src/app/more-screen.tsx
 msgid "Light"
-msgstr "Clair"
+msgstr "浅色"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
-msgstr "Liez votre compte à un document de personne avant d’utiliser « Assignées à moi »."
+msgstr "使用“分配给我”前，请先将你的账户关联到人员记录。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Linked"
-msgstr "Liée"
+msgstr "已关联"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
-msgstr "Liste"
+msgstr "列表"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
-msgstr "Charger plus de tâches"
+msgstr "加载更多任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Load older"
-msgstr "Charger les éléments plus anciens"
+msgstr "加载较早内容"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks"
-msgstr "Charger les tâches restantes"
+msgstr "加载剩余任务"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks to change manual order."
-msgstr "Chargez les tâches restantes pour modifier l’ordre manuel."
+msgstr "加载剩余任务以更改手动顺序。"
 
 #. placeholder {0}: presentedExecution.rows.length
 #. placeholder {1}: presentedExecution.totalCount
 #. placeholder {2}: manualOrder ? t({ message: "Load remaining tasks to change manual order." }) : ""
 #: src/app/views-screen.tsx
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
-msgstr "{0} tâches chargées sur {1} correspondantes. Les nombres par section concernent les tâches chargées. {2}"
+msgstr "已加载 {1} 个匹配任务中的 {0} 个。分区计数仅包括已加载的任务。{2}"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr "Chargement de l’image…"
+msgstr "正在加载图片…"
 
 #: src/components/task-attachments.tsx
 msgid "Loading images…"
-msgstr "Chargement des images…"
+msgstr "正在加载图片…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
-msgstr "Chargement de la suite…"
+msgstr "正在加载更多内容…"
 
 #: src/components/assignee-editor.tsx
 msgid "Loading people…"
-msgstr "Chargement des personnes…"
+msgstr "正在加载人员…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading previous notes…"
-msgstr "Chargement des notes précédentes…"
+msgstr "正在加载之前的笔记…"
 
 #: src/components/loading.tsx
 msgid "Loading tasks"
-msgstr "Chargement des tâches"
+msgstr "正在加载任务"
 
 #: src/app/views-screen.tsx
 msgid "Loading tasks…"
-msgstr "Chargement des tâches…"
+msgstr "正在加载任务…"
 
 #: src/app/search-screen.tsx
 msgid "Loading your person identity…"
-msgstr "Chargement de votre identité de personne…"
+msgstr "正在加载你的人物身份…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
-msgstr "Chargement…"
+msgstr "正在加载…"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
-msgstr "Recherche dans la collection…"
+msgstr "正在查看集合…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
-msgstr "Créer une tâche"
+msgstr "创建任务"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
-msgstr "Créer une note d’occurrence"
+msgstr "创建重复项笔记"
 
 #: src/app/app-shell.tsx
 msgid "Manage"
-msgstr "Gérer"
+msgstr "管理"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Manage views"
-msgstr "Gérer les vues"
+msgstr "管理视图"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx
 msgid "Manual order"
-msgstr "Ordre manuel"
+msgstr "手动排序"
 
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
-msgstr "L’ordre manuel est actif. Des poignées de déplacement apparaîtront sur les tâches."
+msgstr "手动排序已启用。任务上将显示拖动手柄。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark complete"
-msgstr "Marquer comme terminée"
+msgstr "标记为已完成"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark incomplete"
-msgstr "Marquer comme non terminée"
+msgstr "标记为未完成"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
-msgstr "Marquer l’occurrence comme ouverte"
+msgstr "将重复项标记为未完成"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Mark open"
-msgstr "Marquer comme ouverte"
+msgstr "标记为未完成"
 
 #: src/components/task-actions.tsx
 msgid "Markdown link"
-msgstr "Lien Markdown"
+msgstr "Markdown 链接"
 
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
-msgstr "Liens Markdown"
+msgstr "Markdown 链接"
 
 #: src/app/task-screen.tsx
 msgid "Markdown record"
-msgstr "Document Markdown"
+msgstr "Markdown 记录"
 
 #: src/i18n/editor-phrases.ts
 msgid "match case"
-msgstr "respecter la casse"
+msgstr "区分大小写"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
-msgstr "Mode de correspondance"
+msgstr "匹配模式"
 
 #. placeholder {0}: matches.join(", ")
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
-msgstr "Correspondance dans : {0}"
+msgstr "在 {0} 中匹配"
 
 #: src/app/collection-settings.tsx
 msgid "mdbase collection"
-msgstr "Collection mdbase"
+msgstr "mdbase 集合"
 
 #: src/app/more-screen.tsx
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
-msgstr "mdbase envoie les rappels même quand TaskNotes est fermé. Les notifications ne contiennent jamais le contenu des tâches."
+msgstr "即使 TaskNotes 已关闭，mdbase 也会发送提醒。通知不会包含任务内容。"
 
 #: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase est la source de référence. Les modifications nécessitent une connexion."
+msgstr "mdbase 是权威数据源。更改需要连接。"
 
 #: src/app/cloud-collection.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. mdbase Connect lets you choose a collection and approve TaskNotes’ access—whether it’s hosted by mdbase or available from a connected computer."
-msgstr "mdbase conserve vos tâches dans des fichiers Markdown portables et permet aux applications compatibles de les comprendre de la même manière. mdbase Connect vous permet de choisir une collection et d’approuver l’accès de TaskNotes, qu’elle soit hébergée par mdbase ou accessible depuis un ordinateur connecté."
+msgstr "mdbase 将任务保存为可移植的 Markdown 文件，同时为兼容应用提供共享的理解方式。mdbase Connect 让你可以选择集合并批准 TaskNotes 的访问权限，无论集合由 mdbase 托管还是来自已连接的电脑。"
 
 #: src/app/more-screen.tsx
 msgid "mdbase v0.3"
@@ -2532,34 +2532,34 @@ msgstr "mdbase v0.3"
 
 #: src/app/cloud-collection.tsx
 msgid "mdbase will open so you can choose a collection and approve access."
-msgstr "mdbase va s’ouvrir pour vous permettre de choisir une collection et d’approuver l’accès."
+msgstr "mdbase 将打开，以便你选择集合并批准访问权限。"
 
 #: src/components/calendar-preferences.tsx
 msgid "Midnight"
-msgstr "Minuit"
+msgstr "午夜"
 
 #: src/components/task-model-settings.tsx
 msgid "min"
-msgstr "min"
+msgstr "分钟"
 
 #: src/app/view-editor-form.tsx
 msgid "Mini calendar"
-msgstr "Mini-calendrier"
+msgstr "迷你日历"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Minute"
-msgstr "Minute"
+msgstr "分钟"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Minutes"
-msgstr "Minutes"
+msgstr "分钟"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
 msgid "Month"
-msgstr "Mois"
+msgstr "月"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
