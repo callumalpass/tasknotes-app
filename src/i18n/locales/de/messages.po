@@ -325,7 +325,7 @@ msgstr "{count, plural, one {vor # Tag} other {vor # Tagen}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, one {# Tag vor dem Ende} other {# Tage vor dem Ende}}"
+msgstr "{count, plural, one {#. Tag vom Monatsende aus} other {#. Tag vom Monatsende aus}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
@@ -1220,7 +1220,7 @@ msgstr "Leeren"
 
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
-msgstr "Checklistenpunkte in der Notiz bei jeder Wiederholung löschen"
+msgstr "Die Kontrollkästchen in der Notiz bei jeder Wiederholung zurücksetzen"
 
 #: src/components/task-actions.tsx
 msgid "Clear due date"
@@ -2657,7 +2657,7 @@ msgstr "Letztes Datum"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr "letzter Tag"
+msgstr "letzten Tag"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
@@ -3072,7 +3072,7 @@ msgstr "Nie"
 
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
-msgstr "Neue Geräte benötigen die Genehmigung durch ein vorhandenes Gerät. Das Entsperren mit Passwort oder Wiederherstellungsschlüssel ist dann nicht mehr möglich. Ältere Inhalte können für Personen mit dem bisherigen Passwort und Datenpaket lesbar bleiben, bis die Sammlungen die Berechtigungswiderrufe anwenden und die Schlüssel erneuern."
+msgstr "Neue Geräte benötigen die Genehmigung durch ein vorhandenes Gerät. Das Entsperren mit Passwort oder Wiederherstellungsschlüssel ist dann nicht mehr möglich. Ältere Inhalte können für Personen mit dem bisherigen Passwort und Schlüsselpaket lesbar bleiben, bis die Sammlungen die Berechtigungswiderrufe anwenden und die Schlüssel erneuern."
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -4002,7 +4002,7 @@ msgstr "Wiederholung und Erinnerungen"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr "Wiederholungsintervall"
+msgstr "Wiederholungshäufigkeit"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
