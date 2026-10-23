@@ -3595,154 +3595,154 @@ msgstr "タスクノートを{selectedReviewCount}件再試行"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry authorization"
-msgstr "Réessayer l’autorisation"
+msgstr "アクセス許可を再試行"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
-msgstr "Réessayez en rouvrant « Gérer les vues » ou en actualisant la collection."
+msgstr "ビューの管理を再度開くか、コレクションを更新して再試行してください。"
 
 #: src/app/app-shell.tsx
 msgid "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-msgstr "La nouvelle tentative vérifie la requête enregistrée sans envoyer une nouvelle suppression. L’abandon exige une confirmation et déconnecte cette collection."
+msgstr "再試行では新しい削除を送信せず、保存済みの要求を確認します。破棄するには確認が必要で、このコレクションの接続が解除されます。"
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
-msgstr "Réessayer la connexion"
+msgstr "接続を再試行"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry opening TaskNotes"
-msgstr "Réessayer l’ouverture de TaskNotes"
+msgstr "TaskNotesを開き直して再試行"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "Réessayer le chargement des personnes"
+msgstr "人物を再試行"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry recovery review"
-msgstr "Réessayer la vérification de récupération"
+msgstr "復元内容の確認を再試行"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
-msgstr "Réessayer la recherche"
+msgstr "検索を再試行"
 
 #: src/app/view-empty-state.tsx
 msgid "Retry this view to check for tasks."
-msgstr "Réessayez cette vue pour vérifier la présence de tâches."
+msgstr "タスクを確認するには、このビューを再試行してください。"
 
 #: src/app/app-shell.tsx
 msgid "Retry, or undo to restore the task here."
-msgstr "Réessayez ou annulez pour restaurer la tâche ici."
+msgstr "再試行するか、元に戻してタスクをここに復元してください。"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
-msgstr "Valeurs réutilisables pour les filtres, le regroupement, le tri et les champs."
+msgstr "フィルター、グループ化、並べ替え、フィールドに再利用できる値。"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for grouping and displayed fields."
-msgstr "Valeurs réutilisables pour le regroupement et les champs affichés."
+msgstr "グループ化と表示フィールドに再利用できる値。"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
-msgstr "Vérifier l’accès aux notifications"
+msgstr "通知へのアクセスを確認"
 
 #: src/app/cloud-collection.tsx
 msgid "Review TaskNotes setup"
-msgstr "Vérifier la configuration TaskNotes"
+msgstr "TaskNotesの設定を確認"
 
 #: src/app/cloud-collection.tsx
 msgid "Review unconfirmed changes"
-msgstr "Vérifier les modifications non confirmées"
+msgstr "未確認の変更を確認"
 
 #: src/app/cloud-collection.tsx
 msgid "Review updated access"
-msgstr "Vérifier les autorisations mises à jour"
+msgstr "更新されたアクセス権を確認"
 
 #: src/components/task-model-settings.tsx
 msgid "Rolling window"
-msgstr "Fenêtre glissante"
+msgstr "移動期間"
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
-msgstr "Enregistrer"
+msgstr "保存"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 msgid "Save {0}"
-msgstr "Enregistrer : {0}"
+msgstr "{0}を保存"
 
 #: src/components/reminder-editor.tsx
 msgid "Save a fixed or relative reminder in this task."
-msgstr "Enregistrez un rappel fixe ou relatif dans cette tâche."
+msgstr "このタスクに固定または相対リマインダーを保存します。"
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
-msgstr "Échec de l’enregistrement · Réessayer"
+msgstr "保存に失敗しました · 再試行"
 
 #. placeholder {0}: saveError ?? uiCopy("Tap to retry.")
 #: src/app/task-screen.tsx
 msgid "Save failed. {0}"
-msgstr "Échec de l’enregistrement. {0}"
+msgstr "保存に失敗しました。{0}"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
-msgstr "Enregistrer la session"
+msgstr "セッションを保存"
 
 #: src/components/task-model-settings.tsx
 msgid "Save task settings"
-msgstr "Enregistrer les paramètres des tâches"
+msgstr "タスク設定を保存"
 
 #: src/app/view-editor.tsx
 msgid "Save view"
-msgstr "Enregistrer la vue"
+msgstr "ビューを保存"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
-msgstr "Enregistré"
+msgstr "保存済み"
 
 #: src/app/cloud-collection.tsx
 msgid "Saved change recovery"
-msgstr "Récupération des modifications enregistrées"
+msgstr "保存済み変更の復元"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "Vue enregistrée"
+msgstr "保存済みビュー"
 
 #: src/app/views/view-catalog.tsx
 msgid "Saved views"
-msgstr "Vues enregistrées"
+msgstr "保存済みビュー"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
-msgstr "Enregistré dans la collection."
+msgstr "コレクションに保存しました。"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-model-settings.tsx
 msgid "Saving"
-msgstr "Enregistrement en cours"
+msgstr "保存中"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Saving…"
-msgstr "Enregistrement en cours…"
+msgstr "保存中…"
 
 #: src/app/task-screen.tsx
 msgid "Schedule and status"
-msgstr "Planification et statut"
+msgstr "予定とステータス"
 
 #: src/components/task-actions.tsx
 msgid "Schedule today"
-msgstr "Planifier pour aujourd’hui"
+msgstr "今日に予定"
 
 #: src/components/task-actions.tsx
 msgid "Schedule tomorrow"
-msgstr "Planifier pour demain"
+msgstr "明日に予定"
 
 #: src/app/view-editor-form.tsx
 msgid "scheduled"
-msgstr "date planifiée"
+msgstr "予定"
 
 #: src/app/task-screen.tsx
 #: src/components/reminder-editor.tsx
@@ -3752,274 +3752,274 @@ msgstr "date planifiée"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Scheduled"
-msgstr "Planifiée"
+msgstr "予定"
 
 #: src/components/task-capture.tsx
 msgid "Scheduled "
-msgstr "Planifiée "
+msgstr "予定 "
 
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
-msgstr "Date planifiée (non définie)"
+msgstr "予定日（未設定）"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.scheduled)
 #: src/app/task-screen.tsx
 msgid "Scheduled {0}"
-msgstr "Planifiée : {0}"
+msgstr "予定 {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
-msgstr "Dates planifiées"
+msgstr "予定日"
 
 #: src/i18n/ui-copy.ts
 msgid "scratchpad"
-msgstr "bloc-notes"
+msgstr "スクラッチパッド"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Scratchpad"
-msgstr "Bloc-notes"
+msgstr "スクラッチパッド"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad editing mode"
-msgstr "Mode d’édition du Bloc-notes"
+msgstr "スクラッチパッドの編集モード"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
-msgstr "Historique du Bloc-notes"
+msgstr "スクラッチパッドの履歴"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad Markdown"
-msgstr "Markdown du Bloc-notes"
+msgstr "スクラッチパッドのMarkdown"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad outline"
-msgstr "Plan du Bloc-notes"
+msgstr "スクラッチパッドのアウトライン"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is not available for this collection."
-msgstr "Le stockage du Bloc-notes n’est pas disponible pour cette collection."
+msgstr "このコレクションではスクラッチパッドの保存を利用できません。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad storage is unavailable."
-msgstr "Le stockage du Bloc-notes est indisponible."
+msgstr "スクラッチパッドの保存を利用できません。"
 
 #: src/app/app-shell.tsx
 #: src/app/search-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
-msgstr "Rechercher"
+msgstr "検索"
 
 #. placeholder {0}: error.message
 #: src/app/search-screen.tsx
 msgid "Search could not be loaded. {0}"
-msgstr "Impossible de charger la recherche. {0}"
+msgstr "検索を読み込めませんでした。{0}"
 
 #: src/app/search-screen.tsx
 #: src/app/views-screen.tsx
 msgid "Search tasks"
-msgstr "Rechercher des tâches"
+msgstr "タスクを検索"
 
 #: src/app/search-screen.tsx
 msgid "Search titles, notes, projects, contexts, and tags."
-msgstr "Recherchez dans les titres, notes, projets, contextes et étiquettes."
+msgstr "タイトル、ノート、プロジェクト、コンテキスト、タグを検索します。"
 
 #: src/app/views/view-catalog.tsx
 msgid "Search views"
-msgstr "Rechercher des vues"
+msgstr "ビューを検索"
 
 #: src/i18n/presentation.ts
 msgid "second"
-msgstr "deuxième"
+msgstr "秒"
 
 #: src/components/recurrence-field.tsx
 msgid "Second"
-msgstr "Deuxième"
+msgstr "2番目"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
-msgstr "Tout sélectionner"
+msgstr "すべて選択"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select branch"
-msgstr "Sélectionner la branche"
+msgstr "ブランチを選択"
 
 #: src/i18n/ui-copy.ts
 msgid "selected collection"
-msgstr "la collection sélectionnée"
+msgstr "選択したコレクション"
 
 #: src/i18n/ui-copy.ts
 msgid "selected day"
-msgstr "le jour sélectionné"
+msgstr "選択した日"
 
 #: src/app/full-calendar-view.tsx
 msgid "Selected day"
-msgstr "Jour sélectionné"
+msgstr "選択した日"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "Les brouillons sélectionnés deviennent des notes de tâche liées, sur place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+msgstr "選択した下書きはその場でTaskNotesにリンクされます。それ以外はこのスクラッチパッドに残るため、作業を続けられます。"
 
 #: src/i18n/editor-phrases.ts
 msgid "Selection deleted"
-msgstr "Sélection supprimée"
+msgstr "選択を削除しました"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
-msgstr "session"
+msgstr "セッション"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session description"
-msgstr "Description de la session"
+msgstr "セッションの説明"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session end"
-msgstr "Fin de la session"
+msgstr "セッション終了"
 
 #: src/app/task-time-tracking.tsx
 msgid "Session start"
-msgstr "Début de la session"
+msgstr "セッション開始"
 
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
-msgstr "Définissez ce qui se passe lorsqu’une tâche est ajoutée depuis cette vue."
+msgstr "このビューからタスクを追加したときの動作を設定します。"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 msgid "Settings"
-msgstr "Paramètres"
+msgstr "設定"
 
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
-msgstr "Configuration à vérifier"
+msgstr "設定の確認が必要です"
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
 msgid "Several person records match your account: {0}. Resolve those duplicates before filtering tasks."
-msgstr "Plusieurs documents de personne correspondent à votre compte : {0}. Résolvez ces doublons avant de filtrer les tâches."
+msgstr "アカウントに一致する人物レコードが複数あります：{0}。タスクを絞り込む前に重複を解決してください。"
 
 #: src/app/views/view-catalog.tsx
 msgid "Shape an outline before creating tasks"
-msgstr "Structurer un plan avant de créer des tâches"
+msgstr "タスク作成前にアウトラインを整える"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
 msgid "Show all {0}"
-msgstr "Afficher les {0} éléments"
+msgstr "{0}をすべて表示"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show all-day area"
-msgstr "Afficher la zone « Toute la journée »"
+msgstr "終日領域を表示"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show current time"
-msgstr "Afficher l’heure actuelle"
+msgstr "現在時刻を表示"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show each task’s project on Today?"
-msgstr "Afficher le projet de chaque tâche dans Today ?"
+msgstr "各タスクのプロジェクトを今日のビューに表示しますか？"
 
 #: src/app/search-screen.tsx
 msgid "Show fewer"
-msgstr "Afficher moins"
+msgstr "表示を減らす"
 
 #: src/app/view-editor-form.tsx
 msgid "Show future virtual occurrences."
-msgstr "Afficher les occurrences virtuelles futures."
+msgstr "将来の仮想的な発生分を表示します。"
 
 #: src/app/search-screen.tsx
 msgid "Show more results"
-msgstr "Afficher plus de résultats"
+msgstr "結果をさらに表示"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show projects"
-msgstr "Afficher les projets"
+msgstr "プロジェクトを表示"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
-msgstr "Afficher le temps enregistré"
+msgstr "記録した時間を表示"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show weekends"
-msgstr "Afficher les week-ends"
+msgstr "週末を表示"
 
 #. placeholder {0}: visibleEntries.length
 #. placeholder {1}: entries.length
 #: src/app/task-time-tracking.tsx
 msgid "Showing the latest {0} of {1}sessions."
-msgstr "Affichage des {0} dernières sessions sur {1}."
+msgstr "最新の{1}件のうち{0}件を表示しています。"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Shown in navigation"
-msgstr "Éléments de navigation"
+msgstr "ナビゲーションに表示"
 
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
-msgstr "Affichage dans cet ordre sous chaque élément."
+msgstr "各項目の下にこの順序で表示"
 
 #: src/app/task-screen.tsx
 msgid "Skip"
-msgstr "Ignorer"
+msgstr "スキップ"
 
 #: src/components/task-actions.tsx
 msgid "Skip occurrence"
-msgstr "Ignorer l’occurrence"
+msgstr "発生分をスキップ"
 
 #: src/app/app-shell.tsx
 msgid "Skip to content"
-msgstr "Aller au contenu"
+msgstr "コンテンツにスキップ"
 
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
-msgstr "Occurrences récurrentes ignorées"
+msgstr "スキップした繰り返しタスク"
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
-msgstr "Certains fichiers n’ont pas pu être lus et ont été omis de cette vue."
+msgstr "一部のファイルを読み取れなかったため、このビューから除外しました。"
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
-msgstr "Tri"
+msgstr "並べ替え"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort direction {0}"
-msgstr "Sens du tri {0}"
+msgstr "並べ替えの方向 {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort property {0}"
-msgstr "Propriété du tri {0}"
+msgstr "並べ替えプロパティ {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Source file"
-msgstr "Fichier source"
+msgstr "ソースファイル"
 
 #: src/app/task-time-tracking.tsx
 msgid "Start"
-msgstr "Démarrer"
+msgstr "開始"
 
 #: src/components/recurrence-field.tsx
 msgid "Start the next interval when this is finished."
-msgstr "Démarrer l’intervalle suivant une fois la tâche terminée."
+msgstr "次の期間はこれが終わったときに開始します。"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
-msgstr "Démarrer le chronomètre"
+msgstr "タイマーを開始"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to finish"
-msgstr "Début à fin"
+msgstr "開始から終了"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to start"
-msgstr "Début à début"
+msgstr "開始から開始"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
-msgstr "Démarrage…"
+msgstr "開始中…"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -4028,47 +4028,47 @@ msgstr "Démarrage…"
 #: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
-msgstr "Statut"
+msgstr "ステータス"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
-msgstr "Statut, priorité et relations"
+msgstr "ステータス、優先度、関係"
 
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
-msgstr "Arrêter"
+msgstr "停止"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task completes"
-msgstr "Arrêter le chronomètre d’une tâche lorsqu’elle est terminée"
+msgstr "タスク完了時に実行中のタイマーを停止"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
-msgstr "Arrêter le chronomètre"
+msgstr "タイマーを停止"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
-msgstr "Titre de la sous-tâche"
+msgstr "サブタスク名"
 
 #: src/components/dependency-editor.tsx
 msgid "Subtasks"
-msgstr "Sous-tâches"
+msgstr "サブタスク"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"
-msgstr "Suggestions"
+msgstr "候補"
 
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
-msgstr "Suggestions parmi les {limit} premières tâches. Recherchez pour en trouver d’autres."
+msgstr "最初の{limit}件のタスク候補です。他を探すには検索してください。"
 
 #: src/app/more-screen.tsx
 msgid "System"
-msgstr "Système"
+msgstr "システム"
 
 #: src/app/search-match-context.ts
 msgid "tags"
-msgstr "étiquettes"
+msgstr "タグ"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -4077,41 +4077,41 @@ msgstr "étiquettes"
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
-msgstr "Étiquettes"
+msgstr "タグ"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Take photo"
-msgstr "Prendre une photo"
+msgstr "写真を撮る"
 
 #: src/i18n/ui-copy.ts
 msgid "Tap to retry."
-msgstr "Appuyez pour réessayer."
+msgstr "タップして再試行してください。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
-msgstr "Tâche"
+msgstr "タスク"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
-msgstr "Actions de tâche pour {0}"
+msgstr "{0}のタスク操作"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
-msgstr "Tâche ajoutée : {0}"
+msgstr "タスクを追加しました：{0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Task behavior"
-msgstr "Comportement des tâches"
+msgstr "タスクの動作"
 
 #: src/app/views-screen.tsx
 msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "Tâche créée, mais cette vue ne l’affiche pas. Ses filtres ou sa limite de résultats peuvent l’exclure."
+msgstr "タスクを作成しましたが、このビューには表示されません。フィルターまたは結果上限によって除外されている可能性があります。"
 
 #: src/app/views-screen.tsx
 msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "Tâche créée. Elle peut être dans une page non chargée ou exclue par les filtres de cette vue."
+msgstr "タスクを作成しました。未読み込みのページにあるか、ビューのフィルターで除外されている可能性があります。"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
@@ -4830,4 +4830,3 @@ msgstr "Votre barre latérale, dans l’ordre.{0}"
 #: src/components/task-model-settings.tsx
 msgid "Your unsaved choices are still here. Review them and retry."
 msgstr "Vos choix non enregistrés sont toujours ici. Vérifiez-les et réessayez."
-
