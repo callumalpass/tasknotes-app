@@ -4523,107 +4523,107 @@ msgstr "Mostrar ocorrências virtuais futuras."
 
 #: src/app/search-screen.tsx
 msgid "Show more results"
-msgstr ""
+msgstr "Mostrar mais resultados"
 
 #: src/app/views/project-property-offer.tsx
 msgid "Show projects"
-msgstr ""
+msgstr "Mostrar projetos"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
-msgstr ""
+msgstr "Mostrar tempo registrado"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show weekends"
-msgstr ""
+msgstr "Mostrar fins de semana"
 
 #. placeholder {0}: visibleEntries.length
 #. placeholder {1}: entries.length
 #: src/app/task-time-tracking.tsx
 msgid "Showing the latest {0} of {1}sessions."
-msgstr ""
+msgstr "Exibindo os {0} mais recentes de {1} sessões."
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Shown in navigation"
-msgstr ""
+msgstr "Exibido na navegação"
 
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
-msgstr ""
+msgstr "Exibido nesta ordem abaixo de cada item."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
-msgstr ""
+msgstr "Pular"
 
 #: src/components/task-actions.tsx
 msgid "Skip occurrence"
-msgstr ""
+msgstr "Pular ocorrência"
 
 #: src/app/app-shell.tsx
 msgid "Skip to content"
-msgstr ""
+msgstr "Pular para o conteúdo"
 
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
-msgstr ""
+msgstr "Ocorrências recorrentes ignoradas"
 
 #: src/app/repository-context.tsx
 msgid "Some changes are still saving. Keep this page open and try again."
-msgstr ""
+msgstr "Algumas alterações ainda estão sendo salvas. Mantenha esta página aberta e tente novamente."
 
 #: src/app/views-screen.tsx
 msgid "Some files could not be read and were omitted from this view."
-msgstr ""
+msgstr "Não foi possível ler alguns arquivos, que foram omitidos desta visualização."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
-msgstr ""
+msgstr "Algumas alterações na nota não foram salvas. Mantenha esta página aberta e tente novamente."
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
-msgstr ""
+msgstr "Ordenar"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort direction {0}"
-msgstr ""
+msgstr "Direção da ordenação {0}"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
 msgid "Sort property {0}"
-msgstr ""
+msgstr "Propriedade de ordenação {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Source file"
-msgstr ""
+msgstr "Arquivo de origem"
 
 #: src/app/task-time-tracking.tsx
 msgid "Start"
-msgstr ""
+msgstr "Iniciar"
 
 #: src/components/task-model-settings.tsx
 msgid "Start new tasks from a template"
-msgstr ""
+msgstr "Iniciar novas tarefas a partir de um modelo"
 
 #: src/components/task-actions.tsx
 msgid "Start timer"
-msgstr ""
+msgstr "Iniciar cronômetro"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to finish"
-msgstr ""
+msgstr "Início para conclusão"
 
 #: src/components/dependency-editor.tsx
 msgid "Start to start"
-msgstr ""
+msgstr "Início para início"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Starter views"
-msgstr ""
+msgstr "Visualizações iniciais"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Starting…"
-msgstr ""
+msgstr "Iniciando…"
 
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -4633,79 +4633,79 @@ msgstr ""
 #: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
-msgstr ""
+msgstr "Status"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
-msgstr ""
+msgstr "Status, prioridade e relacionamentos"
 
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
-msgstr ""
+msgstr "Parar"
 
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
-msgstr ""
+msgstr "Parar um cronômetro em execução quando sua tarefa for concluída"
 
 #: src/components/task-actions.tsx
 msgid "Stop timer"
-msgstr ""
+msgstr "Parar cronômetro"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
-msgstr ""
+msgstr "Modo estrito"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode cannot be turned off yet. Setting up or unlocking password recovery does not turn off strict mode on a device."
-msgstr ""
+msgstr "Ainda não é possível desativar o modo estrito. Configurar ou desbloquear a recuperação por senha não desativa o modo estrito em um dispositivo."
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."
-msgstr ""
+msgstr "O modo estrito ainda não foi confirmado em todos os destinos de recuperação privada. Um dispositivo online com chave precisa concluir a aplicação das alterações."
 
 #: src/components/held-edits.tsx
 msgid "Submitting…"
-msgstr ""
+msgstr "Enviando…"
 
 #: src/components/task-actions.tsx
 msgid "Subtask title"
-msgstr ""
+msgstr "Título da subtarefa"
 
 #: src/components/dependency-editor.tsx
 msgid "Subtasks"
-msgstr ""
+msgstr "Subtarefas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"
-msgstr ""
+msgstr "Sugestões"
 
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
-msgstr ""
+msgstr "Sugestões das primeiras {limit} tarefas. Pesquise para encontrar outras."
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"
-msgstr ""
+msgstr "Mudar para o modo estrito"
 
 #: src/components/collection-write-status.tsx
 msgid "Sync is taking longer than usual"
-msgstr ""
+msgstr "A sincronização está demorando mais que o normal"
 
 #: src/components/held-edits.tsx
 msgid "Synced version"
-msgstr ""
+msgstr "Versão sincronizada"
 
 #: src/components/collection-write-status.tsx
 msgid "Syncing…"
-msgstr ""
+msgstr "Sincronizando…"
 
 #: src/app/more-screen.tsx
 msgid "System"
-msgstr ""
+msgstr "Sistema"
 
 #: src/app/search-match-context.ts
 msgid "tags"
-msgstr ""
+msgstr "etiquetas"
 
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
@@ -4715,290 +4715,290 @@ msgstr ""
 #: src/components/task-capture.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
-msgstr ""
+msgstr "Etiquetas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Take photo"
-msgstr ""
+msgstr "Tirar foto"
 
 #: src/app/task-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "Tap to retry."
-msgstr ""
+msgstr "Toque para tentar novamente."
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
-msgstr ""
+msgstr "tarefa"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task"
-msgstr ""
+msgstr "Tarefa"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
-msgstr ""
+msgstr "Ações da tarefa {0}"
 
 #. placeholder {0}: task.title
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
-msgstr ""
+msgstr "Tarefa adicionada: {0}"
 
 #: src/app/views-screen.tsx
 msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr ""
+msgstr "Tarefa criada, mas esta visualização não a exibe. Os filtros ou o limite de resultados podem excluí-la."
 
 #: src/app/views-screen.tsx
 msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr ""
+msgstr "Tarefa criada. Ela pode estar em uma página ainda não carregada ou ser excluída pelos filtros desta visualização."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
-msgstr ""
+msgstr "Criação de tarefas desativada"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation on"
-msgstr ""
+msgstr "Criação de tarefas ativada"
 
 #: src/app/app-shell.tsx
 #: src/app/task-screen.tsx
 msgid "Task details"
-msgstr ""
+msgstr "Detalhes da tarefa"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task draft"
-msgstr ""
+msgstr "Rascunho da tarefa"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Task drafts"
-msgstr ""
+msgstr "Rascunhos de tarefas"
 
 #: src/components/task-capture.tsx
 msgid "Task field suggestions"
-msgstr ""
+msgstr "Sugestões de campos da tarefa"
 
 #: src/components/task-model-settings.tsx
 msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
-msgstr ""
+msgstr "Os arquivos de tarefas são mantidos por um período fixo de datas, como os próximos 14 dias."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
 msgid "Task keys act on the focused row. Date keys keep any scheduled time."
-msgstr ""
+msgstr "Os atalhos de tarefa atuam na linha em foco. Os atalhos de data mantêm qualquer horário agendado."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
-msgstr ""
+msgstr "Listas de tarefas"
 
 #: src/app/task-screen.tsx
 msgid "Task not found. It may have been deleted or moved."
-msgstr ""
+msgstr "Tarefa não encontrada. Ela pode ter sido excluída ou movida."
 
 #: src/app/more-screen.tsx
 msgid "Task reminders"
-msgstr ""
+msgstr "Lembretes da tarefa"
 
 #: src/app/task-screen.tsx
 msgid "Task title"
-msgstr ""
+msgstr "Título da tarefa"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
-msgstr ""
+msgstr "Tarefa: "
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not confirm whether “{title}” was deleted."
-msgstr ""
+msgstr "O TaskNotes não conseguiu confirmar se “{title}” foi excluída."
 
 #: src/app/more-screen.tsx
 msgid "TaskNotes could not open the install prompt."
-msgstr ""
+msgstr "O TaskNotes não conseguiu abrir o prompt de instalação."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not open."
-msgstr ""
+msgstr "Não foi possível abrir o TaskNotes."
 
 #: src/components/operation-error-notice.tsx
 msgid "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
-msgstr ""
+msgstr "O TaskNotes continua verificando automaticamente enquanto a coleção está conectada. Você pode continuar trabalhando."
 
 #: src/components/app-error-boundary.tsx
 msgid "TaskNotes needs to restart."
-msgstr ""
+msgstr "O TaskNotes precisa ser reiniciado."
 
 #: src/app/app-shell.tsx
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
-msgstr ""
+msgstr "O TaskNotes precisa da sua aprovação no mdbase novamente antes de abrir esta coleção."
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
-msgstr ""
+msgstr "Ferramenta do TaskNotes"
 
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tools"
-msgstr ""
+msgstr "Ferramentas do TaskNotes"
 
 #: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
-msgstr ""
+msgstr "tarefas"
 
 #: src/app/command-palette-model.ts
 msgid "Tasks"
-msgstr ""
+msgstr "Tarefas"
 
 #: src/app/more-screen.tsx
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
-msgstr ""
+msgstr "As tarefas são registros Markdown portáteis no formato mdbase v0.3."
 
 #. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
-msgstr ""
+msgstr "Tarefas para {0}"
 
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
-msgstr ""
+msgstr "Tarefas, etiquetas, projetos"
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Technical details"
-msgstr ""
+msgstr "Detalhes técnicos"
 
 #: src/components/task-capture.tsx
 msgid "Template could not be read. "
-msgstr ""
+msgstr "Não foi possível ler o modelo. "
 
 #: src/components/task-model-settings.tsx
 msgid "Template file"
-msgstr ""
+msgstr "Arquivo de modelo"
 
 #: src/components/task-capture.tsx
 msgid "Template unavailable. "
-msgstr ""
+msgstr "Modelo indisponível. "
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Templates/Occurrence.md"
-msgstr ""
+msgstr "Templates/Occurrence.md"
 
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
-msgstr ""
+msgstr "Templates/Task.md"
 
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
-msgstr ""
+msgstr "Essa senha ou chave de recuperação não desbloqueou esta conta. Verifique e tente novamente."
 
 #: src/i18n/ui-copy.ts
 msgid "That section"
-msgstr ""
+msgstr "Essa seção"
 
 #: src/components/private-account-settings.tsx
 msgid "The account recovery action could not be completed. Check the connection and account status before retrying."
-msgstr ""
+msgstr "Não foi possível concluir a ação de recuperação da conta. Verifique a conexão e o status da conta antes de tentar novamente."
 
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
-msgstr ""
+msgstr "A ação foi concluída, mas não foi possível atualizar o status da conta. Verifique o status novamente."
 
 #: src/app/full-calendar-view.tsx
 msgid "The calendar change could not be saved. "
-msgstr ""
+msgstr "Não foi possível salvar a alteração do calendário. "
 
 #: src/components/task-property-editor.tsx
 msgid "The change could not be saved."
-msgstr ""
+msgstr "Não foi possível salvar a alteração."
 
 #: src/app/app-shell.tsx
 msgid "The collection is unavailable right now."
-msgstr ""
+msgstr "A coleção está indisponível no momento."
 
 #: src/app/views-screen.tsx
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
-msgstr ""
+msgstr "Não foi possível carregar a ordem manual completa. Seu rascunho foi mantido; tente novamente."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The created TaskNote could not be found."
-msgstr ""
+msgstr "Não foi possível encontrar a nota de tarefa criada."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The current scratchpad is unavailable."
-msgstr ""
+msgstr "O bloco de notas atual está indisponível."
 
 #: src/app/app-shell.tsx
 msgid "The deletion"
-msgstr ""
+msgstr "a exclusão"
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"
-msgstr ""
+msgstr "a seção de destino"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
-msgstr ""
+msgstr "A primeira visualização é Início. A ordem e a visibilidade são salvas para esta coleção neste dispositivo."
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
-msgstr ""
+msgstr "Não foi possível carregar o idioma. Verifique sua conexão e tente novamente."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The linked TaskNote could not be found."
-msgstr ""
+msgstr "Não foi possível encontrar a nota de tarefa vinculada."
 
 #: src/components/task-actions.tsx
 msgid "The menu is still open so you can retry."
-msgstr ""
+msgstr "O menu ainda está aberto para que você possa tentar novamente."
 
 #. placeholder {0}: message(reason)
 #: src/app/scratchpad-screen.tsx
 msgid "The note was resumed, but history could not refresh. {0}"
-msgstr ""
+msgstr "A nota foi retomada, mas não foi possível atualizar o histórico. {0}"
 
 #: src/components/recurrence-field.tsx
 msgid "The pattern start day is used."
-msgstr ""
+msgstr "O dia inicial do padrão está sendo usado."
 
 #: src/components/private-account-settings.tsx
 msgid "The recovery key is still kept on this device."
-msgstr ""
+msgstr "A chave de recuperação continua armazenada neste dispositivo."
 
 #: src/components/recurrence-field.tsx
 msgid "The rule is kept exactly as written. Apply only after it is valid."
-msgstr ""
+msgstr "A regra é mantida exatamente como foi escrita. Aplique-a somente quando for válida."
 
 #: src/app/scratchpad-screen.tsx
 msgid "The scratchpad is not open."
-msgstr ""
+msgstr "O bloco de notas não está aberto."
 
 #: src/app/views-screen.tsx
 msgid "the task"
-msgstr ""
+msgstr "a tarefa"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "The task"
-msgstr ""
+msgstr "A tarefa"
 
 #: src/components/task-actions.tsx
 msgid "The task action"
-msgstr ""
+msgstr "A ação da tarefa"
 
 #: src/app/full-calendar-view.tsx
 msgid "The task date is unavailable."
-msgstr ""
+msgstr "A data da tarefa está indisponível."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
-msgstr ""
+msgstr "A tarefa continua na coleção. Tente novamente."
 
 #: src/app/views-screen.tsx
 msgid "The view change"
-msgstr ""
+msgstr "A alteração da visualização"
 
 #: src/app/views/project-property-offer.tsx
 msgid "The view could not be updated. {error}"
-msgstr ""
+msgstr "Não foi possível atualizar a visualização. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
