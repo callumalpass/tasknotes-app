@@ -2555,7 +2555,7 @@ msgstr "Itálico"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr "item"
+msgstr "elemento"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
@@ -2680,12 +2680,12 @@ msgstr "Mais tarde"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr "Layout"
+msgstr "Formato"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr "Layout: {layoutLabel}{0}"
+msgstr "Formato: {layoutLabel}{0}"
 
 #: src/components/returning-user-notice.tsx
 msgid "Learn more"
