@@ -65,7 +65,7 @@ msgstr "»…"
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
-msgstr "В представлении «{0}» значение вычисляется; переместить сюда задачи нельзя."
+msgstr "«{0}» — вычисляемый раздел; переместить сюда задачи нельзя."
 
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
@@ -88,17 +88,17 @@ msgstr "{0, plural, one {# незавершённая} few {# незавершё
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Adding image…} other {Adding # images…}}"
-msgstr "{0, plural, one {Добавление изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
+msgstr "{0, plural, =1 {Добавление изображения…} one {Добавление # изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
-msgstr "{0, plural, one {Создана заметка о # задаче} few {Созданы заметки о # задачах} many {Созданы заметки о # задачах} other {Созданы заметки о # задаче}}"
+msgstr "{0, plural, one {Создана # заметка задачи} few {Созданы # заметки задач} many {Создано # заметок задач} other {Создано # заметки задачи}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Image added} other {# images added}}"
-msgstr "{0, plural, one {Изображение добавлено} few {Добавлено # изображения} many {Добавлено # изображений} other {Добавлено # изображения}}"
+msgstr "{0, plural, =1 {Изображение добавлено} one {Добавлено # изображение} few {Добавлено # изображения} many {Добавлено # изображений} other {Добавлено # изображения}}"
 
 #. placeholder {0}: lane.rows.length
 #: src/app/views-screen.tsx
@@ -325,7 +325,7 @@ msgstr "{count, plural, one {# день назад} few {# дня назад} ma
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# day from the end} other {# days from the end}}"
-msgstr "{count, plural, one {До конца: # день} few {До конца: # дня} many {До конца: # дней} other {До конца: # дня}}"
+msgstr "{count, plural, one {#-й день с конца месяца} few {#-й день с конца месяца} many {#-й день с конца месяца} other {#-й день с конца месяца}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, plural, one {# time} other {# times}}"
@@ -357,19 +357,19 @@ msgstr "{hours} ч {minutes} мин"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every day} other {Every # days}}"
-msgstr "{interval, plural, one {Каждый день} few {Каждые # дня} many {Каждые # дней} other {Каждые # дня}}"
+msgstr "{interval, plural, =1 {Каждый день} one {Раз в # день} few {Раз в # дня} many {Раз в # дней} other {Раз в # дня}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every month} other {Every # months}}"
-msgstr "{interval, plural, one {Каждый месяц} few {Каждые # месяца} many {Каждые # месяцев} other {Каждые # месяца}}"
+msgstr "{interval, plural, =1 {Каждый месяц} one {Раз в # месяц} few {Раз в # месяца} many {Раз в # месяцев} other {Раз в # месяца}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, one {Каждую неделю} few {Каждые # недели} many {Каждые # недель} other {Каждые # недели}}"
+msgstr "{interval, plural, =1 {Каждую неделю} one {Раз в # неделю} few {Раз в # недели} many {Раз в # недель} other {Раз в # недели}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, one {Every year} other {Every # years}}"
-msgstr "{interval, plural, one {Каждый год} few {Каждые # года} many {Каждые # лет} other {Каждые # года}}"
+msgstr "{interval, plural, =1 {Каждый год} one {Раз в # год} few {Раз в # года} many {Раз в # лет} other {Раз в # года}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
@@ -1392,12 +1392,12 @@ msgstr "Выполнить"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
 msgid "Complete"
-msgstr "Выполнить"
+msgstr "Завершённые"
 
 #: src/components/dependency-editor.tsx
 msgctxt "related task completion state"
 msgid "Complete"
-msgstr "Выполнить"
+msgstr "Завершена"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
@@ -1881,11 +1881,11 @@ msgstr "Отключено в настройках системы"
 
 #: src/components/task-model-settings.tsx
 msgid "Discard"
-msgstr "Отменить"
+msgstr "Отбросить"
 
 #: src/components/write-rejection-notice.tsx
 msgid "Discard and load latest"
-msgstr "Отменить и загрузить последнюю версию"
+msgstr "Отбросить изменения и загрузить последнюю версию"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
@@ -1913,7 +1913,7 @@ msgstr "Удалить данные восстановления"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr "Удаление данных восстановления отключит коллекцию и удалит все сохранённые данные. Оно не отменяет удаление, которое уже могло завершиться."
+msgstr "При отказе удаляются все сохранённые данные восстановления и отключается эта коллекция. Это не отменяет удаление, которое уже могло завершиться."
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
@@ -2865,7 +2865,7 @@ msgstr "Коллекция mdbase"
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-msgstr "mdbase подтвердил завершение строгого режима. Ключ восстановления удалён с этого устройства."
+msgstr "mdbase подтвердил завершение перехода в строгий режим. Ключ восстановления удалён с этого устройства."
 
 #: src/components/private-account-settings.tsx
 msgid "mdbase confirmed that recovery targets have applied strict mode."
@@ -3398,7 +3398,7 @@ msgstr "Не в сети"
 
 #: src/components/recurrence-field.tsx
 msgid "On"
-msgstr "Вкл."
+msgstr "По дням"
 
 #: src/app/notification-label.ts
 msgctxt "notifications enabled state"
@@ -3436,7 +3436,7 @@ msgstr "Открыть"
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: open tasks"
 msgid "Open"
-msgstr "Открыть"
+msgstr "Незавершённые"
 
 #: src/app/palette-commands.ts
 msgid "Open “{title}”"
