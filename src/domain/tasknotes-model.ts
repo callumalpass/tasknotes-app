@@ -186,6 +186,8 @@ export class TaskNotesTaskModel {
     body?: string;
   }): TaskInfo {
     const readable = this.canonicalizeAliases(input.frontmatter, false);
+    const projectsField = this.config.fieldMapping.projects;
+    if (readable[projectsField] === null) readable[projectsField] = [];
     const mapped = mapTaskFromFrontmatter(
       this.config.fieldMapping,
       readable,
@@ -851,6 +853,9 @@ export class TaskNotesTaskModel {
         this.config.storeTitleInFilename,
         this.config.userFields,
       ),
+      ...(info.projects?.length === 0
+        ? { [this.config.fieldMapping.projects]: [] }
+        : {}),
       // The model omits empty reminders, but a Connect patch must retain []:
       // removing the property becomes null, which the array schema rejects.
       ...(info.reminders?.length === 0

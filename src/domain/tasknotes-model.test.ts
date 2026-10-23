@@ -29,6 +29,26 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("reads projects: null as an empty project list", () => {
+    const created = model.create({ title: "No project" }, { id: "no-project" });
+    const task = model.read({
+      path: created.path,
+      frontmatter: { ...created.frontmatter, projects: null },
+      body: "",
+    });
+    expect(task.projects).toEqual([]);
+  });
+
+  it("clears projects with an array rather than a null-producing removal", () => {
+    const task = model.create(
+      { title: "Work task", projects: ["Work"] },
+      { id: "work-task" },
+    );
+    expect(model.update(task, { projects: [] }).frontmatter.projects).toEqual(
+      [],
+    );
+  });
+
   it("persists the first planned date for a due-only repeating task", () => {
     const task = model.create(
       {
