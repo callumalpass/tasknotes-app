@@ -3272,155 +3272,155 @@ msgstr "속성"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to display"
-msgstr "Propriété à afficher"
+msgstr "표시할 속성"
 
 #: src/app/view-editor-form.tsx
 msgid "Property to sort"
-msgstr "Propriété à trier"
+msgstr "정렬할 속성"
 
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
-msgstr "Dates rapides"
+msgstr "빠른 날짜"
 
 #: src/components/reminder-editor.tsx
 msgid "Quick reminders"
-msgstr "Rappels rapides"
+msgstr "빠른 리마인더"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Quote"
-msgstr "Citation"
+msgstr "인용"
 
 #: src/app/cloud-collection.tsx
 msgid "Recent collections"
-msgstr "Collections récentes"
+msgstr "최근 컬렉션"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
-msgstr "Détails de tâche reconnus"
+msgstr "인식된 작업 세부정보"
 
 #. placeholder {0}: selectedConnection?.displayName ?? uiCopy("selected collection")
 #: src/app/cloud-collection.tsx
 msgid "Reconnect {0}"
-msgstr "Reconnecter {0}"
+msgstr "{0} 다시 연결"
 
 #: src/app/app-shell.tsx
 msgid "Reconnect this collection"
-msgstr "Reconnecter cette collection"
+msgstr "이 컬렉션 다시 연결"
 
 #: src/app/app-shell.tsx
 msgid "Reconnect to mdbase."
-msgstr "Reconnectez-vous à mdbase."
+msgstr "mdbase에 다시 연결하세요."
 
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
-msgstr "Reconnexion en cours…"
+msgstr "다시 연결 중…"
 
 #: src/components/task-model-settings.tsx
 msgid "Record links"
-msgstr "Liens vers des documents"
+msgstr "레코드 링크"
 
 #: src/app/cloud-collection.tsx
 msgid "Recover all {count} saved changes now?"
-msgstr "Récupérer les {count} modifications enregistrées maintenant ?"
+msgstr "저장된 변경 사항 {count}개를 지금 모두 복구할까요?"
 
 #: src/app/cloud-collection.tsx
 msgid "Recover checks each exact saved request, even if another check fails. An earlier change may already have applied. Discard removes the saved recovery, its grant keys, and disconnects this collection; it cannot undo a change."
-msgstr "La récupération vérifie chaque requête enregistrée à l’identique, même si une autre vérification échoue. Une modification précédente a peut-être déjà été appliquée. L’abandon supprime les données de récupération et leurs clés d’autorisation, puis déconnecte cette collection ; il ne peut pas annuler une modification."
+msgstr "복구는 다른 확인이 실패하더라도 저장된 각 요청을 정확히 확인합니다. 이전 변경 사항이 이미 적용되었을 수 있습니다. 폐기하면 저장된 복구 정보와 권한 키가 제거되고 이 컬렉션의 연결이 해제됩니다. 이미 적용된 변경은 되돌릴 수 없습니다."
 
 #: src/app/cloud-collection.tsx
 msgid "Recover saved changes"
-msgstr "Récupérer les modifications enregistrées"
+msgstr "저장된 변경 사항 복구"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
-msgstr "Récupérer la tâche"
+msgstr "작업 복구"
 
 #: src/app/cloud-collection.tsx
 msgid "Recovering…"
-msgstr "Récupération en cours…"
+msgstr "복구 중…"
 
 #: src/components/task-capture.tsx
 msgid "Recurrence and template"
-msgstr "Récurrence et modèle"
+msgstr "반복 및 템플릿"
 
 #: src/components/recurrence-field.tsx
 msgid "Recurrence rule"
-msgstr "Règle de récurrence"
+msgstr "반복 규칙"
 
 #: src/app/collection-settings.tsx
 msgid "Refresh now"
-msgstr "Actualiser maintenant"
+msgstr "지금 새로고침"
 
 #: src/app/collection-settings.tsx
 msgid "Refreshing"
-msgstr "Actualisation"
+msgstr "새로고침 중"
 
 #: src/app/search-screen.tsx
 msgid "Refreshing results…"
-msgstr "Actualisation des résultats…"
+msgstr "결과 새로고침 중…"
 
 #: src/components/collection-availability.tsx
 msgid "Refreshing…"
-msgstr "Actualisation en cours…"
+msgstr "새로고침 중…"
 
 #: src/i18n/editor-phrases.ts
 msgid "regexp"
-msgstr "expression régulière"
+msgstr "정규식"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
-msgstr "Tâches liées"
+msgstr "관련 작업"
 
 #: src/components/dependency-editor.tsx
 msgid "Relationship"
-msgstr "Relation"
+msgstr "관계"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
-msgstr "Relations"
+msgstr "관계"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative"
-msgstr "Relatif"
+msgstr "상대적"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
-msgstr "Par rapport à"
+msgstr "기준"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
-msgstr "Recharger"
+msgstr "다시 불러오기"
 
 #: src/app/search-screen.tsx
 msgid "Reload people"
-msgstr "Recharger les personnes"
+msgstr "사람 목록 다시 불러오기"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Reminder {0}"
-msgstr "Rappel {0}"
+msgstr "리마인더 {0}"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder date"
-msgstr "Date du rappel"
+msgstr "리마인더 날짜"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder details stay in Markdown, but tasks stored on this device cannot deliver notifications."
-msgstr "Les détails des rappels restent dans le Markdown, mais les tâches stockées sur cet appareil ne peuvent pas envoyer de notifications."
+msgstr "리마인더 세부정보는 Markdown에 저장되지만, 이 기기에 저장된 작업은 알림을 전달할 수 없습니다."
 
 #: src/components/reminder-editor.tsx
 msgid "Reminder time"
-msgstr "Heure du rappel"
+msgstr "리마인더 시간"
 
 #: src/components/reminder-editor.tsx
 msgid "Reminders"
-msgstr "Rappels"
+msgstr "리마인더"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
 msgid "Remove"
-msgstr "Retirer"
+msgstr "제거"
 
 #. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: entry.description || uiCopy("session")
@@ -3429,320 +3429,320 @@ msgstr "Retirer"
 #: src/components/multi-value-field.tsx
 #: src/components/task-capture.tsx
 msgid "Remove {0}"
-msgstr "Retirer : {0}"
+msgstr "{0} 제거"
 
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
-msgstr "Retirer {label}"
+msgstr "{label} 제거"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
 msgid "Remove assignment to {0}"
-msgstr "Retirer l’assignation à {0}"
+msgstr "{0} 할당 제거"
 
 #. placeholder {0}: property.name || index + 1
 #: src/app/view-editor-form.tsx
 msgid "Remove computed property {0}"
-msgstr "Retirer la propriété calculée {0}"
+msgstr "계산된 속성 {0} 제거"
 
 #: src/components/expression-builder.tsx
 msgid "Remove condition"
-msgstr "Retirer la condition"
+msgstr "조건 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
-msgstr "Retirer du Bloc-notes"
+msgstr "스크래치패드에서 제거"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
-msgstr "Retirer le groupe"
+msgstr "그룹 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove image card"
-msgstr "Retirer la carte image"
+msgstr "이미지 카드 제거"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
 msgid "Remove reminder {0}"
-msgstr "Retirer le rappel {0}"
+msgstr "리마인더 {0} 제거"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Remove this image card from Scratchpad? The image file will be kept."
-msgstr "Retirer cette carte image du Bloc-notes ? Le fichier image sera conservé."
+msgstr "이 이미지 카드를 스크래치패드에서 제거할까요? 이미지 파일은 유지됩니다."
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
-msgstr "Rendu en cours…"
+msgstr "렌더링 중…"
 
 #: src/components/task-row.tsx
 msgid "Reopen"
-msgstr "Rouvrir"
+msgstr "다시 열기"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
-msgstr "Rouvrir la tâche"
+msgstr "작업 다시 열기"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
-msgstr "réorganiser"
+msgstr "순서 변경"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Reorder"
-msgstr "Réordonner"
+msgstr "순서 변경"
 
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
-msgstr "Réordonner {0}. Faites glisser ou utilisez les flèches haut et bas."
+msgstr "{0} 순서 변경. 드래그하거나 위쪽 및 아래쪽 화살표 키를 사용하세요."
 
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
-msgstr "Ordre de {0} modifié."
+msgstr "{0}의 순서를 변경했습니다."
 
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
-msgstr "Répéter"
+msgstr "반복"
 
 #: src/app/task-screen.tsx
 msgid "Repeat and reminders"
-msgstr "Répétition et rappels"
+msgstr "반복 및 리마인더"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
-msgstr "Fréquence de répétition"
+msgstr "반복 빈도"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat from"
-msgstr "Répéter à partir de"
+msgstr "반복 기준"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat interval"
-msgstr "Intervalle de répétition"
+msgstr "반복 간격"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task"
-msgstr "Tâche récurrente"
+msgstr "반복 작업"
 
 #: src/components/task-actions.tsx
 msgid "Repeating task actions"
-msgstr "Actions de la tâche récurrente"
+msgstr "반복 작업 작업"
 
 #: src/i18n/presentation.ts
 msgid "Repeats"
-msgstr "Se répète"
+msgstr "반복"
 
 #: src/i18n/editor-phrases.ts
 msgid "replace"
-msgstr "remplacer"
+msgstr "바꾸기"
 
 #: src/i18n/editor-phrases.ts
 msgid "Replace"
-msgstr "Remplacer"
+msgstr "바꾸기"
 
 #: src/i18n/editor-phrases.ts
 msgid "replace all"
-msgstr "tout remplacer"
+msgstr "모두 바꾸기"
 
 #. CodeMirror replaces the supplied token with the match count. Keep the count argument.
 #: src/i18n/editor-phrases.ts
 msgid "replaced {count} matches"
-msgstr "{count} correspondances remplacées"
+msgstr "일치 항목 {count}개 바꿈"
 
 #. CodeMirror replaces the supplied token with a line number. Keep the line argument.
 #: src/i18n/editor-phrases.ts
 msgid "replaced match on line {line}"
-msgstr "correspondance remplacée à la ligne {line}"
+msgstr "{line}행의 일치 항목 바꿈"
 
 #. placeholder {0}: entry.requestId.slice(0, 8)
 #: src/app/cloud-collection.tsx
 msgid "Request {0}"
-msgstr "Requête {0}"
+msgstr "요청 {0}"
 
 #: src/components/task-model-settings.tsx
 msgid "Reset note checkboxes when a task repeats"
-msgstr "Réinitialiser les cases à cocher des notes lorsqu’une tâche se répète"
+msgstr "작업 반복 시 노트 체크박스 초기화"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
-msgstr "Redémarrer TaskNotes"
+msgstr "TaskNotes 다시 시작"
 
 #: src/components/task-actions.tsx
 msgid "Restore"
-msgstr "Restaurer"
+msgstr "복원"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
-msgstr "Restauration de votre vue d’accueil"
+msgstr "홈 뷰 복원 중"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resume as current"
-msgstr "Reprendre comme note actuelle"
+msgstr "현재 항목으로 이어서 사용"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
-msgstr "Reprise en cours…"
+msgstr "이어서 여는 중…"
 
 #: src/app/app-shell.tsx
 #: src/components/task-row.tsx
 msgid "Retry"
-msgstr "Réessayer"
+msgstr "다시 시도"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Retry {selectedReviewCount} task notes"
-msgstr "Réessayer pour {selectedReviewCount} notes de tâche"
+msgstr "작업 노트 {selectedReviewCount}개 다시 시도"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry authorization"
-msgstr "Réessayer l’autorisation"
+msgstr "권한 부여 다시 시도"
 
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
-msgstr "Réessayez en rouvrant « Gérer les vues » ou en actualisant la collection."
+msgstr "뷰 관리에서 다시 열거나 컬렉션을 새로고침하여 다시 시도하세요."
 
 #: src/app/app-shell.tsx
 msgid "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-msgstr "La nouvelle tentative vérifie la requête enregistrée sans envoyer une nouvelle suppression. L’abandon exige une confirmation et déconnecte cette collection."
+msgstr "다시 시도하면 새로 삭제하지 않고 저장된 요청을 확인합니다. 폐기하려면 확인이 필요하며 이 컬렉션의 연결이 해제됩니다."
 
 #: src/components/collection-availability.tsx
 msgid "Retry connection"
-msgstr "Réessayer la connexion"
+msgstr "연결 다시 시도"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry opening TaskNotes"
-msgstr "Réessayer l’ouverture de TaskNotes"
+msgstr "TaskNotes 열기 다시 시도"
 
 #: src/components/assignee-editor.tsx
 msgid "Retry people"
-msgstr "Réessayer le chargement des personnes"
+msgstr "사람 목록 다시 시도"
 
 #: src/app/cloud-collection.tsx
 msgid "Retry recovery review"
-msgstr "Réessayer la vérification de récupération"
+msgstr "복구 검토 다시 시도"
 
 #: src/app/search-screen.tsx
 msgid "Retry search"
-msgstr "Réessayer la recherche"
+msgstr "검색 다시 시도"
 
 #: src/app/view-empty-state.tsx
 msgid "Retry this view to check for tasks."
-msgstr "Réessayez cette vue pour vérifier la présence de tâches."
+msgstr "작업을 확인하려면 이 뷰를 다시 시도하세요."
 
 #: src/app/app-shell.tsx
 msgid "Retry, or undo to restore the task here."
-msgstr "Réessayez ou annulez pour restaurer la tâche ici."
+msgstr "다시 시도하거나 실행 취소하여 작업을 여기로 복원하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
-msgstr "Valeurs réutilisables pour les filtres, le regroupement, le tri et les champs."
+msgstr "필터, 그룹화, 정렬 및 필드에서 재사용할 값입니다."
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for grouping and displayed fields."
-msgstr "Valeurs réutilisables pour le regroupement et les champs affichés."
+msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
-msgstr "Vérifier l’accès aux notifications"
+msgstr "알림 접근 검토"
 
 #: src/app/cloud-collection.tsx
 msgid "Review TaskNotes setup"
-msgstr "Vérifier la configuration TaskNotes"
+msgstr "TaskNotes 설정 검토"
 
 #: src/app/cloud-collection.tsx
 msgid "Review unconfirmed changes"
-msgstr "Vérifier les modifications non confirmées"
+msgstr "확인되지 않은 변경 사항 검토"
 
 #: src/app/cloud-collection.tsx
 msgid "Review updated access"
-msgstr "Vérifier les autorisations mises à jour"
+msgstr "업데이트된 접근 권한 검토"
 
 #: src/components/task-model-settings.tsx
 msgid "Rolling window"
-msgstr "Fenêtre glissante"
+msgstr "이동 기간"
 
 #: src/components/task-property-editor.tsx
 msgid "Save"
-msgstr "Enregistrer"
+msgstr "저장"
 
 #. placeholder {0}: label.toLocaleLowerCase()
 #: src/components/task-actions.tsx
 msgid "Save {0}"
-msgstr "Enregistrer : {0}"
+msgstr "{0} 저장"
 
 #: src/components/reminder-editor.tsx
 msgid "Save a fixed or relative reminder in this task."
-msgstr "Enregistrez un rappel fixe ou relatif dans cette tâche."
+msgstr "이 작업에 고정 또는 상대 리마인더를 저장합니다."
 
 #: src/app/task-screen.tsx
 msgid "Save failed · Retry"
-msgstr "Échec de l’enregistrement · Réessayer"
+msgstr "저장 실패 · 다시 시도"
 
 #. placeholder {0}: saveError ?? uiCopy("Tap to retry.")
 #: src/app/task-screen.tsx
 msgid "Save failed. {0}"
-msgstr "Échec de l’enregistrement. {0}"
+msgstr "저장하지 못했습니다. {0}"
 
 #: src/app/task-time-tracking.tsx
 msgid "Save session"
-msgstr "Enregistrer la session"
+msgstr "세션 저장"
 
 #: src/components/task-model-settings.tsx
 msgid "Save task settings"
-msgstr "Enregistrer les paramètres des tâches"
+msgstr "작업 설정 저장"
 
 #: src/app/view-editor.tsx
 msgid "Save view"
-msgstr "Enregistrer la vue"
+msgstr "뷰 저장"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
-msgstr "Enregistré"
+msgstr "저장됨"
 
 #: src/app/cloud-collection.tsx
 msgid "Saved change recovery"
-msgstr "Récupération des modifications enregistrées"
+msgstr "저장된 변경 사항 복구 정보"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "Vue enregistrée"
+msgstr "저장된 뷰"
 
 #: src/app/views/view-catalog.tsx
 msgid "Saved views"
-msgstr "Vues enregistrées"
+msgstr "저장된 뷰"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
-msgstr "Enregistré dans la collection."
+msgstr "컬렉션에 저장되었습니다."
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-model-settings.tsx
 msgid "Saving"
-msgstr "Enregistrement en cours"
+msgstr "저장 중"
 
 #: src/app/view-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Saving…"
-msgstr "Enregistrement en cours…"
+msgstr "저장 중…"
 
 #: src/app/task-screen.tsx
 msgid "Schedule and status"
-msgstr "Planification et statut"
+msgstr "일정 및 상태"
 
 #: src/components/task-actions.tsx
 msgid "Schedule today"
-msgstr "Planifier pour aujourd’hui"
+msgstr "오늘로 예약"
 
 #: src/components/task-actions.tsx
 msgid "Schedule tomorrow"
-msgstr "Planifier pour demain"
+msgstr "내일로 예약"
 
 #: src/app/view-editor-form.tsx
 msgid "scheduled"
-msgstr "date planifiée"
+msgstr "예정"
 
 #: src/app/task-screen.tsx
 #: src/components/reminder-editor.tsx
@@ -3752,35 +3752,35 @@ msgstr "date planifiée"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Scheduled"
-msgstr "Planifiée"
+msgstr "예정"
 
 #: src/components/task-capture.tsx
 msgid "Scheduled "
-msgstr "Planifiée "
+msgstr "예정 "
 
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
-msgstr "Date planifiée (non définie)"
+msgstr "예정일(설정 안 됨)"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.scheduled)
 #: src/app/task-screen.tsx
 msgid "Scheduled {0}"
-msgstr "Planifiée : {0}"
+msgstr "{0} 예정"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
-msgstr "Dates planifiées"
+msgstr "예정일"
 
 #: src/i18n/ui-copy.ts
 msgid "scratchpad"
-msgstr "bloc-notes"
+msgstr "스크래치패드"
 
 #: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Scratchpad"
-msgstr "Bloc-notes"
+msgstr "스크래치패드"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Scratchpad editing mode"
