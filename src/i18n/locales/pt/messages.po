@@ -2012,43 +2012,43 @@ msgstr "Primeiro"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
-msgstr "Date et heure fixes"
+msgstr "Data e hora fixas"
 
 #: src/components/recurrence-field.tsx
 msgid "Fixed schedule"
-msgstr "Planification fixe"
+msgstr "Agendamento fixo"
 
 #: src/i18n/editor-phrases.ts
 msgid "Fold line"
-msgstr "Replier la ligne"
+msgstr "Recolher linha"
 
 #: src/i18n/editor-phrases.ts
 msgid "folded code"
-msgstr "code replié"
+msgstr "código recolhido"
 
 #: src/i18n/editor-phrases.ts
 msgid "Folded lines"
-msgstr "Lignes repliées"
+msgstr "Linhas recolhidas"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
-msgstr "Par exemple P1D"
+msgstr "Por exemplo, P1D"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
-msgstr "Formules"
+msgstr "Fórmulas"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas and source details for this saved view."
-msgstr "Formules et détails du fichier source de cette vue enregistrée."
+msgstr "Fórmulas e detalhes da origem desta visualização salva."
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr "quatrième"
+msgstr "quarto"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
-msgstr "Quatrième"
+msgstr "Quarto"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
@@ -2056,441 +2056,441 @@ msgstr "de"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
-msgstr "Depuis le formulaire de tâche"
+msgstr "No formulário da tarefa"
 
 #: src/app/view-editor-form.tsx
 msgid "Full schedule"
-msgstr "Calendrier complet"
+msgstr "Programação completa"
 
 #: src/app/task-screen.tsx
 msgid "Future horizon"
-msgstr "Horizon futur"
+msgstr "Horizonte futuro"
 
 #: src/components/task-model-settings.tsx
 msgid "Future occurrence horizon"
-msgstr "Horizon des occurrences futures"
+msgstr "Horizonte de ocorrências futuras"
 
 #: src/components/dependency-editor.tsx
 msgid "Gap"
-msgstr "Décalage"
+msgstr "Intervalo"
 
 #: src/i18n/editor-phrases.ts
 msgid "go"
-msgstr "aller"
+msgstr "ir"
 
 #: src/app/task-screen.tsx
 msgid "Go back and refresh the collection."
-msgstr "Revenez en arrière et actualisez la collection."
+msgstr "Volte e atualize a coleção."
 
 #: src/i18n/editor-phrases.ts
 msgid "Go to line"
-msgstr "Aller à la ligne"
+msgstr "Ir para a linha"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
-msgstr "Groupe"
+msgstr "Agrupar"
 
 #: src/app/view-editor-form.tsx
 msgid "Group & sort"
-msgstr "Regrouper et trier"
+msgstr "Agrupar e ordenar"
 
 #: src/app/view-editor-form.tsx
 msgid "Group by"
-msgstr "Regrouper par"
+msgstr "Agrupar por"
 
 #: src/app/view-editor-form.tsx
 msgid "Group direction"
-msgstr "Sens du regroupement"
+msgstr "Direção do agrupamento"
 
 #. placeholder {0}: humanize(draft.groupProperty)
 #: src/app/view-editor-form.tsx
 msgid "Grouped by {0}"
-msgstr "Regroupement par {0}"
+msgstr "Agrupado por {0}"
 
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
-msgstr "Colonnes regroupées"
+msgstr "Colunas agrupadas"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
-msgstr "Titre"
+msgstr "Título"
 
 #: src/i18n/pilot-fixture.tsx
 msgctxt "translation pilot rich-text example"
 msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Bonjour {name}. Consultez <0>la documentation</0>."
+msgstr "Olá, {name}. Leia <0>a documentação</0>."
 
 #: src/app/more-screen.tsx
 msgid "Help"
-msgstr "Aide"
+msgstr "Ajuda"
 
 #: src/components/task-capture.tsx
 msgid "Hide details"
-msgstr "Masquer les détails"
+msgstr "Ocultar detalhes"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
-msgstr "Masquer les étapes d’installation"
+msgstr "Ocultar etapas de instalação"
 
 #: src/app/task-time-tracking.tsx
 msgid "Hide sessions"
-msgstr "Masquer les sessions"
+msgstr "Ocultar sessões"
 
 #: src/app/views/navigation-view-order.tsx
 msgid "Home"
-msgstr "Accueil"
+msgstr "Início"
 
 #: src/app/cloud-collection.tsx
 #: src/app/collection-picker.tsx
 msgid "Hosted by mdbase"
-msgstr "Hébergée par mdbase"
+msgstr "Hospedado pelo mdbase"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Hour"
-msgstr "Heure"
+msgstr "Hora"
 
 #: src/components/duration-field.tsx
 #: src/components/reminder-editor.tsx
 msgid "Hours"
-msgstr "Heures"
+msgstr "Horas"
 
 #: src/app/collection-settings.tsx
 msgid "How tasks are stored"
-msgstr "Comment les tâches sont stockées"
+msgstr "Como as tarefas são armazenadas"
 
 #: src/app/more-screen.tsx
 msgid "How to install"
-msgstr "Comment installer"
+msgstr "Como instalar"
 
 #: src/app/cloud-collection.tsx
 msgid "If you do not approve this setup, TaskNotes cannot create its portable views in this collection. You can choose another collection below."
-msgstr "Si vous n’approuvez pas cette configuration, TaskNotes ne pourra pas créer ses vues portables dans cette collection. Vous pouvez choisir une autre collection ci-dessous."
+msgstr "Se você não aprovar esta configuração, o TaskNotes não poderá criar suas visualizações portáteis nesta coleção. Você pode escolher outra coleção abaixo."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
-msgstr "Actions de l’image"
+msgstr "Ações da imagem"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image could not be loaded"
-msgstr "Impossible de charger l’image"
+msgstr "Não foi possível carregar a imagem"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Image file is unavailable"
-msgstr "Le fichier image est indisponible"
+msgstr "Arquivo de imagem indisponível"
 
 #: src/components/markdown-preview.tsx
 msgid "Image preview unavailable"
-msgstr "Aperçu de l’image indisponible"
+msgstr "Prévia da imagem indisponível"
 
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
-msgstr "Image indisponible hors ligne"
+msgstr "Imagem indisponível offline"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
-msgstr "Dans la navigation"
+msgstr "Na navegação"
 
 #: src/components/task-property-editor.tsx
 msgid "In one week"
-msgstr "Dans une semaine"
+msgstr "Em uma semana"
 
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
-msgstr "Inclure les occurrences terminées."
+msgstr "Incluir ocorrências concluídas."
 
 #: src/app/view-editor-form.tsx
 msgid "Include skipped occurrences."
-msgstr "Inclure les occurrences ignorées."
+msgstr "Incluir ocorrências ignoradas."
 
 #: src/components/expression-builder.tsx
 msgid "Include tasks when"
-msgstr "Inclure les tâches quand"
+msgstr "Incluir tarefas quando"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Indent"
-msgstr "Indenter"
+msgstr "Recuar"
 
 #: src/components/task-attachments.tsx
 msgid "Insert"
-msgstr "Insérer"
+msgstr "Inserir"
 
 #: src/components/task-attachments.tsx
 msgid "Insert in Notes"
-msgstr "Insérer dans les notes"
+msgstr "Inserir em Notas"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
-msgstr "Installer l’application"
+msgstr "Instalar aplicativo"
 
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes"
-msgstr "Installer TaskNotes"
+msgstr "Instalar o TaskNotes"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
-msgstr "Règle de récurrence invalide"
+msgstr "Regra de recorrência inválida"
 
 #: src/components/expression-builder.tsx
 msgid "is"
-msgstr "est égal à"
+msgstr "é"
 
 #: src/components/expression-builder.tsx
 msgid "is after"
-msgstr "est après"
+msgstr "é depois de"
 
 #: src/components/expression-builder.tsx
 msgid "is before"
-msgstr "est avant"
+msgstr "é antes de"
 
 #: src/components/expression-builder.tsx
 msgid "is empty"
-msgstr "est vide"
+msgstr "está vazio"
 
 #: src/components/expression-builder.tsx
 msgid "is not"
-msgstr "n’est pas égal à"
+msgstr "não é"
 
 #: src/components/expression-builder.tsx
 msgid "is not empty"
-msgstr "n’est pas vide"
+msgstr "não está vazio"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
-msgstr "Valeur ISO 8601"
+msgstr "Valor ISO 8601"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Italic"
-msgstr "Italique"
+msgstr "Itálico"
 
 #: src/i18n/ui-copy.ts
 msgid "item"
-msgstr "élément"
+msgstr "item"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
-msgstr "Aller au projet"
+msgstr "Ir para o projeto"
 
 #: src/app/task-screen.tsx
 msgid "Keep a rolling window"
-msgstr "Maintenir une fenêtre glissante"
+msgstr "Manter um período contínuo"
 
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
-msgstr "Continuer à ajouter des tâches"
+msgstr "Continuar adicionando tarefas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep as note"
-msgstr "Conserver comme note"
+msgstr "Manter como nota"
 
 #: src/components/recurrence-field.tsx
 msgid "Keep dates anchored to the pattern."
-msgstr "Conserver les dates ancrées sur le schéma de récurrence."
+msgstr "Manter as datas ancoradas ao padrão."
 
 #: src/components/task-model-settings.tsx
 msgid "Keep due-date offset when a task repeats"
-msgstr "Conserver le décalage de l’échéance lorsqu’une tâche se répète"
+msgstr "Manter o deslocamento da data de vencimento quando uma tarefa se repetir"
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
-msgstr "Continuer la modification"
+msgstr "Continuar editando"
 
 #: src/app/task-screen.tsx
 msgid "Keep individual Markdown notes for recurring dates."
-msgstr "Conserver des notes Markdown individuelles pour les dates récurrentes."
+msgstr "Manter notas Markdown individuais para datas recorrentes."
 
 #: src/app/app-shell.tsx
 #: src/app/cloud-collection.tsx
 msgid "Keep saved recovery"
-msgstr "Conserver les données de récupération"
+msgstr "Manter recuperação salva"
 
 #: src/components/task-actions.tsx
 msgid "Keep task"
-msgstr "Conserver la tâche"
+msgstr "Manter tarefa"
 
 #: src/components/operation-error-notice.tsx
 msgid "Keep the collection connected and review the earlier change’s exact result before making another change."
-msgstr "Gardez la collection connectée et vérifiez le résultat exact de la modification précédente avant d’en effectuer une autre."
+msgstr "Mantenha a coleção conectada e revise o resultado exato da alteração anterior antes de fazer outra alteração."
 
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
-msgstr "Conserver le champ d’ajout rapide dans cette vue."
+msgstr "Manter o campo de adição rápida nesta visualização."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
-msgstr "Continuer à écrire"
+msgstr "Continuar escrevendo"
 
 #: src/i18n/presentation.ts
 msgid "last"
-msgstr "dernier"
+msgstr "último"
 
 #: src/components/recurrence-field.tsx
 msgid "Last"
-msgstr "Dernier"
+msgstr "Último"
 
 #: src/app/views-screen.tsx
 msgid "Last available result"
-msgstr "Dernier résultat disponible"
+msgstr "Último resultado disponível"
 
 #: src/components/recurrence-field.tsx
 msgid "Last date"
-msgstr "Dernière date"
+msgstr "Última data"
 
 #: src/i18n/presentation.ts
 msgid "last day"
-msgstr "dernier jour"
+msgstr "último dia"
 
 #: src/components/recurrence-field.tsx
 msgid "Last day"
-msgstr "Dernier jour"
+msgstr "Último dia"
 
 #: src/app/collection-settings.tsx
 msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "La dernière actualisation a vérifié {scanned, plural, one {# document} other {# documents}} en {elapsed} ms."
+msgstr "A última atualização verificou {scanned, plural, one {# registro} other {# registros}} em {elapsed} ms."
 
 #: src/i18n/default-labels.ts
 msgid "Later"
-msgstr "Plus tard"
+msgstr "Mais tarde"
 
 #: src/app/view-editor-form.tsx
 msgid "Layout"
-msgstr "Disposition"
+msgstr "Layout"
 
 #. placeholder {0}: draft.renderer === "tasknotes.planner" ? t({ message: " (external app)" }) : ""
 #: src/app/view-editor-form.tsx
 msgid "Layout: {layoutLabel}{0}"
-msgstr "Disposition : {layoutLabel}{0}"
+msgstr "Layout: {layoutLabel}{0}"
 
 #: src/app/more-screen.tsx
 msgid "Light"
-msgstr "Clair"
+msgstr "Claro"
 
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
-msgstr "Liez votre compte à un document de personne avant d’utiliser « Assignées à moi »."
+msgstr "Vincule sua conta a um registro de pessoa antes de usar Atribuídas a mim."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Linked"
-msgstr "Liée"
+msgstr "Vinculado"
 
 #: src/app/view-editor-form.tsx
 msgid "List"
-msgstr "Liste"
+msgstr "Lista"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
-msgstr "Charger plus de tâches"
+msgstr "Carregar mais tarefas"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Load older"
-msgstr "Charger les éléments plus anciens"
+msgstr "Carregar anteriores"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks"
-msgstr "Charger les tâches restantes"
+msgstr "Carregar tarefas restantes"
 
 #: src/app/views-screen.tsx
 msgid "Load remaining tasks to change manual order."
-msgstr "Chargez les tâches restantes pour modifier l’ordre manuel."
+msgstr "Carregue as tarefas restantes para alterar a ordem manual."
 
 #. placeholder {0}: presentedExecution.rows.length
 #. placeholder {1}: presentedExecution.totalCount
 #. placeholder {2}: manualOrder ? t({ message: "Load remaining tasks to change manual order." }) : ""
 #: src/app/views-screen.tsx
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
-msgstr "{0} tâches chargées sur {1} correspondantes. Les nombres par section concernent les tâches chargées. {2}"
+msgstr "Carregadas {0} de {1} tarefas correspondentes. As contagens das seções abrangem as tarefas carregadas. {2}"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr "Chargement de l’image…"
+msgstr "Carregando imagem…"
 
 #: src/components/task-attachments.tsx
 msgid "Loading images…"
-msgstr "Chargement des images…"
+msgstr "Carregando imagens…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
-msgstr "Chargement de la suite…"
+msgstr "Carregando mais…"
 
 #: src/components/assignee-editor.tsx
 msgid "Loading people…"
-msgstr "Chargement des personnes…"
+msgstr "Carregando pessoas…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading previous notes…"
-msgstr "Chargement des notes précédentes…"
+msgstr "Carregando notas anteriores…"
 
 #: src/components/loading.tsx
 msgid "Loading tasks"
-msgstr "Chargement des tâches"
+msgstr "Carregando tarefas"
 
 #: src/app/views-screen.tsx
 msgid "Loading tasks…"
-msgstr "Chargement des tâches…"
+msgstr "Carregando tarefas…"
 
 #: src/app/search-screen.tsx
 msgid "Loading your person identity…"
-msgstr "Chargement de votre identité de personne…"
+msgstr "Carregando sua identidade de pessoa…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
-msgstr "Chargement…"
+msgstr "Carregando…"
 
 #: src/components/multi-value-field.tsx
 msgid "Looking in collection…"
-msgstr "Recherche dans la collection…"
+msgstr "Procurando na coleção…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
-msgstr "Créer une tâche"
+msgstr "Criar uma tarefa"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
-msgstr "Créer une note d’occurrence"
+msgstr "Criar nota da ocorrência"
 
 #: src/app/app-shell.tsx
 msgid "Manage"
-msgstr "Gérer"
+msgstr "Gerenciar"
 
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 msgid "Manage views"
-msgstr "Gérer les vues"
+msgstr "Gerenciar visualizações"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx
 msgid "Manual order"
-msgstr "Ordre manuel"
+msgstr "Ordem manual"
 
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
-msgstr "L’ordre manuel est actif. Des poignées de déplacement apparaîtront sur les tâches."
+msgstr "A ordem manual está ativa. Alças de arraste aparecerão nas tarefas."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark complete"
-msgstr "Marquer comme terminée"
+msgstr "Marcar como concluída"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Mark incomplete"
-msgstr "Marquer comme non terminée"
+msgstr "Marcar como incompleta"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
-msgstr "Marquer l’occurrence comme ouverte"
+msgstr "Marcar ocorrência como aberta"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Mark open"
-msgstr "Marquer comme ouverte"
+msgstr "Marcar como aberta"
 
 #: src/components/task-actions.tsx
 msgid "Markdown link"
-msgstr "Lien Markdown"
+msgstr "Link Markdown"
 
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
-msgstr "Liens Markdown"
+msgstr "Links Markdown"
 
 #: src/app/task-screen.tsx
 msgid "Markdown record"
