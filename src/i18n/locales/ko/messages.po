@@ -820,8 +820,8 @@ msgid "Agenda"
 msgstr "일정"
 
 #: src/i18n/editor-phrases.ts
-msgid "all"
-msgstr "모두"
+#~ msgid "all"
+#~ msgstr "모두"
 
 #: src/app/views/view-catalog.tsx
 msgid "All"
@@ -1025,8 +1025,8 @@ msgid "Built-in working spaces"
 msgstr "기본 작업 공간"
 
 #: src/i18n/editor-phrases.ts
-msgid "by word"
-msgstr "단어 기준"
+#~ msgid "by word"
+#~ msgstr "단어 기준"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1251,8 +1251,8 @@ msgid "Clear value"
 msgstr "값 지우기"
 
 #: src/i18n/editor-phrases.ts
-msgid "close"
-msgstr "닫기"
+#~ msgid "close"
+#~ msgstr "닫기"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-actions.tsx
@@ -1446,8 +1446,8 @@ msgid "Completion or skip"
 msgstr "완료 또는 건너뛰기"
 
 #: src/i18n/editor-phrases.ts
-msgid "Completions"
-msgstr "완료 횟수"
+#~ msgid "Completions"
+#~ msgstr "완료 횟수"
 
 #: src/app/view-editor-form.tsx
 msgid "Computed properties are valid"
@@ -1546,8 +1546,8 @@ msgid "Continue on the timeline"
 msgstr "타임라인에서 계속"
 
 #: src/i18n/editor-phrases.ts
-msgid "Control character"
-msgstr "제어 문자"
+#~ msgid "Control character"
+#~ msgstr "제어 문자"
 
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
@@ -1698,8 +1698,8 @@ msgid "Creating…"
 msgstr "만드는 중…"
 
 #: src/i18n/editor-phrases.ts
-msgid "current match"
-msgstr "현재 일치 항목"
+#~ msgid "current match"
+#~ msgstr "현재 일치 항목"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Current note"
@@ -2221,8 +2221,8 @@ msgid "Filter views"
 msgstr "뷰 필터링"
 
 #: src/i18n/editor-phrases.ts
-msgid "Find"
-msgstr "찾기"
+#~ msgid "Find"
+#~ msgstr "찾기"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
@@ -2282,16 +2282,16 @@ msgid "Focused task"
 msgstr "포커스된 작업"
 
 #: src/i18n/editor-phrases.ts
-msgid "Fold line"
-msgstr "줄 접기"
+#~ msgid "Fold line"
+#~ msgstr "줄 접기"
 
 #: src/i18n/editor-phrases.ts
-msgid "folded code"
-msgstr "접힌 코드"
+#~ msgid "folded code"
+#~ msgstr "접힌 코드"
 
 #: src/i18n/editor-phrases.ts
-msgid "Folded lines"
-msgstr "접힌 줄"
+#~ msgid "Folded lines"
+#~ msgstr "접힌 줄"
 
 #: src/components/task-model-settings.tsx
 msgid "For an upcoming window"
@@ -2342,8 +2342,8 @@ msgid "Gap"
 msgstr "간격"
 
 #: src/i18n/editor-phrases.ts
-msgid "go"
-msgstr "이동"
+#~ msgid "go"
+#~ msgstr "이동"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
@@ -2358,8 +2358,8 @@ msgid "Go to"
 msgstr "이동"
 
 #: src/i18n/editor-phrases.ts
-msgid "Go to line"
-msgstr "줄로 이동"
+#~ msgid "Go to line"
+#~ msgstr "줄로 이동"
 
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
@@ -2846,8 +2846,8 @@ msgid "Markdown links"
 msgstr "Markdown 링크"
 
 #: src/i18n/editor-phrases.ts
-msgid "match case"
-msgstr "대소문자 구분"
+#~ msgid "match case"
+#~ msgstr "대소문자 구분"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -3117,8 +3117,8 @@ msgid "New view"
 msgstr "새 뷰"
 
 #: src/i18n/editor-phrases.ts
-msgid "next"
-msgstr "다음"
+#~ msgid "next"
+#~ msgstr "다음"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3410,8 +3410,8 @@ msgid "On a date"
 msgstr "날짜 기준"
 
 #: src/i18n/editor-phrases.ts
-msgid "on line"
-msgstr "줄에서"
+#~ msgid "on line"
+#~ msgstr "줄에서"
 
 #: src/app/settings-sections.ts
 msgid "On this device"
@@ -3632,8 +3632,8 @@ msgid "Preview updates after saving"
 msgstr "저장 후 미리보기가 업데이트됩니다."
 
 #: src/i18n/editor-phrases.ts
-msgid "previous"
-msgstr "이전"
+#~ msgid "previous"
+#~ msgstr "이전"
 
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
@@ -3842,8 +3842,8 @@ msgid "Refreshing…"
 msgstr "새로고침 중…"
 
 #: src/i18n/editor-phrases.ts
-msgid "regexp"
-msgstr "정규식"
+#~ msgid "regexp"
+#~ msgstr "정규식"
 
 #: src/components/dependency-editor.tsx
 msgid "Related work"
@@ -4029,26 +4029,26 @@ msgid "Repeats"
 msgstr "반복"
 
 #: src/i18n/editor-phrases.ts
-msgid "replace"
-msgstr "바꾸기"
+#~ msgid "replace"
+#~ msgstr "바꾸기"
 
 #: src/i18n/editor-phrases.ts
-msgid "Replace"
-msgstr "바꾸기"
+#~ msgid "Replace"
+#~ msgstr "바꾸기"
 
 #: src/i18n/editor-phrases.ts
-msgid "replace all"
-msgstr "모두 바꾸기"
+#~ msgid "replace all"
+#~ msgstr "모두 바꾸기"
 
 #. CodeMirror replaces the supplied token with the match count. Keep the count argument.
 #: src/i18n/editor-phrases.ts
-msgid "replaced {count} matches"
-msgstr "일치 항목 {count}개 바꿈"
+#~ msgid "replaced {count} matches"
+#~ msgstr "일치 항목 {count}개 바꿈"
 
 #. CodeMirror replaces the supplied token with a line number. Keep the line argument.
 #: src/i18n/editor-phrases.ts
-msgid "replaced match on line {line}"
-msgstr "{line}행의 일치 항목 바꿈"
+#~ msgid "replaced match on line {line}"
+#~ msgstr "{line}행의 일치 항목 바꿈"
 
 #: src/components/app-error-boundary.tsx
 msgid "Restart TaskNotes"
@@ -4434,8 +4434,8 @@ msgid "Selected drafts become linked TaskNotes in place. Everything else stays i
 msgstr "선택한 초안은 현재 위치에서 연결된 TaskNotes가 됩니다. 나머지는 계속 작업할 수 있도록 이 스크래치패드에 남습니다."
 
 #: src/i18n/editor-phrases.ts
-msgid "Selection deleted"
-msgstr "선택 항목 삭제됨"
+#~ msgid "Selection deleted"
+#~ msgstr "선택 항목 삭제됨"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5183,7 +5183,6 @@ msgstr "제목 필수"
 msgid "Title: “{title}”. "
 msgstr "제목: “{title}”. "
 
-#: src/i18n/editor-phrases.ts
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "까지"
@@ -5271,16 +5270,16 @@ msgid "Undo a deleted task"
 msgstr "삭제된 작업 실행 취소"
 
 #: src/i18n/editor-phrases.ts
-msgid "unfold"
-msgstr "펼치기"
+#~ msgid "unfold"
+#~ msgstr "펼치기"
 
 #: src/i18n/editor-phrases.ts
-msgid "Unfold line"
-msgstr "줄 펼치기"
+#~ msgid "Unfold line"
+#~ msgstr "줄 펼치기"
 
 #: src/i18n/editor-phrases.ts
-msgid "Unfolded lines"
-msgstr "펼친 줄"
+#~ msgid "Unfolded lines"
+#~ msgstr "펼친 줄"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"
