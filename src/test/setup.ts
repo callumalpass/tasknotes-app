@@ -1,10 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { configure } from "@testing-library/react";
 import { beforeEach } from "vitest";
-import { activateAppLocale } from "../i18n/app";
+import { initializeAppI18n } from "../i18n/app";
 
-// No UI is mounted between tests; avoid React act scheduling timers in pure tests.
-beforeEach(() => activateAppLocale("en"));
+// Reset the real translator, not the user's persisted preference. Writing to
+// jsdom Storage here schedules StorageEvents and pollutes fake-timer tests.
+beforeEach(() => initializeAppI18n().activate("en"));
 
 configure({ asyncUtilTimeout: 5_000 });
 import "fake-indexeddb/auto";
