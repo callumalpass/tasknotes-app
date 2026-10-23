@@ -50,8 +50,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Redirect root and deep links
-        run: cp legacy-pages/index.html legacy-pages/404.html
+      - name: Verify worker retirement and prepare root and deep-link redirects
+        run: |
+          node --test scripts/legacy-pages.node-test.mjs
+          cp legacy-pages/index.html legacy-pages/404.html
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: legacy-pages
