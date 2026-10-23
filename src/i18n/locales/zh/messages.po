@@ -1550,195 +1550,195 @@ msgstr "默认随手记模式"
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default status"
-msgstr "Statut par défaut"
+msgstr "默认状态"
 
 #: src/app/view-editor-form.tsx
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
-msgstr "Les valeurs par défaut déduites des conditions de filtre simples sont ajoutées à la création de la tâche."
+msgstr "根据简单筛选条件推断出的默认值会在创建任务时添加。"
 
 #: src/components/task-model-settings.tsx
 msgid "Delay"
-msgstr "Délai"
+msgstr "延迟"
 
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
-msgstr "Supprimer"
+msgstr "删除"
 
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
-msgstr "Supprimer « {name} » ?"
+msgstr "删除“{name}”？"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
-msgstr "Supprimer l’élément"
+msgstr "删除项目"
 
 #: src/components/task-actions.tsx
 msgid "Delete repeating task"
-msgstr "Supprimer la tâche récurrente"
+msgstr "删除重复任务"
 
 #: src/components/task-actions.tsx
 msgid "Delete task"
-msgstr "Supprimer la tâche"
+msgstr "删除任务"
 
 #: src/components/task-actions.tsx
 msgid "Delete this repeating task and all of its occurrences?"
-msgstr "Supprimer cette tâche récurrente et toutes ses occurrences ?"
+msgstr "删除此重复任务及其所有重复项？"
 
 #: src/components/task-actions.tsx
 msgid "Delete this task?"
-msgstr "Supprimer cette tâche ?"
+msgstr "删除此任务？"
 
 #: src/app/view-editor.tsx
 msgid "Delete view"
-msgstr "Supprimer la vue"
+msgstr "删除视图"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”"
-msgstr "« {0} » supprimé"
+msgstr "已删除“{0}”"
 
 #. placeholder {0}: pendingDeletion.title
 #: src/app/app-shell.tsx
 msgid "Deleted “{0}”. Undo is available for 30 seconds."
-msgstr "« {0} » supprimé. Vous pouvez annuler pendant 30 secondes."
+msgstr "已删除“{0}”。可在 30 秒内撤销。"
 
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
-msgstr "Suppression à vérifier"
+msgstr "需要审核删除操作"
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
-msgstr "Suppression en attente"
+msgstr "等待删除"
 
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
-msgstr "Dépendances"
+msgstr "依赖项"
 
 #: src/app/view-editor-form.tsx
 msgid "Descending"
-msgstr "Décroissant"
+msgstr "降序"
 
 #: src/components/reminder-editor.tsx
 msgid "Description"
-msgstr "Description"
+msgstr "描述"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
-msgstr "Détacher"
+msgstr "分离"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Detach {0}"
-msgstr "Détacher {0}"
+msgstr "分离 {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach from task"
-msgstr "Détacher de la tâche"
+msgstr "从任务中分离"
 
 #: src/components/task-attachments.tsx
 msgid "Detaching keeps the image file in your collection."
-msgstr "Détacher l’image conserve son fichier dans votre collection."
+msgstr "分离后，图片文件仍会保留在你的集合中。"
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
-msgstr "Réglage de l’appareil"
+msgstr "设备设置"
 
 #: src/components/reminder-editor.tsx
 msgid "Direction"
-msgstr "Sens"
+msgstr "方向"
 
 #: src/app/notification-label.ts
 msgid "Disabled in system settings"
-msgstr "Désactivées dans les paramètres système"
+msgstr "已在系统设置中禁用"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard all saved recovery and disconnect this collection? This does not reverse changes that may already have reached mdbase."
-msgstr "Abandonner toutes les données de récupération enregistrées et déconnecter cette collection ? Cela n’annule pas les modifications qui ont peut-être déjà atteint mdbase."
+msgstr "放弃所有已保存的恢复数据并断开此集合？这不会撤销可能已写入 mdbase 的更改。"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes"
-msgstr "Abandonner les modifications"
+msgstr "放弃更改"
 
 #: src/app/view-editor.tsx
 msgid "Discard changes?"
-msgstr "Abandonner les modifications ?"
+msgstr "放弃更改？"
 
 #: src/components/global-task-capture.tsx
 msgid "Discard draft"
-msgstr "Abandonner le brouillon"
+msgstr "放弃草稿"
 
 #: src/app/app-shell.tsx
 msgid "Discard recovery"
-msgstr "Abandonner la récupération"
+msgstr "放弃恢复数据"
 
 #: src/app/cloud-collection.tsx
 msgid "Discard recovery and disconnect"
-msgstr "Abandonner la récupération et déconnecter"
+msgstr "放弃恢复数据并断开连接"
 
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
-msgstr "L’abandon supprime toutes les données de récupération enregistrées et déconnecte cette collection. Cela n’annule pas une suppression qui a peut-être abouti."
+msgstr "放弃操作会移除所有已保存的恢复数据并断开此集合连接，但不会撤销可能已经完成的删除。"
 
 #: src/app/cloud-collection.tsx
 msgid "Discarding…"
-msgstr "Abandon en cours…"
+msgstr "正在放弃…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Dismiss"
-msgstr "Masquer"
+msgstr "关闭"
 
 #: src/components/task-added-notice.tsx
 msgid "Dismiss task added confirmation"
-msgstr "Masquer la confirmation d’ajout de tâche"
+msgstr "关闭“已添加任务”确认提示"
 
 #: src/app/view-editor-form.tsx
 msgid "Displayed properties"
-msgstr "Propriétés affichées"
+msgstr "显示的属性"
 
 #: src/components/expression-builder.tsx
 msgid "does not contain"
-msgstr "ne contient pas"
+msgstr "不包含"
 
 #: src/app/more-screen.tsx
 msgid "Does TaskNotes work offline?"
-msgstr "TaskNotes fonctionne-t-il hors ligne ?"
+msgstr "TaskNotes 可以离线使用吗？"
 
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
-msgstr "Terminé"
+msgstr "完成"
 
 #: src/components/assignee-editor.tsx
 msgid "Done choosing assignees"
-msgstr "Terminer le choix des personnes assignées"
+msgstr "完成负责人选择"
 
 #: src/i18n/ui-copy.ts
 msgid "down"
-msgstr "vers le bas"
+msgstr "向下"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
-msgstr "Brouillon de tâche"
+msgstr "任务草稿"
 
 #: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
-msgstr "Déposer ici"
+msgstr "放到这里"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images here, paste them, upload files, or take a photo."
-msgstr "Déposez des images ici, collez-les, importez des fichiers ou prenez une photo."
+msgstr "将图片拖到这里、粘贴图片、上传文件或拍照。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Drop images to add them"
-msgstr "Déposer des images pour les ajouter"
+msgstr "拖放图片以添加"
 
 #: src/app/view-editor-form.tsx
 msgid "due"
-msgstr "échéance"
+msgstr "截止日期"
 
 #: src/app/full-calendar-view.tsx
 #: src/app/task-screen.tsx
@@ -1748,58 +1748,58 @@ msgstr "échéance"
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Due"
-msgstr "Échéance"
+msgstr "截止日期"
 
 #: src/components/reminder-editor.tsx
 msgid "Due (not set)"
-msgstr "Échéance (non définie)"
+msgstr "未设置截止日期"
 
 #. placeholder {0}: formatRelativeTaskDate(draft.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-screen.tsx
 #: src/i18n/presentation.ts
 msgid "Due {0}"
-msgstr "Échéance : {0}"
+msgstr "截止日期：{0}"
 
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
-msgstr "Échéance et date planifiée"
+msgstr "截止日期和计划日期"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
-msgstr "Échéances"
+msgstr "截止日期"
 
 #: src/components/task-actions.tsx
 msgid "Due set"
-msgstr "Échéance définie"
+msgstr "已设置截止日期"
 
 #: src/components/task-actions.tsx
 msgid "Due today"
-msgstr "Échéance aujourd’hui"
+msgstr "今天截止"
 
 #: src/components/task-actions.tsx
 msgid "Due tomorrow"
-msgstr "Échéance demain"
+msgstr "明天截止"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
-msgstr "Dupliquer"
+msgstr "复制"
 
 #: src/app/view-editor.tsx
 msgid "Duplicate saved view"
-msgstr "Dupliquer la vue enregistrée"
+msgstr "复制已保存的视图"
 
 #: src/components/recurrence-field.tsx
 msgid "Each month"
-msgstr "Chaque mois"
+msgstr "每月"
 
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
-msgstr "Les premières règles sont prioritaires."
+msgstr "较早的规则优先。"
 
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
-msgstr "Modifier"
+msgstr "编辑"
 
 #. placeholder {0}: detail.label
 #. placeholder {0}: item.key
@@ -1808,251 +1808,251 @@ msgstr "Modifier"
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Edit {0}"
-msgstr "Modifier : {0}"
+msgstr "编辑 {0}"
 
 #: src/components/task-actions.tsx
 msgid "Edit dates and reminders"
-msgstr "Modifier les dates et les rappels"
+msgstr "编辑日期和提醒"
 
 #: src/components/task-actions.tsx
 msgid "Edit details"
-msgstr "Modifier les détails"
+msgstr "编辑详情"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit pattern"
-msgstr "Modifier le schéma de récurrence"
+msgstr "编辑重复模式"
 
 #: src/components/task-property-editor.tsx
 msgid "Edit property"
-msgstr "Modifier la propriété"
+msgstr "编辑属性"
 
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
-msgstr "Modifier la tâche récurrente"
+msgstr "编辑重复任务"
 
 #: src/components/recurrence-field.tsx
 msgid "Edit RRULE"
-msgstr "Modifier la RRULE"
+msgstr "编辑 RRULE"
 
 #: src/app/view-editor.tsx
 msgid "Edit saved view"
-msgstr "Modifier la vue enregistrée"
+msgstr "编辑已保存的视图"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Edit view"
-msgstr "Modifier la vue"
+msgstr "编辑视图"
 
 #: src/app/views/view-catalog.tsx
 msgid "Editable"
-msgstr "Modifiables"
+msgstr "可编辑"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
 #: src/app/scratchpad-screen.tsx
 msgid "Editor for {0}"
-msgstr "Éditeur de {0}"
+msgstr "{0}的编辑器"
 
 #: src/app/task-screen.tsx
 msgid "Editor mode"
-msgstr "Mode de l’éditeur"
+msgstr "编辑器模式"
 
 #: src/app/scratchpad-screen.tsx
 msgid "empty"
-msgstr "vide"
+msgstr "空"
 
 #: src/i18n/ui-copy.ts
 msgid "empty item"
-msgstr "élément vide"
+msgstr "空项目"
 
 #: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
-msgstr "tâche vide"
+msgstr "空任务"
 
 #: src/components/recurrence-field.tsx
 msgid "Ends"
-msgstr "Fin"
+msgstr "结束"
 
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
-msgstr "Saisissez une expression CEL."
+msgstr "请输入 CEL 表达式。"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
-msgstr "Estimation (minutes)"
+msgstr "预计时长（分钟）"
 
 #: src/app/task-editor-draft.ts
 msgid "Estimate and work sessions"
-msgstr "Estimation et sessions de travail"
+msgstr "预计时长和工作会话"
 
 #: src/components/recurrence-field.tsx
 msgid "Every"
-msgstr "Intervalle :"
+msgstr "每"
 
 #: src/components/expression-builder.tsx
 msgid "Every task will be included"
-msgstr "Toutes les tâches seront incluses"
+msgstr "将包含所有任务"
 
 #: src/app/view-editor-form.tsx
 msgid "Every view in this file"
-msgstr "Toutes les vues de ce fichier"
+msgstr "此文件中的所有视图"
 
 #: src/i18n/ui-copy.ts
 msgid "Expand"
-msgstr "Déplier"
+msgstr "展开"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Expand image"
-msgstr "Déplier l’image"
+msgstr "展开图片"
 
 #: src/app/view-editor-form.tsx
 msgid "Expression"
-msgstr "Expression"
+msgstr "表达式"
 
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
-msgstr "Expression ou filtre YAML"
+msgstr "表达式或筛选器 YAML"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
-msgstr "Application externe"
+msgstr "外部应用"
 
 #: src/components/task-capture.tsx
 msgid "Extra context for the task"
-msgstr "Informations complémentaires pour la tâche"
+msgstr "任务的补充上下文"
 
 #: src/app/view-editor-form.tsx
 msgid "Fields shown"
-msgstr "Champs affichés"
+msgstr "显示的字段"
 
 #: src/components/task-attachments.tsx
 msgid "File missing"
-msgstr "Fichier introuvable"
+msgstr "文件缺失"
 
 #: src/i18n/default-labels.ts
 msgid "File name"
-msgstr "Nom du fichier"
+msgstr "文件名"
 
 #: src/i18n/default-labels.ts
 msgid "File path"
-msgstr "Chemin du fichier"
+msgstr "文件路径"
 
 #: src/app/view-editor-form.tsx
 msgid "Filter"
-msgstr "Filtre"
+msgstr "筛选"
 
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
-msgstr "Condition du filtre"
+msgstr "筛选条件"
 
 #: src/components/expression-builder.tsx
 msgid "Filter editor mode"
-msgstr "Mode de l’éditeur de filtres"
+msgstr "筛选器编辑模式"
 
 #: src/components/expression-builder.tsx
 msgid "Filter expression"
-msgstr "Expression du filtre"
+msgstr "筛选表达式"
 
 #: src/components/expression-builder.tsx
 msgid "Filter is valid"
-msgstr "Le filtre est valide"
+msgstr "筛选器有效"
 
 #: src/components/expression-builder.tsx
 msgid "Filter property"
-msgstr "Propriété du filtre"
+msgstr "筛选属性"
 
 #: src/components/expression-builder.tsx
 msgid "Filter value"
-msgstr "Valeur du filtre"
+msgstr "筛选值"
 
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
-msgstr "Filtrer les vues"
+msgstr "筛选视图"
 
 #: src/i18n/editor-phrases.ts
 msgid "Find"
-msgstr "Rechercher"
+msgstr "查找"
 
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
-msgstr "Rechercher une tâche"
+msgstr "查找任务"
 
 #: src/app/search-screen.tsx
 msgid "Find a task."
-msgstr "Recherchez une tâche."
+msgstr "查找任务。"
 
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
-msgstr "Rechercher des tâches dans toute votre collection"
+msgstr "在整个集合中查找任务"
 
 #: src/app/cloud-collection.tsx
 msgid "Finish opening TaskNotes"
-msgstr "Terminer l’ouverture de TaskNotes"
+msgstr "完成 TaskNotes 的打开流程"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to finish"
-msgstr "Fin à fin"
+msgstr "完成到完成"
 
 #: src/components/dependency-editor.tsx
 msgid "Finish to start"
-msgstr "Fin à début"
+msgstr "完成到开始"
 
 #: src/app/notification-label.ts
 msgid "Firebase setup required"
-msgstr "Configuration Firebase requise"
+msgstr "需要设置 Firebase"
 
 #: src/i18n/presentation.ts
 msgid "first"
-msgstr "premier"
+msgstr "第一个"
 
 #: src/components/recurrence-field.tsx
 msgid "First"
-msgstr "Premier"
+msgstr "第一个"
 
 #: src/components/reminder-editor.tsx
 msgid "Fixed date and time"
-msgstr "Date et heure fixes"
+msgstr "固定日期和时间"
 
 #: src/components/recurrence-field.tsx
 msgid "Fixed schedule"
-msgstr "Planification fixe"
+msgstr "固定计划"
 
 #: src/i18n/editor-phrases.ts
 msgid "Fold line"
-msgstr "Replier la ligne"
+msgstr "折叠行"
 
 #: src/i18n/editor-phrases.ts
 msgid "folded code"
-msgstr "code replié"
+msgstr "已折叠代码"
 
 #: src/i18n/editor-phrases.ts
 msgid "Folded lines"
-msgstr "Lignes repliées"
+msgstr "已折叠行"
 
 #: src/components/duration-field.tsx
 msgid "For example P1D"
-msgstr "Par exemple P1D"
+msgstr "例如 P1D"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas"
-msgstr "Formules"
+msgstr "公式"
 
 #: src/app/view-editor-form.tsx
 msgid "Formulas and source details for this saved view."
-msgstr "Formules et détails du fichier source de cette vue enregistrée."
+msgstr "此已保存视图的公式和来源详情。"
 
 #: src/i18n/presentation.ts
 msgid "fourth"
-msgstr "quatrième"
+msgstr "第四个"
 
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
-msgstr "Quatrième"
+msgstr "第四个"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
-msgstr "de"
+msgstr "来自"
 
 #: src/app/view-editor-form.tsx
 msgid "From the task form"
