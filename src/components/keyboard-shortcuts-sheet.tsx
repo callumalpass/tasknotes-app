@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t } from "@lingui/core/macro";
 import { X } from "lucide-react";
 import { useId, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -33,9 +35,11 @@ export function KeyboardShortcutsSheet({
         role="dialog"
       >
         <header>
-          <h2 id={titleId}>Keyboard shortcuts</h2>
+          <h2 id={titleId}>
+            <Trans>Keyboard shortcuts</Trans>
+          </h2>
           <button
-            aria-label="Close keyboard shortcuts"
+            aria-label={t`Close keyboard shortcuts`}
             className="icon-action"
             ref={closeRef}
             type="button"
@@ -55,7 +59,10 @@ export function KeyboardShortcutsSheet({
                     {shortcut.keys.map((key, index) => (
                       <span key={key}>
                         {index ? (
-                          <span className="shortcut-or"> or </span>
+                          <span className="shortcut-or">
+                            {" "}
+                            <Trans>or</Trans>{" "}
+                          </span>
                         ) : null}
                         <kbd>{key}</kbd>
                       </span>
@@ -67,7 +74,9 @@ export function KeyboardShortcutsSheet({
           </section>
         ))}
         <p className="keyboard-shortcuts-note">
-          Task keys act on the focused row. Date keys keep any scheduled time.
+          <Trans>
+            Task keys act on the focused row. Date keys keep any scheduled time.
+          </Trans>
         </p>
       </section>
     </div>,

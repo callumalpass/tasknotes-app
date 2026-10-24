@@ -7,13 +7,7 @@ import {
   type WriteLedgerStore,
 } from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { attachTaskNotes } from "../test/next-task-fixture";

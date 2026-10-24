@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "../test/render";
 import { afterEach, describe, expect, it } from "vitest";
 import { ReturningUserNotice } from "./returning-user-notice";
 

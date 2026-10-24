@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { ArrowUpRight, UserRound } from "lucide-react";
 import { personSettingsUrl } from "../cloud/person-settings-url";
 
@@ -21,8 +22,12 @@ export function PersonSetupLink({
     >
       <UserRound size={18} aria-hidden="true" />
       <span className="people-profile-label">
-        <span>Choose or create your person record</span>{" "}
-        <span className="people-action-caption">Opens in a new tab</span>
+        <span>
+          <Trans>Choose or create your person record</Trans>
+        </span>{" "}
+        <span className="people-action-caption">
+          <Trans>Opens in a new tab</Trans>
+        </span>
       </span>
       <ArrowUpRight size={18} aria-hidden="true" />
     </a>

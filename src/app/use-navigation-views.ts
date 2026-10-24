@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -151,7 +152,7 @@ export function useNavigationViews(): {
                 scope: info ? navigationViewScope(info) : "",
                 navigationKeys: [],
               })),
-          error: "Couldn't load your views.",
+          error: translate({ message: "Couldn't load your views." }),
         }));
         setDiscovery("error");
         published = true;

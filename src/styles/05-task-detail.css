@@ -701,6 +701,7 @@
   width: 8rem;
 }
 
+.language-picker,
 .theme-picker .tasknotes-control-trigger {
   min-height: var(--control-min-size);
   padding: 0 8px 0 10px;

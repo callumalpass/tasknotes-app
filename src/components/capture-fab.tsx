@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { Plus } from "lucide-react";
 import type { ButtonHTMLAttributes } from "react";
 import { useCollapseOnScroll } from "../app/use-collapse-on-scroll";
@@ -19,7 +20,9 @@ export function CaptureFab({
       type="button"
     >
       <Plus aria-hidden="true" size={24} strokeWidth={1.8} />
-      <span>Add task</span>
+      <span>
+        <Trans>Add task</Trans>
+      </span>
     </button>
   );
 }

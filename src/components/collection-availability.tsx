@@ -1,3 +1,7 @@
+import { useLingui as useI18n } from "@lingui/react";
+
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useContext, useEffect, useState } from "react";
 import { ConnectionNoticeContext } from "../app/connection-notice";
 import { useRepository } from "../app/repository-context";
@@ -8,6 +12,7 @@ export function CollectionAvailability({
 }: {
   onSettings?: () => void;
 }) {
+  useI18n();
   const { connection, refresh, refreshing } = useRepository();
   const waitingForComputer =
     useContext(ConnectionNoticeContext) === "waiting_for_computer";
@@ -38,7 +43,9 @@ export function CollectionAvailability({
         {protectedEdits}
         {waiting && prolonged ? (
           <div className="collection-connection-indicator" role="status">
-            {connection.state === "connecting" ? "Connecting…" : "Refreshing…"}
+            {connection.state === "connecting"
+              ? translate({ message: "Connecting…" })
+              : translate({ message: "Refreshing…" })}
           </div>
         ) : null}
       </>
@@ -49,16 +56,26 @@ export function CollectionAvailability({
       {protectedEdits}
       <section
         className="collection-availability"
-        aria-label="Collection connection"
+        aria-label={translate({ message: "Collection connection" })}
       >
         <div role="status">
           <span>
             {waitingForComputer
-              ? "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects."
-              : "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."}
+              ? translate({
+                  message:
+                    "Waiting for your computer. Previously loaded tasks stay here; they will refresh when it reconnects.",
+                })
+              : translate({
+                  message:
+                    "Collection unavailable. Showing previously loaded tasks; changes can’t be saved.",
+                })}
           </span>
           {failed && !waitingForComputer ? (
-            <p>Could not reconnect. Try again or check connection settings.</p>
+            <p>
+              <Trans>
+                Could not reconnect. Try again or check connection settings.
+              </Trans>
+            </p>
           ) : null}
         </div>
         <div className="availability-actions">
@@ -72,12 +89,14 @@ export function CollectionAvailability({
                 void refresh().catch(() => setFailed(true));
               }}
             >
-              {refreshing ? "Reconnecting…" : "Retry connection"}
+              {refreshing
+                ? translate({ message: "Reconnecting…" })
+                : translate({ message: "Retry connection" })}
             </button>
           ) : null}
           {onSettings ? (
             <button className="text-action" type="button" onClick={onSettings}>
-              Connection settings
+              <Trans>Connection settings</Trans>
             </button>
           ) : null}
         </div>

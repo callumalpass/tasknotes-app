@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -52,14 +54,16 @@ export function TaskEditRecoveryBoundary({
     return (
       <section className="screen task-screen">
         <button className="back-action" type="button" onClick={onBack}>
-          <ArrowLeft size={20} /> Back
+          <ArrowLeft size={20} /> <Trans>Back</Trans>
         </button>
         <OperationErrorNotice
-          action="Unsaved edit recovery"
+          action={translate({ message: "Unsaved edit recovery" })}
           message={
             scope.error?.message ?? "The collection identity is unavailable."
           }
-          recovery="Go back and refresh the collection before editing."
+          recovery={translate({
+            message: "Go back and refresh the collection before editing.",
+          })}
         />
       </section>
     );

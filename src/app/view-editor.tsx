@@ -1,3 +1,6 @@
+import { t as translate } from "@lingui/core/macro";
+import { t, plural } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import { registerReloadParticipant } from "../pwa/reload";
 import {
@@ -51,12 +54,17 @@ export function ViewEditor({
   onClose(): void;
   onChanged(): Promise<void>;
 }) {
+  const { t } = useLingui();
   const { repository } = useRepository();
   useEffect(
     () =>
       registerReloadParticipant({
         check: () => {
-          throw new Error("Finish or close the view editor before reloading.");
+          throw new Error(
+            translate({
+              message: "Finish or close the view editor before reloading.",
+            }),
+          );
         },
       }),
     [],
@@ -254,8 +262,8 @@ export function ViewEditor({
 
   const title =
     draft?.name.trim() ||
-    (duplicate ? `Copy ${view?.name}` : view?.name) ||
-    "New view";
+    (duplicate ? t`Copy ${view?.name}` : view?.name) ||
+    t`New view`;
   const canSave =
     Boolean(draft?.name.trim()) &&
     filterValid &&
@@ -266,7 +274,7 @@ export function ViewEditor({
   return createPortal(
     <div className="view-editor-layer">
       <button
-        aria-label="Close view editor"
+        aria-label={t({ message: "Close view editor" })}
         className="view-editor-scrim"
         disabled={status === "saving"}
         type="button"
@@ -285,15 +293,15 @@ export function ViewEditor({
           <div>
             <p className="eyebrow">
               {duplicate
-                ? "Duplicate saved view"
+                ? t({ message: "Duplicate saved view" })
                 : view
-                  ? "Edit saved view"
-                  : "Create saved view"}
+                  ? t({ message: "Edit saved view" })
+                  : t({ message: "Create saved view" })}
             </p>
             <h1 id="view-editor-title">{title}</h1>
           </div>
           <button
-            aria-label="Close view editor"
+            aria-label={t({ message: "Close view editor" })}
             className="quiet-icon"
             disabled={status === "saving"}
             type="button"
@@ -336,7 +344,7 @@ export function ViewEditor({
               type="button"
               onClick={() => setConfirmation("delete")}
             >
-              Delete view
+              <Trans>Delete view</Trans>
             </button>
           ) : (
             <span />
@@ -348,7 +356,7 @@ export function ViewEditor({
               type="button"
               onClick={requestClose}
             >
-              Cancel
+              <Trans>Cancel</Trans>
             </button>
             <button
               className="save-view-action"
@@ -356,16 +364,18 @@ export function ViewEditor({
               type="button"
               onClick={() => void save()}
             >
-              {status === "saving" ? "Saving…" : "Save view"}
+              {status === "saving"
+                ? t({ message: "Saving…" })
+                : t({ message: "Save view" })}
             </button>
           </div>
         </footer>
         {confirmation ? (
           <ViewEditorConfirmation
-            action={confirmation}
+            kind={confirmation}
             busy={status !== "ready"}
             containerRef={confirmationRef}
-            name={draft?.name || view?.name || "this view"}
+            name={draft?.name || view?.name || t`this view`}
             onCancel={() => setConfirmation(null)}
             onConfirm={() => {
               if (confirmation === "discard") onClose();
@@ -380,52 +390,66 @@ export function ViewEditor({
 }
 
 function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
+  const { t } = useLingui();
   return (
     <details className="view-draft-preview">
       <summary>
-        Preview <span aria-live="polite">{previewLabel(preview)}</span>
+        <Trans>Preview </Trans>
+        <span aria-live="polite">{previewLabel(preview)}</span>
       </summary>
       {preview.tasks.length ? (
-        <ol aria-label="Preview tasks">
+        <ol aria-label={t({ message: "Preview tasks" })}>
           {preview.tasks.map((task) => (
             <li key={task.id}>{task.title}</li>
           ))}
         </ol>
       ) : preview.kind === "live" ? (
-        <p className="view-preview-empty">No tasks match this draft.</p>
+        <p className="view-preview-empty">
+          <Trans>No tasks match this draft.</Trans>
+        </p>
       ) : null}
     </details>
   );
 }
 
 function previewLabel(preview: ViewDraftPreview): string {
-  if (preview.kind === "unavailable") return "Preview updates after saving";
+  if (preview.kind === "unavailable")
+    return t({ message: "Preview updates after saving" });
   const count = preview.count ?? 0;
-  return `${count} ${count === 1 ? "task" : "tasks"} ${
-    preview.kind === "live" ? "match this draft" : "currently in this view"
-  }`;
+  return preview.kind === "live"
+    ? plural(count, {
+        0: "# tasks match this draft",
+        one: "# task match this draft",
+        other: "# tasks match this draft",
+      })
+    : plural(count, {
+        0: "# tasks currently in this view",
+        one: "# task currently in this view",
+        other: "# tasks currently in this view",
+      });
 }
 
 function ViewEditorConfirmation({
-  action,
+  kind,
   busy,
   containerRef,
   name,
   onCancel,
   onConfirm,
 }: {
-  action: "discard" | "delete";
+  kind: "discard" | "delete";
   busy: boolean;
   containerRef: RefObject<HTMLElement | null>;
   name: string;
   onCancel(): void;
   onConfirm(): void;
 }) {
-  const deleting = action === "delete";
+  const { t } = useLingui();
+  const deleting = kind === "delete";
   return (
     <div className="view-editor-confirmation-layer">
       <button
-        aria-label="Cancel confirmation"
+        aria-label={t({ message: "Cancel confirmation" })}
         className="view-editor-confirmation-scrim"
         type="button"
         onClick={onCancel}
@@ -437,16 +461,21 @@ function ViewEditorConfirmation({
         role="alertdialog"
       >
         <h2 id="view-editor-confirmation-title">
-          {deleting ? `Delete “${name}”?` : "Discard changes?"}
+          {deleting ? t`Delete “${name}”?` : t({ message: "Discard changes?" })}
         </h2>
         <p>
           {deleting
-            ? "This removes the saved view only. Your tasks won’t be deleted."
-            : "Your changes to this view have not been saved."}
+            ? t({
+                message:
+                  "This removes the saved view only. Your tasks won’t be deleted.",
+              })
+            : t({ message: "Your changes to this view have not been saved." })}
         </p>
         <div>
           <button className="text-action" type="button" onClick={onCancel}>
-            {deleting ? "Cancel" : "Keep editing"}
+            {deleting
+              ? t({ message: "Cancel" })
+              : t({ message: "Keep editing" })}
           </button>
           <button
             className="danger-outline-action"
@@ -454,7 +483,9 @@ function ViewEditorConfirmation({
             type="button"
             onClick={onConfirm}
           >
-            {deleting ? "Delete view" : "Discard changes"}
+            {deleting
+              ? t({ message: "Delete view" })
+              : t({ message: "Discard changes" })}
           </button>
         </div>
       </section>
@@ -463,8 +494,12 @@ function ViewEditorConfirmation({
 }
 
 function ViewEditorLoading() {
+  const { t } = useLingui();
   return (
-    <div aria-label="Opening view editor" className="view-editor-loading">
+    <div
+      aria-label={t({ message: "Opening view editor" })}
+      className="view-editor-loading"
+    >
       <span />
       <span />
       <span />

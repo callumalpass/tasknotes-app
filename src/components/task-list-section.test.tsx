@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "../test/render";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { TaskListSection } from "./task-list-section";
 

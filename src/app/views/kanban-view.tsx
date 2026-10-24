@@ -1,3 +1,7 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
 import { Plus } from "lucide-react";
 import {
   useContext,
@@ -87,6 +91,7 @@ export function KanbanView({
   onCreateInColumn(property: string, value: unknown, label: string): void;
   canCreateInColumn(property: string, value: unknown): boolean;
 }) {
+  useI18n();
   const departing = useContext(TaskDeparturesContext);
   const property = execution.view.presentation?.mappings.column ?? "status";
   const columns = new Map<
@@ -114,10 +119,22 @@ export function KanbanView({
     });
   if (propertyName === "completed" || propertyName === "archived") {
     for (const configured of [
-      { value: false, label: propertyName === "archived" ? "Active" : "Open" },
+      {
+        value: false,
+        label:
+          propertyName === "archived"
+            ? t({ message: "Active" })
+            : t({ message: "Open", context: "board column: open tasks" }),
+      },
       {
         value: true,
-        label: propertyName === "archived" ? "Archived" : "Complete",
+        label:
+          propertyName === "archived"
+            ? t({ message: "Archived" })
+            : t({
+                message: "Complete",
+                context: "board column: completed tasks",
+              }),
       },
     ])
       columns.set(valueKey(configured.value), {
@@ -268,7 +285,7 @@ export function KanbanView({
       },
     });
     setOverKey(null);
-    setAnnouncement(`Moving ${row.task.title}.`);
+    setAnnouncement(t`Moving ${row.task.title}.`);
   }
 
   function clearDrag() {
@@ -410,8 +427,8 @@ export function KanbanView({
       );
       setAnnouncement(
         changesColumn
-          ? `Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`
-          : `Reordered ${row.task.title}.`,
+          ? t`Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`
+          : t`Reordered ${row.task.title}.`,
       );
     }
     clearDrag();
@@ -663,7 +680,7 @@ export function KanbanView({
           : undefined,
       );
       setAnnouncement(
-        `Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`,
+        t`Moved ${row.task.title} to ${destination.label ?? columnLabel(destination.value)}.`,
       );
       return;
     }
@@ -681,15 +698,19 @@ export function KanbanView({
       targetId: target.task.id,
       placement: vertical < 0 ? "before" : "after",
     });
-    setAnnouncement(`Moved ${row.task.title} ${vertical < 0 ? "up" : "down"}.`);
+    setAnnouncement(
+      t`Moved ${row.task.title} ${vertical < 0 ? uiCopy("up") : uiCopy("down")}.`,
+    );
   }
 
   return (
     <>
       {!writable ? (
         <p className="view-note">
-          This board groups by a calculated property, so cards cannot move
-          between columns.
+          <Trans>
+            This board groups by a calculated property, so cards cannot move
+            between columns.
+          </Trans>
         </p>
       ) : null}
       <KanbanColumnJump
@@ -703,13 +724,13 @@ export function KanbanView({
       <div
         aria-busy={orderPending || pendingMoveTaskIds.size > 0}
         className={`kanban-board${dragging ? " is-dragging" : ""}`}
-        aria-label={`${execution.view.name} board`}
+        aria-label={t`${execution.view.name} board`}
         onKeyDown={(event) => {
           if (event.key !== "Escape" || !draggingRef.current) return;
           const title = draggingRef.current.row.task.title;
           event.preventDefault();
           clearDrag();
-          setAnnouncement(`Cancelled moving ${title}.`);
+          setAnnouncement(t`Cancelled moving ${title}.`);
         }}
         ref={boardRef}
       >
@@ -719,7 +740,7 @@ export function KanbanView({
           const label = kanbanColumnLabel(column, propertyName);
           return (
             <section
-              aria-label={`${label} column`}
+              aria-label={t`${label} column`}
               className={`kanban-column${overKey === key ? " is-drop-target" : ""}`}
               data-kanban-column-key={key}
               key={key}
@@ -744,7 +765,7 @@ export function KanbanView({
                   <span>{settledRowCount(shown.rows, departing)}</span>
                   {writable && canCreateInColumn(property, column.value) ? (
                     <button
-                      aria-label={`Add task to ${label}`}
+                      aria-label={t`Add task to ${label}`}
                       className="kanban-column-add"
                       type="button"
                       onClick={() =>
@@ -768,8 +789,8 @@ export function KanbanView({
                       aria-label={
                         movable
                           ? manualOrder
-                            ? `${row.task.title}. Drag to move. Use arrow keys to arrange.`
-                            : `${row.task.title}. Drag to move between columns. Use left and right arrow keys.`
+                            ? t`${row.task.title}. Drag to move. Use arrow keys to arrange.`
+                            : t`${row.task.title}. Drag to move between columns. Use left and right arrow keys.`
                           : undefined
                       }
                       aria-busy={pending}
@@ -832,7 +853,7 @@ export function KanbanView({
                     aria-hidden="true"
                     className={`kanban-empty-drop-zone${overKey === key ? " is-active" : ""}`}
                   >
-                    Drop here
+                    <Trans>Drop here</Trans>
                   </div>
                 ) : null}
               </div>

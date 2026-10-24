@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen } from "../test/render";
 import { expect, it, vi } from "vitest";
 import { DemoTaskRepository } from "../demo/demo-task-repository";
 import { AutoArchiveActivity } from "../application/auto-archive-activity";

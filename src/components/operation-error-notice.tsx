@@ -1,3 +1,8 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useContext } from "react";
 import { ConnectionNoticeContext } from "../app/connection-notice";
 import { cleanOperationError } from "../app/operation-error";
@@ -17,6 +22,7 @@ export function OperationErrorNotice({
   recovery: string;
   className?: string;
 }) {
+  useI18n();
   const failure =
     typeof message === "string" ? toOperationalError(message, action) : message;
   const waiting =
@@ -24,7 +30,9 @@ export function OperationErrorNotice({
   if (waiting && failure.code === "unavailable")
     return (
       <p role="status">
-        Waiting for your computer. Try this action again when it reconnects.
+        <Trans>
+          Waiting for your computer. Try this action again when it reconnects.
+        </Trans>
       </p>
     );
   const technical = cleanOperationError(failure.detail).trim();
@@ -33,12 +41,17 @@ export function OperationErrorNotice({
       <p className="inline-error" role="alert">
         {operationErrorSummary(action, failure.code)}{" "}
         {failure.code === "outcome-unknown"
-          ? "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
+          ? translate({
+              message:
+                "TaskNotes keeps checking automatically while the collection is connected. You can keep working.",
+            })
           : recovery}
       </p>
       {technical ? (
         <details className="operation-error-details">
-          <summary>Technical details</summary>
+          <summary>
+            <Trans>Technical details</Trans>
+          </summary>
           <p>{technical}</p>
         </details>
       ) : null}
@@ -52,20 +65,20 @@ function operationErrorSummary(
 ): string {
   switch (code) {
     case "unavailable":
-      return `${action} could not finish while the collection was unavailable.`;
+      return t`${action} could not finish while the collection was unavailable.`;
     case "outcome-unknown":
       return `${action} may have been saved; TaskNotes is still confirming it.`;
     case "cancelled":
-      return `${action} was cancelled.`;
+      return t`${action} was cancelled.`;
     case "permission-denied":
-      return `${action} needs access to the collection.`;
+      return t`${action} needs access to the collection.`;
     case "conflict":
-      return `${action} could not finish because the task changed elsewhere.`;
+      return t`${action} could not finish because the task changed elsewhere.`;
     case "validation":
-      return `${action} contains a value the collection cannot accept.`;
+      return t`${action} contains a value the collection cannot accept.`;
     case "not-found":
-      return `${action} could not finish because the record no longer exists.`;
+      return t`${action} could not finish because the record no longer exists.`;
     default:
-      return `${action} could not finish.`;
+      return t`${action} could not finish.`;
   }
 }

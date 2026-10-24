@@ -1,3 +1,5 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandPalette } from "../components/command-palette";
@@ -41,6 +43,7 @@ export function KeyboardLayer({
   /** Increments when the sidebar asks for the palette. */
   paletteRequest: number;
 }) {
+  useI18n();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,20 +127,17 @@ export function KeyboardLayer({
   }, [openPalette]);
 
   const openTaskId = route.page === "task" ? route.id : undefined;
-  const commands = useMemo(
-    () => [
-      ...taskCommands(target, openTaskId),
-      ...navigationCommands({
-        navigationKeys,
-        views,
-        homeKey,
-        navigate,
-        newTask,
-        showShortcuts: () => setSheetOpen(true),
-      }),
-    ],
-    [homeKey, navigate, navigationKeys, newTask, openTaskId, target, views],
-  );
+  const commands = [
+    ...taskCommands(target, openTaskId),
+    ...navigationCommands({
+      navigationKeys,
+      views,
+      homeKey,
+      navigate,
+      newTask,
+      showShortcuts: () => setSheetOpen(true),
+    }),
+  ];
 
   return (
     <>
@@ -175,6 +175,7 @@ function SearchingCommandPalette({
   onClose(): void;
   onQueryChange(query: string): void;
 }) {
+  const { t } = useLingui();
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query), 140);
@@ -193,11 +194,11 @@ function SearchingCommandPalette({
             id: `find:${task.id}`,
             label: task.title,
             section: "tasks" as const,
-            detail: task.completed ? "Completed" : undefined,
+            detail: task.completed ? t({ message: "Completed" }) : undefined,
             run: () => navigate({ page: "task", id: task.id }),
           }))
         : [],
-    [navigate, results, searchText],
+    [navigate, results, searchText, t],
   );
   return (
     <CommandPalette

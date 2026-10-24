@@ -1,8 +1,10 @@
 import { offlineShellPlugin } from "@mdbase-dev/sdk/offline-shell/build";
 import react from "@vitejs/plugin-react";
 import { readdirSync, readFileSync } from "node:fs";
+import { lingui } from "@lingui/vite-plugin";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import { uiCatalogueImports } from "./scripts/vite-ui-catalogues.ts";
 
 const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
@@ -29,11 +31,15 @@ export default defineConfig(({ mode }) => ({
   base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [
     androidNotificationSmokeEntry(),
+    uiCatalogueImports(),
     react(),
+    lingui({ macroTransform: true }),
     offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
   ],
   worker: { format: "es" },
   optimizeDeps: {
+    // Let Vite analyze the UI's normalized lazy imports at their real location.
+    exclude: ["@mdbase-dev/ui"],
     include: [
       "@fullcalendar/react",
       "@fullcalendar/daygrid",

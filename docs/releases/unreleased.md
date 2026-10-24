@@ -1,5 +1,9 @@
 # Unreleased
 
+- Add a persistent App language setting for English, French, German, Spanish, Japanese, Korean, Brazilian Portuguese, Russian, and Simplified Chinese. The interface starts in the best supported device language unless you choose another language.
+
+- Include the current Settings, keyboard commands, account recovery, and save-status messages in app translations.
+
 - Keep a reviewed collection setup working when another tab opens the same setup review. If the changes differ, show the new review for confirmation instead of reporting that the collection was deleted.
 
 - Fixed native iOS hosted-collection access failing after successful authorization
@@ -111,3 +115,4 @@
 - TaskNotes setup now installs Scratchpad note and image types. Existing collections can add missing definitions in a separate setup round without replacing their earlier setup history.
 - Disable reminder reconciliation in the next app until its timer service is available.
 - Previously loaded saved views can show cached rows immediately while refreshing. Cached rows remain marked stale and are cleared when collection data changes.
+- Add an app-language setting with a saved explicit choice, browser-language selection and lazy-loaded interface catalogues for the nine supported languages. Keep user content, saved labels and collection access unchanged.
