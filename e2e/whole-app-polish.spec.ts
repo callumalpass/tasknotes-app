@@ -67,8 +67,8 @@ test("calendar More targets meet target size where More is shown", async ({
     "No More popover on phones",
   );
   await page.goto(view("calendar"));
-  await expect(page.locator(".fc-more-link").first()).toBeVisible();
-  const sizes = await page.locator(".fc-more-link").evaluateAll((nodes) =>
+  await expect(page.locator(".tnc-more").first()).toBeVisible();
+  const sizes = await page.locator(".tnc-more").evaluateAll((nodes) =>
     nodes.map((node) => ({
       width: node.getBoundingClientRect().width,
       height: node.getBoundingClientRect().height,
@@ -170,7 +170,7 @@ test("calendar overflow owns focus and restores More on Escape", async ({
     "No More popover on phones",
   );
   await page.goto(view("calendar"));
-  const more = page.locator(".fc-more-link").first();
+  const more = page.locator(".tnc-more").first();
   await more.focus();
   await page.keyboard.press("Enter");
   const popup = page.getByRole("dialog");
@@ -225,12 +225,12 @@ test("calendar overflow owns focus and restores More on Escape", async ({
   await expect(
     page.getByRole("dialog", { name: "New task", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".fc-more-popover")).toHaveCount(0);
+  await expect(page.locator(".tnc-popover")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(more).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(popup).toBeVisible();
-  await popup.locator(".full-calendar-event-content").first().focus();
+  await popup.locator(".tnc-item").first().focus();
   await page.keyboard.press("Enter");
   await expect(popup).toHaveCount(0);
   await expect(
@@ -242,8 +242,8 @@ test("phone calendar has one capture action and preserves the selected date", as
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(view("calendar"));
-  const day = page.locator(".fc-daygrid-day:not(.fc-day-other)").first();
-  await day.locator(".fc-daygrid-day-top").click();
+  const day = page.locator(".tnc-dg-day:not(.is-other-month)").first();
+  await day.locator(".tnc-dg-top").click();
   await expect(
     page.getByRole("dialog", { name: "New task", exact: true }),
   ).toHaveCount(0);
@@ -374,8 +374,8 @@ test("working screens reflow at 320px with 200% text", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const cases = [
     ["?demo=50", "button.task-row-title"],
-    [view("upcoming"), ".fc-view"],
-    [view("calendar"), ".fc-view"],
+    [view("upcoming"), ".tnc-view"],
+    [view("calendar"), ".tnc-view"],
     [view("projects"), ".project-group"],
     [view("work-board"), ".kanban-column"],
     ["search?demo=50", ".browse-fields button"],

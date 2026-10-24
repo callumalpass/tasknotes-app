@@ -3,7 +3,7 @@ import { uiCopy } from "../i18n/ui-copy";
 import { useEffect, useRef, type RefObject } from "react";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 
-/** Bridge FullCalendar's imperative popover into the application's overlay owner. */
+/** Bridge the calendar's imperative More popover into the application's overlay owner. */
 export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
   const { t } = useLingui();
   const closeRef = useRef<() => void>(() => {});
@@ -13,6 +13,14 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
     let popup: HTMLElement | null = null;
     let release: ReturnType<typeof registerOverlay> | undefined;
     let closeButton: HTMLElement | null = null;
+    // The More link that opened the popover receives focus back.
+    let trigger: HTMLElement | null = null;
+    const remember = (event: Event) => {
+      const more = (event.target as Element | null)?.closest?.<HTMLElement>(
+        ".tnc-more",
+      );
+      if (more) trigger = more;
+    };
     const close = () => closeButton?.click();
     const activateClose = (event: KeyboardEvent) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -30,7 +38,7 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
       close();
     };
     const synchronize = () => {
-      const next = root.querySelector<HTMLElement>(".fc-more-popover");
+      const next = root.querySelector<HTMLElement>(".tnc-popover");
       if (next === popup) {
         if (popup) fitCalendarPopup(popup);
         return;
@@ -38,20 +46,17 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
       detach();
       popup = next;
       closeButton =
-        popup?.querySelector<HTMLElement>(".fc-popover-close") ?? null;
+        popup?.querySelector<HTMLElement>(".tnc-popover-close") ?? null;
       if (!popup) return;
-      popup.setAttribute("role", "dialog");
       if (!popup.hasAttribute("aria-labelledby"))
         popup.setAttribute(
           "aria-label",
-          t`Tasks for ${popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")}`,
+          t`Tasks for ${popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")}`,
         );
-      closeButton?.setAttribute("role", "button");
       closeButton?.setAttribute(
         "aria-label",
         t({ message: "Close additional tasks" }),
       );
-      if (closeButton) closeButton.tabIndex = 0;
       closeButton?.addEventListener("keydown", activateClose);
       fitCalendarPopup(popup);
       release = registerOverlay({
@@ -61,31 +66,32 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
         dismissOnCover: true,
         inertRoots: [
           ...(popup.parentElement?.querySelectorAll<HTMLElement>(
-            ":scope > .fc-view",
+            ":scope > .tnc-view",
           ) ?? []),
         ],
         dismiss: (reason) => {
           detach(reason === "escape");
-          // FullCalendar reconciles React event content; don't close it inside
-          // another overlay's layout effect.
+          // Don't close the calendar's popover inside another overlay's
+          // layout effect.
           queueMicrotask(close);
         },
-        returnFocus: root.querySelector<HTMLElement>(
-          '.fc-more-link[aria-expanded="true"]',
-        ),
+        returnFocus: trigger?.isConnected ? trigger : null,
         initialFocus: () =>
-          popup?.querySelector<HTMLElement>(
-            '.full-calendar-event-content[role="button"]',
-          ) ?? closeButton,
+          popup?.querySelector<HTMLElement>('.tnc-item[role="button"]') ??
+          closeButton,
       });
     };
     const observer = new MutationObserver(synchronize);
     observer.observe(root, { childList: true, subtree: true });
+    root.addEventListener("click", remember, true);
+    root.addEventListener("keydown", remember, true);
     synchronize();
     window.addEventListener("resize", close);
     return () => {
       window.removeEventListener("resize", close);
       observer.disconnect();
+      root.removeEventListener("click", remember, true);
+      root.removeEventListener("keydown", remember, true);
       detach(false);
       closeRef.current = () => {};
     };

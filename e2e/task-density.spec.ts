@@ -106,26 +106,25 @@ for (const colorScheme of ["light", "dark"] as const) {
     }) => {
       await page.goto(calendar);
       const event = page
-        .locator(".fc-daygrid-event .full-calendar-event-content")
+        .locator(".tnc-dg .tnc-item .full-calendar-event-content")
         .first();
       await expect(event).toBeVisible();
       const phone = (page.viewportSize()?.width ?? 0) < 840;
       await expect(event).toHaveCSS("min-height", phone ? "10px" : "24px");
       expect((await event.boundingBox())!.height).toBeLessThanOrEqual(28);
       await page.getByRole("button", { name: "Agenda", exact: true }).click();
-      const agenda = page.locator(".fc-list-event").first();
+      const agenda = page.locator(".tnc-item--list").first();
       await expect(agenda).toBeVisible();
-      await expect(agenda.locator("td").first()).toHaveCSS(
-        "padding-top",
-        "4px",
-      );
+      await expect(agenda).toHaveCSS("padding-top", "4px");
       // Wrapped metadata may grow on phones; only the padding overhead is fixed.
       // Phones stack the time above the title, so it is content, not padding.
       const contentHeight = (await agenda
         .locator(".full-calendar-event-content")
         .boundingBox())!.height;
       const stackedTime = phone
-        ? (await agenda.locator(".fc-list-event-time").boundingBox())!.height
+        ? await agenda
+            .locator(".full-calendar-event-time")
+            .evaluate((time) => time.getBoundingClientRect().height)
         : 0;
       expect(
         (await agenda.boundingBox())!.height - contentHeight - stackedTime,
@@ -134,7 +133,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.setViewportSize({ width: 390, height: 844 });
       // Phone months draw dots; tapping a day lists its tasks below the grid.
       await expect(event.locator("xpath=..")).toBeVisible();
-      await page.locator(".fc-daygrid-day.fc-day-today").click();
+      await page.locator(".tnc-dg-day.is-today").click();
       const dayTask = page
         .getByRole("complementary", { name: "Selected day" })
         .locator(".task-row-title")

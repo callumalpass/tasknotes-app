@@ -12,8 +12,8 @@ import type {
 } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
 
-const FullCalendarView = lazy(async () => ({
-  default: (await import("../full-calendar-view")).FullCalendarView,
+const TaskCalendarView = lazy(async () => ({
+  default: (await import("../task-calendar-view")).TaskCalendarView,
 }));
 
 export function CalendarViewPresentation({
@@ -53,7 +53,7 @@ export function CalendarViewPresentation({
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
     <Suspense fallback={<LoadingRows count={6} />}>
-      <FullCalendarView
+      <TaskCalendarView
         execution={execution}
         preferences={preferences}
         identityTasks={identityTasks}

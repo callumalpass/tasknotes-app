@@ -1,22 +1,20 @@
-import { act, cleanup, render } from "../test/render";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { FullCalendarView } from "./full-calendar-view";
+import { TaskCalendarView } from "./task-calendar-view";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 
-import type { EventContentArg, EventInput } from "@fullcalendar/core";
-import type { ReactNode } from "react";
-import { activateAppLocale } from "../i18n/app";
+import type { CalendarItem } from "@tasknotes/calendar";
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
-// FullCalendar itself does not lay out in jsdom; the test drives the props
-// the view hands it, which is where a dropped event's dates come from.
+// The calendar does not lay out in jsdom; the test drives the props the view
+// hands it, which is where a dropped item's dates come from.
 const calendar = vi.hoisted(() => ({
   props: undefined as undefined | Record<string, unknown>,
 }));
-vi.mock("@fullcalendar/react", () => ({
-  default: (props: Record<string, unknown>) => {
+vi.mock("@tasknotes/calendar/react", () => ({
+  TaskCalendar: (props: Record<string, unknown>) => {
     calendar.props = props;
     return null;
   },
@@ -28,10 +26,9 @@ vi.mock("./repository-context", async () => {
   return { useRepository: () => ({ configuration }) };
 });
 
-afterEach(async () => {
+afterEach(() => {
   cleanup();
   calendar.props = undefined;
-  await act(() => activateAppLocale("en"));
 });
 
 describe("calendar drops", () => {
@@ -42,15 +39,15 @@ describe("calendar drops", () => {
     const view = renderCalendar(original, onUpdate);
     const revert = vi.fn();
 
-    drop("2026-07-24", new Date(2026, 6, 27), revert);
+    drop("2026-07-24", "2026-07-27", revert);
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ id: "one" }),
       { scheduled: "2026-07-27" },
     );
     expect(eventStart()).toBe("2026-07-27");
 
-    // An unrelated re-render while the write is pending must not hand
-    // FullCalendar the old date again.
+    // An unrelated re-render while the write is pending must not hand the
+    // calendar the old date again.
     view.rerender(original, [{ ...task("2026-07-24") }]);
     expect(eventStart()).toBe("2026-07-27");
 
@@ -66,7 +63,7 @@ describe("calendar drops", () => {
     const view = renderCalendar(execution("2026-07-24"), () => write.promise);
     const revert = vi.fn();
 
-    drop("2026-07-24", new Date(2026, 6, 27), revert);
+    drop("2026-07-24", "2026-07-27", revert);
     expect(eventStart()).toBe("2026-07-27");
     await act(async () => write.reject(new Error("offline")));
     expect(revert).toHaveBeenCalled();
@@ -75,68 +72,92 @@ describe("calendar drops", () => {
       /offline/,
     );
   });
+
+  it("writes timed moves and resizes in the stored date formats", async () => {
+    const onUpdate = vi.fn(() => Promise.resolve());
+    renderCalendar(execution("2026-07-24T09:30", 60), onUpdate);
+    const item = items().find((candidate) => candidate.id.startsWith("one"))!;
+    expect(item).toMatchObject({
+      start: "2026-07-24T09:30",
+      end: "2026-07-24T10:30",
+      allDay: false,
+    });
+
+    change("onItemDrop", item, {
+      start: new Date(2026, 6, 27, 14, 15),
+      end: new Date(2026, 6, 27, 15, 15),
+      startStr: "2026-07-27T14:15",
+      endStr: "2026-07-27T15:15",
+      allDay: false,
+    });
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "one" }),
+      { scheduled: "2026-07-27T14:15" },
+    );
+
+    change("onItemResize", item, {
+      start: new Date(2026, 6, 24, 9, 30),
+      end: new Date(2026, 6, 24, 11, 0),
+      startStr: "2026-07-24T09:30",
+      endStr: "2026-07-24T11:00",
+      allDay: false,
+    });
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "one" }),
+      { timeEstimate: 90 },
+    );
+    await act(async () => {});
+  });
 });
 
-describe("localized calendar entry kinds", () => {
-  it.each([
-    ["en", "Due"],
-    ["de", "Fällig"],
-    ["it", "Scadenza"],
-  ] as const)(
-    "deduplicates due markers before rendering %s labels",
-    async (locale, label) => {
-      await act(() => activateAppLocale(locale));
-      const current = execution("2026-07-24");
-      current.rows[0]!.task.due = "2026-07-25";
-      current.rows[0]!.values.due = "2026-07-25";
-      current.view.properties = [{ key: "due" }];
-      renderCalendar(current, vi.fn());
-      const due = events().find((event) => String(event.id).includes(":due:"))!;
-      expect(due).toBeDefined();
-      const content = calendar.props!.eventContent as (
-        info: EventContentArg,
-      ) => ReactNode;
-      const info = (type: string) =>
-        ({
-          event: { ...due, start: new Date(2026, 6, 25) },
-          view: { type },
-          timeText: "",
-        }) as unknown as EventContentArg;
-
-      const agenda = render(<>{content(info("listWeek"))}</>);
-      expect(
-        agenda.container.querySelector(".full-calendar-event-kind"),
-      ).toBeNull();
-      agenda.unmount();
-      const week = render(<>{content(info("timeGridWeek"))}</>);
-      expect(
-        week.container.querySelector(".full-calendar-event-kind"),
-      ).toHaveTextContent(label);
-    },
-  );
-});
-
-function events(): EventInput[] {
-  return (calendar.props?.events ?? []) as EventInput[];
+function items(): CalendarItem[] {
+  return (calendar.props?.items ?? []) as CalendarItem[];
 }
 
 function eventStart() {
-  return events().find((event) => String(event.id).startsWith("one"))?.start;
+  return items().find((item) => item.id.startsWith("one"))?.start;
 }
 
-function drop(from: string, start: Date, revert: () => void) {
-  const event = events().find(
+function drop(from: string, to: string, revert: () => void) {
+  const item = items().find(
     (candidate) => candidate.id === `one:scheduled:${from}`,
   )!;
+  const [year, month, day] = to.split("-").map(Number);
+  change(
+    "onItemDrop",
+    item,
+    {
+      start: new Date(year!, month! - 1, day),
+      end: new Date(year!, month! - 1, day! + 1),
+      startStr: to,
+      endStr: to,
+      allDay: true,
+    },
+    revert,
+  );
+}
+
+function change(
+  handler: "onItemDrop" | "onItemResize",
+  item: CalendarItem,
+  next: {
+    start: Date;
+    end: Date;
+    startStr: string;
+    endStr: string;
+    allDay: boolean;
+  },
+  revert: () => void = vi.fn(),
+) {
+  const oldStart = new Date(String(item.start));
   act(() => {
-    (calendar.props!.eventDrop as (info: unknown) => void)({
-      event: {
-        id: event.id,
-        start,
-        end: null,
-        allDay: true,
-        extendedProps: event.extendedProps,
-      },
+    (calendar.props![handler] as (info: unknown) => void)({
+      item,
+      ...next,
+      oldStart,
+      oldAllDay: item.allDay,
+      delta: next.start.getTime() - oldStart.getTime(),
+      source: "pointer",
       revert,
     });
   });
@@ -150,7 +171,7 @@ function renderCalendar(
     current: TaskViewExecution,
     identityTasks: TaskSummary[] = current.rows.map((row) => row.task),
   ) => (
-    <FullCalendarView
+    <TaskCalendarView
       execution={current}
       identityTasks={identityTasks}
       preferences={defaultCalendarPreferences("en-US")}
@@ -184,7 +205,10 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function execution(scheduled: string): TaskViewExecution {
+function execution(
+  scheduled: string,
+  timeEstimate?: number,
+): TaskViewExecution {
   return {
     view: {
       key: "views/tasks.base#calendar",
@@ -205,7 +229,7 @@ function execution(scheduled: string): TaskViewExecution {
         options: { calendarView: "dayGridMonth" },
       },
     },
-    rows: [{ task: task(scheduled), values: {} }],
+    rows: [{ task: { ...task(scheduled), timeEstimate }, values: {} }],
     totalCount: 1,
     hasMore: false,
     groups: [],

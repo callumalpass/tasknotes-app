@@ -370,7 +370,7 @@
 :root[data-theme="dark"] .global-capture-fab {
   color: var(--paper);
 }
-.app-shell:has(.fc-more-popover) .global-capture-fab {
+.app-shell:has(.tnc-popover) .global-capture-fab {
   visibility: hidden;
 }
 

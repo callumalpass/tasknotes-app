@@ -1,5 +1,3 @@
-import type { EventInput } from "@fullcalendar/core";
-
 import type { TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { ViewPropertyDetail } from "../domain/view-values";
@@ -107,27 +105,30 @@ export interface PendingCalendarMove {
   settledWith?: unknown;
 }
 
+interface MovableCalendarItem {
+  id: string;
+  start: unknown;
+  end?: unknown;
+  allDay?: boolean;
+}
+
 /**
- * FullCalendar draws a dropped event in its new place, but any re-render
+ * The calendar draws a dropped item in its new place, but any re-render
  * before the refreshed view arrives would hand it the old dates again. Keep
  * the dropped dates until the write fails or fresh data replaces them.
  */
-export function withPendingMoves(
-  events: EventInput[],
+export function withPendingMoves<T extends MovableCalendarItem>(
+  items: T[],
   moves: ReadonlyMap<string, PendingCalendarMove>,
   execution: unknown,
-): EventInput[] {
-  if (!moves.size) return events;
-  return events.map((event) => {
-    const move = typeof event.id === "string" ? moves.get(event.id) : undefined;
+): T[] {
+  if (!moves.size) return items;
+  return items.map((item) => {
+    const move = moves.get(item.id);
     // View data newer than the accepted write already carries the move.
     if (!move || (move.settledWith && move.settledWith !== execution))
-      return event;
-    const moved: EventInput = {
-      ...event,
-      start: move.start,
-      allDay: move.allDay,
-    };
+      return item;
+    const moved: T = { ...item, start: move.start, allDay: move.allDay };
     if (move.end) moved.end = move.end;
     else delete moved.end;
     return moved;

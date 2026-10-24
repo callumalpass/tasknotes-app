@@ -35,10 +35,10 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
   // which lists that day's tasks as full rows below the grid.
   expect(
     await page
-      .locator(".fc-daygrid-event .full-calendar-event-content")
+      .locator(".tnc-dg .tnc-item .full-calendar-event-content")
       .evaluateAll((nodes) =>
         nodes.every((node) => {
-          const event = node.closest<HTMLElement>(".fc-daygrid-event")!;
+          const event = node.closest<HTMLElement>(".tnc-item")!;
           return (
             getComputedStyle(event).pointerEvents === "none" &&
             event.getAttribute("aria-hidden") === "true" &&
@@ -48,7 +48,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
       ),
   ).toBe(true);
   expect(
-    await page.locator(".fc-daygrid-day").evaluateAll((nodes) =>
+    await page.locator(".tnc-dg-day").evaluateAll((nodes) =>
       nodes.every((node) => {
         const box = node.getBoundingClientRect();
         return box.width >= 44 && box.height >= 44;
