@@ -710,7 +710,15 @@ test("workflow isolates native manual route and publishes production only to Clo
   assert.match(workflow, /if: always\(\)/);
   assert.match(workflow, /if: inputs.publisher != 'native'/);
   assert.match(workflow, /Pages deployments only run from main/);
-  assert.doesNotMatch(workflow, /actions\/deploy-pages@/);
+  const legacyPages = workflow
+    .split("  legacy-github-pages:")[1]
+    ?.split("  verify:")[0];
+  assert.match(legacyPages, /if: github.event_name == 'push'/);
+  assert.match(legacyPages, /path: legacy-pages/);
+  assert.doesNotMatch(
+    workflow.replace(legacyPages, ""),
+    /actions\/deploy-pages@/,
+  );
   const cloudflare = workflow
     .split("  deploy-cloudflare:")[1]
     ?.split("  native-request:")[0];
