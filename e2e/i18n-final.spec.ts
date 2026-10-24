@@ -49,6 +49,29 @@ const copy = {
     monthEnd: (n: number) =>
       `Jeden Monat am ${n === 1 ? "letzten Tag" : `${n}. Tag des Monats, vom Monatsende an gezählt`}`,
   },
+  it: {
+    setup: "Configura il recupero",
+    newPassword: "Nuova password di recupero",
+    confirm: "Conferma la nuova password di recupero",
+    dismiss: "Ho salvato la chiave di recupero",
+    password: "Password di recupero",
+    unlock: "Sblocca le raccolte private",
+    review: "Verifica la modalità rigorosa",
+    strict: "Abilita la modalità rigorosa",
+    setupNotice: (n: number) =>
+      n
+        ? `Recupero configurato. ${n} ${n === 1 ? "raccolta privata deve ancora completare l'accesso alla chiave." : "raccolte private devono ancora completare l'accesso alle chiavi."}`
+        : "Recupero configurato. Salva la chiave di recupero prima di lasciare questa schermata.",
+    unlockNotice: (n: number) =>
+      n
+        ? `Account sbloccato. ${n} ${n === 1 ? "raccolta privata deve ancora completare l'accesso alla chiave; riprova a sbloccare con questa raccolta selezionata." : "raccolte private devono ancora completare l'accesso alle chiavi; riprova a sbloccare con ciascuna raccolta selezionata."}`
+        : "Account sbloccato. Le chiavi delle raccolte private sono disponibili su questo dispositivo.",
+    strictNotice: (n: number) =>
+      `La modalità rigorosa è in sospeso in ${n} ${n === 1 ? "destinazione" : "destinazioni"} di recupero. La chiave di recupero rimane su questo dispositivo finché mdbase non conferma il completamento.`,
+    daily: (n: number) => (n <= 1 ? "Ogni giorno" : `Ogni ${n} giorni`),
+    monthEnd: (n: number) =>
+      `Ogni mese, ${n === 1 ? "l'ultimo giorno" : `${[8, 11, 80, 800].includes(n) ? "l'" : "il "}${n}° giorno dalla fine del mese`}`,
+  },
   ru: {
     setup: "Настроить восстановление",
     newPassword: "Новый пароль восстановления",
@@ -81,6 +104,7 @@ for (const [locale, titleLabel, saved, back] of [
   ["ja", "タスク名", "保存済み", "戻る"],
   ["de", "Aufgabentitel", "Gespeichert", "Zurück"],
   ["ru", "Название задачи", "Сохранено", "Назад"],
+  ["it", "Titolo dell'attività", "Salvato", "Indietro"],
 ]) {
   test(`${locale} workspace editing preserves user data and explicit locale`, async ({
     page,
@@ -124,7 +148,7 @@ for (const [locale, titleLabel, saved, back] of [
   });
 }
 
-for (const locale of ["ja", "de", "ru"] as const) {
+for (const locale of ["ja", "de", "ru", "it"] as const) {
   for (const count of [0, 1, 2, 5, 11, 21, 22, 101]) {
     test(`${locale} account notices and recurrence plurals at ${count}`, async ({
       page,

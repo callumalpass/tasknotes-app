@@ -1,7 +1,18 @@
 import { expect, test } from "./local-test";
 
 // Deliberately outside *.spec.ts: checks an already built NORMAL production artifact.
-for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
+for (const locale of [
+  "en",
+  "fr",
+  "de",
+  "es",
+  "ja",
+  "ko",
+  "pt",
+  "ru",
+  "zh",
+  "it",
+]) {
   test(`production activates saved ${locale} from its own deployment`, async ({
     page,
   }) => {
@@ -24,6 +35,19 @@ for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
       expect(new URL(url).origin).toBe(new URL(page.url()).origin);
   });
 }
+
+test.describe("Italian browser negotiation", () => {
+  test.use({ locale: "it-IT" });
+  test("uses Italian without persisting an implicit browser preference", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("lang", "it");
+    expect(
+      await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
+    ).toBeNull();
+  });
+});
 
 test.describe("browser negotiation", () => {
   test.use({ locale: "pt-BR" });

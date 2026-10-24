@@ -3,7 +3,11 @@ import { createRoot } from "react-dom/client";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { AppI18nProvider } from "../src/i18n/app-provider";
-import { recurrenceRuleSummary } from "../src/i18n/presentation";
+import {
+  recurrenceRuleSummary,
+  formatTaskDate,
+  formatRelativeTaskDate,
+} from "../src/i18n/presentation";
 import { parseRecurrenceRule } from "../src/domain/recurrence-rule";
 import {
   passwordStrength,
@@ -75,12 +79,24 @@ function Fixture() {
       </header>
       {parameters.has("summaries") ? (
         <div>
+          <p data-testid="date-today">
+            {formatTaskDate("2026-07-24", "2026-07-24")}
+          </p>
+          <p data-testid="date-tomorrow">
+            {formatTaskDate("2026-07-25", "2026-07-24")}
+          </p>
+          <p data-testid="date-relative">
+            {formatRelativeTaskDate("2026-07-22", "2026-07-24")}
+          </p>
+          <p data-testid="date-formatted">
+            {formatTaskDate("2026-07-01", "2026-07-24")}
+          </p>
           <p data-testid="daily-summary">
             {recurrenceRuleSummary(
               parseRecurrenceRule(`FREQ=DAILY;INTERVAL=${Math.max(1, count)}`),
             )}
           </p>
-          {[-1, -2, -3, -5, -11, -21, -22, -31].map((day) => (
+          {[-1, -2, -3, -5, -8, -11, -21, -22, -31].map((day) => (
             <p data-testid={`month-end-${-day}`} key={day}>
               {recurrenceRuleSummary(
                 parseRecurrenceRule(`FREQ=MONTHLY;BYMONTHDAY=${day}`),
