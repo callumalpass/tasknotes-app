@@ -13,7 +13,7 @@ test("calendar marks only elevated priority and names it", async ({ page }) => {
   if (phone) {
     // Phone months draw every task as a dot; only elevated ones are coloured.
     await expect(
-      page.locator(".tnc-dg .tnc-item .has-marker").first(),
+      page.locator(".tnc-dg-dots .tnc-item--indicator.has-marker").first(),
     ).toBeAttached();
     return;
   }
@@ -88,10 +88,7 @@ test("the layout switcher sits on the date row above the calendar on both screen
 test.describe("calendar drops", () => {
   test.skip(({ isMobile }) => isMobile, "Phone months draw indicator dots");
 
-  // @tasknotes/calendar 0.1.0-dev.0 bug: month-grid drags draw no live preview,
-  // so the item stays on its old day until the write re-renders it. Re-enable
-  // once the library moves the item while dragging.
-  test.fixme("a dropped task never returns to its old day before settling", async ({
+  test("a dropped task never returns to its old day before settling", async ({
     page,
   }) => {
     await page.goto(view("calendar"));

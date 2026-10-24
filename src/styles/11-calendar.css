@@ -158,6 +158,8 @@
   --tnc-font-size: var(--type-supporting);
   --tnc-small: var(--type-label);
   --tnc-bar-h: 24px;
+  /* More is a 44px target; the calendar sizes rows to fit it. */
+  --tnc-more-h: 44px;
   --tnc-dg-top-h: 30px;
   --tnc-day-min-h: 66px;
   --tnc-item-c: var(--ink-muted);
@@ -491,39 +493,15 @@
 
   /*
    * Phone months show one dot per task; the selected day's tasks are listed
-   * readably beneath the grid instead of as clipped titles in each cell.
+   * readably beneath the grid. The day cell is the tap target.
    */
   .full-calendar-view .tnc--month {
-    --tnc-bar-h: 10px;
     --tnc-day-min-h: 72px;
   }
 
-  /* Dots are indicators: a tap selects the day, whose tasks list below. */
-  .full-calendar-view .tnc-dg-layer > .tnc-item.is-indicator {
-    padding: 0 6px;
-    background: none;
-    border: 0;
-    pointer-events: none;
-  }
-
-  .full-calendar-view .tnc-item.is-indicator .full-calendar-event-content {
-    min-width: 10px;
-    min-height: 10px;
-    padding: 0;
-    border: 0;
-    place-items: center start;
-  }
-
-  .full-calendar-view
-    .tnc-item.is-indicator
-    .full-calendar-event-primary
-    > :not(i) {
-    display: none;
-  }
-
-  .full-calendar-view .tnc-item.is-indicator .full-calendar-event-primary > i {
-    width: 8px;
-    height: 8px;
+  /* Only an elevated priority colours a dot. */
+  .full-calendar-view .tnc-dg-dots > .tnc-item--indicator {
+    background: var(--event-tone, var(--ink-muted));
   }
 
   /* Agenda rows put the time above the title so titles keep the full width. */
@@ -547,8 +525,6 @@
 .full-calendar-view .tnc-more {
   display: inline-flex;
   align-items: center;
-  height: auto;
-  min-height: 44px;
   min-width: 44px;
   color: var(--ink-soft);
   font-size: var(--type-label);

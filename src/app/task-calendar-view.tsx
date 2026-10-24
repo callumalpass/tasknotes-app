@@ -42,6 +42,7 @@ import type {
 import type {
   Calendar,
   CalendarItem,
+  DateClickArg,
   ItemArg,
   ItemChangeArg,
   SelectArg,
@@ -71,7 +72,7 @@ interface CalendarEventMetadata {
   timeEntryIndex?: number;
 }
 
-/** What an entry draws; kept small so the calendar can compare it cheaply. */
+/** What an entry draws; the calendar redraws an item only when this changes. */
 interface CalendarEventPresentation {
   marker?: CalendarPriorityMarker;
   details: (ViewPropertyDetail & { overdue?: boolean })[];
@@ -79,7 +80,16 @@ interface CalendarEventPresentation {
   recurring: boolean;
 }
 
-type TaskCalendarItem = CalendarItem<CalendarEventPresentation>;
+/**
+ * Presentation plus the task records handlers act on. The records are left
+ * out of the item's `rev`, so a change the calendar does not draw costs no
+ * redraw; handlers still see the latest item passed to the calendar.
+ */
+interface CalendarEventData extends CalendarEventPresentation {
+  metadata: CalendarEventMetadata;
+}
+
+type TaskCalendarItem = CalendarItem<CalendarEventData>;
 
 const PHONE_QUERY = "(max-width: 839px)";
 
@@ -124,7 +134,7 @@ export function TaskCalendarView({
     closeOverflow();
     onOpenTask(task, occurrenceDate);
   }
-  const calendarRef = useRef<Calendar<CalendarEventPresentation> | null>(null);
+  const calendarRef = useRef<Calendar<CalendarEventData> | null>(null);
   const [initialDate] = useState(selected);
   const [mode, setMode] = useState<CalendarMode>(() =>
     calendarMode(execution.view.presentation?.options.calendarView),
@@ -159,14 +169,9 @@ export function TaskCalendarView({
     () => calendarItems(entries, execution, titleProperty, configuration),
     [configuration, entries, execution, titleProperty],
   );
-  // Handlers read the latest task records by id; the calendar keeps an item
-  // object for as long as what it draws is unchanged.
-  const metadataRef = useRef(built.metadata);
-  useEffect(() => {
-    metadataRef.current = built.metadata;
-  }, [built]);
   const items = useMemo(
-    () => withPendingMoves(built.items, pendingMoves, execution),
+    () =>
+      withPendingMoves(built.items, pendingMoves, execution).map(withRevision),
     [built, execution, pendingMoves],
   );
   const legend = useMemo(
@@ -215,8 +220,8 @@ export function TaskCalendarView({
     });
   }
 
-  async function moveEvent(info: ItemChangeArg<CalendarEventPresentation>) {
-    const metadata = metadataRef.current.get(info.item.id);
+  async function moveEvent(info: ItemChangeArg<CalendarEventData>) {
+    const metadata = info.item.data?.metadata;
     if (!metadata) {
       info.revert();
       return;
@@ -266,8 +271,8 @@ export function TaskCalendarView({
     }
   }
 
-  async function resizeEvent(info: ItemChangeArg<CalendarEventPresentation>) {
-    const metadata = metadataRef.current.get(info.item.id);
+  async function resizeEvent(info: ItemChangeArg<CalendarEventData>) {
+    const metadata = info.item.data?.metadata;
     if (!metadata || info.allDay) {
       info.revert();
       return;
@@ -321,6 +326,15 @@ export function TaskCalendarView({
     }
   }
 
+  function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    // A slot names its time, so the day's Add task starts there.
+    onSelect(dateStr, startStr);
+    // Mouse clicks on a slot also select it, which starts capture; a tap on a
+    // phone only clicks, so a timed tap starts capture at that time itself.
+    if (!allDay && "pointerType" in jsEvent && jsEvent.pointerType === "touch")
+      onCreate(dateStr, startStr);
+  }
+
   function createFromSelection(info: SelectArg) {
     const date = info.startStr.slice(0, 10);
     const timeEstimate = info.allDay
@@ -341,10 +355,10 @@ export function TaskCalendarView({
     item,
     el,
     jsEvent,
-  }: ItemArg<CalendarEventPresentation> & {
+  }: ItemArg<CalendarEventData> & {
     jsEvent: MouseEvent | KeyboardEvent;
   }) {
-    const metadata = metadataRef.current.get(item.id);
+    const metadata = item.data?.metadata;
     if (!metadata) return;
     let x: number;
     let y: number;
@@ -420,13 +434,13 @@ export function TaskCalendarView({
             </p>
           ) : null}
           <div className="full-calendar-surface">
-            <TaskCalendar<CalendarEventPresentation>
+            <TaskCalendar<CalendarEventData>
               calendarRef={(calendar) => {
                 calendarRef.current = calendar;
               }}
               items={items}
-              // Day highlights and phone dots are drawn by render hooks.
-              renderKey={`${selected}|${phoneMonth}`}
+              // The selected day is drawn by a render hook.
+              renderKey={selected}
               view={calendarView(mode)}
               date={initialDate}
               dayCount={numberOption(
@@ -453,9 +467,10 @@ export function TaskCalendarView({
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
               eventMinHeight={28}
-              // Phone months draw every task as a dot and list the selected
-              // day below, so there is no More popover to open.
-              dayMaxEvents={phoneMonth ? false : 3}
+              // Phone months draw every task as a dot (the day cell is the
+              // target) and list the selected day below.
+              monthDisplay={phoneMonth ? "dots" : "full"}
+              dayMaxEvents={phoneMonth ? true : 3}
               text={{
                 allDay: "All day",
                 noItems: "No tasks in this period.",
@@ -466,23 +481,16 @@ export function TaskCalendarView({
               dayHeaderContent={({ date, view }) =>
                 view.type === "list" ? listDayLabel(date) : null
               }
-              itemClassNames={() => (phoneMonth ? ["is-indicator"] : [])}
-              itemContent={(arg) =>
-                calendarEventContent(
-                  arg,
-                  configuration,
-                  preferences,
-                  phoneMonth,
-                )
+              itemClassNames={({ item }) =>
+                item.data?.marker ? ["has-marker"] : []
               }
+              itemContent={(arg) => calendarEventContent(arg, configuration)}
               listItemContent={(arg) =>
-                calendarEventContent(arg, configuration, preferences, false)
+                calendarEventContent(arg, configuration)
               }
-              itemDidMount={(arg) =>
-                describeEvent(arg, configuration, phoneMonth)
-              }
+              itemDidMount={(arg) => describeEvent(arg, configuration)}
               onItemClick={({ item }) => {
-                const metadata = metadataRef.current.get(item.id);
+                const metadata = item.data?.metadata;
                 if (metadata)
                   onOpen(metadata.entry.task, metadata.occurrence?.date);
               }}
@@ -490,7 +498,7 @@ export function TaskCalendarView({
               onItemDrop={(info) => void moveEvent(info)}
               onItemResize={(info) => void resizeEvent(info)}
               onSelect={createFromSelection}
-              onDateClick={({ dateStr }) => onSelect(dateStr, dateStr)}
+              onDateClick={selectDate}
               onRangeChange={(view: ViewInfo) => {
                 setTitle(view.title);
                 setRange({
@@ -581,12 +589,8 @@ function calendarItems(
   execution: TaskViewExecution,
   titleProperty: string,
   configuration: TaskCollectionConfiguration,
-): {
-  items: TaskCalendarItem[];
-  metadata: Map<string, CalendarEventMetadata>;
-} {
+): { items: TaskCalendarItem[] } {
   const items: TaskCalendarItem[] = [];
-  const metadata = new Map<string, CalendarEventMetadata>();
   for (const [date, values] of entries) {
     for (const entry of values) {
       if (entry.timeEntry && entry.timeEntryIndex !== undefined) {
@@ -602,7 +606,6 @@ function calendarItems(
               ? liveEnd
               : new Date(start.getTime() + 60_000);
         const id = calendarEntryKey(entry);
-        metadata.set(id, { entry, timeEntryIndex: entry.timeEntryIndex });
         items.push({
           id,
           title: entry.timeEntry.description
@@ -617,7 +620,12 @@ function calendarItems(
           startEditable: true,
           durationEditable: Boolean(entry.timeEntry.endTime),
           className: ["task-calendar-event", "is-time-entry"],
-          data: { details: [], kind: "Tracked time", recurring: false },
+          data: {
+            details: [],
+            kind: "Tracked time",
+            recurring: false,
+            metadata: { entry, timeEntryIndex: entry.timeEntryIndex },
+          },
         });
         continue;
       }
@@ -648,11 +656,6 @@ function calendarItems(
         configuration,
       ).map((detail) => relativeDateDetail(detail, displayed, configuration));
       const id = [calendarEntryKey(entry), dateField, date].join(":");
-      metadata.set(id, {
-        entry,
-        dateField,
-        occurrence: entry.occurrence,
-      });
       items.push({
         id,
         title: entry.task.title,
@@ -682,25 +685,24 @@ function calendarItems(
             ? { kind: "Due" }
             : {}),
           recurring: Boolean(entry.occurrence),
+          metadata: { entry, dateField, occurrence: entry.occurrence },
         },
       });
     }
   }
-  return { items, metadata };
+  return { items };
 }
 
-function variantOf(el: HTMLElement): "timed" | "bar" | "dot" | "list" {
-  if (el.classList.contains("tnc-item--timed")) return "timed";
-  if (el.classList.contains("tnc-item--list")) return "list";
-  if (el.classList.contains("tnc-item--dot")) return "dot";
-  return "bar";
+/** Stamps what an item draws as its `rev`, leaving the task records out. */
+function withRevision(item: TaskCalendarItem): TaskCalendarItem {
+  const data = { ...item.data! } as Partial<CalendarEventData>;
+  delete data.metadata;
+  return { ...item, rev: JSON.stringify({ ...item, data }) };
 }
 
 function calendarEventContent(
-  { item, el }: ItemArg<CalendarEventPresentation>,
+  { item, el, variant, timeText }: ItemArg<CalendarEventData>,
   configuration: TaskCollectionConfiguration,
-  preferences: CalendarPreferences,
-  phoneMonth: boolean,
 ): Node {
   const doc = el.ownerDocument;
   const presentation = item.data;
@@ -724,13 +726,6 @@ function calendarEventContent(
   if (marker) content.style.setProperty("--event-tone", marker.color);
   const primary = node("span", "full-calendar-event-primary");
   content.append(primary);
-  if (phoneMonth) {
-    // Every task is a dot here; only an elevated priority colours it.
-    content.setAttribute("aria-hidden", "true");
-    primary.append(node("i"));
-    return content;
-  }
-  const variant = variantOf(el);
   const listView = variant === "list";
   const details = presentation?.details ?? [];
   const kind = calendarEntryKind(
@@ -739,7 +734,6 @@ function calendarEventContent(
     listView,
     configuration,
   );
-  const timeText = eventTimeText(item, variant, preferences.hourFormat);
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
   if (timeText && !listView) primary.append(node("time", undefined, timeText));
@@ -766,27 +760,24 @@ function calendarEventContent(
   return fragment;
 }
 
-/** Names the entry for assistive technology, or hides a phone-month dot. */
+/** Names the entry for assistive technology; phone-month dots only take a priority colour. */
 function describeEvent(
-  { item, el }: ItemArg<CalendarEventPresentation>,
+  { item, el, variant }: ItemArg<CalendarEventData>,
   configuration: TaskCollectionConfiguration,
-  phoneMonth: boolean,
 ) {
   el.dataset.date = calendarDay(item.start);
-  if (phoneMonth) {
-    // Phone month dots are indicators; the day list holds the tasks.
-    el.tabIndex = -1;
-    el.removeAttribute("role");
-    el.removeAttribute("aria-label");
-    el.setAttribute("aria-hidden", "true");
-    return;
-  }
   const presentation = item.data;
   const marker = presentation?.marker;
+  if (variant === "indicator") {
+    // The day cell is the target and the day list holds the tasks; only an
+    // elevated priority colours the dot.
+    if (marker) el.style.setProperty("--event-tone", marker.color);
+    return;
+  }
   const kind = calendarEntryKind(
     presentation?.kind,
     presentation?.details ?? [],
-    variantOf(el) === "list",
+    variant === "list",
     configuration,
   );
   el.setAttribute(
@@ -794,27 +785,6 @@ function describeEvent(
     `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
   if (marker) el.title = marker.label;
-}
-
-function eventTimeText(
-  item: TaskCalendarItem,
-  variant: ReturnType<typeof variantOf>,
-  hourFormat: CalendarHourFormat,
-): string {
-  if (item.allDay) return "";
-  const start = new Date(item.start);
-  if (Number.isNaN(start.getTime())) return "";
-  const format = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: hour12(hourFormat),
-  });
-  const end = item.end ? new Date(item.end) : null;
-  return (variant === "timed" || variant === "list") &&
-    end &&
-    !Number.isNaN(end.getTime())
-    ? format.formatRange(start, end)
-    : format.format(start);
 }
 
 function hour12(preference: CalendarHourFormat): boolean | undefined {

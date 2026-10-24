@@ -105,13 +105,20 @@ for (const colorScheme of ["light", "dark"] as const) {
       page,
     }) => {
       await page.goto(calendar);
-      const event = page
-        .locator(".tnc-dg .tnc-item .full-calendar-event-content")
-        .first();
-      await expect(event).toBeVisible();
       const phone = (page.viewportSize()?.width ?? 0) < 840;
-      await expect(event).toHaveCSS("min-height", phone ? "10px" : "24px");
-      expect((await event.boundingBox())!.height).toBeLessThanOrEqual(28);
+      // Phone months draw dots; wider months draw 24px bars.
+      const dot = page.locator(".tnc-dg-dots .tnc-item--indicator").first();
+      if (phone) {
+        await expect(dot).toBeVisible();
+        expect((await dot.boundingBox())!.height).toBeLessThanOrEqual(10);
+      } else {
+        const event = page
+          .locator(".tnc-dg .tnc-item .full-calendar-event-content")
+          .first();
+        await expect(event).toBeVisible();
+        await expect(event).toHaveCSS("min-height", "24px");
+        expect((await event.boundingBox())!.height).toBeLessThanOrEqual(28);
+      }
       await page.getByRole("button", { name: "Agenda", exact: true }).click();
       const agenda = page.locator(".tnc-item--list").first();
       await expect(agenda).toBeVisible();
@@ -132,7 +139,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByRole("button", { name: "Month", exact: true }).click();
       await page.setViewportSize({ width: 390, height: 844 });
       // Phone months draw dots; tapping a day lists its tasks below the grid.
-      await expect(event.locator("xpath=..")).toBeVisible();
+      await expect(dot).toBeVisible();
       await page.locator(".tnc-dg-day.is-today").click();
       const dayTask = page
         .getByRole("complementary", { name: "Selected day" })

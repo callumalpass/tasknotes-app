@@ -1269,7 +1269,7 @@ packages:
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
   '@tasknotes/calendar@file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz':
-    resolution: {integrity: sha512-CJhkbTyJpbDbfA5Xubp/LrBUa+6xKiHxULFy3SHvVFjuud0y8zcPh5sfeNHlZPE26/0kAlFrb9Sw1HtDBhBWkA==, tarball: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz}
+    resolution: {integrity: sha512-7Mb023LmY+an/rZY4ddUAMWEk7tEBodEbpoVYcrjr21q3S+qn05CZXWEUujpiDzF4D32PUBWn0Cs8EqEHPJsfw==, tarball: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz}
     version: 0.1.0-dev.0
     peerDependencies:
       react: '>=18'
