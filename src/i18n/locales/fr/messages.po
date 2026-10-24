@@ -78,12 +78,12 @@ msgstr "(modifications non enregistrées)"
 #. placeholder {0}: files.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
-msgstr "{0, plural, =1 {Ajout de l’image…} other {Ajout de # images…}}"
+msgstr "{0, plural, =1 {Ajout de l’image…} one {Ajout de # image…} other {Ajout de # images…}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
-msgstr "{0, plural, =1 {Image ajoutée} other {# images ajoutées}}"
+msgstr "{0, plural, =1 {Image ajoutée} one {# image ajoutée} other {# images ajoutées}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -372,19 +372,19 @@ msgstr "{hours} h {minutes} min"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every day} other {Every # days}}"
-msgstr "{interval, plural, =1 {Chaque jour} other {Tous les # jours}}"
+msgstr "{interval, plural, =1 {Chaque jour} one {Tous les # jour} other {Tous les # jours}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every month} other {Every # months}}"
-msgstr "{interval, plural, =1 {Chaque mois} other {Tous les # mois}}"
+msgstr "{interval, plural, =1 {Chaque mois} one {Tous les # mois} other {Tous les # mois}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every week} other {Every # weeks}}"
-msgstr "{interval, plural, =1 {Chaque semaine} other {Toutes les # semaines}}"
+msgstr "{interval, plural, =1 {Chaque semaine} one {Toutes les # semaine} other {Toutes les # semaines}}"
 
 #: src/i18n/presentation.ts
 msgid "{interval, plural, =1 {Every year} other {Every # years}}"
-msgstr "{interval, plural, =1 {Chaque année} other {Tous les # ans}}"
+msgstr "{interval, plural, =1 {Chaque année} one {Tous les # an} other {Tous les # ans}}"
 
 #: src/components/duration-field.tsx
 msgid "{label} advanced duration"
