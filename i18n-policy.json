@@ -91,7 +91,21 @@
       "CDo193"
     ],
     "ru": ["pZ4VIt", "fHSAmz", "JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
-    "zh": ["JE2anO", "gBtOfg", "3-s08M", "mXS2YG"]
+    "zh": ["JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
+    "it": [
+      "AeXO77",
+      "xDsmP9",
+      "i0qMbr",
+      "3-s08M",
+      "mXS2YG",
+      "Ul_zfa",
+      "pZ4VIt",
+      "fHSAmz",
+      "lWkKSO",
+      "1UzENP",
+      "JE2anO",
+      "gBtOfg"
+    ]
   },
   "source": {
     "include": ["src/app", "src/components", "src/i18n"]

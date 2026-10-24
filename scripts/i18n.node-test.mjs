@@ -14,7 +14,7 @@ import {
   assertMessageContract,
 } from "@mdbase-dev/i18n/checks";
 
-const locales = ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"];
+const locales = ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh", "it"];
 const parse = async (locale) =>
   formatter({}).parse(
     await readFile(
@@ -160,7 +160,9 @@ for (const locale of locales) {
         messages: { [locale]: { fixture: compileMessageOrThrow(target) } },
       });
       const rules = new Intl.PluralRules(formattingLocale, { type });
-      for (const count of [0, 1, 2, 5, 11, 21, 22, 101]) {
+      for (const count of [
+        0, 1, 2, 5, 8, 11, 21, 22, 80, 101, 800, 1_000_000,
+      ]) {
         assert.equal(
           runtime._("fixture", { count }),
           type === "cardinal" && count === 0

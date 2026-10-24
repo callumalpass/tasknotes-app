@@ -98,7 +98,7 @@ msgstr "{0, plural, one {# aperta} other {# aperte}}"
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
-msgstr "{0, plural, one {Account sbloccato. # raccolta privata deve ancora completare l'accesso alla chiave; riprova a sbloccare quando sarà aggiornata.} other {Account sbloccato. # raccolte private devono ancora completare l'accesso alle chiavi; riprova a sbloccare quando saranno aggiornate.}}"
+msgstr "{0, plural, one {Account sbloccato. # raccolta privata deve ancora completare l'accesso alla chiave; riprova a sbloccare con questa raccolta selezionata.} other {Account sbloccato. # raccolte private devono ancora completare l'accesso alle chiavi; riprova a sbloccare con ciascuna raccolta selezionata.}}"
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
@@ -360,7 +360,7 @@ msgstr "{count, plural, one {anno} other {anni}}"
 
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
-msgstr "{count, selectordinal, many {il #° giorno dalla fine del mese} other {il #° giorno dalla fine del mese}}"
+msgstr "{count, selectordinal, many {l'#° giorno dalla fine del mese} other {il #° giorno dalla fine del mese}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -455,7 +455,7 @@ msgstr "{summary} nei giorni {names}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {day}"
-msgstr "{day} di {summary}"
+msgstr "{summary}, {day}"
 
 #: src/i18n/presentation.ts
 msgid "{summary} on the {rank} {day}"

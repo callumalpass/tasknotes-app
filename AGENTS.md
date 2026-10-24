@@ -13,6 +13,6 @@ application state such as a delayed deletion's undo window.
 Interface copy uses Lingui; read `docs/translations.md` before changing it. Mark
 English source copy with macros, keep generated JSON compiler-owned, and never
 translate CSS, identifiers, repository data or authority diagnostics. English renders
-synchronously; all nine supported locales are production-enabled on this branch.
+synchronously; all ten supported locales are production-enabled on this branch.
 Use the shared @mdbase-dev/i18n kit and preserve authored-PO completeness before
 fallback for every locale. Catalogue completeness does not authorize release.
