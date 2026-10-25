@@ -31,7 +31,7 @@ native-speaker certification or permission to release.
 
 The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
-copied into application PO files. Italian UI/kit `49bea0aa` retain the `a36fa009`
+copied into application PO files. Italian UI/kit `24e9f5d0` retain the `a36fa009`
 obsolete-entry pruning
 before compiling: the library has exactly 197 active compiled messages per locale,
 without obsolete `nzHlj8`. Conflicts still fail closed and retain the current
@@ -150,6 +150,18 @@ Italian negotiation, the Italiano endonym and CodeMirror phrases:
 - Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-49bea0aa.tgz`, 23,479 bytes,
   SHA256 `4b08df26d7474b26bd90492a1835716f938488b06a73cd3b55943414bc0cbd82`.
 - UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-49bea0aa.tgz`, 131,844 bytes,
+  SHA256 `1230707f2ba9545a041f2a9325ab5e2d25ed001885ebc0369d836e00b19d30f0`.
+
+It then adopts **`24e9f5d0ac23568ad601767c1a36330f537586e3`** (same version).
+Only the kit's `dist/runtime.js` differs: `createI18nRuntime` now wraps each Lingui
+instance's `_`/`t` once so interpolated user text keeps literal backslashes through
+Lingui's escape decoding. The app therefore no longer patches its singleton; adding
+a second encoding pass would render `\` as `\u005c`. The UI archive is byte-identical
+to `49bea0aa`, repacked under the matched name:
+
+- Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-24e9f5d0.tgz`, 23,885 bytes,
+  SHA256 `b65ce6066f9e096eea183209c93b42950f21f8e78a0d105838a15da9ca82ce46`.
+- UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-24e9f5d0.tgz`, 131,844 bytes,
   SHA256 `1230707f2ba9545a041f2a9325ab5e2d25ed001885ebc0369d836e00b19d30f0`.
 
 Both hashes were checked against the coordinator's PLAN before adoption. The

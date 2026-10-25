@@ -74,6 +74,18 @@ it.each(["en", "de", "it"] as const)(
   },
 );
 
+it.each(["en", "de", "it"] as const)(
+  "renders a lone backslash once, not double-encoded, in %s",
+  async (locale) => {
+    await act(() => activateAppLocale(locale));
+    const title = String.raw`C:\Users\Ada\notes`;
+    fixture(undefined, title);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent(title);
+    expect(status.textContent).not.toContain("u005c");
+  },
+);
+
 it("retains an unknown capture outcome", () => {
   const f = fixture("unknown");
   expect(screen.getByText("Save outcome unknown")).toBeVisible();

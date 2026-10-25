@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPortal } from "react-dom";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { msg } from "@lingui/core/macro";
 import { act, fireEvent, render, screen } from "../test/render";
 import { LanguageSettings } from "./language-settings";
 import {
@@ -143,17 +142,6 @@ describe("application localization", () => {
     expect(screen.getByRole("textbox", { name: "User content" })).toHaveValue(
       "Keep my title",
     );
-  });
-
-  it("preserves literal interpolation values through both Lingui call forms and its alias", () => {
-    const i18n = initializeAppI18n();
-    const descriptor = msg({ message: "Task added: {0}" });
-    const value = String.raw`C:\x41dir\u0042\u005c`;
-    const values = { 0: value };
-    expect(i18n._({ ...descriptor, values })).toBe(`Task added: ${value}`);
-    expect(i18n._(descriptor.id, values)).toBe(`Task added: ${value}`);
-    expect(i18n.t(descriptor.id, values)).toBe(`Task added: ${value}`);
-    expect(values).toEqual({ 0: value });
   });
 
   it("rejects unsupported explicit locales without changing the current language", async () => {

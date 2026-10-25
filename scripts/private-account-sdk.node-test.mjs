@@ -399,9 +399,18 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
   );
   assert.equal(italian.extendsArtifact, final.artifact);
   assert.deepEqual(italian.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const literal = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-24e9f5d0.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(literal.extendsArtifact, italian.artifact);
+  assert.equal(literal.sha256, italian.sha256);
+  assert.deepEqual(literal.sourceIncludesPrs, manifest.sourceIncludesPrs);
   assert.equal(
     pkg.dependencies["@mdbase-dev/ui"],
-    `file:vendor/${italian.artifact}`,
+    `file:vendor/${literal.artifact}`,
   );
   const finalBytes = await readFile(new URL(`vendor/${final.artifact}`, root));
   assert.equal(finalBytes.byteLength, 129246);

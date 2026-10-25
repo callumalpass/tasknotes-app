@@ -8,8 +8,8 @@ import { locales, localeNames, negotiateLocale } from "@mdbase-dev/i18n";
 const root = new URL("../", import.meta.url);
 const pins = {
   i18n: {
-    bytes: 23479,
-    sha256: "4b08df26d7474b26bd90492a1835716f938488b06a73cd3b55943414bc0cbd82",
+    bytes: 23885,
+    sha256: "b65ce6066f9e096eea183209c93b42950f21f8e78a0d105838a15da9ca82ce46",
   },
   ui: {
     bytes: 131844,
@@ -19,7 +19,7 @@ const pins = {
 
 for (const [name, expected] of Object.entries(pins)) {
   test(`Italian ${name} pin retains approved bytes, metadata and frozen lock integrity`, async () => {
-    const artifact = `mdbase-dev-${name}-0.1.0-beta.141-49bea0aa.tgz`;
+    const artifact = `mdbase-dev-${name}-0.1.0-beta.141-24e9f5d0.tgz`;
     const manifest = JSON.parse(
       await readFile(
         new URL(`vendor/${artifact.replace(".tgz", ".json")}`, root),
@@ -34,7 +34,7 @@ for (const [name, expected] of Object.entries(pins)) {
     );
     assert.equal(
       manifest.sourceCommit,
-      "49bea0aa3e105fb5f271ef608850504e77a09c52",
+      "24e9f5d0ac23568ad601767c1a36330f537586e3",
     );
     assert.equal(manifest.artifact, artifact);
     assert.equal(manifest.bytes, expected.bytes);
