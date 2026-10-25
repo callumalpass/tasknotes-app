@@ -693,6 +693,7 @@ export function DeletionFeedback({
   onRetry(): Promise<void>;
   onUndo(): Promise<void>;
 }) {
+  const { t } = useLingui();
   useEffect(() => {
     if (!pendingDeletion || pendingDeletion.outcomeUnknown) return;
     const undoShortcut = (event: KeyboardEvent) => {
@@ -727,14 +728,10 @@ export function DeletionFeedback({
   return (
     <>
       <p aria-atomic="true" className="visually-hidden" role="status">
-        <Trans>
-          Deleted “{pendingDeletion.title}”. Undo is available for 30 seconds.
-        </Trans>
+        {t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
       </p>
       <div className={`undo-toast${positionClass}`}>
-        <span>
-          <Trans>Deleted “{pendingDeletion.title}”</Trans>
-        </span>
+        <span>{t`Deleted “${pendingDeletion.title}”`}</span>
         <button
           aria-keyshortcuts="Control+Z Meta+Z"
           type="button"

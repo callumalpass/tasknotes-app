@@ -5542,7 +5542,7 @@ msgstr "Чтобы фильтровать задачи, сначала испр�
 msgid "Your protected version"
 msgstr "Ваша защищённая версия"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "Порядок элементов боковой панели.{0}"

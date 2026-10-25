@@ -252,7 +252,7 @@ export function MultiValueField({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => add(query)}
             >
-              <Trans>Use “{query.trim()}”</Trans>
+              {t`Use “${query.trim()}”`}
             </button>
           ) : null}
         </div>

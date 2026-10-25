@@ -5542,7 +5542,7 @@ msgstr "筛选任务前，需要修复你的人物记录：{0}。"
 msgid "Your protected version"
 msgstr "你的受保护版本"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "你的侧边栏顺序如下。{0}"

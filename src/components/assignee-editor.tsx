@@ -108,10 +108,7 @@ export function AssigneeEditor({
       {editing && error && (
         <div role="alert">
           <p>
-            <Trans>
-              People could not be loaded. Existing assignments are unchanged.{" "}
-              {error.message}
-            </Trans>
+            {t`People could not be loaded. Existing assignments are unchanged. ${error.message}`}
           </p>
           <button className="people-action" type="button" onClick={retry}>
             <RefreshCw size={18} aria-hidden="true" />

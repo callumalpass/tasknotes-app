@@ -5542,7 +5542,7 @@ msgstr "Seu registro de pessoa precisa ser corrigido antes de filtrar tarefas: {
 msgid "Your protected version"
 msgstr "Sua versão protegida"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "Sua barra lateral, em ordem.{0}"

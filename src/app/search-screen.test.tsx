@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "../test/render";
+import { act, cleanup, fireEvent, render, screen } from "../test/render";
+import { activateAppLocale } from "../i18n/app";
 import { afterEach, expect, it, vi } from "vitest";
 import { SearchScreen } from "./search-screen";
 const fixture = vi.hoisted(() => ({ query: vi.fn(), retry: vi.fn() }));
@@ -10,9 +11,10 @@ vi.mock("./use-people", () => ({ usePeople: () => ({ supported: false }) }));
 vi.mock("../components/task-row", () => ({
   TaskRow: ({ task }: { task: { title: string } }) => <div>{task.title}</div>,
 }));
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.clearAllMocks();
+  await act(() => activateAppLocale("en"));
 });
 function search() {
   render(<SearchScreen onOpen={vi.fn()} />);
@@ -20,6 +22,30 @@ function search() {
     target: { value: "Match" },
   });
 }
+it("keeps browse groups expanded when the display language changes", async () => {
+  fixture.query.mockReturnValue({
+    tasks: Array.from({ length: 6 }, (_, index) => ({
+      task: {
+        id: String(index),
+        title: `Task ${index}`,
+        projects: [`Project ${index}`],
+        contexts: [],
+        tags: [],
+      },
+      bodyMatches: [],
+    })),
+    retry: fixture.retry,
+  });
+  render(<SearchScreen onOpen={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: "Project 5" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Show all 6" }));
+  expect(screen.getByRole("button", { name: "Project 5" })).toBeVisible();
+  await act(() => activateAppLocale("it"));
+  expect(screen.getByRole("button", { name: "Project 5" })).toBeVisible();
+  await act(() => activateAppLocale("de"));
+  expect(screen.getByRole("button", { name: "Project 5" })).toBeVisible();
+});
+
 it("shows an actionable error rather than pretending a failed search was empty", async () => {
   fixture.query.mockReturnValue({
     tasks: [],

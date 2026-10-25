@@ -44,6 +44,20 @@ it("renders persisted record values with resolved titles instead of paths", () =
   expect(screen.queryByText("opaque-file-id")).not.toBeInTheDocument();
 });
 
+it("renders markup-shaped free-form values literally without changing the saved value", async () => {
+  render(<Harness complete={async () => []} />);
+  const input = screen.getByRole("combobox", { name: "Projects" });
+  const value = "Project <0/> <b>notes</b>";
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value } });
+  const option = await screen.findByRole("option", { name: `Use “${value}”` });
+  expect(option).toHaveTextContent(value);
+  fireEvent.click(option);
+  expect(screen.getByTestId("values")).toHaveTextContent(
+    JSON.stringify([value]),
+  );
+});
+
 it("keeps free-form entry and keyboard removal lightweight", async () => {
   render(<Harness complete={async () => []} />);
   const input = screen.getByRole("combobox", { name: "Projects" });

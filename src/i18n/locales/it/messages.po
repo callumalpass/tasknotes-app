@@ -5542,7 +5542,7 @@ msgstr "Il record persona richiede una correzione prima di filtrare le attività
 msgid "Your protected version"
 msgstr "La versione protetta"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "La barra laterale, in ordine.{0}"
