@@ -490,7 +490,7 @@ msgstr "뷰 {visibleCount}개 표시"
 msgid "+{0} more"
 msgstr "+{0}개 더"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "+{count} more"
 msgstr "+{count}개 더"
 
@@ -510,8 +510,9 @@ msgstr "15분"
 msgid "24 hour"
 msgstr "24시간제"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "3 days"
 msgstr "3일"
 
@@ -719,7 +720,7 @@ msgstr "기본 뷰 추가"
 msgid "Add subtask"
 msgstr "하위 작업 추가"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
@@ -829,8 +830,9 @@ msgstr "이후"
 msgid "After a number of times"
 msgstr "횟수 이후"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Agenda"
 msgstr "일정"
 
@@ -842,7 +844,7 @@ msgstr "전체"
 msgid "All conditions match"
 msgstr "모든 조건 일치"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "종일"
 
@@ -1040,11 +1042,11 @@ msgstr "기본 작업 공간"
 msgid "Calendar"
 msgstr "캘린더"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar layout"
 msgstr "캘린더 레이아웃"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar markers"
 msgstr "캘린더 표시"
 
@@ -1741,8 +1743,9 @@ msgstr "날짜"
 msgid "Dates and estimate"
 msgstr "날짜 및 예상 시간"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Day"
 msgstr "일"
 
@@ -1980,7 +1983,7 @@ msgstr "이미지를 놓아 추가"
 msgid "due"
 msgstr "마감"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
@@ -2894,9 +2897,10 @@ msgstr "분"
 msgid "Minutes"
 msgstr "분"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Month"
 msgstr "월"
 
@@ -3095,7 +3099,8 @@ msgstr "새 뷰"
 msgid "Next month"
 msgstr "다음 달"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Next period"
 msgstr "다음 기간"
 
@@ -3200,7 +3205,7 @@ msgstr "상태 없음"
 msgid "No tasks"
 msgstr "작업 없음"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "이 기간에 작업이 없습니다."
 
@@ -3216,7 +3221,7 @@ msgstr "이 뷰와 일치하는 작업이 없습니다."
 msgid "No tasks matched."
 msgstr "일치하는 작업이 없습니다."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
 msgstr "이 날짜에 작업이 없습니다. 작업 추가를 사용해 일정을 등록하세요."
@@ -3613,7 +3618,8 @@ msgstr "이전 노트"
 msgid "Previous notes could not be loaded. {0}"
 msgstr "이전 노트를 불러오지 못했습니다. {0}"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Previous period"
 msgstr "이전 기간"
 
@@ -4363,7 +4369,7 @@ msgstr "선택한 컬렉션"
 msgid "selected day"
 msgstr "선택한 날짜"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Selected day"
 msgstr "선택한 날짜"
 
@@ -4789,7 +4795,7 @@ msgstr "작업"
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
 msgstr "작업은 mdbase v0.3 형식의 이식 가능한 Markdown 레코드입니다."
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
+#. placeholder {0}: popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0} 작업"
@@ -4840,7 +4846,7 @@ msgstr "계정 복구 작업을 완료하지 못했습니다. 다시 시도하�
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "작업이 완료되었지만 계정 상태를 새로고침하지 못했습니다. 상태를 다시 확인하세요."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "캘린더 변경 사항을 저장하지 못했습니다. "
 
@@ -4926,10 +4932,6 @@ msgstr "작업"
 #: src/components/task-actions.tsx
 msgid "The task action"
 msgstr "작업 동작"
-
-#: src/app/full-calendar-view.tsx
-msgid "The task date is unavailable."
-msgstr "작업 날짜를 사용할 수 없습니다."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
@@ -5142,9 +5144,10 @@ msgstr "오늘로."
 msgid "today"
 msgstr "오늘"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
+#: src/i18n/calendar-locale.ts
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
@@ -5167,7 +5170,7 @@ msgstr "내일"
 msgid "Too many attempts. Wait before trying again."
 msgstr "시도 횟수가 너무 많습니다. 잠시 기다렸다가 다시 시도하세요."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Tracked time"
 msgstr "기록된 시간"
 
@@ -5385,8 +5388,9 @@ msgstr "컴퓨터 연결을 기다리는 중입니다. 다시 연결되면 이 �
 msgid "Website, Home"
 msgstr "웹사이트, 홈"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Week"
 msgstr "주"
 

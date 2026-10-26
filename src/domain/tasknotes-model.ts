@@ -5,6 +5,8 @@ import {
   getDefaultCompletedStatus,
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
+import { planCalendarEdit } from "@tasknotes/model/calendar";
+import type { CalendarTaskEdit } from "./calendar-edit";
 import { getCurrentDateString } from "@tasknotes/model/date";
 import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
@@ -425,6 +427,30 @@ export class TaskNotesTaskModel {
       revision,
     );
     return this.toTask(updatedTask, frontmatter, revision);
+  }
+
+  editCalendar(current: Task, edit: CalendarTaskEdit): Task {
+    const plan = planCalendarEdit({
+      task: this.taskInfo(current),
+      ...edit,
+      now: edit.now ?? new Date().toISOString(),
+      fieldMapping: this.config.fieldMapping,
+    });
+    this.assertValid(plan.updatedTask);
+    this.assertCustomFields(plan.updatedTask.customProperties);
+    const revision = current.revision + 1;
+    // Apply the exact patch LAST: the generic mapper intentionally omits some
+    // empty fields and would otherwise retain deleted history/provider metadata.
+    const frontmatter = applyFrontmatterPatch(
+      this.writeFrontmatter(
+        this.canonicalizeAliases(current.frontmatter, true),
+        plan.updatedTask,
+        current.id,
+        revision,
+      ),
+      plan.frontmatterPatch,
+    );
+    return this.toTask(plan.updatedTask, frontmatter, revision);
   }
 
   toggle(
@@ -947,7 +973,34 @@ export class TaskNotesTaskModel {
     );
   }
 
-  private taskInfo(current: TaskSummary): TaskInfo {
+  /** Calendar rows may come from any implementing type, not just the primary
+   * collection configuration. Their decoded semantic fields are authoritative;
+   * reuse mapping for aliases/custom/provider metadata rather than remapping rows. */
+  calendarTaskInfo(current: TaskSummary): TaskInfo {
+    return {
+      ...this.taskInfo(current),
+      id: current.id || current.path,
+      title: current.title,
+      status: current.status,
+      priority: current.priority,
+      archived: current.archived,
+      scheduled: current.scheduled,
+      due: current.due,
+      dateCreated: current.createdAt || undefined,
+      dateModified: current.updatedAt || undefined,
+      recurrence: current.recurrence,
+      recurrence_anchor: current.recurrenceAnchor,
+      complete_instances: current.completeInstances,
+      skipped_instances: current.skippedInstances,
+      recurrence_parent: current.recurrenceParent,
+      occurrence_date: current.occurrenceDate,
+      timeEstimate: current.timeEstimate,
+      timeEntries: current.timeEntries,
+    };
+  }
+
+  /** Shared normalized adapter, including configured aliases and provider metadata. */
+  taskInfo(current: TaskSummary): TaskInfo {
     return this.completeTaskInfo(
       mapTaskFromFrontmatter(
         this.config.fieldMapping,

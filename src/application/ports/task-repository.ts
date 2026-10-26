@@ -1,3 +1,4 @@
+import type { CalendarTaskEdit } from "../../domain/calendar-edit";
 import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
@@ -121,6 +122,8 @@ export interface TaskRepository {
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   update(id: string, input: UpdateTaskInput): Promise<Task>;
+  /** Apply an exact calendar plan with normal authority/revision safeguards. */
+  editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
   updateMany(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]>;

@@ -1,3 +1,4 @@
+import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import { Capacitor } from "@capacitor/core";
 import { MdbaseViewAdapter } from "./mdbase-view-adapter";
 import { validResult, operationDiagnostics } from "./mdbase-operation";
@@ -914,6 +915,12 @@ export class MdbaseTaskRepository implements TaskRepository {
         throw reason;
       }
     });
+  }
+
+  editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task> {
+    return this.persistModelMutation(id, (task, model) =>
+      model.editCalendar(task, edit),
+    );
   }
 
   update(id: string, input: UpdateTaskInput): Promise<Task> {

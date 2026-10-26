@@ -4,7 +4,9 @@ import { useLingui, Trans } from "@lingui/react/macro";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { calendarEntryKey, calendarEvents } from "../../domain/calendar-events";
+import { calendarEntryKey } from "../../domain/calendar-events";
+import { useCalendarEntries } from "../use-calendar-entries";
+import { useRepository } from "../repository-context";
 import { dateFromStorage, todayString } from "../../domain/task";
 import { ViewTaskRow } from "./view-task-row";
 import {
@@ -51,10 +53,19 @@ export function MiniCalendarView({
     () => calendarMonthGrid(month, firstDay),
     [firstDay, month],
   );
-  const events = useMemo(
-    () =>
-      calendarEvents(execution, days[0], days.at(-1) ?? days[0], identityTasks),
-    [days, execution, identityTasks],
+  const { configuration } = useRepository();
+  const range = useMemo(() => {
+    const end = new Date(days.at(-1) ?? days[0]);
+    end.setDate(end.getDate() + 1);
+    return { start: days[0], end };
+  }, [days]);
+  const display = useMemo(() => ({ showTimeEntries: false }), []);
+  const events = useCalendarEntries(
+    execution,
+    range,
+    identityTasks,
+    configuration,
+    display,
   );
   const selectedTasks = events.get(selected) ?? [];
   const monthLabel = new Intl.DateTimeFormat(appLocale(), {

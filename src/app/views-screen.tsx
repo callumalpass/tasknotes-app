@@ -1535,9 +1535,7 @@ export function ViewsScreen({
             }}
             onOpen={openTask}
             onToggle={toggleTask}
-            onUpdate={calendarMutations.updateTask}
-            onUpdateOccurrence={calendarMutations.updateOccurrence}
-            onReplaceTimeEntries={calendarMutations.replaceTimeEntries}
+            onEdit={calendarMutations.edit}
           />
         ) : (
           <TaskListView

@@ -34,7 +34,7 @@ import {
 } from "@mdbase-dev/i18n/codemirror";
 import { uiCopy } from "./ui-copy";
 import { parseRecurrenceRule } from "../domain/recurrence-rule";
-import { loadCalendarLocale } from "./calendar-locale";
+import { calendarText } from "./calendar-locale";
 import type { TaskViewRow } from "../domain/view";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -469,10 +469,11 @@ describe("application localization", () => {
       expect(recurrenceRuleSummary(draft)).toBe(expected);
       expect(draft).toEqual(before);
     }
-    expect(await loadCalendarLocale("it-IT")).toMatchObject({
-      code: "it",
-      buttonText: { today: "Oggi", month: "Mese" },
+    expect(calendarText()).toMatchObject({
+      today: "Oggi",
+      views: { month: "Mese" },
     });
+    expect(calendarText().itemCount?.(2)).toBe("2 attività");
     const phrases = await loadCodeMirrorPhrases("it");
     expect(phrases["Go to line"]).toBe("Vai alla riga");
     expect(phrases["replaced $ matches"]).toContain("$");

@@ -1,3 +1,4 @@
+import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import { Capacitor } from "@capacitor/core";
 import {
   MdbaseError,
@@ -2253,6 +2254,14 @@ export class NextTaskRepository implements TaskRepository {
         },
       },
       this.scope.signal,
+    );
+  }
+
+  editCalendar(id: string, edit: CalendarTaskEdit) {
+    return this.mutateTask(
+      id,
+      JSON.stringify(["task:calendar", id, edit]),
+      (task, model) => model.editCalendar(task, edit),
     );
   }
 

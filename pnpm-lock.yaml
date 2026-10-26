@@ -54,24 +54,6 @@ importers:
       '@fontsource/azeret-mono':
         specifier: 5.3.0
         version: 5.3.0
-      '@fullcalendar/core':
-        specifier: 6.1.17
-        version: 6.1.17
-      '@fullcalendar/daygrid':
-        specifier: 6.1.17
-        version: 6.1.17(@fullcalendar/core@6.1.17)
-      '@fullcalendar/interaction':
-        specifier: 6.1.17
-        version: 6.1.17(@fullcalendar/core@6.1.17)
-      '@fullcalendar/list':
-        specifier: 6.1.17
-        version: 6.1.17(@fullcalendar/core@6.1.17)
-      '@fullcalendar/react':
-        specifier: 6.1.17
-        version: 6.1.17(@fullcalendar/core@6.1.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@fullcalendar/timegrid':
-        specifier: 6.1.17
-        version: 6.1.17(@fullcalendar/core@6.1.17)
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -105,9 +87,12 @@ importers:
       '@tanstack/react-virtual':
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tasknotes/calendar':
+        specifier: 0.1.0
+        version: 0.1.0(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.15.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.15.tgz
+        specifier: 0.3.0-rc.17
+        version: 0.3.0-rc.17
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -769,36 +754,6 @@ packages:
   '@fontsource/azeret-mono@5.3.0':
     resolution: {integrity: sha512-Ag/+gN67fUry7i1yLlTnk16Rr1nnTQI2YefA/G7tYcCSr/+TC/ayMrE8Km7O0OKRgI/B5Mfel46Gq9IGY50Uaw==}
 
-  '@fullcalendar/core@6.1.17':
-    resolution: {integrity: sha512-0W7lnIrv18ruJ5zeWBeNZXO8qCWlzxDdp9COFEsZnyNjiEhUVnrW/dPbjRKYpL0edGG0/Lhs0ghp1z/5ekt8ZA==}
-
-  '@fullcalendar/daygrid@6.1.17':
-    resolution: {integrity: sha512-K7m+pd7oVJ9fW4h7CLDdDGJbc9szJ1xDU1DZ2ag+7oOo1aCNLv44CehzkkknM6r8EYlOOhgaelxQpKAI4glj7A==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.17
-
-  '@fullcalendar/interaction@6.1.17':
-    resolution: {integrity: sha512-AudvQvgmJP2FU89wpSulUUjeWv24SuyCx8FzH2WIPVaYg+vDGGYarI7K6PcM3TH7B/CyaBjm5Rqw9lXgnwt5YA==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.17
-
-  '@fullcalendar/list@6.1.17':
-    resolution: {integrity: sha512-fkyK49F9IxwlGUBVhJGsFpd/LTi/vRVERLIAe1HmBaGkjwpxnynm8TMLb9mZip97wvDk3CmZWduMe6PxscAlow==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.17
-
-  '@fullcalendar/react@6.1.17':
-    resolution: {integrity: sha512-AA8soHhlfRH5dUeqHnfAtzDiXa2vrgWocJSK/F5qzw/pOxc9MqpuoS/nQBROWtHHg6yQUg3DoGqOOhi7dmylXQ==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.17
-      react: ^16.7.0 || ^17 || ^18 || ^19
-      react-dom: ^16.7.0 || ^17 || ^18 || ^19
-
-  '@fullcalendar/timegrid@6.1.17':
-    resolution: {integrity: sha512-K4PlA3L3lclLOs3IX8cvddeiJI9ZVMD7RA9IqaWwbvac771971foc9tFze9YY+Pqesf6S+vhS2dWtEVlERaGlQ==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.17
-
   '@grpc/grpc-js@1.9.16':
     resolution: {integrity: sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ==}
     engines: {node: ^8.13.0 || >=10.10.0}
@@ -1313,9 +1268,17 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.15.tgz':
-    resolution: {integrity: sha512-tsQ/Gmhi12QfKlrgJG5UEVQhbDAJz2Q1tu+UzVlsE3hDCEenZ09ByehbKjmFa75Epvr0bMOhzc8POa6NULhFgw==, tarball: file:vendor/tasknotes-model-0.3.0-rc.15.tgz}
-    version: 0.3.0-rc.15
+  '@tasknotes/calendar@0.1.0':
+    resolution: {integrity: sha512-XT/V+eyfQ3ULun1LhcwRho33xRhg8QYrybzQuQWH9Csw5ZBH8OG3nADXk3WPMG07zrFPTTBPlE/xX5JZ9ibdbw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      react: '>=18'
+    peerDependenciesMeta:
+      react:
+        optional: true
+
+  '@tasknotes/model@0.3.0-rc.17':
+    resolution: {integrity: sha512-yg5lLo/5/OO270cIMd2uyOcSVad1/WKBO4WFG53TFFaQfKltxb3D05dy2u88D7ePbn1bclYbDRTQNqZWqT5qDA==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -3316,9 +3279,6 @@ packages:
     resolution: {integrity: sha512-v4sDNP3fdNiWMfabO7OwOQdOX8TiQSztKyT1Wj0w+j7LDallJThJRBBBmzVGyYj0crMh7jlV4zepPkiNu9UwDQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  preact@10.12.1:
-    resolution: {integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==}
-
   prebuild-install@7.1.3:
     resolution: {integrity: sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==}
     engines: {node: '>=10'}
@@ -4991,33 +4951,6 @@ snapshots:
 
   '@fontsource/azeret-mono@5.3.0': {}
 
-  '@fullcalendar/core@6.1.17':
-    dependencies:
-      preact: 10.12.1
-
-  '@fullcalendar/daygrid@6.1.17(@fullcalendar/core@6.1.17)':
-    dependencies:
-      '@fullcalendar/core': 6.1.17
-
-  '@fullcalendar/interaction@6.1.17(@fullcalendar/core@6.1.17)':
-    dependencies:
-      '@fullcalendar/core': 6.1.17
-
-  '@fullcalendar/list@6.1.17(@fullcalendar/core@6.1.17)':
-    dependencies:
-      '@fullcalendar/core': 6.1.17
-
-  '@fullcalendar/react@6.1.17(@fullcalendar/core@6.1.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@fullcalendar/core': 6.1.17
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
-
-  '@fullcalendar/timegrid@6.1.17(@fullcalendar/core@6.1.17)':
-    dependencies:
-      '@fullcalendar/core': 6.1.17
-      '@fullcalendar/daygrid': 6.1.17(@fullcalendar/core@6.1.17)
-
   '@grpc/grpc-js@1.9.16':
     dependencies:
       '@grpc/proto-loader': 0.7.15
@@ -5570,7 +5503,11 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.15.tgz':
+  '@tasknotes/calendar@0.1.0(react@19.2.8)':
+    optionalDependencies:
+      react: 19.2.8
+
+  '@tasknotes/model@0.3.0-rc.17':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0
@@ -7786,8 +7723,6 @@ snapshots:
       nanoid: 3.3.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
-
-  preact@10.12.1: {}
 
   prebuild-install@7.1.3:
     dependencies:

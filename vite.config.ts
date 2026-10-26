@@ -37,16 +37,12 @@ export default defineConfig(({ mode }) => ({
     offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
   ],
   worker: { format: "es" },
+  // The calendar loads lazily; pre-bundle it so dev servers don't reload
+  // the page when it is first opened.
   optimizeDeps: {
     // Let Vite analyze the UI's normalized lazy imports at their real location.
     exclude: ["@mdbase-dev/ui"],
-    include: [
-      "@fullcalendar/react",
-      "@fullcalendar/daygrid",
-      "@fullcalendar/interaction",
-      "@fullcalendar/list",
-      "@fullcalendar/timegrid",
-    ],
+    include: ["@tasknotes/calendar", "@tasknotes/calendar/react"],
   },
   build: {
     // Collection and cloud runtimes load after the small location gate. Keep

@@ -32,6 +32,7 @@ export function taskRepositoryStub(
     startTimeTracking: unconfigured,
     stopTimeTracking: unconfigured,
     replaceTimeEntries: unconfigured,
+    editCalendar: unconfigured,
     removeTimeEntry: unconfigured,
     setArchived: unconfigured,
     delete: unconfigured,

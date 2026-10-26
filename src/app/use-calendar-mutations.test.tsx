@@ -7,6 +7,8 @@ import { RepositoryProvider } from "./repository-context";
 import { useCalendarMutations } from "./use-calendar-mutations";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
+import { buildCalendarEntries } from "@tasknotes/model/calendar";
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { dateFromStorage, todayString } from "../domain/task";
 
 import type { ReactNode } from "react";
@@ -28,12 +30,14 @@ describe("calendar mutations", () => {
     );
 
     await act(async () => {
-      await result.current.updateOccurrence(parent, {
-        occurrenceDate: "2026-08-17",
-        recurringKind: "next-scheduled",
-        dateField: "scheduled",
-        start: new Date(2026, 7, 18, 11, 30),
-        allDay: false,
+      await result.current.edit(parent, {
+        entry: entryFor(parent, "2026-08-17"),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        change: {
+          kind: "drop",
+          start: new Date(2026, 7, 18, 11, 30).toISOString(),
+          allDay: false,
+        },
       });
     });
 
@@ -65,12 +69,14 @@ describe("calendar mutations", () => {
     );
 
     await act(async () => {
-      await result.current.updateOccurrence(parent, {
-        occurrenceDate: "2026-08-24",
-        recurringKind: "pattern",
-        dateField: "scheduled",
-        start: new Date(2026, 7, 25, 14, 45),
-        allDay: false,
+      await result.current.edit(parent, {
+        entry: entryFor(parent, "2026-08-24"),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        change: {
+          kind: "drop",
+          start: new Date(2026, 7, 25, 14, 45).toISOString(),
+          allDay: false,
+        },
       });
     });
 
@@ -98,6 +104,15 @@ function repositoryWrapper(
       </RepositoryProvider>
     );
   };
+}
+
+function entryFor(task: import("../domain/task").Task, day: string) {
+  return buildCalendarEntries({
+    tasks: [new TaskNotesTaskModel().taskInfo(task)],
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    now: "2026-08-01T00:00:00Z",
+    range: { start: day, end: day.slice(0, 7) + "-28" },
+  }).find((entry) => entry.instanceDate === day)!;
 }
 
 function calendarView(): TaskView {

@@ -51,7 +51,7 @@ it("suppresses a projected calendar occurrence when its child is filtered out", 
   const events = calendarEvents(
     execution,
     new Date(2026, 7, 5),
-    new Date(2026, 7, 5),
+    new Date(2026, 7, 6),
     [parent, child],
   );
 
@@ -129,8 +129,13 @@ function task(overrides: Partial<Task>): Task {
     timeEntries: [],
     customProperties: {},
     revision: 1,
-    frontmatter: {},
     ...overrides,
+    frontmatter: {
+      ...overrides,
+      recurrence_parent: overrides.recurrenceParent,
+      occurrence_date: overrides.occurrenceDate,
+      ...overrides.frontmatter,
+    },
     blockedBy: overrides.blockedBy ?? [],
     attachments: overrides.attachments ?? [],
   };
