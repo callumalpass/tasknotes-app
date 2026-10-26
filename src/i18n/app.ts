@@ -11,11 +11,16 @@ const loaders = {
   pt: () => import("./locales/pt/messages.json"),
   ru: () => import("./locales/ru/messages.json"),
   zh: () => import("./locales/zh/messages.json"),
+  it: () => import("./locales/it/messages.json"),
 };
 
 export const localeStorageKey = "tasknotes:locale";
 
-/** One singleton for React and presentation macros. English is synchronous. */
+/**
+ * One singleton for React and presentation macros. English is synchronous.
+ * The kit runtime keeps interpolated user text literal (backslashes survive
+ * Lingui's escape decoding); do not add a second app-side encoding pass.
+ */
 export const appRuntime = createI18nRuntime({
   i18n,
   english,

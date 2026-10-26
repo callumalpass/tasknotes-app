@@ -669,7 +669,7 @@ function fullCalendarEvents(
               timeEntryIndex: entry.timeEntryIndex,
             } satisfies CalendarEventMetadata,
             details: [],
-            kind: t`Tracked time`,
+            kind: "Tracked time",
           },
         });
         continue;
@@ -728,10 +728,7 @@ function fullCalendarEvents(
           details,
           // A task can appear on its scheduled and its due day; name the
           // reason on the due-day entry so the repeat is not a mystery.
-          kind:
-            dateField === "due" && displayed.scheduled
-              ? t({ message: "Due" })
-              : undefined,
+          kind: dateField === "due" && displayed.scheduled ? "Due" : undefined,
         },
       });
     }
@@ -769,7 +766,7 @@ function calendarEventContent(
   const details = eventDetails(info.event.extendedProps.details);
   const metadata = eventMetadata(info.event.extendedProps);
   const listView = info.view.type.startsWith("list");
-  const kind = calendarEntryKind(
+  const entryKind = calendarEntryKind(
     typeof info.event.extendedProps.kind === "string"
       ? info.event.extendedProps.kind
       : undefined,
@@ -777,6 +774,13 @@ function calendarEventContent(
     listView,
     configuration,
   );
+  // Kind is an internal discriminator until duplicate-marker logic has run.
+  const kind =
+    entryKind === "Due"
+      ? t({ message: "Due" })
+      : entryKind === "Tracked time"
+        ? t`Tracked time`
+        : entryKind;
   return (
     <span
       aria-label={`${kind ? `${kind}: ` : ""}${calendarEventLabel(info)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`}

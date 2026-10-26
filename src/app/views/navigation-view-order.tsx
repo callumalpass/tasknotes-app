@@ -169,7 +169,7 @@ export function NavigationViewOrder({
           <p className="navigation-order-sidebar-note">
             <Trans>
               Your sidebar, in order.
-              {ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""}
+              {[ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]}
             </Trans>
           </p>
         </div>

@@ -534,7 +534,7 @@ export function TaskCapture({
       ) : null}
       {pendingTitle ? (
         <p className="capture-pending" role="status">
-          <Trans>Adding “{pendingTitle}”…</Trans>
+          {t`Adding “${pendingTitle}”…`}
         </p>
       ) : null}
       {warning ? (
@@ -700,12 +700,7 @@ function CaptureDetails({
               }
             />
             <span>
-              <Trans>
-                Use template
-                {configuration.templating.templatePath
-                  ? ` · ${configuration.templating.templatePath}`
-                  : ""}
-              </Trans>
+              {t`Use template${configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""}`}
             </span>
           </label>
         ) : null}

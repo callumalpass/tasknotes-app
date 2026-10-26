@@ -34,6 +34,7 @@ import {
 } from "@mdbase-dev/i18n/codemirror";
 import { uiCopy } from "./ui-copy";
 import { parseRecurrenceRule } from "../domain/recurrence-rule";
+import { loadCalendarLocale } from "./calendar-locale";
 import type { TaskViewRow } from "../domain/view";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -131,7 +132,7 @@ describe("application localization", () => {
       </>,
     );
     const picker = screen.getByRole("combobox", { name: "App language" });
-    expect(picker.querySelectorAll("option")).toHaveLength(9);
+    expect(picker.querySelectorAll("option")).toHaveLength(10);
     fireEvent.change(picker, { target: { value: "fr" } });
     expect(
       await screen.findByRole("button", { name: "Actualiser maintenant" }),
@@ -282,6 +283,19 @@ describe("application localization", () => {
       ],
     },
     {
+      locale: "it",
+      expected: [
+        "0 attività",
+        "1 attività",
+        "2 attività",
+        "5 attività",
+        "11 attività",
+        "21 attività",
+        "22 attività",
+        "101 attività",
+      ],
+    },
+    {
       locale: "zh",
       expected: [
         "0 个任务",
@@ -421,6 +435,47 @@ describe("application localization", () => {
       "Correspondance remplacée à la ligne $",
     );
     expect(phrases["replaced $ matches"]).toBe("$ correspondances remplacées");
+  });
+
+  it("renders Italian date, ordinal, recurrence, calendar and editor copy", async () => {
+    await activateAppLocale("it");
+    expect(appLocale()).toBe("it");
+    expect(formatTaskDate("2026-07-24", "2026-07-24")).toBe("Oggi");
+    expect(formatTaskDate("2026-07-25", "2026-07-24")).toBe("Domani");
+    expect(formatRelativeTaskDate("2026-07-23", "2026-07-24")).toBe("Ieri");
+    expect(formatRelativeTaskDate("2026-07-22", "2026-07-24")).toBe(
+      "2 giorni fa",
+    );
+    expect(formatTaskDate("2026-07-01", "2026-07-24")).toBe("mer 1 lug");
+    expect([1, 2, 8, 11, 31, 80, 800].map(ordinal)).toEqual([
+      "il 1°",
+      "il 2°",
+      "l'8°",
+      "l'11°",
+      "il 31",
+      "l'80°",
+      "l'800°",
+    ]);
+    for (const [rule, expected] of [
+      ["FREQ=DAILY;INTERVAL=2", "Ogni 2 giorni"],
+      ["FREQ=MONTHLY;BYMONTHDAY=31", "Ogni mese, il 31"],
+      [
+        "FREQ=MONTHLY;BYMONTHDAY=-8",
+        "Ogni mese, l'8° giorno dalla fine del mese",
+      ],
+    ]) {
+      const draft = parseRecurrenceRule(rule);
+      const before = structuredClone(draft);
+      expect(recurrenceRuleSummary(draft)).toBe(expected);
+      expect(draft).toEqual(before);
+    }
+    expect(await loadCalendarLocale("it-IT")).toMatchObject({
+      code: "it",
+      buttonText: { today: "Oggi", month: "Mese" },
+    });
+    const phrases = await loadCodeMirrorPhrases("it");
+    expect(phrases["Go to line"]).toBe("Vai alla riga");
+    expect(phrases["replaced $ matches"]).toContain("$");
   });
 
   it("preserves editor phrase lookup keys and substitution tokens", () => {

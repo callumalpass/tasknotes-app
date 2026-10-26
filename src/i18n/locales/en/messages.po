@@ -5542,7 +5542,7 @@ msgstr "Your person record needs fixing before filtering tasks: {0}."
 msgid "Your protected version"
 msgstr "Your protected version"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "Your sidebar, in order.{0}"

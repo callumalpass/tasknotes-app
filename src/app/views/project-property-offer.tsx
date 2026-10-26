@@ -109,7 +109,7 @@ export function ProjectPropertyOffer({
       </div>
       {error ? (
         <p className="inline-error" role="alert">
-          <Trans>The view could not be updated. {error}</Trans>
+          {t`The view could not be updated. ${error}`}
         </p>
       ) : null}
     </div>

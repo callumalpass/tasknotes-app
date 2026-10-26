@@ -9,6 +9,7 @@ const loaders: Record<string, () => Promise<{ default: LocaleInput }>> = {
   pt: () => import("@fullcalendar/core/locales/pt-br"),
   ru: () => import("@fullcalendar/core/locales/ru"),
   zh: () => import("@fullcalendar/core/locales/zh-cn"),
+  it: () => import("@fullcalendar/core/locales/it"),
 };
 
 /** Calendar dependency copy follows the app language without eager locale data. */

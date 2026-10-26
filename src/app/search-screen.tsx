@@ -183,9 +183,7 @@ export function SearchScreen({
       )}
       {!peopleBlocked && !waiting && error ? (
         <div className="operation-error-notice" role="alert">
-          <p>
-            <Trans>Search could not be loaded. {error.message}</Trans>
-          </p>
+          <p>{t`Search could not be loaded. ${error.message}`}</p>
           {stale ? (
             <p>
               <Trans>Previously loaded results may be out of date.</Trans>
@@ -496,11 +494,11 @@ function BrowseFields({
   return (
     <div className="browse-fields">
       {available.map((group) => (
-        <section key={group.label}>
+        <section key={group.prefix}>
           <h2>{group.label}</h2>
           <div>
             {group.values
-              .slice(0, expandedGroups.has(group.label) ? undefined : 4)
+              .slice(0, expandedGroups.has(group.prefix) ? undefined : 4)
               .map((value) => (
                 <button
                   key={value}
@@ -518,13 +516,13 @@ function BrowseFields({
                 onClick={() =>
                   setExpandedGroups((current) => {
                     const next = new Set(current);
-                    if (next.has(group.label)) next.delete(group.label);
-                    else next.add(group.label);
+                    if (next.has(group.prefix)) next.delete(group.prefix);
+                    else next.add(group.prefix);
                     return next;
                   })
                 }
               >
-                {expandedGroups.has(group.label)
+                {expandedGroups.has(group.prefix)
                   ? t({ message: "Show fewer" })
                   : t`Show all ${group.values.length}`}
               </button>

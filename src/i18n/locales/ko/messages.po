@@ -5542,7 +5542,7 @@ msgstr "작업을 필터링하기 전에 사람 레코드를 수정해야 합니
 msgid "Your protected version"
 msgstr "보호된 버전"
 
-#. placeholder {0}: ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""
+#. placeholder {0}: [ordered[0] ? t` ${ordered[0].name} opens first as Home.` : ""]
 #: src/app/views/navigation-view-order.tsx
 msgid "Your sidebar, in order.{0}"
 msgstr "사이드바 순서입니다.{0}"

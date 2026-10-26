@@ -253,7 +253,18 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
   });
 });
 
-for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
+for (const locale of [
+  "en",
+  "fr",
+  "de",
+  "es",
+  "ja",
+  "ko",
+  "pt",
+  "ru",
+  "zh",
+  "it",
+]) {
   test(`Settings switches and persists ${locale} without changing collection data`, async ({
     page,
   }) => {
@@ -261,7 +272,7 @@ for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
     await page.goto("more/device?demo=12");
     const picker = page.locator(".language-picker");
     await expect(picker).toHaveValue(locale);
-    await expect(picker.locator("option")).toHaveCount(9);
+    await expect(picker.locator("option")).toHaveCount(10);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await page.setViewportSize({ width: 320, height: 900 });
     await page.evaluate(() => {
@@ -298,6 +309,32 @@ for (const locale of ["en", "fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
     await restored.close();
   });
 }
+
+test("Italian picker loads and persists authored copy and dates", async ({
+  page,
+}) => {
+  await page.goto("more/device?demo=12");
+  const picker = page.locator(".language-picker");
+  await expect(picker.locator('option[value="it"]')).toHaveText("Italiano");
+  await picker.selectOption("it");
+  await expect(page.locator("html")).toHaveAttribute("lang", "it");
+  await expect(
+    page.getByRole("combobox", { name: "Lingua dell'app", exact: true }),
+  ).toHaveValue("it");
+  const restored = await page.context().newPage();
+  await restored.goto("more/device?demo=12");
+  await expect(restored.locator("html")).toHaveAttribute("lang", "it");
+  await restored.close();
+  await page.goto("e2e/private-account.fixture.html?count=2&summaries=1");
+  await expect(page.getByTestId("daily-summary")).toHaveText("Ogni 2 giorni");
+  await expect(page.getByTestId("month-end-8")).toHaveText(
+    "Ogni mese, l'8° giorno dalla fine del mese",
+  );
+  await expect(page.getByTestId("date-today")).toHaveText("Oggi");
+  await expect(page.getByTestId("date-tomorrow")).toHaveText("Domani");
+  await expect(page.getByTestId("date-relative")).toHaveText("2 giorni fa");
+  await expect(page.getByTestId("date-formatted")).toHaveText("mer 1 lug");
+});
 
 test("a failed locale chunk retains English, the explicit preference and a retryable Settings error", async ({
   page,

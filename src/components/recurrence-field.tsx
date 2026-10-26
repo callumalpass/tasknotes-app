@@ -553,10 +553,7 @@ function AdvancedRuleEditor({
         </p>
       ) : parsed.unsupported.length ? (
         <p>
-          <Trans>
-            Visual editing is unavailable because this rule uses{" "}
-            {parsed.unsupported.join(", ")}.
-          </Trans>
+          {t`Visual editing is unavailable because this rule uses ${parsed.unsupported.join(", ")}.`}
         </p>
       ) : (
         <p>

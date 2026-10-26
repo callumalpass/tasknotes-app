@@ -6,13 +6,13 @@ import {
   uiCatalogueImports,
 } from "./vite-ui-catalogues.ts";
 
-test("Vite sees all eight packed UI JSON imports as bundle-owned modules", async () => {
+test("Vite sees all nine packed UI JSON imports as bundle-owned modules", async () => {
   const source = await readFile(
     new URL(import.meta.resolve("@mdbase-dev/ui/i18n")),
     "utf8",
   );
   const transformed = normalizeUiJsonImports(source);
-  for (const locale of ["fr", "de", "es", "ja", "ko", "pt", "ru", "zh"]) {
+  for (const locale of ["fr", "de", "es", "ja", "ko", "pt", "ru", "zh", "it"]) {
     assert.ok(
       transformed.includes(`import("./locales/${locale}/messages.json")`),
     );
@@ -21,7 +21,7 @@ test("Vite sees all eight packed UI JSON imports as bundle-owned modules", async
   assert.ok(
     transformed.includes('import english from "./locales/en/messages.json"'),
   );
-  assert.equal((source.match(/type: "json"/g) ?? []).length, 9);
+  assert.equal((source.match(/type: "json"/g) ?? []).length, 10);
   assert.equal((transformed.match(/type: "json"/g) ?? []).length, 1);
 });
 
