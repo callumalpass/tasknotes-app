@@ -91,8 +91,8 @@ importers:
         specifier: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz
         version: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.15.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.15.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1277,9 +1277,9 @@ packages:
       react:
         optional: true
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.15.tgz':
-    resolution: {integrity: sha512-tsQ/Gmhi12QfKlrgJG5UEVQhbDAJz2Q1tu+UzVlsE3hDCEenZ09ByehbKjmFa75Epvr0bMOhzc8POa6NULhFgw==, tarball: file:vendor/tasknotes-model-0.3.0-rc.15.tgz}
-    version: 0.3.0-rc.15
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz':
+    resolution: {integrity: sha512-jGy/JRSdYyqrTReVpOjXplegqtsz4+YAnZHrdPqWeiOQZLhZMw+eTJYyVF+/4RW26fW5Q6yellLmr72DnY6nng==, tarball: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz}
+    version: 0.3.0-rc.17-dev.0
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -5508,7 +5508,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.15.tgz':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0

@@ -1,4 +1,5 @@
 import { t as translate } from "@lingui/core/macro";
+import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import { App as CapacitorApp } from "@capacitor/app";
 import { registerReloadParticipant } from "../pwa/reload";
 import { captureSessionFor } from "../application/capture-session";
@@ -107,6 +108,7 @@ interface RepositoryContextValue {
   startTimeTracking(id: string, description?: string): Promise<Task>;
   stopTimeTracking(id: string): Promise<Task>;
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
+  editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setTaskArchived(id: string, archived: boolean): Promise<Task>;
   deleteTask(id: string): Promise<void>;
@@ -617,6 +619,11 @@ export function RepositoryProvider({
     },
     [acceptTask, repository],
   );
+  const editCalendar = useCallback(
+    async (id: string, edit: CalendarTaskEdit) =>
+      acceptTask(await repository.editCalendar(id, edit), { notify: false }),
+    [acceptTask, repository],
+  );
   const replaceTimeEntries = useCallback(
     async (id: string, entries: TaskTimeEntry[]) => {
       return acceptTask(await repository.replaceTimeEntries(id, entries), {
@@ -666,6 +673,7 @@ export function RepositoryProvider({
 
   const value = useMemo<RepositoryContextValue>(
     () => ({
+      editCalendar,
       repository,
       privateAccount,
       mutations,
@@ -698,6 +706,7 @@ export function RepositoryProvider({
       refresh,
     }),
     [
+      editCalendar,
       repository,
       privateAccount,
       mutations,

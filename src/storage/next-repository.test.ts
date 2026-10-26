@@ -1,3 +1,4 @@
+import { buildCalendarEntries } from "@tasknotes/model/calendar";
 import { type PlainValue, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTaskFixture } from "../test/next-task-fixture";
@@ -40,6 +41,62 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("persists exact calendar history deletions without generic recurrence advancement", async () => {
+    const f = await fixture();
+    const configuration = await f.repository.taskConfiguration();
+    const model = new TaskNotesTaskModel(configuration);
+    const original = model.create(
+      {
+        title: "Calendar series",
+        scheduled: "2026-03-07T09:00",
+        recurrence: "DTSTART:20260307T090000Z;FREQ=DAILY",
+        body: "Keep notes",
+      },
+      { id: crypto.randomUUID(), now: "2026-03-01T00:00:00Z" },
+    );
+    const write = await f.client.create({
+      type: "task",
+      path: original.path,
+      body: original.body,
+      frontmatter: {
+        ...original.frontmatter,
+        [configuration.fieldMapping.completeInstances]: ["2026-03-09"],
+        [configuration.fieldMapping.skippedInstances]: ["2026-03-10"],
+        unrelated: "Keep metadata",
+      } as Record<string, PlainValue>,
+    });
+    await write.confirmed;
+    const before = (await f.repository.get(original.id))!;
+    const entry = buildCalendarEntries({
+      tasks: [model.taskInfo(before)],
+      timezone: "UTC",
+      now: "2026-03-07T12:00:00Z",
+      range: { start: "2026-03-07", end: "2026-03-11" },
+    }).find((entry) => entry.recurringKind === "next-scheduled")!;
+    await f.repository.editCalendar(before.id, {
+      entry,
+      timezone: "UTC",
+      now: "2026-03-07T12:00:00Z",
+      change: { kind: "drop", start: "2026-03-08T11:30", allDay: false },
+    });
+    const after = (await f.repository.get(before.id))!;
+    expect(after).toMatchObject({
+      scheduled: "2026-03-08T11:30",
+      recurrence: before.recurrence,
+      completeInstances: [],
+      skippedInstances: [],
+      body: "Keep notes",
+    });
+    expect(after.frontmatter).not.toHaveProperty(
+      configuration.fieldMapping.completeInstances,
+    );
+    expect(after.frontmatter).not.toHaveProperty(
+      configuration.fieldMapping.skippedInstances,
+    );
+    expect(after.frontmatter.unrelated).toBe("Keep metadata");
+    expect(after.revision).toBe(before.revision + 1);
+  });
+
   it("keeps portable selection identity distinct from the stable account-scoped preference identity", async () => {
     const f = await fixture();
     const info = await f.repository.collectionInfo();

@@ -1,3 +1,4 @@
+import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import {
   buildTaskNotesMdbaseResources,
@@ -318,6 +319,10 @@ export class DemoTaskRepository implements TaskRepository {
     const saved = await this.withRollingWarnings(task);
     if (intent) this.acceptedCreates.set(intent, saved);
     return saved;
+  }
+
+  async editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task> {
+    return this.persist(this.model.editCalendar(this.requireTask(id), edit));
   }
 
   async update(id: string, input: UpdateTaskInput): Promise<Task> {
