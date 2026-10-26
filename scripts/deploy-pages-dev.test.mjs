@@ -155,13 +155,18 @@ describe("TaskNotes development deployment", () => {
       { MDBASE_ENV: "staging" },
       { run, verifyBuild },
     );
-    expect(run.mock.calls[0]).toEqual([
+    expect(run.mock.calls[0][1]).toEqual([
+      "add",
+      "--ignore-scripts",
+      "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
+    ]);
+    expect(run.mock.calls[1]).toEqual([
       expect.stringMatching(/^pnpm/),
       ["build:assets"],
       expect.objectContaining({ VITE_TASKNOTES_ENVIRONMENT: "staging" }),
     ]);
     expect(verifyBuild).toHaveBeenCalledWith(developmentDeployments.staging);
-    expect(run.mock.calls[1][1]).toContain("--branch=staging");
+    expect(run.mock.calls[2][1]).toContain("--branch=staging");
   });
 
   it("deploys only the LAB branch and smokes the same origins by default", async () => {
