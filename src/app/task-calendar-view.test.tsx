@@ -1,6 +1,7 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskCalendarView } from "./task-calendar-view";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 
@@ -42,7 +43,10 @@ describe("calendar drops", () => {
     drop("2026-07-24", "2026-07-27", revert);
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ id: "one" }),
-      { scheduled: "2026-07-27" },
+      expect.objectContaining({
+        entry: expect.objectContaining({ id: "scheduled-one" }),
+        change: expect.objectContaining({ kind: "drop", allDay: true }),
+      }),
     );
     expect(eventStart()).toBe("2026-07-27");
 
@@ -76,7 +80,7 @@ describe("calendar drops", () => {
   it("writes timed moves and resizes in the stored date formats", async () => {
     const onUpdate = vi.fn(() => Promise.resolve());
     renderCalendar(execution("2026-07-24T09:30", 60), onUpdate);
-    const item = items().find((candidate) => candidate.id.startsWith("one"))!;
+    const item = items().find((candidate) => candidate.id === "scheduled-one")!;
     expect(item).toMatchObject({
       start: "2026-07-24T09:30",
       end: "2026-07-24T10:30",
@@ -92,7 +96,14 @@ describe("calendar drops", () => {
     });
     expect(onUpdate).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "one" }),
-      { scheduled: "2026-07-27T14:15" },
+      expect.objectContaining({
+        change: {
+          kind: "drop",
+          start: new Date(2026, 6, 27, 14, 15).toISOString(),
+          end: new Date(2026, 6, 27, 15, 15).toISOString(),
+          allDay: false,
+        },
+      }),
     );
 
     change("onItemResize", item, {
@@ -104,7 +115,14 @@ describe("calendar drops", () => {
     });
     expect(onUpdate).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "one" }),
-      { timeEstimate: 90 },
+      expect.objectContaining({
+        change: {
+          kind: "resize",
+          start: new Date(2026, 6, 24, 9, 30).toISOString(),
+          end: new Date(2026, 6, 24, 11, 0).toISOString(),
+          allDay: false,
+        },
+      }),
     );
     await act(async () => {});
   });
@@ -115,13 +133,11 @@ function items(): CalendarItem[] {
 }
 
 function eventStart() {
-  return items().find((item) => item.id.startsWith("one"))?.start;
+  return items().find((item) => item.id === "scheduled-one")?.start;
 }
 
-function drop(from: string, to: string, revert: () => void) {
-  const item = items().find(
-    (candidate) => candidate.id === `one:scheduled:${from}`,
-  )!;
+function drop(_from: string, to: string, revert: () => void) {
+  const item = items().find((candidate) => candidate.id === "scheduled-one")!;
   const [year, month, day] = to.split("-").map(Number);
   change(
     "onItemDrop",
@@ -180,11 +196,9 @@ function renderCalendar(
       titleProperty="title"
       onCreate={vi.fn()}
       onOpen={vi.fn()}
-      onReplaceTimeEntries={vi.fn()}
       onSelect={vi.fn()}
       onToggle={vi.fn()}
-      onUpdate={onUpdate as never}
-      onUpdateOccurrence={vi.fn()}
+      onEdit={onUpdate as never}
     />
   );
   const result = render(element(initial));
@@ -229,7 +243,16 @@ function execution(
         options: { calendarView: "dayGridMonth" },
       },
     },
-    rows: [{ task: { ...task(scheduled), timeEstimate }, values: {} }],
+    rows: [
+      {
+        task: {
+          ...task(scheduled),
+          timeEstimate,
+          frontmatter: { ...task(scheduled).frontmatter, timeEstimate },
+        },
+        values: {},
+      },
+    ],
     totalCount: 1,
     hasMore: false,
     groups: [],
@@ -237,29 +260,17 @@ function execution(
 }
 
 function task(scheduled: string): Task {
-  return {
-    id: "one",
+  return new TaskNotesTaskModel().read({
     path: "tasks/one.md",
-    title: "Calendar task",
-    status: "open",
-    completed: false,
-    archived: false,
-    priority: "normal",
-    scheduled,
     body: "",
-    createdAt: "2026-07-01T00:00:00.000Z",
-    updatedAt: "2026-07-01T00:00:00.000Z",
-    tags: ["task"],
-    contexts: [],
-    projects: [],
-    attachments: [],
-    blockedBy: [],
-    completeInstances: [],
-    skippedInstances: [],
-    reminders: [],
-    timeEntries: [],
-    customProperties: {},
-    revision: 1,
-    frontmatter: {},
-  };
+    frontmatter: {
+      id: "one",
+      title: "Calendar task",
+      status: "open",
+      scheduled,
+      priority: "normal",
+      dateCreated: "2026-07-01T00:00:00Z",
+      dateModified: "2026-07-01T00:00:00Z",
+    },
+  });
 }

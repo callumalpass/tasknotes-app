@@ -4,6 +4,12 @@ import { TaskCalendar } from "@tasknotes/calendar/react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  calendarItems,
+  type CalendarEventData,
+  type CalendarEventMetadata,
+  type TaskCalendarItem,
+} from "./calendar-items";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
 import {
@@ -12,27 +18,17 @@ import {
   calendarPriorityMarker,
   withPendingMoves,
   withPriorityDetail,
-  type CalendarPriorityMarker,
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
 import {
   calendarEntryKey,
-  calendarEvents,
   type CalendarEntry,
 } from "../domain/calendar-events";
-import type { RecurringCalendarDrop } from "../domain/calendar-recurrence-drag";
-import {
-  moveCalendarTimeEntry,
-  resizeCalendarTimeEntry,
-} from "../domain/calendar-time-entries";
-import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
-import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
-import {
-  relativeDateDetail,
-  viewPropertyDetails,
-  type ViewPropertyDetail,
-} from "../domain/view-values";
+import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import { occurrenceTask } from "../domain/task-occurrence";
+import { dateFromStorage, todayString } from "../domain/task";
+import { viewPropertyDetails } from "../domain/view-values";
 import { useRepository } from "./repository-context";
 import type {
   CalendarHourFormat,
@@ -41,7 +37,6 @@ import type {
 
 import type {
   Calendar,
-  CalendarItem,
   DateClickArg,
   ItemArg,
   ItemChangeArg,
@@ -49,11 +44,9 @@ import type {
   ViewInfo,
   ViewType,
 } from "@tasknotes/calendar";
-import type {
-  TaskSummary,
-  TaskTimeEntry,
-  UpdateTaskInput,
-} from "../domain/task";
+import type { TaskSummary } from "../domain/task";
+import { useCalendarEntries } from "./use-calendar-entries";
+import { calendarContext } from "../domain/calendar-events";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
 
@@ -64,32 +57,6 @@ type CalendarMode =
   | "timeGridThreeDay"
   | "timeGridDay"
   | "listWeek";
-
-interface CalendarEventMetadata {
-  entry: CalendarEntry;
-  dateField?: "scheduled" | "due";
-  occurrence?: TaskOccurrence;
-  timeEntryIndex?: number;
-}
-
-/** What an entry draws; the calendar redraws an item only when this changes. */
-interface CalendarEventPresentation {
-  marker?: CalendarPriorityMarker;
-  details: (ViewPropertyDetail & { overdue?: boolean })[];
-  kind?: string;
-  recurring: boolean;
-}
-
-/**
- * Presentation plus the task records handlers act on. The records are left
- * out of the item's `rev`, so a change the calendar does not draw costs no
- * redraw; handlers still see the latest item passed to the calendar.
- */
-interface CalendarEventData extends CalendarEventPresentation {
-  metadata: CalendarEventMetadata;
-}
-
-type TaskCalendarItem = CalendarItem<CalendarEventData>;
 
 const PHONE_QUERY = "(max-width: 839px)";
 
@@ -104,9 +71,7 @@ export function TaskCalendarView({
   onCreate,
   onOpen: onOpenTask,
   onToggle,
-  onUpdate,
-  onUpdateOccurrence,
-  onReplaceTimeEntries,
+  onEdit,
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
@@ -118,15 +83,7 @@ export function TaskCalendarView({
   onCreate(date: string, createValue?: string, timeEstimate?: number): void;
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
-  onUpdate(task: TaskSummary, input: UpdateTaskInput): Promise<void>;
-  onUpdateOccurrence(
-    task: TaskSummary,
-    drop: RecurringCalendarDrop,
-  ): Promise<void>;
-  onReplaceTimeEntries(
-    task: TaskSummary,
-    entries: TaskTimeEntry[],
-  ): Promise<void>;
+  onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const closeOverflow = useCalendarOverflow(rootRef);
@@ -150,14 +107,23 @@ export function TaskCalendarView({
     x: number;
     y: number;
   } | null>(null);
-  const entries = useMemo(
-    () =>
-      calendarEvents(execution, range.start, range.end, identityTasks, {
-        showTimeEntries: preferences.showTimeEntries,
-      }),
-    [execution, identityTasks, preferences.showTimeEntries, range],
-  );
   const { configuration } = useRepository();
+  const { timezone } = calendarContext();
+  const display = useMemo(
+    () => ({
+      showTimeEntries: preferences.showTimeEntries,
+      showAllDaySlot: preferences.allDaySlot,
+      calendarView: mode,
+    }),
+    [preferences.showTimeEntries, preferences.allDaySlot, mode],
+  );
+  const entries = useCalendarEntries(
+    execution,
+    range,
+    identityTasks,
+    configuration,
+    display,
+  );
   const [pendingMoves, setPendingMoves] = useState<
     ReadonlyMap<string, PendingCalendarMove>
   >(() => new Map());
@@ -228,7 +194,6 @@ export function TaskCalendarView({
     }
     setMutationError("");
     const id = info.item.id;
-    const timeEntry = metadata.timeEntryIndex !== undefined;
     const move: PendingCalendarMove = {
       start: info.startStr,
       // Untimed tasks and open time entries keep their implicit length.
@@ -237,32 +202,16 @@ export function TaskCalendarView({
     };
     holdMove(id, move);
     try {
-      if (timeEntry) {
-        await onReplaceTimeEntries(
-          metadata.entry.task,
-          moveCalendarTimeEntry(
-            metadata.entry.task.timeEntries,
-            metadata.timeEntryIndex!,
-            info.start,
-            info.item.end ? info.end : null,
-          ),
-        );
-        holdMove(id, { ...move, settledWith: executionRef.current });
-        return;
-      }
-      if (!metadata.dateField) throw new Error("The task date is unavailable.");
-      if (metadata.occurrence)
-        await onUpdateOccurrence(metadata.entry.task, {
-          occurrenceDate: metadata.occurrence.date,
-          recurringKind: metadata.entry.recurringKind ?? "pattern",
-          dateField: metadata.dateField,
-          start: info.start,
+      await onEdit(metadata.entry.task, {
+        entry: metadata.entry.modelEntry,
+        change: {
+          kind: "drop",
+          start: info.start.toISOString(),
+          end: info.end.toISOString(),
           allDay: info.allDay,
-        });
-      else
-        await onUpdate(metadata.entry.task, {
-          [metadata.dateField]: info.startStr,
-        });
+        },
+        timezone,
+      });
       holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
       holdMove(id, undefined);
@@ -273,51 +222,29 @@ export function TaskCalendarView({
 
   async function resizeEvent(info: ItemChangeArg<CalendarEventData>) {
     const metadata = info.item.data?.metadata;
-    if (!metadata || info.allDay) {
+    if (!metadata) {
       info.revert();
       return;
     }
-    const minutes = Math.max(
-      1,
-      Math.round((info.end.getTime() - info.start.getTime()) / 60_000),
-    );
     setMutationError("");
-    if (metadata.occurrence && metadata.timeEntryIndex === undefined) {
-      info.revert();
-      return;
-    }
     const id = info.item.id;
     const move: PendingCalendarMove = {
       start: info.startStr,
       end: info.endStr,
-      allDay: false,
+      allDay: info.allDay,
     };
     holdMove(id, move);
     try {
-      if (metadata.timeEntryIndex !== undefined)
-        await onReplaceTimeEntries(
-          metadata.entry.task,
-          info.delta
-            ? moveCalendarTimeEntry(
-                metadata.entry.task.timeEntries,
-                metadata.timeEntryIndex,
-                info.start,
-                info.end,
-              )
-            : resizeCalendarTimeEntry(
-                metadata.entry.task.timeEntries,
-                metadata.timeEntryIndex,
-                info.end,
-              ),
-        );
-      else
-        await onUpdate(metadata.entry.task, {
-          // Resizing from the top moves the start as well as the length.
-          ...(info.delta && metadata.dateField
-            ? { [metadata.dateField]: info.startStr }
-            : {}),
-          timeEstimate: minutes,
-        });
+      await onEdit(metadata.entry.task, {
+        entry: metadata.entry.modelEntry,
+        change: {
+          kind: "resize",
+          start: info.start.toISOString(),
+          end: info.end.toISOString(),
+          allDay: info.allDay,
+        },
+        timezone,
+      });
       holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
       holdMove(id, undefined);
@@ -439,6 +366,7 @@ export function TaskCalendarView({
                 calendarRef.current = calendar;
               }}
               items={items}
+              timeZone={timezone}
               // The selected day is drawn by a render hook.
               renderKey={selected}
               view={calendarView(mode)}
@@ -458,7 +386,12 @@ export function TaskCalendarView({
               selectable
               selectMirror
               resizableFromStart
-              allDaySlot={preferences.allDaySlot}
+              allDaySlot={
+                typeof execution.view.presentation?.options.showAllDaySlot ===
+                "boolean"
+                  ? execution.view.presentation.options.showAllDaySlot
+                  : preferences.allDaySlot
+              }
               firstDay={preferences.firstDay}
               weekends={preferences.weekends}
               nowIndicator={preferences.nowIndicator}
@@ -503,7 +436,7 @@ export function TaskCalendarView({
                 setTitle(view.title);
                 setRange({
                   start: new Date(view.range.start.getTime()),
-                  end: new Date(view.range.end.getTime() - 1),
+                  end: new Date(view.range.end.getTime()),
                 });
               }}
             />
@@ -582,115 +515,6 @@ const calendarModes: Array<{
 
 function calendarView(mode: CalendarMode): ViewType {
   return calendarModes.find((option) => option.value === mode)?.view ?? "month";
-}
-
-function calendarItems(
-  entries: Map<string, CalendarEntry[]>,
-  execution: TaskViewExecution,
-  titleProperty: string,
-  configuration: TaskCollectionConfiguration,
-): { items: TaskCalendarItem[] } {
-  const items: TaskCalendarItem[] = [];
-  for (const [date, values] of entries) {
-    for (const entry of values) {
-      if (entry.timeEntry && entry.timeEntryIndex !== undefined) {
-        const start = new Date(entry.timeEntry.startTime);
-        const recordedEnd = entry.timeEntry.endTime
-          ? new Date(entry.timeEntry.endTime)
-          : null;
-        const liveEnd = new Date();
-        const end =
-          recordedEnd && recordedEnd > start
-            ? recordedEnd
-            : liveEnd > start
-              ? liveEnd
-              : new Date(start.getTime() + 60_000);
-        const id = calendarEntryKey(entry);
-        items.push({
-          id,
-          title: entry.timeEntry.description
-            ? `${entry.task.title}: ${entry.timeEntry.description}`
-            : entry.task.title,
-          start: entry.timeEntry.startTime,
-          end: end.toISOString(),
-          allDay: false,
-          kind: "time-entry",
-          color: "var(--success)",
-          editable: true,
-          startEditable: true,
-          durationEditable: Boolean(entry.timeEntry.endTime),
-          className: ["task-calendar-event", "is-time-entry"],
-          data: {
-            details: [],
-            kind: "Tracked time",
-            recurring: false,
-            metadata: { entry, timeEntryIndex: entry.timeEntryIndex },
-          },
-        });
-        continue;
-      }
-      const displayed = entry.occurrence
-        ? occurrenceTask(entry.occurrence)
-        : entry.task;
-      const scheduled =
-        displayed.scheduled && taskDatePart(displayed.scheduled) === date
-          ? displayed.scheduled
-          : undefined;
-      const due =
-        displayed.due && taskDatePart(displayed.due) === date
-          ? displayed.due
-          : undefined;
-      const start = scheduled ?? due ?? date;
-      const dateField = scheduled ? "scheduled" : "due";
-      const allDay = !start.includes("T");
-      const editable = entry.occurrence
-        ? !entry.occurrence.completed && !entry.occurrence.skipped
-        : !entry.task.recurrence;
-      const marker = calendarPriorityMarker(displayed, configuration);
-      const details = withPriorityDetail(
-        viewPropertyDetails(entry.row, execution.view.properties, {
-          identityProperty: titleProperty,
-          occurrence: entry.occurrence,
-        }) ?? [],
-        marker,
-        configuration,
-      ).map((detail) => relativeDateDetail(detail, displayed, configuration));
-      const id = [calendarEntryKey(entry), dateField, date].join(":");
-      items.push({
-        id,
-        title: entry.task.title,
-        start,
-        ...(allDay || !displayed.timeEstimate
-          ? {}
-          : { end: addMinutes(start, displayed.timeEstimate) }),
-        allDay,
-        kind: "task",
-        completed: displayed.completed,
-        editable,
-        startEditable: editable,
-        durationEditable: editable && !entry.occurrence && !allDay,
-        className: [
-          "task-calendar-event",
-          displayed.completed ? "is-complete" : "",
-          entry.occurrence ? "is-recurring" : "",
-          entry.recurringKind === "next-scheduled" ? "is-recurring-next" : "",
-          entry.recurringKind === "pattern" ? "is-recurring-pattern" : "",
-        ].filter(Boolean),
-        data: {
-          ...(marker ? { marker } : {}),
-          details,
-          // A task can appear on its scheduled and its due day; name the
-          // reason on the due-day entry so the repeat is not a mystery.
-          ...(dateField === "due" && displayed.scheduled
-            ? { kind: "Due" }
-            : {}),
-          recurring: Boolean(entry.occurrence),
-          metadata: { entry, dateField, occurrence: entry.occurrence },
-        },
-      });
-    }
-  }
-  return { items };
 }
 
 /** Stamps what an item draws as its `rev`, leaving the task records out. */
@@ -862,13 +686,6 @@ function initialRange(
     start: new Date(date.getFullYear(), date.getMonth(), date.getDate() - 7),
     end: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 14),
   };
-}
-
-function addMinutes(value: string, minutes: number): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  date.setMinutes(date.getMinutes() + minutes);
-  return `${todayString(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function agendaLabel(value: string): string {
