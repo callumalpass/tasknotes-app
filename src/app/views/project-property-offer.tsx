@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { useState } from "react";
 
 import {
@@ -26,6 +27,7 @@ export function ProjectPropertyOffer({
   hasProjects: boolean;
   onChanged(): Promise<unknown>;
 }) {
+  const { t } = useLingui();
   const { repository, configuration } = useRepository();
   const projects = configuration.fieldMapping.projects;
   const storageKey = `tasknotes:today-projects-offer:${scope ?? ""}:${view.key}`;
@@ -84,7 +86,9 @@ export function ProjectPropertyOffer({
 
   return (
     <div className="view-offer" role="status">
-      <p>Show each task’s project on Today?</p>
+      <p>
+        <Trans>Show each task’s project on Today?</Trans>
+      </p>
       <div>
         <button
           className="text-action"
@@ -92,7 +96,7 @@ export function ProjectPropertyOffer({
           type="button"
           onClick={() => void accept()}
         >
-          {pending ? "Adding" : "Show projects"}
+          {pending ? t({ message: "Adding" }) : t({ message: "Show projects" })}
         </button>
         <button
           className="text-action quiet"
@@ -100,12 +104,12 @@ export function ProjectPropertyOffer({
           type="button"
           onClick={dismiss}
         >
-          Not now
+          <Trans>Not now</Trans>
         </button>
       </div>
       {error ? (
         <p className="inline-error" role="alert">
-          The view could not be updated. {error}
+          <Trans>The view could not be updated. {error}</Trans>
         </p>
       ) : null}
     </div>

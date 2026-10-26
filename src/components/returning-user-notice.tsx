@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useEffect, useState } from "react";
 import "./returning-user-notice.css";
 
@@ -46,18 +48,25 @@ export function ReturningUserNotice({
   }, [visit]);
   if (!visible) return null;
   return (
-    <aside className="returning-user-notice" aria-label="mdbase update">
+    <aside
+      className="returning-user-notice"
+      aria-label={translate({ message: "mdbase update" })}
+    >
       <p>
-        mdbase was upgraded. Approve TaskNotes once to continue. Your
-        collections and notes are unchanged.
+        <Trans>
+          mdbase was upgraded. Approve TaskNotes once to continue. Your
+          collections and notes are unchanged.
+        </Trans>
       </p>
-      <p>Private collections need your desktop online.</p>
+      <p>
+        <Trans>Private collections need your desktop online.</Trans>
+      </p>
       <div>
         <a href="https://mdbase.dev/" target="_blank" rel="noopener noreferrer">
-          Learn more
+          <Trans>Learn more</Trans>
         </a>
         <button type="button" onClick={() => setVisible(false)}>
-          Dismiss
+          <Trans>Dismiss</Trans>
         </button>
       </div>
     </aside>

@@ -1,0 +1,21 @@
+{
+  "repository": "mdbase-dev/mdbase-connect",
+  "sourceCommit": "a36fa00914af2aacef03b8e23cb566bee5531e4a",
+  "package": "@mdbase-dev/ui",
+  "version": "0.1.0-beta.141",
+  "artifact": "mdbase-dev-ui-0.1.0-beta.141-a36fa009.tgz",
+  "bytes": 129246,
+  "sha256": "e7199463d7f4d282cfd6f5f16e71dc1aa1029330a634f43112ae5b2f63dea7a0",
+  "integrity": "sha512-oVakG1v10kO9H+FXvqJWzH/dmdn3kGbnhMT+OLx6YKZlzLjtvuBHsvKInBCYDpBtl48eFk/K+9TIWb925UiUmQ==",
+  "extendsArtifact": "mdbase-dev-ui-0.1.0-beta.141-852df21f.tgz",
+  "sourceIncludesPrs": [888, 889, 892, 893, 895, 899, 902],
+  "consumerEntries": [
+    "@mdbase-dev/ui/collections",
+    "@mdbase-dev/ui/collections.css",
+    "@mdbase-dev/ui/collections/testing",
+    "@mdbase-dev/ui/i18n"
+  ],
+  "label": "active-only strict library catalogues and CommandPalette groupLabel; replace with published npm package at merge time",
+  "noPublication": true,
+  "originalArchiveUnchanged": true
+}

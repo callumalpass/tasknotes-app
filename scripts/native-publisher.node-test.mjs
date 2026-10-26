@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { originalOfflineRuntime } from "./lib/native-offline-shell.mjs";
 import { offlineShellFor } from "./fixtures/offline-shell-data.mjs";
 import { frozenStagingRoot } from "./fixtures/staging-intake-root.mjs";
+import { frozenProductionRoot } from "./fixtures/production-intake-root.mjs";
 import { createHash } from "node:crypto";
 import {
   mkdtemp,
@@ -203,7 +204,7 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 
 test("reviewed production intake accepts historical UI labels without relabelling originals", async (t) => {
   const production = await verifySdkTrust({
-    root: new URL("../", import.meta.url).pathname,
+    root: await frozenProductionRoot(t),
     target: NATIVE_PUBLISH_TARGETS.production,
   });
   assert.deepEqual(production.publicationConstraints, []);
@@ -214,6 +215,29 @@ test("reviewed production intake accepts historical UI labels without relabellin
   });
   assert.deepEqual(historical.publicationConstraints, []);
   assert.equal(historical.historicalUiQualification.noPublication, true);
+});
+
+test("production intake refuses the unqualified i18n lock and UI pin", async (t) => {
+  await assert.rejects(
+    verifySdkTrust({
+      root: await realpath(new URL("../", import.meta.url)),
+      target: NATIVE_PUBLISH_TARGETS.production,
+    }),
+    /Frozen lock mismatch/,
+  );
+  // Even the reviewed lock cannot authorize a different UI archive.
+  const root = await frozenProductionRoot(t);
+  const packageJson = JSON.parse(await readFile(join(root, "package.json")));
+  const current = JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url)),
+  );
+  packageJson.dependencies["@mdbase-dev/ui"] =
+    current.dependencies["@mdbase-dev/ui"];
+  await writeFile(join(root, "package.json"), JSON.stringify(packageJson));
+  await assert.rejects(
+    verifySdkTrust({ root, target: NATIVE_PUBLISH_TARGETS.production }),
+    /@mdbase-dev\/ui original pin mismatch/,
+  );
 });
 
 // --- build environment ------------------------------------------------------

@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { Search } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -89,7 +91,7 @@ export function CommandPalette({
         role="dialog"
       >
         <h2 className="visually-hidden" id={titleId}>
-          Command palette
+          <Trans>Command palette</Trans>
         </h2>
         <div className="command-palette-field">
           <Search aria-hidden="true" size={18} />
@@ -100,9 +102,11 @@ export function CommandPalette({
             aria-autocomplete="list"
             aria-controls={listId}
             aria-expanded="true"
-            aria-label="Search commands and tasks"
+            aria-label={translate({ message: "Search commands and tasks" })}
             autoComplete="off"
-            placeholder="Go to, run an action, or find a task…"
+            placeholder={translate({
+              message: "Go to, run an action, or find a task…",
+            })}
             ref={inputRef}
             role="combobox"
             spellCheck={false}
@@ -132,7 +136,7 @@ export function CommandPalette({
           />
         </div>
         <div
-          aria-label="Results"
+          aria-label={translate({ message: "Results" })}
           className="command-palette-results"
           id={listId}
           ref={listRef}
@@ -187,11 +191,13 @@ export function CommandPalette({
           })}
           {!options.length ? (
             <p className="command-palette-empty" role="status">
-              {searchingTasks ? "Searching tasks…" : "No matching commands."}
+              {searchingTasks
+                ? translate({ message: "Searching tasks…" })
+                : translate({ message: "No matching commands." })}
             </p>
           ) : searchingTasks ? (
             <p className="command-palette-empty" role="status">
-              Searching tasks…
+              <Trans>Searching tasks…</Trans>
             </p>
           ) : null}
         </div>

@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "../test/render";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FullCalendarView } from "./full-calendar-view";

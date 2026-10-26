@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 export type PaletteSection = "task" | "navigate" | "actions" | "tasks";
 
 export interface PaletteCommand {
@@ -13,10 +14,18 @@ export interface PaletteCommand {
 }
 
 export const paletteSectionLabels: Record<PaletteSection, string> = {
-  task: "Focused task",
-  navigate: "Go to",
-  actions: "Actions",
-  tasks: "Tasks",
+  get task() {
+    return t({ message: "Focused task" });
+  },
+  get navigate() {
+    return t({ message: "Go to" });
+  },
+  get actions() {
+    return t({ message: "Actions" });
+  },
+  get tasks() {
+    return t({ message: "Tasks" });
+  },
 };
 
 const sectionOrder: PaletteSection[] = ["task", "navigate", "actions", "tasks"];

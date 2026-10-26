@@ -1,5 +1,6 @@
 // Presentation stand-in only: no credentials, native endpoints or live data.
 import { createRoot } from "react-dom/client";
+import { AppI18nProvider } from "../src/i18n/app-provider";
 import { AppShell } from "../src/app/app-shell";
 import { CollectionGateContext } from "../src/app/collection-context";
 import { RepositoryProvider } from "../src/app/repository-context";
@@ -90,19 +91,21 @@ Object.defineProperty(window, "syncPresentationStats", {
   value: () => ({ updates: repository.updates }),
 });
 createRoot(document.getElementById("root")!).render(
-  <CollectionGateContext.Provider
-    value={{
-      collectionUi: null,
-      changeCollection: () => {},
-      reauthorizeCurrentCollection: () => {},
-    }}
-  >
-    <RepositoryProvider
-      repository={repository}
-      mutationJournal={new DemoMutationJournal()}
-      reminderAuthority="none"
+  <AppI18nProvider>
+    <CollectionGateContext.Provider
+      value={{
+        collectionUi: null,
+        changeCollection: () => {},
+        reauthorizeCurrentCollection: () => {},
+      }}
     >
-      <AppShell />
-    </RepositoryProvider>
-  </CollectionGateContext.Provider>,
+      <RepositoryProvider
+        repository={repository}
+        mutationJournal={new DemoMutationJournal()}
+        reminderAuthority="none"
+      >
+        <AppShell />
+      </RepositoryProvider>
+    </CollectionGateContext.Provider>
+  </AppI18nProvider>,
 );

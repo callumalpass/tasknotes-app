@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { AssigneeEditor } from "./assignee-editor";
 const state = vi.hoisted(() => ({

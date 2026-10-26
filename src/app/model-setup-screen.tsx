@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ModelSetupError,
@@ -48,10 +50,11 @@ export function ModelSetupScreen({
         if (active && current === generation)
           setView({
             state: "blocked",
-            message:
-              reason instanceof Error
+            get message() {
+              return reason instanceof Error
                 ? reason.message
-                : "Collection access is unavailable.",
+                : translate({ message: "Collection access is unavailable." });
+            },
           });
       }
     };
@@ -99,7 +102,7 @@ export function ModelSetupScreen({
             ? ""
             : reason instanceof Error
               ? reason.message
-              : "TaskNotes setup is unavailable.",
+              : translate({ message: "TaskNotes setup is unavailable." }),
         );
         if (reason instanceof ModelSetupError) setView(reason.view);
         else {
@@ -121,33 +124,42 @@ export function ModelSetupScreen({
     <main className="opening-screen">
       <h1>
         {!view
-          ? "Opening collection"
+          ? translate({ message: "Opening collection" })
           : view.state === "waiting"
             ? view.reason === "waiting_for_access"
-              ? "Waiting for access"
-              : "Catching up"
-            : "Set up TaskNotes"}
+              ? translate({ message: "Waiting for access" })
+              : translate({ message: "Catching up" })
+            : translate({ message: "Set up TaskNotes" })}
       </h1>
       {view && view.state !== "waiting" ? (
         <p>
-          This collection needs its TaskNotes setup before tasks and views can
-          open. New setup installs the published models and adds Today,
-          Upcoming, Calendar, Projects and Archive. Existing view sources stay
-          unchanged; interrupted setup resumes only its original changes.
+          <Trans>
+            This collection needs its TaskNotes setup before tasks and views can
+            open. New setup installs the published models and adds Today,
+            Upcoming, Calendar, Projects and Archive. Existing view sources stay
+            unchanged; interrupted setup resumes only its original changes.
+          </Trans>
         </p>
       ) : null}
-      {!view ? <p role="status">Checking collection access…</p> : null}
+      {!view ? (
+        <p role="status">
+          <Trans>Checking collection access…</Trans>
+        </p>
+      ) : null}
       {view?.state === "waiting" ? <p role="status">{view.message}</p> : null}
       {view?.state === "required" ? (
         <button disabled={busy} onClick={() => void run("install")}>
-          Set up TaskNotes
+          <Trans>Set up TaskNotes</Trans>
         </button>
       ) : null}
       {view?.state === "outcome_unknown" ? (
         <>
-          <p role="status">Setup outcome unknown. {view.message}</p>
+          <p role="status">
+            <Trans>Setup outcome unknown. </Trans>
+            {view.message}
+          </p>
           <button disabled={busy} onClick={() => void run("resume")}>
-            Resume original setup
+            <Trans>Resume original setup</Trans>
           </button>
         </>
       ) : null}
@@ -155,7 +167,7 @@ export function ModelSetupScreen({
         <>
           <p role="alert">{view.message}</p>
           <button disabled={busy} onClick={reauthorizeCollection}>
-            Review collection permission
+            <Trans>Review collection permission</Trans>
           </button>
         </>
       ) : null}
@@ -165,18 +177,18 @@ export function ModelSetupScreen({
       view.state !== "required" &&
       view.state !== "outcome_unknown" ? (
         <button disabled={busy} onClick={() => void run("inspect")}>
-          Check setup
+          <Trans>Check setup</Trans>
         </button>
       ) : null}
       {busy && view?.state !== "waiting" ? (
         <p role="status">
           {progress === "checking_outcome"
-            ? "Checking whether setup finished…"
+            ? translate({ message: "Checking whether setup finished…" })
             : progress === "waiting_for_confirmation"
-              ? "Waiting for setup confirmation…"
+              ? translate({ message: "Waiting for setup confirmation…" })
               : progress === "installing"
-                ? "Installing TaskNotes setup…"
-                : "Checking TaskNotes setup…"}
+                ? translate({ message: "Installing TaskNotes setup…" })
+                : translate({ message: "Checking TaskNotes setup…" })}
         </p>
       ) : null}
       {error && view?.state !== "waiting" ? <p role="alert">{error}</p> : null}
@@ -185,7 +197,7 @@ export function ModelSetupScreen({
         disabled={busy}
         onClick={changeCollection}
       >
-        Choose another collection
+        <Trans>Choose another collection</Trans>
       </button>
     </main>
   );

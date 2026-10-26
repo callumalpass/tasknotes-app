@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { plural, t as translate } from "@lingui/core/macro";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import "./private-account-settings.css";
 import type {
@@ -38,10 +40,18 @@ export function PrivateAccountSettings({
 
 type Action = "setup" | "unlock" | "recover" | "change_password";
 const labels: Record<Action, string> = {
-  setup: "Set up recovery",
-  unlock: "Unlock private collections",
-  recover: "Recover account access",
-  change_password: "Change recovery password",
+  get setup() {
+    return translate({ message: "Set up recovery" });
+  },
+  get unlock() {
+    return translate({ message: "Unlock private collections" });
+  },
+  get recover() {
+    return translate({ message: "Recover account access" });
+  },
+  get change_password() {
+    return translate({ message: "Change recovery password" });
+  },
 };
 
 function problemCopy(error: unknown): string {
@@ -49,18 +59,34 @@ function problemCopy(error: unknown): string {
   switch (code) {
     case "wrong_secret":
     case "invalid_recovery_key":
-      return "That password or recovery key did not unlock this account. Check it and try again.";
+      return translate({
+        message:
+          "That password or recovery key did not unlock this account. Check it and try again.",
+      });
     case "weak_password":
-      return "Use a longer, less predictable passphrase.";
+      return translate({
+        message: "Use a longer, less predictable passphrase.",
+      });
     case "rate_limited":
-      return "Too many attempts. Wait before trying again.";
+      return translate({
+        message: "Too many attempts. Wait before trying again.",
+      });
     case "conflict":
-      return "Account recovery changed on another device. Check its status before trying again.";
+      return translate({
+        message:
+          "Account recovery changed on another device. Check its status before trying again.",
+      });
     case "strict_mode":
-      return "This account uses strict mode. Approve this device from an existing device.";
+      return translate({
+        message:
+          "This account uses strict mode. Approve this device from an existing device.",
+      });
     default:
       // Never echo foreign exception text, passwords, recovery keys or tokens.
-      return "The account recovery action could not be completed. Check the connection and account status before retrying.";
+      return translate({
+        message:
+          "The account recovery action could not be completed. Check the connection and account status before retrying.",
+      });
   }
 }
 
@@ -91,7 +117,10 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
       () => {
         if (!scope.signal.aborted)
           setProblem(
-            "Could not check account recovery. Check the connection and try again.",
+            translate({
+              message:
+                "Could not check account recovery. Check the connection and try again.",
+            }),
           );
       },
     );
@@ -124,7 +153,10 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
       } catch {
         if (!scope.signal.aborted)
           setProblem(
-            "The action finished, but account status could not be refreshed. Check status again.",
+            translate({
+              message:
+                "The action finished, but account status could not be refreshed. Check status again.",
+            }),
           );
       }
     } catch (error) {
@@ -156,14 +188,24 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
         setAction("unlock");
         setNotice(
           result.incomplete?.length
-            ? `Recovery is set up. ${result.incomplete.length} private collections still need to finish key access.`
-            : "Recovery is set up. Save your recovery key before leaving this screen.",
+            ? plural(result.incomplete.length, {
+                one: "Recovery is set up. # private collection still needs to finish key access.",
+                other:
+                  "Recovery is set up. # private collections still need to finish key access.",
+              })
+            : translate({
+                message:
+                  "Recovery is set up. Save your recovery key before leaving this screen.",
+              }),
         );
       } else if (action === "change_password") {
         await account.changePassword(secret, signal);
         if (!signal.aborted)
           setNotice(
-            "Recovery password changed. Your recovery key is unchanged.",
+            translate({
+              message:
+                "Recovery password changed. Your recovery key is unchanged.",
+            }),
           );
       } else {
         const result =
@@ -176,8 +218,15 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
         if (signal.aborted) return;
         setNotice(
           result.incomplete?.length
-            ? `Account unlocked. ${result.incomplete.length} private collections still need to finish key access; retry unlock when they are current.`
-            : "Account unlocked. Private collection keys are available on this device.",
+            ? plural(result.incomplete.length, {
+                one: "Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.",
+                other:
+                  "Account unlocked. # private collections still need to finish key access; retry unlock when they are current.",
+              })
+            : translate({
+                message:
+                  "Account unlocked. Private collection keys are available on this device.",
+              }),
         );
       }
     });
@@ -196,8 +245,15 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
       setStrictUnderstood(false);
       setNotice(
         result.complete
-          ? "mdbase confirmed strict-mode completion. The recovery key was removed from this device."
-          : `Strict mode is pending in ${result.pending.length} recovery ${result.pending.length === 1 ? "target" : "targets"}. The recovery key stays on this device until mdbase confirms completion.`,
+          ? translate({
+              message:
+                "mdbase confirmed strict-mode completion. The recovery key was removed from this device.",
+            })
+          : plural(result.pending.length, {
+              one: "Strict mode is pending in # recovery target. The recovery key stays on this device until mdbase confirms completion.",
+              other:
+                "Strict mode is pending in # recovery targets. The recovery key stays on this device until mdbase confirms completion.",
+            }),
       );
     });
   }
@@ -215,44 +271,54 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
       className="private-account-settings"
       aria-labelledby="private-account-title"
     >
-      <h3 id="private-account-title">Private account recovery</h3>
+      <h3 id="private-account-title">
+        <Trans>Private account recovery</Trans>
+      </h3>
       <div>
         <p className="section-copy">
-          Your password unlocks private collections on approved devices. It is
-          processed on this device, not sent to mdbase.
+          <Trans>
+            Your password unlocks private collections on approved devices. It is
+            processed on this device, not sent to mdbase.
+          </Trans>
         </p>
         <p className="section-copy">
-          Strict mode cannot be turned off yet. Setting up or unlocking password
-          recovery does not turn off strict mode on a device.
+          <Trans>
+            Strict mode cannot be turned off yet. Setting up or unlocking
+            password recovery does not turn off strict mode on a device.
+          </Trans>
         </p>
         {!status ? (
           <p role="status">
             {problem
-              ? "Recovery status unavailable"
-              : "Checking account recovery…"}
+              ? translate({ message: "Recovery status unavailable" })
+              : translate({ message: "Checking account recovery…" })}
           </p>
         ) : null}
         {status ? (
           <p role="status">
             {status.mode === "strict"
-              ? "Strict mode"
+              ? translate({ message: "Strict mode" })
               : status.mode === "none"
-                ? "Recovery is not set up"
+                ? translate({ message: "Recovery is not set up" })
                 : status.unlocked
-                  ? "Unlocked on this device"
-                  : "Locked on this device"}
+                  ? translate({ message: "Unlocked on this device" })
+                  : translate({ message: "Locked on this device" })}
           </p>
         ) : null}
         {shownRecoveryKey ? (
           <div className="private-recovery-key">
-            <h3>Save your recovery key</h3>
+            <h3>
+              <Trans>Save your recovery key</Trans>
+            </h3>
             <p className="section-copy">
-              This key is shown once. Keep it somewhere secure outside
-              TaskNotes. Anyone with it can recover access to your private
-              collections.
+              <Trans>
+                This key is shown once. Keep it somewhere secure outside
+                TaskNotes. Anyone with it can recover access to your private
+                collections.
+              </Trans>
             </p>
             <label>
-              Recovery key (shown once)
+              <Trans>Recovery key (shown once)</Trans>
               <textarea
                 readOnly
                 autoComplete="off"
@@ -266,11 +332,14 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
               onClick={() => {
                 setShownRecoveryKey(null);
                 setNotice(
-                  "Recovery key dismissed. TaskNotes does not keep a display copy.",
+                  translate({
+                    message:
+                      "Recovery key dismissed. TaskNotes does not keep a display copy.",
+                  }),
                 );
               }}
             >
-              I saved my recovery key
+              <Trans>I saved my recovery key</Trans>
             </button>
           </div>
         ) : status && status.mode !== "strict" ? (
@@ -288,7 +357,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                     setRecoveryInput("");
                   }}
                 >
-                  Unlock
+                  <Trans>Unlock</Trans>
                 </button>
                 <button
                   className="text-action"
@@ -301,7 +370,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                     setRecoveryInput("");
                   }}
                 >
-                  Forgot password
+                  <Trans>Forgot password</Trans>
                 </button>
                 {status.unlocked ? (
                   <button
@@ -315,7 +384,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                       setRecoveryInput("");
                     }}
                   >
-                    Change password
+                    <Trans>Change password</Trans>
                   </button>
                 ) : null}
               </div>
@@ -325,8 +394,10 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                 <legend>{labels[action]}</legend>
                 {action === "recover" || action === "unlock" ? (
                   <label>
-                    Recovery key
-                    {action === "unlock" ? " (or use your password)" : ""}
+                    <Trans>Recovery key</Trans>
+                    {action === "unlock"
+                      ? translate({ message: " (or use your password)" })
+                      : ""}
                     <input
                       type="password"
                       autoComplete="off"
@@ -338,8 +409,8 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                 ) : null}
                 <label>
                   {needsNewPassword
-                    ? "New recovery password"
-                    : "Recovery password"}
+                    ? translate({ message: "New recovery password" })
+                    : translate({ message: "Recovery password" })}
                   <input
                     type="password"
                     autoComplete={
@@ -352,7 +423,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                 {needsNewPassword ? (
                   <>
                     <label>
-                      Confirm new recovery password
+                      <Trans>Confirm new recovery password</Trans>
                       <input
                         type="password"
                         autoComplete="new-password"
@@ -363,7 +434,8 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                       />
                     </label>
                     <p role="status">
-                      Password strength: {strength!.score} of 4
+                      <Trans>Password strength: </Trans>
+                      {strength!.score} <Trans>of 4</Trans>
                     </p>
                     {strength!.feedback.map((line) => (
                       <p className="section-copy" key={line}>
@@ -373,7 +445,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                   </>
                 ) : null}
                 <button className="text-action" disabled={!valid} type="submit">
-                  {busy ? "Working…" : labels[action]}
+                  {busy ? translate({ message: "Working…" }) : labels[action]}
                 </button>
               </fieldset>
             </form>
@@ -387,12 +459,15 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                     await account.lock();
                     if (!lifetime.current?.signal.aborted)
                       setNotice(
-                        "Recovery key locked on this device. Existing collection keys remain available.",
+                        translate({
+                          message:
+                            "Recovery key locked on this device. Existing collection keys remain available.",
+                        }),
                       );
                   })
                 }
               >
-                Lock recovery key on this device
+                <Trans>Lock recovery key on this device</Trans>
               </button>
             ) : null}
             {status.mode === "password" ? (
@@ -402,19 +477,23 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                 disabled={busy}
                 onClick={() => setStrictReview((shown) => !shown)}
               >
-                Review strict mode
+                <Trans>Review strict mode</Trans>
               </button>
             ) : null}
           </>
         ) : null}
         {strictReview && !shownRecoveryKey ? (
           <div>
-            <h3>Switch to strict mode</h3>
+            <h3>
+              <Trans>Switch to strict mode</Trans>
+            </h3>
             <p className="section-copy">
-              New devices will need approval from an existing device. Password
-              and recovery-key unlock will stop. Earlier content can remain
-              readable to someone with the old password and bundle until
-              collections apply the revocations and rekey.
+              <Trans>
+                New devices will need approval from an existing device. Password
+                and recovery-key unlock will stop. Earlier content can remain
+                readable to someone with the old password and bundle until
+                collections apply the revocations and rekey.
+              </Trans>
             </p>
             <label className="private-account-consent">
               <input
@@ -423,8 +502,10 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
                 disabled={busy}
                 onChange={(event) => setStrictUnderstood(event.target.checked)}
               />
-              I understand that existing devices must finish applying strict
-              mode.
+              <Trans>
+                I understand that existing devices must finish applying strict
+                mode.
+              </Trans>
             </label>
             <button
               className="text-action"
@@ -432,7 +513,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
               disabled={busy || !strictUnderstood}
               onClick={() => void strict()}
             >
-              Enable strict mode
+              <Trans>Enable strict mode</Trans>
             </button>
           </div>
         ) : null}
@@ -440,16 +521,29 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
           <div>
             <p className="section-copy">
               {status.strictComplete === true
-                ? "mdbase confirmed that recovery targets have applied strict mode."
-                : "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes."}
+                ? translate({
+                    message:
+                      "mdbase confirmed that recovery targets have applied strict mode.",
+                  })
+                : translate({
+                    message:
+                      "Strict mode is not yet confirmed across every private recovery target. An online keyed device must finish applying the changes.",
+                  })}
             </p>
             <p className="section-copy">
-              {status.pending?.length ?? "Unknown"} recovery targets pending.{" "}
+              {status.pending?.length ?? translate({ message: "Unknown" })}{" "}
+              <Trans>recovery targets pending.</Trans>{" "}
               {status.accountKeyKept === true
-                ? "The recovery key is still kept on this device."
+                ? translate({
+                    message: "The recovery key is still kept on this device.",
+                  })
                 : status.accountKeyKept === false
-                  ? "No recovery key is held on this device."
-                  : "Recovery key custody could not be checked."}
+                  ? translate({
+                      message: "No recovery key is held on this device.",
+                    })
+                  : translate({
+                      message: "Recovery key custody could not be checked.",
+                    })}
             </p>
             <button
               className="text-action"
@@ -458,8 +552,8 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
               onClick={() => void strict()}
             >
               {status.strictComplete === true && status.accountKeyKept
-                ? "Finish strict mode on this device"
-                : "Check strict completion"}
+                ? translate({ message: "Finish strict mode on this device" })
+                : translate({ message: "Check strict completion" })}
             </button>
           </div>
         ) : null}
@@ -475,7 +569,7 @@ function PrivateAccountPanel({ account }: { account: PrivateAccountUi }) {
           disabled={busy}
           onClick={() => void checkStatus()}
         >
-          Check account status
+          <Trans>Check account status</Trans>
         </button>
       </div>
     </section>

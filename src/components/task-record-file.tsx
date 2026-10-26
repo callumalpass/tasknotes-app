@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import { Clipboard, FileText, Link2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -25,7 +27,10 @@ export function TaskRecordFile({
   }, [copied]);
   if (!task.path) return null;
   const link = taskRecordLink(task, linkFormat);
-  const linkLabel = linkFormat === "markdown" ? "Markdown link" : "wikilink";
+  const linkLabel =
+    linkFormat === "markdown"
+      ? translate({ message: "Markdown link" })
+      : "wikilink";
 
   async function copy(kind: "path" | "link", value: string) {
     try {
@@ -38,7 +43,10 @@ export function TaskRecordFile({
   }
 
   return (
-    <section className="record-file" aria-label="Markdown file">
+    <section
+      className="record-file"
+      aria-label={translate({ message: "Markdown file" })}
+    >
       <p className="record-file-path">
         <FileText aria-hidden="true" size={16} />
         <code title={task.path}>{task.path}</code>
@@ -46,19 +54,20 @@ export function TaskRecordFile({
       <div className="record-file-actions">
         <button type="button" onClick={() => void copy("path", task.path)}>
           <Clipboard aria-hidden="true" size={16} />
-          Copy path
+          <Trans>Copy path</Trans>
         </button>
         <button type="button" onClick={() => void copy("link", link)}>
           <Link2 aria-hidden="true" size={16} />
-          Copy {linkLabel}
+          <Trans>Copy </Trans>
+          {linkLabel}
         </button>
         <span className="record-file-status" role="status">
           {copied === "path"
-            ? "Path copied"
+            ? translate({ message: "Path copied" })
             : copied === "link"
-              ? `${linkLabel[0].toUpperCase()}${linkLabel.slice(1)} copied`
+              ? translate`${linkLabel[0].toUpperCase()}${linkLabel.slice(1)} copied`
               : copied === "failed"
-                ? "Couldn’t copy"
+                ? translate({ message: "Couldn’t copy" })
                 : ""}
         </span>
       </div>

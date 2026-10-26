@@ -1,3 +1,7 @@
+import { t as translate } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../../i18n/ui-copy";
+import { countLabel } from "../../i18n/default-labels";
 import {
   Check,
   ChevronRight,
@@ -56,6 +60,7 @@ export function ViewCatalog({
   onDuplicate(view: TaskView): void;
   onDelete(view: TaskView): void;
 }) {
+  const { t } = useLingui();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CatalogFilter>("all");
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -63,27 +68,27 @@ export function ViewCatalog({
     () => [
       {
         key: SEARCH_NAVIGATION_KEY,
-        name: "Search",
-        description: "Find tasks across your collection",
+        name: t`Search`,
+        description: t({ message: "Find tasks across your collection" }),
         icon: SearchIcon,
         open: onOpenSearch,
       },
       {
         key: SCRATCHPAD_NAVIGATION_KEY,
-        name: "Scratchpad",
-        description: "Shape an outline before creating tasks",
+        name: t`Scratchpad`,
+        description: t({ message: "Shape an outline before creating tasks" }),
         icon: FilePenLine,
         open: onOpenScratchpad,
       },
     ],
-    [onOpenScratchpad, onOpenSearch],
+    [onOpenScratchpad, onOpenSearch, t],
   );
   const queryTools = tools.filter((tool) =>
     matchesQuery(
       normalizedQuery,
       tool.name,
       tool.description,
-      "TaskNotes tool",
+      translate({ message: "TaskNotes tool" }),
     ),
   );
   const queryViews = views.filter((view) =>
@@ -135,10 +140,10 @@ export function ViewCatalog({
         specialViews={[
           {
             key: SCRATCHPAD_NAVIGATION_KEY,
-            name: "Scratchpad",
+            name: t`Scratchpad`,
             icon: FilePenLine,
           },
-          { key: SEARCH_NAVIGATION_KEY, name: "Search", icon: SearchIcon },
+          { key: SEARCH_NAVIGATION_KEY, name: t`Search`, icon: SearchIcon },
         ]}
         views={views}
         onMove={onMoveNavigation}
@@ -147,11 +152,17 @@ export function ViewCatalog({
       <section className="all-views" aria-labelledby="all-views-title">
         <header className="all-views-heading">
           <div>
-            <h2 id="all-views-title">All views</h2>
-            <p>Open a view or choose whether it appears in navigation.</p>
+            <h2 id="all-views-title">
+              <Trans>All views</Trans>
+            </h2>
+            <p>
+              <Trans>
+                Open a view or choose whether it appears in navigation.
+              </Trans>
+            </p>
           </div>
-          <span aria-label={`${visibleCount} views shown`}>
-            {visibleCount} {visibleCount === 1 ? "view" : "views"}
+          <span aria-label={t`${visibleCount} views shown`}>
+            {countLabel(visibleCount, "view")}
           </span>
         </header>
 
@@ -159,19 +170,22 @@ export function ViewCatalog({
           <label className="view-search-field">
             <Search aria-hidden="true" size={18} />
             <input
-              aria-label="Search views"
+              aria-label={t({ message: "Search views" })}
               type="search"
               value={query}
-              placeholder="Search views"
+              placeholder={t({ message: "Search views" })}
               onChange={(event) => setQuery(event.currentTarget.value)}
             />
           </label>
-          <div className="view-filter-list" aria-label="Filter views">
+          <div
+            className="view-filter-list"
+            aria-label={t({ message: "Filter views" })}
+          >
             {(
               [
-                ["all", "All"],
-                ["navigation", "In navigation"],
-                ["editable", "Editable"],
+                ["all", t({ message: "All" })],
+                ["navigation", t({ message: "In navigation" })],
+                ["editable", t({ message: "Editable" })],
               ] as const
             ).map(([key, label]) => (
               <button
@@ -188,8 +202,12 @@ export function ViewCatalog({
 
         {visibleCount === 0 ? (
           <div className="view-catalog-empty">
-            <h3>No matching views</h3>
-            <p>Try another search or filter.</p>
+            <h3>
+              <Trans>No matching views</Trans>
+            </h3>
+            <p>
+              <Trans>Try another search or filter.</Trans>
+            </p>
           </div>
         ) : (
           <div className="view-document-list">
@@ -200,8 +218,12 @@ export function ViewCatalog({
               >
                 <header className="view-document-heading">
                   <div>
-                    <h3 id="view-document-tasknotes">TaskNotes tools</h3>
-                    <p>Built-in working spaces</p>
+                    <h3 id="view-document-tasknotes">
+                      <Trans>TaskNotes tools</Trans>
+                    </h3>
+                    <p>
+                      <Trans>Built-in working spaces</Trans>
+                    </p>
                   </div>
                 </header>
                 <div className="saved-view-list">
@@ -228,8 +250,12 @@ export function ViewCatalog({
               >
                 <header className="view-document-heading saved-views-heading">
                   <div>
-                    <h3 id="saved-views-title">Saved views</h3>
-                    <p>Views stored in your collection</p>
+                    <h3 id="saved-views-title">
+                      <Trans>Saved views</Trans>
+                    </h3>
+                    <p>
+                      <Trans>Views stored in your collection</Trans>
+                    </p>
                   </div>
                 </header>
                 {visibleDocuments.map((document) => (
@@ -369,10 +395,13 @@ function NavigationMembershipButton({
   disabled?: boolean;
   onClick(): void;
 }) {
-  const action = inNavigation ? "Remove" : "Add";
+  const { t } = useLingui();
+  const action = inNavigation
+    ? t({ message: "Remove" })
+    : t({ message: "Add" });
   const label = disabled
-    ? `${name} must remain in navigation until another view is added`
-    : `${action} ${name} ${inNavigation ? "from" : "to"} navigation`;
+    ? t`${name} must remain in navigation until another view is added`
+    : t`${action} ${name} ${inNavigation ? uiCopy("from") : uiCopy("to")} navigation`;
   return (
     <button
       aria-label={label}
@@ -391,10 +420,10 @@ function NavigationMembershipButton({
         <Pin aria-hidden="true" size={16} />
       )}
       <span className="membership-label-full">
-        {inNavigation ? "In navigation" : "Add"}
+        {inNavigation ? t({ message: "In navigation" }) : t({ message: "Add" })}
       </span>
       <span className="membership-label-short">
-        {inNavigation ? "Added" : "Add"}
+        {inNavigation ? t({ message: "Added" }) : t({ message: "Add" })}
       </span>
     </button>
   );
@@ -411,6 +440,7 @@ function ViewActions({
   onDuplicate(view: TaskView): void;
   onDelete(view: TaskView): void;
 }) {
+  const { t } = useLingui();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const firstActionRef = useRef<HTMLButtonElement>(null);
@@ -471,7 +501,7 @@ function ViewActions({
       <button
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`More actions for ${view.name}`}
+        aria-label={t`More actions for ${view.name}`}
         className="saved-view-more"
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -480,7 +510,7 @@ function ViewActions({
       </button>
       {open ? (
         <div
-          aria-label={`Actions for ${view.name}`}
+          aria-label={t`Actions for ${view.name}`}
           className="saved-view-menu"
           role="menu"
           onKeyDown={navigateMenu}
@@ -493,7 +523,7 @@ function ViewActions({
               type="button"
               onClick={() => choose(() => onEdit(view))}
             >
-              <Pencil aria-hidden="true" size={16} /> Edit
+              <Pencil aria-hidden="true" size={16} /> <Trans>Edit</Trans>
             </button>
           ) : null}
           <button
@@ -503,7 +533,7 @@ function ViewActions({
             type="button"
             onClick={() => choose(() => onDuplicate(view))}
           >
-            <Copy aria-hidden="true" size={16} /> Duplicate
+            <Copy aria-hidden="true" size={16} /> <Trans>Duplicate</Trans>
           </button>
           {view.source.writable ? (
             <button
@@ -513,7 +543,7 @@ function ViewActions({
               type="button"
               onClick={() => choose(() => onDelete(view))}
             >
-              <Trash2 aria-hidden="true" size={16} /> Delete
+              <Trash2 aria-hidden="true" size={16} /> <Trans>Delete</Trans>
             </button>
           ) : null}
         </div>

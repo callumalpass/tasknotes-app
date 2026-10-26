@@ -65,8 +65,8 @@ jobs:
         if: env.GOOGLE_SERVICES_JSON_BASE64 != ''
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
-      - name: Verify web application and contracts
-        run: pnpm verify
+      - name: Verify web application and committed catalogues
+        run: pnpm verify && git diff --exit-code -- src/i18n/locales
 
       - name: Sync native project
         run: pnpm exec cap sync android

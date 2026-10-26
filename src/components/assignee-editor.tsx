@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { Check, RefreshCw, UsersRound, X } from "lucide-react";
 import { useState } from "react";
 import { PersonSetupLink } from "./person-setup-link";
@@ -16,6 +17,7 @@ export function AssigneeEditor({
   linkWriteFormat: "wikilink" | "markdown";
   onChange(values: string[]): void;
 }) {
+  const { t } = useLingui();
   const [editing, setEditing] = useState(false);
   // Links chosen in this session point at a known record before they are saved.
   const [chosen, setChosen] = useState(() => new Map<string, string>());
@@ -28,15 +30,15 @@ export function AssigneeEditor({
   const label = (value: string) => {
     const name = linkDisplayLabel(value);
     const path = target(value);
-    if (path === null) return `${name} (no matching person record)`;
+    if (path === null) return t`${name} (no matching person record)`;
     if (path === undefined || !directory) return name;
     const person = directory.people.find(
       (candidate) => candidate.path === path,
     );
-    if (!person) return `${name} (not a person record)`;
+    if (!person) return t`${name} (not a person record)`;
     if (person.ambiguousIdentity)
-      return `${person.name} (ambiguous account link)`;
-    return `${person.name}${person.activeMember === false ? " (not linked to an active member)" : ""}`;
+      return t`${person.name} (ambiguous account link)`;
+    return `${person.name}${person.activeMember === false ? t({ message: " (not linked to an active member)" }) : ""}`;
   };
   const assignedPaths = new Set(values.map(target));
   const choices =
@@ -61,7 +63,9 @@ export function AssigneeEditor({
   };
   return (
     <fieldset className="assignee-editor">
-      <legend>Assigned to</legend>
+      <legend>
+        <Trans>Assigned to</Trans>
+      </legend>
       {values.length ? (
         <ul>
           {values.map((value) => (
@@ -70,19 +74,21 @@ export function AssigneeEditor({
               <button
                 type="button"
                 className="people-action people-action--quiet"
-                aria-label={`Remove assignment to ${label(value)}`}
+                aria-label={t`Remove assignment to ${label(value)}`}
                 onClick={() =>
                   onChange(values.filter((candidate) => candidate !== value))
                 }
               >
                 <X size={16} aria-hidden="true" />
-                Remove
+                <Trans>Remove</Trans>
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p>Unassigned</p>
+        <p>
+          <Trans>Unassigned</Trans>
+        </p>
       )}
       {supported && !editing && (
         <button
@@ -91,37 +97,43 @@ export function AssigneeEditor({
           onClick={() => setEditing(true)}
         >
           <UsersRound size={18} aria-hidden="true" />
-          Choose assignees
+          <Trans>Choose assignees</Trans>
         </button>
       )}
       {editing && supported && !directory && !error && (
-        <p role="status">Loading people…</p>
+        <p role="status">
+          <Trans>Loading people…</Trans>
+        </p>
       )}
       {editing && error && (
         <div role="alert">
           <p>
-            People could not be loaded. Existing assignments are unchanged.{" "}
-            {error.message}
+            <Trans>
+              People could not be loaded. Existing assignments are unchanged.{" "}
+              {error.message}
+            </Trans>
           </p>
           <button className="people-action" type="button" onClick={retry}>
             <RefreshCw size={18} aria-hidden="true" />
-            Retry people
+            <Trans>Retry people</Trans>
           </button>
         </div>
       )}
       {editing && directory && (
         <>
           <label>
-            Add an assignee
+            <Trans>Add an assignee</Trans>
             <select
-              aria-label="Add an assignee"
+              aria-label={t({ message: "Add an assignee" })}
               value=""
               disabled={!choices.length}
               onChange={(event) => {
                 if (event.target.value) choose(event.target.value);
               }}
             >
-              <option value="">Choose a person…</option>
+              <option value="">
+                <Trans>Choose a person…</Trans>
+              </option>
               {choices.map((person) => (
                 <option key={person.path} value={person.path}>
                   {person.name} · {person.path}
@@ -129,7 +141,11 @@ export function AssigneeEditor({
               ))}
             </select>
           </label>
-          {!choices.length && <p>No other people are available to assign.</p>}
+          {!choices.length && (
+            <p>
+              <Trans>No other people are available to assign.</Trans>
+            </p>
+          )}
           {directory.settingsUrl && (
             <div className="people-actions">
               <PersonSetupLink
@@ -147,12 +163,14 @@ export function AssigneeEditor({
           onClick={() => setEditing(false)}
         >
           <Check size={18} aria-hidden="true" />
-          Done choosing assignees
+          <Trans>Done choosing assignees</Trans>
         </button>
       )}
       <p className="assignee-help">
-        Assignments link to person notes, which list them as backlinks. They do
-        not grant collection access.
+        <Trans>
+          Assignments link to person notes, which list them as backlinks. They
+          do not grant collection access.
+        </Trans>
       </p>
     </fieldset>
   );

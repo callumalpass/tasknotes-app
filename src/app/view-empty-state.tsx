@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { TaskView } from "../domain/view";
 
 export function ViewEmptyState({
@@ -7,24 +8,28 @@ export function ViewEmptyState({
   view: Pick<TaskView, "id" | "presentation">;
   stale?: boolean;
 }) {
+  const { t } = useLingui();
   const title = stale
-    ? "No cached tasks for this view."
+    ? t({ message: "No cached tasks for this view." })
     : view.id === "today"
-      ? "You’re done for today."
+      ? t({ message: "You’re done for today." })
       : view.id === "archive"
-        ? "No archived tasks here."
+        ? t({ message: "No archived tasks here." })
         : view.id === "upcoming"
-          ? "No upcoming tasks here."
-          : "No tasks match this view";
+          ? t({ message: "No upcoming tasks here." })
+          : t({ message: "No tasks match this view" });
   const body = stale
-    ? "Retry this view to check for tasks."
+    ? t({ message: "Retry this view to check for tasks." })
     : view.id === "archive"
-      ? "Archived tasks are kept, not deleted. You can restore them from their task menu."
+      ? t({
+          message:
+            "Archived tasks are kept, not deleted. You can restore them from their task menu.",
+        })
       : view.id === "upcoming"
-        ? "Add a Scheduled or Due date to an active task."
+        ? t({ message: "Add a Scheduled or Due date to an active task." })
         : view.presentation?.options.create === false
-          ? "Adjust this view’s filters or choose another view."
-          : "Add a task whenever you need to.";
+          ? t({ message: "Adjust this view’s filters or choose another view." })
+          : t({ message: "Add a task whenever you need to." });
   return (
     <div className="plain-empty task-list-view">
       <h2>{title}</h2>

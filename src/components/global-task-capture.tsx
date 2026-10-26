@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import {
   useCallback,
@@ -41,6 +42,7 @@ export function GlobalTaskCapture({
     task: TaskSummary,
   ): Promise<import("./task-capture").TaskCaptureFollowUp | void>;
 }) {
+  const { t } = useLingui();
   const [keepAdding, setKeepAdding] = useState(false);
   const {
     configuration,
@@ -97,10 +99,12 @@ export function GlobalTaskCapture({
       >
         <header>
           <div>
-            <h2 id={titleId}>New task</h2>
+            <h2 id={titleId}>
+              <Trans>New task</Trans>
+            </h2>
           </div>
           <button
-            aria-label="Close new task"
+            aria-label={t({ message: "Close new task" })}
             className="icon-action"
             type="button"
             onClick={onClose}
@@ -116,7 +120,7 @@ export function GlobalTaskCapture({
           createTask={createTask}
           completeField={completeField}
           focusRequest={1}
-          placeholder="What needs doing?"
+          placeholder={t({ message: "What needs doing?" })}
           showGuide
           onCreated={onCreated}
           onAccepted={(task, version) => {
@@ -138,7 +142,7 @@ export function GlobalTaskCapture({
               disabled={snapshot.status === "submitting"}
               onClick={() => session.discard()}
             >
-              Discard draft
+              <Trans>Discard draft</Trans>
             </button>
           </div>
         ) : null}
@@ -151,7 +155,7 @@ export function GlobalTaskCapture({
               setKeepAdding(event.target.checked);
             }}
           />
-          Keep adding tasks
+          <Trans>Keep adding tasks</Trans>
         </label>
       </section>
     </div>,

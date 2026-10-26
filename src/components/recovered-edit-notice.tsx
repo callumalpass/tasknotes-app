@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import "./held-edits.css";
 
 const FIELD_LABELS: Record<string, string> = {
@@ -38,22 +40,27 @@ export function RecoveredEditNotice({
     <section
       className="collection-held-notice recovered-edit-notice"
       role="status"
-      aria-label="Unsaved edits found"
+      aria-label={translate({ message: "Unsaved edits found" })}
     >
       <div>
-        <strong>Unsaved edits from an earlier session are available.</strong>
+        <strong>
+          <Trans>Unsaved edits from an earlier session are available.</Trans>
+        </strong>
         <p>
-          {title !== undefined ? `Title: “${title}”. ` : ""}
-          Changed: {names.join(", ")}. They stay in this browser until restored
-          or discarded.
+          {title !== undefined ? translate`Title: “${title}”. ` : ""}
+          <Trans>Changed: </Trans>
+          {names.join(", ")}
+          <Trans>
+            . They stay in this browser until restored or discarded.
+          </Trans>
         </p>
       </div>
       <div className="held-edit-actions">
         <button className="text-action" type="button" onClick={onRestore}>
-          Restore unsaved edits
+          <Trans>Restore unsaved edits</Trans>
         </button>
         <button className="text-action" type="button" onClick={onDiscard}>
-          Discard recovered edits
+          <Trans>Discard recovered edits</Trans>
         </button>
       </div>
     </section>

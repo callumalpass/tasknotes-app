@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { MdbaseError } from "@mdbase-dev/sdk";
 import {

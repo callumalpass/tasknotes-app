@@ -1,12 +1,6 @@
 import "fake-indexeddb/auto";
 
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import {

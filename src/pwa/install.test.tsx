@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen } from "../test/render";
 
 it("offers installation only after the browser provides an install prompt", async () => {
   Object.defineProperty(window, "matchMedia", {

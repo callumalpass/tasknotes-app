@@ -34,8 +34,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify web application and contracts
-        run: pnpm verify
+      - name: Verify web application and committed catalogues
+        run: pnpm verify && git diff --exit-code -- src/i18n/locales
 
       - name: Sync iOS project
         run: pnpm exec cap sync ios

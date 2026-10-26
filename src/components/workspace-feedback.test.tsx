@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "../test/render";
 import { FeedbackNotice, WorkspaceFeedback } from "./workspace-feedback";
 
 it("keeps save guidance and wrapping notices in the same layout host", () => {

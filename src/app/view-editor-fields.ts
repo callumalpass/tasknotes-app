@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { builtInFieldLabel } from "../i18n/default-labels";
 import type { ExpressionField } from "../components/expression-builder";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -5,7 +7,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 // Expression dialects elsewhere have their own property-label policies.
 export function humanize(value: string): string {
   if (value.toLocaleLowerCase() === "tasknotes_manual_order")
-    return "Manual order";
+    return t({ message: "Manual order" });
   const bracket = value.match(
     /^(?:note|file|formula|projection)\[["'](.+)["']\]$/,
   );
@@ -28,20 +30,22 @@ export function field(
   return { key, label, type };
 }
 
-const defaultFields: ExpressionField[] = [
-  field("title", "Title", "text"),
-  field("status", "Status", "text"),
-  field("priority", "Priority", "text"),
-  field("due", "Due", "date"),
-  field("scheduled", "Scheduled", "date"),
-  field("tags", "Tags", "list"),
-  field("projects", "Projects", "list"),
-  field("contexts", "Contexts", "list"),
-  field("archived", "Archived", "boolean"),
-  field("completed", "Completed", "boolean"),
-  field("file.name", "File name", "text"),
-  field("file.path", "File path", "text"),
-];
+function defaultFields(): ExpressionField[] {
+  return [
+    field("title", t({ message: "Title" }), "text"),
+    field("status", t({ message: "Status" }), "text"),
+    field("priority", t({ message: "Priority" }), "text"),
+    field("due", t({ message: "Due" }), "date"),
+    field("scheduled", t({ message: "Scheduled" }), "date"),
+    field("tags", t({ message: "Tags" }), "list"),
+    field("projects", t({ message: "Projects" }), "list"),
+    field("contexts", t({ message: "Contexts" }), "list"),
+    field("archived", t({ message: "Archived" }), "boolean"),
+    field("completed", t({ message: "Completed" }), "boolean"),
+    field("file.name", t({ message: "File name" }), "text"),
+    field("file.path", t({ message: "File path" }), "text"),
+  ];
+}
 
 export function viewFields(
   configuration: TaskCollectionConfiguration,
@@ -59,7 +63,9 @@ export function viewFields(
     ([label, key]) =>
       field(
         String(key),
-        label === "sortOrder" ? "Manual order" : humanize(label),
+        label === "sortOrder"
+          ? t({ message: "Manual order" })
+          : (builtInFieldLabel(label) ?? humanize(label)),
       ),
   );
   const custom = configuration.userFields.map((item) =>
@@ -70,7 +76,7 @@ export function viewFields(
     ),
   );
   const candidates = [
-    ...defaultFields.map((candidate) =>
+    ...defaultFields().map((candidate) =>
       candidate.key === "status"
         ? { ...candidate, options: statuses }
         : candidate.key === "priority"

@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 import {
   PrivateAccount,
@@ -163,25 +163,54 @@ describe("PrivateAccountSettings", () => {
       expect.any(AbortSignal),
     );
   });
-  it("reports partial key access instead of claiming every collection unlocked", async () => {
-    const f = service({ mode: "password", version: 1, unlocked: false });
-    vi.mocked(f.account.unlock).mockResolvedValueOnce({
-      incomplete: ["a", "b"],
-    });
-    render(<PrivateAccountSettings account={f.account} />);
-    await screen.findByText("Locked on this device");
-    fireEvent.change(screen.getByLabelText("Recovery password"), {
-      target: { value: PASSWORD },
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Unlock private collections" }),
-    );
-    expect(
-      await screen.findByText(
-        /2 private collections still need to finish key access/,
-      ),
-    ).toBeVisible();
-  });
+  it.each([1, 2])(
+    "reports %i incomplete collections after recovery setup",
+    async (count) => {
+      const { account } = service();
+      vi.mocked(account.setup).mockResolvedValueOnce({
+        recoveryKey: RECOVERY,
+        incomplete: Array.from({ length: count }, (_, index) => String(index)),
+      });
+      render(<PrivateAccountSettings account={account} />);
+      const setup = await screen.findByRole("button", {
+        name: "Set up recovery",
+      });
+      fillNewPassword();
+      fireEvent.click(setup);
+      expect(
+        await screen.findByText(
+          count === 1
+            ? "Recovery is set up. 1 private collection still needs to finish key access."
+            : "Recovery is set up. 2 private collections still need to finish key access.",
+        ),
+      ).toBeVisible();
+    },
+  );
+
+  it.each([1, 2])(
+    "reports %i incomplete collections instead of claiming every collection unlocked",
+    async (count) => {
+      const f = service({ mode: "password", version: 1, unlocked: false });
+      vi.mocked(f.account.unlock).mockResolvedValueOnce({
+        incomplete: Array.from({ length: count }, (_, index) => String(index)),
+      });
+      render(<PrivateAccountSettings account={f.account} />);
+      await screen.findByText("Locked on this device");
+      fireEvent.change(screen.getByLabelText("Recovery password"), {
+        target: { value: PASSWORD },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Unlock private collections" }),
+      );
+      expect(
+        await screen.findByText(
+          count === 1
+            ? "Account unlocked. 1 private collection still needs to finish key access; retry unlock when it is current."
+            : "Account unlocked. 2 private collections still need to finish key access; retry unlock when they are current.",
+        ),
+      ).toBeVisible();
+    },
+  );
   it.each(["strict", "password"] as const)(
     "states the leave-strict hold even when CP mode is %s",
     async (mode) => {
