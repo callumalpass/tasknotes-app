@@ -41,7 +41,7 @@ jobs:
 
       - name: Build pull request application
         if: github.event_name == 'pull_request'
-        run: pnpm build:e2e
+        run: pnpm build:e2e && git diff --exit-code -- src/i18n/locales
         env:
           VITE_BASE_PATH: /tasknotes-app/
           TASKNOTES_APP_URL: http://127.0.0.1:4173/tasknotes-app

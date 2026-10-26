@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "../test/render";
 
 import { TimeTrackingField } from "./task-time-tracking";
 

@@ -1,5 +1,14 @@
 // Local development fixture only; no real account, credentials, or key custody.
 import { createRoot } from "react-dom/client";
+import { useLingui } from "@lingui/react";
+import { Trans } from "@lingui/react/macro";
+import { AppI18nProvider } from "../src/i18n/app-provider";
+import {
+  recurrenceRuleSummary,
+  formatTaskDate,
+  formatRelativeTaskDate,
+} from "../src/i18n/presentation";
+import { parseRecurrenceRule } from "../src/domain/recurrence-rule";
 import {
   passwordStrength,
   type PrivateAccountStatus,
@@ -12,17 +21,25 @@ import "../src/styles.css";
 import "../src/accessibility.css";
 if (import.meta.env.MODE !== "e2e")
   throw new Error("private-account fixture requires e2e mode");
+const parameters = new URLSearchParams(location.search);
+const count = Math.min(101, Math.max(0, Number(parameters.get("count")) || 0));
+const incomplete = Array.from({ length: count }, (_, index) => String(index));
+const pending = incomplete.map((collectionId) => ({
+  collectionId,
+  deviceId: "fixture-device",
+  revokedAt: null,
+}));
 let state: PrivateAccountStatus = { mode: "none", unlocked: false, version: 0 };
 const account: PrivateAccountUi = {
   status: async () => state,
   passwordStrength,
   setup: async () => {
     state = { mode: "password", unlocked: true, version: 1 };
-    return { recoveryKey: "MDB1-PUBLIC-TEST-FIXTURE-ONLY" };
+    return { recoveryKey: "MDB1-PUBLIC-TEST-FIXTURE-ONLY", incomplete };
   },
   unlock: async () => {
     state = { ...state, unlocked: true };
-    return {};
+    return { incomplete };
   },
   recover: async () => {
     state = { ...state, unlocked: true };
@@ -35,13 +52,13 @@ const account: PrivateAccountUi = {
       version: 2,
       unlocked: false,
       strictComplete: false,
-      pending: [],
+      pending,
       accountKeyKept: true,
     };
     return {
       version: 2,
       complete: false,
-      pending: [],
+      pending,
       accountKeyKept: true,
       alreadyStrict: false,
       revocations: [],
@@ -51,8 +68,57 @@ const account: PrivateAccountUi = {
     state = { ...state, unlocked: false };
   },
 };
+function Fixture() {
+  useLingui();
+  return (
+    <div className="screen settings-screen">
+      <header className="screen-header">
+        <h1>
+          <Trans>Settings</Trans>
+        </h1>
+      </header>
+      {parameters.has("summaries") ? (
+        <div>
+          <p data-testid="date-today">
+            {formatTaskDate("2026-07-24", "2026-07-24")}
+          </p>
+          <p data-testid="date-tomorrow">
+            {formatTaskDate("2026-07-25", "2026-07-24")}
+          </p>
+          <p data-testid="date-relative">
+            {formatRelativeTaskDate("2026-07-22", "2026-07-24")}
+          </p>
+          <p data-testid="date-formatted">
+            {formatTaskDate("2026-07-01", "2026-07-24")}
+          </p>
+          <p data-testid="daily-summary">
+            {recurrenceRuleSummary(
+              parseRecurrenceRule(`FREQ=DAILY;INTERVAL=${Math.max(1, count)}`),
+            )}
+          </p>
+          {[-1, -2, -3, -5, -8, -11, -21, -22, -31].map((day) => (
+            <p data-testid={`month-end-${-day}`} key={day}>
+              {recurrenceRuleSummary(
+                parseRecurrenceRule(`FREQ=MONTHLY;BYMONTHDAY=${day}`),
+              )}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      <section className="settings-section settings-section-account">
+        <header className="settings-section-header">
+          <h2>
+            <Trans>Private collection recovery</Trans>
+          </h2>
+        </header>
+        <PrivateAccountSettings account={account} />
+      </section>
+    </div>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
-  <div className="screen settings-screen">
-    <PrivateAccountSettings account={account} />
-  </div>,
+  <AppI18nProvider>
+    <Fixture />
+  </AppI18nProvider>,
 );

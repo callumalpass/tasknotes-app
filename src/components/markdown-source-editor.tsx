@@ -1,3 +1,9 @@
+import { useLingui } from "@lingui/react/macro";
+import { isLocale } from "@mdbase-dev/i18n";
+import {
+  englishCodeMirrorPhrases,
+  loadCodeMirrorPhrases,
+} from "@mdbase-dev/i18n/codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
@@ -119,11 +125,15 @@ export function MarkdownSourceEditor({
   ariaLabel: string;
   autoFocus?: boolean;
 }) {
+  const { t, i18n } = useLingui();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
   const onChangeRef = useRef(onChange);
   const completeRecordsRef = useRef(completeRecords);
+  const language = useRef(new Compartment());
+  const accessibility = useRef(new Compartment());
+  const locale = i18n.locale;
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -170,7 +180,8 @@ export function MarkdownSourceEditor({
           syntaxHighlighting(scratchpadHighlightStyle),
           theme.of(scratchpadEditorTheme(dark)),
           EditorView.lineWrapping,
-          EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
+          accessibility.current.of([]),
+          language.current.of(EditorState.phrases.of(englishCodeMirrorPhrases)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged)
               onChangeRef.current(update.state.doc.toString());
@@ -196,7 +207,35 @@ export function MarkdownSourceEditor({
       viewRef.current = null;
       view.destroy();
     };
+  }, [autoFocus]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: accessibility.current.reconfigure(
+        EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
+      ),
+    });
   }, [ariaLabel, autoFocus]);
+
+  useEffect(() => {
+    // Reconfigure without resetting document text, selection or undo history.
+    let active = true;
+    void loadCodeMirrorPhrases(isLocale(locale) ? locale : "en")
+      .then((phrases) => {
+        if (active)
+          viewRef.current?.dispatch({
+            effects: language.current.reconfigure(
+              EditorState.phrases.of(phrases),
+            ),
+          });
+      })
+      .catch((error: unknown) =>
+        console.warn("Editor language could not load.", error),
+      );
+    return () => {
+      active = false;
+    };
+  }, [locale, autoFocus]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -222,15 +261,15 @@ export function MarkdownSourceEditor({
       <div
         className="scratchpad-writing-tools"
         role="group"
-        aria-label="Writing tools"
+        aria-label={t({ message: "Writing tools" })}
       >
         {(
           [
-            ["bold", "Bold", Bold],
-            ["italic", "Italic", Italic],
-            ["heading", "Heading", Heading2],
-            ["quote", "Quote", Quote],
-            ["link", "Wikilink", Link],
+            ["bold", t({ message: "Bold" }), Bold],
+            ["italic", t({ message: "Italic" }), Italic],
+            ["heading", t({ message: "Heading" }), Heading2],
+            ["quote", t({ message: "Quote" }), Quote],
+            ["link", t({ message: "Wikilink" }), Link],
           ] as const
         ).map(([action, label, Icon]) => (
           <button

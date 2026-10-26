@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { originalOfflineRuntime } from "./lib/native-offline-shell.mjs";
 import { offlineShellFor } from "./fixtures/offline-shell-data.mjs";
 import { frozenStagingRoot } from "./fixtures/staging-intake-root.mjs";
+import { frozenProductionRoot } from "./fixtures/production-intake-root.mjs";
 import { createHash } from "node:crypto";
 import {
   mkdtemp,
@@ -201,20 +202,42 @@ test("stale release head, dirty checkout, wrong dispatch SHA and prototype targe
 
 // --- SDK trust guard --------------------------------------------------------
 
-test("actual missing target intake refuses (no LAB/UI relabel fallback)", async (t) => {
-  await assert.rejects(
-    verifySdkTrust({
-      root: new URL("../", import.meta.url).pathname,
-      target: NATIVE_PUBLISH_TARGETS.production,
-    }),
-    /Missing actual reviewed target intake/,
-  );
+test("reviewed production intake accepts historical UI labels without relabelling originals", async (t) => {
+  const production = await verifySdkTrust({
+    root: await frozenProductionRoot(t),
+    target: NATIVE_PUBLISH_TARGETS.production,
+  });
+  assert.deepEqual(production.publicationConstraints, []);
+  assert.equal(production.historicalUiQualification.noPublication, true);
   const historical = await verifySdkTrust({
     root: await frozenStagingRoot(t),
     target: NATIVE_PUBLISH_TARGETS.staging,
   });
   assert.deepEqual(historical.publicationConstraints, []);
   assert.equal(historical.historicalUiQualification.noPublication, true);
+});
+
+test("production intake refuses the unqualified i18n lock and UI pin", async (t) => {
+  await assert.rejects(
+    verifySdkTrust({
+      root: await realpath(new URL("../", import.meta.url)),
+      target: NATIVE_PUBLISH_TARGETS.production,
+    }),
+    /Frozen lock mismatch/,
+  );
+  // Even the reviewed lock cannot authorize a different UI archive.
+  const root = await frozenProductionRoot(t);
+  const packageJson = JSON.parse(await readFile(join(root, "package.json")));
+  const current = JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url)),
+  );
+  packageJson.dependencies["@mdbase-dev/ui"] =
+    current.dependencies["@mdbase-dev/ui"];
+  await writeFile(join(root, "package.json"), JSON.stringify(packageJson));
+  await assert.rejects(
+    verifySdkTrust({ root, target: NATIVE_PUBLISH_TARGETS.production }),
+    /@mdbase-dev\/ui original pin mismatch/,
+  );
 });
 
 // --- build environment ------------------------------------------------------
@@ -711,7 +734,15 @@ test("workflow isolates native manual route and publishes production only to Clo
   assert.match(workflow, /if: always\(\)/);
   assert.match(workflow, /if: inputs.publisher != 'native'/);
   assert.match(workflow, /Pages deployments only run from main/);
-  assert.doesNotMatch(workflow, /actions\/deploy-pages@/);
+  const legacyPages = workflow
+    .split("  legacy-github-pages:")[1]
+    ?.split("  verify:")[0];
+  assert.match(legacyPages, /if: github.event_name == 'push'/);
+  assert.match(legacyPages, /path: legacy-pages/);
+  assert.doesNotMatch(
+    workflow.replace(legacyPages, ""),
+    /actions\/deploy-pages@/,
+  );
   const cloudflare = workflow
     .split("  deploy-cloudflare:")[1]
     ?.split("  native-request:")[0];

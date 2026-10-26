@@ -1,10 +1,31 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "../test/render";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { RecurrenceField } from "./recurrence-field";
 
 describe("RecurrenceField", () => {
+  it("shows markup-shaped unsupported field names literally without rewriting the rule", () => {
+    const rule = "FREQ=WEEKLY;<0/>=VALUE";
+    const changed = vi.fn();
+    render(
+      <RecurrenceField
+        value={rule}
+        onAnchorChange={vi.fn()}
+        onChange={changed}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "Visual editing is unavailable because this rule uses <0/>.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("textbox", { name: "Recurrence rule" }),
+    ).toHaveValue(rule);
+    expect(changed).not.toHaveBeenCalled();
+  });
+
   it("anchors a new preset to Due when Scheduled is empty", () => {
     const changed = vi.fn();
     render(

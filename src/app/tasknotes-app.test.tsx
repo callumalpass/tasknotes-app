@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
 import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";

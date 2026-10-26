@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import {
   useLayoutEffect,
@@ -51,6 +52,7 @@ export function TaskPropertyEditor({
   occurrenceDate?: string;
   onClose(): void;
 }) {
+  const { t } = useLingui();
   const { configuration, updateTask } = useRepository();
   const property = useMemo(
     () => editableProperty(detail.key, configuration),
@@ -123,7 +125,7 @@ export function TaskPropertyEditor({
       setError(
         reason instanceof Error
           ? reason.message
-          : "The change could not be saved.",
+          : t({ message: "The change could not be saved." }),
       );
       setSaving(false);
     }
@@ -132,7 +134,7 @@ export function TaskPropertyEditor({
   return createPortal(
     <div className="task-property-editor-scrim" role="presentation">
       <section
-        aria-label={`Edit ${detail.label}`}
+        aria-label={t`Edit ${detail.label}`}
         aria-modal={desktopPosition ? undefined : "true"}
         className="task-property-editor"
         ref={editorRef}
@@ -149,11 +151,13 @@ export function TaskPropertyEditor({
       >
         <header>
           <div>
-            <span>Edit property</span>
+            <span>
+              <Trans>Edit property</Trans>
+            </span>
             <h2>{detail.label}</h2>
           </div>
           <button
-            aria-label="Close property editor"
+            aria-label={t({ message: "Close property editor" })}
             ref={closeRef}
             type="button"
             onClick={onClose}
@@ -163,19 +167,21 @@ export function TaskPropertyEditor({
         </header>
         {occurrenceDate ? (
           <p className="task-property-editor-note">
-            This edits the repeating task, including future occurrences.
+            <Trans>
+              This edits the repeating task, including future occurrences.
+            </Trans>
           </p>
         ) : null}
         {property?.kind === "scheduled" || property?.kind === "due" ? (
           <div
             className="task-date-shortcuts"
             role="group"
-            aria-label="Quick dates"
+            aria-label={t({ message: "Quick dates" })}
           >
             {[
-              ["Today", 0],
-              ["Tomorrow", 1],
-              ["In one week", 7],
+              [t({ message: "Today" }), 0],
+              [t({ message: "Tomorrow" }), 1],
+              [t({ message: "In one week" }), 7],
             ].map(([label, days]) => (
               <button
                 key={label}
@@ -214,7 +220,9 @@ export function TaskPropertyEditor({
           />
         ) : (
           <p className="task-property-editor-note">
-            This value is calculated by the view and cannot be edited here.
+            <Trans>
+              This value is calculated by the view and cannot be edited here.
+            </Trans>
           </p>
         )}
         {error ? (
@@ -229,7 +237,7 @@ export function TaskPropertyEditor({
             type="button"
             onClick={() => void save(undefined)}
           >
-            Clear value
+            <Trans>Clear value</Trans>
           </button>
         ) : null}
         {property?.kind === "recurrence" ? (
@@ -241,7 +249,7 @@ export function TaskPropertyEditor({
               type="button"
               onClick={() => void save()}
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t({ message: "Saving…" }) : t({ message: "Save" })}
             </button>
           </footer>
         ) : !property ? (
@@ -252,7 +260,7 @@ export function TaskPropertyEditor({
               type="button"
               onClick={onClose}
             >
-              Close
+              <Trans>Close</Trans>
             </button>
           </footer>
         ) : null}
@@ -287,6 +295,7 @@ function PropertyControl({
   onPersist(value: unknown): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
+  const { t } = useLingui();
   if (property.kind === "status" || property.kind === "priority") {
     const options =
       property.kind === "status"
@@ -295,7 +304,11 @@ function PropertyControl({
     return (
       <TaskNotesSelectField
         disabled={disabled}
-        label={property.kind === "status" ? "Status" : "Priority"}
+        label={
+          property.kind === "status"
+            ? t({ message: "Status" })
+            : t({ message: "Priority" })
+        }
         options={options.map((option) => ({
           value: option.value,
           label: option.label,
@@ -312,7 +325,11 @@ function PropertyControl({
     return (
       <TaskNotesDateTimeField
         disabled={disabled}
-        label={property.kind === "scheduled" ? "Scheduled" : "Due"}
+        label={
+          property.kind === "scheduled"
+            ? t({ message: "Scheduled" })
+            : t({ message: "Due" })
+        }
         value={typeof value === "string" ? value : undefined}
         splitValue={(current) => ({
           date: taskDatePart(current) || undefined,
@@ -352,7 +369,7 @@ function PropertyControl({
           value: option.value,
           label: option.label ?? option.value,
         }))}
-        placeholder="No value"
+        placeholder={t({ message: "No value" })}
         value={typeof value === "string" ? value : ""}
         onChange={(next) => {
           onChange(next);

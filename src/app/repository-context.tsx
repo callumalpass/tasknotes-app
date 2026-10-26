@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { App as CapacitorApp } from "@capacitor/app";
 import { registerReloadParticipant } from "../pwa/reload";
 import { captureSessionFor } from "../application/capture-session";
@@ -196,19 +197,32 @@ export function RepositoryProvider({
         check: async () => {
           if (mutations.hasPending())
             throw new Error(
-              "Some changes are still saving. Keep this page open and try again.",
+              translate({
+                message:
+                  "Some changes are still saving. Keep this page open and try again.",
+              }),
             );
           const draft = captureSessionFor(repository).getSnapshot();
           if (draft.text.trim() || draft.status === "submitting")
             throw new Error(
-              "Finish or discard the task you are adding before reloading.",
+              translate({
+                message:
+                  "Finish or discard the task you are adding before reloading.",
+              }),
             );
           const state = await repository.connectionStatus();
           if (state.sync?.held || state.heldEdits?.length)
-            throw new Error("Review your protected edits before reloading.");
+            throw new Error(
+              translate({
+                message: "Review your protected edits before reloading.",
+              }),
+            );
           if (state.sync?.pending)
             throw new Error(
-              "Some changes are still saving. Keep this page open and try again.",
+              translate({
+                message:
+                  "Some changes are still saving. Keep this page open and try again.",
+              }),
             );
         },
       }),

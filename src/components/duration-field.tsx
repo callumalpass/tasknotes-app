@@ -1,10 +1,32 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { TaskNotesSelect } from "./tasknotes-controls";
 
 const UNITS = [
-  { value: "minutes", label: "Minutes" },
-  { value: "hours", label: "Hours" },
-  { value: "days", label: "Days" },
-  { value: "weeks", label: "Weeks" },
+  {
+    value: "minutes",
+    get label() {
+      return t({ message: "Minutes" });
+    },
+  },
+  {
+    value: "hours",
+    get label() {
+      return t({ message: "Hours" });
+    },
+  },
+  {
+    value: "days",
+    get label() {
+      return t({ message: "Days" });
+    },
+  },
+  {
+    value: "weeks",
+    get label() {
+      return t({ message: "Weeks" });
+    },
+  },
 ] as const;
 
 type DurationUnit = (typeof UNITS)[number]["value"];
@@ -20,6 +42,7 @@ export function DurationField({
   optional?: boolean;
   onChange(value: string): void;
 }) {
+  const { t } = useLingui();
   const parsed = simpleDuration(value);
 
   function change(amount: string, unit: DurationUnit) {
@@ -31,17 +54,17 @@ export function DurationField({
       <span>{label}</span>
       <div className="duration-field-controls">
         <input
-          aria-label={`${label} amount`}
+          aria-label={t`${label} amount`}
           inputMode="numeric"
           min="0"
-          placeholder={optional ? "Optional" : "0"}
+          placeholder={optional ? t({ message: "Optional" }) : "0"}
           step="1"
           type="number"
           value={parsed.amount}
           onChange={(event) => change(event.target.value, parsed.unit)}
         />
         <TaskNotesSelect
-          ariaLabel={`${label} unit`}
+          ariaLabel={t`${label} unit`}
           options={UNITS}
           value={parsed.unit}
           onChange={(unit) => change(parsed.amount, unit as DurationUnit)}
@@ -49,16 +72,22 @@ export function DurationField({
       </div>
       {!parsed.simple ? (
         <p className="duration-field-current">
-          This task uses an advanced duration: <code>{value}</code>
+          <Trans>
+            This task uses an advanced duration: <code>{value}</code>
+          </Trans>
         </p>
       ) : null}
       <details className="duration-field-source" open={!parsed.simple}>
-        <summary>Advanced duration</summary>
+        <summary>
+          <Trans>Advanced duration</Trans>
+        </summary>
         <label>
-          <span>ISO 8601 value</span>
+          <span>
+            <Trans>ISO 8601 value</Trans>
+          </span>
           <input
-            aria-label={`${label} advanced duration`}
-            placeholder="For example P1D"
+            aria-label={t`${label} advanced duration`}
+            placeholder={t({ message: "For example P1D" })}
             value={value}
             onChange={(event) => onChange(event.target.value)}
           />

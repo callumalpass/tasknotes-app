@@ -358,10 +358,115 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
     manifest.sourceIncludesPrs,
     [888, 889, 892, 893, 895, 899, 902],
   );
+  const successor = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-9041442d.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(
+    successor.sourceCommit,
+    "9041442d6584ef5354620eada6995156ece883c4",
+  );
+  assert.equal(successor.extendsArtifact, manifest.artifact);
+  assert.deepEqual(successor.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const refreshed = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-852df21f.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(
+    refreshed.sourceCommit,
+    "852df21f2a45f7decf1eda1f8967c2029a658828",
+  );
+  assert.equal(refreshed.extendsArtifact, successor.artifact);
+  assert.deepEqual(refreshed.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const final = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-a36fa009.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(final.sourceCommit, "a36fa00914af2aacef03b8e23cb566bee5531e4a");
+  assert.equal(final.extendsArtifact, refreshed.artifact);
+  assert.deepEqual(final.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const italian = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-49bea0aa.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(italian.extendsArtifact, final.artifact);
+  assert.deepEqual(italian.sourceIncludesPrs, manifest.sourceIncludesPrs);
+  const literal = JSON.parse(
+    await readFile(
+      new URL("vendor/mdbase-dev-ui-0.1.0-beta.141-24e9f5d0.json", root),
+      "utf8",
+    ),
+  );
+  assert.equal(literal.extendsArtifact, italian.artifact);
+  assert.equal(literal.sha256, italian.sha256);
+  assert.deepEqual(literal.sourceIncludesPrs, manifest.sourceIncludesPrs);
   assert.equal(
     pkg.dependencies["@mdbase-dev/ui"],
-    `file:vendor/${manifest.artifact}`,
+    `file:vendor/${literal.artifact}`,
   );
+  const finalBytes = await readFile(new URL(`vendor/${final.artifact}`, root));
+  assert.equal(finalBytes.byteLength, 129246);
+  assert.equal(final.bytes, finalBytes.byteLength);
+  assert.equal(
+    final.sha256,
+    "e7199463d7f4d282cfd6f5f16e71dc1aa1029330a634f43112ae5b2f63dea7a0",
+  );
+  assert.equal(
+    createHash("sha256").update(finalBytes).digest("hex"),
+    final.sha256,
+  );
+  assert.equal(
+    final.integrity,
+    "sha512-oVakG1v10kO9H+FXvqJWzH/dmdn3kGbnhMT+OLx6YKZlzLjtvuBHsvKInBCYDpBtl48eFk/K+9TIWb925UiUmQ==",
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(finalBytes).digest("base64")}`,
+    final.integrity,
+  );
+  const refreshedBytes = await readFile(
+    new URL(`vendor/${refreshed.artifact}`, root),
+  );
+  assert.equal(refreshedBytes.byteLength, 128913);
+  assert.equal(refreshed.bytes, refreshedBytes.byteLength);
+  assert.equal(
+    refreshed.sha256,
+    "5f644e4059ab7d66b3153d032a5b9eb1ca896e0129aa317ba7250ca676a89ce7",
+  );
+  assert.equal(
+    createHash("sha256").update(refreshedBytes).digest("hex"),
+    refreshed.sha256,
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(refreshedBytes).digest("base64")}`,
+    refreshed.integrity,
+  );
+  // Keep the previous integration intake byte-for-byte too.
+  const currentBytes = await readFile(
+    new URL(`vendor/${successor.artifact}`, root),
+  );
+  assert.equal(currentBytes.byteLength, 124189);
+  assert.equal(successor.bytes, currentBytes.byteLength);
+  assert.equal(
+    successor.sha256,
+    "65b7ab3754fe840e04c0128e00f4b9f81dbbf999e0eb987acf97ee72c6b3b55b",
+  );
+  assert.equal(
+    createHash("sha256").update(currentBytes).digest("hex"),
+    successor.sha256,
+  );
+  assert.equal(
+    `sha512-${createHash("sha512").update(currentBytes).digest("base64")}`,
+    successor.integrity,
+  );
+  // Retain the authenticated predecessor bytes and their regression checks.
   const bytes = await readFile(new URL(`vendor/${manifest.artifact}`, root));
   assert.equal(bytes.byteLength, 91016);
   assert.equal(manifest.bytes, bytes.byteLength);
@@ -377,6 +482,10 @@ test("shared UI successor preserves opening and save-warning consumer exports", 
     `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
     manifest.integrity,
   );
+  const { uiCatalogues, i18n } = await import("@mdbase-dev/ui/i18n");
+  assert.ok(Object.keys(uiCatalogues.english.messages).length > 0);
+  assert.equal(typeof uiCatalogues.loadLocale, "function");
+  assert.equal(i18n, (await import("@lingui/core")).i18n);
   const ui = await import("@mdbase-dev/ui/collections");
   for (const name of [
     "CollectionGate",

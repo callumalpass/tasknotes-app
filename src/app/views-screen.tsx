@@ -1,3 +1,7 @@
+import { t as translate, plural } from "@lingui/core/macro";
+import { appLocale } from "../i18n/app";
+import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import {
   Check,
   ChevronLeft,
@@ -46,7 +50,7 @@ import {
   type ViewCreationPlan,
 } from "../domain/view-creation";
 import { viewPropertyMoveInput } from "../domain/view-mutation";
-import { propertyLabel } from "../domain/view-values";
+import { propertyLabel } from "../i18n/view-presentation";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
 import { RecordWriteNotice } from "../components/record-write-notice";
@@ -147,6 +151,7 @@ export function ViewsScreen({
   onMoveNavigationView(key: string, direction: -1 | 1): void;
   onViewsChanged(): Promise<void>;
 }) {
+  const { t } = useLingui();
   const {
     repository,
     createTask,
@@ -722,7 +727,7 @@ export function ViewsScreen({
         if (selectedKeyRef.current === view.key) {
           setViewActionError({
             viewKey: view.key,
-            message: `Could not ${Object.keys(additionalInput).length ? "move" : "reorder"} “${dragged.task.title}”. ${message(reason)}`,
+            message: t`Could not ${Object.keys(additionalInput).length ? uiCopy("move") : uiCopy("reorder")} “${dragged.task.title}”. ${message(reason)}`,
           });
           void repository
             .executeView(view)
@@ -787,7 +792,7 @@ export function ViewsScreen({
     if (!input) {
       setViewActionError({
         viewKey: selected.key,
-        message: `${propertyLabel(property)} is calculated by this view and cannot be changed here.`,
+        message: t`${propertyLabel(property)} is calculated by this view and cannot be changed here.`,
       });
       return;
     }
@@ -852,7 +857,7 @@ export function ViewsScreen({
       if (selectedKeyRef.current === selected.key)
         setViewActionError({
           viewKey: selected.key,
-          message: `Could not move “${row.task.title}”. ${message(reason)}`,
+          message: t`Could not move “${row.task.title}”. ${message(reason)}`,
         });
       return;
     } finally {
@@ -912,7 +917,7 @@ export function ViewsScreen({
     if (!input) {
       setViewActionError({
         viewKey: selected.key,
-        message: `“${destination.label ?? "This section"}” is calculated and cannot accept moved tasks.`,
+        message: t`“${destination.label ?? uiCopy("This section")}” is calculated and cannot accept moved tasks.`,
       });
       return;
     }
@@ -990,7 +995,7 @@ export function ViewsScreen({
       if (selectedKeyRef.current === view.key)
         setViewActionError({
           viewKey: view.key,
-          message: `Could not reschedule ${updates.length === 1 ? "the task" : `${updates.length} tasks`}. ${message(reason)}`,
+          message: `Could not reschedule ${updates.length === 1 ? translate({ message: "the task" }) : `${updates.length} tasks`}. ${message(reason)}`,
         });
       return false;
     }
@@ -1055,7 +1060,10 @@ export function ViewsScreen({
       const complete = await repository.executeView(selected);
       if (complete.stale || complete.hasMore || complete.hasSkippedRecords)
         throw new Error(
-          "The complete manual order could not be loaded. Your draft is kept; try again.",
+          t({
+            message:
+              "The complete manual order could not be loaded. Your draft is kept; try again.",
+          }),
         );
       return createTask(
         {
@@ -1087,8 +1095,14 @@ export function ViewsScreen({
       ? undefined
       : {
           message: refreshed.hasMore
-            ? "Task created. It may be in an unloaded page or excluded by this view’s filters."
-            : "Task created, but this view does not show it. Its filters or result limit may exclude it.",
+            ? t({
+                message:
+                  "Task created. It may be in an unloaded page or excluded by this view’s filters.",
+              })
+            : t({
+                message:
+                  "Task created, but this view does not show it. Its filters or result limit may exclude it.",
+              }),
         };
   }
 
@@ -1123,10 +1137,14 @@ export function ViewsScreen({
         <section className="screen views-screen" aria-labelledby="views-title">
           <header className="screen-header compact-header views-catalog-header">
             <div>
-              <h1 id="views-title">Manage views</h1>
+              <h1 id="views-title">
+                <Trans>Manage views</Trans>
+              </h1>
               <p>
-                Choose what appears in navigation, change its order, and manage
-                saved views.
+                <Trans>
+                  Choose what appears in navigation, change its order, and
+                  manage saved views.
+                </Trans>
               </p>
             </div>
             <div className="views-header-actions">
@@ -1138,15 +1156,18 @@ export function ViewsScreen({
                 onPointerEnter={preloadViewEditor}
               >
                 <Plus aria-hidden="true" size={20} strokeWidth={1.7} />
-                Create view
+                <Trans>Create view</Trans>
               </button>
             </div>
           </header>
           {viewsError ? (
             <OperationErrorNotice
-              action="Views"
+              action={t({ message: "Views" })}
               message={viewsError}
-              recovery="Retry by reopening Manage views or refreshing the collection."
+              recovery={t({
+                message:
+                  "Retry by reopening Manage views or refreshing the collection.",
+              })}
             />
           ) : null}
           {documents && !hasTaskNotesStarterViews(documents) ? (
@@ -1197,11 +1218,11 @@ export function ViewsScreen({
           {!operational ? (
             <button className="back-action" type="button" onClick={onBack}>
               <ChevronLeft aria-hidden="true" size={20} />
-              Views
+              <Trans>Views</Trans>
             </button>
           ) : null}
           <div>
-            <h1>{selected?.name ?? "Saved view"}</h1>
+            <h1>{selected?.name ?? translate({ message: "Saved view" })}</h1>
             {selected ? (
               <RecordWriteNotice
                 repository={repository}
@@ -1210,7 +1231,7 @@ export function ViewsScreen({
             ) : null}
             {selected?.name === "Today" ? (
               <p className="view-date">
-                {new Intl.DateTimeFormat(undefined, {
+                {new Intl.DateTimeFormat(appLocale(), {
                   weekday: "long",
                   month: "long",
                   day: "numeric",
@@ -1218,7 +1239,8 @@ export function ViewsScreen({
                 {todayProgress ? (
                   <span className="today-progress">
                     {" "}
-                    · {todayProgress.done} of {todayProgress.total} done
+                    · {todayProgress.done} <Trans>of </Trans>
+                    {todayProgress.total} <Trans>done</Trans>
                   </span>
                 ) : null}
               </p>
@@ -1229,11 +1251,11 @@ export function ViewsScreen({
                 className="visually-hidden"
                 role="status"
               >
-                Updating view
+                <Trans>Updating view</Trans>
               </span>
             ) : visibleExecution?.stale ? (
               <small aria-live="polite" role="status">
-                Last available result
+                <Trans>Last available result</Trans>
               </small>
             ) : null}
           </div>
@@ -1241,7 +1263,7 @@ export function ViewsScreen({
             <div className="view-header-actions">
               {operational ? (
                 <button
-                  aria-label="Search tasks"
+                  aria-label={t({ message: "Search tasks" })}
                   className="view-header-action"
                   type="button"
                   onClick={onSearch}
@@ -1266,7 +1288,7 @@ export function ViewsScreen({
                     ) : (
                       <GripVertical aria-hidden="true" size={18} />
                     )}{" "}
-                    Manual order
+                    <Trans>Manual order</Trans>
                   </button>
                   <ArrangeTasksOption
                     available={Boolean(manualOrder)}
@@ -1276,12 +1298,13 @@ export function ViewsScreen({
                   />
                   <button
                     type="button"
-                    aria-label={`Edit ${selected.name}`}
+                    aria-label={t`Edit ${selected.name}`}
                     onFocus={preloadViewEditor}
                     onPointerEnter={preloadViewEditor}
                     onClick={() => setEditing({ view: selected })}
                   >
-                    <Pencil aria-hidden="true" size={18} /> Edit view
+                    <Pencil aria-hidden="true" size={18} />{" "}
+                    <Trans>Edit view</Trans>
                   </button>
                 </ViewOptions>
               ) : null}
@@ -1310,10 +1333,14 @@ export function ViewsScreen({
         ) : null}
         {presentedExecution?.hasMore ? (
           <p className="view-note" role="status">
-            Loaded {presentedExecution.rows.length} of{" "}
-            {presentedExecution.totalCount} matching tasks. Section counts cover
-            loaded tasks.{" "}
-            {manualOrder ? "Load remaining tasks to change manual order." : ""}
+            <Trans>
+              Loaded {presentedExecution.rows.length} of{" "}
+              {presentedExecution.totalCount} matching tasks. Section counts
+              cover loaded tasks.{" "}
+              {manualOrder
+                ? t({ message: "Load remaining tasks to change manual order." })
+                : ""}
+            </Trans>
           </p>
         ) : null}
         {manualOrder && presentedExecution?.hasMore ? (
@@ -1331,20 +1358,24 @@ export function ViewsScreen({
             }}
           >
             {currentExecutionRefreshing
-              ? "Loading tasks…"
-              : "Load remaining tasks"}
+              ? t({ message: "Loading tasks…" })
+              : t({ message: "Load remaining tasks" })}
           </button>
         ) : null}
         {!error && presentedExecution?.hasSkippedRecords ? (
           <p className="view-record-warning" role="status">
-            Some files could not be read and were omitted from this view.
+            <Trans>
+              Some files could not be read and were omitted from this view.
+            </Trans>
           </p>
         ) : null}
         {currentViewActionError ? (
           <OperationErrorNotice
-            action="The view change"
+            action={t({ message: "The view change" })}
             message={currentViewActionError}
-            recovery="Review the task before making another change."
+            recovery={translate({
+              message: "Review the task before making another change.",
+            })}
           />
         ) : null}
         {editing ? (
@@ -1366,7 +1397,7 @@ export function ViewsScreen({
           <>
             <CaptureFab
               className="view-context-capture"
-              aria-label="New task"
+              aria-label={translate({ message: "New task" })}
               onClick={() => setMobileCaptureOpen(true)}
             />
             <GlobalTaskCapture
@@ -1398,8 +1429,8 @@ export function ViewsScreen({
             retainFocusAfterCreate
             placeholder={
               currentCreationContext
-                ? `Add to ${currentCreationContext.label}`
-                : `Add to ${selected?.name ?? "this view"}`
+                ? t`Add to ${currentCreationContext.label}`
+                : t`Add to ${selected?.name ?? uiCopy("this view")}`
             }
             onCreated={refreshAfterCreate}
             onOpenCreated={onOpenTask}
@@ -1542,11 +1573,14 @@ export function ViewsScreen({
                 <button
                   className="section-heading-action"
                   type="button"
-                  aria-label={`Move all to today, ${lane.rows.length} overdue ${lane.rows.length === 1 ? "task" : "tasks"}`}
+                  aria-label={plural(lane.rows.length, {
+                    one: "Move all to today, # overdue task",
+                    other: "Move all to today, # overdue tasks",
+                  })}
                   disabled={reschedulePending}
                   onClick={() => void moveOverdueToToday(lane.rows)}
                 >
-                  Move all to today
+                  <Trans>Move all to today</Trans>
                 </button>
               ) : null
             }
@@ -1589,21 +1623,29 @@ export function ViewsScreen({
         {rescheduled && rescheduled.viewKey === selected?.key ? (
           <>
             <p aria-atomic="true" className="visually-hidden" role="status">
-              Moved {rescheduled.count}{" "}
-              {rescheduled.count === 1 ? "task" : "tasks"} to today.
+              <Trans>Moved </Trans>
+              {rescheduled.count}{" "}
+              {rescheduled.count === 1
+                ? translate({ message: "task" })
+                : translate({ message: "tasks" })}{" "}
+              <Trans>to today.</Trans>
             </p>
             {!pendingDeletion ? (
               <div className="undo-toast is-above-mobile-controls">
                 <span>
-                  Moved {rescheduled.count}{" "}
-                  {rescheduled.count === 1 ? "task" : "tasks"} to today
+                  <Trans>Moved </Trans>
+                  {rescheduled.count}{" "}
+                  {rescheduled.count === 1
+                    ? translate({ message: "task" })
+                    : translate({ message: "tasks" })}{" "}
+                  <Trans>to today</Trans>
                 </span>
                 <button
                   ref={rescheduleUndoRef}
                   type="button"
                   onClick={() => void undoReschedule()}
                 >
-                  Undo
+                  <Trans>Undo</Trans>
                 </button>
               </div>
             ) : null}
@@ -1620,10 +1662,10 @@ export function ViewsScreen({
             }}
           >
             {currentExecutionRefreshing
-              ? "Loading tasks…"
+              ? t({ message: "Loading tasks…" })
               : paging.available
-                ? "Load more tasks"
-                : "All matching tasks loaded"}
+                ? t({ message: "Load more tasks" })
+                : t({ message: "All matching tasks loaded" })}
           </button>
         ) : null}
       </section>

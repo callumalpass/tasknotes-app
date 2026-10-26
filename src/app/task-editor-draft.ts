@@ -1,11 +1,12 @@
+import { t as translate } from "@lingui/core/macro";
+import { appLocale } from "../i18n/app";
+import { t } from "@lingui/core/macro";
+import { countLabel, type CountKind } from "../i18n/default-labels";
+import { recurrenceLabel, formatRelativeTaskDate } from "../i18n/presentation";
 import { linkDisplayLabel } from "../domain/completion";
 import { isEmptyFieldValue } from "../domain/custom-field-value";
 import { recurrencePreset } from "../domain/recurrence-rule";
-import {
-  activeTimeEntry,
-  formatRelativeTaskDate,
-  type Task,
-} from "../domain/task";
+import { activeTimeEntry, type Task } from "../domain/task";
 import {
   occurrenceTask,
   taskOccurrenceForDate,
@@ -65,12 +66,12 @@ export function scheduleSummary(
           )?.label ?? draft.status)
         : "",
       dates.scheduled
-        ? `Scheduled ${formatRelativeTaskDate(dates.scheduled)}`
+        ? t`Scheduled ${formatRelativeTaskDate(dates.scheduled)}`
         : "",
-      dates.due ? `Due ${formatRelativeTaskDate(dates.due)}` : "",
+      dates.due ? t`Due ${formatRelativeTaskDate(dates.due)}` : "",
     ]
       .filter(Boolean)
-      .join(" · ") || "No dates"
+      .join(" · ") || translate({ message: "No dates" })
   );
 }
 
@@ -103,42 +104,34 @@ export function toDraft(task: Task): Draft {
 export function organizeSummary(draft: Draft): string {
   const values: string[] = [];
   if (draft.priority !== "normal" && draft.priority !== "none")
-    values.push(`${humanizeValue(draft.priority)} priority`);
+    values.push(t`${humanizeValue(draft.priority)} priority`);
   if (draft.assignees?.length)
-    values.push(`${draft.assignees.length} assigned`);
+    values.push(t`${draft.assignees.length} assigned`);
   if (draft.projects.length)
     values.push(listSummary(draft.projects, "project"));
   if (draft.blockedBy.length)
-    values.push(
-      `${draft.blockedBy.length} ${draft.blockedBy.length === 1 ? "dependency" : "dependencies"}`,
-    );
+    values.push(countLabel(draft.blockedBy.length, "dependency"));
   if (draft.contexts.length)
     values.push(listSummary(draft.contexts, "context"));
   const tags = draft.tags.filter((tag) => tag !== "task");
-  if (tags.length)
-    values.push(`${tags.length} ${tags.length === 1 ? "tag" : "tags"}`);
+  if (tags.length) values.push(countLabel(tags.length, "tag"));
   const customCount = Object.values(draft.customProperties).filter(
     (value) => !isEmptyFieldValue(value),
   ).length;
-  if (customCount)
-    values.push(
-      `${customCount} ${customCount === 1 ? "property" : "properties"}`,
-    );
+  if (customCount) values.push(countLabel(customCount, "property"));
   return (
-    values.join(" · ") || "Priority, projects, dependencies, contexts and tags"
+    values.join(" · ") || t`Priority, projects, dependencies, contexts and tags`
   );
 }
 
 export function timeSummary(task: Task, estimate?: number): string {
   const active = activeTimeEntry(task.timeEntries);
   const values: string[] = [];
-  if (active) values.push("Timer running");
+  if (active) values.push(t`Timer running`);
   else if (task.timeEntries.length)
-    values.push(
-      `${task.timeEntries.length} ${task.timeEntries.length === 1 ? "session" : "sessions"}`,
-    );
-  if (estimate) values.push(`${estimate}m estimate`);
-  return values.join(" · ") || "Estimate and work sessions";
+    values.push(countLabel(task.timeEntries.length, "session"));
+  if (estimate) values.push(t`${estimate}m estimate`);
+  return values.join(" · ") || t`Estimate and work sessions`;
 }
 
 export function repeatSummary(draft: Draft): string {
@@ -146,28 +139,28 @@ export function repeatSummary(draft: Draft): string {
   if (draft.recurrence) {
     const preset = recurrencePreset(draft.recurrence);
     values.push(
-      preset === "advanced" ? "Advanced repeat" : humanizeValue(preset),
+      preset === "advanced"
+        ? t({ message: "Advanced repeat" })
+        : recurrenceLabel(draft.recurrence),
     );
   }
   if (draft.reminders.length)
-    values.push(
-      `${draft.reminders.length} ${draft.reminders.length === 1 ? "reminder" : "reminders"}`,
-    );
-  return values.join(" · ") || "No repeat or reminder";
+    values.push(countLabel(draft.reminders.length, "reminder"));
+  return values.join(" · ") || t`No repeat or reminder`;
 }
 
 export { isEmptyFieldValue } from "../domain/custom-field-value";
 
-function listSummary(values: string[], singular: string): string {
+function listSummary(values: string[], singular: CountKind): string {
   return values.length === 1
     ? linkDisplayLabel(values[0])
-    : `${values.length} ${singular}s`;
+    : countLabel(values.length, singular);
 }
 
 export function formatOccurrenceDate(value: string): string {
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     day: "numeric",
     month: "long",

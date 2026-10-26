@@ -1,3 +1,5 @@
+import { useLingui } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import { useState, type DragEvent, type KeyboardEvent } from "react";
 
 type Placement = "before" | "after";
@@ -11,6 +13,7 @@ export function useSidebarReorder(
   navigationKeys: readonly string[],
   onMove: ((key: string, direction: -1 | 1) => void) | undefined,
 ) {
+  const { t } = useLingui();
   const [dragKey, setDragKey] = useState<string>();
   const [drop, setDrop] = useState<{ key: string; placement: Placement }>();
   const [announcement, setAnnouncement] = useState("");
@@ -60,7 +63,7 @@ export function useSidebarReorder(
               ? index
               : index + 1;
         moveBy(dragKey, target - from);
-        if (target !== from) setAnnouncement(`${label} moved.`);
+        if (target !== from) setAnnouncement(t`${label} moved.`);
         setDragKey(undefined);
         setDrop(undefined);
       },
@@ -77,7 +80,7 @@ export function useSidebarReorder(
         event.preventDefault();
         onMove(key, direction);
         setAnnouncement(
-          `${label} moved ${direction < 0 ? "up" : "down"}${next === 0 ? ", now Home" : ""}.`,
+          t`${label} moved ${direction < 0 ? uiCopy("up") : uiCopy("down")}${next === 0 ? uiCopy(", now Home") : ""}.`,
         );
       },
     };

@@ -1,11 +1,5 @@
 import { StrictMode } from "react";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "../test/render";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   HeldEdit,

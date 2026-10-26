@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { Link2 } from "lucide-react";
 import { useId } from "react";
 
@@ -17,10 +19,30 @@ const RELATIONSHIP_TYPES: Array<{
   value: TaskDependencyRelType;
   label: string;
 }> = [
-  { value: "FINISHTOSTART", label: "Finish to start" },
-  { value: "STARTTOSTART", label: "Start to start" },
-  { value: "FINISHTOFINISH", label: "Finish to finish" },
-  { value: "STARTTOFINISH", label: "Start to finish" },
+  {
+    value: "FINISHTOSTART",
+    get label() {
+      return t({ message: "Finish to start" });
+    },
+  },
+  {
+    value: "STARTTOSTART",
+    get label() {
+      return t({ message: "Start to start" });
+    },
+  },
+  {
+    value: "FINISHTOFINISH",
+    get label() {
+      return t({ message: "Finish to finish" });
+    },
+  },
+  {
+    value: "STARTTOFINISH",
+    get label() {
+      return t({ message: "Start to finish" });
+    },
+  },
 ];
 
 export function DependencyEditor({
@@ -36,6 +58,7 @@ export function DependencyEditor({
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   onChange(dependencies: TaskDependency[]): void;
 }) {
+  const { t } = useLingui();
   const headingId = useId();
   const byUid = new Map(
     dependencies.map((dependency) => [dependency.uid, dependency]),
@@ -65,15 +88,19 @@ export function DependencyEditor({
     <section className="dependency-editor" aria-labelledby={headingId}>
       <div className="dependency-editor-heading">
         <div>
-          <h2 id={headingId}>Dependencies</h2>
-          <p>Add work that must happen before this task.</p>
+          <h2 id={headingId}>
+            <Trans>Dependencies</Trans>
+          </h2>
+          <p>
+            <Trans>Add work that must happen before this task.</Trans>
+          </p>
         </div>
       </div>
       <MultiValueField
         completion={{ kind: "records", targetTypes: ["task"] }}
         field={field}
-        label="Blocked by"
-        placeholder="Find a task"
+        label={t({ message: "Blocked by" })}
+        placeholder={t({ message: "Find a task" })}
         values={dependencies.map((dependency) => dependency.uid)}
         valueLabel={(uid) => dependencyLabel(uid, labels)}
         completeField={completeField}
@@ -89,7 +116,7 @@ export function DependencyEditor({
               </div>
               <div className="field-grid metadata-fields">
                 <TaskNotesSelectField
-                  label="Relationship"
+                  label={t({ message: "Relationship" })}
                   options={RELATIONSHIP_TYPES}
                   value={dependency.reltype}
                   onChange={(reltype) =>
@@ -99,7 +126,7 @@ export function DependencyEditor({
                   }
                 />
                 <DurationField
-                  label="Gap"
+                  label={t({ message: "Gap" })}
                   optional
                   value={dependency.gap ?? ""}
                   onChange={(gap) => change(index, { gap: gap || undefined })}
@@ -118,13 +145,14 @@ export function RelatedWork({
 }: {
   relationships: TaskRelationships;
 }) {
+  const { t } = useLingui();
   const groups = [
     {
-      label: "Blocking",
+      label: t({ message: "Blocking" }),
       tasks: relationships.blocking,
     },
     {
-      label: "Subtasks",
+      label: t({ message: "Subtasks" }),
       tasks: relationships.subtasks,
     },
   ];
@@ -132,7 +160,9 @@ export function RelatedWork({
   if (!groups.some((group) => group.tasks.length)) return null;
   return (
     <section className="related-work" aria-labelledby="related-work-title">
-      <h2 id="related-work-title">Related work</h2>
+      <h2 id="related-work-title">
+        <Trans>Related work</Trans>
+      </h2>
       <div className="related-work-groups">
         {groups.map((group) =>
           group.tasks.length ? (
@@ -142,7 +172,14 @@ export function RelatedWork({
                 {group.tasks.map((task) => (
                   <li key={task.id}>
                     <span>{task.title}</span>
-                    <small>{task.completed ? "Complete" : task.status}</small>
+                    <small>
+                      {task.completed
+                        ? t({
+                            message: "Complete",
+                            context: "related task completion state",
+                          })
+                        : task.status}
+                    </small>
                   </li>
                 ))}
               </ul>

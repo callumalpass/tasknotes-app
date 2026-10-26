@@ -191,8 +191,17 @@ export async function deployDevelopmentTaskNotes(
     environment,
     deployment,
   );
+  const restoreTargets = [
+    ...manifestTargets,
+    ...(deployment.environment === "staging"
+      ? [
+          resolve(projectRoot, "package.json"),
+          resolve(projectRoot, "pnpm-lock.yaml"),
+        ]
+      : []),
+  ];
   const previousManifests = await Promise.all(
-    manifestTargets.map(async (target) => {
+    restoreTargets.map(async (target) => {
       try {
         return await readFile(target);
       } catch (error) {
@@ -203,11 +212,23 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
+    if (deployment.environment === "staging") {
+      // Only this deployment uses staging trust; keep the production/iOS pin.
+      await dependencies.run(
+        pnpm,
+        [
+          "add",
+          "--ignore-scripts",
+          "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
+        ],
+        deploymentEnvironment,
+      );
+    }
     await dependencies.run(pnpm, ["build:assets"], deploymentEnvironment);
     await dependencies.verifyBuild(deployment);
   } finally {
     await Promise.all(
-      manifestTargets.map((target, index) =>
+      restoreTargets.map((target, index) =>
         previousManifests[index] === null
           ? unlink(target).catch((error) => {
               if (error.code !== "ENOENT") throw error;

@@ -1,3 +1,8 @@
+import { appLocale } from "../i18n/app";
+import { t } from "@lingui/core/macro";
+import { countLabel } from "../i18n/default-labels";
+import { useLingui, Trans } from "@lingui/react/macro";
+import { uiCopy } from "../i18n/ui-copy";
 import { Clock3, Play, Square, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -24,6 +29,7 @@ export function TimeTrackingField({
   onReplace(entries: TaskTimeEntry[]): void;
   onRemove(index: number): void;
 }) {
+  const { t } = useLingui();
   const active = activeTimeEntry(entries);
   const now = useTimerNow(Boolean(active));
   const totals = taskTimeTotals(entries, now);
@@ -37,11 +43,12 @@ export function TimeTrackingField({
       <div className="time-tracking-heading">
         <div>
           <h2 id="time-tracking-title">
-            <Clock3 aria-hidden="true" size={16} strokeWidth={1.7} /> Time
+            <Clock3 aria-hidden="true" size={16} strokeWidth={1.7} />{" "}
+            <Trans context="time tracking duration">Time</Trans>
           </h2>
           <p>
             {active
-              ? `${formatMinutes(totals.liveMinutes)} tracked`
+              ? t`${formatMinutes(totals.liveMinutes)} tracked`
               : formatMinutes(totals.closedMinutes)}
           </p>
         </div>
@@ -52,7 +59,8 @@ export function TimeTrackingField({
             type="button"
             onClick={onStop}
           >
-            <Square aria-hidden="true" size={14} fill="currentColor" /> Stop
+            <Square aria-hidden="true" size={14} fill="currentColor" />{" "}
+            <Trans>Stop</Trans>
           </button>
         ) : (
           <button
@@ -64,22 +72,24 @@ export function TimeTrackingField({
               setDescription("");
             }}
           >
-            <Play aria-hidden="true" size={15} fill="currentColor" /> Start
+            <Play aria-hidden="true" size={15} fill="currentColor" />{" "}
+            <Trans>Start</Trans>
           </button>
         )}
       </div>
 
       {!active ? (
         <input
-          aria-label="Timer description"
+          aria-label={t({ message: "Timer description" })}
           className="timer-description"
-          placeholder="What are you working on?"
+          placeholder={t({ message: "What are you working on?" })}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
       ) : (
         <p className="active-session" aria-live="polite">
-          {active.description || "Work session"} · {formatSession(active, now)}
+          {active.description || t({ message: "Work session" })} ·{" "}
+          {formatSession(active, now)}
         </p>
       )}
 
@@ -97,8 +107,8 @@ export function TimeTrackingField({
           onClick={() => setExpanded((value) => !value)}
         >
           {expanded
-            ? "Hide sessions"
-            : `${entries.length} session${entries.length === 1 ? "" : "s"}`}
+            ? t({ message: "Hide sessions" })
+            : countLabel(entries.length, "session")}
         </button>
       ) : null}
 
@@ -106,8 +116,10 @@ export function TimeTrackingField({
         <div className="time-entry-list">
           {entries.length > visibleEntries.length ? (
             <p className="time-entry-limit">
-              Showing the latest {visibleEntries.length} of {entries.length}
-              sessions.
+              <Trans>
+                Showing the latest {visibleEntries.length} of {entries.length}
+                sessions.
+              </Trans>
             </p>
           ) : null}
           {visibleEntries.map((entry, reversedIndex) => {
@@ -131,11 +143,13 @@ export function TimeTrackingField({
                 key={`${entry.startTime}:${index}`}
               >
                 <button type="button" onClick={() => setEditing(index)}>
-                  <strong>{entry.description || "Work session"}</strong>
+                  <strong>
+                    {entry.description || t({ message: "Work session" })}
+                  </strong>
                   <span>{formatSessionRange(entry, now)}</span>
                 </button>
                 <button
-                  aria-label={`Remove ${entry.description || "session"}`}
+                  aria-label={t`Remove ${entry.description || uiCopy("session")}`}
                   className="icon-action"
                   disabled={busy}
                   type="button"
@@ -161,6 +175,7 @@ function TimeEntryEditor({
   onSave(entry: TaskTimeEntry): void;
   onCancel(): void;
 }) {
+  const { t } = useLingui();
   const [start, setStart] = useState(toLocalDateTime(entry.startTime));
   const [end, setEnd] = useState(toLocalDateTime(entry.endTime));
   const [description, setDescription] = useState(entry.description ?? "");
@@ -168,26 +183,26 @@ function TimeEntryEditor({
   return (
     <div className="time-entry-editor">
       <input
-        aria-label="Session description"
-        placeholder="Session description"
+        aria-label={t({ message: "Session description" })}
+        placeholder={t({ message: "Session description" })}
         value={description}
         onChange={(event) => setDescription(event.target.value)}
       />
       <div>
         <TaskNotesDateTimeField
-          label="Session start"
+          label={t({ message: "Session start" })}
           value={start}
           onChange={(value) => setStart(value ?? "")}
         />
         <TaskNotesDateTimeField
-          label="Session end"
+          label={t({ message: "Session end" })}
           value={end}
           onChange={(value) => setEnd(value ?? "")}
         />
       </div>
       <div className="time-entry-editor-actions">
         <button className="text-action" type="button" onClick={onCancel}>
-          Cancel
+          <Trans>Cancel</Trans>
         </button>
         <button
           className="text-action"
@@ -203,7 +218,7 @@ function TimeEntryEditor({
             })
           }
         >
-          Save session
+          <Trans>Save session</Trans>
         </button>
       </div>
     </div>
@@ -224,7 +239,7 @@ function formatMinutes(value: number): string {
   if (value < 60) return `${value}m`;
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
-  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  return minutes ? t`${hours}h ${minutes}m` : `${hours}h`;
 }
 
 function formatSession(entry: TaskTimeEntry, now: Date): string {
@@ -234,11 +249,11 @@ function formatSession(entry: TaskTimeEntry, now: Date): string {
 function formatSessionRange(entry: TaskTimeEntry, now: Date): string {
   const start = new Date(entry.startTime);
   const end = entry.endTime ? new Date(entry.endTime) : now;
-  const day = new Intl.DateTimeFormat(undefined, {
+  const day = new Intl.DateTimeFormat(appLocale(), {
     month: "short",
     day: "numeric",
   }).format(start);
-  const time = new Intl.DateTimeFormat(undefined, {
+  const time = new Intl.DateTimeFormat(appLocale(), {
     hour: "numeric",
     minute: "2-digit",
   });

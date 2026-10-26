@@ -1,3 +1,6 @@
+import { countLabel } from "../i18n/default-labels";
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   Archive,
   ArchiveRestore,
@@ -85,6 +88,7 @@ export function TaskActions({
   onDeleted,
   contextMenuRequest,
 }: TaskActionsProps) {
+  const { t } = useLingui();
   const {
     configuration,
     mutations,
@@ -312,14 +316,14 @@ export function TaskActions({
           aria-haspopup={mobile ? "dialog" : "menu"}
           aria-label={
             context === "detail"
-              ? "More task actions"
-              : `Task actions for ${task.title}`
+              ? t({ message: "More task actions" })
+              : t`Task actions for ${task.title}`
           }
           className={
             context === "detail" ? "icon-action" : "task-actions-trigger"
           }
           ref={triggerRef}
-          title={`Actions for ${task.title}`}
+          title={t`Actions for ${task.title}`}
           type="button"
           onClick={openFromTrigger}
           onContextMenu={(event) => {
@@ -336,7 +340,13 @@ export function TaskActions({
       ) : null}
       {position
         ? createPortal(
-            <div className="task-actions-layer">
+            <div
+              aria-label={
+                rootRole === "menu" ? t`Actions for ${task.title}` : undefined
+              }
+              className="task-actions-layer"
+              role={rootRole === "menu" ? "region" : undefined}
+            >
               {mobile ? (
                 <button
                   aria-hidden="true"
@@ -348,7 +358,7 @@ export function TaskActions({
               ) : null}
               <div
                 aria-label={
-                  rootRole === "menu" ? `Actions for ${task.title}` : undefined
+                  rootRole === "menu" ? t`Actions for ${task.title}` : undefined
                 }
                 aria-labelledby={
                   rootRole !== "menu"
@@ -375,14 +385,15 @@ export function TaskActions({
                 <div className="task-actions-heading">
                   <strong id={headingId}>{task.title}</strong>
                   <button type="button" onClick={() => closeMenu(true)}>
-                    Close
+                    <Trans>Close</Trans>
                   </button>
                 </div>
                 {panel !== "actions" ? (
                   <div className="task-actions-subheading">
                     <button
-                      aria-label="Back to previous actions"
+                      aria-label={t({ message: "Back to previous actions" })}
                       data-panel-back
+                      role={rootRole === "menu" ? "menuitem" : undefined}
                       type="button"
                       onClick={goBack}
                     >
@@ -403,8 +414,8 @@ export function TaskActions({
                           icon={occurrenceComplete ? Circle : Check}
                           label={
                             occurrenceComplete
-                              ? "Mark occurrence open"
-                              : "Complete occurrence"
+                              ? t({ message: "Mark occurrence open" })
+                              : t({ message: "Complete occurrence" })
                           }
                           onClick={() => void run(toggle)}
                         />
@@ -413,8 +424,8 @@ export function TaskActions({
                           icon={SkipForward}
                           label={
                             occurrenceSkipped
-                              ? "Unskip occurrence"
-                              : "Skip occurrence"
+                              ? t({ message: "Unskip occurrence" })
+                              : t({ message: "Skip occurrence" })
                           }
                           onClick={() =>
                             void run(() => skipTask(task.id, occurrence!))
@@ -423,7 +434,7 @@ export function TaskActions({
                         <MenuAction
                           disabled={busy || !occurrenceDate}
                           icon={NotebookPen}
-                          label="Make occurrence note"
+                          label={t({ message: "Make occurrence note" })}
                           onClick={() =>
                             void run(async () => {
                               const result = await materializeOccurrence(
@@ -436,9 +447,9 @@ export function TaskActions({
                         />
                         <MenuSeparator />
                         <MenuAction
-                          detail="Changes every occurrence"
+                          detail={t({ message: "Changes every occurrence" })}
                           icon={Repeat2}
-                          label="Repeating task actions"
+                          label={t({ message: "Repeating task actions" })}
                           next
                           onClick={() => navigate("series")}
                         />
@@ -489,7 +500,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={busy}
                         icon={CalendarClock}
-                        label="Due today"
+                        label={t({ message: "Due today" })}
                         onClick={() =>
                           void run(() => updateTask(task.id, { due: today }))
                         }
@@ -497,7 +508,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={busy}
                         icon={CalendarClock}
-                        label="Due tomorrow"
+                        label={t({ message: "Due tomorrow" })}
                         onClick={() =>
                           void run(() => updateTask(task.id, { due: tomorrow }))
                         }
@@ -505,7 +516,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={busy}
                         icon={CalendarClock}
-                        label="Schedule today"
+                        label={t({ message: "Schedule today" })}
                         onClick={() =>
                           void run(() =>
                             updateTask(task.id, { scheduled: today }),
@@ -515,7 +526,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={busy}
                         icon={CalendarClock}
-                        label="Schedule tomorrow"
+                        label={t({ message: "Schedule tomorrow" })}
                         onClick={() =>
                           void run(() =>
                             updateTask(task.id, { scheduled: tomorrow }),
@@ -525,7 +536,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={busy || (!task.due && !task.scheduled)}
                         icon={ChevronRight}
-                        label="Move dates one day later"
+                        label={t({ message: "Move dates one day later" })}
                         onClick={() =>
                           void run(() =>
                             updateTask(task.id, {
@@ -546,7 +557,7 @@ export function TaskActions({
                         <MenuAction
                           disabled={busy}
                           icon={Trash2}
-                          label="Clear due date"
+                          label={t({ message: "Clear due date" })}
                           onClick={() =>
                             void run(() => updateTask(task.id, { due: null }))
                           }
@@ -556,7 +567,7 @@ export function TaskActions({
                         <MenuAction
                           disabled={busy}
                           icon={Trash2}
-                          label="Clear scheduled date"
+                          label={t({ message: "Clear scheduled date" })}
                           onClick={() =>
                             void run(() =>
                               updateTask(task.id, { scheduled: null }),
@@ -567,7 +578,7 @@ export function TaskActions({
                       {onOpen ? (
                         <MenuAction
                           icon={Pencil}
-                          label="Edit dates and reminders"
+                          label={t({ message: "Edit dates and reminders" })}
                           onClick={openEditor}
                         />
                       ) : null}
@@ -580,21 +591,21 @@ export function TaskActions({
                           task.projects.map(organizeValueLabel),
                         )}
                         icon={FolderTree}
-                        label="Projects"
+                        label={t({ message: "Projects" })}
                         next
                         onClick={() => navigate("projects")}
                       />
                       <MenuAction
                         detail={valueSummary(task.contexts)}
                         icon={AtSign}
-                        label="Contexts"
+                        label={t({ message: "Contexts" })}
                         next
                         onClick={() => navigate("contexts")}
                       />
                       <MenuAction
                         detail={valueSummary(task.tags)}
                         icon={Tags}
-                        label="Tags"
+                        label={t({ message: "Tags" })}
                         next
                         onClick={() => navigate("tags")}
                       />
@@ -602,18 +613,18 @@ export function TaskActions({
                       <MenuAction
                         disabled={!projectLink}
                         icon={Plus}
-                        label="Create subtask"
+                        label={t({ message: "Create subtask" })}
                         onClick={() => navigate("subtask")}
                       />
                       {onOpen ? (
                         <MenuAction
                           detail={
                             task.blockedBy.length
-                              ? `${task.blockedBy.length} ${task.blockedBy.length === 1 ? "dependency" : "dependencies"}`
-                              : "Dependencies"
+                              ? countLabel(task.blockedBy.length, "dependency")
+                              : t({ message: "Dependencies" })
                           }
                           icon={Link2}
-                          label="Relationships"
+                          label={t({ message: "Relationships" })}
                           onClick={openEditor}
                         />
                       ) : null}
@@ -624,7 +635,7 @@ export function TaskActions({
                   ) : null}
                   {panel === "subtask" ? (
                     <form
-                      aria-label={`Create a subtask of ${task.title}`}
+                      aria-label={t`Create a subtask of ${task.title}`}
                       className="task-actions-subtask"
                       onSubmit={(event) => {
                         event.preventDefault();
@@ -641,7 +652,9 @@ export function TaskActions({
                       }}
                     >
                       <label>
-                        <span>Subtask title</span>
+                        <span>
+                          <Trans>Subtask title</Trans>
+                        </span>
                         <input
                           autoFocus
                           disabled={busy}
@@ -656,7 +669,8 @@ export function TaskActions({
                         disabled={busy || !subtaskTitle.trim()}
                         type="submit"
                       >
-                        <Plus aria-hidden="true" size={18} /> Add subtask
+                        <Plus aria-hidden="true" size={18} />{" "}
+                        <Trans>Add subtask</Trans>
                       </button>
                     </form>
                   ) : null}
@@ -664,7 +678,7 @@ export function TaskActions({
                     <>
                       <MenuAction
                         icon={FileText}
-                        label="Copy title"
+                        label={t({ message: "Copy title" })}
                         onClick={() =>
                           void run(() => writeClipboard(task.title))
                         }
@@ -672,12 +686,12 @@ export function TaskActions({
                       <MenuAction
                         detail={
                           configuration.linkWriteFormat === "markdown"
-                            ? "Markdown link"
-                            : "Wikilink"
+                            ? t({ message: "Markdown link" })
+                            : t({ message: "Wikilink" })
                         }
                         disabled={!projectLink}
                         icon={Link2}
-                        label="Copy task link"
+                        label={t({ message: "Copy task link" })}
                         onClick={() =>
                           void run(() => writeClipboard(projectLink))
                         }
@@ -685,7 +699,7 @@ export function TaskActions({
                       <MenuAction
                         disabled={!task.path}
                         icon={Clipboard}
-                        label="Copy path"
+                        label={t({ message: "Copy path" })}
                         onClick={() =>
                           void run(() => writeClipboard(task.path))
                         }
@@ -695,13 +709,18 @@ export function TaskActions({
                   {panel === "delete" ? (
                     <div className="task-actions-confirm">
                       <p>
-                        {virtualOccurrence
-                          ? "Delete this repeating task and all of its occurrences?"
-                          : "Delete this task?"}{" "}
-                        You’ll have 30 seconds to undo.
+                        <Trans>
+                          {virtualOccurrence
+                            ? t({
+                                message:
+                                  "Delete this repeating task and all of its occurrences?",
+                              })
+                            : t({ message: "Delete this task?" })}{" "}
+                          You’ll have 30 seconds to undo.
+                        </Trans>
                       </p>
                       <button data-safe-action type="button" onClick={goBack}>
-                        Keep task
+                        <Trans>Keep task</Trans>
                       </button>
                       <button
                         className="danger"
@@ -713,18 +732,20 @@ export function TaskActions({
                       >
                         <Trash2 aria-hidden="true" size={18} />
                         {virtualOccurrence
-                          ? "Delete repeating task"
-                          : "Delete task"}
+                          ? t({ message: "Delete repeating task" })
+                          : t({ message: "Delete task" })}
                       </button>
                     </div>
                   ) : null}
                 </div>
                 {error ? (
                   <OperationErrorNotice
-                    action="The task action"
+                    action={t({ message: "The task action" })}
                     className="task-actions-error"
                     message={error}
-                    recovery="The menu is still open so you can retry."
+                    recovery={t({
+                      message: "The menu is still open so you can retry.",
+                    })}
                   />
                 ) : null}
               </div>
@@ -736,46 +757,55 @@ export function TaskActions({
   );
 
   function TaskActionList({ series = false }: { series?: boolean }) {
+    const { t } = useLingui();
     return (
       <>
         <MenuAction
           disabled={busy}
           icon={task.completed ? Circle : Check}
-          label={task.completed ? "Mark open" : "Complete"}
+          label={
+            task.completed
+              ? t({ message: "Mark open" })
+              : t({ message: "Complete" })
+          }
           onClick={() => void run(toggle)}
         />
         <MenuAction
           detail={dateSummary(task)}
           icon={CalendarClock}
-          label="Dates"
+          label={t({ message: "Dates" })}
           next
           onClick={() => navigate("dates")}
         />
         <MenuAction
           detail={task.priority === "none" ? undefined : priority}
           icon={Star}
-          label="Priority"
+          label={t({ message: "Priority" })}
           next
           onClick={() => navigate("priority")}
         />
         <MenuAction
           detail={task.status === "none" ? undefined : status}
           icon={Circle}
-          label="Status"
+          label={t({ message: "Status" })}
           next
           onClick={() => navigate("status")}
         />
         <MenuSeparator />
         <MenuAction
           icon={FolderTree}
-          label="Organize"
+          label={t({ message: "Organize" })}
           next
           onClick={() => navigate("organize")}
         />
         <MenuAction
           disabled={busy}
           icon={tracking ? Square : Play}
-          label={tracking ? "Stop timer" : "Start timer"}
+          label={
+            tracking
+              ? t({ message: "Stop timer" })
+              : t({ message: "Start timer" })
+          }
           onClick={() =>
             void run(() =>
               tracking ? stopTimeTracking(task.id) : startTimeTracking(task.id),
@@ -785,13 +815,17 @@ export function TaskActions({
         {context === "row" && onOpen ? (
           <MenuAction
             icon={Pencil}
-            label={series ? "Edit repeating task" : "Edit details"}
+            label={
+              series
+                ? t({ message: "Edit repeating task" })
+                : t({ message: "Edit details" })
+            }
             onClick={openEditor}
           />
         ) : null}
         <MenuAction
           icon={Copy}
-          label="Copy"
+          label={t({ message: "Copy" })}
           next
           onClick={() => navigate("copy")}
         />
@@ -799,7 +833,11 @@ export function TaskActions({
         <MenuAction
           disabled={busy}
           icon={task.archived ? ArchiveRestore : Archive}
-          label={task.archived ? "Restore" : "Archive"}
+          label={
+            task.archived
+              ? t({ message: "Restore" })
+              : t({ message: "Archive" })
+          }
           onClick={() =>
             void run(async () => {
               const updated = await setTaskArchived(task.id, !task.archived);
@@ -811,7 +849,11 @@ export function TaskActions({
         <MenuAction
           danger
           icon={Trash2}
-          label={series ? "Delete repeating task" : "Delete"}
+          label={
+            series
+              ? t({ message: "Delete repeating task" })
+              : t({ message: "Delete" })
+          }
           onClick={() => navigate("delete")}
         />
       </>
@@ -823,6 +865,7 @@ export function TaskActions({
   }: {
     field: "projects" | "contexts" | "tags";
   }) {
+    const { t } = useLingui();
     const label = panelTitle(field);
     const completionField =
       field === "projects"
@@ -849,14 +892,16 @@ export function TaskActions({
           completeField={(request) => repository.completeField(request)}
           field={completionField}
           label={label}
-          placeholder={`Add ${label.toLocaleLowerCase()}`}
+          placeholder={t`Add ${label.toLocaleLowerCase()}`}
           values={organizeDraft[field]}
           onChange={(values) =>
             setOrganizeDraft((current) => ({ ...current, [field]: values }))
           }
         />
         <button className="primary" disabled={busy} type="submit">
-          {busy ? "Saving…" : `Save ${label.toLocaleLowerCase()}`}
+          {busy
+            ? t({ message: "Saving…" })
+            : t`Save ${label.toLocaleLowerCase()}`}
         </button>
       </form>
     );
@@ -961,17 +1006,17 @@ function MenuSeparator() {
 }
 
 function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
-  if (panel === "series") return "Repeating task";
-  if (panel === "status") return "Status";
-  if (panel === "priority") return "Priority";
-  if (panel === "dates") return "Dates";
-  if (panel === "organize") return "Organize";
-  if (panel === "projects") return "Projects";
-  if (panel === "contexts") return "Contexts";
-  if (panel === "tags") return "Tags";
-  if (panel === "subtask") return "New subtask";
-  if (panel === "copy") return "Copy";
-  return "Delete task";
+  if (panel === "series") return t({ message: "Repeating task" });
+  if (panel === "status") return t({ message: "Status" });
+  if (panel === "priority") return t({ message: "Priority" });
+  if (panel === "dates") return t({ message: "Dates" });
+  if (panel === "organize") return t({ message: "Organize" });
+  if (panel === "projects") return t({ message: "Projects" });
+  if (panel === "contexts") return t({ message: "Contexts" });
+  if (panel === "tags") return t({ message: "Tags" });
+  if (panel === "subtask") return t({ message: "New subtask" });
+  if (panel === "copy") return t({ message: "Copy" });
+  return t({ message: "Delete task" });
 }
 
 function isOrganizeEditor(
@@ -981,7 +1026,7 @@ function isOrganizeEditor(
 }
 
 function valueSummary(values: readonly string[]): string {
-  if (!values.length) return "None";
+  if (!values.length) return t({ message: "None" });
   if (values.length === 1) return values[0]!;
   return `${values[0]} +${values.length - 1}`;
 }
@@ -994,8 +1039,8 @@ function organizeValueLabel(value: string): string {
 }
 
 function dateSummary(task: TaskSummary): string {
-  if (task.due && task.scheduled) return "Due and scheduled";
-  if (task.due) return "Due set";
-  if (task.scheduled) return "Scheduled";
+  if (task.due && task.scheduled) return t({ message: "Due and scheduled" });
+  if (task.due) return t({ message: "Due set" });
+  if (task.scheduled) return t({ message: "Scheduled" });
   return "";
 }

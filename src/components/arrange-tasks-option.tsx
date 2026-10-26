@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { Check, GripVertical } from "lucide-react";
 
 /** Touch layouts reveal manual-order handles only while arranging. */
@@ -26,7 +27,7 @@ export function ArrangeTasksOption({
       ) : (
         <GripVertical aria-hidden="true" size={18} />
       )}{" "}
-      Arrange tasks
+      <Trans>Arrange tasks</Trans>
     </button>
   );
 }

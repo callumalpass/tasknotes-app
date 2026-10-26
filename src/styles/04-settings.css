@@ -698,6 +698,23 @@
   width: 8rem;
 }
 
+.language-setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  padding-block: var(--space-xs);
+}
+
+.language-picker {
+  flex: 0 1 14rem;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.language-setting-row > span {
+  flex: 1 1 9rem;
+  overflow-wrap: anywhere;
+}
+
 .setting-explanation {
   display: flex;
   align-items: center;

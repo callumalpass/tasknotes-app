@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 import type { FieldCompletion } from "../domain/completion";
 import type { CreateTaskInput } from "../domain/task";

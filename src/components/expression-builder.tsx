@@ -1,3 +1,5 @@
+import { useLingui, Trans } from "@lingui/react/macro";
+import { t } from "@lingui/core/macro";
 import { compileFilter } from "obsidian-bases-expression";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -66,6 +68,7 @@ export function ExpressionBuilder({
   onChange(value: unknown): void;
   onValidityChange?(valid: boolean): void;
 }) {
+  const { t } = useLingui();
   const [state, setState] = useState<BuilderState>(() =>
     initialState(value, dialect),
   );
@@ -102,7 +105,7 @@ export function ExpressionBuilder({
       <div
         className="expression-mode"
         role="group"
-        aria-label="Filter editor mode"
+        aria-label={t({ message: "Filter editor mode" })}
       >
         {dialect === "obsidian-bases" ? (
           <button
@@ -111,7 +114,10 @@ export function ExpressionBuilder({
             title={
               visualDraft
                 ? undefined
-                : "This filter uses syntax that the builder cannot safely edit."
+                : t({
+                    message:
+                      "This filter uses syntax that the builder cannot safely edit.",
+                  })
             }
             type="button"
             onClick={() => {
@@ -119,7 +125,7 @@ export function ExpressionBuilder({
                 setState({ ...state, mode: "visual", root: visualDraft });
             }}
           >
-            Builder
+            <Trans>Builder</Trans>
           </button>
         ) : null}
         <button
@@ -136,12 +142,15 @@ export function ExpressionBuilder({
             })
           }
         >
-          Advanced
+          <Trans>Advanced</Trans>
         </button>
       </div>
       {state.mode === "raw" && dialect === "obsidian-bases" && !visualDraft ? (
         <p className="expression-mode-note">
-          This filter uses advanced syntax. Edit it here to preserve it exactly.
+          <Trans>
+            This filter uses advanced syntax. Edit it here to preserve it
+            exactly.
+          </Trans>
         </p>
       ) : null}
       {state.mode === "visual" ? (
@@ -155,11 +164,11 @@ export function ExpressionBuilder({
         <label className="expression-source">
           <span>
             {dialect === "mdbase-cel"
-              ? "CEL expression"
-              : "Expression or filter YAML"}
+              ? t({ message: "CEL expression" })
+              : t({ message: "Expression or filter YAML" })}
           </span>
           <textarea
-            aria-label="Filter expression"
+            aria-label={t({ message: "Filter expression" })}
             rows={5}
             spellCheck={false}
             value={state.raw}
@@ -168,7 +177,10 @@ export function ExpressionBuilder({
         </label>
       )}
       <p className={error ? "expression-status is-error" : "expression-status"}>
-        {error || (encoded ? "Filter is valid" : "Every task will be included")}
+        {error ||
+          (encoded
+            ? t({ message: "Filter is valid" })
+            : t({ message: "Every task will be included" }))}
       </p>
     </div>
   );
@@ -187,15 +199,24 @@ function FilterGroupEditor({
   onChange(group: FilterGroup): void;
   onRemove?(): void;
 }) {
+  const { t } = useLingui();
   return (
     <fieldset className="filter-group">
-      <legend>{root ? "Include tasks when" : "Nested group"}</legend>
+      <legend>
+        {root
+          ? t({ message: "Include tasks when" })
+          : t({ message: "Nested group" })}
+      </legend>
       <div className="filter-group-heading">
         <TaskNotesSelect
-          ariaLabel={root ? "Match mode" : "Nested match mode"}
+          ariaLabel={
+            root
+              ? t({ message: "Match mode" })
+              : t({ message: "Nested match mode" })
+          }
           options={[
-            { value: "and", label: "All conditions match" },
-            { value: "or", label: "Any condition matches" },
+            { value: "and", label: t({ message: "All conditions match" }) },
+            { value: "or", label: t({ message: "Any condition matches" }) },
           ]}
           value={group.operator}
           onChange={(operator) =>
@@ -204,7 +225,7 @@ function FilterGroupEditor({
         />
         {!root ? (
           <button
-            aria-label="Remove group"
+            aria-label={t({ message: "Remove group" })}
             className="quiet-icon"
             type="button"
             onClick={onRemove}
@@ -243,13 +264,13 @@ function FilterGroupEditor({
             onChange(addChild(group, emptyRule(defaultField(fields))))
           }
         >
-          <Plus aria-hidden="true" size={15} /> Condition
+          <Plus aria-hidden="true" size={15} /> <Trans>Condition</Trans>
         </button>
         <button
           type="button"
           onClick={() => onChange(addChild(group, emptyGroup(fields[0]?.key)))}
         >
-          <Plus aria-hidden="true" size={15} /> Group
+          <Plus aria-hidden="true" size={15} /> <Trans>Group</Trans>
         </button>
       </div>
     </fieldset>
@@ -267,14 +288,17 @@ function FilterRuleEditor({
   onChange(rule: FilterRule): void;
   onRemove(): void;
 }) {
+  const { t } = useLingui();
   const field = fields.find((candidate) => candidate.key === rule.field);
   const noValue = rule.operator === "empty" || rule.operator === "not-empty";
   return (
     <div className="filter-rule">
       <label>
-        <span>Property</span>
+        <span>
+          <Trans>Property</Trans>
+        </span>
         <TaskNotesCombobox
-          ariaLabel="Filter property"
+          ariaLabel={t({ message: "Filter property" })}
           options={fields.map((candidate) => ({
             value: candidate.key,
             label: candidate.label,
@@ -284,18 +308,23 @@ function FilterRuleEditor({
         />
       </label>
       <label>
-        <span>Condition</span>
+        <span>
+          <Trans>Condition</Trans>
+        </span>
         <TaskNotesSelect
-          ariaLabel="Filter condition"
+          ariaLabel={t({ message: "Filter condition" })}
           options={[
-            { value: "equals", label: "is" },
-            { value: "not-equals", label: "is not" },
-            { value: "contains", label: "contains" },
-            { value: "not-contains", label: "does not contain" },
-            { value: "before", label: "is before" },
-            { value: "after", label: "is after" },
-            { value: "empty", label: "is empty" },
-            { value: "not-empty", label: "is not empty" },
+            { value: "equals", label: t({ message: "is" }) },
+            { value: "not-equals", label: t({ message: "is not" }) },
+            { value: "contains", label: t({ message: "contains" }) },
+            {
+              value: "not-contains",
+              label: t({ message: "does not contain" }),
+            },
+            { value: "before", label: t({ message: "is before" }) },
+            { value: "after", label: t({ message: "is after" }) },
+            { value: "empty", label: t({ message: "is empty" }) },
+            { value: "not-empty", label: t({ message: "is not empty" }) },
           ]}
           value={rule.operator}
           onChange={(operator) =>
@@ -305,23 +334,28 @@ function FilterRuleEditor({
       </label>
       {!noValue ? (
         <label>
-          <span>Value</span>
+          <span>
+            <Trans>Value</Trans>
+          </span>
           {field?.options?.length ? (
             <TaskNotesSelect
-              ariaLabel="Filter value"
-              options={[{ value: "", label: "Choose…" }, ...field.options]}
+              ariaLabel={t({ message: "Filter value" })}
+              options={[
+                { value: "", label: t({ message: "Choose…" }) },
+                ...field.options,
+              ]}
               value={rule.value}
               onChange={(value) => onChange({ ...rule, value })}
             />
           ) : field?.type === "date" ? (
             <TaskNotesDatePicker
-              ariaLabel="Filter value"
+              ariaLabel={t({ message: "Filter value" })}
               value={rule.value || undefined}
               onChange={(value) => onChange({ ...rule, value: value ?? "" })}
             />
           ) : (
             <input
-              aria-label="Filter value"
+              aria-label={t({ message: "Filter value" })}
               inputMode={field?.type === "number" ? "decimal" : undefined}
               type="text"
               value={rule.value}
@@ -333,7 +367,7 @@ function FilterRuleEditor({
         </label>
       ) : null}
       <button
-        aria-label="Remove condition"
+        aria-label={t({ message: "Remove condition" })}
         className="quiet-icon"
         type="button"
         onClick={onRemove}
@@ -464,7 +498,7 @@ function filterSource(value: unknown): string {
 function validate(value: unknown, dialect: ViewDialect): string {
   if (value === undefined) return "";
   if (dialect === "mdbase-cel")
-    return typeof value === "string" ? "" : "Enter a CEL expression.";
+    return typeof value === "string" ? "" : t`Enter a CEL expression.`;
   const invalid = compileFilter(value).diagnostics.find(
     (diagnostic) => diagnostic.severity === "error",
   );

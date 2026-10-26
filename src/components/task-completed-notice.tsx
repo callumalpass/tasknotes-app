@@ -1,3 +1,4 @@
+import { t as translate } from "@lingui/core/macro";
 import { X } from "lucide-react";
 import { FeedbackNotice } from "./workspace-feedback";
 import { useEffect, useRef, useState } from "react";
@@ -75,11 +76,13 @@ export function TaskCompletedNotice({
               }
             }}
           >
-            {failed ? "Try again" : "Undo"}
+            {failed
+              ? translate({ message: "Try again" })
+              : translate({ message: "Undo" })}
           </button>
           <button
             type="button"
-            aria-label="Dismiss completion notice"
+            aria-label={translate({ message: "Dismiss completion notice" })}
             onClick={onDismiss}
           >
             <X aria-hidden="true" size={18} />

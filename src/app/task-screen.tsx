@@ -1,3 +1,6 @@
+import { t as translate } from "@lingui/core/macro";
+import { OccurrencePolicyField } from "./occurrence-policy-field";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { ArrowLeft } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
 import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
@@ -38,7 +41,6 @@ import { AssigneeEditor } from "../components/assignee-editor";
 import { ReminderEditor } from "../components/reminder-editor";
 import {
   TaskNotesDateTimeField,
-  TaskNotesSelect,
   TaskNotesSelectField,
 } from "../components/tasknotes-controls";
 import {
@@ -105,6 +107,7 @@ export function TaskScreen({
   onBack(): void;
   onMaterialized(task: Task): void;
 }) {
+  const { t } = useLingui();
   const { task, loading, error } = useTask(id);
   const { repository } = useRepository();
   const openedId = task?.id;
@@ -122,17 +125,17 @@ export function TaskScreen({
     return (
       <section className="screen task-screen">
         <button className="back-action" type="button" onClick={onBack}>
-          <ArrowLeft size={20} /> Back
+          <ArrowLeft size={20} /> <Trans>Back</Trans>
         </button>
         {error ? (
           <OperationErrorNotice
-            action="The task"
+            action={t({ message: "The task" })}
             message={error.message}
-            recovery="Go back and refresh the collection."
+            recovery={t({ message: "Go back and refresh the collection." })}
           />
         ) : (
           <p className="inline-error" role="alert">
-            Task not found. It may have been deleted or moved.
+            <Trans>Task not found. It may have been deleted or moved.</Trans>
           </p>
         )}
       </section>
@@ -163,6 +166,7 @@ function TaskEditor({
   onMaterialized,
   recoveryScope,
 }: TaskEditorProps & { recoveryScope: string }) {
+  const { t } = useLingui();
   const {
     updateTask,
     mutations,
@@ -267,7 +271,7 @@ function TaskEditor({
     writeState === "failed"
       ? (reportedRejection ?? {
           changedElsewhere: false,
-          message: "mdbase refused the change.",
+          message: translate({ message: "mdbase refused the change." }),
         })
       : undefined;
   // Saving again would overwrite the other change without an explicit choice.
@@ -364,7 +368,7 @@ function TaskEditor({
       if (existing) return existing;
       if (!value.title.trim()) {
         if (mounted.current) {
-          setSaveError("Add a title before leaving this task.");
+          setSaveError(t({ message: "Add a title before leaving this task." }));
           setSaveState("error");
         }
         return Promise.resolve();
@@ -426,7 +430,7 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [task.assignees, task.id, updateTask],
+    [task.assignees, task.id, updateTask, t],
   );
 
   // Once mdbase confirms every save, the device copy is no longer needed.
@@ -559,7 +563,10 @@ function TaskEditor({
     if (!awaitingChoiceRef.current) return;
     reviewRejection();
     throw new Error(
-      "Keep or discard your unsaved edit before making another change.",
+      translate({
+        message:
+          "Keep or discard your unsaved edit before making another change.",
+      }),
     );
   }
 
@@ -576,10 +583,16 @@ function TaskEditor({
       };
       if (!Object.keys(mine).length)
         throw new Error(
-          "Your edit is no longer available on this device. Discard it to load the latest version.",
+          translate({
+            message:
+              "Your edit is no longer available on this device. Discard it to load the latest version.",
+          }),
         );
       const latest = await repository.get(task.id);
-      if (!latest) throw new Error("This task is no longer available.");
+      if (!latest)
+        throw new Error(
+          translate({ message: "This task is no longer available." }),
+        );
       if (!mounted.current) return;
       const base = toDraft(latest);
       const next = { ...base, ...mine };
@@ -606,7 +619,10 @@ function TaskEditor({
     setResolveError(null);
     try {
       const latest = await repository.get(task.id);
-      if (!latest) throw new Error("This task is no longer available.");
+      if (!latest)
+        throw new Error(
+          translate({ message: "This task is no longer available." }),
+        );
       if (!mounted.current) return;
       editVersion.current += 1;
       const next = toDraft(latest);
@@ -745,11 +761,15 @@ function TaskEditor({
     }
   }
 
+  const retrySaveLabel = saveError ?? translate({ message: "Tap to retry." });
   return (
-    <section className="screen task-screen" aria-label="Task details">
+    <section
+      className="screen task-screen"
+      aria-label={t({ message: "Task details" })}
+    >
       <header className="task-toolbar">
         <button
-          aria-label="Back"
+          aria-label={t({ message: "Back" })}
           className="icon-action"
           disabled={leaving}
           type="button"
@@ -770,27 +790,29 @@ function TaskEditor({
           }
           aria-label={
             rejection
-              ? "Not saved. Review your edit."
+              ? translate({ message: "Not saved. Review your edit." })
               : saveState === "error"
-                ? `Save failed. ${saveError ?? "Tap to retry."}`
+                ? translate`Save failed. ${retrySaveLabel}`
                 : writeState === "pending"
-                  ? "Saved on this device; waiting for sync"
+                  ? translate({
+                      message: "Saved on this device; waiting for sync",
+                    })
                   : undefined
           }
         >
           {rejection
-            ? "Not saved · Review"
+            ? translate({ message: "Not saved · Review" })
             : !draft.title.trim()
-              ? "Title required"
+              ? translate({ message: "Title required" })
               : saveState === "saving"
-                ? "Saving"
+                ? translate({ message: "Saving" })
                 : saveState === "error"
-                  ? "Save failed · Retry"
+                  ? translate({ message: "Save failed · Retry" })
                   : writeState === "pending"
                     ? ""
                     : writeState
-                      ? "Review save"
-                      : "Saved"}
+                      ? translate({ message: "Review save" })
+                      : translate({ message: "Saved" })}
         </button>
         <RecordWriteNotice
           repository={repository}
@@ -834,8 +856,10 @@ function TaskEditor({
       ) : null}
       {backupUnavailable ? (
         <p className="inline-error" role="alert">
-          Unsaved edits cannot be backed up in this browser. Keep this tab open
-          until saving finishes.
+          <Trans>
+            Unsaved edits cannot be backed up in this browser. Keep this tab
+            open until saving finishes.
+          </Trans>
         </p>
       ) : null}
 
@@ -843,7 +867,9 @@ function TaskEditor({
         <div className="occurrence-banner">
           <div>
             <span>
-              {task.occurrenceDate ? "Occurrence note" : "Occurrence"}
+              {task.occurrenceDate
+                ? t({ message: "Occurrence note" })
+                : t({ message: "Occurrence" })}
             </span>
             <strong>
               {formatOccurrenceDate(task.occurrenceDate ?? occurrenceDate!)}
@@ -858,11 +884,11 @@ function TaskEditor({
             >
               {task.occurrenceDate
                 ? task.completed
-                  ? "Mark open"
-                  : "Complete"
+                  ? t({ message: "Mark open" })
+                  : t({ message: "Complete" })
                 : task.completeInstances.includes(occurrenceDate!)
-                  ? "Mark open"
-                  : "Complete"}
+                  ? t({ message: "Mark open" })
+                  : t({ message: "Complete" })}
             </button>
             <button
               className="text-action"
@@ -872,11 +898,11 @@ function TaskEditor({
             >
               {task.occurrenceDate
                 ? task.skipped
-                  ? "Unskip"
-                  : "Skip"
+                  ? t({ message: "Unskip" })
+                  : t({ message: "Skip" })
                 : task.skippedInstances.includes(occurrenceDate!)
-                  ? "Unskip"
-                  : "Skip"}
+                  ? t({ message: "Unskip" })
+                  : t({ message: "Skip" })}
             </button>
             {occurrenceDate && task.recurrence ? (
               <button
@@ -885,7 +911,7 @@ function TaskEditor({
                 type="button"
                 onClick={() => void materialize()}
               >
-                Make occurrence note
+                <Trans>Make occurrence note</Trans>
               </button>
             ) : null}
           </div>
@@ -903,14 +929,18 @@ function TaskEditor({
           id="task-title-label"
           htmlFor="task-title"
         >
-          Task title
+          <Trans>Task title</Trans>
         </label>
         <div className="task-title-line">
           {!occurrenceDate && !task.occurrenceDate ? (
             <button
               type="button"
               className="completion-control"
-              aria-label={task.completed ? "Reopen task" : "Complete task"}
+              aria-label={
+                task.completed
+                  ? t({ message: "Reopen task" })
+                  : t({ message: "Complete task" })
+              }
               aria-pressed={task.completed}
               aria-busy={completing || completion.pending}
               disabled={completing || completion.pending || !draft.title.trim()}
@@ -964,13 +994,15 @@ function TaskEditor({
         ) : null}
 
         <TaskFormSection
-          title="Schedule and status"
+          title={translate({ message: "Schedule and status" })}
           summary={scheduleSummary(task, draft, configuration, occurrenceDate)}
         >
           {occurrenceDate && draft.recurrence ? (
             <p className="field-help">
-              These fields edit the series dates. The summary above shows this
-              occurrence.
+              <Trans>
+                These fields edit the series dates. The summary above shows this
+                occurrence.
+              </Trans>
             </p>
           ) : null}
           <div className="field-grid timing-fields task-core-fields">
@@ -980,7 +1012,7 @@ function TaskEditor({
                   task.occurrenceDate ? "occurrence-status-help" : undefined
                 }
                 disabled={Boolean(task.occurrenceDate)}
-                label="Status"
+                label={t({ message: "Status" })}
                 options={[...configuration.statuses].sort(
                   (left, right) => left.order - right.order,
                 )}
@@ -989,17 +1021,19 @@ function TaskEditor({
               />
               {task.occurrenceDate ? (
                 <small id="occurrence-status-help">
-                  Use the occurrence actions above to change this state.
+                  <Trans>
+                    Use the occurrence actions above to change this state.
+                  </Trans>
                 </small>
               ) : null}
             </div>
             <DateTimeField
-              label="Scheduled"
+              label={t({ message: "Scheduled" })}
               value={draft.scheduled}
               onChange={(scheduled) => change({ scheduled })}
             />
             <DateTimeField
-              label="Due"
+              label={t({ message: "Due" })}
               value={draft.due}
               onChange={(due) => change({ due })}
             />
@@ -1008,21 +1042,23 @@ function TaskEditor({
 
         <section className="notes-field">
           <header className="notes-field-heading">
-            <h2 id="task-notes-title">Notes</h2>
-            <div aria-label="Editor mode" role="group">
+            <h2 id="task-notes-title">
+              <Trans>Notes</Trans>
+            </h2>
+            <div aria-label={t({ message: "Editor mode" })} role="group">
               <button
                 aria-pressed={notesMode === "write"}
                 type="button"
                 onClick={() => setNotesMode("write")}
               >
-                Write
+                <Trans>Write</Trans>
               </button>
               <button
                 aria-pressed={notesMode === "preview"}
                 type="button"
                 onClick={() => setNotesMode("preview")}
               >
-                Preview
+                <Trans>Preview</Trans>
               </button>
             </div>
           </header>
@@ -1030,14 +1066,20 @@ function TaskEditor({
             <textarea
               aria-labelledby="task-notes-title"
               ref={notesInputRef}
-              placeholder="Add thoughts, links, or supporting details…"
+              placeholder={t({
+                message: "Add thoughts, links, or supporting details…",
+              })}
               rows={8}
               value={draft.body}
               onChange={(event) => change({ body: event.target.value })}
             />
           ) : (
             <Suspense
-              fallback={<p className="markdown-preview-empty">Rendering…</p>}
+              fallback={
+                <p className="markdown-preview-empty">
+                  <Trans>Rendering…</Trans>
+                </p>
+              }
             >
               {/* Keyboard users switch with Write; pointer users click the text. */}
               <div
@@ -1071,8 +1113,11 @@ function TaskEditor({
           />
         ) : null}
 
-        <TaskFormSection summary={organizeSummary(draft)} title="Organize">
-          <Fieldset legend="Priority">
+        <TaskFormSection
+          summary={organizeSummary(draft)}
+          title={t({ message: "Organize" })}
+        >
+          <Fieldset legend={t({ message: "Priority" })}>
             {configuration.priorities.map((priority) => (
               <Choice
                 color={priority.color}
@@ -1087,8 +1132,8 @@ function TaskEditor({
           <div className="field-grid metadata-fields">
             <ListField
               field={configuration.fieldMapping.projects}
-              label="Projects"
-              placeholder="Website, Home"
+              label={t({ message: "Projects" })}
+              placeholder={t({ message: "Website, Home" })}
               values={draft.projects}
               valueLabels={projectLabels}
               completion={
@@ -1101,8 +1146,8 @@ function TaskEditor({
             />
             <ListField
               field={configuration.fieldMapping.contexts}
-              label="Contexts"
-              placeholder="Computer, Errands"
+              label={t({ message: "Contexts" })}
+              placeholder={t({ message: "Computer, Errands" })}
               values={draft.contexts}
               completion={
                 configuration.fieldCompletions[
@@ -1114,8 +1159,8 @@ function TaskEditor({
             />
             <ListField
               field="tags"
-              label="Tags"
-              placeholder="work, important"
+              label={t({ message: "Tags" })}
+              placeholder={t({ message: "work, important" })}
               values={draft.tags.filter((tag) => tag !== "task")}
               completion={
                 configuration.fieldCompletions.tags ?? { kind: "values" }
@@ -1149,7 +1194,9 @@ function TaskEditor({
               className="custom-fields"
               aria-labelledby="custom-fields-title"
             >
-              <h2 id="custom-fields-title">Properties</h2>
+              <h2 id="custom-fields-title">
+                <Trans>Properties</Trans>
+              </h2>
               <div className="field-grid metadata-fields">
                 {configuration.userFields.map((field) => (
                   <CustomField
@@ -1169,10 +1216,12 @@ function TaskEditor({
         <TaskFormSection
           defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
           summary={timeSummary(task, draft.timeEstimate)}
-          title="Time"
+          title={t({ message: "Time", context: "time tracking duration" })}
         >
           <label className="form-field time-estimate-field">
-            <span>Estimate (minutes)</span>
+            <span>
+              <Trans>Estimate (minutes)</Trans>
+            </span>
             <input
               inputMode="numeric"
               min="0"
@@ -1206,7 +1255,7 @@ function TaskEditor({
 
         <TaskFormSection
           summary={repeatSummary(draft)}
-          title="Repeat and reminders"
+          title={t({ message: "Repeat and reminders" })}
         >
           <RecurrenceField
             anchor={draft.recurrenceAnchor}
@@ -1240,103 +1289,6 @@ function TaskEditor({
           task={task}
         />
       </div>
-    </section>
-  );
-}
-
-function OccurrencePolicyField({
-  materialization,
-  nextTrigger,
-  template,
-  pastHorizon,
-  futureHorizon,
-  onChange,
-}: {
-  materialization: "manual" | "on_completion" | "rolling";
-  nextTrigger: "completion" | "completion_or_skip";
-  template?: string;
-  pastHorizon?: string;
-  futureHorizon?: string;
-  onChange(value: Partial<Draft>): void;
-}) {
-  return (
-    <section className="repeat-fields occurrence-policy">
-      <div className="repeat-heading">
-        <div>
-          <span className="field-label">Occurrence notes</span>
-          <p>Keep individual Markdown notes for recurring dates.</p>
-        </div>
-        <TaskNotesSelect
-          ariaLabel="Occurrence note policy"
-          options={[
-            { value: "manual", label: "When I choose" },
-            {
-              value: "on_completion",
-              label: "Create the next after completion",
-            },
-            { value: "rolling", label: "Keep a rolling window" },
-          ]}
-          value={materialization}
-          onChange={(value) =>
-            onChange({
-              occurrenceMaterialization:
-                value as Task["occurrenceMaterialization"],
-            })
-          }
-        />
-      </div>
-      {materialization === "on_completion" ? (
-        <TaskNotesSelectField
-          label="Advance after"
-          options={[
-            { value: "completion", label: "Completion" },
-            {
-              value: "completion_or_skip",
-              label: "Completion or skip",
-            },
-          ]}
-          value={nextTrigger}
-          onChange={(value) =>
-            onChange({
-              occurrenceNextTrigger: value as Task["occurrenceNextTrigger"],
-            })
-          }
-        />
-      ) : null}
-      {materialization === "rolling" ? (
-        <div className="field-grid metadata-fields">
-          <label className="form-field">
-            <span>Past horizon</span>
-            <input
-              placeholder="P0D"
-              value={pastHorizon ?? ""}
-              onChange={(event) =>
-                onChange({ occurrencePastHorizon: event.target.value })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span>Future horizon</span>
-            <input
-              placeholder="P14D"
-              value={futureHorizon ?? ""}
-              onChange={(event) =>
-                onChange({ occurrenceFutureHorizon: event.target.value })
-              }
-            />
-          </label>
-        </div>
-      ) : null}
-      <label className="form-field">
-        <span>Occurrence template</span>
-        <input
-          placeholder="Templates/Occurrence.md"
-          value={template ?? ""}
-          onChange={(event) =>
-            onChange({ occurrenceTemplate: event.target.value })
-          }
-        />
-      </label>
     </section>
   );
 }

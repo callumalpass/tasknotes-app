@@ -1,10 +1,12 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "../test/render";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FullCalendarView } from "./full-calendar-view";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 
-import type { EventInput } from "@fullcalendar/core";
+import type { EventContentArg, EventInput } from "@fullcalendar/core";
+import type { ReactNode } from "react";
+import { activateAppLocale } from "../i18n/app";
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
@@ -26,9 +28,10 @@ vi.mock("./repository-context", async () => {
   return { useRepository: () => ({ configuration }) };
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   calendar.props = undefined;
+  await act(() => activateAppLocale("en"));
 });
 
 describe("calendar drops", () => {
@@ -72,6 +75,45 @@ describe("calendar drops", () => {
       /offline/,
     );
   });
+});
+
+describe("localized calendar entry kinds", () => {
+  it.each([
+    ["en", "Due"],
+    ["de", "Fällig"],
+    ["it", "Scadenza"],
+  ] as const)(
+    "deduplicates due markers before rendering %s labels",
+    async (locale, label) => {
+      await act(() => activateAppLocale(locale));
+      const current = execution("2026-07-24");
+      current.rows[0]!.task.due = "2026-07-25";
+      current.rows[0]!.values.due = "2026-07-25";
+      current.view.properties = [{ key: "due" }];
+      renderCalendar(current, vi.fn());
+      const due = events().find((event) => String(event.id).includes(":due:"))!;
+      expect(due).toBeDefined();
+      const content = calendar.props!.eventContent as (
+        info: EventContentArg,
+      ) => ReactNode;
+      const info = (type: string) =>
+        ({
+          event: { ...due, start: new Date(2026, 6, 25) },
+          view: { type },
+          timeText: "",
+        }) as unknown as EventContentArg;
+
+      const agenda = render(<>{content(info("listWeek"))}</>);
+      expect(
+        agenda.container.querySelector(".full-calendar-event-kind"),
+      ).toBeNull();
+      agenda.unmount();
+      const week = render(<>{content(info("timeGridWeek"))}</>);
+      expect(
+        week.container.querySelector(".full-calendar-event-kind"),
+      ).toHaveTextContent(label);
+    },
+  );
 });
 
 function events(): EventInput[] {

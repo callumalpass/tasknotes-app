@@ -1,3 +1,5 @@
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import type { Ref } from "react";
 import type { RecordWriteRejection } from "../application/ports/task-repository";
 import "./held-edits.css";
@@ -25,17 +27,23 @@ export function WriteRejectionNotice({
       className="collection-held-notice write-rejection-notice"
       role="alert"
       tabIndex={-1}
-      aria-label="Edit not saved"
+      aria-label={translate({ message: "Edit not saved" })}
     >
       <div>
         <strong>
           {rejection.changedElsewhere
-            ? "This task changed somewhere else, so your edit wasn't saved."
-            : "Your edit wasn't saved."}
+            ? translate({
+                message:
+                  "This task changed somewhere else, so your edit wasn't saved.",
+              })
+            : translate({ message: "Your edit wasn't saved." })}
         </strong>
         <p>
           {rejection.changedElsewhere
-            ? "Keep your edit to apply it on top of the latest version, or discard it and load the latest version."
+            ? translate({
+                message:
+                  "Keep your edit to apply it on top of the latest version, or discard it and load the latest version.",
+              })
             : rejection.message}
         </p>
         {error ? (
@@ -52,7 +60,7 @@ export function WriteRejectionNotice({
             type="button"
             onClick={onKeep}
           >
-            Keep my edit
+            <Trans>Keep my edit</Trans>
           </button>
         ) : null}
         <button
@@ -62,8 +70,8 @@ export function WriteRejectionNotice({
           onClick={onDiscard}
         >
           {rejection.changedElsewhere
-            ? "Discard and load latest"
-            : "Discard my edit"}
+            ? translate({ message: "Discard and load latest" })
+            : translate({ message: "Discard my edit" })}
         </button>
       </div>
     </div>

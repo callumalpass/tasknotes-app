@@ -1,3 +1,4 @@
+import { useLingui, Trans } from "@lingui/react/macro";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, X } from "lucide-react";
 
@@ -30,6 +31,7 @@ export function MultiValueField({
   valueLabel?(value: string): string;
   onChange(values: string[]): void;
 }) {
+  const { t } = useLingui();
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const blurTimer = useRef<number | null>(null);
@@ -106,7 +108,7 @@ export function MultiValueField({
       onChange([...values, next]);
       if (label)
         setSelectedLabels((current) => ({ ...current, [next]: label }));
-      setAnnouncement(`${label ?? labelFor(next)} added`);
+      setAnnouncement(t`${label ?? labelFor(next)} added`);
     }
     setQuery("");
     setOpen(true);
@@ -142,7 +144,7 @@ export function MultiValueField({
     if (event.key === "Backspace" && !query && values.length) {
       const removed = values.at(-1);
       onChange(values.slice(0, -1));
-      if (removed) setAnnouncement(`${labelFor(removed)} removed`);
+      if (removed) setAnnouncement(t`${labelFor(removed)} removed`);
       return;
     }
     if (event.key === "Escape" && open) {
@@ -165,12 +167,12 @@ export function MultiValueField({
           <span className="field-token" key={value}>
             <span>{labelFor(value)}</span>
             <button
-              aria-label={`Remove ${labelFor(value)}`}
+              aria-label={t`Remove ${labelFor(value)}`}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 onChange(values.filter((candidate) => candidate !== value));
-                setAnnouncement(`${labelFor(value)} removed`);
+                setAnnouncement(t`${labelFor(value)} removed`);
               }}
             >
               <X aria-hidden="true" size={13} strokeWidth={1.8} />
@@ -208,14 +210,14 @@ export function MultiValueField({
       </div>
       {showOptions ? (
         <div
-          aria-label={`${label} suggestions`}
+          aria-label={t`${label} suggestions`}
           className="field-suggestions"
           id={`${id}-options`}
           role="listbox"
         >
           {loading ? (
             <span className="field-suggestion-status">
-              Looking in collection…
+              <Trans>Looking in collection…</Trans>
             </span>
           ) : (
             options.map((option, index) => (
@@ -250,7 +252,7 @@ export function MultiValueField({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => add(query)}
             >
-              Use “{query.trim()}”
+              {t`Use “${query.trim()}”`}
             </button>
           ) : null}
         </div>

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import {
   loadScratchpadDefaultMode,
@@ -7,17 +8,18 @@ import {
 import { TaskNotesSelect } from "./tasknotes-controls";
 
 export function ScratchpadModePreference() {
+  const { t } = useLingui();
   const [mode, setMode] = useState(loadScratchpadDefaultMode);
   const [error, setError] = useState("");
   return (
     <>
       <TaskNotesSelect
-        ariaLabel="Default Scratchpad mode"
+        ariaLabel={t({ message: "Default Scratchpad mode" })}
         className="theme-picker"
         value={mode}
         options={[
-          { value: "outline", label: "Outline" },
-          { value: "markdown", label: "Write" },
+          { value: "outline", label: t({ message: "Outline" }) },
+          { value: "markdown", label: t({ message: "Write" }) },
         ]}
         onChange={(value) => {
           try {
@@ -25,7 +27,9 @@ export function ScratchpadModePreference() {
             setMode(value as ScratchpadMode);
             setError("");
           } catch {
-            setError("Could not save the default mode on this device.");
+            setError(
+              t({ message: "Could not save the default mode on this device." }),
+            );
           }
         }}
       />

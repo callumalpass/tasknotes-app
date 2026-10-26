@@ -4,6 +4,8 @@ import "@fontsource/azeret-mono/500.css";
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
+import { Trans } from "@lingui/react/macro";
+import { AppI18nProvider } from "./i18n/app-provider";
 import { TaskNotesApp } from "./app/tasknotes-app";
 import {
   deliverAppGrantReturn,
@@ -31,7 +33,11 @@ if (grantReturn) {
     () => undefined,
   );
   createRoot(document.getElementById("root")!).render(
-    <main className="opening-screen">You can close this window.</main>,
+    <AppI18nProvider>
+      <main className="opening-screen">
+        <Trans>You can close this window.</Trans>
+      </main>
+    </AppI18nProvider>,
   );
 } else startApp();
 
@@ -72,33 +78,37 @@ function startApp(): void {
       : null;
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <AppErrorBoundary>
-        <ReturningUserNotice />
-        <AppUpdateNotice />
-        {CutoverFixture ? (
-          <Suspense fallback={<p>Loading cutover fixture…</p>}>
-            <CutoverFixture />
-          </Suspense>
-        ) : SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
-          <Suspense
-            fallback={
-              <main className="opening-screen">Loading SDK fixture…</main>
-            }
-          >
-            <SmokeFixture />
-          </Suspense>
-        ) : DemoFixture ? (
-          <Suspense
-            fallback={
-              <main className="opening-screen">Loading demo test fixture…</main>
-            }
-          >
-            <DemoFixture />
-          </Suspense>
-        ) : (
-          <TaskNotesApp />
-        )}
-      </AppErrorBoundary>
+      <AppI18nProvider>
+        <AppErrorBoundary>
+          <ReturningUserNotice />
+          <AppUpdateNotice />
+          {CutoverFixture ? (
+            <Suspense fallback={<p>Loading cutover fixture…</p>}>
+              <CutoverFixture />
+            </Suspense>
+          ) : SmokeFixture && window.__TASKNOTES_NEXT_SMOKE__ ? (
+            <Suspense
+              fallback={
+                <main className="opening-screen">Loading SDK fixture…</main>
+              }
+            >
+              <SmokeFixture />
+            </Suspense>
+          ) : DemoFixture ? (
+            <Suspense
+              fallback={
+                <main className="opening-screen">
+                  Loading demo test fixture…
+                </main>
+              }
+            >
+              <DemoFixture />
+            </Suspense>
+          ) : (
+            <TaskNotesApp />
+          )}
+        </AppErrorBoundary>
+      </AppI18nProvider>
     </StrictMode>,
   );
 

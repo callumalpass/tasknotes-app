@@ -8,7 +8,7 @@ import {
   screen,
   waitFor,
   within,
-} from "@testing-library/react";
+} from "../test/render";
 import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

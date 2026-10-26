@@ -1,3 +1,7 @@
+import { useLingui as useI18n } from "@lingui/react";
+import { useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
 import {
   Columns3,
   Command,
@@ -82,6 +86,7 @@ import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
 
 export function AppShell() {
+  const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
   const {
     repository,
@@ -243,14 +248,16 @@ export function AppShell() {
     return (
       <main className="opening-screen">
         <img alt="" src={tasknotesMarkUrl} />
-        <p>Opening your tasks</p>
+        <p>
+          <Trans>Opening your tasks</Trans>
+        </p>
         <LoadingRows count={4} />
         <button
           className="text-action opening-change-collection"
           type="button"
           onClick={changeCollection}
         >
-          Choose a different collection
+          <Trans>Choose a different collection</Trans>
         </button>
       </main>
     );
@@ -331,9 +338,9 @@ export function AppShell() {
       className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
       <a className="skip-link" href="#main-content">
-        Skip to content
+        <Trans>Skip to content</Trans>
       </a>
-      <aside className="navigation-rail" aria-label="Primary">
+      <aside className="navigation-rail" aria-label={t({ message: "Primary" })}>
         <button
           className="wordmark"
           type="button"
@@ -352,14 +359,16 @@ export function AppShell() {
         ) : null}
         <button
           aria-keyshortcuts="Control+N Meta+N"
-          aria-label="New task"
+          aria-label={t({ message: "New task" })}
           className="global-capture-navigation"
-          title={`New task (${shortcutLabel("N")})`}
+          title={translate`New task (${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
           <Plus aria-hidden="true" size={19} strokeWidth={1.8} />
-          <span>New task</span>
+          <span>
+            <Trans>New task</Trans>
+          </span>
           {isApplePlatform() ? <kbd>{shortcutLabel("N")}</kbd> : null}
         </button>
         <Navigation
@@ -471,7 +480,7 @@ export function AppShell() {
       {route.page === "task" ? (
         <aside
           className="detail-inspector"
-          aria-label="Task details"
+          aria-label={t({ message: "Task details" })}
           tabIndex={-1}
           ref={detailRef}
         >
@@ -495,7 +504,7 @@ export function AppShell() {
       {showBottomNavigation ? (
         <nav
           className={`bottom-navigation items-${Math.min(navigationKeys.length, 2) + 2}`}
-          aria-label="Primary"
+          aria-label={t({ message: "Primary" })}
         >
           <Navigation
             active={activePage}
@@ -510,7 +519,7 @@ export function AppShell() {
       {route.page !== "task" && showGlobalCaptureFab ? (
         <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
-          aria-label="New task"
+          aria-label={translate({ message: "New task" })}
           onClick={() => setCaptureOpen(true)}
         />
       ) : null}
@@ -627,11 +636,13 @@ export function ViewDiscoveryNotice({
   return (
     <section
       className="view-discovery-notice"
-      aria-label="Views availability"
+      aria-label={translate({ message: "Views availability" })}
       aria-busy={refreshing}
     >
       <p role={outcome === "error" ? "alert" : "status"}>
-        {outcome === "error" ? "Couldn't load your views." : "No views yet."}
+        {outcome === "error"
+          ? translate({ message: "Couldn't load your views." })
+          : translate({ message: "No views yet." })}
       </p>
       <button
         className="text-action"
@@ -641,9 +652,9 @@ export function ViewDiscoveryNotice({
       >
         {outcome === "error"
           ? refreshing
-            ? "Retrying…"
-            : "Retry"
-          : "Create a view"}
+            ? translate({ message: "Retrying…" })
+            : translate({ message: "Retry" })
+          : translate({ message: "Create a view" })}
       </button>
     </section>
   );
@@ -662,17 +673,21 @@ function EmptyViewsNotice({
   return (
     <section
       className="view-discovery-notice"
-      aria-label="Views availability"
+      aria-label={translate({ message: "Views availability" })}
       aria-busy={refreshing || adding}
     >
-      <p role="status">No views yet.</p>
+      <p role="status">
+        <Trans>No views yet.</Trans>
+      </p>
       <button
         className="text-action"
         type="button"
         disabled={refreshing || adding}
         onClick={() => void add()}
       >
-        {adding ? "Adding starter views…" : "Add starter views"}
+        {adding
+          ? translate({ message: "Adding starter views…" })
+          : translate({ message: "Add starter views" })}
       </button>
       <button
         className="text-action"
@@ -680,7 +695,7 @@ function EmptyViewsNotice({
         disabled={refreshing || adding}
         onClick={onCreate}
       >
-        Create a view
+        <Trans>Create a view</Trans>
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </section>
@@ -704,6 +719,7 @@ export function DeletionFeedback({
   onRetry(): Promise<void>;
   onUndo(): Promise<void>;
 }) {
+  const { t } = useLingui();
   useEffect(() => {
     if (!pendingDeletion || pendingDeletion.outcomeUnknown) return;
     const undoShortcut = (event: KeyboardEvent) => {
@@ -738,16 +754,16 @@ export function DeletionFeedback({
   return (
     <>
       <p aria-atomic="true" className="visually-hidden" role="status">
-        Deleted “{pendingDeletion.title}”. Undo is available for 30 seconds.
+        {t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
       </p>
       <div className={`undo-toast${positionClass}`}>
-        <span>Deleted “{pendingDeletion.title}”</span>
+        <span>{t`Deleted “${pendingDeletion.title}”`}</span>
         <button
           aria-keyshortcuts="Control+Z Meta+Z"
           type="button"
           onClick={() => void onUndo().catch(() => undefined)}
         >
-          Undo
+          <Trans>Undo</Trans>
         </button>
       </div>
     </>
@@ -769,6 +785,7 @@ function DeletionRecoveryNotice({
   onRetry?: () => Promise<void>;
   onUndo?: () => Promise<void>;
 }) {
+  const { t } = useLingui();
   const headingId = useId();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const positionClass = aboveMobileControls ? " is-above-mobile-controls" : "";
@@ -779,25 +796,30 @@ function DeletionRecoveryNotice({
     >
       <header>
         <h2 id={headingId}>
-          {outcomeUnknown ? "Deletion needs review" : "Deletion waiting"}
+          {outcomeUnknown
+            ? t({ message: "Deletion needs review" })
+            : t({ message: "Deletion waiting" })}
         </h2>
         {title ? (
           <p>
             {outcomeUnknown
-              ? `TaskNotes could not confirm whether “${title}” was deleted.`
-              : `“${title}” is still in the collection.`}
+              ? t`TaskNotes could not confirm whether “${title}” was deleted.`
+              : t`“${title}” is still in the collection.`}
           </p>
         ) : null}
       </header>
       <OperationErrorNotice
-        action="The deletion"
+        action={t({ message: "The deletion" })}
         message={error}
         recovery={
           onRetry
             ? outcomeUnknown
-              ? "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection."
-              : "Retry, or undo to restore the task here."
-            : "The task remains in the collection. Try again."
+              ? t({
+                  message:
+                    "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection.",
+                })
+              : t({ message: "Retry, or undo to restore the task here." })
+            : t({ message: "The task remains in the collection. Try again." })
         }
       />
       {onRetry && onUndo ? (
@@ -807,23 +829,25 @@ function DeletionRecoveryNotice({
             type="button"
             onClick={() => void onRetry().catch(() => undefined)}
           >
-            Retry
+            <Trans>Retry</Trans>
           </button>
           {outcomeUnknown && confirmDiscard ? (
             <>
               <p>
-                Discarding removes all saved recovery and disconnects this
-                collection. It does not reverse a deletion that may have
-                completed.
+                <Trans>
+                  Discarding removes all saved recovery and disconnects this
+                  collection. It does not reverse a deletion that may have
+                  completed.
+                </Trans>
               </p>
               <button
                 type="button"
                 onClick={() => void onUndo().catch(() => undefined)}
               >
-                Confirm discard and disconnect
+                <Trans>Confirm discard and disconnect</Trans>
               </button>
               <button type="button" onClick={() => setConfirmDiscard(false)}>
-                Keep saved recovery
+                <Trans>Keep saved recovery</Trans>
               </button>
             </>
           ) : (
@@ -838,7 +862,9 @@ function DeletionRecoveryNotice({
                   : void onUndo().catch(() => undefined)
               }
             >
-              {outcomeUnknown ? "Discard recovery" : "Undo"}
+              {outcomeUnknown
+                ? t({ message: "Discard recovery" })
+                : t({ message: "Undo" })}
             </button>
           )}
         </div>
@@ -858,19 +884,23 @@ export function StorageErrorScreen({
   reauthorizeCurrentCollection(): void;
   retry(): void;
 }) {
+  useI18n();
   const authorizationExpired = isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">
       <img alt="" src={tasknotesMarkUrl} />
       <h1>
         {authorizationExpired
-          ? "Review TaskNotes’ access"
-          : "TaskNotes could not open."}
+          ? translate({ message: "Review TaskNotes’ access" })
+          : translate({ message: "TaskNotes could not open." })}
       </h1>
       <p>
         {authorizationExpired
-          ? "TaskNotes needs your approval in mdbase again before it can open this collection."
-          : "The collection is unavailable right now."}
+          ? translate({
+              message:
+                "TaskNotes needs your approval in mdbase again before it can open this collection.",
+            })
+          : translate({ message: "The collection is unavailable right now." })}
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
@@ -879,11 +909,11 @@ export function StorageErrorScreen({
             type="button"
             onClick={reauthorizeCurrentCollection}
           >
-            Review access
+            <Trans>Review access</Trans>
           </button>
         ) : (
           <button className="outline-action" type="button" onClick={retry}>
-            Try again
+            <Trans>Try again</Trans>
           </button>
         )}
         <button
@@ -891,7 +921,7 @@ export function StorageErrorScreen({
           type="button"
           onClick={changeCollection}
         >
-          Choose a different collection
+          <Trans>Choose a different collection</Trans>
         </button>
       </div>
     </main>
@@ -907,8 +937,12 @@ function HomeViewLoading() {
     >
       <header className="view-header operational">
         <div>
-          <h1 id="home-view-loading-title">Opening your view</h1>
-          <small>Restoring your home view</small>
+          <h1 id="home-view-loading-title">
+            <Trans>Opening your view</Trans>
+          </h1>
+          <small>
+            <Trans>Restoring your home view</Trans>
+          </small>
         </div>
       </header>
       <LoadingRows count={6} />
@@ -935,6 +969,7 @@ export function Navigation({
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
 }) {
+  const { t } = useLingui();
   const navigationEntries: {
     key: string;
     navigationKey: string;
@@ -947,7 +982,7 @@ export function Navigation({
       navigationEntries.push({
         key: "scratchpad",
         navigationKey: key,
-        label: "Scratchpad",
+        label: t({ message: "Scratchpad" }),
         icon: FilePenLine,
         route: key === homeKey ? { page: "home" } : { page: "scratchpad" },
       });
@@ -957,7 +992,7 @@ export function Navigation({
       navigationEntries.push({
         key: "search",
         navigationKey: key,
-        label: "Search",
+        label: t({ message: "Search" }),
         icon: Search,
         route: key === homeKey ? { page: "home" } : { page: "search" },
       });
@@ -1067,7 +1102,7 @@ export function Navigation({
       ))}
       {mode === "desktop" ? (
         <div
-          aria-label="Views"
+          aria-label={t({ message: "Views" })}
           className="navigation-view-section"
           role="group"
         >
@@ -1114,12 +1149,14 @@ export function Navigation({
             onClick={openMenu}
           >
             <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
-            <span>Browse</span>
+            <span>
+              <Trans>Browse</Trans>
+            </span>
           </button>
           {menuPosition
             ? createPortal(
                 <div
-                  aria-label="Browse"
+                  aria-label={t({ message: "Browse" })}
                   className="navigation-views-menu"
                   id={menuId}
                   ref={menuRef}
@@ -1149,7 +1186,9 @@ export function Navigation({
                     onClick={() => choose({ page: "views" })}
                   >
                     <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
-                    <span>Manage views</span>
+                    <span>
+                      <Trans>Manage views</Trans>
+                    </span>
                   </button>
                   <button
                     role="menuitem"
@@ -1157,7 +1196,9 @@ export function Navigation({
                     onClick={() => choose({ page: "more" })}
                   >
                     <Settings aria-hidden="true" size={19} strokeWidth={1.7} />
-                    <span>Settings</span>
+                    <span>
+                      <Trans>Settings</Trans>
+                    </span>
                   </button>
                 </div>,
                 document.body,
@@ -1171,17 +1212,23 @@ export function Navigation({
         </p>
       ) : null}
       {mode === "desktop" ? (
-        <div aria-label="Manage" className="navigation-utility" role="group">
+        <div
+          aria-label={translate({ message: "Manage" })}
+          className="navigation-utility"
+          role="group"
+        >
           {onCommands ? (
             <button
               aria-keyshortcuts="Control+K Meta+K"
               className="navigation-commands"
-              title={`Commands (${shortcutLabel("K")})`}
+              title={translate`Commands (${shortcutLabel("K")})`}
               type="button"
               onClick={onCommands}
             >
               <Command aria-hidden="true" size={20} strokeWidth={1.7} />
-              <span>Commands</span>
+              <span>
+                <Trans>Commands</Trans>
+              </span>
               {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
           ) : null}
@@ -1192,7 +1239,9 @@ export function Navigation({
             onClick={() => onNavigate({ page: "views" })}
           >
             <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
-            <span>Manage views</span>
+            <span>
+              <Trans>Manage views</Trans>
+            </span>
           </button>
           <button
             aria-current={active === "more" ? "page" : undefined}
@@ -1201,7 +1250,9 @@ export function Navigation({
             onClick={() => onNavigate({ page: "more" })}
           >
             <Settings aria-hidden="true" size={20} strokeWidth={1.7} />
-            <span>Settings</span>
+            <span>
+              <Trans>Settings</Trans>
+            </span>
           </button>
         </div>
       ) : null}

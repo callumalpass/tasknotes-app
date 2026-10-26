@@ -1,10 +1,4 @@
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "../test/render";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 

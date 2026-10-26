@@ -1,3 +1,5 @@
+import { t as translate } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import {
   CollectionSaveWarning,
   useCollectionSaveWarning,
@@ -157,18 +159,18 @@ export function WriteStatusOverlay({
   const offline = useProlonged(repository, pending > 0 && disconnected, 5_000);
   const message = problem
     ? problem.state === "failed"
-      ? "Change rejected"
+      ? translate({ message: "Change rejected" })
       : problem.state === "conflicted"
-        ? "Conflicting changes"
-        : "Save outcome unknown"
+        ? translate({ message: "Conflicting changes" })
+        : translate({ message: "Save outcome unknown" })
     : notice
       ? connectionNoticeLabels[notice]
       : offline
-        ? "Saved on this device; waiting for sync"
+        ? translate({ message: "Saved on this device; waiting for sync" })
         : slow
-          ? "Sync is taking longer than usual"
+          ? translate({ message: "Sync is taking longer than usual" })
           : syncing
-            ? "Syncing…"
+            ? translate({ message: "Syncing…" })
             : "";
   const needsAttention = Boolean(
     problem || (notice && notice !== "reconnecting") || offline || slow,
@@ -191,11 +193,13 @@ export function WriteStatusOverlay({
         <span>{message}</span>
         <CollectionSaveWarning />
         {problemCount > 1 ? (
-          <span>{problemCount} changes need review</span>
+          <span>
+            {problemCount} <Trans>changes need review</Trans>
+          </span>
         ) : null}
         {problem && onReview ? (
           <button type="button" onClick={() => onReview(problem.target)}>
-            Review record
+            <Trans>Review record</Trans>
           </button>
         ) : null}
       </div>

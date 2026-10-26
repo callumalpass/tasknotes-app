@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "./repository-context";

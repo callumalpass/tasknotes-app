@@ -1,3 +1,6 @@
+import { useLingui, Trans } from "@lingui/react/macro";
+import { t as translate } from "@lingui/core/macro";
+import { appLocale } from "../i18n/app";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,6 +31,7 @@ export function ReminderEditor({
   deliveryMode?: "mdbase" | "local";
   onChange(reminders: TaskReminder[]): void;
 }) {
+  const { t } = useLingui();
   const defaultAnchor = due ? "due" : scheduled ? "scheduled" : undefined;
 
   function add(reminder: TaskReminder) {
@@ -47,31 +51,44 @@ export function ReminderEditor({
       {deliveryMode === "local" ? (
         <div className="reminder-delivery-note" role="note">
           <div>
-            <strong>Notifications are not available here</strong>
+            <strong>
+              <Trans>Notifications are not available here</Trans>
+            </strong>
             <p>
-              Reminder details stay in Markdown, but tasks stored on this device
-              cannot deliver notifications.
+              <Trans>
+                Reminder details stay in Markdown, but tasks stored on this
+                device cannot deliver notifications.
+              </Trans>
             </p>
           </div>
         </div>
       ) : null}
       <div className="reminder-editor-heading">
         <div>
-          <span className="field-label">Reminders</span>
+          <span className="field-label">
+            <Trans>Reminders</Trans>
+          </span>
           <p>
             {deliveryMode === "mdbase"
-              ? "Notify at a fixed time or relative to this task."
-              : "Save a fixed or relative reminder in this task."}
+              ? t({
+                  message: "Notify at a fixed time or relative to this task.",
+                })
+              : t({
+                  message: "Save a fixed or relative reminder in this task.",
+                })}
           </p>
         </div>
         <button className="text-action" type="button" onClick={addDefault}>
           <Plus aria-hidden="true" size={16} />
-          Add reminder
+          <Trans>Add reminder</Trans>
         </button>
       </div>
 
       {defaultAnchor ? (
-        <div className="reminder-quick-actions" aria-label="Quick reminders">
+        <div
+          className="reminder-quick-actions"
+          aria-label={t({ message: "Quick reminders" })}
+        >
           {[
             ["5m", "-PT5M", "5 minutes before"],
             ["15m", "-PT15M", "15 minutes before"],
@@ -81,12 +98,12 @@ export function ReminderEditor({
             <button
               key={offset}
               type="button"
-              aria-label={`Add ${description} ${defaultAnchor}`}
+              aria-label={quickReminderLabel(offset, defaultAnchor)}
               onClick={() =>
                 add(relativeReminder(defaultAnchor, offset, description))
               }
             >
-              {label}
+              {quickReminderDuration(label)}
             </button>
           ))}
         </div>
@@ -115,7 +132,9 @@ export function ReminderEditor({
           ))}
         </div>
       ) : (
-        <p className="reminder-empty">No reminders set.</p>
+        <p className="reminder-empty">
+          <Trans>No reminders set.</Trans>
+        </p>
       )}
     </div>
   );
@@ -136,6 +155,7 @@ function ReminderRow({
   onChange(reminder: TaskReminder): void;
   onRemove(): void;
 }) {
+  const { t } = useLingui();
   const relativeAvailable =
     Boolean(scheduled || due) || reminder.type === "relative";
 
@@ -154,27 +174,29 @@ function ReminderRow({
   }
 
   return (
-    <section className="reminder-row" aria-label={`Reminder ${index + 1}`}>
+    <section className="reminder-row" aria-label={t`Reminder ${index + 1}`}>
       <div className="reminder-row-heading">
-        <strong>Reminder {index + 1}</strong>
+        <strong>
+          <Trans>Reminder {index + 1}</Trans>
+        </strong>
         <button
           className="text-action danger"
           type="button"
-          aria-label={`Remove reminder ${index + 1}`}
+          aria-label={t`Remove reminder ${index + 1}`}
           onClick={onRemove}
         >
           <Trash2 aria-hidden="true" size={16} />
-          Remove
+          <Trans>Remove</Trans>
         </button>
       </div>
       <div className="field-grid metadata-fields reminder-fields">
         <TaskNotesSelectField
-          label="Type"
+          label={t({ message: "Type" })}
           options={[
             ...(relativeAvailable
-              ? [{ value: "relative", label: "Relative" }]
+              ? [{ value: "relative", label: t({ message: "Relative" }) }]
               : []),
-            { value: "absolute", label: "Fixed date and time" },
+            { value: "absolute", label: t({ message: "Fixed date and time" }) },
           ]}
           value={reminder.type}
           onChange={changeType}
@@ -191,9 +213,11 @@ function ReminderRow({
         )}
       </div>
       <label className="form-field reminder-description">
-        <span>Description</span>
+        <span>
+          <Trans>Description</Trans>
+        </span>
         <input
-          placeholder="Optional notification text"
+          placeholder={t({ message: "Optional notification text" })}
           value={reminder.description ?? ""}
           onChange={(event) =>
             onChange({
@@ -218,6 +242,7 @@ function RelativeReminderFields({
   due?: string;
   onChange(reminder: TaskReminder): void;
 }) {
+  const { t } = useLingui();
   const initial = editableReminderOffset(reminder.offset);
   const [amount, setAmount] = useState(initial.amount);
   const [unit, setUnit] = useState<ReminderOffsetUnit>(initial.unit);
@@ -247,15 +272,22 @@ function RelativeReminderFields({
   return (
     <>
       <TaskNotesSelectField
-        label="Relative to"
+        label={t({ message: "Relative to" })}
         options={[
-          ...(due ? [{ value: "due", label: "Due" }] : []),
-          ...(scheduled ? [{ value: "scheduled", label: "Scheduled" }] : []),
+          ...(due ? [{ value: "due", label: t({ message: "Due" }) }] : []),
+          ...(scheduled
+            ? [{ value: "scheduled", label: t({ message: "Scheduled" }) }]
+            : []),
           ...(!due && reminder.relatedTo === "due"
-            ? [{ value: "due", label: "Due (not set)" }]
+            ? [{ value: "due", label: t({ message: "Due (not set)" }) }]
             : []),
           ...(!scheduled && reminder.relatedTo === "scheduled"
-            ? [{ value: "scheduled", label: "Scheduled (not set)" }]
+            ? [
+                {
+                  value: "scheduled",
+                  label: t({ message: "Scheduled (not set)" }),
+                },
+              ]
             : []),
         ]}
         value={reminder.relatedTo ?? (due ? "due" : "scheduled")}
@@ -267,7 +299,9 @@ function RelativeReminderFields({
         }
       />
       <label className="form-field">
-        <span>Amount</span>
+        <span>
+          <Trans>Amount</Trans>
+        </span>
         <input
           inputMode="numeric"
           min="0"
@@ -281,11 +315,11 @@ function RelativeReminderFields({
         />
       </label>
       <TaskNotesSelectField
-        label="Unit"
+        label={t({ message: "Unit" })}
         options={[
-          { value: "minutes", label: "Minutes" },
-          { value: "hours", label: "Hours" },
-          { value: "days", label: "Days" },
+          { value: "minutes", label: t({ message: "Minutes" }) },
+          { value: "hours", label: t({ message: "Hours" }) },
+          { value: "days", label: t({ message: "Days" }) },
         ]}
         value={unit}
         onChange={(value) => {
@@ -295,10 +329,10 @@ function RelativeReminderFields({
         }}
       />
       <TaskNotesSelectField
-        label="Direction"
+        label={t({ message: "Direction" })}
         options={[
-          { value: "before", label: "Before" },
-          { value: "after", label: "After" },
+          { value: "before", label: t({ message: "Before" }) },
+          { value: "after", label: t({ message: "After" }) },
         ]}
         value={direction}
         onChange={(value) => {
@@ -318,6 +352,7 @@ function AbsoluteReminderFields({
   reminder: TaskReminder;
   onChange(reminder: TaskReminder): void;
 }) {
+  const { t } = useLingui();
   const initial = localDateTimeParts(reminder.absoluteTime);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
@@ -335,9 +370,11 @@ function AbsoluteReminderFields({
   return (
     <>
       <div className="form-field tasknotes-control-field">
-        <span>Date</span>
+        <span>
+          <Trans>Date</Trans>
+        </span>
         <TaskNotesDatePicker
-          ariaLabel="Reminder date"
+          ariaLabel={t({ message: "Reminder date" })}
           value={date}
           onChange={(value) => {
             const next = value ?? date;
@@ -347,9 +384,11 @@ function AbsoluteReminderFields({
         />
       </div>
       <div className="form-field tasknotes-control-field">
-        <span>Time</span>
+        <span>
+          <Trans>Time</Trans>
+        </span>
         <TaskNotesTimePicker
-          ariaLabel="Reminder time"
+          ariaLabel={t({ message: "Reminder time" })}
           value={time}
           onChange={(value) => {
             const next = value ?? time;
@@ -360,6 +399,44 @@ function AbsoluteReminderFields({
       </div>
     </>
   );
+}
+
+function quickReminderLabel(
+  offset: string,
+  anchor: "due" | "scheduled",
+): string {
+  switch (offset) {
+    case "-PT5M":
+      return anchor === "due"
+        ? translate`Add 5 minutes before due`
+        : translate`Add 5 minutes before scheduled`;
+    case "-PT15M":
+      return anchor === "due"
+        ? translate`Add 15 minutes before due`
+        : translate`Add 15 minutes before scheduled`;
+    case "-PT1H":
+      return anchor === "due"
+        ? translate`Add 1 hour before due`
+        : translate`Add 1 hour before scheduled`;
+    default:
+      return anchor === "due"
+        ? translate`Add 1 day before due`
+        : translate`Add 1 day before scheduled`;
+  }
+}
+
+function quickReminderDuration(label: string): string {
+  const amount = Number.parseInt(label, 10);
+  const unit = label.endsWith("m")
+    ? "minute"
+    : label.endsWith("h")
+      ? "hour"
+      : "day";
+  return new Intl.NumberFormat(appLocale(), {
+    style: "unit",
+    unit,
+    unitDisplay: "narrow",
+  }).format(amount);
 }
 
 function relativeReminder(

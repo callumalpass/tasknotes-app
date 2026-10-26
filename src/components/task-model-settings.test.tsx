@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "../test/render";
+import { describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
@@ -29,6 +29,33 @@ async function renderEditor() {
 }
 
 describe("TaskModelSettingsEditor", () => {
+  it("displays the contextual source label after settings access fails", async () => {
+    const repository = createTestMdbaseRepository();
+    await repository.initialize();
+    const access = vi
+      .spyOn(repository, "taskModelSettingsAccess")
+      .mockRejectedValue(new Error("Authority refused access"));
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskModelSettingsEditor />
+      </RepositoryProvider>,
+    );
+
+    expect(await screen.findByText("Collection settings")).toHaveClass(
+      "settings-source",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Authority refused access",
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Default priority" }),
+    ).toBeDisabled();
+    expect(access).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps unsaved choices when Settings is left and offers Discard", async () => {
     const { view, element } = await renderEditor();
     fireEvent.click(

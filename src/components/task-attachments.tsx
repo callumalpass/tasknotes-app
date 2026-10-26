@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ExternalLink,
   FileImage,
@@ -29,6 +31,7 @@ export function TaskAttachments({
   beforeMutation(): Promise<void>;
   onInsertInline(reference: string): Promise<void>;
 }) {
+  const { t } = useLingui();
   const attachInputId = useId();
   const insertInputId = useId();
   const [items, setItems] = useState<ResolvedTaskAttachment[]>([]);
@@ -100,7 +103,10 @@ export function TaskAttachments({
     const target = window.open("about:blank", "_blank");
     if (!target) {
       setError(
-        "Your browser blocked the image window. Allow pop-ups and try again.",
+        t({
+          message:
+            "Your browser blocked the image window. Allow pop-ups and try again.",
+        }),
       );
       return;
     }
@@ -131,7 +137,9 @@ export function TaskAttachments({
     >
       <header className="task-attachments-heading">
         <div>
-          <h2 id="task-attachments-title">Attachments</h2>
+          <h2 id="task-attachments-title">
+            <Trans>Attachments</Trans>
+          </h2>
         </div>
         <div className="task-attachment-add-actions">
           <input
@@ -145,7 +153,8 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={attachInputId}>
-            <ImagePlus aria-hidden="true" size={16} /> Attach image
+            <ImagePlus aria-hidden="true" size={16} />{" "}
+            <Trans>Attach image</Trans>
           </label>
           <input
             accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
@@ -158,7 +167,8 @@ export function TaskAttachments({
             }}
           />
           <label className="text-action" htmlFor={insertInputId}>
-            <NotebookPen aria-hidden="true" size={16} /> Insert in Notes
+            <NotebookPen aria-hidden="true" size={16} />{" "}
+            <Trans>Insert in Notes</Trans>
           </label>
         </div>
       </header>
@@ -170,13 +180,13 @@ export function TaskAttachments({
       ) : null}
       {items.length ? (
         <p className="attachment-policy">
-          Detaching keeps the image file in your collection.
+          <Trans>Detaching keeps the image file in your collection.</Trans>
         </p>
       ) : null}
       {loading && !items.length ? (
         <p className="attachment-status" role="status">
-          <LoaderCircle aria-hidden="true" className="spin" size={17} /> Loading
-          images…
+          <LoaderCircle aria-hidden="true" className="spin" size={17} />{" "}
+          <Trans>Loading images…</Trans>
         </p>
       ) : items.length ? (
         <ul className="attachment-list">
@@ -190,9 +200,9 @@ export function TaskAttachments({
               <div className="attachment-actions">
                 {item.file ? (
                   <button
-                    aria-label={`Open ${displayName(item.path ?? item.reference)}`}
+                    aria-label={t`Open ${displayName(item.path ?? item.reference)}`}
                     disabled={busy}
-                    title="Open image"
+                    title={t({ message: "Open image" })}
                     type="button"
                     onClick={() => openImage(item)}
                   >
@@ -212,19 +222,21 @@ export function TaskAttachments({
                     })
                   }
                 >
-                  Insert
+                  <Trans>Insert</Trans>
                 </button>
                 <button
-                  aria-label={`Detach ${displayName(item.path ?? item.reference)}`}
+                  aria-label={t`Detach ${displayName(item.path ?? item.reference)}`}
                   disabled={busy}
-                  title="Detach from task"
+                  title={t({ message: "Detach from task" })}
                   type="button"
                   onClick={() =>
                     void run(() => service.detach(task.id, item.reference))
                   }
                 >
                   <Unlink aria-hidden="true" size={17} />
-                  <span>Detach</span>
+                  <span>
+                    <Trans>Detach</Trans>
+                  </span>
                 </button>
               </div>
             </li>
@@ -279,7 +291,7 @@ function displayName(path: string): string {
 }
 
 function attachmentState(item: ResolvedTaskAttachment): string {
-  if (!item.file) return "File missing";
+  if (!item.file) return t({ message: "File missing" });
   return formatBytes(item.file.size);
 }
 
