@@ -223,6 +223,8 @@
   display: inline-flex;
   width: auto;
   min-width: 52px;
+  /* Large text and long translations shrink the label rather than push the button offscreen. */
+  max-width: calc(100vw - 2 * max(18px, env(safe-area-inset-right)));
   height: 52px;
   align-items: center;
   justify-content: center;
@@ -244,8 +246,10 @@
 }
 
 .global-capture-fab span {
+  min-width: 0;
   max-width: 8em;
   overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1;
   white-space: nowrap;
   transition:
@@ -677,4 +681,8 @@
   .keyboard-shortcuts-sheet {
     max-height: calc(100dvh - 16px);
   }
+}
+
+.global-capture-fab svg {
+  flex: none;
 }
