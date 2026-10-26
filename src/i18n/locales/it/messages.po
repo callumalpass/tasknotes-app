@@ -5189,6 +5189,10 @@ msgstr "Prova con meno parole o con un'altra grafia."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Prova a caricare di nuovo la vista. Se il problema persiste, modifica le impostazioni o scegli un'altra vista."
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "Disattiva i promemoria"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Tipo"

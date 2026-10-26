@@ -701,7 +701,7 @@ function ReminderSettings({ reminders }: { reminders: ReminderSettingsState }) {
             type="button"
             onClick={() => void reminders.setEnabled(false)}
           >
-            Turn reminders off
+            <Trans>Turn reminders off</Trans>
           </button>
         </div>
       ) : null}

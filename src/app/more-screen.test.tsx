@@ -14,6 +14,7 @@ import type {
   MdbaseNotificationStatus,
 } from "../native/mdbase-notifications";
 import { deferred } from "../test/mdbase-fixture";
+import { activateAppLocale } from "../i18n/app";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 import type { SettingsSection } from "./settings-sections";
 
@@ -483,6 +484,27 @@ it("offers explicit cleanup for unresolved registration without passively replay
   expect(fixture.enable).not.toHaveBeenCalled();
   fireEvent.click(toggle);
   await waitFor(() => expect(fixture.enable).toHaveBeenCalledOnce());
+});
+
+it("translates reminder cleanup on a language switch without replaying registration", async () => {
+  fixture.status.mockResolvedValue({ state: "error", optedIn: false });
+  render(settings());
+  expect(
+    await screen.findByRole("button", { name: "Turn reminders off" }),
+  ).toBeVisible();
+  try {
+    await act(() => activateAppLocale("fr"));
+    const cleanup = await screen.findByRole("button", {
+      name: "Désactiver les rappels",
+    });
+    expect(fixture.enable).not.toHaveBeenCalled();
+    expect(fixture.disable).not.toHaveBeenCalled();
+    fireEvent.click(cleanup);
+    await waitFor(() => expect(fixture.disable).toHaveBeenCalledOnce());
+    expect(fixture.enable).not.toHaveBeenCalled();
+  } finally {
+    await act(() => activateAppLocale("en"));
+  }
 });
 
 it("offers cleanup immediately when an explicit registration has an unknown outcome", async () => {

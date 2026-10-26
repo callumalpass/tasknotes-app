@@ -5189,6 +5189,10 @@ msgstr "語数を減らすか、別の表記をお試しください。"
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "もう一度ビューを読み込んでください。問題が続く場合は、設定を編集するか別のビューを選択してください。"
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "リマインダーをオフにする"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "種類"
