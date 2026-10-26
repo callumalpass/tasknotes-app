@@ -1,11 +1,15 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "../test/render";
+import { activateAppLocale } from "../i18n/app";
+import type { ItemArg } from "@tasknotes/calendar";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskCalendarView } from "./task-calendar-view";
+import type { CalendarEventData } from "./calendar-items";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 
-import type { CalendarItem } from "@tasknotes/calendar";
+import { parseDay } from "@tasknotes/calendar";
+import type { TaskCalendarItem } from "./calendar-items";
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
@@ -27,9 +31,10 @@ vi.mock("./repository-context", async () => {
   return { useRepository: () => ({ configuration }) };
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   calendar.props = undefined;
+  await act(() => activateAppLocale("en"));
 });
 
 describe("calendar drops", () => {
@@ -128,8 +133,83 @@ describe("calendar drops", () => {
   });
 });
 
-function items(): CalendarItem[] {
-  return (calendar.props?.items ?? []) as CalendarItem[];
+describe("localized calendar entry kinds", () => {
+  it("refreshes the external calendar title when only the language changes", async () => {
+    const view = renderCalendar(execution("2026-07-24"), vi.fn());
+    // The visible range has not changed, so there is no range notification.
+    (calendar.props!.calendarRef as (instance: unknown) => void)({
+      getView: () => ({ title: "luglio 2026" }),
+    });
+    await act(() => activateAppLocale("it"));
+    expect(
+      view.container.querySelector(".full-calendar-commandbar > h2"),
+    ).toHaveTextContent("luglio 2026");
+  });
+
+  it.each([
+    ["en", "Due"],
+    ["de", "Fällig"],
+    ["it", "Scadenza"],
+  ] as const)(
+    "deduplicates due markers before rendering %s labels",
+    async (locale, label) => {
+      const current = execution("2026-07-24");
+      current.rows[0]!.task.due = "2026-07-25";
+      current.rows[0]!.values.due = "2026-07-25";
+      current.view.properties = [{ key: "due" }];
+      renderCalendar(current, vi.fn());
+      // Changing language keeps the calendar mounted and refreshes DOM hooks.
+      await act(() => activateAppLocale(locale));
+      expect(calendar.props!.locale).toBe(locale);
+      const due = items().find((item) => item.id === "due-one")!;
+      expect(due).toBeDefined();
+      const content = (variant: "list" | "timed") => {
+        const el = document.createElement("div");
+        const arg: ItemArg<CalendarEventData> = {
+          item: due,
+          el,
+          variant,
+          timeText: "",
+          day: parseDay("2026-07-25")!,
+          view: {
+            type: variant === "list" ? "list" : "week",
+            range: {
+              start: new Date(2026, 6, 24),
+              end: new Date(2026, 6, 31),
+              startDay: parseDay("2026-07-24")!,
+              endDay: parseDay("2026-07-31")!,
+            },
+            anchor: parseDay("2026-07-24")!,
+            title: "",
+          },
+          isStart: true,
+          isEnd: true,
+          isMirror: false,
+        };
+        el.append(
+          (
+            calendar.props!.itemContent as (
+              info: ItemArg<CalendarEventData>,
+            ) => Node
+          )(arg),
+        );
+        return el;
+      };
+      expect(
+        content("list").querySelector(".full-calendar-event-kind"),
+      ).toBeNull();
+      expect(
+        content("timed").querySelector(".full-calendar-event-kind"),
+      ).toHaveTextContent(label);
+      expect(
+        content("list").querySelector(".full-calendar-event-properties"),
+      ).toHaveTextContent(label);
+    },
+  );
+});
+
+function items(): TaskCalendarItem[] {
+  return (calendar.props?.items ?? []) as TaskCalendarItem[];
 }
 
 function eventStart() {
@@ -155,7 +235,7 @@ function drop(_from: string, to: string, revert: () => void) {
 
 function change(
   handler: "onItemDrop" | "onItemResize",
-  item: CalendarItem,
+  item: TaskCalendarItem,
   next: {
     start: Date;
     end: Date;

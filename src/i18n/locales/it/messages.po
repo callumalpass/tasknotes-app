@@ -490,7 +490,7 @@ msgstr "{visibleCount} viste mostrate"
 msgid "+{0} more"
 msgstr "+{0} altre"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "+{count} more"
 msgstr "+{count} altre"
 
@@ -510,8 +510,9 @@ msgstr "15 minuti"
 msgid "24 hour"
 msgstr "24 ore"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "3 days"
 msgstr "3 giorni"
 
@@ -719,7 +720,7 @@ msgstr "Aggiungi viste iniziali"
 msgid "Add subtask"
 msgstr "Aggiungi attività secondaria"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
@@ -829,8 +830,9 @@ msgstr "Dopo"
 msgid "After a number of times"
 msgstr "Dopo un certo numero di volte"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Agenda"
 msgstr "Agenda"
 
@@ -842,7 +844,7 @@ msgstr "Tutti"
 msgid "All conditions match"
 msgstr "Tutte le condizioni corrispondono"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "Tutto il giorno"
 
@@ -1040,11 +1042,11 @@ msgstr "Spazi di lavoro integrati"
 msgid "Calendar"
 msgstr "Calendario"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar layout"
 msgstr "Layout del calendario"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar markers"
 msgstr "Indicatori del calendario"
 
@@ -1741,8 +1743,9 @@ msgstr "Date"
 msgid "Dates and estimate"
 msgstr "Date e stima"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Day"
 msgstr "Giorno"
 
@@ -1980,7 +1983,7 @@ msgstr "Rilascia le immagini per aggiungerle"
 msgid "due"
 msgstr "scadenza"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
@@ -2894,9 +2897,10 @@ msgstr "Minuto"
 msgid "Minutes"
 msgstr "Minuti"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Month"
 msgstr "Mese"
 
@@ -3095,7 +3099,8 @@ msgstr "Nuova vista"
 msgid "Next month"
 msgstr "Il prossimo mese"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Next period"
 msgstr "Periodo successivo"
 
@@ -3200,7 +3205,7 @@ msgstr "Nessuno stato"
 msgid "No tasks"
 msgstr "Nessuna attività"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "Nessuna attività in questo periodo."
 
@@ -3216,7 +3221,7 @@ msgstr "Nessuna attività corrisponde a questa vista"
 msgid "No tasks matched."
 msgstr "Nessuna attività trovata."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
 msgstr "Nessuna attività in questo giorno. Usa «Aggiungi attività» per pianificarne una."
@@ -3613,7 +3618,8 @@ msgstr "Nota precedente"
 msgid "Previous notes could not be loaded. {0}"
 msgstr "Impossibile caricare le note precedenti. {0}"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Previous period"
 msgstr "Periodo precedente"
 
@@ -4363,7 +4369,7 @@ msgstr "raccolta selezionata"
 msgid "selected day"
 msgstr "giorno selezionato"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Selected day"
 msgstr "Giorno selezionato"
 
@@ -4789,7 +4795,7 @@ msgstr "Attività"
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
 msgstr "Le attività sono record Markdown portabili nel formato mdbase v0.3."
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
+#. placeholder {0}: popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "Attività per {0}"
@@ -4840,7 +4846,7 @@ msgstr "Impossibile completare l'azione di recupero dell'account. Verifica la co
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "L'azione è stata completata, ma non è stato possibile aggiornare lo stato dell'account. Verifica di nuovo lo stato."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "Impossibile salvare la modifica al calendario. "
 
@@ -4926,10 +4932,6 @@ msgstr "L'attività"
 #: src/components/task-actions.tsx
 msgid "The task action"
 msgstr "L'azione sull'attività"
-
-#: src/app/full-calendar-view.tsx
-msgid "The task date is unavailable."
-msgstr "La data dell'attività non è disponibile."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
@@ -5142,9 +5144,10 @@ msgstr "a oggi."
 msgid "today"
 msgstr "oggi"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
+#: src/i18n/calendar-locale.ts
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
@@ -5167,7 +5170,7 @@ msgstr "Domani"
 msgid "Too many attempts. Wait before trying again."
 msgstr "Troppi tentativi. Attendi prima di riprovare."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Tracked time"
 msgstr "Tempo monitorato"
 
@@ -5385,8 +5388,9 @@ msgstr "In attesa del computer. Riprova questa azione alla riconnessione."
 msgid "Website, Home"
 msgstr "Sito web, Home"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Week"
 msgstr "Settimana"
 

@@ -1,4 +1,9 @@
 import "@tasknotes/calendar/calendar.css";
+import { t } from "@lingui/core/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
+import { appLocale } from "../i18n/app";
+import { calendarText } from "../i18n/calendar-locale";
+import { countLabel } from "../i18n/default-labels";
 
 import { TaskCalendar } from "@tasknotes/calendar/react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -28,7 +33,7 @@ import {
 import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { dateFromStorage, todayString } from "../domain/task";
-import { viewPropertyDetails } from "../domain/view-values";
+import { viewPropertyDetails } from "../i18n/view-presentation";
 import { useRepository } from "./repository-context";
 import type {
   CalendarHourFormat,
@@ -85,6 +90,8 @@ export function TaskCalendarView({
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
 }) {
+  const { t } = useLingui();
+  const locale = appLocale();
   const rootRef = useRef<HTMLDivElement>(null);
   const closeOverflow = useCalendarOverflow(rootRef);
   function onOpen(task: TaskSummary, occurrenceDate?: string) {
@@ -99,6 +106,12 @@ export function TaskCalendarView({
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
   const [title, setTitle] = useState("");
+  // The external calendar updates its title on a language change without
+  // emitting onRangeChange when the visible dates stay the same.
+  useEffect(() => {
+    const view = calendarRef.current?.getView();
+    if (view) setTitle(view.title);
+  }, [locale]);
   const [range, setRange] = useState(() => initialRange(selected, mode));
   const [mutationError, setMutationError] = useState("");
   const [contextAction, setContextAction] = useState<{
@@ -132,8 +145,11 @@ export function TaskCalendarView({
     executionRef.current = execution;
   }, [execution]);
   const built = useMemo(
-    () => calendarItems(entries, execution, titleProperty, configuration),
-    [configuration, entries, execution, titleProperty],
+    () => ({
+      ...calendarItems(entries, execution, titleProperty, configuration),
+      locale,
+    }),
+    [configuration, entries, execution, titleProperty, locale],
   );
   const items = useMemo(
     () =>
@@ -312,7 +328,7 @@ export function TaskCalendarView({
           <div className="full-calendar-commandbar">
             <div className="full-calendar-navigation">
               <button
-                aria-label="Previous period"
+                aria-label={t`Previous period`}
                 type="button"
                 onClick={() => calendarRef.current?.prev()}
               >
@@ -324,16 +340,16 @@ export function TaskCalendarView({
                 onClick={() => onCreate(selected, selectedCreateValue)}
               >
                 <Plus aria-hidden="true" size={16} />
-                Add task
+                <Trans>Add task</Trans>
               </button>
               <button
                 type="button"
                 onClick={() => calendarRef.current?.goToday()}
               >
-                Today
+                <Trans>Today</Trans>
               </button>
               <button
-                aria-label="Next period"
+                aria-label={t`Next period`}
                 type="button"
                 onClick={() => calendarRef.current?.next()}
               >
@@ -341,7 +357,10 @@ export function TaskCalendarView({
               </button>
             </div>
             <h2 aria-live="polite">{title}</h2>
-            <div className="full-calendar-modes" aria-label="Calendar layout">
+            <div
+              className="full-calendar-modes"
+              aria-label={t`Calendar layout`}
+            >
               {calendarModes.map(({ value, label, compact }) => (
                 <button
                   aria-pressed={mode === value}
@@ -357,7 +376,8 @@ export function TaskCalendarView({
           </div>
           {mutationError ? (
             <p className="inline-error" role="alert">
-              The calendar change could not be saved. {mutationError}
+              <Trans>The calendar change could not be saved. </Trans>
+              {mutationError}
             </p>
           ) : null}
           <div className="full-calendar-surface">
@@ -367,8 +387,9 @@ export function TaskCalendarView({
               }}
               items={items}
               timeZone={timezone}
-              // The selected day is drawn by a render hook.
-              renderKey={selected}
+              locale={locale}
+              // Selected day and imperative entry labels follow app language.
+              renderKey={`${selected}|${built.locale}`}
               view={calendarView(mode)}
               date={initialDate}
               dayCount={numberOption(
@@ -404,10 +425,7 @@ export function TaskCalendarView({
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
               dayMaxEvents={phoneMonth ? true : 3}
-              text={{
-                allDay: "All day",
-                noItems: "No tasks in this period.",
-              }}
+              text={calendarText()}
               dayClassNames={({ dateStr }) =>
                 dateStr === selected ? ["is-selected-day"] : []
               }
@@ -442,7 +460,10 @@ export function TaskCalendarView({
             />
           </div>
           {legend.length && !listMode ? (
-            <ul className="full-calendar-legend" aria-label="Calendar markers">
+            <ul
+              className="full-calendar-legend"
+              aria-label={t`Calendar markers`}
+            >
               {legend.map((marker) => (
                 <li
                   key={marker.value}
@@ -458,13 +479,13 @@ export function TaskCalendarView({
           ) : null}
         </div>
         {!listMode ? (
-          <aside className="full-calendar-inspector" aria-label="Selected day">
+          <aside
+            className="full-calendar-inspector"
+            aria-label={t`Selected day`}
+          >
             <header>
               <h2>{agendaLabel(selected)}</h2>
-              <span>
-                {selectedEntries.length}{" "}
-                {selectedEntries.length === 1 ? "task" : "tasks"}
-              </span>
+              <span>{countLabel(selectedEntries.length, "task")}</span>
             </header>
             {selectedEntries.length ? (
               <div className="full-calendar-day-tasks">
@@ -480,7 +501,11 @@ export function TaskCalendarView({
                 ))}
               </div>
             ) : (
-              <p>No tasks on this day. Use Add task to schedule one.</p>
+              <p>
+                <Trans>
+                  No tasks on this day. Use Add task to schedule one.
+                </Trans>
+              </p>
             )}
           </aside>
         ) : null}
@@ -506,11 +531,46 @@ const calendarModes: Array<{
   label: string;
   compact: boolean;
 }> = [
-  { value: "dayGridMonth", view: "month", label: "Month", compact: true },
-  { value: "timeGridWeek", view: "week", label: "Week", compact: false },
-  { value: "timeGridThreeDay", view: "days", label: "3 days", compact: true },
-  { value: "timeGridDay", view: "day", label: "Day", compact: false },
-  { value: "listWeek", view: "list", label: "Agenda", compact: true },
+  {
+    value: "dayGridMonth",
+    view: "month",
+    get label() {
+      return t`Month`;
+    },
+    compact: true,
+  },
+  {
+    value: "timeGridWeek",
+    view: "week",
+    get label() {
+      return t`Week`;
+    },
+    compact: false,
+  },
+  {
+    value: "timeGridThreeDay",
+    view: "days",
+    get label() {
+      return t`3 days`;
+    },
+    compact: true,
+  },
+  {
+    value: "timeGridDay",
+    view: "day",
+    get label() {
+      return t`Day`;
+    },
+    compact: false,
+  },
+  {
+    value: "listWeek",
+    view: "list",
+    get label() {
+      return t`Agenda`;
+    },
+    compact: true,
+  },
 ];
 
 function calendarView(mode: CalendarMode): ViewType {
@@ -552,11 +612,8 @@ function calendarEventContent(
   content.append(primary);
   const listView = variant === "list";
   const details = presentation?.details ?? [];
-  const kind = calendarEntryKind(
-    presentation?.kind,
-    details,
-    listView,
-    configuration,
+  const kind = localizedEntryKind(
+    calendarEntryKind(presentation?.kind, details, listView, configuration),
   );
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
@@ -598,17 +655,27 @@ function describeEvent(
     if (marker) el.style.setProperty("--event-tone", marker.color);
     return;
   }
-  const kind = calendarEntryKind(
-    presentation?.kind,
-    presentation?.details ?? [],
-    variant === "list",
-    configuration,
+  const kind = localizedEntryKind(
+    calendarEntryKind(
+      presentation?.kind,
+      presentation?.details ?? [],
+      variant === "list",
+      configuration,
+    ),
   );
   el.setAttribute(
     "aria-label",
     `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
   if (marker) el.title = marker.label;
+}
+
+function localizedEntryKind(kind: string | undefined): string | undefined {
+  return kind === "Due"
+    ? t`Due`
+    : kind === "Tracked time"
+      ? t`Tracked time`
+      : kind;
 }
 
 function hour12(preference: CalendarHourFormat): boolean | undefined {
@@ -627,15 +694,15 @@ function calendarEventLabel(item: TaskCalendarItem): string {
   if (Number.isNaN(start.getTime())) return item.title;
   const date =
     todayString(start) === todayString()
-      ? "Today"
-      : new Intl.DateTimeFormat(undefined, {
+      ? t`Today`
+      : new Intl.DateTimeFormat(appLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
         }).format(start);
   const time = item.allDay
     ? ""
-    : `, ${new Intl.DateTimeFormat(undefined, {
+    : `, ${new Intl.DateTimeFormat(appLocale(), {
         hour: "numeric",
         minute: "2-digit",
       }).format(start)}`;
@@ -643,7 +710,7 @@ function calendarEventLabel(item: TaskCalendarItem): string {
 }
 
 function listDayLabel(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -691,7 +758,7 @@ function initialRange(
 function agendaLabel(value: string): string {
   const date = dateFromStorage(value);
   return date
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat(appLocale(), {
         weekday: "long",
         day: "numeric",
         month: "long",

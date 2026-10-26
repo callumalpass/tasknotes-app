@@ -336,7 +336,6 @@
   .task-calendar-event.is-recurring-pattern
   .full-calendar-event-content {
   border-inline-start-style: dashed;
-  opacity: 0.72;
 }
 
 .full-calendar-event-properties {

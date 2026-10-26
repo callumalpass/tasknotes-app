@@ -490,7 +490,7 @@ msgstr "已显示 {visibleCount} 个视图"
 msgid "+{0} more"
 msgstr "还有 +{0} 个"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "+{count} more"
 msgstr "还有 {count} 项"
 
@@ -510,8 +510,9 @@ msgstr "15 分钟"
 msgid "24 hour"
 msgstr "24 小时制"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "3 days"
 msgstr "3 天"
 
@@ -719,7 +720,7 @@ msgstr "添加初始视图"
 msgid "Add subtask"
 msgstr "添加子任务"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
@@ -829,8 +830,9 @@ msgstr "之后"
 msgid "After a number of times"
 msgstr "达到指定次数后"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Agenda"
 msgstr "议程"
 
@@ -842,7 +844,7 @@ msgstr "全部"
 msgid "All conditions match"
 msgstr "符合所有条件"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "全天"
 
@@ -1040,11 +1042,11 @@ msgstr "内置工作区"
 msgid "Calendar"
 msgstr "日历"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar layout"
 msgstr "日历布局"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar markers"
 msgstr "日历标记"
 
@@ -1741,8 +1743,9 @@ msgstr "日期"
 msgid "Dates and estimate"
 msgstr "日期和预计时长"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Day"
 msgstr "日"
 
@@ -1980,7 +1983,7 @@ msgstr "拖放图片以添加"
 msgid "due"
 msgstr "截止日期"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
@@ -2894,9 +2897,10 @@ msgstr "分钟"
 msgid "Minutes"
 msgstr "分钟"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Month"
 msgstr "月"
 
@@ -3095,7 +3099,8 @@ msgstr "新建视图"
 msgid "Next month"
 msgstr "下个月"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Next period"
 msgstr "下一时段"
 
@@ -3200,7 +3205,7 @@ msgstr "无状态"
 msgid "No tasks"
 msgstr "没有任务"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "此时段没有任务。"
 
@@ -3216,7 +3221,7 @@ msgstr "没有任务符合此视图"
 msgid "No tasks matched."
 msgstr "没有匹配的任务。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
 msgstr "这一天没有任务。使用“添加任务”安排任务。"
@@ -3613,7 +3618,8 @@ msgstr "上一条笔记"
 msgid "Previous notes could not be loaded. {0}"
 msgstr "无法加载之前的笔记。{0}"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Previous period"
 msgstr "上一时段"
 
@@ -4363,7 +4369,7 @@ msgstr "所选集合"
 msgid "selected day"
 msgstr "所选日期"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Selected day"
 msgstr "所选日期"
 
@@ -4789,7 +4795,7 @@ msgstr "任务"
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
 msgstr "任务是 mdbase v0.3 格式的可移植 Markdown 记录。"
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
+#. placeholder {0}: popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0}的任务"
@@ -4840,7 +4846,7 @@ msgstr "无法完成账户恢复操作。请检查连接和账户状态后重试
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "操作已完成，但无法刷新账户状态。请再次检查状态。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "无法保存日历更改。 "
 
@@ -4926,10 +4932,6 @@ msgstr "任务"
 #: src/components/task-actions.tsx
 msgid "The task action"
 msgstr "任务操作"
-
-#: src/app/full-calendar-view.tsx
-msgid "The task date is unavailable."
-msgstr "无法获取任务日期。"
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
@@ -5142,9 +5144,10 @@ msgstr "已移至今天。"
 msgid "today"
 msgstr "今天"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
+#: src/i18n/calendar-locale.ts
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
@@ -5167,7 +5170,7 @@ msgstr "明天"
 msgid "Too many attempts. Wait before trying again."
 msgstr "尝试次数过多。请稍后再试。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Tracked time"
 msgstr "已跟踪时间"
 
@@ -5385,8 +5388,9 @@ msgstr "正在等待你的电脑。重新连接后请重试此操作。"
 msgid "Website, Home"
 msgstr "网站、家中"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Week"
 msgstr "周"
 

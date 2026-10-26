@@ -88,11 +88,11 @@ importers:
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/calendar':
-        specifier: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz
-        version: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz(react@19.2.8)
+        specifier: 0.1.0
+        version: 0.1.0(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz
+        specifier: 0.3.0-rc.17
+        version: 0.3.0-rc.17
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1268,18 +1268,17 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/calendar@file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz':
-    resolution: {integrity: sha512-7Mb023LmY+an/rZY4ddUAMWEk7tEBodEbpoVYcrjr21q3S+qn05CZXWEUujpiDzF4D32PUBWn0Cs8EqEHPJsfw==, tarball: file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz}
-    version: 0.1.0-dev.0
+  '@tasknotes/calendar@0.1.0':
+    resolution: {integrity: sha512-XT/V+eyfQ3ULun1LhcwRho33xRhg8QYrybzQuQWH9Csw5ZBH8OG3nADXk3WPMG07zrFPTTBPlE/xX5JZ9ibdbw==}
+    engines: {node: '>=22'}
     peerDependencies:
       react: '>=18'
     peerDependenciesMeta:
       react:
         optional: true
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz':
-    resolution: {integrity: sha512-jGy/JRSdYyqrTReVpOjXplegqtsz4+YAnZHrdPqWeiOQZLhZMw+eTJYyVF+/4RW26fW5Q6yellLmr72DnY6nng==, tarball: file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz}
-    version: 0.3.0-rc.17-dev.0
+  '@tasknotes/model@0.3.0-rc.17':
+    resolution: {integrity: sha512-yg5lLo/5/OO270cIMd2uyOcSVad1/WKBO4WFG53TFFaQfKltxb3D05dy2u88D7ePbn1bclYbDRTQNqZWqT5qDA==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -5504,11 +5503,11 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/calendar@file:vendor/tasknotes-calendar-0.1.0-dev.0.tgz(react@19.2.8)':
+  '@tasknotes/calendar@0.1.0(react@19.2.8)':
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.17-dev.0.tgz':
+  '@tasknotes/model@0.3.0-rc.17':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0

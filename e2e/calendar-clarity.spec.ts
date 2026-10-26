@@ -1,14 +1,21 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./local-test";
 
 const view = (id: string) =>
   `views/${encodeURIComponent(`TaskNotes/Views/${id}.base#${id}`)}?demo=50`;
 
-test("calendar marks only elevated priority and names it", async ({ page }) => {
+test("calendar names elevated priority and keeps entries accessible", async ({
+  page,
+}) => {
   await page.goto(view("calendar"));
   await expect(page.locator(".tnc-dg .tnc-item").first()).toBeVisible();
   await expect(page.getByRole("list", { name: "Calendar markers" })).toHaveText(
     "High priority",
   );
+  const accessibility = await new AxeBuilder({ page })
+    .include(".full-calendar-view")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
   const phone = (page.viewportSize()?.width ?? 0) < 840;
   if (phone) {
     // Phone months draw every task as a dot; only elevated ones are coloured.

@@ -490,7 +490,7 @@ msgstr "{visibleCount}件のビューを表示中"
 msgid "+{0} more"
 msgstr "ほか{0}件"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "+{count} more"
 msgstr "ほか{count}件"
 
@@ -510,8 +510,9 @@ msgstr "15分"
 msgid "24 hour"
 msgstr "24時間制"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "3 days"
 msgstr "3日"
 
@@ -719,7 +720,7 @@ msgstr "初期ビューを追加"
 msgid "Add subtask"
 msgstr "サブタスクを追加"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
@@ -829,8 +830,9 @@ msgstr "後"
 msgid "After a number of times"
 msgstr "指定回数後"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Agenda"
 msgstr "アジェンダ"
 
@@ -842,7 +844,7 @@ msgstr "すべて"
 msgid "All conditions match"
 msgstr "すべての条件に一致"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "終日"
 
@@ -1040,11 +1042,11 @@ msgstr "組み込みの作業スペース"
 msgid "Calendar"
 msgstr "カレンダー"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar layout"
 msgstr "カレンダーレイアウト"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar markers"
 msgstr "カレンダーの目印"
 
@@ -1741,8 +1743,9 @@ msgstr "日付"
 msgid "Dates and estimate"
 msgstr "日付と見積もり"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Day"
 msgstr "日"
 
@@ -1980,7 +1983,7 @@ msgstr "画像をドロップして追加"
 msgid "due"
 msgstr "期限"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
@@ -2894,9 +2897,10 @@ msgstr "分"
 msgid "Minutes"
 msgstr "分"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Month"
 msgstr "月"
 
@@ -3095,7 +3099,8 @@ msgstr "新しいビュー"
 msgid "Next month"
 msgstr "翌月"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Next period"
 msgstr "次の期間"
 
@@ -3200,7 +3205,7 @@ msgstr "ステータスなし"
 msgid "No tasks"
 msgstr "タスクはありません"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "この期間にタスクはありません。"
 
@@ -3216,7 +3221,7 @@ msgstr "このビューに一致するタスクはありません"
 msgid "No tasks matched."
 msgstr "一致するタスクはありませんでした。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
 msgstr "この日にタスクはありません。追加から予定を設定してください。"
@@ -3613,7 +3618,8 @@ msgstr "以前のノート"
 msgid "Previous notes could not be loaded. {0}"
 msgstr "以前のノートを読み込めませんでした。{0}"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Previous period"
 msgstr "前の期間"
 
@@ -4363,7 +4369,7 @@ msgstr "選択したコレクション"
 msgid "selected day"
 msgstr "選択した日"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Selected day"
 msgstr "選択した日"
 
@@ -4789,7 +4795,7 @@ msgstr "タスク"
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
 msgstr "タスクはmdbase v0.3形式の持ち運び可能なMarkdownレコードです。"
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
+#. placeholder {0}: popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0}のタスク"
@@ -4840,7 +4846,7 @@ msgstr "アカウントの復元操作を完了できませんでした。接続
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "操作は完了しましたが、アカウント状態を更新できませんでした。もう一度状態を確認してください。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "カレンダーの変更を保存できませんでした。 "
 
@@ -4926,10 +4932,6 @@ msgstr "タスク"
 #: src/components/task-actions.tsx
 msgid "The task action"
 msgstr "タスク操作"
-
-#: src/app/full-calendar-view.tsx
-msgid "The task date is unavailable."
-msgstr "タスクの日付を利用できません。"
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
@@ -5142,9 +5144,10 @@ msgstr "。"
 msgid "today"
 msgstr "今日"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
+#: src/i18n/calendar-locale.ts
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
@@ -5167,7 +5170,7 @@ msgstr "明日"
 msgid "Too many attempts. Wait before trying again."
 msgstr "試行回数が多すぎます。しばらく待ってから、もう一度お試しください。"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Tracked time"
 msgstr "記録した時間"
 
@@ -5385,8 +5388,9 @@ msgstr "パソコンの再接続後に、この操作をもう一度お試しく
 msgid "Website, Home"
 msgstr "ウェブサイト、ホーム"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Week"
 msgstr "週"
 

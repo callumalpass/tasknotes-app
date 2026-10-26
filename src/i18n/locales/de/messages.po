@@ -490,7 +490,7 @@ msgstr "{visibleCount} Ansichten angezeigt"
 msgid "+{0} more"
 msgstr "+{0} weitere"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "+{count} more"
 msgstr "+{count} weitere"
 
@@ -510,8 +510,9 @@ msgstr "15 Minuten"
 msgid "24 hour"
 msgstr "24-Stunden-Format"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "3 days"
 msgstr "3 Tage"
 
@@ -719,7 +720,7 @@ msgstr "Startansichten hinzufügen"
 msgid "Add subtask"
 msgstr "Unteraufgabe hinzufügen"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
 #: src/components/capture-fab.tsx
 msgid "Add task"
@@ -829,8 +830,9 @@ msgstr "Nach"
 msgid "After a number of times"
 msgstr "Nach einer bestimmten Anzahl von Wiederholungen"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Agenda"
 msgstr "Agenda"
 
@@ -842,7 +844,7 @@ msgstr "Alle"
 msgid "All conditions match"
 msgstr "Alle Bedingungen treffen zu"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "Ganztägig"
 
@@ -1040,11 +1042,11 @@ msgstr "Integrierte Arbeitsbereiche"
 msgid "Calendar"
 msgstr "Kalender"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar layout"
 msgstr "Kalenderlayout"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Calendar markers"
 msgstr "Kalendermarkierungen"
 
@@ -1741,8 +1743,9 @@ msgstr "Daten"
 msgid "Dates and estimate"
 msgstr "Daten und Zeitschätzung"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Day"
 msgstr "Tag"
 
@@ -1980,7 +1983,7 @@ msgstr "Bilder hier ablegen, um sie hinzuzufügen"
 msgid "due"
 msgstr "fällig"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
@@ -2894,9 +2897,10 @@ msgstr "Minute"
 msgid "Minutes"
 msgstr "Minuten"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Month"
 msgstr "Monat"
 
@@ -3095,7 +3099,8 @@ msgstr "Neue Ansicht"
 msgid "Next month"
 msgstr "Nächster Monat"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Next period"
 msgstr "Nächster Zeitraum"
 
@@ -3200,7 +3205,7 @@ msgstr "Kein Status"
 msgid "No tasks"
 msgstr "Keine Aufgaben"
 
-#: src/app/full-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "Keine Aufgaben in diesem Zeitraum."
 
@@ -3216,7 +3221,7 @@ msgstr "Keine Aufgaben entsprechen dieser Ansicht"
 msgid "No tasks matched."
 msgstr "Keine passenden Aufgaben gefunden."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/views/mini-calendar-view.tsx
 msgid "No tasks on this day. Use Add task to schedule one."
 msgstr "An diesem Tag gibt es keine Aufgaben. Verwenden Sie „Aufgabe hinzufügen“, um eine einzuplanen."
@@ -3613,7 +3618,8 @@ msgstr "Vorherige Notiz"
 msgid "Previous notes could not be loaded. {0}"
 msgstr "Vorherige Notizen konnten nicht geladen werden. {0}"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Previous period"
 msgstr "Vorheriger Zeitraum"
 
@@ -4363,7 +4369,7 @@ msgstr "ausgewählte Sammlung"
 msgid "selected day"
 msgstr "ausgewählter Tag"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Selected day"
 msgstr "Ausgewählter Tag"
 
@@ -4789,7 +4795,7 @@ msgstr "Aufgaben"
 msgid "Tasks are portable Markdown records in the mdbase v0.3 format."
 msgstr "Aufgaben sind portable Markdown-Datensätze im Format mdbase v0.3."
 
-#. placeholder {0}: popup.querySelector(".fc-popover-title")?.textContent ?? uiCopy("selected day")
+#. placeholder {0}: popup.querySelector(".tnc-popover-title")?.textContent ?? uiCopy("selected day")
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "Aufgaben für {0}"
@@ -4840,7 +4846,7 @@ msgstr "Die Kontowiederherstellung konnte nicht abgeschlossen werden. Prüfen Si
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "Die Aktion wurde abgeschlossen, aber der Kontostatus konnte nicht aktualisiert werden. Prüfen Sie den Status erneut."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "Die Kalenderänderung konnte nicht gespeichert werden. "
 
@@ -4926,10 +4932,6 @@ msgstr "Die Aufgabe"
 #: src/components/task-actions.tsx
 msgid "The task action"
 msgstr "Die Aufgabenaktion"
-
-#: src/app/full-calendar-view.tsx
-msgid "The task date is unavailable."
-msgstr "Das Aufgabendatum ist nicht verfügbar."
 
 #: src/app/app-shell.tsx
 msgid "The task remains in the collection. Try again."
@@ -5142,9 +5144,10 @@ msgstr "für heute eingeplant."
 msgid "today"
 msgstr "heute"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
+#: src/i18n/calendar-locale.ts
 #: src/i18n/default-labels.ts
 #: src/i18n/presentation.ts
 msgid "Today"
@@ -5167,7 +5170,7 @@ msgstr "Morgen"
 msgid "Too many attempts. Wait before trying again."
 msgstr "Zu viele Versuche. Warten Sie, bevor Sie es erneut versuchen."
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 msgid "Tracked time"
 msgstr "Erfasste Zeit"
 
@@ -5385,8 +5388,9 @@ msgstr "Warten auf Ihren Computer. Versuchen Sie diese Aktion erneut, sobald die
 msgid "Website, Home"
 msgstr "Website, Zuhause"
 
-#: src/app/full-calendar-view.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
+#: src/i18n/calendar-locale.ts
 msgid "Week"
 msgstr "Woche"
 

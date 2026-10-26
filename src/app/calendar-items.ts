@@ -7,7 +7,7 @@ import {
   relativeDateDetail,
   viewPropertyDetails,
   type ViewPropertyDetail,
-} from "../domain/view-values";
+} from "../i18n/view-presentation";
 import {
   calendarPriorityMarker,
   withPriorityDetail,
