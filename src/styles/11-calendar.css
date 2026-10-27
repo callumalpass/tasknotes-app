@@ -772,12 +772,13 @@
   .full-calendar-commandbar {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-sm) var(--space-lg);
+    gap: var(--space-sm);
     margin-bottom: 14px;
   }
 
+  /* A long range title wraps within itself, so the layouts stay on the row. */
   .full-calendar-commandbar > h2 {
-    flex: 1 1 8em;
+    flex: 1 1 6em;
     min-width: 0;
     text-align: center;
   }
@@ -788,7 +789,7 @@
   }
 
   .full-calendar-modes button {
-    padding: 0 10px;
+    padding: 0 8px;
   }
 
   .full-calendar-modes .wide-mode {
@@ -1348,4 +1349,18 @@
   justify-content: flex-end;
   gap: 10px 14px;
   margin-top: 24px;
+}
+
+.full-calendar-commandbar[hidden] {
+  display: none;
+}
+
+.full-calendar-view .layout-option-space {
+  display: inline-block;
+  width: 18px;
+}
+
+/* The agenda's date strip sticks to the page, so nothing above it may clip. */
+.full-calendar-surface.is-agenda {
+  overflow: visible;
 }

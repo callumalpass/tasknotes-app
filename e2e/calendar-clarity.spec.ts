@@ -70,7 +70,9 @@ test("agenda groups all-day tasks under the date and labels only timed ones", as
 test("the layout switcher sits on the date row above the calendar on both screens", async ({
   page,
 }) => {
-  for (const id of ["upcoming", "calendar"]) {
+  // Phone agendas keep the switcher in their date strip instead.
+  const phone = (page.viewportSize()?.width ?? 0) < 840;
+  for (const id of phone ? ["calendar"] : ["upcoming", "calendar"]) {
     await page.goto(view(id));
     const modes = page.getByLabel("Calendar layout");
     await expect(modes).toBeVisible();
@@ -90,6 +92,31 @@ test("the layout switcher sits on the date row above the calendar on both screen
         Math.abs(box.y + box.height / 2 - (title.y + title.height / 2)),
       ).toBeLessThan(4);
   }
+});
+
+test("the phone agenda keeps its date strip in view and overdue work on today", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "The date strip is the phone agenda");
+  await page.goto(view("upcoming"));
+  const strip = page.locator(".tnc-strip");
+  await expect(strip.getByLabel("Calendar layout")).toBeVisible();
+  await expect(page.locator(".full-calendar-commandbar")).toBeHidden();
+  // Demo tasks due two days ago appear under today.
+  await expect(
+    page
+      .locator(".tnc-list-section:has(.is-today)")
+      .getByText("2 days ago")
+      .first(),
+  ).toBeVisible();
+  await page.mouse.wheel(0, 1500);
+  await expect
+    .poll(async () => (await strip.boundingBox())?.y ?? -1)
+    .toBeGreaterThanOrEqual(0);
+  await expect(strip.locator(".tnc-strip-day.is-focus")).not.toHaveClass(
+    /is-today/,
+  );
 });
 
 test.describe("calendar drops", () => {

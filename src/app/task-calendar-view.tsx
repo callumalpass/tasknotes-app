@@ -6,8 +6,15 @@ import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
 
 import { TaskCalendar } from "@tasknotes/calendar/react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Plus,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   calendarItems,
@@ -27,6 +34,7 @@ import {
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
+import { ViewOptions } from "../components/view-options";
 import {
   calendarEntryKey,
   type CalendarEntry,
@@ -124,6 +132,9 @@ export function TaskCalendarView({
   );
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
+  // Phones get a date strip above a list that keeps loading days.
+  const agenda = phone && mode === "listWeek";
+  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
   const [title, setTitle] = useState("");
   // The external calendar updates its title on a language change without
   // emitting onRangeChange when the visible dates stay the same.
@@ -461,7 +472,37 @@ export function TaskCalendarView({
         {/* The layout switcher belongs to the calendar it changes, so it sits
             on the date row above the grid or agenda on every screen. */}
         <div className="full-calendar-main">
-          <div className="full-calendar-commandbar">
+          {agenda && stripSlot
+            ? createPortal(
+                <ViewOptions
+                  label={t`Calendar layout`}
+                  icon={<LayoutGrid aria-hidden="true" size={18} />}
+                >
+                  {calendarModes
+                    .filter(({ compact }) => compact)
+                    .map(({ value, label }) => (
+                      <button
+                        aria-pressed={mode === value}
+                        key={value}
+                        type="button"
+                        onClick={() => setMode(value)}
+                      >
+                        {mode === value ? (
+                          <Check aria-hidden="true" size={18} />
+                        ) : (
+                          <span
+                            aria-hidden="true"
+                            className="layout-option-space"
+                          />
+                        )}{" "}
+                        {label}
+                      </button>
+                    ))}
+                </ViewOptions>,
+                stripSlot,
+              )
+            : null}
+          <div className="full-calendar-commandbar" hidden={agenda}>
             <div className="full-calendar-navigation">
               <button
                 aria-label={t`Previous period`}
@@ -534,7 +575,13 @@ export function TaskCalendarView({
               {mutationError}
             </p>
           ) : null}
-          <div className="full-calendar-surface">
+          <div
+            className={
+              agenda
+                ? "full-calendar-surface is-agenda"
+                : "full-calendar-surface"
+            }
+          >
             <TaskCalendar<CalendarEventData>
               calendarRef={(calendar) => {
                 calendarRef.current = calendar;
@@ -554,6 +601,11 @@ export function TaskCalendarView({
                 execution.view.presentation?.options.listDayCount,
                 7,
               )}
+              listAgenda={agenda}
+              stripSlotDidMount={({ el }) => setStripSlot(el)}
+              stripSlotWillUnmount={({ el }) =>
+                setStripSlot((current) => (current === el ? null : current))
+              }
               toolbar={false}
               height="auto"
               navLinks={false}

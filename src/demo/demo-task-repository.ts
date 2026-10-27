@@ -1036,6 +1036,7 @@ function demoViewDocuments(
       options: {
         calendarView: "listWeek",
         listDayCount: 7,
+        showOverdueOnToday: true,
         showScheduled: true,
         showDue: true,
       },
