@@ -88,11 +88,11 @@ importers:
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/calendar':
-        specifier: 0.1.0
-        version: 0.1.0(react@19.2.8)
+        specifier: 0.1.1
+        version: 0.1.1(react@19.2.8)
       '@tasknotes/model':
-        specifier: 0.3.0-rc.17
-        version: 0.3.0-rc.17
+        specifier: 0.3.0-rc.19
+        version: 0.3.0-rc.19
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1268,8 +1268,8 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/calendar@0.1.0':
-    resolution: {integrity: sha512-XT/V+eyfQ3ULun1LhcwRho33xRhg8QYrybzQuQWH9Csw5ZBH8OG3nADXk3WPMG07zrFPTTBPlE/xX5JZ9ibdbw==}
+  '@tasknotes/calendar@0.1.1':
+    resolution: {integrity: sha512-L1u1/0tIbCxtq+0k4W67UT3uo0vq8uO8QbI9/BGMAAYjjM73F47qrHLfsqKgaRmJ6NzCZ09Y84++11on+FfwlQ==}
     engines: {node: '>=22'}
     peerDependencies:
       react: '>=18'
@@ -1277,8 +1277,8 @@ packages:
       react:
         optional: true
 
-  '@tasknotes/model@0.3.0-rc.17':
-    resolution: {integrity: sha512-yg5lLo/5/OO270cIMd2uyOcSVad1/WKBO4WFG53TFFaQfKltxb3D05dy2u88D7ePbn1bclYbDRTQNqZWqT5qDA==}
+  '@tasknotes/model@0.3.0-rc.19':
+    resolution: {integrity: sha512-OEvRh6hP6yFHDLdyxrswdkwFoUYjP0sDZD8wxnyH+gZT33KbtvM/wmrlJ/gP0Q5NoCs8TgCR7H0j+LJitg7mVA==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -5503,11 +5503,11 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/calendar@0.1.0(react@19.2.8)':
+  '@tasknotes/calendar@0.1.1(react@19.2.8)':
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@0.3.0-rc.17':
+  '@tasknotes/model@0.3.0-rc.19':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0

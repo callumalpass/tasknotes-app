@@ -146,8 +146,22 @@ describe("shared calendar contract through app mapping and exact repository pers
           expect(after.frontmatter[operation.field], operation.field).toEqual(
             expected[operation.field],
           );
-        const planned = { ...model.taskInfo(before), ...edit.expectedUpdates };
+        const planned: Record<string, unknown> = {
+          ...model.taskInfo(before),
+          ...edit.expectedUpdates,
+        };
         const actual = model.taskInfo(after);
+        // Fixture data carries this field ahead of its published type.
+        const unset =
+          "expectedUnsetProperties" in edit
+            ? (edit.expectedUnsetProperties as readonly string[])
+            : [];
+        for (const property of unset) {
+          delete planned[property];
+          expect(actual[property as keyof typeof actual], property).toBe(
+            undefined,
+          );
+        }
         expect({
           ...actual,
           complete_instances: actual.complete_instances ?? [],
