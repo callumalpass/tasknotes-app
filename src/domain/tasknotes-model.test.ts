@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { buildCalendarEntries } from "@tasknotes/model/calendar";
+
 import { TaskNotesTaskModel } from "./tasknotes-model";
 
 describe("TaskNotes task model app boundary", () => {
@@ -833,6 +835,27 @@ Occurrence body for {{title}}`,
       recurrence_parent: "[[tasks/template-series]]",
       occurrence_date: "2026-08-05",
     });
+  });
+
+  it("stores calendar moves of timed tasks as instants", () => {
+    const task = model.create(
+      { title: "Call", scheduled: "2026-10-29T00:30:00Z" },
+      { id: "call", now: "2026-10-27T00:00:00Z" },
+    );
+    const timezone = "Australia/Melbourne";
+    const [entry] = buildCalendarEntries({
+      tasks: [model.calendarTaskInfo(task)],
+      range: { start: "2026-10-26", end: "2026-11-02" },
+      timezone,
+      now: "2026-10-27T00:00:00Z",
+    });
+    const moved = model.editCalendar(task, {
+      entry,
+      change: { kind: "drop", start: "2026-10-30T11:30", allDay: false },
+      timezone,
+      now: "2026-10-27T01:00:00Z",
+    });
+    expect(moved.frontmatter.scheduled).toBe("2026-10-30T00:30:00Z");
   });
 });
 

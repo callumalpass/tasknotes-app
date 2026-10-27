@@ -5,7 +5,10 @@ import {
   getDefaultCompletedStatus,
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
-import { planCalendarEdit } from "@tasknotes/model/calendar";
+import {
+  calendarDateToInstant,
+  planCalendarEdit,
+} from "@tasknotes/model/calendar";
 import type { CalendarTaskEdit } from "./calendar-edit";
 import { getCurrentDateString } from "@tasknotes/model/date";
 import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
@@ -97,6 +100,40 @@ export interface MaterializedOccurrenceTransition {
   occurrence: Task;
   parent: Task;
   materializeNextDate?: string;
+}
+
+/** Calendar plans carry wall-clock times in the calendar's timezone; stored
+ * task times are instants, as create and update write them. */
+function storedCalendarTime<Value>(value: Value, timezone: string): Value {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T/.test(value) ||
+    /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
+  )
+    return value;
+  return new Date(calendarDateToInstant(value, timezone))
+    .toISOString()
+    .replace(".000Z", "Z") as Value;
+}
+
+function storedCalendarPlan<Plan extends ReturnType<typeof planCalendarEdit>>(
+  plan: Plan,
+  timezone: string,
+  dateFields: readonly string[],
+): Plan {
+  return {
+    ...plan,
+    updatedTask: {
+      ...plan.updatedTask,
+      scheduled: storedCalendarTime(plan.updatedTask.scheduled, timezone),
+      due: storedCalendarTime(plan.updatedTask.due, timezone),
+    },
+    frontmatterPatch: plan.frontmatterPatch.map((operation) =>
+      operation.op === "set" && dateFields.includes(operation.field)
+        ? { ...operation, value: storedCalendarTime(operation.value, timezone) }
+        : operation,
+    ),
+  };
 }
 
 export class TaskNotesTaskModel {
@@ -430,12 +467,16 @@ export class TaskNotesTaskModel {
   }
 
   editCalendar(current: Task, edit: CalendarTaskEdit): Task {
-    const plan = planCalendarEdit({
-      task: this.taskInfo(current),
-      ...edit,
-      now: edit.now ?? new Date().toISOString(),
-      fieldMapping: this.config.fieldMapping,
-    });
+    const plan = storedCalendarPlan(
+      planCalendarEdit({
+        task: this.taskInfo(current),
+        ...edit,
+        now: edit.now ?? new Date().toISOString(),
+        fieldMapping: this.config.fieldMapping,
+      }),
+      edit.timezone,
+      [this.config.fieldMapping.scheduled, this.config.fieldMapping.due],
+    );
     this.assertValid(plan.updatedTask);
     this.assertCustomFields(plan.updatedTask.customProperties);
     const revision = current.revision + 1;

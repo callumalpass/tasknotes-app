@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { calendarDateToInstant } from "@tasknotes/model/calendar";
 import { calendarFixtures } from "@tasknotes/model/calendar/fixtures";
 import { DEFAULT_FIELD_MAPPING } from "@tasknotes/model/defaults";
 import { mapTaskToFrontmatter } from "@tasknotes/model/mapping";
@@ -141,19 +142,39 @@ describe("shared calendar contract through app mapping and exact repository pers
           ...operation,
           field: mappedField(operation.field, configuration.fieldMapping),
         }));
+        // The contract states times on the fixture's wall clock; the app
+        // stores the same moments as instants.
+        const moment = (value: unknown) =>
+          typeof value === "string" && value.includes("T")
+            ? calendarDateToInstant(value, fixture.input.timezone)
+            : value;
+        const dateFields = [
+          configuration.fieldMapping.scheduled,
+          configuration.fieldMapping.due,
+        ];
         const expected = applyFrontmatterPatch(before.frontmatter, patch);
         for (const operation of patch)
-          expect(after.frontmatter[operation.field], operation.field).toEqual(
-            expected[operation.field],
-          );
+          if (dateFields.includes(operation.field))
+            expect(
+              moment(after.frontmatter[operation.field]),
+              operation.field,
+            ).toEqual(moment(expected[operation.field]));
+          else
+            expect(after.frontmatter[operation.field], operation.field).toEqual(
+              expected[operation.field],
+            );
         const planned = { ...model.taskInfo(before), ...edit.expectedUpdates };
         const actual = model.taskInfo(after);
         expect({
           ...actual,
+          scheduled: moment(actual.scheduled),
+          due: moment(actual.due),
           complete_instances: actual.complete_instances ?? [],
           skipped_instances: actual.skipped_instances ?? [],
         }).toMatchObject({
           ...planned,
+          scheduled: moment(planned.scheduled),
+          due: moment(planned.due),
           complete_instances: planned.complete_instances ?? [],
           skipped_instances: planned.skipped_instances ?? [],
         });
