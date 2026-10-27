@@ -1029,10 +1029,6 @@ msgstr "Colunas do quadro"
 msgid "Bold"
 msgstr "Negrito"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Navegar"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Criador"
@@ -2942,6 +2938,10 @@ msgstr "Mês"
 msgid "Monthly"
 msgstr "Mensal"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Mais"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "Sugestões"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Sugestões das primeiras {limit} tarefas. Pesquise para encontrar outras."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Trocar de coleção"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

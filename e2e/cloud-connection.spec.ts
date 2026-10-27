@@ -44,7 +44,7 @@ async function nav(page: Page, name: string) {
   const direct = page.getByRole("button", { name, exact: true });
   if (await direct.isVisible()) await direct.click();
   else {
-    await page.getByRole("button", { name: "Browse", exact: true }).click();
+    await page.getByRole("button", { name: "More", exact: true }).click();
     await page.getByRole("menuitem", { name, exact: true }).click();
   }
 }

@@ -1029,10 +1029,6 @@ msgstr "ボード列"
 msgid "Bold"
 msgstr "太字"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "参照"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "ビルダー"
@@ -2942,6 +2938,10 @@ msgstr "月"
 msgid "Monthly"
 msgstr "毎月"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "その他"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "候補"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "最初の{limit}件のタスク候補です。他を探すには検索してください。"
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "コレクションを切り替え"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

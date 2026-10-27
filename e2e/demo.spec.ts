@@ -840,7 +840,7 @@ async function openNavigationItem(page: Page, name: string): Promise<void> {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 

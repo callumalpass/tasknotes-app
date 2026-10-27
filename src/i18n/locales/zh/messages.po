@@ -1029,10 +1029,6 @@ msgstr "看板列"
 msgid "Bold"
 msgstr "粗体"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "浏览"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "构建器"
@@ -2942,6 +2938,10 @@ msgstr "月"
 msgid "Monthly"
 msgstr "每月"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "更多"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "建议"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "根据前 {limit} 个任务提供的建议。搜索以查找其他任务。"
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "切换集合"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

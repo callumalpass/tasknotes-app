@@ -1029,10 +1029,6 @@ msgstr "Colonne della bacheca"
 msgid "Bold"
 msgstr "Grassetto"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Sfoglia"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Generatore"
@@ -2942,6 +2938,10 @@ msgstr "Mese"
 msgid "Monthly"
 msgstr "Mensile"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Altro"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "Suggerimenti"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Suggerimenti dalle prime {limit} attività. Cerca per trovarne altre."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Cambia raccolta"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

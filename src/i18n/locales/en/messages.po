@@ -1029,10 +1029,6 @@ msgstr "Board columns"
 msgid "Bold"
 msgstr "Bold"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Browse"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Builder"
@@ -2942,6 +2938,10 @@ msgstr "Month"
 msgid "Monthly"
 msgstr "Monthly"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "More"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "Suggestions"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Suggestions from the first {limit} tasks. Search to find others."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Switch collection"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

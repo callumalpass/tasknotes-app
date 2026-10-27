@@ -381,7 +381,7 @@ async function openNavigationItem(
   }
   await page
     .getByRole("button", {
-      name: locale === "fr" ? "Parcourir" : "Browse",
+      name: locale === "fr" ? "Plus" : "More",
       exact: true,
     })
     .click();

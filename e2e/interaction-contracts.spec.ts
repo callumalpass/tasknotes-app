@@ -26,7 +26,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
     ),
   ).toEqual([]);
   await page.goto("?demo=50");
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("menuitem", { name: "Calendar", exact: true }).click();
   const dots = page.locator(".tnc-dg-dots .tnc-item--indicator");
   await expect(dots.first()).toBeVisible();
