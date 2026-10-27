@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTaskCollectionConfiguration } from "./task-configuration";
+import {
+  resolveTaskCollectionConfiguration,
+  splitTaskModelSettingsPatch,
+  taskNotesSettingsChanges,
+} from "./task-configuration";
 
 function taskType(input: Record<string, unknown>): Record<string, unknown> {
   const binding = structuredClone(
@@ -346,5 +350,97 @@ describe("TaskNotes collection configuration", () => {
         readOnly: true,
       },
     ]);
+  });
+
+  it("routes moved settings to the record and the rest to the type, keeping only changes", () => {
+    const current = resolveTaskCollectionConfiguration(
+      taskType({
+        binding: {
+          status: {
+            values: ["open", "done"],
+            completed_values: ["done"],
+            default: "open",
+          },
+          archive: { move_on_archive: true, folder: "Archive/Tasks" },
+        },
+      }),
+    );
+
+    const { type, app } = splitTaskModelSettingsPatch(
+      {
+        defaultStatus: "done",
+        recurrence: {
+          maintainDueDateOffset: false,
+          resetCheckboxesOnRecurrence:
+            !current.recurrence.resetCheckboxesOnRecurrence,
+        },
+        links: { writeFormat: "markdown" },
+        // Unchanged values never reach the record.
+        archive: { moveOnArchive: true, folder: "/Archive/Tasks/" },
+        templating: { enabled: true, templatePath: " Templates/Task.md " },
+        statusAutomation: {
+          done: { autoArchive: true, autoArchiveDelay: 15 },
+        },
+      },
+      current,
+    );
+
+    expect(type).toEqual({
+      defaultStatus: "done",
+      recurrence: { maintainDueDateOffset: false },
+    });
+    expect(app).toEqual({
+      reset_body_checkboxes_on_recurrence:
+        !current.recurrence.resetCheckboxesOnRecurrence,
+      link_write_format: "markdown",
+      template_path: "Templates/Task.md",
+      template_enabled: true,
+      status_behavior: {
+        done: { auto_archive: true, auto_archive_delay_minutes: 15 },
+      },
+    });
+
+    expect(() =>
+      splitTaskModelSettingsPatch({ templating: { enabled: true } }, current),
+    ).toThrow(/template path/);
+    expect(() =>
+      splitTaskModelSettingsPatch(
+        { archive: { folder: "../Elsewhere" } },
+        current,
+      ),
+    ).toThrow(/inside the collection/);
+    expect(() =>
+      splitTaskModelSettingsPatch(
+        { statusAutomation: { done: { autoArchiveDelay: -1 } } },
+        current,
+      ),
+    ).toThrow(/non-negative integer/);
+  });
+
+  it("merges a status behaviour change into the record without dropping other statuses", () => {
+    const record = {
+      app: "dev.tasknotes",
+      scope: "collection",
+      settings_version: 1,
+      status_behavior: {
+        open: { next_status: "done" },
+        done: { auto_archive: false, exclude_from_cycle: true },
+      },
+    };
+
+    expect(
+      taskNotesSettingsChanges(
+        { status_behavior: { done: { auto_archive: true } } },
+        record,
+      ),
+    ).toEqual({
+      status_behavior: {
+        open: { next_status: "done" },
+        done: { auto_archive: true, exclude_from_cycle: true },
+      },
+    });
+    expect(taskNotesSettingsChanges({ move_on_archive: true }, record)).toEqual(
+      { move_on_archive: true },
+    );
   });
 });
