@@ -693,8 +693,20 @@ function releaseFixture(appStoreState, buildVersion = "27") {
     async list(path) {
       assert.match(path, /\/appStoreVersions\?/);
       return [
-        { id: "live", attributes: { versionString: "1.0.8", appStoreState: "READY_FOR_SALE" } },
-        { id: "v109", attributes: { versionString: "1.0.9", appStoreState: f.appStoreState } },
+        {
+          id: "live",
+          attributes: {
+            versionString: "1.0.8",
+            appStoreState: "READY_FOR_SALE",
+          },
+        },
+        {
+          id: "v109",
+          attributes: {
+            versionString: "1.0.9",
+            appStoreState: f.appStoreState,
+          },
+        },
       ];
     },
     async request(path, method = "GET", data) {
@@ -703,10 +715,20 @@ function releaseFixture(appStoreState, buildVersion = "27") {
         f.appStoreState = "PROCESSING_FOR_APP_STORE";
         return { data: { id: "req" } };
       }
-      if (path === "appStoreVersions/v109/relationships/build") return { data: { type: "builds", id: "b27" } };
-      if (path === "builds/b27") return { data: { id: "b27", attributes: { version: buildVersion } } };
+      if (path === "appStoreVersions/v109/relationships/build")
+        return { data: { type: "builds", id: "b27" } };
+      if (path === "builds/b27")
+        return { data: { id: "b27", attributes: { version: buildVersion } } };
       if (path === "appStoreVersions/v109")
-        return { data: { id: "v109", attributes: { versionString: "1.0.9", appStoreState: f.appStoreState } } };
+        return {
+          data: {
+            id: "v109",
+            attributes: {
+              versionString: "1.0.9",
+              appStoreState: f.appStoreState,
+            },
+          },
+        };
       throw new Error(`Unexpected ${method} ${path}`);
     },
   };
@@ -715,15 +737,23 @@ function releaseFixture(appStoreState, buildVersion = "27") {
 
 test("releases only the approved exact version and build", async () => {
   const f = releaseFixture("PENDING_DEVELOPER_RELEASE");
-  const result = await releaseAppStore({ client: f.client, version: "1.0.9", buildNumber: "27" });
-  assert.deepEqual(f.writes, [{
-    path: "appStoreVersionReleaseRequests",
-    method: "POST",
-    data: {
-      type: "appStoreVersionReleaseRequests",
-      relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: "v109" } } },
+  const result = await releaseAppStore({
+    client: f.client,
+    version: "1.0.9",
+    buildNumber: "27",
+  });
+  assert.deepEqual(f.writes, [
+    {
+      path: "appStoreVersionReleaseRequests",
+      method: "POST",
+      data: {
+        type: "appStoreVersionReleaseRequests",
+        relationships: {
+          appStoreVersion: { data: { type: "appStoreVersions", id: "v109" } },
+        },
+      },
     },
-  }]);
+  ]);
   assert.equal(result.state, "PROCESSING_FOR_APP_STORE");
   assert.equal(result.alreadyReleased, false);
 });
@@ -731,7 +761,11 @@ test("releases only the approved exact version and build", async () => {
 test("release rerun after it started is a read-only success", async () => {
   for (const state of ["PROCESSING_FOR_APP_STORE", "READY_FOR_SALE"]) {
     const f = releaseFixture(state);
-    const result = await releaseAppStore({ client: f.client, version: "1.0.9", buildNumber: "27" });
+    const result = await releaseAppStore({
+      client: f.client,
+      version: "1.0.9",
+      buildNumber: "27",
+    });
     assert.equal(f.writes.length, 0);
     assert.equal(result.alreadyReleased, true);
   }
@@ -739,8 +773,22 @@ test("release rerun after it started is a read-only success", async () => {
 
 test("release refuses unapproved versions and mismatched builds", async () => {
   const waiting = releaseFixture("WAITING_FOR_REVIEW");
-  await assert.rejects(releaseAppStore({ client: waiting.client, version: "1.0.9", buildNumber: "27" }), /not awaiting release/);
+  await assert.rejects(
+    releaseAppStore({
+      client: waiting.client,
+      version: "1.0.9",
+      buildNumber: "27",
+    }),
+    /not awaiting release/,
+  );
   const other = releaseFixture("PENDING_DEVELOPER_RELEASE", "26");
-  await assert.rejects(releaseAppStore({ client: other.client, version: "1.0.9", buildNumber: "27" }), /expected build/);
+  await assert.rejects(
+    releaseAppStore({
+      client: other.client,
+      version: "1.0.9",
+      buildNumber: "27",
+    }),
+    /expected build/,
+  );
   assert.equal(waiting.writes.length + other.writes.length, 0);
 });
