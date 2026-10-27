@@ -23,6 +23,7 @@ import {
   calendarPriorityMarker,
   withPendingMoves,
   withPriorityDetail,
+  withoutSupersededMoves,
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
@@ -77,6 +78,8 @@ type CalendarMode =
   | "listWeek";
 
 const PHONE_QUERY = "(max-width: 839px)";
+/** How long a saved move outlasts view data that still shows the old place. */
+const HELD_MOVE_LIMIT_MS = 5000;
 
 export function TaskCalendarView({
   execution,
@@ -173,6 +176,13 @@ export function TaskCalendarView({
     }),
     [configuration, entries, execution, titleProperty, locale],
   );
+  // Forget moves once view data shows them, so a later Undo is drawn as is.
+  const [prunedFor, setPrunedFor] = useState(built);
+  if (prunedFor !== built) {
+    setPrunedFor(built);
+    const kept = withoutSupersededMoves(pendingMoves, built.items, execution);
+    if (kept !== pendingMoves) setPendingMoves(kept);
+  }
   const items = useMemo(
     () =>
       withPendingMoves(built.items, pendingMoves, execution).map(withRevision),
@@ -211,17 +221,48 @@ export function TaskCalendarView({
 
   function holdMove(id: string, move: PendingCalendarMove | undefined) {
     setPendingMoves((current) => {
-      // Drop moves that later view data has already superseded.
-      const next = new Map(
-        [...current].filter(
-          ([, held]) =>
-            !held.settledWith || held.settledWith === executionRef.current,
-        ),
-      );
+      const next = new Map(current);
       if (move) next.set(id, move);
       else next.delete(id);
       return next;
     });
+  }
+
+  /** Holds the dropped place until view data shows the accepted write. */
+  async function saveMove(
+    id: string,
+    placement: Omit<PendingCalendarMove, "from" | "settledWith">,
+    save: () => Promise<void>,
+    revert: () => void,
+  ) {
+    const drawn = built.items.find((item) => item.id === id);
+    const move: PendingCalendarMove = {
+      ...placement,
+      from: { start: drawn?.start, end: drawn?.end, allDay: drawn?.allDay },
+    };
+    holdMove(id, move);
+    try {
+      await save();
+    } catch (reason) {
+      holdMove(id, undefined);
+      revert();
+      setMutationError(message(reason));
+      return;
+    }
+    const settled = { ...move, settledWith: executionRef.current };
+    holdMove(id, settled);
+    // Should the data never show the move (another device moved it back),
+    // the data wins after a while.
+    window.setTimeout(
+      () =>
+        setPendingMoves((current) => {
+          if (current.get(id) !== settled) return current;
+          const next = new Map(current);
+          next.delete(id);
+          return next;
+        }),
+      HELD_MOVE_LIMIT_MS,
+    );
   }
 
   /** Asks about a gesture on a generated occurrence; true unless the person chose the series. */
@@ -301,21 +342,17 @@ export function TaskCalendarView({
       info.revert();
       return;
     }
-    const move: PendingCalendarMove = {
-      start: info.startStr,
-      // Untimed tasks and open time entries keep their implicit length.
-      ...(info.item.end ? { end: info.endStr } : {}),
-      allDay: info.allDay,
-    };
-    holdMove(id, move);
-    try {
-      await onEdit(metadata.entry.task, edit);
-      holdMove(id, { ...move, settledWith: executionRef.current });
-    } catch (reason) {
-      holdMove(id, undefined);
-      info.revert();
-      setMutationError(message(reason));
-    }
+    await saveMove(
+      id,
+      {
+        start: info.startStr,
+        // Untimed tasks and open time entries keep their implicit length.
+        ...(info.item.end ? { end: info.endStr } : {}),
+        allDay: info.allDay,
+      },
+      () => onEdit(metadata.entry.task, edit),
+      info.revert,
+    );
   }
 
   async function resizeEvent(info: ItemChangeArg<CalendarEventData>) {
@@ -348,20 +385,12 @@ export function TaskCalendarView({
       info.revert();
       return;
     }
-    const move: PendingCalendarMove = {
-      start: info.startStr,
-      end: info.endStr,
-      allDay: info.allDay,
-    };
-    holdMove(id, move);
-    try {
-      await onEdit(metadata.entry.task, edit);
-      holdMove(id, { ...move, settledWith: executionRef.current });
-    } catch (reason) {
-      holdMove(id, undefined);
-      info.revert();
-      setMutationError(message(reason));
-    }
+    await saveMove(
+      id,
+      { start: info.startStr, end: info.endStr, allDay: info.allDay },
+      () => onEdit(metadata.entry.task, edit),
+      info.revert,
+    );
   }
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
