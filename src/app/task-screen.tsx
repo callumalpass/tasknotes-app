@@ -1,7 +1,7 @@
 import { t as translate } from "@lingui/core/macro";
 import { OccurrencePolicyField } from "./occurrence-policy-field";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
 import { useHistoryLeaveGuard } from "./use-workspace-navigation";
 import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
@@ -15,6 +15,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
@@ -168,6 +169,7 @@ function TaskEditor({
   recoveryScope,
 }: TaskEditorProps & { recoveryScope: string }) {
   const { t } = useLingui();
+  const besideWork = useDetailsBesideWork();
   const {
     updateTask,
     mutations,
@@ -783,13 +785,22 @@ function TaskEditor({
     >
       <header className="task-toolbar">
         <button
-          aria-label={t({ message: "Back" })}
+          aria-label={
+            besideWork
+              ? t({ message: "Close task details" })
+              : t({ message: "Back" })
+          }
           className="icon-action"
           disabled={leaving}
+          title={besideWork ? t({ message: "Close" }) : undefined}
           type="button"
           onClick={() => void leave()}
         >
-          <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
+          {besideWork ? (
+            <X aria-hidden="true" size={21} strokeWidth={1.7} />
+          ) : (
+            <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
+          )}
         </button>
         <button
           className={`save-state is-${rejection ? "error" : saveState}`}
@@ -1336,6 +1347,25 @@ function DateTimeField({
       value={value}
       onChange={onChange}
     />
+  );
+}
+
+// Matches the 06-navigation.css breakpoint where details sit beside the work
+// rather than replacing it.
+const DETAILS_BESIDE_WORK = "(min-width: 1024px)";
+
+function subscribeDetailsBesideWork(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => undefined;
+  const media = window.matchMedia(DETAILS_BESIDE_WORK);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function useDetailsBesideWork(): boolean {
+  return useSyncExternalStore(
+    subscribeDetailsBesideWork,
+    () => window.matchMedia?.(DETAILS_BESIDE_WORK).matches ?? false,
+    () => false,
   );
 }
 

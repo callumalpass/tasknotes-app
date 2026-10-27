@@ -79,6 +79,27 @@ describe("TaskScreen", () => {
     );
   });
 
+  it("offers Close instead of Back when details sit beside the work", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query === "(min-width: 1024px)",
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    try {
+      const onBack = renderTask();
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Close task details" }),
+      );
+      await waitFor(() => expect(onBack).toHaveBeenCalled());
+      expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("does not write assignments when only other fields changed", async () => {
     const update = vi.spyOn(repository, "update");
     const onBack = renderTask();

@@ -96,7 +96,9 @@ test("French interface preserves user edits and stored English view names", asyn
   expect(results.violations).toEqual([]);
   await title.fill("Ma tâche — untouched user content");
   await expect(page.locator(".save-state")).toHaveText("Enregistré");
-  await page.getByRole("button", { name: "Retour", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Retour|Fermer les détails de la tâche)$/ })
+    .click();
   await expect(
     page.getByRole("button", {
       name: "Ma tâche — untouched user content",

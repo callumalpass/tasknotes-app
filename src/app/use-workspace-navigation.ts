@@ -111,7 +111,18 @@ export function useWorkspaceNavigation(
   const navigate = useCallback(
     (next: Route, replace = false) => {
       const url = routeUrl(next);
-      const state = next.page === "task" ? { taskPanel: true } : null;
+      // Choosing another task swaps the open panel's entry, so Back closes the
+      // panel instead of revisiting earlier selections. `taskPanel` marks an
+      // entry pushed over the workspace and survives the swap.
+      if (next.page === "task" && route.page === "task") replace = true;
+      const state =
+        next.page !== "task"
+          ? null
+          : {
+              taskPanel: replace
+                ? Boolean(window.history.state?.taskPanel)
+                : true,
+            };
       if (replace) window.history.replaceState(state, "", url);
       else window.history.pushState(state, "", url);
       if (next.page === "task" && route.page !== "task")

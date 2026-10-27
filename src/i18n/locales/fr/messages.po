@@ -1285,6 +1285,7 @@ msgid "Clear value"
 msgstr "Effacer la valeur"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1326,6 +1327,10 @@ msgstr "Fermer la nouvelle tâche"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Fermer l’éditeur de propriétés"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "Fermer les détails de la tâche"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
