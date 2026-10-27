@@ -1,5 +1,5 @@
 import "@tasknotes/calendar/calendar.css";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { appLocale } from "../i18n/app";
 import { calendarText } from "../i18n/calendar-locale";
@@ -54,7 +54,7 @@ import {
 } from "../components/recurring-edit-scope-dialog";
 import { formatOccurrenceDate } from "./task-editor-draft";
 import { occurrenceTask } from "../domain/task-occurrence";
-import { dateFromStorage, todayString } from "../domain/task";
+import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
 import { viewPropertyDetails } from "../i18n/view-presentation";
 import { useRepository } from "./repository-context";
 import type {
@@ -75,7 +75,7 @@ import type { TaskSummary } from "../domain/task";
 import { useCalendarEntries } from "./use-calendar-entries";
 import { calendarContext } from "../domain/calendar-events";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskViewExecution } from "../domain/view";
+import type { TaskViewExecution, TaskViewRow } from "../domain/view";
 
 /** View names as stored in `.base` files, shared with the TaskNotes plugin. */
 type CalendarMode =
@@ -104,6 +104,8 @@ export function TaskCalendarView({
   onOpen: onOpenTask,
   onToggle,
   onEdit,
+  onMoveOverdueToToday,
+  movingOverdue,
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
@@ -116,6 +118,8 @@ export function TaskCalendarView({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
+  onMoveOverdueToToday?(rows: readonly TaskViewRow[]): void;
+  movingOverdue?: boolean;
 }) {
   const { t } = useLingui();
   const locale = appLocale();
@@ -132,9 +136,14 @@ export function TaskCalendarView({
   );
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
-  // Phones get a date strip above a list that keeps loading days.
+  // Phones get a date strip above a list that keeps loading days, and above
+  // day grids; the strip replaces the date row there.
   const agenda = phone && mode === "listWeek";
+  const stripped =
+    agenda ||
+    (phone && (mode === "timeGridThreeDay" || mode === "timeGridDay"));
   const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
+  const [leadSlot, setLeadSlot] = useState<HTMLElement | null>(null);
   const [title, setTitle] = useState("");
   // The external calendar updates its title on a language change without
   // emitting onRangeChange when the visible dates stay the same.
@@ -463,6 +472,21 @@ export function TaskCalendarView({
     setContextAction({ id: Date.now(), metadata, x, y });
   }
 
+  // The Overdue section moves to today as the Today view's Overdue lane
+  // does: Scheduled becomes today and Due stays the deadline, so rows overdue
+  // only by Due stay listed. Rows already scheduled today have nothing to move.
+  const overdueRows = useMemo(() => {
+    const today = todayString();
+    const rows = new Map<string, TaskViewRow>();
+    for (const item of items) {
+      const entry = item.data?.metadata.entry;
+      if (!entry?.modelEntry.isOverdueOnToday) continue;
+      if (taskDatePart(entry.row.task.scheduled) === today) continue;
+      rows.set(entry.row.task.id, entry.row);
+    }
+    return [...rows.values()];
+  }, [items]);
+
   return (
     <div
       ref={rootRef}
@@ -472,7 +496,24 @@ export function TaskCalendarView({
         {/* The layout switcher belongs to the calendar it changes, so it sits
             on the date row above the grid or agenda on every screen. */}
         <div className="full-calendar-main">
-          {agenda && stripSlot
+          {agenda && leadSlot && onMoveOverdueToToday && overdueRows.length
+            ? createPortal(
+                <button
+                  aria-label={plural(overdueRows.length, {
+                    one: "Move all to today, # overdue task",
+                    other: "Move all to today, # overdue tasks",
+                  })}
+                  className="full-calendar-reschedule"
+                  disabled={movingOverdue}
+                  type="button"
+                  onClick={() => onMoveOverdueToToday(overdueRows)}
+                >
+                  <Trans>Move all to today</Trans>
+                </button>,
+                leadSlot,
+              )
+            : null}
+          {stripped && stripSlot
             ? createPortal(
                 <ViewOptions
                   label={t`Calendar layout`}
@@ -502,7 +543,7 @@ export function TaskCalendarView({
                 stripSlot,
               )
             : null}
-          <div className="full-calendar-commandbar" hidden={agenda}>
+          <div className="full-calendar-commandbar" hidden={stripped}>
             <div className="full-calendar-navigation">
               <button
                 aria-label={t`Previous period`}
@@ -577,8 +618,8 @@ export function TaskCalendarView({
           ) : null}
           <div
             className={
-              agenda
-                ? "full-calendar-surface is-agenda"
+              stripped
+                ? "full-calendar-surface has-strip"
                 : "full-calendar-surface"
             }
           >
@@ -602,6 +643,20 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
+              dateStrip={stripped}
+              listLeadTitle={agenda ? t`Overdue` : null}
+              listLeadIncludes={(item) =>
+                !!item.data?.metadata.entry.modelEntry.isOverdueOnToday
+              }
+              listLeadDidMount={({ el }) => setLeadSlot(el)}
+              listLeadWillUnmount={({ el }) =>
+                setLeadSlot((current) => (current === el ? null : current))
+              }
+              listAddText={agenda ? t`Add task` : null}
+              onListAdd={({ dateStr }) => {
+                onSelect(dateStr);
+                onCreate(dateStr);
+              }}
               stripSlotDidMount={({ el }) => setStripSlot(el)}
               stripSlotWillUnmount={({ el }) =>
                 setStripSlot((current) => (current === el ? null : current))
@@ -658,9 +713,10 @@ export function TaskCalendarView({
               onDateClick={selectDate}
               onRangeChange={(view: ViewInfo) => {
                 setTitle(view.title);
+                // The data range also covers the date strip's later days.
                 setRange({
-                  start: new Date(view.range.start.getTime()),
-                  end: new Date(view.range.end.getTime()),
+                  start: new Date(view.dataRange.start.getTime()),
+                  end: new Date(view.dataRange.end.getTime()),
                 });
               }}
             />

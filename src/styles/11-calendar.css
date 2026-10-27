@@ -1360,7 +1360,24 @@
   width: 18px;
 }
 
-/* The agenda's date strip sticks to the page, so nothing above it may clip. */
-.full-calendar-surface.is-agenda {
+/* The date strip sticks to the page, so nothing above it may clip. Strip
+   layouts (agenda, day and 3 days) fit a phone without sideways scrolling. */
+.full-calendar-surface.has-strip {
   overflow: visible;
+}
+
+.full-calendar-view .full-calendar-reschedule {
+  min-height: 32px;
+  padding: 0 8px;
+  color: var(--accent);
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.full-calendar-view .full-calendar-reschedule:disabled {
+  color: var(--ink-soft);
+  cursor: default;
 }

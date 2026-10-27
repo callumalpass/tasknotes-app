@@ -94,7 +94,7 @@ test("the layout switcher sits on the date row above the calendar on both screen
   }
 });
 
-test("the phone agenda keeps its date strip in view and overdue work on today", async ({
+test("the phone agenda keeps its strip in view and moves overdue work to today", async ({
   page,
   isMobile,
 }) => {
@@ -103,13 +103,6 @@ test("the phone agenda keeps its date strip in view and overdue work on today", 
   const strip = page.locator(".tnc-strip");
   await expect(strip.getByLabel("Calendar layout")).toBeVisible();
   await expect(page.locator(".full-calendar-commandbar")).toBeHidden();
-  // Demo tasks due two days ago appear under today.
-  await expect(
-    page
-      .locator(".tnc-list-section:has(.is-today)")
-      .getByText("2 days ago")
-      .first(),
-  ).toBeVisible();
   await page.mouse.wheel(0, 1500);
   await expect
     .poll(async () => (await strip.boundingBox())?.y ?? -1)
@@ -117,6 +110,26 @@ test("the phone agenda keeps its date strip in view and overdue work on today", 
   await expect(strip.locator(".tnc-strip-day.is-focus")).not.toHaveClass(
     /is-today/,
   );
+  // Today returns to the top, where overdue work waits above today.
+  await strip.getByRole("button", { name: "Today" }).click();
+  const overdue = page.locator(".tnc-list-lead");
+  await expect(overdue.getByText("2 days ago").first()).toBeVisible();
+  // As in the Today view, Scheduled moves to today and Due stays the
+  // deadline, so only work overdue by Due stays listed here.
+  const items = overdue.locator(".tnc-item");
+  const before = await items.count();
+  const move = overdue.getByRole("button", {
+    name: /^Move all to today, \d+ overdue tasks?$/,
+  });
+  await move.click();
+  await expect(page.locator(".undo-toast")).toContainText("to today");
+  await expect.poll(() => items.count()).toBeLessThan(before);
+  await expect(move).toHaveCount(0);
+  await page
+    .locator(".undo-toast")
+    .getByRole("button", { name: "Undo" })
+    .click();
+  await expect.poll(() => items.count()).toBe(before);
 });
 
 test.describe("calendar drops", () => {

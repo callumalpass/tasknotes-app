@@ -6,7 +6,7 @@ import { MiniCalendarView } from "./mini-calendar-view";
 import type { CalendarPreferences } from "../calendar-preferences";
 import type { CalendarTaskEdit } from "../../domain/calendar-edit";
 import type { TaskSummary } from "../../domain/task";
-import type { TaskViewExecution } from "../../domain/view";
+import type { TaskViewExecution, TaskViewRow } from "../../domain/view";
 
 const TaskCalendarView = lazy(async () => ({
   default: (await import("../task-calendar-view")).TaskCalendarView,
@@ -24,6 +24,8 @@ export function CalendarViewPresentation({
   onOpen,
   onToggle,
   onEdit,
+  onMoveOverdueToToday,
+  movingOverdue,
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
@@ -36,6 +38,8 @@ export function CalendarViewPresentation({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
+  onMoveOverdueToToday?(rows: readonly TaskViewRow[]): void;
+  movingOverdue?: boolean;
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
     <Suspense fallback={<LoadingRows count={6} />}>
@@ -51,6 +55,8 @@ export function CalendarViewPresentation({
         onOpen={onOpen}
         onToggle={onToggle}
         onEdit={onEdit}
+        onMoveOverdueToToday={onMoveOverdueToToday}
+        movingOverdue={movingOverdue}
       />
     </Suspense>
   ) : (
