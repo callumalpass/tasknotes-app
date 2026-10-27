@@ -422,9 +422,22 @@ export class TaskNotesTaskModel {
         input.customProperties,
       );
 
-    const plan = buildTaskUpdatePlan({
-      originalTask: original,
-      updates,
+    // A repeat change makes the model plan the next occurrence on the wall
+    // clock, so it plans on local times and the result is stored as instants.
+    const floating = updates.recurrence !== undefined;
+    const rawPlan = buildTaskUpdatePlan({
+      originalTask: floating ? withFloatingTaskTimes(original) : original,
+      updates: floating
+        ? {
+            ...updates,
+            ...("scheduled" in updates
+              ? { scheduled: floatingLocalDateTime(updates.scheduled) }
+              : {}),
+            ...("due" in updates
+              ? { due: floatingLocalDateTime(updates.due) }
+              : {}),
+          }
+        : updates,
       fieldMapping: this.config.fieldMapping,
       taskTag: this.config.defaults.taskTag,
       storeTitleInFilename: this.config.storeTitleInFilename,
@@ -435,6 +448,26 @@ export class TaskNotesTaskModel {
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
+    const timeFields = new Set([
+      this.config.fieldMapping.scheduled,
+      this.config.fieldMapping.due,
+    ]);
+    const plan = floating
+      ? {
+          ...rawPlan,
+          updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
+          frontmatterPatch: rawPlan.frontmatterPatch.map((operation) =>
+            operation.op === "set" && timeFields.has(operation.field)
+              ? {
+                  ...operation,
+                  value: normalizeTaskDateTime(
+                    operation.value as string | undefined,
+                  ),
+                }
+              : operation,
+          ),
+        }
+      : rawPlan;
     const plannedTask =
       input.preserveRecurrenceSchedule && input.recurrence !== undefined
         ? {

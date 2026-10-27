@@ -871,6 +871,25 @@ Occurrence body for {{title}}`,
     expect(moved.frontmatter.scheduled).toBe("2026-10-30T00:30:00Z");
   });
 
+  it("keeps an evening task's day when it starts repeating west of UTC", () => {
+    vi.stubEnv("TZ", "America/New_York");
+    try {
+      // Thursday 29 October, 8:41 PM in New York.
+      const task = model.create(
+        { title: "Evening", scheduled: "2026-10-30T00:41:00Z" },
+        { id: "evening", now: "2026-10-27T03:30:00Z" },
+      );
+      const repeating = model.update(
+        task,
+        { recurrence: "DTSTART:20261029T204100Z;FREQ=DAILY;INTERVAL=1" },
+        { now: "2026-10-27T03:30:00Z", currentDate: "2026-10-26" },
+      );
+      expect(repeating.frontmatter.scheduled).toBe("2026-10-30T00:41:00Z");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("stores a moved occurrence of a timed series as an instant", async () => {
     const series = model.create(
       {
