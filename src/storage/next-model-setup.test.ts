@@ -1,7 +1,11 @@
 import { connect, MdbaseError, toValue, type wire } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
+import {
+  TASKNOTES_CONTRACT_DIGEST,
+  TASKNOTES_LEGACY_CONTRACT_DIGESTS,
+} from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { init } from "mdbase";
 import {
@@ -109,9 +113,16 @@ async function fixture(
   vi.spyOn(client, "describe").mockImplementation(async (input) => {
     const signal = input && "aborted" in input ? input : input?.signal;
     const sources = await client.resources.list({ text: true, signal });
-    const contract = sources.resources.find(
-      (r) => r.path === "_contracts/tasknotes.task.md",
-    );
+    // Each tasknotes.task contract resource, at its published digest.
+    const contracts = sources.resources.flatMap((r) => {
+      if (!r.path.startsWith("_contracts/tasknotes.task") || !r.text) return [];
+      const version = String(parseFrontmatter(r.text).frontmatter.version);
+      const digest =
+        version === TASKNOTES_SPEC_VERSION
+          ? TASKNOTES_CONTRACT_DIGEST
+          : TASKNOTES_LEGACY_CONTRACT_DIGESTS[version];
+      return digest ? [{ version, digest, path: r.path }] : [];
+    });
     const type = sources.resources.find((r) => r.path === "_types/task.md");
     const definition = type?.text
       ? parseFrontmatter(type.text).frontmatter
@@ -129,18 +140,12 @@ async function fixture(
       inclusion: { include: [] },
       issues: [],
       settings: new Map(),
-      contracts: contract
-        ? [
-            {
-              id: "tasknotes.task",
-              version: "0.3.0-rc.5",
-              digest: TASKNOTES_CONTRACT_DIGEST,
-              path: contract.path,
-              contractType: "record",
-              implementedBy: type ? ["task"] : [],
-            },
-          ]
-        : [],
+      contracts: contracts.map((contract) => ({
+        id: "tasknotes.task",
+        ...contract,
+        contractType: "record",
+        implementedBy: type ? ["task"] : [],
+      })),
       types: type
         ? [
             {

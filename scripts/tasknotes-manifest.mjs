@@ -63,8 +63,12 @@ export async function buildTaskNotesManifest({
     installation_origins: TASKNOTES_INSTALLATION_ORIGINS,
     requirements: {
       people: { version: 1, optional: ["identity", "members"] },
+      // A provision may only provide contracts the app requires. The task
+      // pack also provides tasknotes.settings and mdbase.app-settings, for
+      // the TaskNotes settings record.
       contracts: [
         taskContract,
+        ...typePack.provides.filter((contract) => contract !== taskContract),
         ...basePack.provides,
         ...mdbaseViewPack.provides,
       ],

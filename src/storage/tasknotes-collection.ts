@@ -4,9 +4,13 @@ import type {
   JsonObject,
 } from "@mdbase-dev/connect";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
+import {
+  readableTaskNotesContract,
+  taskNotesImplementationOf,
+  TASKNOTES_MISSING_CONTRACT_MESSAGE,
+} from "../domain/tasknotes-contract";
 
 export interface TaskCollectionResources {
   contracts: CollectionContractDescriptor[];
@@ -24,19 +28,17 @@ export interface ResolvedTaskProvider {
   typeName: string;
 }
 
+/**
+ * The collection's TaskNotes providers. The current tasknotes.task contract
+ * is preferred; a collection still on an earlier readable contract (rc.5)
+ * resolves too, reading moved settings from its binding after the record.
+ */
 export function resolveTaskCollection(
   resources: TaskCollectionResources,
+  options: { settings?: Readonly<Record<string, unknown>> } = {},
 ): ResolvedTaskCollection {
-  const contract = resources.contracts.find(
-    (candidate) =>
-      candidate.id === "tasknotes.task" &&
-      candidate.version === TASKNOTES_SPEC_VERSION &&
-      candidate.digest === TASKNOTES_CONTRACT_DIGEST,
-  );
-  if (!contract)
-    throw new Error(
-      `This collection does not provide tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
-    );
+  const contract = readableTaskNotesContract(resources.contracts);
+  if (!contract) throw new Error(TASKNOTES_MISSING_CONTRACT_MESSAGE);
   const providers = contract.implementations.map((implementation) => {
     const type = resources.types.find(
       (candidate) => candidate.name === implementation.typeName,
@@ -51,6 +53,8 @@ export function resolveTaskCollection(
       fields: implementation.fields,
       collection: type.collection,
       configuration: implementation.binding,
+      version: contract.version,
+      settings: options.settings,
     });
   });
   if (!providers.length)
@@ -66,22 +70,27 @@ export function resolveTaskTypeDefinition(
     fields?: JsonObject;
     collection?: JsonObject;
     configuration?: JsonObject;
+    /** The tasknotes.task version the catalog says the type implements. */
+    version?: string;
+    /** Frontmatter of the TaskNotes settings record, when there is one. */
+    settings?: Readonly<Record<string, unknown>>;
   } = {},
 ): ResolvedTaskProvider {
-  const configuration =
-    overrides.configuration ?? taskNotesImplementation(definition)?.binding;
-  const fields =
-    overrides.fields ?? taskNotesImplementation(definition)?.fields;
+  const declared = taskNotesImplementationOf(definition) as
+    { version?: string; fields?: JsonObject; binding?: JsonObject } | undefined;
+  const configuration = overrides.configuration ?? declared?.binding;
+  const fields = overrides.fields ?? declared?.fields;
   const implementation = {
     contract: "tasknotes.task",
-    version: TASKNOTES_SPEC_VERSION,
+    version:
+      overrides.version ??
+      (typeof declared?.version === "string"
+        ? declared.version
+        : TASKNOTES_SPEC_VERSION),
     fields: fields ?? {},
     binding: configuration ?? {},
   };
-  if (
-    overrides.configuration === undefined &&
-    !taskNotesImplementation(definition)
-  )
+  if (overrides.configuration === undefined && !declared)
     throw new Error("This type does not provide the TaskNotes task contract.");
   const schema =
     overrides.schema ??
@@ -98,12 +107,15 @@ export function resolveTaskTypeDefinition(
   return {
     typeName,
     model: new TaskNotesTaskModel(
-      resolveTaskCollectionConfiguration({
-        ...definition,
-        schema: { value: schema },
-        collection,
-        implements: [implementation],
-      }),
+      resolveTaskCollectionConfiguration(
+        {
+          ...definition,
+          schema: { value: schema },
+          collection,
+          implements: [implementation],
+        },
+        overrides.settings ? { settings: overrides.settings } : {},
+      ),
       {
         recordsFolder: taskRecordsFolder,
         pathPattern:
@@ -112,29 +124,6 @@ export function resolveTaskTypeDefinition(
       },
     ),
   };
-}
-
-function taskNotesImplementation(
-  definition: Record<string, unknown>,
-): { fields?: JsonObject; binding?: JsonObject } | undefined {
-  const implementations = Array.isArray(definition.implements)
-    ? definition.implements
-    : [];
-  return implementations.find(
-    (
-      candidate,
-    ): candidate is {
-      contract: string;
-      version: string;
-      fields?: JsonObject;
-      binding?: JsonObject;
-    } =>
-      candidate !== null &&
-      typeof candidate === "object" &&
-      !Array.isArray(candidate) &&
-      (candidate as Record<string, unknown>).contract === "tasknotes.task" &&
-      (candidate as Record<string, unknown>).version === TASKNOTES_SPEC_VERSION,
-  );
 }
 
 function pathPattern(collection: JsonObject | undefined): string | undefined {

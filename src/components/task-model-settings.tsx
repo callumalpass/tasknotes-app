@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { useRepository } from "../app/repository-context";
+import type { TaskModelSettingsAccess } from "../domain/task-configuration";
 import { DurationField } from "./duration-field";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { TaskNotesSelectField } from "./tasknotes-controls";
@@ -80,11 +81,7 @@ export function TaskModelSettingsEditor() {
   const { t } = useLingui();
   const { configuration, repository, updateTaskModelSettings } =
     useRepository();
-  const [access, setAccess] = useState<{
-    writable: boolean;
-    source: string;
-    reason?: string;
-  } | null>(null);
+  const [access, setAccess] = useState<TaskModelSettingsAccess | null>(null);
   const { draft, original, dirty, change, discard } = useTaskModelDraft(
     repository,
     configuration,
@@ -127,6 +124,11 @@ export function TaskModelSettingsEditor() {
   }, [dirty]);
 
   const writable = access?.writable === true;
+  // App behaviour lives in the TaskNotes settings record, which can be
+  // read-only while the task type is writable (an rc.5 collection, or a
+  // connection that may not change the record).
+  const appWritable = writable && access?.appSettings?.writable !== false;
+  const appReason = writable ? access?.appSettings?.reason : undefined;
 
   function update(patch: Partial<TaskModelSettingsDraft>) {
     change(patch);
@@ -206,6 +208,10 @@ export function TaskModelSettingsEditor() {
         <p className="settings-read-only" role="status">
           {access.reason}
         </p>
+      ) : !appWritable && appReason ? (
+        <p className="settings-read-only" role="status">
+          {appReason}
+        </p>
       ) : null}
       <fieldset disabled={!writable || saveState === "saving"}>
         <legend className="visually-hidden">
@@ -227,25 +233,27 @@ export function TaskModelSettingsEditor() {
               onChange={(defaultPriority) => update({ defaultPriority })}
             />
           </div>
-          <SettingCheckbox
-            checked={draft.templatingEnabled}
-            label={translate({ message: "Start new tasks from a template" })}
-            onChange={(templatingEnabled) => update({ templatingEnabled })}
-          />
-          {draft.templatingEnabled ? (
-            <label className="form-field settings-dependent-field">
-              <span>
-                <Trans>Template file</Trans>
-              </span>
-              <input
-                placeholder={translate({ message: "Templates/Task.md" })}
-                value={draft.templatePath}
-                onChange={(event) =>
-                  update({ templatePath: event.target.value })
-                }
-              />
-            </label>
-          ) : null}
+          <fieldset className="settings-app-fields" disabled={!appWritable}>
+            <SettingCheckbox
+              checked={draft.templatingEnabled}
+              label={translate({ message: "Start new tasks from a template" })}
+              onChange={(templatingEnabled) => update({ templatingEnabled })}
+            />
+            {draft.templatingEnabled ? (
+              <label className="form-field settings-dependent-field">
+                <span>
+                  <Trans>Template file</Trans>
+                </span>
+                <input
+                  placeholder={translate({ message: "Templates/Task.md" })}
+                  value={draft.templatePath}
+                  onChange={(event) =>
+                    update({ templatePath: event.target.value })
+                  }
+                />
+              </label>
+            ) : null}
+          </fieldset>
         </SettingsGroup>
 
         <SettingsGroup title={translate({ message: "Repeating tasks" })}>
@@ -309,141 +317,147 @@ export function TaskModelSettingsEditor() {
               update({ maintainDueDateOffset })
             }
           />
-          <SettingCheckbox
-            checked={draft.resetCheckboxesOnRecurrence}
-            label={translate({
-              message: "Clear checklist items in the note on each repeat",
-            })}
-            onChange={(resetCheckboxesOnRecurrence) =>
-              update({ resetCheckboxesOnRecurrence })
-            }
-          />
+          <fieldset className="settings-app-fields" disabled={!appWritable}>
+            <SettingCheckbox
+              checked={draft.resetCheckboxesOnRecurrence}
+              label={translate({
+                message: "Clear checklist items in the note on each repeat",
+              })}
+              onChange={(resetCheckboxesOnRecurrence) =>
+                update({ resetCheckboxesOnRecurrence })
+              }
+            />
+          </fieldset>
         </SettingsGroup>
 
         <SettingsGroup title={translate({ message: "Archive" })}>
-          <SettingCheckbox
-            checked={draft.moveOnArchive}
-            label={translate({
-              message: "Move archived task files into a folder",
-            })}
-            onChange={(moveOnArchive) => update({ moveOnArchive })}
-          />
-          {draft.moveOnArchive ? (
-            <label className="form-field settings-dependent-field">
-              <span>
-                <Trans>Archive folder</Trans>
-              </span>
-              <input
-                value={draft.archiveFolder}
-                onChange={(event) =>
-                  update({ archiveFolder: event.target.value })
-                }
-              />
-            </label>
-          ) : null}
-          <section
-            aria-labelledby={`${ids}-auto-archive`}
-            className="status-automation-settings"
-          >
-            <h4 id={`${ids}-auto-archive`}>
-              <Trans>Archive automatically</Trans>
-            </h4>
-            <p className="setting-hint">
-              <Trans>
-                Archive a task once it has been in a chosen status for a while.
-                Repeating tasks are never archived automatically.
-              </Trans>
-            </p>
-            <div className="status-automation-list">
-              {configuration.statuses.map((status) => {
-                const automation = draft.statusAutomation[status.value] ?? {
-                  autoArchive: false,
-                  autoArchiveDelay: 5,
-                };
-                const inputId = `${ids}-archive-${status.value}`;
-                function automate(patch: Partial<typeof automation>): void {
-                  update({
-                    statusAutomation: {
-                      ...draft.statusAutomation,
-                      [status.value]: { ...automation, ...patch },
-                    },
-                  });
-                }
-                return (
-                  <div className="status-automation-row" key={status.value}>
-                    <div className="task-model-toggle">
-                      <input
-                        checked={automation.autoArchive}
-                        id={inputId}
-                        type="checkbox"
-                        onChange={(event) =>
-                          automate({ autoArchive: event.target.checked })
-                        }
-                      />
-                      <label htmlFor={inputId}>{status.label}</label>
-                    </div>
-                    {automation.autoArchive ? (
-                      <label className="auto-archive-delay">
-                        <span>
-                          <Trans>after</Trans>
-                        </span>
+          <fieldset className="settings-app-fields" disabled={!appWritable}>
+            <SettingCheckbox
+              checked={draft.moveOnArchive}
+              label={translate({
+                message: "Move archived task files into a folder",
+              })}
+              onChange={(moveOnArchive) => update({ moveOnArchive })}
+            />
+            {draft.moveOnArchive ? (
+              <label className="form-field settings-dependent-field">
+                <span>
+                  <Trans>Archive folder</Trans>
+                </span>
+                <input
+                  value={draft.archiveFolder}
+                  onChange={(event) =>
+                    update({ archiveFolder: event.target.value })
+                  }
+                />
+              </label>
+            ) : null}
+            <section
+              aria-labelledby={`${ids}-auto-archive`}
+              className="status-automation-settings"
+            >
+              <h4 id={`${ids}-auto-archive`}>
+                <Trans>Archive automatically</Trans>
+              </h4>
+              <p className="setting-hint">
+                <Trans>
+                  Archive a task once it has been in a chosen status for a
+                  while. Repeating tasks are never archived automatically.
+                </Trans>
+              </p>
+              <div className="status-automation-list">
+                {configuration.statuses.map((status) => {
+                  const automation = draft.statusAutomation[status.value] ?? {
+                    autoArchive: false,
+                    autoArchiveDelay: 5,
+                  };
+                  const inputId = `${ids}-archive-${status.value}`;
+                  function automate(patch: Partial<typeof automation>): void {
+                    update({
+                      statusAutomation: {
+                        ...draft.statusAutomation,
+                        [status.value]: { ...automation, ...patch },
+                      },
+                    });
+                  }
+                  return (
+                    <div className="status-automation-row" key={status.value}>
+                      <div className="task-model-toggle">
                         <input
-                          aria-label={translate`${status.label} auto-archive delay in minutes`}
-                          min="0"
-                          step="1"
-                          type="number"
-                          value={automation.autoArchiveDelay}
+                          checked={automation.autoArchive}
+                          id={inputId}
+                          type="checkbox"
                           onChange={(event) =>
-                            automate({
-                              autoArchiveDelay: Math.max(
-                                0,
-                                Number.parseInt(event.target.value, 10) || 0,
-                              ),
-                            })
+                            automate({ autoArchive: event.target.checked })
                           }
                         />
-                        <span>
-                          <Trans>min</Trans>
-                        </span>
-                      </label>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                        <label htmlFor={inputId}>{status.label}</label>
+                      </div>
+                      {automation.autoArchive ? (
+                        <label className="auto-archive-delay">
+                          <span>
+                            <Trans>after</Trans>
+                          </span>
+                          <input
+                            aria-label={translate`${status.label} auto-archive delay in minutes`}
+                            min="0"
+                            step="1"
+                            type="number"
+                            value={automation.autoArchiveDelay}
+                            onChange={(event) =>
+                              automate({
+                                autoArchiveDelay: Math.max(
+                                  0,
+                                  Number.parseInt(event.target.value, 10) || 0,
+                                ),
+                              })
+                            }
+                          />
+                          <span>
+                            <Trans>min</Trans>
+                          </span>
+                        </label>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </fieldset>
         </SettingsGroup>
 
         <SettingsGroup
           title={translate({ message: "Links and time tracking" })}
         >
-          <div className="settings-field-with-hint">
-            <TaskNotesSelectField
-              ariaDescribedBy={`${ids}-links`}
-              label={translate({ message: "Link format" })}
-              options={linkFormatOptions}
-              value={draft.writeFormat}
-              onChange={(value) =>
-                update({
-                  writeFormat: value as TaskModelSettingsDraft["writeFormat"],
-                })
-              }
+          <fieldset className="settings-app-fields" disabled={!appWritable}>
+            <div className="settings-field-with-hint">
+              <TaskNotesSelectField
+                ariaDescribedBy={`${ids}-links`}
+                label={translate({ message: "Link format" })}
+                options={linkFormatOptions}
+                value={draft.writeFormat}
+                onChange={(value) =>
+                  update({
+                    writeFormat: value as TaskModelSettingsDraft["writeFormat"],
+                  })
+                }
+              />
+              <p className="setting-hint" id={`${ids}-links`}>
+                <Trans>
+                  Used when TaskNotes writes links to projects, people, and
+                  other tasks, for example{" "}
+                </Trans>
+                <code>{linkFormat?.description}</code>.
+              </p>
+            </div>
+            <SettingCheckbox
+              checked={draft.autoStopOnComplete}
+              label={translate({
+                message: "Stop a running timer when its task is completed",
+              })}
+              onChange={(autoStopOnComplete) => update({ autoStopOnComplete })}
             />
-            <p className="setting-hint" id={`${ids}-links`}>
-              <Trans>
-                Used when TaskNotes writes links to projects, people, and other
-                tasks, for example{" "}
-              </Trans>
-              <code>{linkFormat?.description}</code>.
-            </p>
-          </div>
-          <SettingCheckbox
-            checked={draft.autoStopOnComplete}
-            label={translate({
-              message: "Stop a running timer when its task is completed",
-            })}
-            onChange={(autoStopOnComplete) => update({ autoStopOnComplete })}
-          />
+          </fieldset>
         </SettingsGroup>
       </fieldset>
       {error ? (

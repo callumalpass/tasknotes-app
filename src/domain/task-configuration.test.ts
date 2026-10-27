@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTaskCollectionConfiguration } from "./task-configuration";
+import {
+  resolveTaskCollectionConfiguration,
+  splitTaskModelSettingsPatch,
+  taskNotesSettingsChanges,
+} from "./task-configuration";
 
 function taskType(input: Record<string, unknown>): Record<string, unknown> {
   const binding = structuredClone(
@@ -90,6 +94,43 @@ describe("TaskNotes collection configuration", () => {
       moveOnArchive: true,
       folder: "Archive/Tasks",
     });
+  });
+
+  it("reads the settings record over an rc.5 binding, and the binding over the default", () => {
+    const rc5 = taskType({
+      binding: {
+        archive: { move_on_archive: true, folder: "Archive/Binding" },
+        templating: { enabled: true, template_path: "Templates/Binding.md" },
+      },
+    });
+    const settings = {
+      app: "dev.tasknotes",
+      scope: "collection",
+      settings_version: 1,
+      archive_folder: "Archive/Record",
+    };
+
+    const configuration = resolveTaskCollectionConfiguration(rc5, {
+      settings,
+    });
+    // The record wins where it has a value; the binding fills the rest.
+    expect(configuration.archive).toEqual({
+      moveOnArchive: true,
+      folder: "Archive/Record",
+    });
+    expect(configuration.templating).toMatchObject({
+      enabled: true,
+      templatePath: "Templates/Binding.md",
+    });
+    // No record yet (missing or late): the binding's values are kept.
+    expect(resolveTaskCollectionConfiguration(rc5).archive).toEqual({
+      moveOnArchive: true,
+      folder: "Archive/Binding",
+    });
+    // Neither: the defaults.
+    expect(
+      resolveTaskCollectionConfiguration(taskType({})).archive,
+    ).toMatchObject({ moveOnArchive: false });
   });
 
   it("resolves skipped statuses and occurrence defaults", () => {
@@ -309,5 +350,97 @@ describe("TaskNotes collection configuration", () => {
         readOnly: true,
       },
     ]);
+  });
+
+  it("routes moved settings to the record and the rest to the type, keeping only changes", () => {
+    const current = resolveTaskCollectionConfiguration(
+      taskType({
+        binding: {
+          status: {
+            values: ["open", "done"],
+            completed_values: ["done"],
+            default: "open",
+          },
+          archive: { move_on_archive: true, folder: "Archive/Tasks" },
+        },
+      }),
+    );
+
+    const { type, app } = splitTaskModelSettingsPatch(
+      {
+        defaultStatus: "done",
+        recurrence: {
+          maintainDueDateOffset: false,
+          resetCheckboxesOnRecurrence:
+            !current.recurrence.resetCheckboxesOnRecurrence,
+        },
+        links: { writeFormat: "markdown" },
+        // Unchanged values never reach the record.
+        archive: { moveOnArchive: true, folder: "/Archive/Tasks/" },
+        templating: { enabled: true, templatePath: " Templates/Task.md " },
+        statusAutomation: {
+          done: { autoArchive: true, autoArchiveDelay: 15 },
+        },
+      },
+      current,
+    );
+
+    expect(type).toEqual({
+      defaultStatus: "done",
+      recurrence: { maintainDueDateOffset: false },
+    });
+    expect(app).toEqual({
+      reset_body_checkboxes_on_recurrence:
+        !current.recurrence.resetCheckboxesOnRecurrence,
+      link_write_format: "markdown",
+      template_path: "Templates/Task.md",
+      template_enabled: true,
+      status_behavior: {
+        done: { auto_archive: true, auto_archive_delay_minutes: 15 },
+      },
+    });
+
+    expect(() =>
+      splitTaskModelSettingsPatch({ templating: { enabled: true } }, current),
+    ).toThrow(/template path/);
+    expect(() =>
+      splitTaskModelSettingsPatch(
+        { archive: { folder: "../Elsewhere" } },
+        current,
+      ),
+    ).toThrow(/inside the collection/);
+    expect(() =>
+      splitTaskModelSettingsPatch(
+        { statusAutomation: { done: { autoArchiveDelay: -1 } } },
+        current,
+      ),
+    ).toThrow(/non-negative integer/);
+  });
+
+  it("merges a status behaviour change into the record without dropping other statuses", () => {
+    const record = {
+      app: "dev.tasknotes",
+      scope: "collection",
+      settings_version: 1,
+      status_behavior: {
+        open: { next_status: "done" },
+        done: { auto_archive: false, exclude_from_cycle: true },
+      },
+    };
+
+    expect(
+      taskNotesSettingsChanges(
+        { status_behavior: { done: { auto_archive: true } } },
+        record,
+      ),
+    ).toEqual({
+      status_behavior: {
+        open: { next_status: "done" },
+        done: { auto_archive: true, exclude_from_cycle: true },
+      },
+    });
+    expect(taskNotesSettingsChanges({ move_on_archive: true }, record)).toEqual(
+      { move_on_archive: true },
+    );
   });
 });

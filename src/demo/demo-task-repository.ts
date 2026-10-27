@@ -7,6 +7,10 @@ import {
   buildTaskNotesMdbaseResources,
   patchTaskNotesMdbaseTypeSettings,
 } from "@tasknotes/model/mdbase";
+import {
+  buildTaskNotesSettingsPatch,
+  newTaskNotesSettingsFrontmatter,
+} from "@tasknotes/model/settings";
 import { parse } from "yaml";
 
 import { completeTaskValues } from "../storage/completions";
@@ -17,7 +21,11 @@ import {
   findOccurrenceParent,
   occurrenceRecordId,
 } from "../domain/task-occurrence";
-import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
+import {
+  resolveTaskCollectionConfiguration,
+  splitTaskModelSettingsPatch,
+  taskNotesSettingsChanges,
+} from "../domain/task-configuration";
 import {
   compareTasks,
   selectTaskSummaries,
@@ -103,6 +111,8 @@ export class DemoTaskRepository implements TaskRepository {
   readonly files = new DemoFileStore();
   private modelDefinition: Record<string, unknown> =
     buildTaskNotesMdbaseResources({ profiles: ["core-lite"] }).type;
+  /** The demo's TaskNotes settings record, created by the first save. */
+  private settingsRecord: Record<string, unknown> | undefined;
   private model = new TaskNotesTaskModel(
     resolveTaskCollectionConfiguration(this.modelDefinition),
   );
@@ -839,12 +849,29 @@ export class DemoTaskRepository implements TaskRepository {
   async updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration> {
-    this.modelDefinition = patchTaskNotesMdbaseTypeSettings(
-      this.modelDefinition,
+    const split = splitTaskModelSettingsPatch(
       patch,
+      this.model.configuration(),
     );
+    const modelDefinition = patchTaskNotesMdbaseTypeSettings(
+      this.modelDefinition,
+      split.type,
+    );
+    if (Object.keys(split.app).length) {
+      const changes = taskNotesSettingsChanges(split.app, this.settingsRecord);
+      this.settingsRecord = this.settingsRecord
+        ? applySettingsPatch(
+            this.settingsRecord,
+            buildTaskNotesSettingsPatch(this.settingsRecord, changes),
+          )
+        : newTaskNotesSettingsFrontmatter(changes);
+    }
+    this.modelDefinition = modelDefinition;
     this.model = new TaskNotesTaskModel(
-      resolveTaskCollectionConfiguration(this.modelDefinition),
+      resolveTaskCollectionConfiguration(
+        this.modelDefinition,
+        this.settingsRecord ? { settings: this.settingsRecord } : {},
+      ),
     );
     for (const [id, task] of this.tasks)
       this.tasks.set(id, this.model.read(task));
@@ -1250,4 +1277,16 @@ function nextScratchpadRevision(revision: string): string {
 
 function clone<T>(value: T): T {
   return structuredClone(value);
+}
+
+function applySettingsPatch(
+  frontmatter: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = { ...frontmatter };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) delete next[key];
+    else next[key] = value;
+  }
+  return next;
 }

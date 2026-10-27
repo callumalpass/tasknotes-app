@@ -50,7 +50,11 @@ import type {
 import { summarizeTask } from "../domain/task";
 import { taskPathCandidates } from "../domain/task-path-policy";
 import type { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import type { TaskModelSettingsPatch } from "../domain/task-configuration";
+import {
+  splitTaskModelSettingsPatch,
+  taskNotesSettingsChanges,
+  type TaskModelSettingsPatch,
+} from "../domain/task-configuration";
 import type {
   FieldCompletionRequest,
   CollectionRecord,
@@ -141,7 +145,16 @@ import {
   type TaskNotesModelSetup,
   type ModelSetupProgressListener,
 } from "../application/ports/model-setup";
-import { nextTaskProviders, type NextTaskProvider } from "./next-task-catalog";
+import {
+  nextTaskCatalog,
+  nextTaskProviders,
+  type NextTaskProvider,
+} from "./next-task-catalog";
+import {
+  nativeTaskNotesSettingsStore,
+  type TaskNotesSettingsStore,
+} from "./next-app-settings";
+import { appSettingsAccess, saveAppSettings } from "./task-app-settings";
 import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { peopleView } from "./mdbase-people";
 import { ConnectedTaskIndex } from "./connected-task-index";
@@ -368,6 +381,10 @@ export class NextTaskRepository implements TaskRepository {
       this.listeners.forEach((listener) => listener({ kind: "data" }));
   });
   private changesWatch: ChangesWatch | null = null;
+  /** The TaskNotes settings record (_settings/dev.tasknotes.md). */
+  private readonly settings: TaskNotesSettingsStore;
+  /** Whether the collection defines the tasknotes-settings type. */
+  private settingsType = false;
   private readonly clientOwnership: "owned" | "borrowed";
   private readonly peopleClient?: Pick<MdbasePeopleClient, "directory">;
 
@@ -443,6 +460,11 @@ export class NextTaskRepository implements TaskRepository {
       this.emit("data");
     };
     this.mutations = new NextMutations(client, this.readCurrentWrites);
+    this.settings = nativeTaskNotesSettingsStore(
+      client,
+      this.mutations,
+      () => this.scope.signal,
+    );
     this.stopLedger = client.ledger.subscribe(() => {
       if (!this.disposed && !this.scope.signal.aborted) this.emit("status");
     });
@@ -750,9 +772,17 @@ export class NextTaskRepository implements TaskRepository {
       if (!this.initialization) {
         const revision = this.dataRevision;
         const loading = (async () => {
-          const providers = await nextTaskProviders(this.client, signal);
+          // The record is read first: its fields win over the type binding's.
+          const settings = await this.settings.reload(signal);
+          signal.throwIfAborted();
+          const { providers, settingsType } = await nextTaskCatalog(
+            this.client,
+            signal,
+            { settings: settings.frontmatter },
+          );
           signal.throwIfAborted();
           this.assertCurrentData(revision);
+          this.settingsType = settingsType;
           this.providers = providers;
           this.models = new Map(providers.map((p) => [p.typeName, p.model]));
           this.reached(false);
@@ -2710,7 +2740,14 @@ export class NextTaskRepository implements TaskRepository {
     try {
       await this.client.resources.get(source, signal);
       signal.throwIfAborted();
-      return { writable: true as const, source };
+      return {
+        writable: true as const,
+        source,
+        appSettings: appSettingsAccess(
+          this.settingsType,
+          this.settings.getSnapshot(),
+        ),
+      };
     } catch (reason) {
       if (reason instanceof MdbaseError && reason.code === "forbidden")
         return {
@@ -2731,9 +2768,29 @@ export class NextTaskRepository implements TaskRepository {
         "This collection has several task types. Edit each type's settings in mdbase.",
       );
     const source = this.providers[0]!.sourcePath;
+    const split = splitTaskModelSettingsPatch(
+      patch,
+      this.providers[0]!.model.configuration(),
+    );
+    // App behaviour goes to the settings record, never to the binding. It is
+    // saved first: a conflict there stops the save before anything is written.
+    if (Object.keys(split.app).length) {
+      const prepared = await this.settings.current(this.signal());
+      const access = appSettingsAccess(this.settingsType, prepared);
+      if (!access.writable) throw new Error(access.reason);
+      await saveAppSettings(
+        this.settings,
+        taskNotesSettingsChanges(split.app, prepared.frontmatter),
+        prepared,
+      );
+      this.invalidateRemoteData();
+      await this.initialize({ deferTaskIndex: true });
+      owner.throwIfAborted();
+    }
+    const typePatch = split.type;
     await this.mutations.run(
       {
-        key: JSON.stringify(["task:settings", patch]),
+        key: JSON.stringify(["task:settings", typePatch]),
         prepare: async (mutationId, signal) => {
           const providers = await nextTaskProviders(this.client, signal);
           if (providers.length !== 1 || providers[0]!.sourcePath !== source)
@@ -2745,9 +2802,11 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error("The replica did not supply the task type source.");
           const parsed = parseFrontmatter(resource.text);
           const text = serializeMarkdownDocument(
-            patchTaskNotesMdbaseTypeSettings(parsed.frontmatter, patch),
+            patchTaskNotesMdbaseTypeSettings(parsed.frontmatter, typePatch),
             parsed.body,
           );
+          // Nothing the type keeps changed: leave its revision alone.
+          if (text === resource.text) return { value: undefined };
           return () =>
             this.client.resources.put(source, text, {
               baseRevision: resource.revision,
@@ -2756,7 +2815,9 @@ export class NextTaskRepository implements TaskRepository {
             });
         },
         confirmed: async (_r, signal) => {
-          const providers = await nextTaskProviders(this.client, signal);
+          const providers = await nextTaskProviders(this.client, signal, {
+            settings: this.settings.getSnapshot().frontmatter,
+          });
           signal.throwIfAborted();
           this.providers = providers;
           this.models = new Map(providers.map((p) => [p.typeName, p.model]));
