@@ -769,6 +769,18 @@ describe("TaskNotes task model app boundary", () => {
     expect(completed.parent.completeInstances).toContain("2026-08-05");
     expect(completed.materializeNextDate).toBe("2026-08-06");
 
+    const reopened = model.transitionMaterializedOccurrence(
+      completed.occurrence,
+      completed.parent,
+      "toggle",
+      { now: "2026-08-05T09:30:00Z" },
+    );
+    expect(reopened.occurrence.completed).toBe(false);
+    expect(reopened.occurrence.completedDate).toBeUndefined();
+    expect(reopened.occurrence.frontmatter).not.toHaveProperty("completedDate");
+    expect(model.read(reopened.occurrence).completedDate).toBeUndefined();
+    expect(reopened.parent.completeInstances).toEqual([]);
+
     const skipped = model.transitionMaterializedOccurrence(
       materialized.task,
       parent,

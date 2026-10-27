@@ -1031,8 +1031,11 @@ export class TaskNotesTaskModel {
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
     this.assertValid(updated);
     const revision = current.revision + 1;
+    const base = this.canonicalizeAliases(current.frontmatter, true);
+    if (updated.completedDate === undefined)
+      delete base[this.config.fieldMapping.completedDate];
     const frontmatter = this.writeFrontmatter(
-      this.canonicalizeAliases(current.frontmatter, true),
+      base,
       updated,
       current.id,
       revision,
