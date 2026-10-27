@@ -15,7 +15,7 @@ import { modelResourceInventory } from "../storage/next-model-resources";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import { resourceSetupPlan } from "../test/resource-setup-plan";
-import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.18.json";
+import publisher from "../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.19.json";
 import { initializeModelPackCore } from "./next-model-pack-core";
 import {
   nativeModelPackAssessment,
@@ -474,7 +474,7 @@ describe("original Worker model journal and held repository wiring", () => {
         packs: [
           expect.objectContaining({
             id: "tasknotes.task",
-            version: "0.3.0-rc.18",
+            version: "0.3.0-rc.19",
           }),
           expect.objectContaining({
             id: "tasknotes.scratch",

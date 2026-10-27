@@ -1,6 +1,12 @@
 import { resolveModelConfig } from "@tasknotes/model/config";
 import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import {
+  applyTaskNotesAppSettingsToModelConfig,
+  resolveTaskNotesAppSettings,
+  type TaskNotesAppSettingsChanges,
+  type TaskNotesAppSettingsValues,
+  type TaskNotesStatusBehavior,
+} from "@tasknotes/model/settings";
 
 import type {
   PriorityConfig,
@@ -12,13 +18,42 @@ import type {
 import type { TaskNotesMdbaseTypeSettingsPatch } from "@tasknotes/model/mdbase";
 
 import { editableFieldSchema } from "./editable-field-schema";
+import { taskNotesImplementationOf } from "./tasknotes-contract";
 
-export type TaskModelSettingsPatch = TaskNotesMdbaseTypeSettingsPatch;
+/**
+ * A settings save as the settings screen describes it. Fields the
+ * tasknotes.task binding keeps go to the task type; app behaviour
+ * (templating, archive moves, time tracking, checkbox resets, link format and
+ * per-status automation) goes to the TaskNotes settings record. See
+ * splitTaskModelSettingsPatch.
+ */
+export interface TaskModelSettingsPatch extends Omit<
+  TaskNotesMdbaseTypeSettingsPatch,
+  "recurrence"
+> {
+  recurrence?: {
+    maintainDueDateOffset?: boolean;
+    resetCheckboxesOnRecurrence?: boolean;
+  };
+  timeTracking?: { autoStopOnComplete?: boolean };
+  links?: { writeFormat?: "wikilink" | "markdown" };
+  archive?: { moveOnArchive?: boolean; folder?: string };
+  templating?: { enabled?: boolean; templatePath?: string };
+  statusAutomation?: Record<
+    string,
+    { autoArchive?: boolean; autoArchiveDelay?: number }
+  >;
+}
 
 export interface TaskModelSettingsAccess {
   writable: boolean;
   source: string;
   reason?: string;
+  /**
+   * Whether app behaviour, kept in the TaskNotes settings record, can be
+   * saved. Absent means it follows `writable`.
+   */
+  appSettings?: { writable: boolean; reason?: string };
 }
 
 export interface TaskTemplatingConfiguration {
@@ -68,10 +103,26 @@ export function defaultTaskCollectionConfiguration(): TaskCollectionConfiguratio
  */
 export function resolveTaskCollectionConfiguration(
   value: Record<string, unknown>,
+  options: {
+    /**
+     * Frontmatter of the TaskNotes settings record, when there is one. Each
+     * of its fields wins over an earlier binding's, which wins over the
+     * default, so a missing or late record never loses a value.
+     */
+    settings?: Readonly<Record<string, unknown>>;
+  } = {},
 ): TaskCollectionConfiguration {
-  const base = resolveTaskNotesModelConfigFromMdbaseType(value);
-  const implementation = taskNotesImplementation(value);
+  const base = resolveTaskNotesModelConfigFromMdbaseType(
+    value,
+    {},
+    options.settings ? { settings: options.settings } : {},
+  );
+  const implementation = taskNotesImplementationOf(value) ?? {};
   const extension = record(implementation.binding);
+  const appSettings = resolveTaskNotesAppSettings(options.settings, {
+    legacyBinding: extension,
+    fallback: legacyAliases(extension),
+  }).values;
   const schema = record(record(value.schema).value);
   const properties = record(schema.properties);
   const required = new Set(stringList(schema.required));
@@ -95,88 +146,219 @@ export function resolveTaskCollectionConfiguration(
   );
 
   return withCollectionDefaults(
-    resolveModelConfig({
-      ...base,
-      statuses,
-      priorities,
-      occurrences: resolveOccurrences(
-        base.occurrences,
-        record(extension.occurrences),
-      ),
-      userFields: [
-        ...explicitFields,
-        ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
-      ],
-    }),
-    extension,
+    applyTaskNotesAppSettingsToModelConfig(
+      resolveModelConfig({
+        ...base,
+        statuses,
+        priorities,
+        occurrences: resolveOccurrences(
+          base.occurrences,
+          record(extension.occurrences),
+        ),
+        userFields: [
+          ...explicitFields,
+          ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
+        ],
+      }),
+      appSettings,
+    ),
+    appSettings,
     properties,
     collectionLinks,
   );
 }
 
-function taskNotesImplementation(
-  value: Record<string, unknown>,
-): Record<string, unknown> {
-  const implementations = Array.isArray(value.implements)
-    ? value.implements
-    : [];
-  return (
-    implementations
-      .map(record)
-      .find(
-        (implementation) =>
-          implementation.contract === "tasknotes.task" &&
-          implementation.version === TASKNOTES_SPEC_VERSION,
-      ) ?? {}
-  );
-}
+/** The default app folder for archived tasks when the collection names none. */
+export const DEFAULT_ARCHIVE_FOLDER = "TaskNotes/Archive";
 
 function withCollectionDefaults(
   model: TaskNotesModelConfig,
-  extension: Record<string, unknown> = {},
+  settings?: TaskNotesAppSettingsValues,
   properties: Record<string, unknown> = {},
   collectionLinks: Record<string, unknown> = {},
 ): TaskCollectionConfiguration {
-  const templating = record(extension.templating);
-  const archive = record(extension.archive);
-  const links = record(extension.links);
   return {
     ...model,
     templating: {
-      enabled: boolean(templating.enabled) ?? false,
-      templatePath:
-        string(templating.template_path) ?? string(templating.templatePath),
-      failureMode:
-        templating.failure_mode === "error" ||
-        templating.failureMode === "error"
-          ? "error"
-          : "warning_fallback",
+      enabled: settings?.template_enabled ?? false,
+      templatePath: settings?.template_path || undefined,
+      failureMode: settings?.template_failure_mode ?? "warning_fallback",
       unknownVariablePolicy:
-        templating.unknown_variable_policy === "empty" ||
-        templating.unknownVariablePolicy === "empty"
-          ? "empty"
-          : "preserve",
+        settings?.template_unknown_variable_policy ?? "preserve",
     },
     archive: {
-      moveOnArchive:
-        boolean(archive.move_on_archive) ??
-        boolean(archive.moveOnArchive) ??
-        false,
-      folder: string(archive.folder) ?? "TaskNotes/Archive",
+      moveOnArchive: settings?.move_on_archive ?? false,
+      folder: settings?.archive_folder || DEFAULT_ARCHIVE_FOLDER,
     },
     fieldCompletions: completionConfiguration(
       model,
       properties,
       collectionLinks,
     ),
-    linkWriteFormat:
-      links.write_format === "markdown" ||
-      links.writeFormat === "markdown" ||
-      links.use_markdown_format === true ||
-      links.useMarkdownFormat === true
-        ? "markdown"
-        : "wikilink",
+    linkWriteFormat: settings?.link_write_format ?? "wikilink",
   };
+}
+
+/**
+ * Camel-case spellings early TaskNotes bindings used. They are read after the
+ * settings record and the binding's own fields.
+ */
+function legacyAliases(
+  extension: Record<string, unknown>,
+): Partial<TaskNotesAppSettingsValues> {
+  const templating = record(extension.templating);
+  const archive = record(extension.archive);
+  const links = record(extension.links);
+  const templatePath = string(templating.templatePath);
+  const moveOnArchive = boolean(archive.moveOnArchive);
+  return {
+    ...(templatePath ? { template_path: templatePath } : {}),
+    ...(templating.failureMode === "error" ||
+    templating.failureMode === "warning_fallback"
+      ? { template_failure_mode: templating.failureMode }
+      : {}),
+    ...(templating.unknownVariablePolicy === "empty" ||
+    templating.unknownVariablePolicy === "preserve"
+      ? { template_unknown_variable_policy: templating.unknownVariablePolicy }
+      : {}),
+    ...(moveOnArchive !== undefined ? { move_on_archive: moveOnArchive } : {}),
+    ...(links.writeFormat === "markdown" ||
+    links.use_markdown_format === true ||
+    links.useMarkdownFormat === true
+      ? { link_write_format: "markdown" as const }
+      : {}),
+  };
+}
+
+/**
+ * Split a settings save between the task type and the TaskNotes settings
+ * record. Only app settings whose value differs from `current` become record
+ * changes. `status_behavior` holds only the statuses that changed; expand it
+ * with taskNotesSettingsChanges before saving.
+ */
+export function splitTaskModelSettingsPatch(
+  patch: TaskModelSettingsPatch,
+  current: TaskCollectionConfiguration,
+): {
+  type: TaskNotesMdbaseTypeSettingsPatch;
+  app: TaskNotesAppSettingsChanges;
+} {
+  const type: TaskNotesMdbaseTypeSettingsPatch = {
+    ...(patch.defaultStatus !== undefined
+      ? { defaultStatus: patch.defaultStatus }
+      : {}),
+    ...(patch.defaultPriority !== undefined
+      ? { defaultPriority: patch.defaultPriority }
+      : {}),
+    ...(patch.recurrence?.maintainDueDateOffset !== undefined
+      ? {
+          recurrence: {
+            maintainDueDateOffset: patch.recurrence.maintainDueDateOffset,
+          },
+        }
+      : {}),
+    ...(patch.occurrences ? { occurrences: patch.occurrences } : {}),
+  };
+  const app: TaskNotesAppSettingsChanges = {};
+  const reset = patch.recurrence?.resetCheckboxesOnRecurrence;
+  if (
+    reset !== undefined &&
+    reset !== current.recurrence.resetCheckboxesOnRecurrence
+  )
+    app.reset_body_checkboxes_on_recurrence = reset;
+  const autoStop = patch.timeTracking?.autoStopOnComplete;
+  if (
+    autoStop !== undefined &&
+    autoStop !== current.timeTracking.autoStopOnComplete
+  )
+    app.auto_stop_time_tracking_on_complete = autoStop;
+  const writeFormat = patch.links?.writeFormat;
+  if (writeFormat !== undefined && writeFormat !== current.linkWriteFormat)
+    app.link_write_format = writeFormat;
+  const moveOnArchive = patch.archive?.moveOnArchive;
+  if (
+    moveOnArchive !== undefined &&
+    moveOnArchive !== current.archive.moveOnArchive
+  )
+    app.move_on_archive = moveOnArchive;
+  if (patch.archive?.folder !== undefined) {
+    const folder = cleanFolder(patch.archive.folder, "archive folder");
+    if ((folder || DEFAULT_ARCHIVE_FOLDER) !== current.archive.folder)
+      app.archive_folder = folder;
+  }
+  const templatePath =
+    patch.templating?.templatePath !== undefined
+      ? cleanFolder(patch.templating.templatePath, "template path")
+      : undefined;
+  if (
+    templatePath !== undefined &&
+    templatePath !== (current.templating.templatePath ?? "")
+  )
+    app.template_path = templatePath;
+  const templateEnabled = patch.templating?.enabled;
+  if (
+    templateEnabled !== undefined &&
+    templateEnabled !== current.templating.enabled
+  )
+    app.template_enabled = templateEnabled;
+  if (
+    (templateEnabled ?? current.templating.enabled) &&
+    !(templatePath ?? current.templating.templatePath ?? "")
+  )
+    throw new Error(
+      "template path must be set before task templating is enabled.",
+    );
+  const behaviors: Record<string, TaskNotesStatusBehavior> = {};
+  for (const [value, automation] of Object.entries(
+    patch.statusAutomation ?? {},
+  )) {
+    const status = current.statuses.find(
+      (candidate) => candidate.value === value,
+    );
+    if (!status) throw new Error(`Unknown task status "${value}".`);
+    const delay = automation.autoArchiveDelay;
+    if (delay !== undefined && (!Number.isInteger(delay) || delay < 0))
+      throw new Error(
+        `Auto-archive delay for "${value}" must be a non-negative integer.`,
+      );
+    const behavior: TaskNotesStatusBehavior = {};
+    if (
+      automation.autoArchive !== undefined &&
+      automation.autoArchive !== status.autoArchive
+    )
+      behavior.auto_archive = automation.autoArchive;
+    if (delay !== undefined && delay !== status.autoArchiveDelay)
+      behavior.auto_archive_delay_minutes = delay;
+    if (Object.keys(behavior).length) behaviors[value] = behavior;
+  }
+  if (Object.keys(behaviors).length) app.status_behavior = behaviors;
+  return { type, app };
+}
+
+/**
+ * The record changes for `app`, with `status_behavior` merged into the map
+ * the record already holds, so a save never drops another status's entry.
+ */
+export function taskNotesSettingsChanges(
+  app: TaskNotesAppSettingsChanges,
+  frontmatter: Readonly<Record<string, unknown>> | undefined,
+): TaskNotesAppSettingsChanges {
+  if (!app.status_behavior) return app;
+  const stored =
+    resolveTaskNotesAppSettings(frontmatter).stored.status_behavior ?? {};
+  const merged: Record<string, TaskNotesStatusBehavior> = {
+    ...structuredClone(stored),
+  };
+  for (const [status, behavior] of Object.entries(app.status_behavior))
+    merged[status] = { ...merged[status], ...behavior };
+  return { ...app, status_behavior: merged };
+}
+
+function cleanFolder(value: string, label: string): string {
+  const path = value.trim().replace(/^\/+|\/+$/g, "");
+  if (path.split("/").some((part) => part === ".." || part === "."))
+    throw new Error(`The ${label} must stay inside the collection.`);
+  return path;
 }
 
 function completionConfiguration(
@@ -248,22 +430,8 @@ function resolveStatuses(
         boolean(definition.isSkipped) ??
         (skippedValues.size ? skippedValues.has(entry.value) : undefined) ??
         entry.isSkipped,
-      excludeFromCycle:
-        boolean(definition.exclude_from_cycle) ??
-        boolean(definition.excludeFromCycle) ??
-        entry.excludeFromCycle,
-      nextStatus:
-        string(definition.next_status) ??
-        string(definition.nextStatus) ??
-        entry.nextStatus,
-      autoArchive:
-        boolean(definition.auto_archive) ??
-        boolean(definition.autoArchive) ??
-        entry.autoArchive,
-      autoArchiveDelay:
-        integer(definition.auto_archive_delay_minutes) ??
-        integer(definition.autoArchiveDelay) ??
-        entry.autoArchiveDelay,
+      // Cycling and auto-archive are app settings: the settings record, then
+      // an earlier binding's definitions (see resolveTaskNotesAppSettings).
     };
   });
 }

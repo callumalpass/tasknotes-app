@@ -16,6 +16,9 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SETTINGS_TYPE } from "@tasknotes/model/settings";
+import { connectTaskNotesSettingsStore } from "./mdbase-app-settings";
+import { appSettingsAccess, saveAppSettings } from "./task-app-settings";
 import {
   linksTo,
   type CollectionDescription,
@@ -105,9 +108,11 @@ import type {
   TaskTimeEntry,
   UpdateTaskInput,
 } from "../domain/task";
-import type {
-  TaskCollectionConfiguration,
-  TaskModelSettingsPatch,
+import {
+  splitTaskModelSettingsPatch,
+  taskNotesSettingsChanges,
+  type TaskCollectionConfiguration,
+  type TaskModelSettingsPatch,
 } from "../domain/task-configuration";
 import type {
   CollectionRecord,
@@ -171,6 +176,8 @@ export class MdbaseTaskRepository implements TaskRepository {
   private readonly documents = new TaskDocumentCache<CachedTaskDocument>();
   private changeCursor?: number;
   private descriptionSignature?: string;
+  /** The TaskNotes settings record (_settings/dev.tasknotes.md). */
+  private readonly settings: ReturnType<typeof connectTaskNotesSettingsStore>;
   private description?: CollectionDescription;
   private readonly views: MdbaseViewAdapter;
   private collectionId = "";
@@ -208,6 +215,9 @@ export class MdbaseTaskRepository implements TaskRepository {
   };
 
   constructor(private readonly connect: MdbaseConnection<JsonObject>) {
+    this.settings = connectTaskNotesSettingsStore(connect, () =>
+      this.requestOptions(),
+    );
     this.views = new MdbaseViewAdapter(
       connect,
       () => this.requestOptions(),
@@ -334,6 +344,8 @@ export class MdbaseTaskRepository implements TaskRepository {
     const signal = this.operationController.signal;
     const description = validResult(await this.connect.describe({ signal }));
     signal.throwIfAborted();
+    await this.settings.reload(signal);
+    signal.throwIfAborted();
     if (this.configureDescription(description)) this.taskIndexReady = false;
     this.collectionId = description.collectionId;
     if (!this.taskIndexReady)
@@ -371,6 +383,8 @@ export class MdbaseTaskRepository implements TaskRepository {
       // Let an existing snapshot settle before changing its decoding models.
       // A failed initial load must not prevent refresh from discovering a new schema.
       await this.taskIndexLoading?.catch(() => undefined);
+      signal.throwIfAborted();
+      await this.settings.reload(signal);
       signal.throwIfAborted();
       let configurationChanged = this.configureDescription(description);
       await this.ensureTaskIndex();
@@ -1186,6 +1200,10 @@ export class MdbaseTaskRepository implements TaskRepository {
       return {
         writable: true as const,
         source: `${this.taskTypeName} type definition`,
+        appSettings: appSettingsAccess(
+          this.hasSettingsType(),
+          await this.settings.current(this.requestOptions().signal),
+        ),
       };
     } catch {
       return {
@@ -1197,9 +1215,35 @@ export class MdbaseTaskRepository implements TaskRepository {
     }
   }
 
+  private hasSettingsType(): boolean {
+    return (
+      this.description?.types.some(
+        (type) => type.name === TASKNOTES_SETTINGS_TYPE,
+      ) === true
+    );
+  }
+
   async updateTaskModelSettings(
     patch: TaskModelSettingsPatch,
   ): Promise<TaskCollectionConfiguration> {
+    const split = splitTaskModelSettingsPatch(
+      patch,
+      this.model.configuration(),
+    );
+    // App behaviour goes to the settings record, never to the binding.
+    if (Object.keys(split.app).length) {
+      const prepared = await this.settings.current(
+        this.requestOptions().signal,
+      );
+      const access = appSettingsAccess(this.hasSettingsType(), prepared);
+      if (!access.writable) throw new Error(access.reason);
+      await saveAppSettings(
+        this.settings,
+        taskNotesSettingsChanges(split.app, prepared.frontmatter),
+        prepared,
+        this.requestOptions().signal,
+      );
+    }
     const current = validResult(
       await this.connect.readType(
         { name: this.taskTypeName },
@@ -1209,7 +1253,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     const parsed = parseFrontmatter(current.document);
     const definition = patchTaskNotesMdbaseTypeSettings(
       parsed.frontmatter,
-      patch,
+      split.type,
     );
     const operationInput = {
       path: current.path,
@@ -1220,6 +1264,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       const updatedDefinition = parseFrontmatter(updated.document).frontmatter;
       const provider = resolveTaskTypeDefinition(updatedDefinition, {
         typeName: this.taskTypeName,
+        settings: this.settings.getSnapshot().frontmatter,
       });
       this.model = provider.model;
       this.taskProviders.set(this.taskTypeName, provider.model);
@@ -2112,18 +2157,20 @@ export class MdbaseTaskRepository implements TaskRepository {
     // SDK cache hits share the same read-only object. Compare schema contents
     // only on a refetch: expiry can refetch without advancing schemaGeneration.
     if (this.description === description) return false;
+    const settings = this.settings.getSnapshot().frontmatter;
     const nextSignature = JSON.stringify([
       description.displayName,
       description.types,
       description.contracts,
       description.configuration,
+      settings,
     ]);
     this.displayName = description.displayName;
     if (nextSignature === this.descriptionSignature) {
       this.description = description;
       return false;
     }
-    const resolved = resolveTaskCollection(description);
+    const resolved = resolveTaskCollection(description, { settings });
     this.description = description;
     this.descriptionSignature = nextSignature;
     this.changeCursor = undefined;

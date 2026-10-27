@@ -43,7 +43,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
     expect(uuid).not.toHaveBeenCalled();
     expect(held.listAppBasesViews).not.toHaveBeenCalled(); // CURRENT resolved Base contract absent; occupancy UNKNOWN.
     expect(assessment.packs.map((p) => [p.id, p.version])).toEqual([
-      ["tasknotes.task", "0.3.0-rc.18"],
+      ["tasknotes.task", "0.3.0-rc.19"],
       ["tasknotes.scratch", "1.2.0"],
       ["tasknotes.scratch-image", "1.2.0"],
       ["obsidian.base", "1.0.0"],

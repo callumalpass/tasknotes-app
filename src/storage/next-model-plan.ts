@@ -17,7 +17,7 @@ import { initializeModelPackCore } from "../cloud/next-model-pack-core";
 // loader verifies its vendor digest; no rc.15 builder/profile selection occurs.
 export const TASKNOTES_MODEL_PACK = Object.freeze({
   id: "tasknotes.task",
-  version: "0.3.0-rc.18",
+  version: "0.3.0-rc.19",
 });
 // Legacy v2 journals bind ONE task pack. New setup installs the full application
 // declaration in next-resource-plan; never enlarge a persisted v2 operation.
@@ -32,7 +32,7 @@ if (
   provision.manifest.kind !== "mdbase.type-pack" ||
   provision.manifest.id !== TASKNOTES_MODEL_PACK.id ||
   provision.manifest.version !== TASKNOTES_MODEL_PACK.version ||
-  provision.manifest.resources.length !== 4 ||
+  provision.manifest.resources.length !== 10 ||
   provision.resources.length !== provision.manifest.resources.length
 )
   throw new Error("The pinned TaskNotes catalog provision is invalid.");

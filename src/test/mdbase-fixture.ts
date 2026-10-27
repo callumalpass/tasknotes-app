@@ -26,6 +26,8 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
+import { buildTaskNotesSettingsResources } from "@tasknotes/model/settings";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { vi } from "vitest";
 import { stringify } from "yaml";
 
@@ -714,7 +716,7 @@ export function description(
   const implementation = type.implements.find(
     (candidate) =>
       candidate.contract === "tasknotes.task" &&
-      candidate.version === "0.3.0-rc.5",
+      candidate.version === TASKNOTES_SPEC_VERSION,
   )!;
   const configuration = structuredClone(implementation.binding);
   if (templating)
@@ -759,12 +761,13 @@ export function description(
         definition: generated.type,
         extensions: {},
       },
+      settingsTypeDescriptor(),
     ],
     contracts: [
       {
         id: "tasknotes.task",
         contractType: "record",
-        version: "0.3.0-rc.5",
+        version: TASKNOTES_SPEC_VERSION,
         digest: TASKNOTES_CONTRACT_DIGEST,
         schema: generated.taskSchema,
         bindingSchema: generated.bindingSchema,
@@ -779,6 +782,22 @@ export function description(
         ],
       },
     ],
+  };
+}
+
+/** The tasknotes-settings type the rc.19 pack seeds. */
+function settingsTypeDescriptor(): CollectionDescription["types"][number] {
+  const type = buildTaskNotesSettingsResources().type as {
+    name: string;
+    version: number;
+    schema: { value: JsonObject };
+  };
+  return {
+    name: type.name,
+    version: type.version,
+    schema: type.schema.value,
+    definition: type as unknown as JsonObject,
+    extensions: {},
   };
 }
 

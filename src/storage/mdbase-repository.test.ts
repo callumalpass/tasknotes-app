@@ -441,7 +441,7 @@ describe("mdbase task repository", () => {
       title: "Ship relay support",
       body: "Tested through Connect.",
     });
-    expect(fixture.read).toHaveBeenCalledTimes(1);
+    expect(taskReads(fixture.read)).toBe(1);
     expect(
       fixture.update.mock.calls.map(([input]) => input.ifRevision),
     ).toEqual(["r1", "r2"]);
@@ -742,7 +742,7 @@ describe("mdbase task repository", () => {
     await repository.get("delete-me");
     await repository.delete("delete-me");
 
-    expect(fixture.read).toHaveBeenCalledTimes(1);
+    expect(taskReads(fixture.read)).toBe(1);
     expect(fixture.remove).toHaveBeenCalledWith(
       expect.objectContaining({ ifRevision: "r1" }),
       expect.objectContaining({ signal: expect.anything() }),
@@ -1417,3 +1417,10 @@ describe("mdbase task repository", () => {
     ).toBeInstanceOf(MdbaseTaskRepository);
   });
 });
+
+/** Task reads, leaving out the settings record's read by path. */
+function taskReads(read: { mock: { calls: { path: string }[][] } }): number {
+  return read.mock.calls.filter(
+    ([input]) => input?.path !== "_settings/dev.tasknotes.md",
+  ).length;
+}

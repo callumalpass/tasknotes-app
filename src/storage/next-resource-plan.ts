@@ -10,8 +10,7 @@ import {
 import { stringify } from "yaml";
 import { MdbaseError, type MdbaseClient } from "@mdbase-dev/sdk";
 import type { JsonObject, TypePackProvision } from "@mdbase-dev/connect";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { TASKNOTES_READABLE_CONTRACTS } from "../domain/tasknotes-contract";
 import manifest from "../generated/mdbase-app.json";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
 import { initializeModelPackCore } from "../cloud/next-model-pack-core";
@@ -139,12 +138,16 @@ async function configuration(
   signal.throwIfAborted();
   if (!catalog.valid)
     throw new Error("The staged resource catalog is invalid.");
-  const implementations = catalog.implementations.filter(
-    (i) =>
-      i.contract === "tasknotes.task" &&
-      i.version === TASKNOTES_SPEC_VERSION &&
-      i.contract_digest === TASKNOTES_CONTRACT_DIGEST,
-  );
+  // Prefer the current contract; a preserved rc.5 type still resolves.
+  const implementations =
+    TASKNOTES_READABLE_CONTRACTS.map((readable) =>
+      catalog.implementations.filter(
+        (i) =>
+          i.contract === "tasknotes.task" &&
+          i.version === readable.version &&
+          i.contract_digest === readable.digest,
+      ),
+    ).find((found) => found.length) ?? [];
   if (implementations.length !== 1)
     throw new Error(
       "The staged/preserved TaskNotes implementation is unavailable or ambiguous.",
@@ -157,6 +160,7 @@ async function configuration(
     typeName: type.name,
     fields: Object.fromEntries(implementation.fields),
     configuration: implementation.binding as JsonObject,
+    version: implementation.version,
   }).model.configuration();
 }
 function readback(

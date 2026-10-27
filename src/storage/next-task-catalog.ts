@@ -1,8 +1,11 @@
 import { toPlain, type MdbaseClient } from "@mdbase-dev/sdk";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { TASKNOTES_SETTINGS_TYPE } from "@tasknotes/model/settings";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
+import {
+  readableTaskNotesContract,
+  TASKNOTES_MISSING_CONTRACT_MESSAGE,
+} from "../domain/tasknotes-contract";
 import {
   resolveTaskTypeDefinition,
   type ResolvedTaskProvider,
@@ -18,19 +21,28 @@ export interface NextTaskProvider extends ResolvedTaskProvider {
 export async function nextTaskProviders(
   client: MdbaseClient,
   signal: AbortSignal,
+  options: { settings?: Readonly<Record<string, unknown>> } = {},
 ): Promise<NextTaskProvider[]> {
+  return (await nextTaskCatalog(client, signal, options)).providers;
+}
+
+export interface NextTaskCatalog {
+  providers: NextTaskProvider[];
+  /** Whether the collection defines the TaskNotes settings type. */
+  settingsType: boolean;
+}
+
+/** The current tasknotes.task contract is preferred; rc.5 collections still resolve. */
+export async function nextTaskCatalog(
+  client: MdbaseClient,
+  signal: AbortSignal,
+  options: { settings?: Readonly<Record<string, unknown>> } = {},
+): Promise<NextTaskCatalog> {
   const catalog = await client.describe(signal);
   signal.throwIfAborted();
-  const contract = catalog.contracts.find(
-    (item) =>
-      item.id === "tasknotes.task" &&
-      item.version === TASKNOTES_SPEC_VERSION &&
-      item.digest === TASKNOTES_CONTRACT_DIGEST,
-  );
+  const contract = readableTaskNotesContract(catalog.contracts);
   if (!contract)
-    throw new TaskNotesModelRequiredError(
-      `This collection does not provide tasknotes.task ${TASKNOTES_SPEC_VERSION}.`,
-    );
+    throw new TaskNotesModelRequiredError(TASKNOTES_MISSING_CONTRACT_MESSAGE);
   const providers: NextTaskProvider[] = [];
   for (const type of catalog.types) {
     const implementations = type.implements.filter(
@@ -67,6 +79,8 @@ export async function nextTaskProviders(
         typeName: type.name,
         fields: Object.fromEntries(implementation.fields),
         configuration: binding,
+        version: contract.version,
+        settings: options.settings,
       }),
       sourcePath: type.path,
     });
@@ -75,5 +89,10 @@ export async function nextTaskProviders(
     throw new TaskNotesModelRequiredError(
       "The TaskNotes contract has no implementing types.",
     );
-  return providers;
+  return {
+    providers,
+    settingsType: catalog.types.some(
+      (type) => type.name === TASKNOTES_SETTINGS_TYPE,
+    ),
+  };
 }

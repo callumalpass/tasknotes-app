@@ -523,7 +523,13 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     const get = vi.spyOn(f.client, "get");
     const summaries = await f.repository.listSummaries();
     expect(summaries[0]).not.toHaveProperty("body");
-    expect(get).not.toHaveBeenCalled();
+    // Only the settings record is read by path; no task is read.
+    expect(
+      get.mock.calls.filter(
+        ([ref]) =>
+          JSON.stringify(ref) !== '{"path":"_settings/dev.tasknotes.md"}',
+      ),
+    ).toEqual([]);
     expect((await f.repository.get(s.portableId))!.body).toBe("Original body");
     expect(get.mock.calls.at(-1)![1]).toMatchObject({ body: true });
   });

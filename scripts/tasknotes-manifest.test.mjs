@@ -61,9 +61,11 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.contracts).toEqual([
       expect.objectContaining({
         id: "tasknotes.task",
-        version: "0.3.0-rc.5",
+        version: "0.3.0-rc.6",
         digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       }),
+      expect.objectContaining({ id: "tasknotes.settings", version: "1.0.0" }),
+      expect.objectContaining({ id: "mdbase.app-settings", version: "1.0.0" }),
       expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
       expect.objectContaining({ id: "mdbase.view", version: "1.0.0" }),
     ]);
@@ -125,12 +127,12 @@ describe("TaskNotes mdbase manifest", () => {
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
-      4,
+      10,
     );
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.18");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.19");
     const taskSeed = manifest.provisions.type_packs[0].manifest.resources.find(
       (resource) => resource.kind === "type",
     );
@@ -140,7 +142,7 @@ describe("TaskNotes mdbase manifest", () => {
       taskSeed.upgrade_from.map(
         (baseline) => parse(baseline.document.split("---\n")[1]).version,
       ),
-    ).toEqual([4, 3, 2, 1]);
+    ).toEqual([4, 4, 3, 2, 1]);
     for (const baseline of taskSeed.upgrade_from) {
       expect(baseline.digest).toBe(
         `sha256:${createHash("sha256").update(baseline.document).digest("hex")}`,
@@ -335,7 +337,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.5",
+        candidate.version === "0.3.0-rc.6",
     );
     const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
@@ -359,7 +361,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.5",
+        candidate.version === "0.3.0-rc.6",
     );
     const taskDateSchema = {
       anyOf: [

@@ -92,6 +92,43 @@ describe("TaskNotes collection configuration", () => {
     });
   });
 
+  it("reads the settings record over an rc.5 binding, and the binding over the default", () => {
+    const rc5 = taskType({
+      binding: {
+        archive: { move_on_archive: true, folder: "Archive/Binding" },
+        templating: { enabled: true, template_path: "Templates/Binding.md" },
+      },
+    });
+    const settings = {
+      app: "dev.tasknotes",
+      scope: "collection",
+      settings_version: 1,
+      archive_folder: "Archive/Record",
+    };
+
+    const configuration = resolveTaskCollectionConfiguration(rc5, {
+      settings,
+    });
+    // The record wins where it has a value; the binding fills the rest.
+    expect(configuration.archive).toEqual({
+      moveOnArchive: true,
+      folder: "Archive/Record",
+    });
+    expect(configuration.templating).toMatchObject({
+      enabled: true,
+      templatePath: "Templates/Binding.md",
+    });
+    // No record yet (missing or late): the binding's values are kept.
+    expect(resolveTaskCollectionConfiguration(rc5).archive).toEqual({
+      moveOnArchive: true,
+      folder: "Archive/Binding",
+    });
+    // Neither: the defaults.
+    expect(
+      resolveTaskCollectionConfiguration(taskType({})).archive,
+    ).toMatchObject({ moveOnArchive: false });
+  });
+
   it("resolves skipped statuses and occurrence defaults", () => {
     const configuration = resolveTaskCollectionConfiguration(
       taskType({
