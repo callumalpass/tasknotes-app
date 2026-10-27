@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {# Aufgabennotiz erstellt} other {# Aufgabennotizen erstellt}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, one {Alle überfälligen Aufgaben auf heute verschieben (# Aufgabe)} other {Alle überfälligen Aufgaben auf heute verschieben (# Aufgaben)}}"
@@ -1029,10 +1031,6 @@ msgstr "Board-Spalten"
 msgid "Bold"
 msgstr "Fett"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Durchsuchen"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Visueller Editor"
@@ -1286,6 +1284,7 @@ msgid "Clear value"
 msgstr "Wert löschen"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1327,6 +1326,10 @@ msgstr "Neue Aufgabe schließen"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Eigenschaftseditor schließen"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "Aufgabendetails schließen"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -2942,6 +2945,10 @@ msgstr "Monat"
 msgid "Monthly"
 msgstr "Monatlich"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Mehr"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -2987,6 +2994,7 @@ msgstr "{label} nach unten verschieben"
 msgid "Move {label} up"
 msgstr "{label} nach oben verschieben"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "Alle auf heute verschieben"
@@ -3562,6 +3570,7 @@ msgstr "Gliederung"
 msgid "Outline controls for {0}"
 msgstr "Gliederungssteuerung für {0}"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "Überfällig"
@@ -4659,6 +4668,10 @@ msgstr "Vorschläge"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Vorschläge aus den ersten {limit} Aufgaben. Suchen Sie, um weitere zu finden."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Sammlung wechseln"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

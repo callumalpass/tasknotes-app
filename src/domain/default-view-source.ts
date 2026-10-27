@@ -113,6 +113,7 @@ export function taskNotesDefaultBaseDocument(
           options: {
             calendarView: "listWeek",
             listDayCount: 7,
+            showOverdueOnToday: true,
             showScheduled: true,
             showDue: true,
             showRecurring: true,
@@ -310,6 +311,8 @@ function calendarCanonicalView(
         calendarView,
         listDayCount: 7,
         customDayCount: 3,
+        // Upcoming starts today, so overdue work would otherwise drop out of it.
+        ...(calendarView === "listWeek" ? { showOverdueOnToday: true } : {}),
         showScheduled: true,
         showDue: true,
         showRecurring: true,

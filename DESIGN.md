@@ -224,18 +224,20 @@ Today             Search       More
   its layout (day-sectioned list, agenda, month calendar, board, planner,
   projects, plain list); the starter Projects and Archive views, which share
   the plain list layout, are distinguished by name. The sidebar, phone tab
-  bar, Browse menu, and Manage views use the same mapping.
-- The desktop sidebar leads with a filled New task action, lists navigation
-  destinations, and groups Manage views and Settings at its foot. Destinations
+  bar, More menu, and Manage views use the same mapping.
+- The desktop sidebar leads with the collection switcher and a filled New
+  task action, lists navigation destinations, and groups Manage views and Settings at its foot. Destinations
   reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
   it Home. Because the
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Browse. Tab labels scale with system text until the tab width is reached and
+  More. Tab labels scale with system text until the tab width is reached and
   never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
-  require observed viewport occlusion. Browse contains additional destinations,
-  Manage views, and Settings. Tab dismisses Browse and continues outside it;
+  require observed viewport occlusion. Phones keep no collection bar above the
+  work: More leads with the open collection, which goes to Collection settings
+  to switch, then additional destinations, Manage views, and Settings. Tab
+  dismisses More and continues outside it;
   arrow keys belong to the menu only while focus is inside.
   Fresh collections begin with Today, Upcoming, and Scratchpad; existing choices
   and migrated navigation preferences remain intact. Manage views separates the ordered destinations shown in
@@ -471,9 +473,28 @@ This is functional evidence of portability, not permanent technical chrome.
 
 ## Motion
 
-Use 150 to 220 millisecond ease-out transitions only when state changes need
-orientation. Completing a task may fade and reposition the row. Respect reduced
-motion and avoid entrance choreography.
+Motion explains change; it never celebrates. Things arrive from where they
+belong and leave the way they came, so the work underneath stays oriented.
+Exits are quicker than entrances, and everything stays interruptible: a closing
+surface is inert immediately and focus returns at once, not when the motion ends.
+
+- Popovers and menus scale up slightly from their trigger (180 ms enter,
+  120 ms exit).
+- Centred dialogs, such as New task on wider screens, rise and settle.
+- Sheets on phones slide up from the bottom edge on the sheet curve (320 ms
+  enter, 200 ms exit) while their scrim fades in. Scrims animate their
+  colour, never the sheet's opacity.
+- Switching views keeps navigation still; the old work fades out and the new
+  work settles 6 px upward.
+- Where task details replace the work, they push in from the trailing edge and
+  pop back. Beside the work, the details panel slides in on its own.
+- Completing a task may fade and reposition the row.
+
+Use the `--motion-*` and `--ease-*` tokens and the shared `motion-*`
+keyframes in `01-foundation.css`. Overlays keep rendering while they exit
+through `usePresence`; route changes go through `transitionNavigation`. With
+reduced motion, all of these change state immediately. Avoid entrance
+choreography for ordinary content.
 
 When a list's order or membership changes (a completion, reschedule, section
 move, or board column move), rows and cards glide 220ms from where they were

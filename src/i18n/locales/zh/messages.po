@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {已创建 # 条任务记录}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
@@ -1029,10 +1031,6 @@ msgstr "看板列"
 msgid "Bold"
 msgstr "粗体"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "浏览"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "构建器"
@@ -1286,6 +1284,7 @@ msgid "Clear value"
 msgstr "清除值"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1327,6 +1326,10 @@ msgstr "关闭新建任务"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "关闭属性编辑器"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "关闭任务详情"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -2942,6 +2945,10 @@ msgstr "月"
 msgid "Monthly"
 msgstr "每月"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "更多"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -2987,6 +2994,7 @@ msgstr "将 {label} 下移"
 msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "全部移至今天"
@@ -3562,6 +3570,7 @@ msgstr "大纲"
 msgid "Outline controls for {0}"
 msgstr "{0}的大纲控件"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "逾期"
@@ -4659,6 +4668,10 @@ msgstr "建议"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "根据前 {limit} 个任务提供的建议。搜索以查找其他任务。"
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "切换集合"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

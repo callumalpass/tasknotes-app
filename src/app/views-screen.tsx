@@ -1536,6 +1536,8 @@ export function ViewsScreen({
             onOpen={openTask}
             onToggle={toggleTask}
             onEdit={calendarMutations.edit}
+            onMoveOverdueToToday={(rows) => void moveOverdueToToday(rows)}
+            movingOverdue={reschedulePending}
           />
         ) : (
           <TaskListView

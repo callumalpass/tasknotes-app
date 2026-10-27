@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {Создана # заметка задачи} few {Созданы # заметки задач} many {Создано # заметок задач} other {Создано # заметки задачи}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, one {Перенести на сегодня все просроченные задачи: # задача} few {Перенести на сегодня все просроченные задачи: # задачи} many {Перенести на сегодня все просроченные задачи: # задач} other {Перенести на сегодня все просроченные задачи: # задачи}}"
@@ -1029,10 +1031,6 @@ msgstr "Столбцы доски"
 msgid "Bold"
 msgstr "Полужирный"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Обзор"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Конструктор"
@@ -1286,6 +1284,7 @@ msgid "Clear value"
 msgstr "Очистить значение"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1327,6 +1326,10 @@ msgstr "Закрыть новую задачу"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Закрыть редактор свойств"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "Закрыть сведения о задаче"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -2942,6 +2945,10 @@ msgstr "Месяц"
 msgid "Monthly"
 msgstr "Ежемесячно"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Ещё"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -2987,6 +2994,7 @@ msgstr "Переместить {label} вниз"
 msgid "Move {label} up"
 msgstr "Переместить {label} вверх"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "Перенести все задачи на сегодня"
@@ -3562,6 +3570,7 @@ msgstr "Структура"
 msgid "Outline controls for {0}"
 msgstr "Элементы управления структурой: {0}"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "Просрочено"
@@ -4659,6 +4668,10 @@ msgstr "Варианты"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Показаны варианты среди первых {limit} задач. Найдите остальные с помощью поиска."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Сменить коллекцию"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

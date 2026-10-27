@@ -384,6 +384,11 @@
   background: transparent;
   border: 0;
   cursor: default;
+  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
+}
+
+.tasknotes-popover-scrim[data-state="closed"] {
+  animation: motion-scrim-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .tasknotes-popover {
@@ -401,6 +406,12 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   box-shadow: 0 14px 38px var(--color-shadow-soft);
+  transform-origin: top left;
+  animation: motion-pop-in var(--motion-enter) var(--ease-out);
+}
+
+.tasknotes-popover[data-state="closed"] {
+  animation: motion-pop-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .tasknotes-popover-title {

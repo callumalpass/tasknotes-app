@@ -5,7 +5,9 @@ import { t as translate } from "@lingui/core/macro";
 import {
   Columns3,
   Command,
+  Ellipsis,
   FilePenLine,
+  Library,
   Plus,
   Search,
   Settings,
@@ -40,6 +42,10 @@ import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
 import { taskViewIcon } from "./views/view-icon";
 import { useOverlay } from "../components/overlays/use-overlay";
+import {
+  useExitingValue,
+  usePresence,
+} from "../components/overlays/use-presence";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -50,7 +56,11 @@ import {
 } from "./use-workspace-navigation";
 import { tasknotesMarkUrl } from "./assets";
 import { isAuthorizationError } from "./auth-error";
-import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
+import {
+  CollectionSwitcher,
+  useCollectionUi,
+  type CollectionUiOptions,
+} from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
@@ -357,15 +367,6 @@ export function AppShell() {
         />
       </aside>
       <main id="main-content" className="page-surface" tabIndex={-1}>
-        {collectionUi && route.page !== "task" ? (
-          <div className="mobile-collection-bar">
-            <CollectionSwitcher
-              {...collectionUi}
-              icon="mark"
-              variant="compact"
-            />
-          </div>
-        ) : null}
         {route.page !== "task" ? (
           <CollectionAvailability
             onSettings={
@@ -482,6 +483,7 @@ export function AppShell() {
         >
           <Navigation
             active={activePage}
+            collectionUi={collectionUi}
             homeKey={homeKey}
             mode="mobile"
             navigationKeys={navigationKeys}
@@ -924,8 +926,36 @@ function HomeViewLoading() {
   );
 }
 
+function MenuCollectionItem({
+  collectionUi,
+  onChoose,
+}: {
+  collectionUi: CollectionUiOptions;
+  onChoose(): void;
+}) {
+  const { view } = useCollectionUi(collectionUi);
+  const name = view.current?.name;
+  return (
+    <button
+      className="navigation-menu-collection"
+      role="menuitem"
+      type="button"
+      onClick={onChoose}
+    >
+      <Library aria-hidden="true" size={19} strokeWidth={1.7} />
+      <span>
+        {name ? <strong>{name}</strong> : null}
+        <small>
+          <Trans>Switch collection</Trans>
+        </small>
+      </span>
+    </button>
+  );
+}
+
 export function Navigation({
   active,
+  collectionUi,
   homeKey,
   mode,
   navigationKeys,
@@ -935,6 +965,8 @@ export function Navigation({
   onCommands,
 }: {
   active: string;
+  /** Phones reach the collection from More; the desktop rail has its own switcher. */
+  collectionUi?: CollectionUiOptions | null;
   homeKey?: string;
   mode: "desktop" | "mobile";
   navigationKeys: string[];
@@ -1013,6 +1045,13 @@ export function Navigation({
       menuRef.current?.querySelector<HTMLButtonElement>("[role='menuitem']") ??
       null,
   });
+  const exitingMenu = useExitingValue(menuPosition);
+  const shownMenuPosition = exitingMenu.value;
+  const menuPresent = usePresence(
+    Boolean(menuPosition),
+    menuRef,
+    exitingMenu.clear,
+  );
   useEffect(() => {
     if (!menuPosition) return;
     window.addEventListener("resize", closeMenu);
@@ -1027,7 +1066,7 @@ export function Navigation({
     const rect = triggerRef.current?.getBoundingClientRect();
     const width = Math.min(236, innerWidth - 16);
     const height = Math.min(
-      (additionalViews.length + 2) * 46 + 16,
+      (additionalViews.length + (collectionUi ? 3 : 2)) * 46 + 16,
       innerHeight - 96,
     );
     const left =
@@ -1122,22 +1161,36 @@ export function Navigation({
             type="button"
             onClick={openMenu}
           >
-            <Columns3 aria-hidden="true" size={22} strokeWidth={1.7} />
+            <Ellipsis aria-hidden="true" size={22} strokeWidth={1.7} />
             <span>
-              <Trans>Browse</Trans>
+              <Trans>More</Trans>
             </span>
           </button>
-          {menuPosition
+          {menuPresent && shownMenuPosition
             ? createPortal(
                 <div
-                  aria-label={t({ message: "Browse" })}
+                  aria-hidden={menuPosition ? undefined : true}
+                  aria-label={t({ message: "More" })}
                   className="navigation-views-menu"
+                  data-state={menuPosition ? "open" : "closed"}
                   id={menuId}
+                  inert={!menuPosition}
                   ref={menuRef}
                   role="menu"
                   onKeyDown={(event) => moveMenuFocus(event, menuRef.current)}
-                  style={menuPosition}
+                  style={shownMenuPosition}
                 >
+                  {collectionUi ? (
+                    <>
+                      <MenuCollectionItem
+                        collectionUi={collectionUi}
+                        onChoose={() =>
+                          choose({ page: "more", section: "collection" })
+                        }
+                      />
+                      <hr />
+                    </>
+                  ) : null}
                   {additionalViews.map((view) => {
                     const Icon = view.icon;
                     return (

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "../test/render";
 import { connectError } from "@mdbase-dev/connect-testing";
+import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 
 import {
   DeletionFeedback,
@@ -76,6 +77,32 @@ it("routes a TaskNotes tool through Home when it is first", () => {
   expect(onNavigate).toHaveBeenLastCalledWith({
     page: "views",
     key: today.key,
+  });
+});
+
+it("offers the open collection first in More on phones", async () => {
+  const onNavigate = vi.fn();
+  const mdbase = await createTestMdbase({ collections: [{ name: "Alpha" }] });
+  await mdbase.select(mdbase.getSnapshot().collections[0]!.collectionId);
+
+  render(
+    <Navigation
+      active="view:today"
+      collectionUi={{ mdbase, app: { name: "TaskNotes" } }}
+      mode="mobile"
+      navigationKeys={[]}
+      views={[]}
+      onNavigate={onNavigate}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  const items = screen.getAllByRole("menuitem");
+  expect(items[0]).toHaveTextContent("AlphaSwitch collection");
+  fireEvent.click(items[0]!);
+  expect(onNavigate).toHaveBeenLastCalledWith({
+    page: "more",
+    section: "collection",
   });
 });
 

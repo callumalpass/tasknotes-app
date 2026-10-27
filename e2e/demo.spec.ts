@@ -840,7 +840,7 @@ async function openNavigationItem(page: Page, name: string): Promise<void> {
     await direct.click();
     return;
   }
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("menuitem", { name, exact: true }).click();
 }
 
@@ -868,7 +868,9 @@ test("supports demo attachments and collection settings", async ({ page }) => {
     });
   await expect(page.getByText("demo-pixel.png")).toBeVisible();
 
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Back|Close task details)$/ })
+    .click();
   await openNavigationItem(page, "Settings");
   await page
     .getByRole("navigation", { name: "Settings sections" })

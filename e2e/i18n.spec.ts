@@ -96,7 +96,9 @@ test("French interface preserves user edits and stored English view names", asyn
   expect(results.violations).toEqual([]);
   await title.fill("Ma tâche — untouched user content");
   await expect(page.locator(".save-state")).toHaveText("Enregistré");
-  await page.getByRole("button", { name: "Retour", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Retour|Fermer les détails de la tâche)$/ })
+    .click();
   await expect(
     page.getByRole("button", {
       name: "Ma tâche — untouched user content",
@@ -121,6 +123,11 @@ test("French interface preserves user edits and stored English view names", asyn
     page.getByRole("button", { name: "Nouvelle note", exact: true }),
   ).toBeVisible();
   await openNavigationItem(page, "Paramètres");
+  // Route changes commit inside a view transition; wait for Settings before
+  // the non-waiting check below.
+  await expect(
+    page.getByRole("heading", { name: "Paramètres", level: 1 }),
+  ).toBeVisible();
   const collectionSection = page
     .getByRole("navigation", { name: "Sections des paramètres" })
     .getByRole("button", { name: /^Collection / });
@@ -381,7 +388,7 @@ async function openNavigationItem(
   }
   await page
     .getByRole("button", {
-      name: locale === "fr" ? "Parcourir" : "Browse",
+      name: locale === "fr" ? "Plus" : "More",
       exact: true,
     })
     .click();

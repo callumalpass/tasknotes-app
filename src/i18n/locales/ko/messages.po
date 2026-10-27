@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {작업 노트 #개를 만들었습니다.}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {모든 작업을 오늘로 이동, 기한 초과 #개}}"
@@ -1029,10 +1031,6 @@ msgstr "보드 열"
 msgid "Bold"
 msgstr "굵게"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "찾아보기"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "빌더"
@@ -1286,6 +1284,7 @@ msgid "Clear value"
 msgstr "값 지우기"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1327,6 +1326,10 @@ msgstr "새 작업 닫기"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "속성 편집기 닫기"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "작업 세부정보 닫기"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -2942,6 +2945,10 @@ msgstr "월"
 msgid "Monthly"
 msgstr "매월"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "더보기"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -2987,6 +2994,7 @@ msgstr "{label} 아래로 이동"
 msgid "Move {label} up"
 msgstr "{label} 위로 이동"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "모두 오늘로 이동"
@@ -3562,6 +3570,7 @@ msgstr "개요"
 msgid "Outline controls for {0}"
 msgstr "{0} 개요 제어"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "기한 초과"
@@ -4659,6 +4668,10 @@ msgstr "제안"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "처음 {limit}개 작업에서 제안합니다. 다른 항목은 검색하세요."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "컬렉션 전환"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

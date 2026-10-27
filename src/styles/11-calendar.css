@@ -772,12 +772,13 @@
   .full-calendar-commandbar {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-sm) var(--space-lg);
+    gap: var(--space-sm);
     margin-bottom: 14px;
   }
 
+  /* A long range title wraps within itself, so the layouts stay on the row. */
   .full-calendar-commandbar > h2 {
-    flex: 1 1 8em;
+    flex: 1 1 6em;
     min-width: 0;
     text-align: center;
   }
@@ -788,11 +789,28 @@
   }
 
   .full-calendar-modes button {
-    padding: 0 10px;
+    padding: 0 8px;
   }
 
   .full-calendar-modes .wide-mode {
     display: block;
+  }
+
+  /* The date row needs about 760px for navigation, range and every layout.
+     Beside the day list the grid is narrower, so the range takes its own line
+     and navigation shares the next with the layout switcher. The bar is the
+     container: one higher up would contain the calendar's fixed drag
+     preview. */
+  .full-calendar-commandbar {
+    container: calendar-commandbar / inline-size;
+  }
+
+  @container calendar-commandbar (max-width: 759px) {
+    .full-calendar-commandbar > h2 {
+      flex-basis: 100%;
+      order: -1;
+      text-align: left;
+    }
   }
 
   .full-calendar-workspace {
@@ -1020,9 +1038,27 @@
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   }
 
+  .global-capture-dialog,
+  .global-capture-scrim {
+    animation-duration: var(--motion-sheet-enter);
+  }
+
+  .global-capture-dialog {
+    animation-name: motion-sheet-in;
+    animation-timing-function: var(--ease-sheet);
+  }
+
   .global-capture-scrim {
     align-items: end;
     padding: env(safe-area-inset-top) 0 0;
+  }
+
+  .global-capture-scrim[data-state="closed"] {
+    animation-duration: var(--motion-sheet-exit);
+  }
+
+  .global-capture-scrim[data-state="closed"] .global-capture-dialog {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
 
   .task-model-settings-grid {
@@ -1048,6 +1084,11 @@
 
   .tasknotes-popover-scrim {
     background: var(--color-scrim-soft);
+    animation-duration: var(--motion-sheet-enter);
+  }
+
+  .tasknotes-popover-scrim[data-state="closed"] {
+    animation-duration: var(--motion-sheet-exit);
   }
 
   .tasknotes-select-popover,
@@ -1067,6 +1108,13 @@
     border-width: 1px 0 0;
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 44px var(--color-shadow);
+    animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+  }
+
+  .tasknotes-select-popover[data-state="closed"],
+  .tasknotes-calendar-popover[data-state="closed"],
+  .tasknotes-time-popover[data-state="closed"] {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
 
   .tasknotes-select-popover .tasknotes-option-list {
@@ -1348,4 +1396,35 @@
   justify-content: flex-end;
   gap: 10px 14px;
   margin-top: 24px;
+}
+
+.full-calendar-commandbar[hidden] {
+  display: none;
+}
+
+.full-calendar-view .layout-option-space {
+  display: inline-block;
+  width: 18px;
+}
+
+/* The date strip sticks to the page, so nothing above it may clip. Strip
+   layouts (agenda, day and 3 days) fit a phone without sideways scrolling. */
+.full-calendar-surface.has-strip {
+  overflow: visible;
+}
+
+.full-calendar-view .full-calendar-reschedule {
+  min-height: 32px;
+  padding: 0 8px;
+  color: var(--accent);
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.full-calendar-view .full-calendar-reschedule:disabled {
+  color: var(--ink-soft);
+  cursor: default;
 }

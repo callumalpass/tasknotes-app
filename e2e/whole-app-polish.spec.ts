@@ -142,23 +142,23 @@ test("phone Scratchpad reserves writing width and keeps conversion in the row me
   ).toHaveValue("Ask Rowan about the research notes");
 });
 
-test("Browse dismisses on Tab and no longer owns background arrow keys", async ({
+test("More dismisses on Tab and no longer owns background arrow keys", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("?demo=50");
-  const browse = page.getByRole("button", { name: "Browse", exact: true });
-  await browse.click();
+  const more = page.getByRole("button", { name: "More", exact: true });
+  await more.click();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("menu", { name: "Browse" })).toHaveCount(0);
+  await expect(page.getByRole("menu", { name: "More" })).toHaveCount(0);
   const active = await page.evaluate(() => document.activeElement?.outerHTML);
   await page.keyboard.press("ArrowDown");
   expect(await page.evaluate(() => document.activeElement?.outerHTML)).toBe(
     active,
   );
-  await browse.click();
+  await more.click();
   await page.keyboard.press("Escape");
-  await expect(browse).toBeFocused();
+  await expect(more).toBeFocused();
 });
 test("calendar overflow owns focus and restores More on Escape", async ({
   page,

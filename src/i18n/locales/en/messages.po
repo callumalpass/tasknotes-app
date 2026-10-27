@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {Created # task note} other {Created # task notes}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
@@ -1029,10 +1031,6 @@ msgstr "Board columns"
 msgid "Bold"
 msgstr "Bold"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Browse"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Builder"
@@ -1286,6 +1284,7 @@ msgid "Clear value"
 msgstr "Clear value"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1327,6 +1326,10 @@ msgstr "Close new task"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Close property editor"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "Close task details"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -2942,6 +2945,10 @@ msgstr "Month"
 msgid "Monthly"
 msgstr "Monthly"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "More"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -2987,6 +2994,7 @@ msgstr "Move {label} down"
 msgid "Move {label} up"
 msgstr "Move {label} up"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "Move all to today"
@@ -3562,6 +3570,7 @@ msgstr "Outline"
 msgid "Outline controls for {0}"
 msgstr "Outline controls for {0}"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "Overdue"
@@ -4659,6 +4668,10 @@ msgstr "Suggestions"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Suggestions from the first {limit} tasks. Search to find others."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Switch collection"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

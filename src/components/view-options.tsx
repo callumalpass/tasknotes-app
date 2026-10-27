@@ -3,8 +3,17 @@ import { Ellipsis } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /** Native disclosure containing ordinary buttons, not a partially implemented ARIA menu. */
-export function ViewOptions({ children }: { children: ReactNode }) {
+export function ViewOptions({
+  children,
+  label,
+  icon,
+}: {
+  children: ReactNode;
+  label?: string;
+  icon?: ReactNode;
+}) {
   const { t } = useLingui();
+  const name = label ?? t({ message: "View options" });
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -26,11 +35,8 @@ export function ViewOptions({ children }: { children: ReactNode }) {
         }
       }}
     >
-      <summary
-        aria-label={t({ message: "View options" })}
-        title={t({ message: "View options" })}
-      >
-        <Ellipsis aria-hidden="true" size={20} />
+      <summary aria-label={name} title={name}>
+        {icon ?? <Ellipsis aria-hidden="true" size={20} />}
       </summary>
       <div
         className="view-options-panel"
