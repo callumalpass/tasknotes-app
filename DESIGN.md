@@ -473,9 +473,28 @@ This is functional evidence of portability, not permanent technical chrome.
 
 ## Motion
 
-Use 150 to 220 millisecond ease-out transitions only when state changes need
-orientation. Completing a task may fade and reposition the row. Respect reduced
-motion and avoid entrance choreography.
+Motion explains change; it never celebrates. Things arrive from where they
+belong and leave the way they came, so the work underneath stays oriented.
+Exits are quicker than entrances, and everything stays interruptible: a closing
+surface is inert immediately and focus returns at once, not when the motion ends.
+
+- Popovers and menus scale up slightly from their trigger (180 ms enter,
+  120 ms exit).
+- Centred dialogs, such as New task on wider screens, rise and settle.
+- Sheets on phones slide up from the bottom edge on the sheet curve (320 ms
+  enter, 200 ms exit) while their scrim fades in. Scrims animate their
+  colour, never the sheet's opacity.
+- Switching views keeps navigation still; the old work fades out and the new
+  work settles 6 px upward.
+- Where task details replace the work, they push in from the trailing edge and
+  pop back. Beside the work, the details panel slides in on its own.
+- Completing a task may fade and reposition the row.
+
+Use the `--motion-*` and `--ease-*` tokens and the shared `motion-*`
+keyframes in `01-foundation.css`. Overlays keep rendering while they exit
+through `usePresence`; route changes go through `transitionNavigation`. With
+reduced motion, all of these change state immediately. Avoid entrance
+choreography for ordinary content.
 
 When a list's order or membership changes (a completion, reschedule, section
 move, or board column move), rows and cards glide 220ms from where they were

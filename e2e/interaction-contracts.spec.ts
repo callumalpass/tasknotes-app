@@ -64,6 +64,10 @@ test("notes and reminder controls reflow at 320px and 200% text", async ({
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto("?demo=50");
   await page.locator(".task-row-title").first().click();
+  // The route commits inside a view transition; open sections once it lands.
+  await expect(
+    page.getByRole("complementary", { name: "Task details" }),
+  ).toBeVisible();
   await page.locator("details").evaluateAll((nodes) =>
     nodes.forEach((node) => {
       node.open = true;

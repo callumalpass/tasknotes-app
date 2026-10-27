@@ -91,6 +91,11 @@
     max(24px, env(safe-area-inset-bottom));
   overflow-y: auto;
   background: var(--color-scrim);
+  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] {
+  animation: motion-scrim-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .global-capture-dialog {
@@ -103,6 +108,12 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sheet);
   box-shadow: 0 24px 70px var(--color-shadow);
+  transform-origin: top center;
+  animation: motion-dialog-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] .global-capture-dialog {
+  animation: motion-dialog-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .global-capture-dialog > header {

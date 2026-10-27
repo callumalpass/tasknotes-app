@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { useRepository } from "../app/repository-context";
 import { TaskCapture } from "./task-capture";
 import { useOverlay } from "./overlays/use-overlay";
+import { usePresence } from "./overlays/use-presence";
 
 import type { CreateTaskInput, Task, TaskSummary } from "../domain/task";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
@@ -86,10 +87,17 @@ export function GlobalTaskCapture({
   );
 
   useOverlay({ open, rootRef: dialogRef, modal: true, onDismiss: onClose });
+  const present = usePresence(open, scrimRef);
 
-  if (!open) return null;
+  if (!present) return null;
   return createPortal(
-    <div className="global-capture-scrim" ref={scrimRef}>
+    <div
+      aria-hidden={open ? undefined : true}
+      className="global-capture-scrim"
+      data-state={open ? "open" : "closed"}
+      inert={!open}
+      ref={scrimRef}
+    >
       <section
         aria-labelledby={titleId}
         aria-modal="true"

@@ -119,6 +119,12 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 12px 30px var(--color-shadow-soft);
+  transform-origin: top right;
+  animation: motion-pop-in var(--motion-enter) var(--ease-out);
+}
+
+.task-actions-layer[data-state="closed"] .task-actions-menu {
+  animation: motion-pop-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .task-actions-menu.is-organize-editor {
@@ -134,6 +140,11 @@
   padding: 0;
   background: var(--color-scrim);
   border: 0;
+  animation: motion-scrim-in var(--motion-sheet-enter) var(--ease-out);
+}
+
+.task-actions-layer[data-state="closed"] .task-actions-scrim {
+  animation: motion-scrim-out var(--motion-sheet-exit) var(--ease-in) forwards;
 }
 
 .navigation-views-menu {
@@ -149,6 +160,14 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow: 0 16px 36px var(--color-shadow);
+  /* Opens upward from the Browse tab in the bottom navigation. */
+  --motion-pop-offset: 6px;
+  transform-origin: bottom center;
+  animation: motion-pop-in var(--motion-enter) var(--ease-out);
+}
+
+.navigation-views-menu[data-state="closed"] {
+  animation: motion-pop-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .navigation-views-menu button {
@@ -711,6 +730,11 @@
   z-index: 80;
   inset: 0;
   background: transparent;
+  animation: motion-scrim-in var(--motion-sheet-enter) var(--ease-out);
+}
+
+.task-property-editor-scrim[data-state="closed"] {
+  animation: motion-scrim-out var(--motion-sheet-exit) var(--ease-in) forwards;
 }
 
 .task-property-editor {
@@ -729,7 +753,11 @@
     0 1px 2px var(--color-shadow-soft),
     0 12px 32px var(--color-shadow);
   transform-origin: top left;
-  animation: task-property-editor-in 150ms var(--ease-out);
+  animation: motion-pop-in var(--motion-enter) var(--ease-out);
+}
+
+.task-property-editor-scrim[data-state="closed"] .task-property-editor {
+  animation: motion-pop-out var(--motion-exit) var(--ease-in) forwards;
 }
 
 .task-property-editor header,
@@ -778,13 +806,6 @@
   margin-top: 8px;
 }
 
-@keyframes task-property-editor-in {
-  from {
-    opacity: 0;
-    transform: translateY(-3px) scale(0.99);
-  }
-}
-
 @media (max-width: 600px) {
   .task-property-editor-scrim {
     display: grid;
@@ -801,7 +822,10 @@
     border-width: 1px 0 0;
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 44px var(--color-shadow);
-    animation: none;
+    animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+  }
+  .task-property-editor-scrim[data-state="closed"] .task-property-editor {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
   .task-property-editor header {
     margin-bottom: var(--space-lg);

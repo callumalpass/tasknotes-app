@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import { useOverlay } from "./overlays/use-overlay";
+import { useExitingValue, usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget } from "../domain/completion";
 import { activeTimeEntry, todayString } from "../domain/task";
@@ -237,12 +238,10 @@ export function TaskActions({
     });
   }
 
+  // Opening resets the panel, so a closing menu keeps its content while it exits.
   function closeMenu(restoreFocus = false) {
     setPosition(null);
-    setPanels(["actions"]);
-    setSubtaskTitle("");
     subtaskIntent.current = null;
-    setError("");
     if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
   }
 
@@ -307,6 +306,11 @@ export function TaskActions({
     },
   });
 
+  const layerRef = useRef<HTMLDivElement>(null);
+  const exiting = useExitingValue(position);
+  const shownPosition = exiting.value;
+  const present = usePresence(Boolean(position), layerRef, exiting.clear);
+
   return (
     <>
       {!contextMenuRequest ? (
@@ -338,13 +342,17 @@ export function TaskActions({
           />
         </button>
       ) : null}
-      {position
+      {present && shownPosition
         ? createPortal(
             <div
+              aria-hidden={position ? undefined : true}
               aria-label={
                 rootRole === "menu" ? t`Actions for ${task.title}` : undefined
               }
               className="task-actions-layer"
+              data-state={position ? "open" : "closed"}
+              inert={!position}
+              ref={layerRef}
               role={rootRole === "menu" ? "region" : undefined}
             >
               {mobile ? (
@@ -376,9 +384,9 @@ export function TaskActions({
                 role={rootRole}
                 style={{
                   left: isOrganizeEditor(panel)
-                    ? Math.max(8, Math.min(position.x, innerWidth - 428))
-                    : position.x,
-                  top: position.y,
+                    ? Math.max(8, Math.min(shownPosition.x, innerWidth - 428))
+                    : shownPosition.x,
+                  top: shownPosition.y,
                 }}
                 onKeyDown={handleMenuKeys}
               >

@@ -23,6 +23,7 @@ import {
 } from "react";
 
 import { useOverlay } from "./overlays/use-overlay";
+import { usePresence } from "./overlays/use-presence";
 
 export interface TaskNotesOption {
   value: string;
@@ -55,7 +56,7 @@ export function TaskNotesSelect({
   const { t } = useLingui();
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
   const selectedIndex = options.findIndex((option) => option.value === value);
   const [activeIndex, setActiveIndex] = useState(
     Math.max(selectedIndex, firstEnabledIndex(options)),
@@ -131,9 +132,10 @@ export function TaskNotesSelect({
         </span>
         <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </button>
-      {open ? (
+      {present ? (
         <>
           <PopoverScrim
+            open={open}
             label={t`Close ${ariaLabel ?? uiCopy("options")}`}
             onClose={() => setOpen(false)}
           />
@@ -141,6 +143,8 @@ export function TaskNotesSelect({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             className="tasknotes-popover tasknotes-select-popover"
+            data-state={open ? "open" : "closed"}
+            inert={!open}
             id={`${id}-options`}
             role="listbox"
           >
@@ -399,7 +403,7 @@ export function TaskNotesDatePicker({
 }) {
   const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
   const selected = parseDateValue(value);
   const today = startOfDay(new Date());
   const [visibleMonth, setVisibleMonth] = useState(() =>
@@ -463,15 +467,18 @@ export function TaskNotesDatePicker({
           {selected ? shortDate(selected) : placeholder}
         </span>
       </button>
-      {open ? (
+      {present ? (
         <>
           <PopoverScrim
+            open={open}
             label={t`Close ${accessibleName} calendar`}
             onClose={() => setOpen(false)}
           />
           <div
             aria-label={t`${accessibleName} calendar`}
             className="tasknotes-popover tasknotes-calendar-popover"
+            data-state={open ? "open" : "closed"}
+            inert={!open}
             role="dialog"
           >
             <div className="tasknotes-calendar-heading">
@@ -617,7 +624,7 @@ export function TaskNotesTimePicker({
 }) {
   const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const { open, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
   const parsed = parseTimeValue(value);
   const now = new Date();
   const [hour, setHour] = useState(parsed?.hour ?? now.getHours());
@@ -669,15 +676,18 @@ export function TaskNotesTimePicker({
           {parsed ? timeLabel(parsed.hour, parsed.minute) : placeholder}
         </span>
       </button>
-      {open ? (
+      {present ? (
         <>
           <PopoverScrim
+            open={open}
             label={t`Close ${ariaLabel}`}
             onClose={() => setOpen(false)}
           />
           <div
             aria-label={ariaLabel}
             className="tasknotes-popover tasknotes-time-popover"
+            data-state={open ? "open" : "closed"}
+            inert={!open}
             role="dialog"
           >
             <div className="tasknotes-time-heading">
@@ -790,11 +800,21 @@ function TimeColumn({
   );
 }
 
-function PopoverScrim({ label, onClose }: { label: string; onClose(): void }) {
+function PopoverScrim({
+  label,
+  open,
+  onClose,
+}: {
+  label: string;
+  open: boolean;
+  onClose(): void;
+}) {
   return (
     <button
       aria-label={label}
       className="tasknotes-popover-scrim"
+      data-state={open ? "open" : "closed"}
+      inert={!open}
       tabIndex={-1}
       type="button"
       onClick={onClose}
@@ -806,6 +826,7 @@ function useDismissablePopover<T extends HTMLElement>(
   triggerRef: RefObject<T | null>,
 ): {
   open: boolean;
+  present: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   rootRef: RefObject<HTMLDivElement | null>;
 } {
@@ -817,7 +838,8 @@ function useDismissablePopover<T extends HTMLElement>(
     returnFocusRef: triggerRef,
     onDismiss: () => setOpen(false),
   });
-  return { open, setOpen, rootRef };
+  const present = usePresence(open, rootRef);
+  return { open, present, setOpen, rootRef };
 }
 
 function firstEnabledIndex(options: readonly TaskNotesOption[]): number {
