@@ -30,7 +30,17 @@ import {
   calendarEntryKey,
   type CalendarEntry,
 } from "../domain/calendar-events";
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import {
+  calendarOccurrenceChoice,
+  type CalendarTaskEdit,
+} from "../domain/calendar-edit";
+import type { CalendarOccurrenceChoice } from "@tasknotes/model/calendar";
+import {
+  RecurringEditScopeDialog,
+  type RecurringEditScope,
+  type RecurringEditScopeRequest,
+} from "../components/recurring-edit-scope-dialog";
+import { formatOccurrenceDate } from "./task-editor-draft";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { dateFromStorage, todayString } from "../domain/task";
 import { viewPropertyDetails } from "../i18n/view-presentation";
@@ -120,8 +130,14 @@ export function TaskCalendarView({
     x: number;
     y: number;
   } | null>(null);
-  const { configuration } = useRepository();
+  const { configuration, materializeOccurrence } = useRepository();
   const { timezone } = calendarContext();
+  const [scopeRequest, setScopeRequest] = useState<
+    | (RecurringEditScopeRequest & {
+        resolve(scope: RecurringEditScope | null): void;
+      })
+    | null
+  >(null);
   const display = useMemo(
     () => ({
       showTimeEntries: preferences.showTimeEntries,
@@ -202,6 +218,36 @@ export function TaskCalendarView({
     });
   }
 
+  /** Asks about a gesture on a generated occurrence; true unless the person chose the series. */
+  async function editedOneOccurrence(
+    info: ItemChangeArg<CalendarEventData>,
+    metadata: CalendarEventMetadata,
+    choice: CalendarOccurrenceChoice,
+  ): Promise<boolean> {
+    const scope = await new Promise<RecurringEditScope | null>((resolve) =>
+      setScopeRequest({
+        title: metadata.entry.task.title,
+        date: formatOccurrenceDate(choice.occurrence.occurrenceDate),
+        series: choice.series,
+        resolve,
+      }),
+    );
+    if (scope === "series") return false;
+    info.revert();
+    if (scope === "occurrence") {
+      try {
+        await materializeOccurrence(
+          metadata.entry.task.id,
+          choice.occurrence.occurrenceDate,
+          choice.occurrence.overrides,
+        );
+      } catch (reason) {
+        setMutationError(message(reason));
+      }
+    }
+    return true;
+  }
+
   async function moveEvent(info: ItemChangeArg<CalendarEventData>) {
     const metadata = info.item.data?.metadata;
     if (!metadata) {
@@ -210,6 +256,23 @@ export function TaskCalendarView({
     }
     setMutationError("");
     const id = info.item.id;
+    const edit: CalendarTaskEdit = {
+      entry: metadata.entry.modelEntry,
+      change: {
+        kind: "drop",
+        start: info.start.toISOString(),
+        end: info.end.toISOString(),
+        allDay: info.allDay,
+      },
+      timezone,
+    };
+    // Other gestures stay synchronous so the moved item holds its place at once.
+    const choice = calendarOccurrenceChoice(
+      metadata.entry.task,
+      edit,
+      configuration,
+    );
+    if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
     const move: PendingCalendarMove = {
       start: info.startStr,
       // Untimed tasks and open time entries keep their implicit length.
@@ -218,16 +281,7 @@ export function TaskCalendarView({
     };
     holdMove(id, move);
     try {
-      await onEdit(metadata.entry.task, {
-        entry: metadata.entry.modelEntry,
-        change: {
-          kind: "drop",
-          start: info.start.toISOString(),
-          end: info.end.toISOString(),
-          allDay: info.allDay,
-        },
-        timezone,
-      });
+      await onEdit(metadata.entry.task, edit);
       holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
       holdMove(id, undefined);
@@ -244,6 +298,23 @@ export function TaskCalendarView({
     }
     setMutationError("");
     const id = info.item.id;
+    const edit: CalendarTaskEdit = {
+      entry: metadata.entry.modelEntry,
+      change: {
+        kind: "resize",
+        start: info.start.toISOString(),
+        end: info.end.toISOString(),
+        allDay: info.allDay,
+      },
+      timezone,
+    };
+    // Other gestures stay synchronous so the moved item holds its place at once.
+    const choice = calendarOccurrenceChoice(
+      metadata.entry.task,
+      edit,
+      configuration,
+    );
+    if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
     const move: PendingCalendarMove = {
       start: info.startStr,
       end: info.endStr,
@@ -251,16 +322,7 @@ export function TaskCalendarView({
     };
     holdMove(id, move);
     try {
-      await onEdit(metadata.entry.task, {
-        entry: metadata.entry.modelEntry,
-        change: {
-          kind: "resize",
-          start: info.start.toISOString(),
-          end: info.end.toISOString(),
-          allDay: info.allDay,
-        },
-        timezone,
-      });
+      await onEdit(metadata.entry.task, edit);
       holdMove(id, { ...move, settledWith: executionRef.current });
     } catch (reason) {
       holdMove(id, undefined);
@@ -374,6 +436,15 @@ export function TaskCalendarView({
               ))}
             </div>
           </div>
+          {scopeRequest ? (
+            <RecurringEditScopeDialog
+              request={scopeRequest}
+              onChoose={(scope) => {
+                scopeRequest.resolve(scope);
+                setScopeRequest(null);
+              }}
+            />
+          ) : null}
           {mutationError ? (
             <p className="inline-error" role="alert">
               <Trans>The calendar change could not be saved. </Trans>

@@ -71,6 +71,10 @@ msgstr "“{0}”由计算得出，无法接收移入的任务。"
 msgid "“{title}” is still in the collection."
 msgstr "“{title}”仍在集合中。"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "“{title}”会重复。仅更改此重复项会为 {date} 创建重复项笔记。"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（有未保存的更改）"
@@ -1057,6 +1061,7 @@ msgstr "之后还能更换集合吗？"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "取消"
 
@@ -1076,6 +1081,10 @@ msgstr "正在追赶进度"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL 表达式"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "更改重复任务"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "更改被拒绝"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "更改被拒绝：{0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "更改每个重复项的时长"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "更改每个重复项的时间"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -2329,6 +2346,10 @@ msgstr "未来范围"
 msgid "Gap"
 msgstr "间隔"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "为每个重复项设置此时间"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "编辑前请返回并刷新集合。"
@@ -2770,6 +2791,10 @@ msgstr "正在查看集合…"
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
 msgstr "创建任务"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "将每个重复项设为全天"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -4920,6 +4945,10 @@ msgstr "规则会按原样保留。只有规则有效时才能应用。"
 msgid "The scratchpad is not open."
 msgstr "随手记未打开。"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "系列的日期保持不变，因此只有此重复项可以移到其他日期。"
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "此任务"
@@ -5028,6 +5057,10 @@ msgstr "此密钥仅显示一次。请将其安全地保存在 TaskNotes 之外�
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "此 Markdown 包含大纲无法表示的内容。内容已保存；请继续以 Markdown 方式编辑。"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "仅此重复项"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."

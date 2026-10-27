@@ -1,4 +1,7 @@
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import type {
+  CalendarTaskEdit,
+  OccurrenceOverrides,
+} from "../domain/calendar-edit";
 import { Capacitor } from "@capacitor/core";
 import {
   MdbaseError,
@@ -2454,6 +2457,7 @@ export class NextTaskRepository implements TaskRepository {
   async materializeOccurrence(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult> {
     const owner = this.scope.signal;
     owner.throwIfAborted();
@@ -2476,7 +2480,7 @@ export class NextTaskRepository implements TaskRepository {
             parent.task,
             occurrenceDate,
             existing,
-            { id: recordId, now: new Date().toISOString() },
+            { id: recordId, now: new Date().toISOString(), overrides },
             (path) => this.template(path, signal),
           );
           if (!result.created)

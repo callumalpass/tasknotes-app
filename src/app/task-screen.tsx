@@ -923,7 +923,11 @@ function TaskEditor({
                     : t({ message: "Skip" })}
               </button>
             ) : null}
-            {occurrenceDate && task.recurrence ? (
+            {occurrenceDate &&
+            task.recurrence &&
+            // A skipped date needs a skipped status for its note.
+            (!task.skippedInstances.includes(occurrenceDate) ||
+              configuration.statuses.some((status) => status.isSkipped)) ? (
               <button
                 className="text-action"
                 disabled={occurrenceAction}

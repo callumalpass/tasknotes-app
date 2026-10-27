@@ -1,4 +1,7 @@
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import type {
+  CalendarTaskEdit,
+  OccurrenceOverrides,
+} from "../domain/calendar-edit";
 import { Capacitor } from "@capacitor/core";
 import { MdbaseViewAdapter } from "./mdbase-view-adapter";
 import { validResult, operationDiagnostics } from "./mdbase-operation";
@@ -1015,9 +1018,10 @@ export class MdbaseTaskRepository implements TaskRepository {
   materializeOccurrence(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult> {
     return this.serializeWrite(parentId, () =>
-      this.materializeOccurrenceUnlocked(parentId, occurrenceDate),
+      this.materializeOccurrenceUnlocked(parentId, occurrenceDate, overrides),
     );
   }
 
@@ -2321,6 +2325,7 @@ export class MdbaseTaskRepository implements TaskRepository {
   private async materializeOccurrenceUnlocked(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult> {
     await this.ensureTaskIndex();
     const parent = await this.requireCurrent(parentId);
@@ -2345,6 +2350,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       {
         id: await occurrenceRecordId(parent.task.id, occurrenceDate),
         now: new Date().toISOString(),
+        overrides,
       },
       async (path) => {
         const template = validResult(

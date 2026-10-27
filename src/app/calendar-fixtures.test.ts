@@ -39,7 +39,7 @@ function mappedField(field: string, mapping: FieldMapping): string {
   const role = Object.entries(DEFAULT_FIELD_MAPPING).find(
     ([, value]) => value === field,
   )?.[0] as keyof FieldMapping | undefined;
-  return role ? mapping[role] : field;
+  return (role && mapping[role]) || field;
 }
 
 describe("shared calendar contract through app mapping and exact repository persistence", () => {

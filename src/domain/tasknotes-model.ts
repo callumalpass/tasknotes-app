@@ -6,7 +6,7 @@ import {
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
 import { planCalendarEdit } from "@tasknotes/model/calendar";
-import type { CalendarTaskEdit } from "./calendar-edit";
+import type { CalendarTaskEdit, OccurrenceOverrides } from "./calendar-edit";
 import { getCurrentDateString } from "@tasknotes/model/date";
 import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
@@ -541,7 +541,7 @@ export class TaskNotesTaskModel {
     parent: Task,
     targetDate: string,
     existingOccurrences: readonly Existing[],
-    context: { id: string; now?: string },
+    context: { id: string; now?: string; overrides?: OccurrenceOverrides },
     loadTemplate?: (path: string) => Promise<string>,
   ): Promise<
     | (MaterializeOccurrenceResult & { created: true })
@@ -552,6 +552,11 @@ export class TaskNotesTaskModel {
     const occurrenceInfos = existingOccurrences.map((task) =>
       this.taskInfo(task),
     );
+    // A note for a completed or skipped date keeps that state.
+    const recordedState = {
+      completedStatus: getDefaultCompletedStatus(this.config.statuses),
+      skippedStatus: getDefaultSkippedStatus(this.config.statuses),
+    };
     let plan = buildMaterializeOccurrencePlan({
       parentTask: parentInfo,
       targetDate,
@@ -559,6 +564,8 @@ export class TaskNotesTaskModel {
       existingOccurrences: occurrenceInfos,
       defaultStatus: this.config.defaults.status,
       defaultPriority: this.config.defaults.priority,
+      ...recordedState,
+      overrides: context.overrides,
     });
     const existing = plan.existingOccurrence
       ? existingOccurrences.find(
@@ -615,7 +622,9 @@ export class TaskNotesTaskModel {
           existingOccurrences: occurrenceInfos,
           defaultStatus: this.config.defaults.status,
           defaultPriority: this.config.defaults.priority,
+          ...recordedState,
           templateTask: templateInfo,
+          overrides: context.overrides,
         });
       } catch (reason) {
         const message =
@@ -908,6 +917,7 @@ export class TaskNotesTaskModel {
       string[],
     ][]) {
       const canonical = this.config.fieldMapping[role];
+      if (!canonical) continue;
       if (!Object.prototype.hasOwnProperty.call(result, canonical)) {
         const alias = aliases.find((candidate) =>
           Object.prototype.hasOwnProperty.call(result, candidate),

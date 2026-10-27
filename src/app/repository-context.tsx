@@ -1,5 +1,8 @@
 import { t as translate } from "@lingui/core/macro";
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import type {
+  CalendarTaskEdit,
+  OccurrenceOverrides,
+} from "../domain/calendar-edit";
 import { App as CapacitorApp } from "@capacitor/app";
 import { registerReloadParticipant } from "../pwa/reload";
 import { captureSessionFor } from "../application/capture-session";
@@ -104,6 +107,7 @@ interface RepositoryContextValue {
   materializeOccurrence(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult>;
   startTimeTracking(id: string, description?: string): Promise<Task>;
   stopTimeTracking(id: string): Promise<Task>;
@@ -594,10 +598,15 @@ export function RepositoryProvider({
     [acceptTask, repository],
   );
   const materializeOccurrence = useCallback(
-    async (parentId: string, occurrenceDate: string) => {
+    async (
+      parentId: string,
+      occurrenceDate: string,
+      overrides?: OccurrenceOverrides,
+    ) => {
       const result = await repository.materializeOccurrence(
         parentId,
         occurrenceDate,
+        overrides,
       );
       return { ...result, task: await acceptTask(result.task) };
     },

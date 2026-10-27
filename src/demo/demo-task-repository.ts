@@ -1,4 +1,7 @@
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import type {
+  CalendarTaskEdit,
+  OccurrenceOverrides,
+} from "../domain/calendar-edit";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import {
   buildTaskNotesMdbaseResources,
@@ -419,6 +422,7 @@ export class DemoTaskRepository implements TaskRepository {
   async materializeOccurrence(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult> {
     const parent = this.requireTask(parentId);
     const result = await this.model.materializeOccurrence(
@@ -430,6 +434,7 @@ export class DemoTaskRepository implements TaskRepository {
       {
         id: await occurrenceRecordId(parentId, occurrenceDate),
         now: new Date().toISOString(),
+        overrides,
       },
     );
     if (!result.created) return clone(result);

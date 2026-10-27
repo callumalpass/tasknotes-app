@@ -71,6 +71,10 @@ msgstr "“{0}”은(는) 계산된 값이므로 작업을 이동할 수 없습�
 msgid "“{title}” is still in the collection."
 msgstr "“{title}”은(는) 아직 컬렉션에 있습니다."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "\"{title}\"은(는) 반복됩니다. 이 반복 항목만 변경하면 {date} 반복 항목 노트가 만들어집니다."
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(저장되지 않은 변경 사항)"
@@ -1057,6 +1061,7 @@ msgstr "나중에 컬렉션을 변경할 수 있나요?"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "취소"
 
@@ -1076,6 +1081,10 @@ msgstr "동기화 중"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL 표현식"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "반복 작업 변경"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "변경 거부됨"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "변경 거부됨: {0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "모든 반복 항목의 소요 시간 변경"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "모든 반복 항목의 시간 변경"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -2329,6 +2346,10 @@ msgstr "미래 범위"
 msgid "Gap"
 msgstr "간격"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "모든 반복 항목에 이 시간 지정"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "편집하기 전에 돌아가서 컬렉션을 새로고침하세요."
@@ -2770,6 +2791,10 @@ msgstr "컬렉션에서 찾는 중…"
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
 msgstr "작업 만들기"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "모든 반복 항목을 종일로 변경"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -4920,6 +4945,10 @@ msgstr "규칙은 입력한 그대로 유지됩니다. 유효한 경우에만 �
 msgid "The scratchpad is not open."
 msgstr "스크래치패드가 열려 있지 않습니다."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "시리즈의 날짜는 유지되므로 이 반복 항목만 다른 날로 옮길 수 있습니다."
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "작업"
@@ -5028,6 +5057,10 @@ msgstr "이 키는 한 번만 표시됩니다. TaskNotes 외부의 안전한 곳
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "이 Markdown에는 개요에서 표현할 수 없는 블록이 포함되어 있습니다. 저장되었습니다. Markdown으로 계속 편집하세요."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "이 반복 항목만"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."

@@ -71,6 +71,10 @@ msgstr "“{0}” is calculated and cannot accept moved tasks."
 msgid "“{title}” is still in the collection."
 msgstr "“{title}” is still in the collection."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(unsaved changes)"
@@ -1057,6 +1061,7 @@ msgstr "Can I change collections later?"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -1076,6 +1081,10 @@ msgstr "Catching up"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL expression"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "Change a recurring task"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "Change rejected"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "Change rejected: {0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "Change the duration of every occurrence"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "Change the time of every occurrence"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -2329,6 +2346,10 @@ msgstr "Future horizon"
 msgid "Gap"
 msgstr "Gap"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "Give every occurrence this time"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "Go back and refresh the collection before editing."
@@ -2770,6 +2791,10 @@ msgstr "Looking in collection…"
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
 msgstr "Make a task"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "Make every occurrence all-day"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -4920,6 +4945,10 @@ msgstr "The rule is kept exactly as written. Apply only after it is valid."
 msgid "The scratchpad is not open."
 msgstr "The scratchpad is not open."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "The series keeps its days, so only this occurrence can move to another day."
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "the task"
@@ -5028,6 +5057,10 @@ msgstr "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyo
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "This occurrence"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."

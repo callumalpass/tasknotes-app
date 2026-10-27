@@ -71,6 +71,10 @@ msgstr "«{0}» — вычисляемый раздел; переместить 
 msgid "“{title}” is still in the collection."
 msgstr "«{title}» всё ещё находится в коллекции."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "«{title}» повторяется. Если изменить только это повторение, для {date} будет создана заметка о повторении."
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(несохранённые изменения)"
@@ -1057,6 +1061,7 @@ msgstr "Можно ли сменить коллекцию позже?"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -1076,6 +1081,10 @@ msgstr "Синхронизация изменений"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "Выражение CEL"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "Изменение повторяющейся задачи"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "Изменение отклонено"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "Изменение отклонено: {0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "Изменить длительность всех повторений"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "Изменить время всех повторений"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -2329,6 +2346,10 @@ msgstr "Горизонт планирования"
 msgid "Gap"
 msgstr "Интервал"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "Задать это время всем повторениям"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "Вернитесь и обновите коллекцию перед редактированием."
@@ -2770,6 +2791,10 @@ msgstr "Поиск в коллекции…"
 #: src/app/scratchpad-screen.tsx
 msgid "Make a task"
 msgstr "Создать задачу"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "Сделать все повторения на весь день"
 
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
@@ -4920,6 +4945,10 @@ msgstr "Правило сохраняется без изменений. При�
 msgid "The scratchpad is not open."
 msgstr "Блокнот не открыт."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "Дни серии не меняются, поэтому на другой день можно перенести только это повторение."
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "задачу"
@@ -5028,6 +5057,10 @@ msgstr "Этот ключ показывается только один раз.
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "Этот документ Markdown содержит блоки, которые нельзя представить в структуре. Изменения сохранены; продолжайте редактировать документ в формате Markdown."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "Только это повторение"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
