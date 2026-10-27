@@ -868,7 +868,9 @@ test("supports demo attachments and collection settings", async ({ page }) => {
     });
   await expect(page.getByText("demo-pixel.png")).toBeVisible();
 
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Back|Close task details)$/ })
+    .click();
   await openNavigationItem(page, "Settings");
   await page
     .getByRole("navigation", { name: "Settings sections" })

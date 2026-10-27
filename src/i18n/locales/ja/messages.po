@@ -1284,6 +1284,7 @@ msgid "Clear value"
 msgstr "値をクリア"
 
 #: src/app/scratchpad-screen.tsx
+#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1325,6 +1326,10 @@ msgstr "新しいタスクを閉じる"
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "プロパティエディターを閉じる"
+
+#: src/app/task-screen.tsx
+msgid "Close task details"
+msgstr "タスクの詳細を閉じる"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"

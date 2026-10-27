@@ -100,11 +100,17 @@ const copy = {
   },
 };
 
-for (const [locale, titleLabel, saved, back] of [
-  ["ja", "タスク名", "保存済み", "戻る"],
-  ["de", "Aufgabentitel", "Gespeichert", "Zurück"],
-  ["ru", "Название задачи", "Сохранено", "Назад"],
-  ["it", "Titolo dell'attività", "Salvato", "Indietro"],
+for (const [locale, titleLabel, saved, back, close] of [
+  ["ja", "タスク名", "保存済み", "戻る", "タスクの詳細を閉じる"],
+  ["de", "Aufgabentitel", "Gespeichert", "Zurück", "Aufgabendetails schließen"],
+  ["ru", "Название задачи", "Сохранено", "Назад", "Закрыть сведения о задаче"],
+  [
+    "it",
+    "Titolo dell'attività",
+    "Salvato",
+    "Indietro",
+    "Chiudi i dettagli dell'attività",
+  ],
 ]) {
   test(`${locale} workspace editing preserves user data and explicit locale`, async ({
     page,
@@ -137,7 +143,11 @@ for (const [locale, titleLabel, saved, back] of [
       path: `test-results/i18n-final-workspace-${locale}-${test.info().project.name}.png`,
       fullPage: true,
     });
-    await page.getByRole("button", { name: back, exact: true }).click();
+    // Beside the work the details button closes; where it replaces the work it goes back.
+    await page
+      .getByRole("button", { name: back, exact: true })
+      .or(page.getByRole("button", { name: close, exact: true }))
+      .click();
     await expect(
       page.getByRole("button", { name: userContent, exact: true }),
     ).toBeVisible();

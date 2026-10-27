@@ -155,7 +155,9 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     path: testInfo.outputPath("task-detail.png"),
     fullPage: true,
   });
-  await detail.getByRole("button", { name: "Back", exact: true }).click();
+  await detail
+    .getByRole("button", { name: /^(Back|Close task details)$/ })
+    .click();
   await expect(title).toBeFocused();
   await page.screenshot({
     path: testInfo.outputPath("today-light.png"),

@@ -109,7 +109,9 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
   await trigger.click();
   const detail = page.getByRole("complementary", { name: "Task details" });
   await expect(detail).toBeFocused();
-  await detail.getByRole("button", { name: "Back", exact: true }).click();
+  await detail
+    .getByRole("button", { name: /^(Back|Close task details)$/ })
+    .click();
   await expect(trigger).toBeFocused();
   await expect(page.getByText(/Loaded 200 of .* matching tasks/)).toBeVisible();
   await page
@@ -117,6 +119,31 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
     .click();
   await expect(page.getByText(/Loaded 400 of .* matching tasks/)).toBeVisible();
   expect(await page.locator(".task-row").count()).toBeLessThan(80);
+});
+
+test("closing task details returns to the list after switching tasks", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.goto("?demo=50");
+  const titles = page.locator(".task-row-title");
+  await expect(titles.nth(1)).toBeVisible();
+  const second = await titles.nth(1).textContent();
+  await titles.first().click();
+  const detail = page.getByRole("complementary", { name: "Task details" });
+  await expect(detail).toBeVisible();
+  await page.getByRole("button", { name: second!, exact: true }).click();
+  await expect(detail.getByLabel("Task title", { exact: true })).toHaveValue(
+    second!,
+  );
+
+  await detail.getByRole("button", { name: "Close task details" }).click();
+  await expect(detail).toBeHidden();
+  await expect(page).not.toHaveURL(/\/task\//);
+  await page.goForward();
+  await expect(detail).toBeVisible();
+  await page.goBack();
+  await expect(detail).toBeHidden();
 });
 
 // Local, disposable fixtures only. These are failure-sequence contracts, not screenshots.
