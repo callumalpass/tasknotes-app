@@ -2,8 +2,9 @@
 
 TaskNotes uses package ID `dev.tasknotes.app`. Tagged Android releases build a
 signed APK and Android App Bundle, publish the bundle to Google Play's `alpha`
-closed-testing track, and then create a GitHub release. Production publication
-is deliberately not implemented by this workflow.
+closed-testing track, and then create a GitHub release. Production is a
+separate, manually dispatched and reviewer-protected step that promotes a
+version code already on `alpha`; tags never publish to production.
 
 ## One-time Play Console setup
 
@@ -11,10 +12,10 @@ is deliberately not implemented by this workflow.
 2. Enable the Google Play Android Developer API in a dedicated Google Cloud
    project.
 3. Invite a dedicated service account to TaskNotes only. Grant view access and
-   permission to release to testing tracks. Add tester-list management only if
-   it is separately needed; the publication workflow does not require it. Do
-   not grant store-presence, production, finance, account administration, or
-   user-management permissions.
+   permission to release to testing tracks and to production. Add tester-list
+   management only if it is separately needed; the publication workflows do
+   not require it. Do not grant store-presence, finance, account
+   administration, or user-management permissions.
 4. Associate the `alpha` closed-testing track with a stable Google Group or
    tester email list and publish its opt-in link.
 5. Complete the required store listing, policy, privacy, and app-access forms.
@@ -60,8 +61,9 @@ code:
 - exactly one uploaded AAB version;
 - validate the edit before committing it.
 
-The script has no track or production override. A production path must be added
-and reviewed separately.
+The script has no track override. Production promotion is a separate mode,
+described below, selected only by the `--promote-production` flag that the
+production workflow passes.
 
 ## Publish a closed-test build
 
@@ -93,3 +95,72 @@ conflicting state.
 
 A committed Play release cannot be rolled back to an older version code.
 Publish a newer corrective build or halt the closed track in Play Console.
+
+## Promote a closed-test build to production
+
+TaskNotes has Play production access. Production releases are never triggered
+by tags: a build first goes through the closed-testing flow above, and only
+then is promoted on demand.
+
+### One-time production environment setup
+
+A repository administrator creates the GitHub environment
+`google-play-production`:
+
+1. **Required reviewers:** `callumalpass`. Leave "Prevent self-review" off,
+   because the same maintainer dispatches and approves the run, and disable
+   administrator bypass if the plan offers it.
+2. **Deployment branches and tags:** selected branches only, with the single
+   rule `main`.
+3. **Environment secret:** `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64`, holding
+   the same base64-encoded service-account JSON as the
+   `google-play-closed-testing` environment. GitHub cannot copy secrets between
+   environments; set it again from the durable private copy of the key file,
+   for example
+   `base64 -w0 service-account.json | gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 --env google-play-production`.
+
+The service account must have permission to release to production in Play
+Console (see the one-time Play Console setup above).
+
+### Production policy
+
+`scripts/publish-google-play.mjs --promote-production <versionCode> <version>`
+uses a fixed policy:
+
+- package: `dev.tasknotes.app`;
+- track: `production`;
+- release status: `completed` (full rollout, no `userFraction`);
+- no upload: the version code must already be a completed `alpha` release
+  named `TaskNotes <version>`; its release notes are copied unchanged;
+- refuses if production has any release that is not `completed` (for example
+  a staged rollout or halted release started in Play Console), or already
+  contains this or a higher version code in a different state;
+- the exact existing production state is a read-only success, so reruns are
+  safe;
+- validates the edit before committing it.
+
+A full rollout is deliberate: the identical bundle has already run on the
+closed track, the install base is small, and a staged rollout would leave an
+`inProgress` release requiring manual follow-up before the next promotion. To
+halt a bad production release, use Play Console and publish a newer
+corrective build through closed testing and promotion.
+
+### Dispatch a production promotion
+
+1. Confirm the version is on the `alpha` track and has been tested.
+2. Dispatch the workflow from `main`:
+
+   ```bash
+   gh workflow run google-play-production.yml --ref main \
+     -f release_tag=android-v1.0.10
+   ```
+
+3. The **Google Play production** workflow verifies the tag commit is
+   reachable from `main` and matches `package.json`, and derives the version
+   code from the tag's successful **Android** run exactly as closed testing
+   did. It then waits for approval on the `google-play-production`
+   environment.
+4. Approve the deployment in the Actions run. The publisher checks that the
+   version code is on `alpha`, promotes it, and commits after Play validates
+   the edit. Production releases then go through Google Play review before
+   they reach the store.

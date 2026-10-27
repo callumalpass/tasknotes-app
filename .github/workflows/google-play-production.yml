@@ -1,0 +1,125 @@
+name: Google Play production
+
+# Promotes a build that already passed Google Play closed testing (alpha) to
+# the public production track. Manual dispatch from protected main only; never
+# triggered by tags. Track, status and rollout policy are fixed in
+# scripts/publish-google-play.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Android release tag already published to closed testing (android-vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: google-play-production
+  cancel-in-progress: false
+
+jobs:
+  verify-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version_code: ${{ steps.metadata.outputs.version_code }}
+      version_name: ${{ steps.metadata.outputs.version_name }}
+    env:
+      RELEASE_REF: ${{ inputs.release_tag }}
+    steps:
+      - name: Check out protected publication policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag belongs to protected main and resolve its version code
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! [[ "$RELEASE_REF" =~ ^android-v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unexpected Android release ref." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin \
+            "+refs/tags/$RELEASE_REF:refs/tags/$RELEASE_REF" \
+            "+refs/heads/main:refs/remotes/origin/main"
+          release_sha="$(git rev-list -n 1 "$RELEASE_REF")"
+          if ! [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unexpected Android release commit." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$release_sha" origin/main; then
+            echo "Android release tag is not reachable from protected main." >&2
+            exit 1
+          fi
+
+          version_name="${RELEASE_REF#android-v}"
+          package_version="$(git show "$release_sha:package.json" | node -e \
+            "let data=''; process.stdin.on('data', c => data += c); process.stdin.on('end', () => console.log(JSON.parse(data).version));")"
+          if [ "$version_name" != "$package_version" ]; then
+            echo "Release tag does not match package.json at the tagged commit." >&2
+            exit 1
+          fi
+
+          # The version code is derived exactly as the closed-testing workflow
+          # derived it: from the successful tag-push Android run for this commit.
+          run_numbers="$(gh api \
+            "repos/$GH_REPO/actions/workflows/android.yml/runs?event=push&status=success&branch=$RELEASE_REF&head_sha=$release_sha&per_page=100" \
+            --jq '[.workflow_runs[] | select(.head_branch == env.RELEASE_REF and .head_sha == "'"$release_sha"'") | .run_number] | unique | .[]')"
+          if [ -z "$run_numbers" ]; then
+            echo "No successful Android tag workflow run exists for $RELEASE_REF." >&2
+            exit 1
+          fi
+          if [ "$(printf '%s\n' "$run_numbers" | wc -l)" -ne 1 ]; then
+            echo "Multiple successful Android runs exist for $RELEASE_REF; the version code is ambiguous." >&2
+            exit 1
+          fi
+          source_run_number="$run_numbers"
+
+          version_code_base="${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}"
+          if ! [[ "$version_code_base" =~ ^[0-9]+$ ]]; then
+            echo "TASKNOTES_ANDROID_VERSION_CODE_BASE must be a non-negative integer." >&2
+            exit 1
+          fi
+          version_code="$((version_code_base + source_run_number))"
+          if [ "$version_code" -lt 1 ] || [ "$version_code" -gt 2100000000 ]; then
+            echo "Generated Android version code is outside the platform range." >&2
+            exit 1
+          fi
+
+          echo "Promoting $RELEASE_REF ($release_sha) version code $version_code."
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+
+  promote-play-production:
+    needs: verify-release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: google-play-production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out protected publication policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Promote closed-test build to Google Play production
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+          TASKNOTES_ANDROID_VERSION_CODE: ${{ needs.verify-release.outputs.version_code }}
+          TASKNOTES_ANDROID_VERSION_NAME: ${{ needs.verify-release.outputs.version_name }}
+        run: |
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          node scripts/publish-google-play.mjs --promote-production \
+            "$TASKNOTES_ANDROID_VERSION_CODE" \
+            "$TASKNOTES_ANDROID_VERSION_NAME"
