@@ -5517,6 +5517,11 @@ msgstr "쓰기"
 msgid "Writing tools"
 msgstr "작성 도구"
 
+#: src/app/task-calendar-view.tsx
+#: src/app/view-editor-form.tsx
+msgid "Year"
+msgstr "년"
+
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"

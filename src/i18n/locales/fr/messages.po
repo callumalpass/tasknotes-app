@@ -5518,6 +5518,11 @@ msgstr "Écrire"
 msgid "Writing tools"
 msgstr "Outils d’écriture"
 
+#: src/app/task-calendar-view.tsx
+#: src/app/view-editor-form.tsx
+msgid "Year"
+msgstr "Année"
+
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts
 msgid "Yearly"

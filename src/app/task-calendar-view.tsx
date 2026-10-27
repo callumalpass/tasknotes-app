@@ -75,9 +75,12 @@ type CalendarMode =
   | "timeGridWeek"
   | "timeGridThreeDay"
   | "timeGridDay"
-  | "listWeek";
+  | "listWeek"
+  | "multiMonthYear";
 
 const PHONE_QUERY = "(max-width: 839px)";
+/** From here the selected day's tasks sit beside the calendar, not below it. */
+const DAY_LIST_BESIDE_QUERY = "(min-width: 1200px)";
 /** How long a saved move outlasts view data that still shows the old place. */
 const HELD_MOVE_LIMIT_MS = 5000;
 
@@ -396,6 +399,15 @@ export function TaskCalendarView({
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
+    // Below twelve months the day's tasks would be out of sight, so a year
+    // day opens its month, as phone calendars do.
+    if (
+      mode === "multiMonthYear" &&
+      !window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches
+    ) {
+      calendarRef.current?.gotoDate(dateStr);
+      setMode("dayGridMonth");
+    }
     // Mouse clicks on a slot also select it, which starts capture; a tap on a
     // phone only clicks, so a timed tap starts capture at that time itself.
     if (!allDay && "pointerType" in jsEvent && jsEvent.pointerType === "touch")
@@ -713,6 +725,14 @@ const calendarModes: Array<{
     },
     compact: true,
   },
+  {
+    value: "multiMonthYear",
+    view: "year",
+    get label() {
+      return t`Year`;
+    },
+    compact: true,
+  },
 ];
 
 function calendarView(mode: CalendarMode): ViewType {
@@ -888,6 +908,11 @@ function initialRange(
   mode: CalendarMode,
 ): { start: Date; end: Date } {
   const date = dateFromStorage(selected) ?? new Date();
+  if (mode === "multiMonthYear")
+    return {
+      start: new Date(date.getFullYear(), 0, 1),
+      end: new Date(date.getFullYear() + 1, 0, 1),
+    };
   if (mode === "dayGridMonth") {
     return {
       start: new Date(date.getFullYear(), date.getMonth(), -7),

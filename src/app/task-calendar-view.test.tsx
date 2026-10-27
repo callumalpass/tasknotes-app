@@ -184,6 +184,40 @@ describe("calendar drops", () => {
   });
 });
 
+describe("year layout", () => {
+  it("opens a saved year view, and a day there opens its month when the day list is below", () => {
+    const year = execution("2026-07-24");
+    year.view.presentation!.options.calendarView = "multiMonthYear";
+    const onSelect = vi.fn();
+    render(
+      <TaskCalendarView
+        execution={year}
+        identityTasks={year.rows.map((row) => row.task)}
+        preferences={defaultCalendarPreferences("en-US")}
+        selected="2026-07-01"
+        selectedCreateValue="2026-07-01"
+        titleProperty="title"
+        onCreate={vi.fn()}
+        onOpen={vi.fn()}
+        onSelect={onSelect}
+        onToggle={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
+    expect(calendar.props!.view).toBe("year");
+    act(() =>
+      (calendar.props!.onDateClick as (info: unknown) => void)({
+        dateStr: "2026-03-12",
+        startStr: "2026-03-12",
+        allDay: true,
+        jsEvent: new MouseEvent("click"),
+      }),
+    );
+    expect(onSelect).toHaveBeenCalledWith("2026-03-12", "2026-03-12");
+    expect(calendar.props!.view).toBe("month");
+  });
+});
+
 describe("calendar entry labels", () => {
   it("names an all-day entry's own day west of UTC", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
