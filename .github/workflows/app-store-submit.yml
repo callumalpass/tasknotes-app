@@ -12,6 +12,11 @@ on:
         required: true
         default: false
         type: boolean
+      release:
+        description: Release an Apple-approved MANUAL version to everyone (overrides submit)
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   actions: read
@@ -59,8 +64,11 @@ jobs:
           APP_REVIEW_DEMO_ACCOUNT_NAME: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_NAME }}
           APP_REVIEW_DEMO_ACCOUNT_PASSWORD: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_PASSWORD }}
           SUBMIT: ${{ inputs.submit }}
+          RELEASE: ${{ inputs.release }}
         run: |
-          if [ "$SUBMIT" = true ]; then
+          if [ "$RELEASE" = true ]; then
+            node scripts/submit-app-store.mjs --release
+          elif [ "$SUBMIT" = true ]; then
             node scripts/submit-app-store.mjs --submit
           else
             node scripts/submit-app-store.mjs
