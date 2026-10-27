@@ -80,6 +80,11 @@ test("the layout switcher sits on the date row above the calendar on both screen
       .locator(".full-calendar-surface")
       .boundingBox())!;
     const box = (await modes.boundingBox())!;
+    // Beside the day list the range takes its own line; the switcher stays
+    // on the row with the date navigation either way.
+    const navigation = (await page
+      .locator(".full-calendar-navigation")
+      .boundingBox())!;
     const title = (await page
       .locator(".full-calendar-commandbar > h2")
       .boundingBox())!;
@@ -87,9 +92,12 @@ test("the layout switcher sits on the date row above the calendar on both screen
       surface.x + surface.width + 1,
     );
     expect(box.y + box.height).toBeLessThanOrEqual(surface.y);
+    expect(title.y + title.height).toBeLessThanOrEqual(surface.y);
     if ((page.viewportSize()?.width ?? 0) >= 1024)
       expect(
-        Math.abs(box.y + box.height / 2 - (title.y + title.height / 2)),
+        Math.abs(
+          box.y + box.height / 2 - (navigation.y + navigation.height / 2),
+        ),
       ).toBeLessThan(4);
   }
 });
@@ -163,6 +171,9 @@ test.describe("calendar drops", () => {
       return quietest!.getAttribute("data-date")!;
     }, from);
     const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
+    // The first draggable task can sit in a week below the fold; the mouse
+    // only reaches what is on screen.
+    await target.scrollIntoViewIfNeeded();
     await page.evaluate(
       ({ title }) => {
         const seen: string[] = [];
