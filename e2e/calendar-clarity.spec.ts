@@ -149,11 +149,18 @@ test.describe("calendar drops", () => {
       .last()
       .textContent())!.trim();
     const from = (await event.getAttribute("data-date"))!;
-    // A neighbouring day in the same week keeps the drop on screen.
+    // The quieter neighbouring day in the same week keeps the drop on screen
+    // rather than behind its "+N more".
     const to = await page.evaluate((from) => {
       const cell = document.querySelector(`.tnc-dg-day[data-date="${from}"]`)!;
-      return (cell.previousElementSibling ??
-        cell.nextElementSibling)!.getAttribute("data-date")!;
+      const load = (day: Element) =>
+        document.querySelectorAll(
+          `.tnc-dg .tnc-item[data-date="${day.getAttribute("data-date")}"]`,
+        ).length;
+      const [quietest] = [cell.previousElementSibling, cell.nextElementSibling]
+        .filter((day): day is Element => !!day)
+        .sort((a, b) => load(a) - load(b));
+      return quietest!.getAttribute("data-date")!;
     }, from);
     const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
     await page.evaluate(
@@ -179,6 +186,8 @@ test.describe("calendar drops", () => {
       },
       { title },
     );
+    // The mouse does not scroll, so bring the week on screen first.
+    await event.scrollIntoViewIfNeeded();
     const start = (await event.boundingBox())!;
     const end = (await target.boundingBox())!;
     await page.mouse.move(start.x + 20, start.y + start.height / 2);
