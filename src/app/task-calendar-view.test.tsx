@@ -82,6 +82,57 @@ describe("calendar drops", () => {
     );
   });
 
+  it("asks before a move clears completed occurrences, and keeps them on cancel", async () => {
+    const recurring = execution("2026-07-24");
+    const row = recurring.rows[0]!;
+    row.task = new TaskNotesTaskModel().read({
+      path: row.task.path,
+      body: "",
+      frontmatter: {
+        ...row.task.frontmatter,
+        recurrence: "DTSTART:20260724;FREQ=DAILY",
+        complete_instances: ["2026-07-25"],
+      },
+    });
+    const onUpdate = vi.fn(() => Promise.resolve());
+    const view = renderCalendar(recurring, onUpdate);
+    const item = items().find(
+      (candidate) =>
+        candidate.start === "2026-07-24" &&
+        candidate.data?.metadata?.entry.task.id === "one",
+    )!;
+    const revert = vi.fn();
+    change(
+      "onItemDrop",
+      item,
+      {
+        start: new Date(2026, 6, 22),
+        end: new Date(2026, 6, 23),
+        startStr: "2026-07-22",
+        endStr: "2026-07-22",
+        allDay: true,
+      },
+      revert,
+    );
+    const dialog = await vi.waitFor(() => {
+      const found = view.container.ownerDocument.querySelector(
+        '[role="alertdialog"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(dialog.textContent).toMatch(/completed or skipped occurrences/);
+    await act(async () =>
+      (
+        [...dialog.querySelectorAll("button")].find(
+          (button) => button.textContent === "Cancel",
+        ) as HTMLButtonElement
+      ).click(),
+    );
+    expect(revert).toHaveBeenCalled();
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
   it("writes timed moves and resizes in the stored date formats", async () => {
     const onUpdate = vi.fn(() => Promise.resolve());
     renderCalendar(execution("2026-07-24T09:30", 60), onUpdate);

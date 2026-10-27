@@ -1245,6 +1245,10 @@ msgstr "选择…"
 msgid "Clear"
 msgstr "清除"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear and move"
+msgstr "清除并移动"
+
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
 msgstr "每次重复时取消勾选笔记中的清单项"
@@ -1260,6 +1264,10 @@ msgstr "清除最近的搜索记录"
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
 msgstr "清除最近打开的任务"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear recorded occurrences?"
+msgstr "清除已记录的重复项？"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -3043,6 +3051,10 @@ msgstr "已将 {0} 上移。"
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "已移动 {0}。"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
+msgstr "移动“{title}”会清除新日期及之后已完成或已跳过的重复项：{dates}。它们将不再标记为已完成或已跳过。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name

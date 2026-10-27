@@ -1,4 +1,5 @@
 import {
+  planCalendarEdit,
   planCalendarOccurrenceChoice,
   type CalendarChange,
   type CalendarEntry,
@@ -32,4 +33,21 @@ export function calendarOccurrenceChoice(
     change: edit.change,
     timezone: edit.timezone,
   });
+}
+
+/** Completed and skipped dates a calendar gesture on the series would clear,
+ * so the caller can ask before losing them. */
+export function calendarClearedInstances(
+  task: TaskSummary,
+  edit: CalendarTaskEdit,
+  configuration: TaskCollectionConfiguration,
+): string[] {
+  const model = new TaskNotesTaskModel(configuration);
+  const { clearedInstances } = planCalendarEdit({
+    task: model.calendarTaskInfo(task),
+    ...edit,
+    now: edit.now ?? new Date().toISOString(),
+    fieldMapping: model.config.fieldMapping,
+  });
+  return [...clearedInstances.complete, ...clearedInstances.skipped].sort();
 }

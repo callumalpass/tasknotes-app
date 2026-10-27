@@ -1245,6 +1245,10 @@ msgstr "선택…"
 msgid "Clear"
 msgstr "지우기"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear and move"
+msgstr "지우고 이동"
+
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
 msgstr "반복할 때마다 노트의 체크박스 초기화"
@@ -1260,6 +1264,10 @@ msgstr "최근 검색 지우기"
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
 msgstr "최근 연 작업 지우기"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear recorded occurrences?"
+msgstr "기록된 반복 항목을 지울까요?"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -3043,6 +3051,10 @@ msgstr "{0}을(를) 위로 이동했습니다."
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "{0}을(를) 이동했습니다."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
+msgstr "“{title}”을(를) 이동하면 새 날짜 이후의 완료되었거나 건너뛴 반복 항목이 지워집니다: {dates}. 더 이상 완료 또는 건너뜀으로 표시되지 않습니다."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name

@@ -31,12 +31,15 @@ import {
   type CalendarEntry,
 } from "../domain/calendar-events";
 import {
+  calendarClearedInstances,
   calendarOccurrenceChoice,
   type CalendarTaskEdit,
 } from "../domain/calendar-edit";
 import type { CalendarOccurrenceChoice } from "@tasknotes/model/calendar";
 import {
+  ClearRecurringHistoryDialog,
   RecurringEditScopeDialog,
+  type ClearRecurringHistoryRequest,
   type RecurringEditScope,
   type RecurringEditScopeRequest,
 } from "../components/recurring-edit-scope-dialog";
@@ -132,6 +135,9 @@ export function TaskCalendarView({
   } | null>(null);
   const { configuration, materializeOccurrence } = useRepository();
   const { timezone } = calendarContext();
+  const [historyRequest, setHistoryRequest] = useState<
+    (ClearRecurringHistoryRequest & { resolve(proceed: boolean): void }) | null
+  >(null);
   const [scopeRequest, setScopeRequest] = useState<
     | (RecurringEditScopeRequest & {
         resolve(scope: RecurringEditScope | null): void;
@@ -248,6 +254,23 @@ export function TaskCalendarView({
     return true;
   }
 
+  /** A series change that clears recorded occurrences goes ahead only once the user agrees. */
+  function keepsHistoryOrAgreed(
+    task: CalendarEventMetadata["entry"]["task"],
+    edit: CalendarTaskEdit,
+  ): true | Promise<boolean> {
+    const cleared = calendarClearedInstances(task, edit, configuration);
+    // Synchronous when nothing is cleared, so the moved item holds its place at once.
+    if (!cleared.length) return true;
+    return new Promise<boolean>((resolve) =>
+      setHistoryRequest({
+        title: task.title,
+        dates: cleared.map(formatOccurrenceDate),
+        resolve,
+      }),
+    );
+  }
+
   async function moveEvent(info: ItemChangeArg<CalendarEventData>) {
     const metadata = info.item.data?.metadata;
     if (!metadata) {
@@ -273,6 +296,11 @@ export function TaskCalendarView({
       configuration,
     );
     if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
+    const agreed = keepsHistoryOrAgreed(metadata.entry.task, edit);
+    if (agreed !== true && !(await agreed)) {
+      info.revert();
+      return;
+    }
     const move: PendingCalendarMove = {
       start: info.startStr,
       // Untimed tasks and open time entries keep their implicit length.
@@ -315,6 +343,11 @@ export function TaskCalendarView({
       configuration,
     );
     if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
+    const agreed = keepsHistoryOrAgreed(metadata.entry.task, edit);
+    if (agreed !== true && !(await agreed)) {
+      info.revert();
+      return;
+    }
     const move: PendingCalendarMove = {
       start: info.startStr,
       end: info.endStr,
@@ -436,6 +469,15 @@ export function TaskCalendarView({
               ))}
             </div>
           </div>
+          {historyRequest ? (
+            <ClearRecurringHistoryDialog
+              request={historyRequest}
+              onChoose={(proceed) => {
+                historyRequest.resolve(proceed);
+                setHistoryRequest(null);
+              }}
+            />
+          ) : null}
           {scopeRequest ? (
             <RecurringEditScopeDialog
               request={scopeRequest}

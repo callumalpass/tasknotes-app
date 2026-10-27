@@ -1245,6 +1245,10 @@ msgstr "Choose…"
 msgid "Clear"
 msgstr "Clear"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear and move"
+msgstr "Clear and move"
+
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
 msgstr "Clear checklist items in the note on each repeat"
@@ -1260,6 +1264,10 @@ msgstr "Clear recent searches"
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
 msgstr "Clear recently opened tasks"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear recorded occurrences?"
+msgstr "Clear recorded occurrences?"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -3043,6 +3051,10 @@ msgstr "Moved {0} up."
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "Moved {0}."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
+msgstr "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name

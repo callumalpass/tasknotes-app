@@ -101,3 +101,73 @@ export function RecurringEditScopeDialog({
     </div>
   );
 }
+
+export interface ClearRecurringHistoryRequest {
+  title: string;
+  /** Formatted completed or skipped dates the change would clear. */
+  dates: string[];
+}
+
+/** Asks before a series change clears recorded completed or skipped dates. */
+export function ClearRecurringHistoryDialog({
+  request,
+  onChoose,
+}: {
+  request: ClearRecurringHistoryRequest;
+  onChoose(proceed: boolean): void;
+}) {
+  const { t } = useLingui();
+  const rootRef = useRef<HTMLElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useOverlay({
+    open: true,
+    rootRef,
+    modal: true,
+    onDismiss: () => onChoose(false),
+    initialFocus: () => cancelRef.current,
+  });
+  const { title } = request;
+  const dates = request.dates.join(", ");
+  return (
+    <div className="recurring-scope-layer">
+      <button
+        aria-label={t({ message: "Cancel" })}
+        className="recurring-scope-scrim"
+        tabIndex={-1}
+        type="button"
+        onClick={() => onChoose(false)}
+      />
+      <section
+        aria-describedby="recurring-history-message"
+        aria-labelledby="recurring-history-title"
+        className="recurring-scope-dialog"
+        ref={rootRef}
+        role="alertdialog"
+      >
+        <h2 id="recurring-history-title">
+          {t({ message: "Clear recorded occurrences?" })}
+        </h2>
+        <p id="recurring-history-message">
+          {t`Moving “${title}” clears its completed or skipped occurrences on or after the new date: ${dates}. They will no longer be marked complete or skipped.`}
+        </p>
+        <div>
+          <button
+            className="text-action"
+            ref={cancelRef}
+            type="button"
+            onClick={() => onChoose(false)}
+          >
+            {t({ message: "Cancel" })}
+          </button>
+          <button
+            className="primary-action"
+            type="button"
+            onClick={() => onChoose(true)}
+          >
+            {t({ message: "Clear and move" })}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
