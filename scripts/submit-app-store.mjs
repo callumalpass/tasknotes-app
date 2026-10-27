@@ -531,6 +531,44 @@ export async function submitAppStore({
   };
 }
 
+/** Release an Apple-approved MANUAL version to everyone. Only the exact
+ * version and build in PENDING_DEVELOPER_RELEASE is released; a version that
+ * is already releasing or live is a read-only success. */
+export async function releaseAppStore({ client, version, buildNumber }) {
+  const build = requireValue(buildNumber, "TASKNOTES_IOS_BUILD");
+  const versions = await client.list(
+    `apps/${APP_ID}/appStoreVersions?filter[platform]=IOS`,
+  );
+  const target = versions.find(
+    (item) => item.attributes.versionString === version,
+  );
+  if (!target) throw new Error(`No App Store version ${version}`);
+  const linked = (
+    await client.request(`appStoreVersions/${target.id}/relationships/build`)
+  ).data;
+  const attached = linked
+    ? (await client.request(`builds/${linked.id}`)).data
+    : null;
+  if (attached?.attributes?.version !== build)
+    throw new Error("Store version is not attached to the expected build");
+  const result = { version, buildNumber: build, versionId: target.id };
+  if (
+    releasedStates.has(state(target)) ||
+    state(target) === "PROCESSING_FOR_APP_STORE"
+  )
+    return { ...result, state: state(target), alreadyReleased: true };
+  if (state(target) !== "PENDING_DEVELOPER_RELEASE")
+    throw new Error(`Version is not awaiting release: ${state(target)}`);
+  await client.request("appStoreVersionReleaseRequests", "POST", {
+    type: "appStoreVersionReleaseRequests",
+    relationships: {
+      appStoreVersion: relation("appStoreVersions", target.id),
+    },
+  });
+  const after = (await client.request(`appStoreVersions/${target.id}`)).data;
+  return { ...result, state: state(after), alreadyReleased: false };
+}
+
 async function main() {
   const version = requireValue(
     process.env.TASKNOTES_IOS_VERSION,
@@ -560,6 +598,20 @@ async function main() {
       "base64",
     ).toString("utf8"),
   });
+  if (process.argv.includes("--release")) {
+    const released = await releaseAppStore({
+      client,
+      version,
+      buildNumber: process.env.TASKNOTES_IOS_BUILD,
+    });
+    console.log(JSON.stringify(released));
+    if (process.env.GITHUB_STEP_SUMMARY)
+      await appendFile(
+        process.env.GITHUB_STEP_SUMMARY,
+        `## App Store release\n\nVersion **${released.version}**, build **${released.buildNumber}**: **${released.state}**.\n`,
+      );
+    return;
+  }
   const result = await submitAppStore({
     client,
     version,
