@@ -104,7 +104,11 @@ export interface MaterializedOccurrenceTransition {
 
 /** Calendar plans carry wall-clock times in the calendar's timezone; stored
  * task times are instants, as create and update write them. */
-function storedCalendarTime<Value>(value: Value, timezone: string): Value {
+/** A calendar plan's wall-clock time on the calendar's timezone, as the stored instant. */
+export function storedCalendarTime<Value>(
+  value: Value,
+  timezone: string,
+): Value {
   if (
     typeof value !== "string" ||
     !/^\d{4}-\d{2}-\d{2}T/.test(value) ||

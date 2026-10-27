@@ -7,7 +7,7 @@ import {
 } from "@tasknotes/model/calendar";
 import type { TaskSummary } from "./task";
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import { TaskNotesTaskModel } from "./tasknotes-model";
+import { storedCalendarTime, TaskNotesTaskModel } from "./tasknotes-model";
 
 /** A gesture, not a stale task snapshot. Repositories plan against a fresh read. */
 export interface CalendarTaskEdit {
@@ -27,12 +27,30 @@ export function calendarOccurrenceChoice(
   edit: CalendarTaskEdit,
   configuration: TaskCollectionConfiguration,
 ): CalendarOccurrenceChoice | undefined {
-  return planCalendarOccurrenceChoice({
+  const choice = planCalendarOccurrenceChoice({
     task: new TaskNotesTaskModel(configuration).calendarTaskInfo(task),
     entry: edit.entry,
     change: edit.change,
     timezone: edit.timezone,
   });
+  if (!choice) return undefined;
+  // The plan states times on the calendar's wall clock; tasks store instants.
+  const { scheduled, due } = choice.occurrence.overrides;
+  return {
+    ...choice,
+    occurrence: {
+      ...choice.occurrence,
+      overrides: {
+        ...choice.occurrence.overrides,
+        ...(scheduled === undefined
+          ? {}
+          : { scheduled: storedCalendarTime(scheduled, edit.timezone) }),
+        ...(due === undefined
+          ? {}
+          : { due: storedCalendarTime(due, edit.timezone) }),
+      },
+    },
+  };
 }
 
 /** Completed and skipped dates a calendar gesture on the series would clear,

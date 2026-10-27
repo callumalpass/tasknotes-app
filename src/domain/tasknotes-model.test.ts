@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildCalendarEntries } from "@tasknotes/model/calendar";
 
+import { calendarOccurrenceChoice } from "./calendar-edit";
 import { TaskNotesTaskModel } from "./tasknotes-model";
 
 describe("TaskNotes task model app boundary", () => {
@@ -868,6 +869,40 @@ Occurrence body for {{title}}`,
       now: "2026-10-27T01:00:00Z",
     });
     expect(moved.frontmatter.scheduled).toBe("2026-10-30T00:30:00Z");
+  });
+
+  it("stores a moved occurrence of a timed series as an instant", async () => {
+    const series = model.create(
+      {
+        title: "Standup",
+        scheduled: "2026-10-28T09:40:00Z",
+        recurrence: "FREQ=DAILY",
+      },
+      { id: "standup", now: "2026-10-27T00:00:00Z" },
+    );
+    const timezone = "America/New_York";
+    const entry = buildCalendarEntries({
+      tasks: [model.calendarTaskInfo(series)],
+      range: { start: "2026-10-26", end: "2026-11-02" },
+      timezone,
+      now: "2026-10-27T00:00:00Z",
+    }).find((candidate) => candidate.start.startsWith("2026-10-30"))!;
+    const choice = calendarOccurrenceChoice(
+      series,
+      {
+        entry,
+        change: { kind: "drop", start: "2026-11-03T10:44", allDay: false },
+        timezone,
+      },
+      model.config,
+    )!;
+    const result = await model.materializeOccurrence(
+      series,
+      choice.occurrence.occurrenceDate,
+      [],
+      { id: "moved", overrides: choice.occurrence.overrides },
+    );
+    expect(result.task.frontmatter.scheduled).toBe("2026-11-03T15:44:00Z");
   });
 });
 
