@@ -795,6 +795,23 @@
     display: block;
   }
 
+  /* The date row needs about 760px for navigation, range and every layout.
+     Beside the day list the grid is narrower, so the range takes its own line
+     and navigation shares the next with the layout switcher. The bar is the
+     container: one higher up would contain the calendar's fixed drag
+     preview. */
+  .full-calendar-commandbar {
+    container: calendar-commandbar / inline-size;
+  }
+
+  @container calendar-commandbar (max-width: 759px) {
+    .full-calendar-commandbar > h2 {
+      flex-basis: 100%;
+      order: -1;
+      text-align: left;
+    }
+  }
+
   .full-calendar-workspace {
     display: grid;
     grid-template-columns: minmax(580px, 1fr) minmax(280px, 340px);
