@@ -729,6 +729,7 @@
   background: var(--color-scrim-soft);
   border: 0;
   cursor: default;
+  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
 }
 
 .view-editor {
@@ -746,6 +747,7 @@
   background: var(--paper);
   border-left: 1px solid var(--line-strong);
   box-shadow: -18px 0 50px var(--color-shadow-soft);
+  animation: motion-drawer-in var(--motion-view) var(--ease-out);
 }
 
 .view-editor button,

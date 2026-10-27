@@ -1038,9 +1038,27 @@
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   }
 
+  .global-capture-dialog,
+  .global-capture-scrim {
+    animation-duration: var(--motion-sheet-enter);
+  }
+
+  .global-capture-dialog {
+    animation-name: motion-sheet-in;
+    animation-timing-function: var(--ease-sheet);
+  }
+
   .global-capture-scrim {
     align-items: end;
     padding: env(safe-area-inset-top) 0 0;
+  }
+
+  .global-capture-scrim[data-state="closed"] {
+    animation-duration: var(--motion-sheet-exit);
+  }
+
+  .global-capture-scrim[data-state="closed"] .global-capture-dialog {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
 
   .task-model-settings-grid {
@@ -1066,6 +1084,11 @@
 
   .tasknotes-popover-scrim {
     background: var(--color-scrim-soft);
+    animation-duration: var(--motion-sheet-enter);
+  }
+
+  .tasknotes-popover-scrim[data-state="closed"] {
+    animation-duration: var(--motion-sheet-exit);
   }
 
   .tasknotes-select-popover,
@@ -1085,6 +1108,13 @@
     border-width: 1px 0 0;
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 44px var(--color-shadow);
+    animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+  }
+
+  .tasknotes-select-popover[data-state="closed"],
+  .tasknotes-calendar-popover[data-state="closed"],
+  .tasknotes-time-popover[data-state="closed"] {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
 
   .tasknotes-select-popover .tasknotes-option-list {

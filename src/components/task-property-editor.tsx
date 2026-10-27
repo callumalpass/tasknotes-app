@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { useOverlay } from "./overlays/use-overlay";
+import { usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import {
   combineTaskDateTime,
@@ -44,13 +45,18 @@ export function TaskPropertyEditor({
   detail,
   anchor: triggerAnchor,
   occurrenceDate,
+  open = true,
   onClose,
+  onExited,
 }: {
   task: TaskSummary;
   detail: TaskRowDetail;
   anchor: TaskPropertyEditorAnchor;
   occurrenceDate?: string;
+  /** False while the editor plays its exit before `onExited`. */
+  open?: boolean;
   onClose(): void;
+  onExited?(): void;
 }) {
   const { t } = useLingui();
   const { configuration, updateTask } = useRepository();
@@ -105,8 +111,10 @@ export function TaskPropertyEditor({
     return () => window.removeEventListener("resize", position);
   }, [property?.kind, triggerAnchor]);
 
+  const scrimRef = useRef<HTMLDivElement>(null);
+  const present = usePresence(open, scrimRef, onExited);
   useOverlay({
-    open: true,
+    open,
     rootRef: editorRef,
     modal: window.innerWidth <= 600,
     onDismiss: onClose,
@@ -131,8 +139,16 @@ export function TaskPropertyEditor({
     }
   }
 
+  if (!present) return null;
   return createPortal(
-    <div className="task-property-editor-scrim" role="presentation">
+    <div
+      aria-hidden={open ? undefined : true}
+      className="task-property-editor-scrim"
+      data-state={open ? "open" : "closed"}
+      inert={!open}
+      ref={scrimRef}
+      role="presentation"
+    >
       <section
         aria-label={t`Edit ${detail.label}`}
         aria-modal={desktopPosition ? undefined : "true"}

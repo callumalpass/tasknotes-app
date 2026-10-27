@@ -42,6 +42,10 @@ import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
 import { taskViewIcon } from "./views/view-icon";
 import { useOverlay } from "../components/overlays/use-overlay";
+import {
+  useExitingValue,
+  usePresence,
+} from "../components/overlays/use-presence";
 import { LoadingRows } from "../components/loading";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -1041,6 +1045,13 @@ export function Navigation({
       menuRef.current?.querySelector<HTMLButtonElement>("[role='menuitem']") ??
       null,
   });
+  const exitingMenu = useExitingValue(menuPosition);
+  const shownMenuPosition = exitingMenu.value;
+  const menuPresent = usePresence(
+    Boolean(menuPosition),
+    menuRef,
+    exitingMenu.clear,
+  );
   useEffect(() => {
     if (!menuPosition) return;
     window.addEventListener("resize", closeMenu);
@@ -1155,16 +1166,19 @@ export function Navigation({
               <Trans>More</Trans>
             </span>
           </button>
-          {menuPosition
+          {menuPresent && shownMenuPosition
             ? createPortal(
                 <div
+                  aria-hidden={menuPosition ? undefined : true}
                   aria-label={t({ message: "More" })}
                   className="navigation-views-menu"
+                  data-state={menuPosition ? "open" : "closed"}
                   id={menuId}
+                  inert={!menuPosition}
                   ref={menuRef}
                   role="menu"
                   onKeyDown={(event) => moveMenuFocus(event, menuRef.current)}
-                  style={menuPosition}
+                  style={shownMenuPosition}
                 >
                   {collectionUi ? (
                     <>

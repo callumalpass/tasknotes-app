@@ -122,6 +122,11 @@
     border-left: 0;
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 40px var(--color-shadow);
+    animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+  }
+
+  .task-actions-layer[data-state="closed"] .task-actions-menu {
+    animation: motion-sheet-out var(--motion-sheet-exit) var(--ease-in) forwards;
   }
 
   .task-actions-menu.is-organize-editor {
@@ -685,4 +690,167 @@
 
 .global-capture-fab svg {
   flex: none;
+}
+
+/*
+ * Route motion. transitionNavigation (navigation-transition.ts) sets
+ * html[data-navigation-motion] around a view transition. Navigation chrome is
+ * captured separately and held still, so only the work area moves. Old and new
+ * images blend normally; the default plus-lighter blend brightens offsets.
+ */
+.navigation-rail {
+  view-transition-name: navigation-rail;
+}
+
+/* Pushes carry the tab bar with the page it belongs to. */
+:root[data-navigation-motion="switch"] .bottom-navigation {
+  view-transition-name: bottom-navigation;
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(navigation-rail) {
+  display: none;
+}
+
+::view-transition-group(navigation-rail),
+::view-transition-new(navigation-rail) {
+  animation: none;
+}
+
+/* Switching views: the old work fades away, the new settles into place. */
+:root[data-navigation-motion="switch"]::view-transition-old(root) {
+  animation: motion-view-out var(--motion-exit) var(--ease-in) both;
+}
+
+:root[data-navigation-motion="switch"]::view-transition-new(root) {
+  animation: motion-view-in var(--motion-view) var(--ease-out) both;
+}
+
+::view-transition-old(bottom-navigation) {
+  display: none;
+}
+
+::view-transition-group(bottom-navigation),
+::view-transition-new(bottom-navigation) {
+  animation: none;
+}
+
+/* Moving between tasks crossfades the details without moving anything. */
+:root[data-navigation-motion="replace"]::view-transition-old(root),
+:root[data-navigation-motion="replace"]::view-transition-old(task-detail) {
+  animation: motion-view-out var(--motion-exit) var(--ease-in) both;
+}
+
+:root[data-navigation-motion="replace"]::view-transition-new(root),
+:root[data-navigation-motion="replace"]::view-transition-new(task-detail) {
+  animation: motion-view-fade-in var(--motion-view) var(--ease-out) both;
+}
+
+/* Where details replace the work, they push in from the trailing edge. */
+@media (max-width: 1023px) {
+  :root[data-navigation-motion="forward"]::view-transition-old(root) {
+    animation: motion-push-under var(--motion-push) var(--ease-sheet) both;
+  }
+
+  :root[data-navigation-motion="forward"]::view-transition-new(root) {
+    animation: motion-push-in var(--motion-push) var(--ease-sheet) both;
+  }
+
+  :root[data-navigation-motion="back"]::view-transition-old(root) {
+    z-index: 1;
+    animation: motion-push-out var(--motion-push) var(--ease-sheet) both;
+  }
+
+  :root[data-navigation-motion="back"]::view-transition-new(root) {
+    animation: motion-push-from-under var(--motion-push) var(--ease-sheet) both;
+  }
+}
+
+/* Beside the work, the details panel slides in and out on its own. */
+@media (min-width: 1024px) {
+  .detail-inspector {
+    view-transition-name: task-detail;
+  }
+
+  :root:is(
+      [data-navigation-motion="forward"],
+      [data-navigation-motion="replace"],
+      [data-navigation-motion="back"]
+    )::view-transition-old(root) {
+    display: none;
+  }
+
+  :root:is(
+      [data-navigation-motion="forward"],
+      [data-navigation-motion="replace"],
+      [data-navigation-motion="back"]
+    )::view-transition-new(root) {
+    animation: none;
+  }
+
+  :root[data-navigation-motion="forward"]::view-transition-group(task-detail) {
+    animation: none;
+  }
+
+  :root[data-navigation-motion="forward"]::view-transition-new(task-detail) {
+    animation: motion-drawer-in var(--motion-view) var(--ease-out) both;
+  }
+
+  :root[data-navigation-motion="back"]::view-transition-old(task-detail) {
+    animation: motion-drawer-out var(--motion-exit) var(--ease-in) both;
+  }
+}
+
+@keyframes motion-view-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes motion-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes motion-view-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes motion-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes motion-push-under {
+  to {
+    transform: translateX(-24%);
+  }
+}
+
+@keyframes motion-push-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes motion-push-from-under {
+  from {
+    transform: translateX(-24%);
+  }
+}
+
+@keyframes motion-drawer-out {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
 }

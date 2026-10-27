@@ -21,6 +21,7 @@ import { useRepository } from "../app/repository-context";
 import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
+import { useExitingValue } from "./overlays/use-presence";
 import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
@@ -109,6 +110,7 @@ export function TaskRow({
     detail: TaskRowDetail;
     anchor: TaskPropertyEditorAnchor;
   } | null>(null);
+  const shownEditor = useExitingValue(editing);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const shownDetails = (
     details ?? defaultTaskDetails(displayedTask, metadata, configuration)
@@ -349,16 +351,19 @@ export function TaskRow({
         onOpen={onOpen}
         onToggle={onToggle}
       />
-      {editing ? (
+      {shownEditor.value ? (
         <TaskPropertyEditor
-          anchor={editing.anchor}
-          detail={editing.detail}
+          anchor={shownEditor.value.anchor}
+          detail={shownEditor.value.detail}
+          key={shownEditor.key}
           occurrenceDate={occurrence?.date}
+          open={Boolean(editing)}
           task={task}
           onClose={() => {
             setEditing(null);
             window.requestAnimationFrame(() => editorTrigger.current?.focus());
           }}
+          onExited={shownEditor.clear}
         />
       ) : null}
     </div>

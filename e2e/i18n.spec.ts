@@ -121,6 +121,11 @@ test("French interface preserves user edits and stored English view names", asyn
     page.getByRole("button", { name: "Nouvelle note", exact: true }),
   ).toBeVisible();
   await openNavigationItem(page, "Paramètres");
+  // Route changes commit inside a view transition; wait for Settings before
+  // the non-waiting check below.
+  await expect(
+    page.getByRole("heading", { name: "Paramètres", level: 1 }),
+  ).toBeVisible();
   const collectionSection = page
     .getByRole("navigation", { name: "Sections des paramètres" })
     .getByRole("button", { name: /^Collection / });

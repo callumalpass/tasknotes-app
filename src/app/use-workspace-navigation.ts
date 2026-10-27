@@ -1,8 +1,18 @@
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { nativeBackAction } from "../native/navigation";
 import { isSettingsSection, type SettingsSection } from "./settings-sections";
+import {
+  navigationMotion,
+  transitionNavigation,
+} from "./navigation-transition";
 
 export type Route =
   | { page: "home" | "search" | "scratchpad" }
@@ -53,30 +63,26 @@ export function useWorkspaceNavigation(
   const routeRef = useRef(route);
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
-  useEffect(() => {
+  // Restore before paint so a route's view transition captures the result.
+  useLayoutEffect(() => {
     const wasTask = previousPage.current === "task";
     previousPage.current = route.page;
-    const frame = requestAnimationFrame(() => {
-      if (route.page === "task" && !wasTask)
-        detailRef.current?.focus({ preventScroll: true });
-      else if (wasTask && route.page !== "task" && taskReturn.current) {
-        const target = taskReturn.current;
-        taskReturn.current = null;
-        if (target.workspaceUrl !== currentRouteUrl) return;
-        window.scrollTo({ top: target.scrollY, left: 0 });
-        if (target.element?.isConnected)
-          target.element.focus({ preventScroll: true });
-        else
-          document
-            .getElementById("main-content")
-            ?.focus({ preventScroll: true });
-      }
-    });
-    return () => cancelAnimationFrame(frame);
+    if (route.page === "task" && !wasTask)
+      detailRef.current?.focus({ preventScroll: true });
+    else if (wasTask && route.page !== "task" && taskReturn.current) {
+      const target = taskReturn.current;
+      taskReturn.current = null;
+      if (target.workspaceUrl !== currentRouteUrl) return;
+      window.scrollTo({ top: target.scrollY, left: 0 });
+      if (target.element?.isConnected)
+        target.element.focus({ preventScroll: true });
+      else
+        document.getElementById("main-content")?.focus({ preventScroll: true });
+    }
   }, [route.page, currentRouteUrl]);
 
   useEffect(() => {
-    const pop = () => {
+    const pop = (event: PopStateEvent) => {
       if ([...leaveGuards].some((blocked) => blocked())) {
         const current = routeRef.current;
         window.history.pushState(
@@ -87,8 +93,16 @@ export function useWorkspaceNavigation(
         return;
       }
       const next = parseRoute();
-      setRoute(next);
-      if (next.page !== "task") setWorkspaceRoute(next);
+      const apply = () => {
+        setRoute(next);
+        if (next.page !== "task") setWorkspaceRoute(next);
+      };
+      // A browser swipe-back has already animated the change.
+      if (event.hasUAVisualTransition) apply();
+      else
+        transitionNavigation(navigationMotion(routeRef.current, next), apply, {
+          traversal: true,
+        });
     };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
@@ -100,23 +114,21 @@ export function useWorkspaceNavigation(
       const state = next.page === "task" ? { taskPanel: true } : null;
       if (replace) window.history.replaceState(state, "", url);
       else window.history.pushState(state, "", url);
-      if (next.page === "task") {
-        if (route.page !== "task") {
-          taskReturn.current = {
-            element:
-              document.activeElement instanceof HTMLElement
-                ? document.activeElement
-                : null,
-            scrollY: window.scrollY,
-            workspaceUrl: routeUrl(route),
-          };
-          setWorkspaceRoute(route);
-        }
-      } else {
-        setWorkspaceRoute(next);
-      }
-      setRoute(next);
-      if (next.page !== "task") window.scrollTo({ top: 0, left: 0 });
+      if (next.page === "task" && route.page !== "task")
+        taskReturn.current = {
+          element:
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null,
+          scrollY: window.scrollY,
+          workspaceUrl: routeUrl(route),
+        };
+      transitionNavigation(navigationMotion(route, next), () => {
+        if (next.page !== "task") setWorkspaceRoute(next);
+        else if (route.page !== "task") setWorkspaceRoute(route);
+        setRoute(next);
+        if (next.page !== "task") window.scrollTo({ top: 0, left: 0 });
+      });
     },
     [route],
   );
