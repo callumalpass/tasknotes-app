@@ -177,6 +177,27 @@
   color: var(--accent);
 }
 
+.navigation-views-menu .navigation-menu-collection {
+  min-height: 52px;
+}
+
+.navigation-menu-collection > span {
+  display: grid;
+  min-width: 0;
+}
+
+.navigation-menu-collection strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navigation-menu-collection small {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
 .navigation-views-menu hr {
   width: 100%;
   height: 1px;

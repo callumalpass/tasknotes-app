@@ -1029,10 +1029,6 @@ msgstr "Columnas del tablero"
 msgid "Bold"
 msgstr "Negrita"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Explorar"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Creador"
@@ -2942,6 +2938,10 @@ msgstr "Mes"
 msgid "Monthly"
 msgstr "Mensual"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Más"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "Sugerencias"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Sugerencias de las primeras {limit} tareas. Busca para encontrar otras."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Cambiar de colección"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

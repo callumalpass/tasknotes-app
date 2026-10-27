@@ -1029,10 +1029,6 @@ msgstr "Board-Spalten"
 msgid "Bold"
 msgstr "Fett"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Durchsuchen"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Visueller Editor"
@@ -2942,6 +2938,10 @@ msgstr "Monat"
 msgid "Monthly"
 msgstr "Monatlich"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Mehr"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "Vorschläge"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Vorschläge aus den ersten {limit} Aufgaben. Suchen Sie, um weitere zu finden."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Sammlung wechseln"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

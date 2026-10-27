@@ -327,14 +327,3 @@
   width: 100%;
   color: var(--ink-soft);
 }
-
-.mobile-collection-bar {
-  display: flex;
-  padding: max(6px, env(safe-area-inset-top)) var(--page-inset) 0;
-}
-
-@media (min-width: 840px) {
-  .mobile-collection-bar {
-    display: none;
-  }
-}

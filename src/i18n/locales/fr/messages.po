@@ -1030,10 +1030,6 @@ msgstr "Colonnes du tableau"
 msgid "Bold"
 msgstr "Gras"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "Parcourir"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Éditeur visuel"
@@ -2943,6 +2939,10 @@ msgstr "Mois"
 msgid "Monthly"
 msgstr "Tous les mois"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "Plus"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4660,6 +4660,10 @@ msgstr "Suggestions"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Suggestions parmi les {limit} premières tâches. Recherchez pour en trouver d’autres."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "Changer de collection"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

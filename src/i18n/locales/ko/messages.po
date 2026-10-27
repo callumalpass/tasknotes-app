@@ -1029,10 +1029,6 @@ msgstr "보드 열"
 msgid "Bold"
 msgstr "굵게"
 
-#: src/app/app-shell.tsx
-msgid "Browse"
-msgstr "찾아보기"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "빌더"
@@ -2942,6 +2938,10 @@ msgstr "월"
 msgid "Monthly"
 msgstr "매월"
 
+#: src/app/app-shell.tsx
+msgid "More"
+msgstr "더보기"
+
 #. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 msgid "More actions for {0}"
@@ -4659,6 +4659,10 @@ msgstr "제안"
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "처음 {limit}개 작업에서 제안합니다. 다른 항목은 검색하세요."
+
+#: src/app/app-shell.tsx
+msgid "Switch collection"
+msgstr "컬렉션 전환"
 
 #: src/components/private-account-settings.tsx
 msgid "Switch to strict mode"

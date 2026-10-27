@@ -224,18 +224,20 @@ Today             Search       More
   its layout (day-sectioned list, agenda, month calendar, board, planner,
   projects, plain list); the starter Projects and Archive views, which share
   the plain list layout, are distinguished by name. The sidebar, phone tab
-  bar, Browse menu, and Manage views use the same mapping.
-- The desktop sidebar leads with a filled New task action, lists navigation
-  destinations, and groups Manage views and Settings at its foot. Destinations
+  bar, More menu, and Manage views use the same mapping.
+- The desktop sidebar leads with the collection switcher and a filled New
+  task action, lists navigation destinations, and groups Manage views and Settings at its foot. Destinations
   reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
   it Home. Because the
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
 - Mobile bottom navigation shows the first three configured destinations beside
-  Browse. Tab labels scale with system text until the tab width is reached and
+  More. Tab labels scale with system text until the tab width is reached and
   never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
-  require observed viewport occlusion. Browse contains additional destinations,
-  Manage views, and Settings. Tab dismisses Browse and continues outside it;
+  require observed viewport occlusion. Phones keep no collection bar above the
+  work: More leads with the open collection, which goes to Collection settings
+  to switch, then additional destinations, Manage views, and Settings. Tab
+  dismisses More and continues outside it;
   arrow keys belong to the menu only while focus is inside.
   Fresh collections begin with Today, Upcoming, and Scratchpad; existing choices
   and migrated navigation preferences remain intact. Manage views separates the ordered destinations shown in
