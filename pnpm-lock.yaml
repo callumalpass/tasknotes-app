@@ -88,8 +88,8 @@ importers:
         specifier: 3.14.11
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/calendar':
-        specifier: 0.1.2
-        version: 0.1.2(react@19.2.8)
+        specifier: 0.1.3
+        version: 0.1.3(react@19.2.8)
       '@tasknotes/model':
         specifier: 0.3.0-rc.19
         version: 0.3.0-rc.19
@@ -1268,8 +1268,8 @@ packages:
   '@tanstack/virtual-core@3.17.9':
     resolution: {integrity: sha512-M8Bzy7CCMvUjRiuoHVH9mRjyUVczRs8v8RcUEphLFGc445ZP4KQ15Y1sLqhQqJi/HgGJrxfCHnEnIX0x9mVrBg==}
 
-  '@tasknotes/calendar@0.1.2':
-    resolution: {integrity: sha512-Ts1UXOD0hoLC+i6lYM0Eo430nwza9sbyKm6HekSWF8rRSC2vTQi8Risyh8mS1mJcDHnvtA24ZKymk14sf2+syA==}
+  '@tasknotes/calendar@0.1.3':
+    resolution: {integrity: sha512-R6ElTBZWPvmy8P1Fl+IcNSrDwCuU+zo+MidgdjxNXAyjTWporC1mrVRNXkgLK5tREPTjGMAX3p/9yoxD8tFFoQ==}
     engines: {node: '>=22'}
     peerDependencies:
       react: '>=18'
@@ -5503,7 +5503,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/calendar@0.1.2(react@19.2.8)':
+  '@tasknotes/calendar@0.1.3(react@19.2.8)':
     optionalDependencies:
       react: 19.2.8
 

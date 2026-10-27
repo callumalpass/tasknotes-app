@@ -76,7 +76,7 @@
     "@mdbase-dev/ui": "file:vendor/mdbase-dev-ui-0.1.0-beta.141-24e9f5d0.tgz",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tanstack/react-virtual": "3.14.11",
-    "@tasknotes/calendar": "0.1.2",
+    "@tasknotes/calendar": "0.1.3",
     "@tasknotes/model": "0.3.0-rc.19",
     "codemirror": "^6.0.2",
     "dexie": "4.4.4",
