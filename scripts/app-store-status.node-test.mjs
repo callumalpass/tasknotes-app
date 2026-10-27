@@ -7,6 +7,7 @@ import {
   createStatusClient,
   readAppStoreStatus,
   statusSummary,
+  VERSION,
 } from "./app-store-status.mjs";
 
 const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
@@ -26,7 +27,7 @@ function fixture() {
       {
         id: "target",
         attributes: {
-          versionString: "1.0.9",
+          versionString: VERSION,
           appStoreState: "WAITING_FOR_REVIEW",
           releaseType: "MANUAL",
           demoAccountName: secret,
@@ -67,7 +68,7 @@ function fixture() {
         assert.equal(url.searchParams.get("filter[app]"), APP_ID);
         assert.equal(
           url.searchParams.get("filter[preReleaseVersion.version]"),
-          "1.0.9",
+          VERSION,
         );
         assert.equal(
           url.searchParams.get("filter[preReleaseVersion.platform]"),
@@ -90,7 +91,7 @@ test("GET-only status reads the requested version, its active review and latest 
   const f = fixture();
   const result = await f.run();
   assert.deepEqual(result, {
-    version: "1.0.9",
+    version: VERSION,
     appStoreState: "WAITING_FOR_REVIEW",
     releaseType: "MANUAL",
     reviewSubmissionState: "WAITING_FOR_REVIEW",
@@ -98,7 +99,9 @@ test("GET-only status reads the requested version, its active review and latest 
   });
   assert.match(
     statusSummary(result),
-    /^1\.0\.9: WAITING_FOR_REVIEW \(MANUAL\)/,
+    new RegExp(
+      `^${VERSION.replaceAll(".", "\\.")}: WAITING_FOR_REVIEW \\(MANUAL\\)`,
+    ),
   );
   assert.ok(!JSON.stringify(result).includes(secret));
   assert.ok(!statusSummary(result).includes(secret));
@@ -126,7 +129,9 @@ test("approved MANUAL version reports PENDING_DEVELOPER_RELEASE and no active re
   assert.equal(result.reviewSubmissionState, "NONE");
   assert.match(
     statusSummary(result),
-    /^1\.0\.9: PENDING_DEVELOPER_RELEASE \(MANUAL\)/,
+    new RegExp(
+      `^${VERSION.replaceAll(".", "\\.")}: PENDING_DEVELOPER_RELEASE \\(MANUAL\\)`,
+    ),
   );
 });
 
@@ -142,7 +147,7 @@ test("reports missing version/build without manufacturing a review state", async
   f.versions = [];
   f.builds = [];
   assert.deepEqual(await f.run(), {
-    version: "1.0.9",
+    version: VERSION,
     appStoreState: "NOT_FOUND",
     releaseType: "NOT_FOUND",
     reviewSubmissionState: "NONE",
