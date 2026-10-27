@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
 import { appendFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_ID, BUNDLE_ID, createClient } from "./submit-app-store.mjs";
 
-export const VERSION = "1.0.9";
+// Report the version this commit releases, so the reader never lags a bump.
+export const VERSION = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+).version;
 
 function required(value, name) {
   if (typeof value !== "string" || !value.trim())
