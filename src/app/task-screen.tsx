@@ -3,6 +3,7 @@ import { OccurrencePolicyField } from "./occurrence-policy-field";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { ArrowLeft } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
+import { useHistoryLeaveGuard } from "./use-workspace-navigation";
 import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
 import {
   lazy,
@@ -667,6 +668,19 @@ function TaskEditor({
     await persist(next, version);
   }
 
+  const refused = Boolean(rejection);
+  useHistoryLeaveGuard(
+    refused || (dirty && !draft.title.trim()),
+    useCallback(() => {
+      if (refused) reviewRejection();
+      else {
+        setSaveError(t({ message: "Add a title before leaving this task." }));
+        setSaveState("error");
+        titleRef.current?.focus();
+      }
+    }, [refused, reviewRejection, t]),
+  );
+
   async function leave() {
     if (leaving) return;
     if (rejection) {
@@ -890,21 +904,30 @@ function TaskEditor({
                   ? t({ message: "Mark open" })
                   : t({ message: "Complete" })}
             </button>
-            <button
-              className="text-action"
-              disabled={occurrenceAction}
-              type="button"
-              onClick={() => void toggleSkippedOccurrence()}
-            >
-              {task.occurrenceDate
-                ? task.skipped
-                  ? t({ message: "Unskip" })
-                  : t({ message: "Skip" })
-                : task.skippedInstances.includes(occurrenceDate!)
-                  ? t({ message: "Unskip" })
-                  : t({ message: "Skip" })}
-            </button>
-            {occurrenceDate && task.recurrence ? (
+            {/* An occurrence note can only be skipped through a skipped status. */}
+            {!task.occurrenceDate ||
+            task.skipped ||
+            configuration.statuses.some((status) => status.isSkipped) ? (
+              <button
+                className="text-action"
+                disabled={occurrenceAction}
+                type="button"
+                onClick={() => void toggleSkippedOccurrence()}
+              >
+                {task.occurrenceDate
+                  ? task.skipped
+                    ? t({ message: "Unskip" })
+                    : t({ message: "Skip" })
+                  : task.skippedInstances.includes(occurrenceDate!)
+                    ? t({ message: "Unskip" })
+                    : t({ message: "Skip" })}
+              </button>
+            ) : null}
+            {occurrenceDate &&
+            task.recurrence &&
+            // A skipped date needs a skipped status for its note.
+            (!task.skippedInstances.includes(occurrenceDate) ||
+              configuration.statuses.some((status) => status.isSkipped)) ? (
               <button
                 className="text-action"
                 disabled={occurrenceAction}

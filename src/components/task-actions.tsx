@@ -431,20 +431,26 @@ export function TaskActions({
                             void run(() => skipTask(task.id, occurrence!))
                           }
                         />
-                        <MenuAction
-                          disabled={busy || !occurrenceDate}
-                          icon={NotebookPen}
-                          label={t({ message: "Make occurrence note" })}
-                          onClick={() =>
-                            void run(async () => {
-                              const result = await materializeOccurrence(
-                                task.id,
-                                occurrenceDate!,
-                              );
-                              onOpen?.(result.task);
-                            })
-                          }
-                        />
+                        {/* A skipped date needs a skipped status for its note. */}
+                        {occurrenceSkipped &&
+                        !configuration.statuses.some(
+                          (status) => status.isSkipped,
+                        ) ? null : (
+                          <MenuAction
+                            disabled={busy || !occurrenceDate}
+                            icon={NotebookPen}
+                            label={t({ message: "Make occurrence note" })}
+                            onClick={() =>
+                              void run(async () => {
+                                const result = await materializeOccurrence(
+                                  task.id,
+                                  occurrenceDate!,
+                                );
+                                onOpen?.(result.task);
+                              })
+                            }
+                          />
+                        )}
                         <MenuSeparator />
                         <MenuAction
                           detail={t({ message: "Changes every occurrence" })}

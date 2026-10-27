@@ -5,8 +5,11 @@ import {
   getDefaultCompletedStatus,
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
-import { planCalendarEdit } from "@tasknotes/model/calendar";
-import type { CalendarTaskEdit } from "./calendar-edit";
+import {
+  calendarDateToInstant,
+  planCalendarEdit,
+} from "@tasknotes/model/calendar";
+import type { CalendarTaskEdit, OccurrenceOverrides } from "./calendar-edit";
 import { getCurrentDateString } from "@tasknotes/model/date";
 import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
@@ -97,6 +100,44 @@ export interface MaterializedOccurrenceTransition {
   occurrence: Task;
   parent: Task;
   materializeNextDate?: string;
+}
+
+/** Calendar plans carry wall-clock times in the calendar's timezone; stored
+ * task times are instants, as create and update write them. */
+/** A calendar plan's wall-clock time on the calendar's timezone, as the stored instant. */
+export function storedCalendarTime<Value>(
+  value: Value,
+  timezone: string,
+): Value {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T/.test(value) ||
+    /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
+  )
+    return value;
+  return new Date(calendarDateToInstant(value, timezone))
+    .toISOString()
+    .replace(".000Z", "Z") as Value;
+}
+
+function storedCalendarPlan<Plan extends ReturnType<typeof planCalendarEdit>>(
+  plan: Plan,
+  timezone: string,
+  dateFields: readonly string[],
+): Plan {
+  return {
+    ...plan,
+    updatedTask: {
+      ...plan.updatedTask,
+      scheduled: storedCalendarTime(plan.updatedTask.scheduled, timezone),
+      due: storedCalendarTime(plan.updatedTask.due, timezone),
+    },
+    frontmatterPatch: plan.frontmatterPatch.map((operation) =>
+      operation.op === "set" && dateFields.includes(operation.field)
+        ? { ...operation, value: storedCalendarTime(operation.value, timezone) }
+        : operation,
+    ),
+  };
 }
 
 export class TaskNotesTaskModel {
@@ -381,9 +422,22 @@ export class TaskNotesTaskModel {
         input.customProperties,
       );
 
-    const plan = buildTaskUpdatePlan({
-      originalTask: original,
-      updates,
+    // A repeat change makes the model plan the next occurrence on the wall
+    // clock, so it plans on local times and the result is stored as instants.
+    const floating = updates.recurrence !== undefined;
+    const rawPlan = buildTaskUpdatePlan({
+      originalTask: floating ? withFloatingTaskTimes(original) : original,
+      updates: floating
+        ? {
+            ...updates,
+            ...("scheduled" in updates
+              ? { scheduled: floatingLocalDateTime(updates.scheduled) }
+              : {}),
+            ...("due" in updates
+              ? { due: floatingLocalDateTime(updates.due) }
+              : {}),
+          }
+        : updates,
       fieldMapping: this.config.fieldMapping,
       taskTag: this.config.defaults.taskTag,
       storeTitleInFilename: this.config.storeTitleInFilename,
@@ -394,6 +448,26 @@ export class TaskNotesTaskModel {
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
+    const timeFields = new Set([
+      this.config.fieldMapping.scheduled,
+      this.config.fieldMapping.due,
+    ]);
+    const plan = floating
+      ? {
+          ...rawPlan,
+          updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
+          frontmatterPatch: rawPlan.frontmatterPatch.map((operation) =>
+            operation.op === "set" && timeFields.has(operation.field)
+              ? {
+                  ...operation,
+                  value: normalizeTaskDateTime(
+                    operation.value as string | undefined,
+                  ),
+                }
+              : operation,
+          ),
+        }
+      : rawPlan;
     const plannedTask =
       input.preserveRecurrenceSchedule && input.recurrence !== undefined
         ? {
@@ -430,12 +504,16 @@ export class TaskNotesTaskModel {
   }
 
   editCalendar(current: Task, edit: CalendarTaskEdit): Task {
-    const plan = planCalendarEdit({
-      task: this.taskInfo(current),
-      ...edit,
-      now: edit.now ?? new Date().toISOString(),
-      fieldMapping: this.config.fieldMapping,
-    });
+    const plan = storedCalendarPlan(
+      planCalendarEdit({
+        task: this.taskInfo(current),
+        ...edit,
+        now: edit.now ?? new Date().toISOString(),
+        fieldMapping: this.config.fieldMapping,
+      }),
+      edit.timezone,
+      [this.config.fieldMapping.scheduled, this.config.fieldMapping.due],
+    );
     this.assertValid(plan.updatedTask);
     this.assertCustomFields(plan.updatedTask.customProperties);
     const revision = current.revision + 1;
@@ -541,7 +619,7 @@ export class TaskNotesTaskModel {
     parent: Task,
     targetDate: string,
     existingOccurrences: readonly Existing[],
-    context: { id: string; now?: string },
+    context: { id: string; now?: string; overrides?: OccurrenceOverrides },
     loadTemplate?: (path: string) => Promise<string>,
   ): Promise<
     | (MaterializeOccurrenceResult & { created: true })
@@ -552,6 +630,11 @@ export class TaskNotesTaskModel {
     const occurrenceInfos = existingOccurrences.map((task) =>
       this.taskInfo(task),
     );
+    // A note for a completed or skipped date keeps that state.
+    const recordedState = {
+      completedStatus: getDefaultCompletedStatus(this.config.statuses),
+      skippedStatus: getDefaultSkippedStatus(this.config.statuses),
+    };
     let plan = buildMaterializeOccurrencePlan({
       parentTask: parentInfo,
       targetDate,
@@ -559,6 +642,8 @@ export class TaskNotesTaskModel {
       existingOccurrences: occurrenceInfos,
       defaultStatus: this.config.defaults.status,
       defaultPriority: this.config.defaults.priority,
+      ...recordedState,
+      overrides: context.overrides,
     });
     const existing = plan.existingOccurrence
       ? existingOccurrences.find(
@@ -615,7 +700,9 @@ export class TaskNotesTaskModel {
           existingOccurrences: occurrenceInfos,
           defaultStatus: this.config.defaults.status,
           defaultPriority: this.config.defaults.priority,
+          ...recordedState,
           templateTask: templateInfo,
+          overrides: context.overrides,
         });
       } catch (reason) {
         const message =
@@ -908,6 +995,7 @@ export class TaskNotesTaskModel {
       string[],
     ][]) {
       const canonical = this.config.fieldMapping[role];
+      if (!canonical) continue;
       if (!Object.prototype.hasOwnProperty.call(result, canonical)) {
         const alias = aliases.find((candidate) =>
           Object.prototype.hasOwnProperty.call(result, candidate),
@@ -1021,8 +1109,11 @@ export class TaskNotesTaskModel {
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
     this.assertValid(updated);
     const revision = current.revision + 1;
+    const base = this.canonicalizeAliases(current.frontmatter, true);
+    if (updated.completedDate === undefined)
+      delete base[this.config.fieldMapping.completedDate];
     const frontmatter = this.writeFrontmatter(
-      this.canonicalizeAliases(current.frontmatter, true),
+      base,
       updated,
       current.id,
       revision,

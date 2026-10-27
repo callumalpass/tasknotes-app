@@ -71,6 +71,10 @@ msgstr "“{0}” é calculada e não pode receber tarefas movidas."
 msgid "“{title}” is still in the collection."
 msgstr "“{title}” ainda está na coleção."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "\"{title}\" se repete. Alterar só esta ocorrência cria uma nota da ocorrência para {date}."
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(alterações não salvas)"
@@ -1057,6 +1061,7 @@ msgstr "Posso mudar de coleção mais tarde?"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1076,6 +1081,10 @@ msgstr "Atualizando"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "Expressão CEL"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "Alterar uma tarefa recorrente"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "Alteração rejeitada"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "Alteração rejeitada: {0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "Alterar a duração de cada ocorrência"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "Alterar o horário de cada ocorrência"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -1228,6 +1245,10 @@ msgstr "Escolher…"
 msgid "Clear"
 msgstr "Limpar"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear and move"
+msgstr "Limpar e mover"
+
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
 msgstr "Desmarcar as caixas de seleção da nota a cada repetição"
@@ -1243,6 +1264,10 @@ msgstr "Limpar pesquisas recentes"
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
 msgstr "Limpar tarefas abertas recentemente"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear recorded occurrences?"
+msgstr "Limpar as ocorrências registadas?"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -2329,6 +2354,10 @@ msgstr "Horizonte futuro"
 msgid "Gap"
 msgstr "Intervalo"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "Usar este horário em cada ocorrência"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "Volte e atualize a coleção antes de editar."
@@ -2771,6 +2800,10 @@ msgstr "Procurando na coleção…"
 msgid "Make a task"
 msgstr "Criar uma tarefa"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "Tornar cada ocorrência de dia inteiro"
+
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
@@ -3018,6 +3051,10 @@ msgstr "{0} movido para cima."
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "{0} movido."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
+msgstr "Mover “{title}” limpa as ocorrências concluídas ou ignoradas a partir da nova data: {dates}. Deixarão de estar marcadas como concluídas ou ignoradas."
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
@@ -4920,6 +4957,10 @@ msgstr "A regra é mantida exatamente como foi escrita. Aplique-a somente quando
 msgid "The scratchpad is not open."
 msgstr "O bloco de notas não está aberto."
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "A série mantém seus dias, então só esta ocorrência pode ir para outro dia."
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "a tarefa"
@@ -5028,6 +5069,10 @@ msgstr "Esta chave é exibida uma única vez. Guarde-a em um local seguro fora d
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "Este Markdown contém blocos que a estrutura de tópicos não consegue representar. Ele foi salvo; continue editando como Markdown."
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "Só esta ocorrência"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
@@ -5471,6 +5516,11 @@ msgstr "Escrever"
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
 msgstr "Ferramentas de escrita"
+
+#: src/app/task-calendar-view.tsx
+#: src/app/view-editor-form.tsx
+msgid "Year"
+msgstr "Ano"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts

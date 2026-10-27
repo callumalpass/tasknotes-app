@@ -1,4 +1,7 @@
-import type { CalendarTaskEdit } from "../../domain/calendar-edit";
+import type {
+  CalendarTaskEdit,
+  OccurrenceOverrides,
+} from "../../domain/calendar-edit";
 import type {
   CreateTaskInput,
   MaterializeOccurrenceResult,
@@ -137,6 +140,7 @@ export interface TaskRepository {
   materializeOccurrence(
     parentId: string,
     occurrenceDate: string,
+    overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult>;
   startTimeTracking(id: string, description?: string): Promise<Task>;
   stopTimeTracking(id: string): Promise<Task>;

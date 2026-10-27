@@ -71,6 +71,10 @@ msgstr "「{0}」は計算値のため、移動したタスクを受け入れら
 msgid "“{title}” is still in the collection."
 msgstr "「{title}」はまだコレクション内にあります。"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
+msgstr "「{title}」は繰り返します。この発生分だけを変更すると、{date} の発生分のノートが作成されます。"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（未保存の変更）"
@@ -1057,6 +1061,7 @@ msgstr "後からコレクションを変更できますか？"
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/components/held-edits.tsx
+#: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -1076,6 +1081,10 @@ msgstr "追いついています"
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL式"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change a recurring task"
+msgstr "繰り返しタスクを変更"
 
 #: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
@@ -1098,6 +1107,14 @@ msgstr "変更が拒否されました"
 #: src/components/task-added-notice.tsx
 msgid "Change rejected: {0}"
 msgstr "変更が拒否されました：{0}"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the duration of every occurrence"
+msgstr "すべての発生分の所要時間を変更"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Change the time of every occurrence"
+msgstr "すべての発生分の時刻を変更"
 
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
@@ -1228,6 +1245,10 @@ msgstr "選択…"
 msgid "Clear"
 msgstr "クリア"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear and move"
+msgstr "消去して移動"
+
 #: src/components/task-model-settings.tsx
 msgid "Clear checklist items in the note on each repeat"
 msgstr "繰り返しのたびにノートのチェックボックスをリセット"
@@ -1243,6 +1264,10 @@ msgstr "最近の検索をクリア"
 #: src/app/search-screen.tsx
 msgid "Clear recently opened tasks"
 msgstr "最近開いたタスクをクリア"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Clear recorded occurrences?"
+msgstr "記録済みの発生分を消去しますか？"
 
 #: src/components/task-actions.tsx
 msgid "Clear scheduled date"
@@ -2329,6 +2354,10 @@ msgstr "将来の期間"
 msgid "Gap"
 msgstr "間隔"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Give every occurrence this time"
+msgstr "すべての発生分をこの時刻にする"
+
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
 msgstr "編集する前に戻ってコレクションを更新してください。"
@@ -2771,6 +2800,10 @@ msgstr "コレクション内を確認中…"
 msgid "Make a task"
 msgstr "タスクにする"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Make every occurrence all-day"
+msgstr "すべての発生分を終日にする"
+
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 msgid "Make occurrence note"
@@ -3018,6 +3051,10 @@ msgstr "{0}を上に移動しました。"
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "{0}を移動しました。"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
+msgstr "「{title}」を移動すると、新しい日付以降の完了またはスキップ済みの発生分が消去されます: {dates}。これらは完了またはスキップとして記録されなくなります。"
 
 #. placeholder {0}: row.task.title
 #. placeholder {0}: source.name
@@ -4920,6 +4957,10 @@ msgstr "ルールは記述どおりに保持されます。有効になってか
 msgid "The scratchpad is not open."
 msgstr "スクラッチパッドが開いていません。"
 
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "The series keeps its days, so only this occurrence can move to another day."
+msgstr "シリーズの日付は変わらないため、別の日に移動できるのはこの発生分だけです。"
+
 #: src/app/views-screen.tsx
 msgid "the task"
 msgstr "タスク"
@@ -5028,6 +5069,10 @@ msgstr "このキーは一度だけ表示されます。TaskNotesの外にある
 #: src/app/scratchpad-screen.tsx
 msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
 msgstr "このMarkdownにはアウトラインで表現できないブロックが含まれています。保存済みです。Markdownとして編集を続けてください。"
+
+#: src/components/recurring-edit-scope-dialog.tsx
+msgid "This occurrence"
+msgstr "この発生分のみ"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
@@ -5471,6 +5516,11 @@ msgstr "書く"
 #: src/components/markdown-source-editor.tsx
 msgid "Writing tools"
 msgstr "執筆ツール"
+
+#: src/app/task-calendar-view.tsx
+#: src/app/view-editor-form.tsx
+msgid "Year"
+msgstr "年"
 
 #: src/components/recurrence-field.tsx
 #: src/i18n/presentation.ts

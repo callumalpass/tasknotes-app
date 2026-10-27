@@ -23,6 +23,7 @@ import {
   calendarPriorityMarker,
   withPendingMoves,
   withPriorityDetail,
+  withoutSupersededMoves,
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
@@ -30,7 +31,20 @@ import {
   calendarEntryKey,
   type CalendarEntry,
 } from "../domain/calendar-events";
-import type { CalendarTaskEdit } from "../domain/calendar-edit";
+import {
+  calendarClearedInstances,
+  calendarOccurrenceChoice,
+  type CalendarTaskEdit,
+} from "../domain/calendar-edit";
+import type { CalendarOccurrenceChoice } from "@tasknotes/model/calendar";
+import {
+  ClearRecurringHistoryDialog,
+  RecurringEditScopeDialog,
+  type ClearRecurringHistoryRequest,
+  type RecurringEditScope,
+  type RecurringEditScopeRequest,
+} from "../components/recurring-edit-scope-dialog";
+import { formatOccurrenceDate } from "./task-editor-draft";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { dateFromStorage, todayString } from "../domain/task";
 import { viewPropertyDetails } from "../i18n/view-presentation";
@@ -61,9 +75,14 @@ type CalendarMode =
   | "timeGridWeek"
   | "timeGridThreeDay"
   | "timeGridDay"
-  | "listWeek";
+  | "listWeek"
+  | "multiMonthYear";
 
 const PHONE_QUERY = "(max-width: 839px)";
+/** From here the selected day's tasks sit beside the calendar, not below it. */
+const DAY_LIST_BESIDE_QUERY = "(min-width: 1200px)";
+/** How long a saved move outlasts view data that still shows the old place. */
+const HELD_MOVE_LIMIT_MS = 5000;
 
 export function TaskCalendarView({
   execution,
@@ -120,8 +139,17 @@ export function TaskCalendarView({
     x: number;
     y: number;
   } | null>(null);
-  const { configuration } = useRepository();
+  const { configuration, materializeOccurrence } = useRepository();
   const { timezone } = calendarContext();
+  const [historyRequest, setHistoryRequest] = useState<
+    (ClearRecurringHistoryRequest & { resolve(proceed: boolean): void }) | null
+  >(null);
+  const [scopeRequest, setScopeRequest] = useState<
+    | (RecurringEditScopeRequest & {
+        resolve(scope: RecurringEditScope | null): void;
+      })
+    | null
+  >(null);
   const display = useMemo(
     () => ({
       showTimeEntries: preferences.showTimeEntries,
@@ -151,6 +179,13 @@ export function TaskCalendarView({
     }),
     [configuration, entries, execution, titleProperty, locale],
   );
+  // Forget moves once view data shows them, so a later Undo is drawn as is.
+  const [prunedFor, setPrunedFor] = useState(built);
+  if (prunedFor !== built) {
+    setPrunedFor(built);
+    const kept = withoutSupersededMoves(pendingMoves, built.items, execution);
+    if (kept !== pendingMoves) setPendingMoves(kept);
+  }
   const items = useMemo(
     () =>
       withPendingMoves(built.items, pendingMoves, execution).map(withRevision),
@@ -189,17 +224,95 @@ export function TaskCalendarView({
 
   function holdMove(id: string, move: PendingCalendarMove | undefined) {
     setPendingMoves((current) => {
-      // Drop moves that later view data has already superseded.
-      const next = new Map(
-        [...current].filter(
-          ([, held]) =>
-            !held.settledWith || held.settledWith === executionRef.current,
-        ),
-      );
+      const next = new Map(current);
       if (move) next.set(id, move);
       else next.delete(id);
       return next;
     });
+  }
+
+  /** Holds the dropped place until view data shows the accepted write. */
+  async function saveMove(
+    id: string,
+    placement: Omit<PendingCalendarMove, "from" | "settledWith">,
+    save: () => Promise<void>,
+    revert: () => void,
+  ) {
+    const drawn = built.items.find((item) => item.id === id);
+    const move: PendingCalendarMove = {
+      ...placement,
+      from: { start: drawn?.start, end: drawn?.end, allDay: drawn?.allDay },
+    };
+    holdMove(id, move);
+    try {
+      await save();
+    } catch (reason) {
+      holdMove(id, undefined);
+      revert();
+      setMutationError(message(reason));
+      return;
+    }
+    const settled = { ...move, settledWith: executionRef.current };
+    holdMove(id, settled);
+    // Should the data never show the move (another device moved it back),
+    // the data wins after a while.
+    window.setTimeout(
+      () =>
+        setPendingMoves((current) => {
+          if (current.get(id) !== settled) return current;
+          const next = new Map(current);
+          next.delete(id);
+          return next;
+        }),
+      HELD_MOVE_LIMIT_MS,
+    );
+  }
+
+  /** Asks about a gesture on a generated occurrence; true unless the person chose the series. */
+  async function editedOneOccurrence(
+    info: ItemChangeArg<CalendarEventData>,
+    metadata: CalendarEventMetadata,
+    choice: CalendarOccurrenceChoice,
+  ): Promise<boolean> {
+    const scope = await new Promise<RecurringEditScope | null>((resolve) =>
+      setScopeRequest({
+        title: metadata.entry.task.title,
+        date: formatOccurrenceDate(choice.occurrence.occurrenceDate),
+        series: choice.series,
+        resolve,
+      }),
+    );
+    if (scope === "series") return false;
+    info.revert();
+    if (scope === "occurrence") {
+      try {
+        await materializeOccurrence(
+          metadata.entry.task.id,
+          choice.occurrence.occurrenceDate,
+          choice.occurrence.overrides,
+        );
+      } catch (reason) {
+        setMutationError(message(reason));
+      }
+    }
+    return true;
+  }
+
+  /** A series change that clears recorded occurrences goes ahead only once the user agrees. */
+  function keepsHistoryOrAgreed(
+    task: CalendarEventMetadata["entry"]["task"],
+    edit: CalendarTaskEdit,
+  ): true | Promise<boolean> {
+    const cleared = calendarClearedInstances(task, edit, configuration);
+    // Synchronous when nothing is cleared, so the moved item holds its place at once.
+    if (!cleared.length) return true;
+    return new Promise<boolean>((resolve) =>
+      setHistoryRequest({
+        title: task.title,
+        dates: cleared.map(formatOccurrenceDate),
+        resolve,
+      }),
+    );
   }
 
   async function moveEvent(info: ItemChangeArg<CalendarEventData>) {
@@ -210,30 +323,39 @@ export function TaskCalendarView({
     }
     setMutationError("");
     const id = info.item.id;
-    const move: PendingCalendarMove = {
-      start: info.startStr,
-      // Untimed tasks and open time entries keep their implicit length.
-      ...(info.item.end ? { end: info.endStr } : {}),
-      allDay: info.allDay,
+    const edit: CalendarTaskEdit = {
+      entry: metadata.entry.modelEntry,
+      change: {
+        kind: "drop",
+        start: info.start.toISOString(),
+        end: info.end.toISOString(),
+        allDay: info.allDay,
+      },
+      timezone,
     };
-    holdMove(id, move);
-    try {
-      await onEdit(metadata.entry.task, {
-        entry: metadata.entry.modelEntry,
-        change: {
-          kind: "drop",
-          start: info.start.toISOString(),
-          end: info.end.toISOString(),
-          allDay: info.allDay,
-        },
-        timezone,
-      });
-      holdMove(id, { ...move, settledWith: executionRef.current });
-    } catch (reason) {
-      holdMove(id, undefined);
+    // Other gestures stay synchronous so the moved item holds its place at once.
+    const choice = calendarOccurrenceChoice(
+      metadata.entry.task,
+      edit,
+      configuration,
+    );
+    if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
+    const agreed = keepsHistoryOrAgreed(metadata.entry.task, edit);
+    if (agreed !== true && !(await agreed)) {
       info.revert();
-      setMutationError(message(reason));
+      return;
     }
+    await saveMove(
+      id,
+      {
+        start: info.startStr,
+        // Untimed tasks and open time entries keep their implicit length.
+        ...(info.item.end ? { end: info.endStr } : {}),
+        allDay: info.allDay,
+      },
+      () => onEdit(metadata.entry.task, edit),
+      info.revert,
+    );
   }
 
   async function resizeEvent(info: ItemChangeArg<CalendarEventData>) {
@@ -244,34 +366,48 @@ export function TaskCalendarView({
     }
     setMutationError("");
     const id = info.item.id;
-    const move: PendingCalendarMove = {
-      start: info.startStr,
-      end: info.endStr,
-      allDay: info.allDay,
+    const edit: CalendarTaskEdit = {
+      entry: metadata.entry.modelEntry,
+      change: {
+        kind: "resize",
+        start: info.start.toISOString(),
+        end: info.end.toISOString(),
+        allDay: info.allDay,
+      },
+      timezone,
     };
-    holdMove(id, move);
-    try {
-      await onEdit(metadata.entry.task, {
-        entry: metadata.entry.modelEntry,
-        change: {
-          kind: "resize",
-          start: info.start.toISOString(),
-          end: info.end.toISOString(),
-          allDay: info.allDay,
-        },
-        timezone,
-      });
-      holdMove(id, { ...move, settledWith: executionRef.current });
-    } catch (reason) {
-      holdMove(id, undefined);
+    // Other gestures stay synchronous so the moved item holds its place at once.
+    const choice = calendarOccurrenceChoice(
+      metadata.entry.task,
+      edit,
+      configuration,
+    );
+    if (choice && (await editedOneOccurrence(info, metadata, choice))) return;
+    const agreed = keepsHistoryOrAgreed(metadata.entry.task, edit);
+    if (agreed !== true && !(await agreed)) {
       info.revert();
-      setMutationError(message(reason));
+      return;
     }
+    await saveMove(
+      id,
+      { start: info.startStr, end: info.endStr, allDay: info.allDay },
+      () => onEdit(metadata.entry.task, edit),
+      info.revert,
+    );
   }
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
+    // Below twelve months the day's tasks would be out of sight, so a year
+    // day opens its month, as phone calendars do.
+    if (
+      mode === "multiMonthYear" &&
+      !window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches
+    ) {
+      calendarRef.current?.gotoDate(dateStr);
+      setMode("dayGridMonth");
+    }
     // Mouse clicks on a slot also select it, which starts capture; a tap on a
     // phone only clicks, so a timed tap starts capture at that time itself.
     if (!allDay && "pointerType" in jsEvent && jsEvent.pointerType === "touch")
@@ -374,6 +510,24 @@ export function TaskCalendarView({
               ))}
             </div>
           </div>
+          {historyRequest ? (
+            <ClearRecurringHistoryDialog
+              request={historyRequest}
+              onChoose={(proceed) => {
+                historyRequest.resolve(proceed);
+                setHistoryRequest(null);
+              }}
+            />
+          ) : null}
+          {scopeRequest ? (
+            <RecurringEditScopeDialog
+              request={scopeRequest}
+              onChoose={(scope) => {
+                scopeRequest.resolve(scope);
+                setScopeRequest(null);
+              }}
+            />
+          ) : null}
           {mutationError ? (
             <p className="inline-error" role="alert">
               <Trans>The calendar change could not be saved. </Trans>
@@ -571,6 +725,14 @@ const calendarModes: Array<{
     },
     compact: true,
   },
+  {
+    value: "multiMonthYear",
+    view: "year",
+    get label() {
+      return t`Year`;
+    },
+    compact: true,
+  },
 ];
 
 function calendarView(mode: CalendarMode): ViewType {
@@ -692,14 +854,17 @@ function calendarDay(value: TaskCalendarItem["start"]): string {
 function calendarEventLabel(item: TaskCalendarItem): string {
   const start = new Date(item.start);
   if (Number.isNaN(start.getTime())) return item.title;
+  // An all-day date is a calendar day, not an instant: name that day everywhere.
+  const day = item.allDay ? calendarDay(item.start) : todayString(start);
   const date =
-    todayString(start) === todayString()
+    day === todayString()
       ? t`Today`
       : new Intl.DateTimeFormat(appLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
-        }).format(start);
+          ...(item.allDay ? { timeZone: "UTC" } : {}),
+        }).format(item.allDay ? new Date(`${day}T00:00:00Z`) : start);
   const time = item.allDay
     ? ""
     : `, ${new Intl.DateTimeFormat(appLocale(), {
@@ -743,6 +908,11 @@ function initialRange(
   mode: CalendarMode,
 ): { start: Date; end: Date } {
   const date = dateFromStorage(selected) ?? new Date();
+  if (mode === "multiMonthYear")
+    return {
+      start: new Date(date.getFullYear(), 0, 1),
+      end: new Date(date.getFullYear() + 1, 0, 1),
+    };
   if (mode === "dayGridMonth") {
     return {
       start: new Date(date.getFullYear(), date.getMonth(), -7),

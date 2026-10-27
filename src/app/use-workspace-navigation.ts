@@ -11,6 +11,29 @@ export type Route =
   | { page: "task"; id: string; occurrence?: string };
 export type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
+// Screens that cannot be left yet (an unsaveable or refused draft) veto
+// browser history navigation the same way their own Back button does.
+const leaveGuards = new Set<() => boolean>();
+
+/** While `blocked`, browser Back/Forward stays on this screen and calls `onBlocked`. */
+export function useHistoryLeaveGuard(blocked: boolean, onBlocked: () => void) {
+  const onBlockedRef = useRef(onBlocked);
+  useEffect(() => {
+    onBlockedRef.current = onBlocked;
+  }, [onBlocked]);
+  useEffect(() => {
+    if (!blocked) return;
+    const guard = () => {
+      onBlockedRef.current();
+      return true;
+    };
+    leaveGuards.add(guard);
+    return () => {
+      leaveGuards.delete(guard);
+    };
+  }, [blocked]);
+}
+
 // Navigation owns the mounted workspace, history, and detail return target.
 // Capture and notices intentionally remain with the shell.
 export function useWorkspaceNavigation(
@@ -27,6 +50,7 @@ export function useWorkspaceNavigation(
     workspaceUrl: string;
   } | null>(null);
   const currentRouteUrl = routeUrl(route);
+  const routeRef = useRef(route);
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
   useEffect(() => {
@@ -53,6 +77,15 @@ export function useWorkspaceNavigation(
 
   useEffect(() => {
     const pop = () => {
+      if ([...leaveGuards].some((blocked) => blocked())) {
+        const current = routeRef.current;
+        window.history.pushState(
+          current.page === "task" ? { taskPanel: true } : null,
+          "",
+          routeUrl(current),
+        );
+        return;
+      }
       const next = parseRoute();
       setRoute(next);
       if (next.page !== "task") setWorkspaceRoute(next);
@@ -87,7 +120,6 @@ export function useWorkspaceNavigation(
     },
     [route],
   );
-  const routeRef = useRef(route);
   const navigateRef = useRef(navigate);
   const navigationViewKeysRef = useRef(navigationViews.map((view) => view.key));
   useEffect(() => {

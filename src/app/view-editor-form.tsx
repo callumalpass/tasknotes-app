@@ -718,6 +718,7 @@ function CalendarOptionsSection({
               { value: "timeGridThreeDay", label: t({ message: "3 days" }) },
               { value: "timeGridDay", label: t({ message: "Day" }) },
               { value: "listWeek", label: t({ message: "Agenda" }) },
+              { value: "multiMonthYear", label: t({ message: "Year" }) },
             ]}
             value={string(draft.options.calendarView) || "dayGridMonth"}
             onChange={(calendarView) => option("calendarView", calendarView)}
@@ -1223,6 +1224,7 @@ function calendarModeLabel(value: string): string {
       timeGridThreeDay: t`3 days`,
       timeGridDay: t`Day`,
       listWeek: t`Agenda`,
+      multiMonthYear: t`Year`,
     }[value || "dayGridMonth"] ?? t({ message: "Month" })
   );
 }

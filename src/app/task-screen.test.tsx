@@ -186,6 +186,25 @@ describe("TaskScreen", () => {
     ).toHaveLength(1);
   });
 
+  it("keeps the attachments section steady when the open task updates", async () => {
+    renderTask();
+    await screen.findByLabelText("Task title", { exact: true });
+    await waitFor(() =>
+      expect(screen.queryByText("Loading images…")).not.toBeInTheDocument(),
+    );
+    const flashed = vi.fn();
+    const observer = new MutationObserver(() => {
+      if (screen.queryByText("Loading images…")) flashed();
+    });
+    observer.observe(document.body, { subtree: true, childList: true });
+    await act(async () => {
+      await repository.update(task.id, { priority: "high" });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    observer.disconnect();
+    expect(flashed).not.toHaveBeenCalled();
+  });
+
   it("preserves Notes typed while an inline image upload is in flight", async () => {
     renderTask();
     const upload = repository.files!.upload.bind(repository.files);

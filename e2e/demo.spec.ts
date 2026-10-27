@@ -901,3 +901,36 @@ test("demo work screen has no serious accessibility violations", async ({
     ),
   ).toEqual([]);
 });
+
+test("the capture button stays on screen with large text on a narrow phone", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.addInitScript(() =>
+    localStorage.setItem("tasknotes:locale", "fr"),
+  );
+  await page.goto("?demo=50");
+  await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
+  const fab = page
+    .locator(".global-capture-fab")
+    .filter({ visible: true })
+    .first();
+  await expect(fab).toBeVisible();
+  const box = (await fab.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(320);
+});
+
+test("browser Back keeps an unsaveable task draft open", async ({ page }) => {
+  await page.goto("?demo=50");
+  await page.getByText("Send the research summary to Rowan").first().click();
+  const title = page.locator("#task-title");
+  await title.fill("");
+  const notes = page.locator("textarea[aria-labelledby='task-notes-title']");
+  await notes.fill("Unsaved draft body");
+  await title.focus();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/task\//);
+  await expect(title).toHaveValue("");
+  await expect(notes).toHaveValue("Unsaved draft body");
+});

@@ -94,28 +94,63 @@ export function calendarEntryKind(
     : kind;
 }
 
-export interface PendingCalendarMove {
-  start: string;
-  end?: string;
-  allDay: boolean;
-  /**
-   * The view data current when the write was accepted; any later view data
-   * reflects the write and supersedes the move.
-   */
-  settledWith?: unknown;
-}
-
-interface MovableCalendarItem {
-  id: string;
+interface CalendarPlacement {
   start: unknown;
   end?: unknown;
   allDay?: boolean;
 }
 
+export interface PendingCalendarMove {
+  start: string;
+  end?: string;
+  allDay: boolean;
+  /** Where the view data drew the item before the drop. */
+  from: CalendarPlacement;
+  /** The view data current when the write was accepted. */
+  settledWith?: unknown;
+}
+
+interface MovableCalendarItem extends CalendarPlacement {
+  id: string;
+}
+
+/**
+ * Whether view data has caught up with an accepted move. A read can still
+ * return the rows from before the write, so only data that no longer draws
+ * the item in its old place carries it.
+ */
+export function pendingMoveSuperseded(
+  move: PendingCalendarMove,
+  item: MovableCalendarItem | undefined,
+  execution: unknown,
+): boolean {
+  if (!move.settledWith || move.settledWith === execution) return false;
+  return (
+    !item ||
+    item.start !== move.from.start ||
+    item.end !== move.from.end ||
+    Boolean(item.allDay) !== Boolean(move.from.allDay)
+  );
+}
+
+/** The moves view data has not yet caught up with; the same map when all are. */
+export function withoutSupersededMoves(
+  moves: ReadonlyMap<string, PendingCalendarMove>,
+  items: readonly MovableCalendarItem[],
+  execution: unknown,
+): ReadonlyMap<string, PendingCalendarMove> {
+  if (!moves.size) return moves;
+  const drawn = new Map(items.map((item) => [item.id, item]));
+  const kept = [...moves].filter(
+    ([id, move]) => !pendingMoveSuperseded(move, drawn.get(id), execution),
+  );
+  return kept.length === moves.size ? moves : new Map(kept);
+}
+
 /**
  * The calendar draws a dropped item in its new place, but any re-render
  * before the refreshed view arrives would hand it the old dates again. Keep
- * the dropped dates until the write fails or fresh data replaces them.
+ * the dropped dates until the write fails or view data shows the move.
  */
 export function withPendingMoves<T extends MovableCalendarItem>(
   items: T[],
@@ -125,9 +160,7 @@ export function withPendingMoves<T extends MovableCalendarItem>(
   if (!moves.size) return items;
   return items.map((item) => {
     const move = moves.get(item.id);
-    // View data newer than the accepted write already carries the move.
-    if (!move || (move.settledWith && move.settledWith !== execution))
-      return item;
+    if (!move || pendingMoveSuperseded(move, item, execution)) return item;
     const moved: T = { ...item, start: move.start, allDay: move.allDay };
     if (move.end) moved.end = move.end;
     else delete moved.end;

@@ -6,6 +6,7 @@ import {
   calendarPriorityMarker,
   withPendingMoves,
   withPriorityDetail,
+  withoutSupersededMoves,
 } from "./calendar-event-presentation";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -111,19 +112,20 @@ describe("calendar entry kind", () => {
 describe("pending calendar moves", () => {
   const event = { id: "a", start: "2026-07-24T09:00", end: "2026-07-24T10:00" };
 
-  it("keeps a dropped event at its new place until newer view data arrives", () => {
+  it("keeps a dropped event at its new place until view data shows the move", () => {
     const before = {};
-    const after = {};
-    const moves = new Map([["a", { start: "2026-07-27", allDay: true }]]);
-    expect(withPendingMoves([event], moves, before)).toEqual([
-      { id: "a", start: "2026-07-27", allDay: true },
+    const stale = {};
+    const fresh = {};
+    const move = { start: "2026-07-27", allDay: true, from: event };
+    const moved = { id: "a", start: "2026-07-27", allDay: true };
+    expect(withPendingMoves([event], new Map([["a", move]]), before)).toEqual([
+      moved,
     ]);
-    const settled = new Map([
-      ["a", { start: "2026-07-27", allDay: true, settledWith: before }],
-    ]);
-    expect(withPendingMoves([event], settled, before)[0]?.start).toBe(
-      "2026-07-27",
-    );
-    expect(withPendingMoves([event], settled, after)).toEqual([event]);
+    const settled = new Map([["a", { ...move, settledWith: before }]]);
+    // A read that predates the write still draws the old place.
+    expect(withPendingMoves([event], settled, stale)).toEqual([moved]);
+    expect(withPendingMoves([moved], settled, fresh)).toEqual([moved]);
+    expect(withoutSupersededMoves(settled, [event], stale)).toBe(settled);
+    expect(withoutSupersededMoves(settled, [moved], fresh).size).toBe(0);
   });
 });

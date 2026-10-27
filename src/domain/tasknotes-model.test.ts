@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { buildCalendarEntries } from "@tasknotes/model/calendar";
+
+import { calendarOccurrenceChoice } from "./calendar-edit";
 import { TaskNotesTaskModel } from "./tasknotes-model";
 
 describe("TaskNotes task model app boundary", () => {
@@ -769,6 +772,18 @@ describe("TaskNotes task model app boundary", () => {
     expect(completed.parent.completeInstances).toContain("2026-08-05");
     expect(completed.materializeNextDate).toBe("2026-08-06");
 
+    const reopened = model.transitionMaterializedOccurrence(
+      completed.occurrence,
+      completed.parent,
+      "toggle",
+      { now: "2026-08-05T09:30:00Z" },
+    );
+    expect(reopened.occurrence.completed).toBe(false);
+    expect(reopened.occurrence.completedDate).toBeUndefined();
+    expect(reopened.occurrence.frontmatter).not.toHaveProperty("completedDate");
+    expect(model.read(reopened.occurrence).completedDate).toBeUndefined();
+    expect(reopened.parent.completeInstances).toEqual([]);
+
     const skipped = model.transitionMaterializedOccurrence(
       materialized.task,
       parent,
@@ -833,6 +848,80 @@ Occurrence body for {{title}}`,
       recurrence_parent: "[[tasks/template-series]]",
       occurrence_date: "2026-08-05",
     });
+  });
+
+  it("stores calendar moves of timed tasks as instants", () => {
+    const task = model.create(
+      { title: "Call", scheduled: "2026-10-29T00:30:00Z" },
+      { id: "call", now: "2026-10-27T00:00:00Z" },
+    );
+    const timezone = "Australia/Melbourne";
+    const [entry] = buildCalendarEntries({
+      tasks: [model.calendarTaskInfo(task)],
+      range: { start: "2026-10-26", end: "2026-11-02" },
+      timezone,
+      now: "2026-10-27T00:00:00Z",
+    });
+    const moved = model.editCalendar(task, {
+      entry,
+      change: { kind: "drop", start: "2026-10-30T11:30", allDay: false },
+      timezone,
+      now: "2026-10-27T01:00:00Z",
+    });
+    expect(moved.frontmatter.scheduled).toBe("2026-10-30T00:30:00Z");
+  });
+
+  it("keeps an evening task's day when it starts repeating west of UTC", () => {
+    vi.stubEnv("TZ", "America/New_York");
+    try {
+      // Thursday 29 October, 8:41 PM in New York.
+      const task = model.create(
+        { title: "Evening", scheduled: "2026-10-30T00:41:00Z" },
+        { id: "evening", now: "2026-10-27T03:30:00Z" },
+      );
+      const repeating = model.update(
+        task,
+        { recurrence: "DTSTART:20261029T204100Z;FREQ=DAILY;INTERVAL=1" },
+        { now: "2026-10-27T03:30:00Z", currentDate: "2026-10-26" },
+      );
+      expect(repeating.frontmatter.scheduled).toBe("2026-10-30T00:41:00Z");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("stores a moved occurrence of a timed series as an instant", async () => {
+    const series = model.create(
+      {
+        title: "Standup",
+        scheduled: "2026-10-28T09:40:00Z",
+        recurrence: "FREQ=DAILY",
+      },
+      { id: "standup", now: "2026-10-27T00:00:00Z" },
+    );
+    const timezone = "America/New_York";
+    const entry = buildCalendarEntries({
+      tasks: [model.calendarTaskInfo(series)],
+      range: { start: "2026-10-26", end: "2026-11-02" },
+      timezone,
+      now: "2026-10-27T00:00:00Z",
+    }).find((candidate) => candidate.start.startsWith("2026-10-30"))!;
+    const choice = calendarOccurrenceChoice(
+      series,
+      {
+        entry,
+        change: { kind: "drop", start: "2026-11-03T10:44", allDay: false },
+        timezone,
+      },
+      model.config,
+    )!;
+    const result = await model.materializeOccurrence(
+      series,
+      choice.occurrence.occurrenceDate,
+      [],
+      { id: "moved", overrides: choice.occurrence.overrides },
+    );
+    expect(result.task.frontmatter.scheduled).toBe("2026-11-03T15:44:00Z");
   });
 });
 
