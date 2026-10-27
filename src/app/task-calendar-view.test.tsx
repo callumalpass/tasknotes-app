@@ -133,6 +133,25 @@ describe("calendar drops", () => {
   });
 });
 
+describe("calendar entry labels", () => {
+  it("names an all-day entry's own day west of UTC", () => {
+    renderCalendar(execution("2026-07-24"), vi.fn());
+    const item = items().find((entry) => entry.allDay)!;
+    const el = document.createElement("div");
+    vi.stubEnv("TZ", "America/New_York");
+    try {
+      (calendar.props!.itemDidMount as (arg: unknown) => void)({
+        item,
+        el,
+        variant: "dayGrid",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(el.getAttribute("aria-label")).toContain("Friday, July 24");
+  });
+});
+
 describe("localized calendar entry kinds", () => {
   it("refreshes the external calendar title when only the language changes", async () => {
     const view = renderCalendar(execution("2026-07-24"), vi.fn());

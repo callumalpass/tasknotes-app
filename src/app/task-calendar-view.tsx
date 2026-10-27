@@ -763,14 +763,17 @@ function calendarDay(value: TaskCalendarItem["start"]): string {
 function calendarEventLabel(item: TaskCalendarItem): string {
   const start = new Date(item.start);
   if (Number.isNaN(start.getTime())) return item.title;
+  // An all-day date is a calendar day, not an instant: name that day everywhere.
+  const day = item.allDay ? calendarDay(item.start) : todayString(start);
   const date =
-    todayString(start) === todayString()
+    day === todayString()
       ? t`Today`
       : new Intl.DateTimeFormat(appLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
-        }).format(start);
+          ...(item.allDay ? { timeZone: "UTC" } : {}),
+        }).format(item.allDay ? new Date(`${day}T00:00:00Z`) : start);
   const time = item.allDay
     ? ""
     : `, ${new Intl.DateTimeFormat(appLocale(), {
