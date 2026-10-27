@@ -230,6 +230,13 @@ function plainFields(fields: wire.FmMap): Record<string, unknown> {
 /** Direct native SDK implementation of the application port.
  * Unsupported native metadata is explicit, never reconstructed in the app.
  */
+/** Refusals meaning the data moved during a READ; read again. The replica
+ * refuses a Bases discovery overtaken by a newer head or discovery as stale. */
+const currentnessRefusals = new Set([
+  "collection_changed",
+  "view_discovery_stale",
+]);
+
 export class NextTaskRepository implements TaskRepository {
   readonly files: NextCollectionFileStore;
   readonly modelSetup?: TaskNotesModelSetup;
@@ -717,7 +724,7 @@ export class NextTaskRepository implements TaskRepository {
         if (
           !(reason instanceof MdbaseError) ||
           reason.code !== "conflict" ||
-          reason.reason !== "collection_changed"
+          !currentnessRefusals.has(reason.reason ?? "")
         )
           throw reason;
         // A currentness refusal is a retired READ, not a failed collection.
@@ -2771,6 +2778,10 @@ export class NextTaskRepository implements TaskRepository {
   async listViews(): Promise<TaskViewDocument[]> {
     return this.discoverNativeViews(this.signal());
   }
+  /** The replica keeps one Bases discovery per session; starting another
+   * makes the first stale. Each caller keeps its own discovery and owner, but
+   * their page loops take turns. */
+  private discoveryTurn: Promise<void> = Promise.resolve();
   private async discoverNativeViews(
     signal: AbortSignal,
   ): Promise<TaskViewDocument[]> {
@@ -2780,59 +2791,78 @@ export class NextTaskRepository implements TaskRepository {
       const descriptors = new Map<string, AppBasesDescriptor>();
       const documents = new Map<string, TaskViewDocument>();
       const timezone = runtimeTimezone();
-      for await (const views of iterateNativeDiscovery(async (continuation) => {
-        const result = await this.client.listAppBasesViews(
-          { captureTimezone: timezone, limit: 128, continuation },
+      const previous = this.discoveryTurn;
+      let release = () => {};
+      this.discoveryTurn = new Promise((resolve) => (release = resolve));
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const abort = () => reject(signal.reason);
+          signal.addEventListener("abort", abort, { once: true });
+          void previous.then(() => {
+            signal.removeEventListener("abort", abort);
+            resolve();
+          });
+        });
+        for await (const views of iterateNativeDiscovery(
+          async (continuation) => {
+            const result = await this.client.listAppBasesViews(
+              { captureTimezone: timezone, limit: 128, continuation },
+              signal,
+            );
+            if (result.kind === "refusal")
+              throw new MdbaseError(result.problem);
+            return result;
+          },
           signal,
-        );
-        if (result.kind === "refusal") throw new MdbaseError(result.problem);
-        return result;
-      }, signal)) {
-        this.assertCurrentData(revision);
-        for (const descriptor of views) {
-          const key = taskViewKey(
-            descriptor.record,
-            String(descriptor.ordinal),
-          );
-          descriptors.set(key, structuredClone(descriptor));
-          this.sourceRecords.set(descriptor.path, descriptor.record);
-          let document = documents.get(descriptor.record);
-          if (!document) {
-            document = {
-              id: descriptor.record,
-              name: descriptor.path,
-              source: {
+        )) {
+          this.assertCurrentData(revision);
+          for (const descriptor of views) {
+            const key = taskViewKey(
+              descriptor.record,
+              String(descriptor.ordinal),
+            );
+            descriptors.set(key, structuredClone(descriptor));
+            this.sourceRecords.set(descriptor.path, descriptor.record);
+            let document = documents.get(descriptor.record);
+            if (!document) {
+              document = {
+                id: descriptor.record,
+                name: descriptor.path,
+                source: {
+                  path: descriptor.path,
+                  revision: descriptor.sourceRevision,
+                  format: "obsidian.base",
+                  writable: this.hasViewSourceGrant("records.edit"),
+                },
+                views: [],
+              };
+              documents.set(descriptor.record, document);
+            }
+            document.views.push({
+              key,
+              declaration: {
+                recordId: descriptor.record,
                 path: descriptor.path,
                 revision: descriptor.sourceRevision,
-                format: "obsidian.base",
-                writable: this.hasViewSourceGrant("records.edit"),
+                ordinal: descriptor.ordinal,
+                name: descriptor.name,
               },
-              views: [],
-            };
-            documents.set(descriptor.record, document);
+              documentId: descriptor.record,
+              documentName: descriptor.path,
+              id: String(descriptor.ordinal),
+              name: descriptor.name ?? "",
+              properties: [],
+              source: { ...document.source },
+              presentation: {
+                type: normalizePresentationType(descriptor.viewType),
+                mappings: {},
+                options: {},
+              },
+            });
           }
-          document.views.push({
-            key,
-            declaration: {
-              recordId: descriptor.record,
-              path: descriptor.path,
-              revision: descriptor.sourceRevision,
-              ordinal: descriptor.ordinal,
-              name: descriptor.name,
-            },
-            documentId: descriptor.record,
-            documentName: descriptor.path,
-            id: String(descriptor.ordinal),
-            name: descriptor.name ?? "",
-            properties: [],
-            source: { ...document.source },
-            presentation: {
-              type: normalizePresentationType(descriptor.viewType),
-              mappings: {},
-              options: {},
-            },
-          });
         }
+      } finally {
+        release();
       }
       signal.throwIfAborted();
       this.assertCurrentData(revision);
