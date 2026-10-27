@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {已创建 # 条任务记录}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
@@ -2987,6 +2989,7 @@ msgstr "将 {label} 下移"
 msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "全部移至今天"
@@ -3562,6 +3565,7 @@ msgstr "大纲"
 msgid "Outline controls for {0}"
 msgstr "{0}的大纲控件"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "逾期"

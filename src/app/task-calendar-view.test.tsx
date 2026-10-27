@@ -285,6 +285,12 @@ describe("localized calendar entry kinds", () => {
             },
             anchor: parseDay("2026-07-24")!,
             title: "",
+            dataRange: {
+              start: new Date(2026, 6, 24),
+              end: new Date(2026, 6, 31),
+              startDay: parseDay("2026-07-24")!,
+              endDay: parseDay("2026-07-31")!,
+            },
           },
           isStart: true,
           isEnd: true,

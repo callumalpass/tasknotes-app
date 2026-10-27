@@ -136,6 +136,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(
         (await agenda.boundingBox())!.height - contentHeight - stackedTime,
       ).toBeLessThanOrEqual(9);
+      // Phone agendas keep the layouts in their date strip's menu.
+      if (phone)
+        await page.locator(".tnc-strip").getByLabel("Calendar layout").click();
       await page.getByRole("button", { name: "Month", exact: true }).click();
       await page.setViewportSize({ width: 390, height: 844 });
       // Phone months draw dots; tapping a day lists its tasks below the grid.

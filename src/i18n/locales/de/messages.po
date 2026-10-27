@@ -110,6 +110,8 @@ msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {# Aufgabennotiz erstellt} other {# Aufgabennotizen erstellt}}"
 
 #. placeholder {0}: lane.rows.length
+#. placeholder {0}: overdueRows.length
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, one {Alle überfälligen Aufgaben auf heute verschieben (# Aufgabe)} other {Alle überfälligen Aufgaben auf heute verschieben (# Aufgaben)}}"
@@ -2987,6 +2989,7 @@ msgstr "{label} nach unten verschieben"
 msgid "Move {label} up"
 msgstr "{label} nach oben verschieben"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/views-screen.tsx
 msgid "Move all to today"
 msgstr "Alle auf heute verschieben"
@@ -3562,6 +3565,7 @@ msgstr "Gliederung"
 msgid "Outline controls for {0}"
 msgstr "Gliederungssteuerung für {0}"
 
+#: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
 msgid "Overdue"
 msgstr "Überfällig"

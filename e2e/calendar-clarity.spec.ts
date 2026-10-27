@@ -70,7 +70,9 @@ test("agenda groups all-day tasks under the date and labels only timed ones", as
 test("the layout switcher sits on the date row above the calendar on both screens", async ({
   page,
 }) => {
-  for (const id of ["upcoming", "calendar"]) {
+  // Phone agendas keep the switcher in their date strip instead.
+  const phone = (page.viewportSize()?.width ?? 0) < 840;
+  for (const id of phone ? ["calendar"] : ["upcoming", "calendar"]) {
     await page.goto(view(id));
     const modes = page.getByLabel("Calendar layout");
     await expect(modes).toBeVisible();
@@ -92,6 +94,44 @@ test("the layout switcher sits on the date row above the calendar on both screen
   }
 });
 
+test("the phone agenda keeps its strip in view and moves overdue work to today", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "The date strip is the phone agenda");
+  await page.goto(view("upcoming"));
+  const strip = page.locator(".tnc-strip");
+  await expect(strip.getByLabel("Calendar layout")).toBeVisible();
+  await expect(page.locator(".full-calendar-commandbar")).toBeHidden();
+  await page.mouse.wheel(0, 1500);
+  await expect
+    .poll(async () => (await strip.boundingBox())?.y ?? -1)
+    .toBeGreaterThanOrEqual(0);
+  await expect(strip.locator(".tnc-strip-day.is-focus")).not.toHaveClass(
+    /is-today/,
+  );
+  // Today returns to the top, where overdue work waits above today.
+  await strip.getByRole("button", { name: "Today" }).click();
+  const overdue = page.locator(".tnc-list-lead");
+  await expect(overdue.getByText("2 days ago").first()).toBeVisible();
+  // As in the Today view, Scheduled moves to today and Due stays the
+  // deadline, so only work overdue by Due stays listed here.
+  const items = overdue.locator(".tnc-item");
+  const before = await items.count();
+  const move = overdue.getByRole("button", {
+    name: /^Move all to today, \d+ overdue tasks?$/,
+  });
+  await move.click();
+  await expect(page.locator(".undo-toast")).toContainText("to today");
+  await expect.poll(() => items.count()).toBeLessThan(before);
+  await expect(move).toHaveCount(0);
+  await page
+    .locator(".undo-toast")
+    .getByRole("button", { name: "Undo" })
+    .click();
+  await expect.poll(() => items.count()).toBe(before);
+});
+
 test.describe("calendar drops", () => {
   test.skip(({ isMobile }) => isMobile, "Phone months draw indicator dots");
 
@@ -109,11 +149,18 @@ test.describe("calendar drops", () => {
       .last()
       .textContent())!.trim();
     const from = (await event.getAttribute("data-date"))!;
-    // A neighbouring day in the same week keeps the drop on screen.
+    // The quieter neighbouring day in the same week keeps the drop on screen
+    // rather than behind its "+N more".
     const to = await page.evaluate((from) => {
       const cell = document.querySelector(`.tnc-dg-day[data-date="${from}"]`)!;
-      return (cell.previousElementSibling ??
-        cell.nextElementSibling)!.getAttribute("data-date")!;
+      const load = (day: Element) =>
+        document.querySelectorAll(
+          `.tnc-dg .tnc-item[data-date="${day.getAttribute("data-date")}"]`,
+        ).length;
+      const [quietest] = [cell.previousElementSibling, cell.nextElementSibling]
+        .filter((day): day is Element => !!day)
+        .sort((a, b) => load(a) - load(b));
+      return quietest!.getAttribute("data-date")!;
     }, from);
     const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
     await page.evaluate(
@@ -139,6 +186,8 @@ test.describe("calendar drops", () => {
       },
       { title },
     );
+    // The mouse does not scroll, so bring the week on screen first.
+    await event.scrollIntoViewIfNeeded();
     const start = (await event.boundingBox())!;
     const end = (await target.boundingBox())!;
     await page.mouse.move(start.x + 20, start.y + start.height / 2);
