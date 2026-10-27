@@ -43,8 +43,9 @@ export function TaskAttachments({
 
   const load = useCallback(async () => {
     if (!service.available()) return;
+    // Only the first load shows its progress; refreshes after task edits keep
+    // what is on screen rather than flashing the loading row.
     const generation = ++loadGeneration.current;
-    setLoading(true);
     try {
       await service.recover();
       const resolved = await service.resolve(
