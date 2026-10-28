@@ -13,6 +13,7 @@ vi.mock("../storage/next-repository", () => ({
   NextTaskRepository: class {
     constructor(readonly records: unknown) {}
     taskConfiguration = async () => ({});
+    setRemindersEnabled = async () => undefined;
     dispose() {}
   },
 }));
