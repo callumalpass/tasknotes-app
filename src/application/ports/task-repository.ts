@@ -280,3 +280,6 @@ export interface RefreshResult {
   removed: number;
   elapsedMs: number;
 }
+
+/** The repository cancelled deletion before creating or submitting a write. */
+export class TaskDeletionNotStartedError extends Error {}

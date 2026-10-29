@@ -5,7 +5,10 @@ import { nextTaskFixture } from "../test/next-task-fixture";
 import { heldEditFromHold } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
-import type { TaskCreateIntent } from "../application/ports/task-repository";
+import {
+  TaskDeletionNotStartedError,
+  type TaskCreateIntent,
+} from "../application/ports/task-repository";
 import type { UpdateTaskInput } from "../domain/task";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
@@ -41,6 +44,39 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("identifies a deletion cancelled before index loading submits a write", async () => {
+    const f = await fixture();
+    const task = await seed(f);
+    await f.repository.get(task.portableId);
+    f.repository.suspend();
+    f.repository.resume();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let reading!: () => void;
+    const started = new Promise<void>((resolve) => {
+      reading = resolve;
+    });
+    const pages = f.client.pages.bind(f.client);
+    vi.spyOn(f.client, "pages").mockImplementation(async function* (...args) {
+      reading();
+      await gate;
+      yield* pages(...args);
+    });
+    const remove = vi.spyOn(f.client, "delete");
+    const result = f.repository.delete(task.portableId);
+    const refused = expect(result).rejects.toBeInstanceOf(
+      TaskDeletionNotStartedError,
+    );
+    await started;
+    f.repository.suspend();
+    f.repository.resume();
+    release();
+    await refused;
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   it("persists exact calendar history deletions without generic recurrence advancement", async () => {
     const f = await fixture();
     const configuration = await f.repository.taskConfiguration();

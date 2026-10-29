@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "../test/render";
-import { beforeEach, expect, it } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
+import { beforeEach, expect, it, vi } from "vitest";
 
 import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { createTestMdbaseRepository } from "../test/mdbase-fixture";
@@ -46,9 +46,51 @@ it("keeps the task recoverable during the deletion undo window", async () => {
   expect(await repository.get(task.id)).not.toBeNull();
 });
 
+it("waits for foreground before committing a deletion whose undo window expired", async () => {
+  const deleted = vi.spyOn(repository, "delete");
+  const journal = new MemoryMutationJournal();
+  render(
+    <RepositoryProvider mutationJournal={journal} repository={repository}>
+      <DeletionHarness task={task} />
+    </RepositoryProvider>,
+  );
+  const button = screen.getByRole("button", { name: "Delete test task" });
+  await waitFor(() => expect(button).toBeEnabled());
+  const visibility = vi.spyOn(document, "visibilityState", "get");
+  vi.useFakeTimers();
+  try {
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    expect(journal.snapshot()).toHaveLength(1);
+    visibility.mockReturnValue("hidden");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(deleted).not.toHaveBeenCalled();
+    expect(screen.queryByText("cancelled")).not.toBeInTheDocument();
+    visibility.mockReturnValue("visible");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(deleted).toHaveBeenCalledExactlyOnceWith(task.id);
+    expect(journal.snapshot()).toEqual([]);
+  } finally {
+    vi.useRealTimers();
+    visibility.mockRestore();
+  }
+});
+
 function DeletionHarness({ task }: { task: Task }) {
-  const { deleteTask, pendingDeletion, status, undoTaskDeletion } =
-    useRepository();
+  const {
+    deleteTask,
+    pendingDeletion,
+    deletionError,
+    status,
+    undoTaskDeletion,
+  } = useRepository();
   return (
     <>
       <button
@@ -59,6 +101,7 @@ function DeletionHarness({ task }: { task: Task }) {
         Delete test task
       </button>
       {pendingDeletion ? <p>Deleted {pendingDeletion.title}</p> : null}
+      {deletionError ? <p>{deletionError.code}</p> : null}
       <button type="button" onClick={undoTaskDeletion}>
         Undo deletion
       </button>
