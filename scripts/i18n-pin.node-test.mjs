@@ -1,63 +1,38 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { parse } from "yaml";
 import { locales, localeNames, negotiateLocale } from "@mdbase-dev/i18n";
 
 const root = new URL("../", import.meta.url);
-const pins = {
-  i18n: {
-    bytes: 23885,
-    sha256: "b65ce6066f9e096eea183209c93b42950f21f8e78a0d105838a15da9ca82ce46",
-  },
-  ui: {
-    bytes: 131844,
-    sha256: "1230707f2ba9545a041f2a9325ab5e2d25ed001885ebc0369d836e00b19d30f0",
-  },
+const version = "0.1.0-beta.147";
+const integrity = {
+  i18n: "sha512-6WlBrS1hsiT2sppyAHHSLrr18fknqkm6xZsCy7YIFZHR0z5MMRA5oSl5UOMmGjkNr5Ji81ISpcmgZXVjDM5EJg==",
+  ui: "sha512-BslLGNFzNSzQX8Uvhoj7NvtvG0Y1ea/jLhXU+NQlqTb/58CX4m3xeV+ambV7acuzD7zcKr54USEd10SU4ncyQA==",
 };
 
-for (const [name, expected] of Object.entries(pins)) {
-  test(`Italian ${name} pin retains approved bytes, metadata and frozen lock integrity`, async () => {
-    const artifact = `mdbase-dev-${name}-0.1.0-beta.141-24e9f5d0.tgz`;
-    const manifest = JSON.parse(
-      await readFile(
-        new URL(`vendor/${artifact.replace(".tgz", ".json")}`, root),
-        "utf8",
-      ),
-    );
-    const archive = await readFile(new URL(`vendor/${artifact}`, root));
-    assert.equal(archive.length, expected.bytes);
-    assert.equal(
-      createHash("sha256").update(archive).digest("hex"),
-      expected.sha256,
-    );
-    assert.equal(
-      manifest.sourceCommit,
-      "24e9f5d0ac23568ad601767c1a36330f537586e3",
-    );
-    assert.equal(manifest.artifact, artifact);
-    assert.equal(manifest.bytes, expected.bytes);
-    assert.equal(manifest.sha256, expected.sha256);
-    assert.equal(
-      manifest.integrity,
-      `sha512-${createHash("sha512").update(archive).digest("base64")}`,
-    );
-    assert.equal(manifest.noPublication, true);
+for (const [name, expected] of Object.entries(integrity)) {
+  test(`shared ${name} uses the exact published npm version and integrity`, async () => {
+    const dependency = `@mdbase-dev/${name}`;
     const pkg = JSON.parse(
       await readFile(new URL("package.json", root), "utf8"),
     );
     const lock = parse(await readFile(new URL("pnpm-lock.yaml", root), "utf8"));
-    const dependency = `file:vendor/${artifact}`;
-    assert.equal(pkg.dependencies[`@mdbase-dev/${name}`], dependency);
-    assert.equal(
-      lock.importers["."].dependencies[`@mdbase-dev/${name}`].specifier,
-      dependency,
+    const installed = JSON.parse(
+      await readFile(
+        new URL(`node_modules/${dependency}/package.json`, root),
+        "utf8",
+      ),
     );
+    assert.equal(pkg.dependencies[dependency], version);
     assert.equal(
-      lock.packages[`@mdbase-dev/${name}@${dependency}`].resolution.integrity,
-      manifest.integrity,
+      lock.importers["."].dependencies[dependency].specifier,
+      version,
     );
+    const resolution = lock.packages[`${dependency}@${version}`].resolution;
+    assert.equal(resolution.integrity, expected);
+    assert.equal(resolution.tarball, undefined);
+    assert.equal(installed.version, version);
   });
 }
 
