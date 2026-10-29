@@ -26,6 +26,7 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
+import { TaskDeletionNotStartedError } from "../application/ports/task-repository";
 import type {
   TaskRepository,
   TaskCreateIntent,
@@ -2656,9 +2657,24 @@ export class NextTaskRepository implements TaskRepository {
     options: { authorityRequestId?: string } = {},
   ): Promise<void> {
     const owner = this.scope.signal;
-    owner.throwIfAborted();
-    await this.ensureIndex();
-    owner.throwIfAborted();
+    try {
+      owner.throwIfAborted();
+      await this.ensureIndex();
+      owner.throwIfAborted();
+    } catch (reason) {
+      if (
+        !options.authorityRequestId &&
+        owner.aborted &&
+        reason === owner.reason
+      )
+        throw new TaskDeletionNotStartedError(
+          "Deletion paused before submission.",
+          {
+            cause: reason,
+          },
+        );
+      throw reason;
+    }
     if (!this.cache.has(id) && !options.authorityRequestId) return;
     let recordId = this.cache.get(id)?.recordId;
     if (options.authorityRequestId) {

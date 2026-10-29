@@ -6,7 +6,9 @@ import { loadCanonicalTaskNotesTypePack } from "../scripts/canonical-task-pack.m
 // Same task fields/variation as mdbase-prod-testing/seed/r3-6c-tasks.py.
 // This isolates the TaskNotes read/render path after SDK admission, not native sync.
 for (const count of [500, 1000]) {
-  test(`opens ${count} seeded tasks`, async ({ page }, info) => {
+  test(`renders ${count} seeded tasks after fixture admission`, async ({
+    page,
+  }, info) => {
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
     const records = Array.from({ length: count }, (_, index) => {
@@ -32,11 +34,11 @@ for (const count of [500, 1000]) {
         body: "",
       };
     });
-    const started = Date.now();
     const pack = await loadCanonicalTaskNotesTypePack();
     const task = pack.resources.find((resource: { source: string }) =>
       resource.source.startsWith("types/tasknotes-task/"),
     );
+    const started = Date.now();
     await openFixture(page, {
       records,
       typeDefinition: parseFrontmatter(task!.document).frontmatter,

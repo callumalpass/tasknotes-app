@@ -1,5 +1,8 @@
 import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
-import type { CollectionInfo } from "./ports/task-repository";
+import {
+  TaskDeletionNotStartedError,
+  type CollectionInfo,
+} from "./ports/task-repository";
 import type { MutationJournal, PendingTaskDeletion } from "./mutation-journal";
 import { OperationalError, toOperationalError } from "./operational-error";
 import { acceptedWriteEffect } from "./accepted-task-effects";
@@ -253,6 +256,15 @@ export class TaskCommandService {
         this.pendingDeletion = null;
       this.deletionError = null;
     } catch (reason) {
+      if (
+        reason instanceof TaskDeletionNotStartedError &&
+        !command.authorityRequestId
+      ) {
+        this.pendingDeletion = command;
+        this.deletionError = null;
+        this.schedule(command);
+        throw reason;
+      }
       const authorityRequestId = durableRequestId(reason);
       if (
         authorityRequestId &&
