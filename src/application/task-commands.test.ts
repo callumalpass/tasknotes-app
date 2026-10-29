@@ -60,6 +60,67 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
+  it("defers an expired deletion while backgrounded and commits once on return", async () => {
+    const repository = taskRepository();
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await vi.advanceTimersByTimeAsync(10_000);
+    service.setForeground(false);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(service.snapshot().deletionError).toBeNull();
+    expect(journal.commands).toHaveLength(1);
+    service.setForeground(true);
+    service.setForeground(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(repository.delete).toHaveBeenCalledExactlyOnceWith("task-1");
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("keeps the original undo deadline across a short background interval", async () => {
+    const repository = taskRepository();
+    const service = new TaskCommandService({
+      repository,
+      journal: new MemoryMutationJournal(),
+    });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    service.setForeground(false);
+    await vi.advanceTimersByTimeAsync(20_000);
+    service.setForeground(true);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(repository.delete).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(repository.delete).toHaveBeenCalledOnce();
+    service.dispose();
+  });
+
+  it("does not retry a failed deletion on foreground changes", async () => {
+    const repository = taskRepository();
+    repository.delete.mockRejectedValueOnce(
+      connectError("operation_outcome_unknown", "Deletion outcome unknown", {
+        operationOutcome: "unknown",
+        details: { request_id: "delete-request-1" },
+      }),
+    );
+    const service = new TaskCommandService({
+      repository,
+      journal: new MemoryMutationJournal(),
+    });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await vi.advanceTimersByTimeAsync(30_000);
+    service.setForeground(false);
+    service.setForeground(true);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(repository.delete).toHaveBeenCalledOnce();
+    expect(service.snapshot().deletionError).not.toBeNull();
+    service.dispose();
+  });
+
   it("does not reject an accepted bulk update when a post-acceptance callback fails", async () => {
     const repository = taskRepository();
     const service = new TaskCommandService({

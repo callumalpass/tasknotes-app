@@ -250,6 +250,7 @@ export function RepositoryProvider({
   const interruptStartupRef = useRef<(() => void) | null>(null);
   const readyRef = useRef(false);
   const lifecycleRef = useRef(0);
+  const foregroundRef = useRef(document.visibilityState !== "hidden");
   const configurationRef = useRef(configuration);
   const autoArchiveRef = useRef<AutoArchiveActivity | null>(null);
   const taskCommandsRef = useRef<TaskCommandService | null>(null);
@@ -410,6 +411,7 @@ export function RepositoryProvider({
             onTasksUpdated: (tasks, updates) => effects.updated(tasks, updates),
           });
           const commands = taskCommands;
+          commands.setForeground(foregroundRef.current);
           const publishCommandSnapshot = () => {
             if (!current()) return;
             const snapshot = commands.snapshot();
@@ -512,7 +514,9 @@ export function RepositoryProvider({
       const handle = CapacitorApp.addListener(
         "appStateChange",
         ({ isActive }) => {
+          foregroundRef.current = isActive;
           if (!isActive) {
+            taskCommandsRef.current?.setForeground(false);
             lifecycleRef.current += 1;
             repository.suspend?.();
             interruptStartupRef.current?.();
@@ -520,13 +524,16 @@ export function RepositoryProvider({
             return;
           }
           repository.resume?.();
+          taskCommandsRef.current?.setForeground(true);
           void refresh().catch(() => undefined);
         },
       );
       return () => void handle.then((listener) => listener.remove());
     }
     const onVisibility = () => {
+      foregroundRef.current = document.visibilityState === "visible";
       if (document.visibilityState !== "visible") {
+        taskCommandsRef.current?.setForeground(false);
         lifecycleRef.current += 1;
         repository.suspend?.();
         interruptStartupRef.current?.();
@@ -534,6 +541,7 @@ export function RepositoryProvider({
         return;
       }
       repository.resume?.();
+      taskCommandsRef.current?.setForeground(true);
       void refresh().catch(() => undefined);
     };
     document.addEventListener("visibilitychange", onVisibility);

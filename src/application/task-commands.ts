@@ -47,6 +47,7 @@ export class TaskCommandService {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private tail: Promise<void> = Promise.resolve();
   private disposed = false;
+  private foreground = true;
   private readonly listeners = new Set<() => void>();
 
   constructor(
@@ -95,7 +96,7 @@ export class TaskCommandService {
       await this.commitDeletionNow(deletion).catch(() => undefined);
     const latest = deletions.at(-1) ?? null;
     if (!latest) return;
-    if (latest.commitAfter <= this.clock.now()) {
+    if (this.foreground && latest.commitAfter <= this.clock.now()) {
       await this.commitDeletionNow(latest).catch(() => undefined);
       return;
     }
@@ -202,6 +203,13 @@ export class TaskCommandService {
     });
   }
 
+  setForeground(active: boolean): void {
+    this.foreground = active;
+    this.clearTimer();
+    if (active && this.pendingDeletion && !this.deletionError)
+      this.schedule(this.pendingDeletion);
+  }
+
   dispose(): void {
     this.disposed = true;
     this.clearTimer();
@@ -210,12 +218,19 @@ export class TaskCommandService {
 
   private schedule(command: PendingTaskDeletion): void {
     this.clearTimer();
+    if (!this.foreground || this.disposed) return;
     const remaining = Math.max(0, command.commitAfter - this.clock.now());
     this.timer = this.clock.setTimeout(() => {
       this.timer = null;
-      void this.enqueue(() => this.commitDeletionNow(command)).catch(
-        () => undefined,
-      );
+      void this.enqueue(async () => {
+        if (
+          this.foreground &&
+          !this.disposed &&
+          !this.deletionError &&
+          this.pendingDeletion?.operationId === command.operationId
+        )
+          await this.commitDeletionNow(command);
+      }).catch(() => undefined);
     }, remaining);
   }
 
