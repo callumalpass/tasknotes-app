@@ -31,8 +31,7 @@ native-speaker certification or permission to release.
 
 The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
-copied into application PO files. Italian UI/kit `24e9f5d0` retain the `a36fa009`
-obsolete-entry pruning
+copied into application PO files. The published UI/kit retain obsolete-entry pruning
 before compiling: the library has exactly 197 active compiled messages per locale,
 without obsolete `nzHlj8`. Conflicts still fail closed and retain the current
 language rather than overriding translations; successful composition remains a
@@ -128,52 +127,24 @@ regressions cover all nine lazy imports, module scoping and Vite version queries
 Authenticated archive bytes, catalogue values and fail-closed composition are
 unchanged. Requalify this bundler integration when replacing the npm pins.
 
-## Shared-kit handoff
+## Published shared packages
 
-The app adopted and hash-verified kit `b4134d71` (SHA256
-`3cc9e231dd0ea2ef3cbb34112689e7ed227111f30d976ce0f94d6cd991520806`),
-then advanced to its source-guard/composition successor `8785bd19`, same version
-`0.1.0-beta.141`, as `vendor/mdbase-dev-i18n-0.1.0-beta.141-8785bd19.tgz`
-(SHA256 `4eae06666795c7d7e8c24d5eb35ead06686e6f351b3d76d39f2b95f402c91af6`).
-The field-aware successor `5be277b8` was subsequently superseded by the nine-locale pin
-**`a36fa00914af2aacef03b8e23cb566bee5531e4a`**, also `0.1.0-beta.141`:
+Both `@mdbase-dev/i18n` and `@mdbase-dev/ui` use the exact npm version
+`0.1.0-beta.147`, not a dist-tag or range. The lockfile records registry integrity;
+release tests verify both exact pins and installed versions. The vendored kit/UI
+archives, provenance manifests and archive-only checks have been removed.
 
-- Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-a36fa009.tgz`, 21,683 bytes,
-  SHA256 `da2ae8145e5744733c29726a5b56f999c19f82bdd9d48c57d67da29cc18dd9b5`.
-- UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-a36fa009.tgz`, 129,246 bytes,
-  SHA256 `e7199463d7f4d282cfd6f5f16e71dc1aa1029330a634f43112ae5b2f63dea7a0`.
+The published tarballs were compared with the previous `24e9f5d0` builds:
+all runtime, CSS, declaration and catalogue files are byte-identical. Only package
+version metadata changed (including the UI's development kit dependency). No
+visual/API migration or Vite integration change is needed.
 
-The Italian stack adopts **`49bea0aa3e105fb5f271ef608850504e77a09c52`**,
-still version `0.1.0-beta.141`, with ten complete shared UI catalogues (197 IDs each),
-Italian negotiation, the Italiano endonym and CodeMirror phrases:
+The kit still wraps each Lingui instance's `_`/`t` once to preserve literal
+backslashes in interpolated user text. The app must not add a second encoding
+pass, which would display `\u005c` instead of a backslash. Existing backslash and double-encoding
+regressions remain, as do the French/Portuguese zero-aware `one` fixes and
+fail-closed composition tests.
 
-- Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-49bea0aa.tgz`, 23,479 bytes,
-  SHA256 `4b08df26d7474b26bd90492a1835716f938488b06a73cd3b55943414bc0cbd82`.
-- UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-49bea0aa.tgz`, 131,844 bytes,
-  SHA256 `1230707f2ba9545a041f2a9325ab5e2d25ed001885ebc0369d836e00b19d30f0`.
-
-It then adopts **`24e9f5d0ac23568ad601767c1a36330f537586e3`** (same version).
-Only the kit's `dist/runtime.js` differs: `createI18nRuntime` now wraps each Lingui
-instance's `_`/`t` once so interpolated user text keeps literal backslashes through
-Lingui's escape decoding. The app therefore no longer patches its singleton; adding
-a second encoding pass would render `\` as `\u005c`. The UI archive is byte-identical
-to `49bea0aa`, repacked under the matched name:
-
-- Kit: `vendor/mdbase-dev-i18n-0.1.0-beta.141-24e9f5d0.tgz`, 23,885 bytes,
-  SHA256 `b65ce6066f9e096eea183209c93b42950f21f8e78a0d105838a15da9ca82ce46`.
-- UI: `vendor/mdbase-dev-ui-0.1.0-beta.141-24e9f5d0.tgz`, 131,844 bytes,
-  SHA256 `1230707f2ba9545a041f2a9325ab5e2d25ed001885ebc0369d836e00b19d30f0`.
-
-Both hashes were checked against the coordinator's PLAN before adoption. The
-lockfile was refreshed by `pnpm install --no-frozen-lockfile`; no unrelated
-versions changed. Compiled application JSON is generated locally and committed.
-Exact byte/hash/sha512 lockfile integrity regressions protect both Italian pins;
-all original predecessor and earlier UI integration checks remain intact.
-The `45346aa` French/Portuguese zero-aware `one` fix is retained. The known native
-synthetic-merge frozen-lock mismatch from main's #299 remains a merge-time
-requalification item, not evidence that Italian is broken. Workflows are unchanged.
-**Swap both vendored kit/UI file dependencies for published npm versions at merge
-time**, after the coordinated Connect release, and rerun gates. This branch does
-not publish or deploy anything. Agent-authored translations have not received
-native-speaker certification. iOS acceptance remains explicitly waived/unverified,
-not passed.
+Application JSON remains compiler-owned and committed. Agent-authored
+translations have not received native-speaker certification. This dependency
+migration does not publish or deploy anything; iOS acceptance remains unverified.
