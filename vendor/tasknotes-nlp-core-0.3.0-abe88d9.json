@@ -1,0 +1,10 @@
+{
+  "package": "tasknotes-nlp-core",
+  "version": "0.3.0",
+  "sourceRepository": "https://github.com/callumalpass/tasknotes-nlp-core",
+  "sourceCommit": "abe88d9c0a683e162ee6581bbf67699bc8b6e596",
+  "pullRequest": 9,
+  "archive": "tasknotes-nlp-core-0.3.0-abe88d9.tgz",
+  "archiveSha256": "b4457635c04c63c25606919c399d97a7d6ce8752fc7dbbbfb475f7c8091077a6",
+  "published": false
+}

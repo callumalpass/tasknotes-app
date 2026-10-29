@@ -22,7 +22,6 @@ import {
 } from "../domain/capture-autosuggest";
 import {
   currentCaptureHighlights,
-  recognizedCaptureSpans,
   reflectedCaptureHighlights,
 } from "../domain/capture-highlights";
 import { preloadTaskCapture, taskCapturePreview } from "../domain/task-capture";
@@ -238,13 +237,10 @@ export function TaskCapture({
   // step with the chips rather than chasing each keystroke.
   const parsedHighlights = useMemo(
     () =>
-      settled
-        ? reflectedCaptureHighlights(
-            recognizedCaptureSpans(parsedText, settled.input.title, triggers),
-            settled.input,
-          )
+      settled?.highlights
+        ? reflectedCaptureHighlights(settled.highlights, settled.input)
         : [],
-    [parsedText, settled, triggers],
+    [settled],
   );
   const highlights = useMemo(
     () => currentCaptureHighlights(parsedHighlights, parsedText, text),

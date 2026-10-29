@@ -127,8 +127,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1
       tasknotes-nlp-core:
-        specifier: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
-        version: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz
+        specifier: file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz
+        version: file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -3690,9 +3690,9 @@ packages:
     resolution: {integrity: sha512-9FcyK4PA6+WbzlTM9WhQm6vB5W7cP7dUiPsv1g7YDwEQnQ1CGpK3MGlKk/ITVWMk05kHZuBhmVhiv8LZoy/PFQ==}
     engines: {node: '>=18'}
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
-    resolution: {integrity: sha512-1HVH6TJjElHq70RuEhFcWWPPbQaV0qEzuMqB2NnB4z8MdA5M8lRmy5xgDyMW/fsj5mrhiQnLWWiPt7gaSWNd3A==, tarball: file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz}
-    version: 0.2.0
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz:
+    resolution: {integrity: sha512-QKAL0AjigwjnhWiEx3dsBlqxal/iWrlwzPKDENm92Yrnz58SwW5/7a6WDGYej8c1F+1x1zDwQnT56trnjG/DdA==, tarball: file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz}
+    version: 0.3.0
 
   tasknotes-spec@file:vendor/tasknotes-spec-0.3.0-rc.5.tgz:
     resolution: {integrity: sha512-8/Z16QQ58gmBLI7CAwYSkuAL8UwEB7FF04VDFjz2CQhUWfyppZPKtCox4NGz2944PEI0VWo/8JEcvAcSgXuxiA==, tarball: file:vendor/tasknotes-spec-0.3.0-rc.5.tgz}
@@ -4410,7 +4410,7 @@ snapshots:
       rimraf: 4.4.1
       semver: 7.8.5
       tar: 6.2.1
-      tslib: 2.6.2
+      tslib: 2.8.1
       xml2js: 0.5.0
     transitivePeerDependencies:
       - supports-color
@@ -4992,7 +4992,7 @@ snapshots:
   '@ionic/utils-array@2.1.6':
     dependencies:
       debug: 4.3.4
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5001,7 +5001,7 @@ snapshots:
       '@types/fs-extra': 8.1.5
       debug: 4.3.4
       fs-extra: 9.1.0
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -8226,7 +8226,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz:
+  tasknotes-nlp-core@file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz:
     dependencies:
       chrono-node: 2.10.1
       date-fns: 4.4.0

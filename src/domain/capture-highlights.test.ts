@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { captureTriggers } from "./capture-autosuggest";
 import {
   currentCaptureHighlights,
-  recognizedCaptureSpans,
   reflectedCaptureHighlights,
+  type CaptureHighlight,
 } from "./capture-highlights";
 import { resolveTaskCollectionConfiguration } from "./task-configuration";
 import { parseTaskCapture } from "./task-capture";
@@ -55,12 +54,15 @@ const configuration = resolveTaskCollectionConfiguration({
   ],
 });
 
-const triggers = captureTriggers(configuration);
+async function highlights(text: string) {
+  return (
+    (await parseTaskCapture(text, configuration, "en-AU")).highlights ?? []
+  );
+}
 
 async function phrases(text: string) {
-  const result = await parseTaskCapture(text, configuration, "en-AU");
-  return recognizedCaptureSpans(text, result.input.title, triggers).map(
-    (span) => text.slice(span.start, span.end),
+  return (await highlights(text)).map((span) =>
+    text.slice(span.start, span.end),
   );
 }
 
@@ -81,7 +83,8 @@ describe("recognized capture phrases", () => {
       "#finance",
       "@home",
       "+admin",
-      "every month 30m",
+      "every month",
+      "30m",
       "!high",
       "*doing",
     ]);
@@ -117,23 +120,33 @@ describe("recognized capture phrases", () => {
     expect(await phrases("tomorrow")).toEqual(["tomorrow"]);
   });
 
-  it("reports trigger values for field reconciliation", () => {
-    expect(
-      recognizedCaptureSpans(
-        "Ship #release, +[[Big project]]",
-        "Ship ,",
-        triggers,
-      ),
-    ).toEqual([
-      { start: 5, end: 13, propertyId: "tags", value: "release" },
-      { start: 15, end: 31, propertyId: "projects", value: "Big project" },
+  it("reports trigger values for field reconciliation", async () => {
+    expect(await highlights("Ship #release, +[[Big project]]")).toEqual([
+      { start: 5, end: 13, kind: "tag", propertyId: "tags", value: "release" },
+      {
+        start: 15,
+        end: 31,
+        kind: "project",
+        propertyId: "projects",
+        value: "Big project",
+      },
     ]);
   });
 });
 
 describe("reflected capture highlights", () => {
   const text = "Call Sam tomorrow #work +admin";
-  const spans = recognizedCaptureSpans(text, "Call Sam", triggers);
+  const spans: CaptureHighlight[] = [
+    { start: 9, end: 17, kind: "scheduled" },
+    { start: 18, end: 23, kind: "tag", propertyId: "tags", value: "work" },
+    {
+      start: 24,
+      end: 30,
+      kind: "project",
+      propertyId: "projects",
+      value: "admin",
+    },
+  ];
 
   it("keeps phrases whose fields still hold the parsed values", () => {
     expect(
@@ -159,38 +172,50 @@ describe("reflected capture highlights", () => {
 
 describe("current capture highlights", () => {
   const parsed = "Call Sam tomorrow";
-  const spans = [{ start: 9, end: 17 }];
+  const spans: CaptureHighlight[] = [{ start: 9, end: 17, kind: "scheduled" }];
 
   it("follows leading whitespace in the live value", () => {
     expect(
       currentCaptureHighlights(spans, parsed, "  Call Sam tomorrow"),
-    ).toEqual([{ start: 11, end: 19 }]);
+    ).toEqual([{ start: 11, end: 19, kind: "scheduled" }]);
   });
 
   it("keeps phrases while typing continues after them", () => {
     expect(
       currentCaptureHighlights(spans, parsed, "Call Sam tomorrow at"),
-    ).toEqual([{ start: 9, end: 17 }]);
+    ).toEqual([{ start: 9, end: 17, kind: "scheduled" }]);
   });
 
   it("stretches a trigger word that is still being typed", () => {
     expect(
       currentCaptureHighlights(
-        [{ start: 9, end: 12, propertyId: "tags", value: "wo" }],
+        [{ start: 9, end: 12, kind: "tag", propertyId: "tags", value: "wo" }],
         "Call Sam #wo",
         "Call Sam #wor",
       ),
-    ).toEqual([{ start: 9, end: 13, propertyId: "tags", value: "wo" }]);
+    ).toEqual([
+      { start: 9, end: 13, kind: "tag", propertyId: "tags", value: "wo" },
+    ]);
   });
 
   it("falls back to the intact words when a phrase's last word changes", () => {
     expect(
       currentCaptureHighlights(
-        [{ start: 9, end: 22 }],
+        [{ start: 9, end: 22, kind: "scheduled" }],
         "Call Sam tomorrow at 3",
         "Call Sam tomorrow at 3p",
       ),
-    ).toEqual([{ start: 9, end: 20 }]);
+    ).toEqual([{ start: 9, end: 20, kind: "scheduled" }]);
+  });
+
+  it("keeps an unchanged phrase that ends at punctuation", () => {
+    expect(
+      currentCaptureHighlights(
+        [{ start: 9, end: 17, kind: "scheduled" }],
+        "Buy milk tomorrow, then eggs",
+        "Buy milk tomorrow, then eggs",
+      ),
+    ).toEqual([{ start: 9, end: 17, kind: "scheduled" }]);
   });
 
   it("drops a phrase once it is edited or extended into another word", () => {
