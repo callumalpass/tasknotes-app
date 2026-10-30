@@ -13,13 +13,16 @@ import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { recordMatchesLink } from "../domain/completion";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import { toPlain } from "@mdbase-dev/sdk";
+import type { NextTaskRepository } from "../storage/next-repository";
+import { deferred } from "../test/deferred";
 import {
-  deferred,
-  mdbaseFixture,
-  taskRecord,
-  type TestRecord,
-} from "../test/mdbase-fixture";
+  attachTaskNotes,
+  nextTaskFixture,
+  seedRecord,
+  seedTask,
+  taskQueryWhere,
+} from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ScratchpadScreen } from "./scratchpad-screen";
@@ -27,17 +30,54 @@ import { ScratchpadScreen } from "./scratchpad-screen";
 const SCRATCHPAD_LOAD_TIMEOUT = 5_000;
 
 describe("ScratchpadScreen", () => {
-  let fixture: ReturnType<typeof mdbaseFixture>;
-  let repository: MdbaseTaskRepository;
+  let fixture: Awaited<ReturnType<typeof nextTaskFixture>>;
+  let repository: NextTaskRepository;
 
   beforeEach(async () => {
     localStorage.clear();
-    fixture = mdbaseFixture([]);
-    repository = new MdbaseTaskRepository(fixture.connect);
+    fixture = await nextTaskFixture({ where: taskQueryWhere });
+    ({ repository } = fixture);
     await repository.initialize();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fixture.close();
+  });
+
+  /** Replace the collection with one holding records another app wrote. */
+  async function reopenWith(seed: (replica: typeof fixture.replica) => void) {
+    fixture.close();
+    fixture = await nextTaskFixture({ where: taskQueryWhere });
+    seed(fixture.replica);
+    ({ repository } = fixture);
+    await repository.initialize();
+  }
+
+  function storedRecords() {
+    return fixture.replica.allRecords.map((record) => ({
+      body: record.body,
+      frontmatter: Object.fromEntries(
+        [...record.frontmatter].map(([field, value]) => [
+          field,
+          toPlain(value),
+        ]),
+      ),
+    }));
+  }
+
+  const scratchpadRecord = (body: string) => ({
+    path: "scratchpads/Scratchpad.md",
+    types: ["tasknotes-scratch"],
+    frontmatter: {
+      type: "tasknotes-scratch",
+      id: "current",
+      state: "active",
+      dateCreated: "2026-08-31T00:00:00.000Z",
+      dateModified: "2026-08-31T00:00:00.000Z",
+    },
+    body,
+  });
 
   let leaveScratchpad: () => void;
 
@@ -169,7 +209,7 @@ describe("ScratchpadScreen", () => {
       { name: "Draft task: empty" },
       { timeout: SCRATCHPAD_LOAD_TIMEOUT },
     );
-    fixture.update.mockClear();
+    const updateOp = vi.spyOn(fixture.client, "updateOp");
 
     fireEvent.change(input, { target: { value: "Draft [[Plan" } });
 
@@ -179,9 +219,9 @@ describe("ScratchpadScreen", () => {
       });
       expect(screen.getByText("Saved")).toBeVisible();
     });
-    expect(fixture.update).toHaveBeenLastCalledWith(
-      expect.objectContaining({ body: "- [ ] Draft [[Plan\n" }),
+    expect(updateOp).toHaveBeenLastCalledWith(
       expect.anything(),
+      expect.objectContaining({ body: "- [ ] Draft [[Plan\n" }),
     );
 
     fireEvent.change(input, { target: { value: "Draft [[Plan]]" } });
@@ -190,18 +230,20 @@ describe("ScratchpadScreen", () => {
       expect(await repository.getActiveScratchpad()).toMatchObject({
         body: "- [ ] Draft [[Plan]]\n",
       });
-      expect(fixture.update).toHaveBeenCalledTimes(2);
+      expect(updateOp).toHaveBeenCalledTimes(2);
     });
     expect(screen.queryByText("Not saved")).toBeNull();
   });
 
   it("shows a generic autosave rejection and clears it after recovery", async () => {
-    fixture.update.mockRejectedValueOnce(new Error("Temporary save failure"));
     renderScratchpad();
     const input = await screen.findByRole(
       "textbox",
       { name: "Draft task: empty" },
       { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    vi.spyOn(repository, "saveScratchpad").mockRejectedValueOnce(
+      new Error("Temporary save failure"),
     );
 
     fireEvent.change(input, { target: { value: "First attempt" } });
@@ -222,11 +264,9 @@ describe("ScratchpadScreen", () => {
 
   it("adds the next line after an exact task row's existing children", async () => {
     cleanup();
-    fixture = mdbaseFixture([
-      taskRecord("suggested", "Suggested task", "task-r1"),
-    ]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
+    await reopenWith((replica) =>
+      seedTask(replica, { title: "Suggested task" }, { id: "suggested" }),
+    );
     renderScratchpad();
     const parent = await screen.findByRole(
       "textbox",
@@ -261,33 +301,19 @@ describe("ScratchpadScreen", () => {
 
   it("keeps an exact non-task record link as editable outline note content", async () => {
     cleanup();
-    const project: TestRecord = {
-      path: "Projects/Plan.md",
-      revision: "project-r1",
-      types: ["project"],
-      frontmatter: { title: "Project plan" },
-      body: "",
-    };
-    const linkedScratchpad: TestRecord = {
-      path: "scratchpads/Scratchpad.md",
-      revision: "scratch-r1",
-      types: ["tasknotes-scratch"],
-      frontmatter: {
-        type: "tasknotes-scratch",
-        id: "current",
-        state: "active",
-        dateCreated: "2026-08-31T00:00:00.000Z",
-        dateModified: "2026-08-31T00:00:00.000Z",
-      },
-      body: "- [[Projects/Plan|Project plan]]\n",
-    };
-    fixture = mdbaseFixture([
-      project,
-      taskRecord("task", "Actual task", "task-r1"),
-      linkedScratchpad,
-    ]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
+    await reopenWith((replica) => {
+      seedRecord(replica, {
+        path: "Projects/Plan.md",
+        types: ["project"],
+        frontmatter: { title: "Project plan" },
+        body: "",
+      });
+      seedTask(replica, { title: "Actual task" }, { id: "task" });
+      seedRecord(
+        replica,
+        scratchpadRecord("- [[Projects/Plan|Project plan]]\n"),
+      );
+    });
 
     renderScratchpad();
 
@@ -304,26 +330,14 @@ describe("ScratchpadScreen", () => {
 
   it("does not resolve a basename-only non-task link to a task in another folder", async () => {
     cleanup();
-    const task = {
-      ...taskRecord("task", "Task plan", "task-r1"),
-      path: "tasks/Plan.md",
-    };
-    const linkedScratchpad: TestRecord = {
-      path: "scratchpads/Scratchpad.md",
-      revision: "scratch-r1",
-      types: ["tasknotes-scratch"],
-      frontmatter: {
-        type: "tasknotes-scratch",
-        id: "current",
-        state: "active",
-        dateCreated: "2026-08-31T00:00:00.000Z",
-        dateModified: "2026-08-31T00:00:00.000Z",
-      },
-      body: "- [[Plan]]\n",
-    };
-    fixture = mdbaseFixture([task, linkedScratchpad]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
+    await reopenWith((replica) => {
+      seedTask(
+        replica,
+        { title: "Task plan" },
+        { id: "task", path: "tasks/Plan.md" },
+      );
+      seedRecord(replica, scratchpadRecord("- [[Plan]]\n"));
+    });
 
     renderScratchpad();
 
@@ -357,7 +371,12 @@ describe("ScratchpadScreen", () => {
   });
 
   async function saveTitleFromAnotherTab(nextTitle: string) {
-    const otherTab = new MdbaseTaskRepository(fixture.connect);
+    // Another tab is another client on the same device replica.
+    const { repository: otherTab, close } = await attachTaskNotes(
+      fixture.replica,
+      undefined,
+      { accountId: fixture.accountId },
+    );
     await otherTab.initialize();
     const current = await otherTab.getActiveScratchpad();
     await otherTab.saveScratchpad({
@@ -368,6 +387,7 @@ describe("ScratchpadScreen", () => {
       body: current.body,
       title: nextTitle,
     });
+    close();
     // The collection reports the other tab's change to this tab.
     await act(async () => void (await repository.refresh()));
   }
@@ -539,23 +559,13 @@ describe("ScratchpadScreen", () => {
 
   it("keeps newer Markdown edits when Outline hydration is still loading", async () => {
     cleanup();
-    const task = taskRecord("task", "Linked task", "task-r1");
-    const linkedScratchpad: TestRecord = {
-      path: "scratchpads/Scratchpad.md",
-      revision: "scratch-r1",
-      types: ["tasknotes-scratch"],
-      frontmatter: {
-        type: "tasknotes-scratch",
-        id: "current",
-        state: "active",
-        dateCreated: "2026-08-31T00:00:00.000Z",
-        dateModified: "2026-08-31T00:00:00.000Z",
-      },
-      body: `- [[${task.path.replace(/\.md$/i, "")}]]\n`,
-    };
-    fixture = mdbaseFixture([task, linkedScratchpad]);
-    repository = new MdbaseTaskRepository(fixture.connect);
-    await repository.initialize();
+    await reopenWith((replica) => {
+      const task = seedTask(replica, { title: "Linked task" }, { id: "task" });
+      seedRecord(
+        replica,
+        scratchpadRecord(`- [[${task.path.replace(/\.md$/i, "")}]]\n`),
+      );
+    });
     renderScratchpad();
     await screen.findByRole("button", { name: "Linked task" });
     fireEvent.click(screen.getByRole("button", { name: "Write" }));
@@ -653,7 +663,7 @@ describe("ScratchpadScreen", () => {
     expect(active.body).toContain("[[tasks/");
     expect(active.body).toContain("  - [ ] Write announcement");
     expect(
-      [...fixture.records.values()].filter(
+      storedRecords().filter(
         (record) => record.frontmatter.state === "converted",
       ),
     ).toHaveLength(0);
@@ -716,7 +726,7 @@ describe("ScratchpadScreen", () => {
       expect((await repository.getActiveScratchpad()).id).not.toBe(previous.id),
     );
     expect(screen.queryByText(/archive/i)).not.toBeInTheDocument();
-    const preserved = [...fixture.records.values()].find(
+    const preserved = storedRecords().find(
       (record) => record.frontmatter.id === previous.id,
     );
     expect(preserved?.body).toContain("Keep the tone straightforward");
@@ -749,7 +759,7 @@ describe("ScratchpadScreen", () => {
       name: "Draft task: empty",
     });
     await waitFor(() => expect(currentInput).toHaveFocus());
-    const preserved = [...fixture.records.values()].find(
+    const preserved = storedRecords().find(
       (record) => record.frontmatter.state === "converted",
     );
     expect(preserved?.body).toContain("- [ ] An idea for later");

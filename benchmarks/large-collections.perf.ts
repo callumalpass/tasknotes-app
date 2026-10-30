@@ -2,26 +2,19 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { cpus } from "node:os";
 import { expect, it } from "vitest";
-import { connectSuccess } from "@mdbase-dev/connect-testing";
+import { seedTask } from "../src/test/next-task-fixture";
 import {
-  normalizeCollectionChange,
-  type CollectionChange,
-  type QueryInput,
-} from "@mdbase-dev/connect";
-import { cacheFixtureDescription } from "../src/test/sdk-description-fixture";
-import {
-  mdbaseFixture,
-  taskRecord,
-  testQueryFile,
-} from "../src/test/mdbase-fixture";
+  STAND_IN,
+  benchmarkReplica,
+  emptyWork,
+  meteredTaskNotes,
+  type Work,
+} from "./sdk-stand-in";
 
-// Measures the app layer, not Connect's query engine or network latency. The
-// authority double serializes/parses every response to avoid sharing objects
-// across the boundary and records deterministic transfer/work counters.
+// Measures the app layer over the real SDK client, not Core's query engine or
+// network latency. Work counters are the replica's encoded responses and the
+// records/body text the SDK client hands the repository.
 it("benchmarks large collections", async () => {
-  const { MdbaseTaskRepository } = (await import(
-    process.env.PERF_REPOSITORY_MODULE ?? "../src/storage/mdbase-repository"
-  )) as typeof import("../src/storage/mdbase-repository");
   const sizes = (process.env.PERF_SIZES ?? "10000,50000")
     .split(",")
     .map(Number);
@@ -31,193 +24,41 @@ it("benchmarks large collections", async () => {
     cpu: cpus()[0]?.model,
     rounds,
     revision: process.env.PERF_REVISION ?? "working-tree",
-    connectVersion: JSON.parse(
+    sdkVersion: JSON.parse(
       readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-    ).dependencies["@mdbase-dev/connect"],
-    taskModelVersion: "0.3.0-rc.15",
+    ).dependencies["@mdbase-dev/sdk"],
     bodyBytesPerRecord: 2048,
-    environment:
-      "synthetic serialized authority; no network or provider query-engine timing",
-    authority: process.env.PERF_AUTHORITY ?? "legacy",
+    environment: STAND_IN,
     results: [],
   };
   for (const size of sizes) {
-    const template = taskRecord("template", "Template", "r0");
-    const records = Array.from({ length: size }, (_, index) => ({
-      ...template,
-      path: `tasks/task-${String(index).padStart(6, "0")}.md`,
-      revision: `r${index}`,
-      frontmatter: {
-        ...template.frontmatter,
-        id: `task-${index}`,
-        title: `Task ${index}`,
-        status: "open",
-        tags: [`tag-${index % 50}`],
-      },
-      body: (`Notes for ${index}. ` + "ordinary note text ".repeat(130)).slice(
+    const replica = benchmarkReplica();
+    const body = (index: number) =>
+      (`Notes for ${index}. ` + "ordinary note text ".repeat(130)).slice(
         0,
         2048,
-      ),
-    }));
-    const fixture = mdbaseFixture(records);
-    let cursor = 0;
-    const events: CollectionChange[] = [];
-    let counters = { requests: 0, records: 0, responseBytes: 0, bodyBytes: 0 };
-    const transfer = <T>(value: T): T => {
-      counters.requests++;
-      const json = JSON.stringify(value);
-      counters.responseBytes += Buffer.byteLength(json);
-      return JSON.parse(json);
-    };
-    const describe = await fixture.describe();
-    fixture.describe.mockImplementation(async () =>
-      transfer({
-        ...describe,
-        operations: [...describe.operations, "changes"],
-        changeCursor: cursor,
-      }),
-    );
-    cacheFixtureDescription(fixture);
-    if (process.env.PERF_AUTHORITY === "qualified") {
-      fixture.authorityCapabilities.add("query-metadata-v1");
-      fixture.authorityCapabilities.add("read-many-documents-v1");
-    }
-    fixture.queryTransfer.serialize = transfer;
-    const readDocuments = fixture.readDocuments.getMockImplementation()!;
-    fixture.readDocuments.mockImplementation(async (input) => {
-      const response = await readDocuments(input);
-      counters.records += response.items.length;
-      counters.bodyBytes += response.items.reduce(
-        (bytes, item) => bytes + Buffer.byteLength(item.record?.body ?? ""),
-        0,
       );
-      return transfer(response);
-    });
-    Object.assign(fixture.connect, {
-      changes: async ({ after = 0, limit = 1000 } = {}) => {
-        const batch = events
-          .filter((event) => event.cursor > after)
-          .slice(0, limit);
-        return transfer(
-          connectSuccess({
-            events: batch,
-            cursor: batch.at(-1)?.cursor ?? cursor,
-            hasMore: events.some(
-              (event) => event.cursor > (batch.at(-1)?.cursor ?? cursor),
-            ),
-            reset: false,
-          }),
-        );
-      },
-    });
-    fixture.queryPages.mockImplementation((input?: QueryInput) =>
-      (async function* () {
-        // Support both historical equality disjunctions and SDK path lists.
-        // CPU spent selecting rows is not a real query-engine benchmark.
-        const paths = new Set(
-          [
-            ...(input?.where ?? "").matchAll(
-              /file\.path == ("(?:[^"\\]|\\.)*")/g,
-            ),
-          ].map((match) => JSON.parse(match[1])),
-        );
-        const pathList = /file\.path in (\[[^\n]*\])/.exec(input?.where ?? "");
-        if (pathList)
-          for (const path of JSON.parse(pathList[1])) paths.add(path);
-        const tokens = [
-          ...(input?.where ?? "").matchAll(
-            /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/g,
-          ),
-        ].map((match) => JSON.parse(match[1]) as string);
-        const projections = Object.entries(input?.projections ?? {}).map(
-          ([name, projection]) => {
-            const match =
-              /file\.body\.lower\(\)\.contains\(("(?:[^"\\]|\\.)*")\)/.exec(
-                projection.expression,
-              );
-            if (!match) throw new Error("Unsupported synthetic projection");
-            return [name, JSON.parse(match[1]) as string] as const;
+    const recordIds: string[] = [];
+    for (let index = 0; index < size; index++)
+      recordIds.push(
+        seedTask(
+          replica,
+          {
+            title: `Task ${index}`,
+            status: "open",
+            tags: [`tag-${index % 50}`],
+            body: body(index),
           },
-        );
-        const matching = [...fixture.records.values()].filter((record) => {
-          if (paths.size && !paths.has(record.path)) return false;
-          if (!tokens.length) return true;
-          const body = record.body.toLowerCase();
-          return input?.where?.includes(" && ")
-            ? tokens.every((token) => body.includes(token))
-            : tokens.some((token) => body.includes(token));
-        });
-        for (
-          let offset = 0;
-          offset < matching.length || offset === 0;
-          offset += 1000
-        ) {
-          const batch = matching.slice(offset, offset + 1000);
-          counters.records += batch.length;
-          const results = batch.map((record) => {
-            const body = input?.includeBody ? record.body : undefined;
-            counters.bodyBytes += body ? Buffer.byteLength(body) : 0;
-            return {
-              path: record.path,
-              effectiveFrontmatter: record.frontmatter,
-              body,
-              types: record.types,
-              file: testQueryFile(record.path),
-              ...(projections.length
-                ? {
-                    values: Object.fromEntries(
-                      projections.map(([name, token]) => [
-                        name,
-                        record.body.toLowerCase().includes(token),
-                      ]),
-                    ),
-                  }
-                : {}),
-            };
-          });
-          yield connectSuccess({
-            results,
-            meta: {
-              hasMore: offset + batch.length < matching.length,
-              totalCount: matching.length,
-            },
-            page: offset / 1000,
-            offset,
-            loaded: offset + batch.length,
-            complete: offset + batch.length >= matching.length,
-          });
-        }
-      })(),
+          { id: `task-${index}` },
+        ).id,
+      );
+    let counters: Work = emptyWork();
+    const { repository, close } = await meteredTaskNotes(
+      replica,
+      () => counters,
     );
-    const read = fixture.read.getMockImplementation()!;
-    fixture.read.mockImplementation(async (input) => {
-      const response = await read(input);
-      counters.records++;
-      counters.bodyBytes += Buffer.byteLength(
-        "body" in response.result ? response.result.body : "",
-      );
-      return transfer(response);
-    });
-    const update = fixture.update.getMockImplementation()!;
-    fixture.update.mockImplementation(async (input) => {
-      const response = await update(input);
-      counters.records++;
-      counters.bodyBytes += Buffer.byteLength(
-        "body" in response.result ? response.result.body : "",
-      );
-      return transfer(response);
-    });
-    type Repository = InstanceType<typeof MdbaseTaskRepository>;
-    const repository: Omit<Repository, "listSummaries" | "search"> &
-      Partial<Pick<Repository, "listSummaries" | "search">> =
-      new MdbaseTaskRepository(fixture.connect);
-    // Feature detection is only in the benchmark, so historical implementations
-    // exercise the same browsing/search intent through their original API.
-    const list =
-      repository.listSummaries?.bind(repository) ??
-      repository.list.bind(repository);
-    const search =
-      repository.search?.bind(repository) ?? repository.list.bind(repository);
+    const list = repository.listSummaries.bind(repository);
+    const search = repository.search.bind(repository);
     expect(globalThis.gc).toBeTypeOf("function");
     globalThis.gc!();
     const heapBeforeInitialize = process.memoryUsage().heapUsed;
@@ -228,9 +69,9 @@ it("benchmarks large collections", async () => {
       samples = rounds,
     ) => {
       const times: number[] = [];
-      const work: (typeof counters)[] = [];
+      const work: Work[] = [];
       for (let round = 0; round < samples; round++) {
-        counters = { requests: 0, records: 0, responseBytes: 0, bodyBytes: 0 };
+        counters = emptyWork();
         const start = performance.now();
         await operation();
         times.push(performance.now() - start);
@@ -248,7 +89,8 @@ it("benchmarks large collections", async () => {
     };
     await measure("initialize", () => repository.initialize(), 1);
     expect((await repository.stats()).total).toBe(size);
-    if (repository.listSummaries) expect(counters.bodyBytes).toBe(0);
+    // The metadata index never asks the client for Notes text.
+    expect(counters.bodyBytes).toBe(0);
     globalThis.gc!();
     const retainedAfterInitializeMiB = +(
       (process.memoryUsage().heapUsed - heapBeforeInitialize) /
@@ -258,7 +100,7 @@ it("benchmarks large collections", async () => {
       "firstDetail",
       async () => {
         expect((await repository.get(`task-${size - 1}`))?.body).toBe(
-          records[size - 1].body,
+          body(size - 1),
         );
       },
       1,
@@ -280,9 +122,7 @@ it("benchmarks large collections", async () => {
           search: `Notes for ${size - 1}.`,
           limit: 300,
         });
-        expect(
-          results.map((row) => ("task" in row ? row.task : row).id),
-        ).toEqual([`task-${size - 1}`]);
+        expect(results.map((row) => row.task.id)).toEqual([`task-${size - 1}`]);
       },
       1,
     );
@@ -293,23 +133,14 @@ it("benchmarks large collections", async () => {
         limit: 300,
       }),
     );
+    let edits = 0;
     await measure("singleRecordRefresh", async () => {
-      const old = fixture.records.get(records[0].path)!;
-      fixture.records.set(old.path, {
-        ...old,
-        revision: `changed-${++cursor}`,
-        body: `Changed ${cursor}. ` + old.body.slice(20),
-      });
-      events.push(
-        normalizeCollectionChange({
-          cursor,
-          type: "mdbase.record.modified",
-          occurred_at: "2026-09-19T00:00:00Z",
-          payload: { path: old.path, types: ["task"] },
-        }),
-      );
+      // Another device edits one task; its change arrives confirmed.
+      const title = `Changed elsewhere ${++edits}`;
+      replica.editElsewhere(recordIds[0]!, { frontmatter: { title } });
       const result = await repository.refresh();
-      expect(result.changed).toBe(1);
+      expect(result.scanned).toBe(size);
+      expect((await repository.getSummary("task-0"))?.title).toBe(title);
     });
     await measure(
       "listAfterMutation",
@@ -352,7 +183,7 @@ it("benchmarks large collections", async () => {
       retainedAfterQueriesMiB,
       measurements,
     });
-    repository.dispose();
+    close();
   }
   const destination =
     process.env.PERF_OUTPUT ?? "benchmarks/results/latest.json";

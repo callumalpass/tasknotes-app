@@ -86,7 +86,10 @@ test("legacy private-account LAB SDK original custody remains intact", async () 
     pkg.dependencies["@mdbase-dev/connect-protocol"],
     `file:vendor/${manifest.protocol.artifact}`,
   );
-  assert.equal(pkg.pnpm.overrides["@mdbase-dev/connect-protocol"], undefined);
+  assert.equal(
+    pkg.pnpm?.overrides?.["@mdbase-dev/connect-protocol"],
+    undefined,
+  );
   const protocolBytes = await readFile(
     new URL(`vendor/${manifest.protocol.artifact}`, root),
   );

@@ -1,8 +1,11 @@
 import { expect, it, vi } from "vitest";
 import { ViewQuerySession, appendViewPage } from "./view-query-session";
-import { connectError, connectSuccess } from "@mdbase-dev/connect-testing";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
+import { mdbaseError } from "@mdbase-dev/sdk";
+import {
+  nextTaskFixture,
+  seedTask,
+  seedTaskView,
+} from "../test/next-task-fixture";
 import type { TaskRepository } from "./ports/task-repository";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 const view: TaskView = {
@@ -67,80 +70,39 @@ function fixture(
   };
 }
 it("replaces an interrupted partial cursor even when foreground refresh finds no changes", async () => {
-  const f = mdbaseFixture([taskRecord("one", "One", "r1")]);
-  const description = await f.describe();
-  description.operations.push("changes");
-  f.describe.mockResolvedValue(description);
-  Object.assign(f.connect, {
-    changes: vi.fn(async () =>
-      connectSuccess({
-        events: [],
-        cursor: description.changeCursor,
-        hasMore: false,
-        reset: false,
-      }),
-    ),
-  });
-  const repository = new MdbaseTaskRepository(f.connect);
+  const f = await nextTaskFixture();
+  // One more task than the first native window, so the view starts partial.
+  for (let index = 0; index <= 200; index++)
+    seedTask(f.replica, { title: `Task ${index}` });
+  seedTaskView(f.replica, { path: "views/today.base", name: "Today" });
+  const repository = f.repository;
   await repository.initialize();
   const selected = (await repository.listViews())[0].views[0];
   selected.presentation = view.presentation;
-  const execute = f.executeView.getMockImplementation()!;
-  f.executeViewPages.mockImplementation(() =>
-    (async function* () {
-      const first = await execute();
-      yield connectSuccess({
-        ...first.result,
-        meta: { ...first.result.meta, hasMore: true },
-        page: 0,
-        offset: 0,
-        loaded: 1,
-        complete: false,
-      });
-      yield connectSuccess({
-        ...first.result,
-        meta: { ...first.result.meta, hasMore: true },
-        page: 1,
-        offset: 1,
-        loaded: 2,
-        complete: false,
-      });
-      yield connectSuccess({
-        ...first.result,
-        page: 2,
-        offset: 2,
-        loaded: 3,
-        complete: true,
-      });
-    })(),
-  );
   const observer = { result: vi.fn(), error: vi.fn(), pending: vi.fn() };
   let session = new ViewQuerySession(repository, selected, observer);
-  let restart = Promise.resolve();
-  const unsubscribe = repository.subscribe((change) => {
-    if (change?.kind === "status") return;
-    const rows = session.currentResult?.rows.length ?? 0;
-    session.close();
-    session = new ViewQuerySession(repository, selected, observer, rows);
-    restart = session.start();
-  });
   try {
     await session.start();
-    await session.loadMore();
-    expect(session.currentResult?.rows).toHaveLength(2);
+    expect(session.currentResult?.rows).toHaveLength(200);
+    expect(session.currentResult?.hasMore).toBe(true);
+    session.close();
     repository.suspend();
     repository.resume();
     const refreshed = await repository.refresh();
     expect(refreshed.changed).toBe(0);
-    await restart;
-    expect(session.currentResult?.rows).toHaveLength(2);
+    // Native view handles belong to their READ cut: rediscover after refresh.
+    const current = (await repository.listViews())[0].views[0];
+    current.presentation = view.presentation;
+    session = new ViewQuerySession(repository, current, observer, 200);
+    await session.start();
+    expect(session.currentResult?.rows).toHaveLength(200);
     await session.loadMore();
+    expect(session.currentResult?.rows).toHaveLength(201);
     expect(observer.error).not.toHaveBeenCalled();
     expect(session.currentResult?.hasMore).toBe(false);
   } finally {
-    unsubscribe();
     session.close();
-    repository.dispose();
+    f.close();
   }
 });
 
@@ -228,7 +190,7 @@ it("Kanban close releases the partial cursor without draining another page", asy
 it("does not expose lifecycle cancellation as a view failure", async () => {
   const { session, observer } = fixture(async function* () {
     yield page("one", true);
-    throw connectError("operation_cancelled", "Neutral diagnostic");
+    throw mdbaseError("cancelled", "Neutral diagnostic");
   });
   await session.start();
   await session.loadMore();

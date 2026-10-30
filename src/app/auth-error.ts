@@ -1,13 +1,8 @@
-import { connectProblemFromError } from "../cloud/outcome";
+import { connectProblemFromError } from "../application/connect-problem";
 
 export function isAuthorizationError(reason: unknown): boolean {
   const problem = connectProblemFromError(reason);
-  if (
-    !problem ||
-    problem.operation_outcome === "unknown" ||
-    problem.recovery === "resolve_outcome"
-  )
-    return false;
+  if (!problem || problem.recovery === "resolve_outcome") return false;
   return (
     problem.category === "authorization" || problem.recovery === "reauthorize"
   );

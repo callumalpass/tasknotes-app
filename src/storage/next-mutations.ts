@@ -4,8 +4,20 @@ import {
   type Write,
   type wire,
 } from "@mdbase-dev/sdk";
-import { pendingRecoveryError } from "../cloud/outcome";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
+
+/** Preserve the exact request for delayed-deletion journals and explicit review. */
+function pendingRecoveryError(requestId: string, cause: unknown): MdbaseError {
+  return new MdbaseError(
+    {
+      code: "outcome_unknown",
+      recovery: "resolve_outcome",
+      message:
+        "The change may have been applied; its result is not confirmed yet. TaskNotes keeps checking its exact result automatically.",
+    },
+    { mutationId: requestId, cause },
+  );
+}
 
 /** How long a foreground write keeps reconciling its own result before it
  * hands the write to background reconciliation. */

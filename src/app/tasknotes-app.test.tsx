@@ -115,7 +115,11 @@ function SwitcherWorkspace({
 }) {
   return (
     <main>
-      <CollectionSwitcher {...actions.collectionUi} variant="compact" />
+      <CollectionSwitcher
+        mdbase={actions.collectionUi.mdbase}
+        app={actions.collectionUi.app}
+        variant="compact"
+      />
       Workspace {repository.records.collection}
     </main>
   );

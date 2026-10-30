@@ -38,46 +38,24 @@ describe("native Capacitor configuration", () => {
     ).toBe(manifestOrigin);
   });
 
-  it("uses the supported Capacitor scheme on iOS without changing the app host", async () => {
+  it("uses the supported Capacitor scheme on iOS without changing the app host", () => {
     // Unlike Android, WKWebView cannot serve packaged assets through HTTP(S).
     expect(capacitorConfig.server.iosScheme).toBe("capacitor");
     expect(
       `${capacitorConfig.server.iosScheme}://${capacitorConfig.server.hostname}`,
     ).toBe("capacitor://app.tasknotes.dev");
     expect(capacitorConfig.appId).toBe("dev.tasknotes.app");
-    const nativeSource = await source(
-      "../ios/App/App/TaskNotesBridgeViewController.swift",
-    );
-    expect(nativeSource).toContain(
-      `applicationOrigin = "${TASKNOTES_NATIVE_APPLICATION_ORIGIN}"`,
-    );
   });
 
-  it("packages a cookie-free, cancellable, redirect-denying signed authority transport", async () => {
-    const [bridgeSource, storyboard, project] = await Promise.all([
-      source("../ios/App/App/TaskNotesBridgeViewController.swift"),
+  it("uses the standard Capacitor controller without a legacy authority HTTP bridge", async () => {
+    const [storyboard, project] = await Promise.all([
       source("../ios/App/App/Base.lproj/Main.storyboard"),
       source("../ios/App/App.xcodeproj/project.pbxproj"),
     ]);
-    expect(storyboard).toContain('customClass="TaskNotesBridgeViewController"');
-    expect(project).toContain("TaskNotesBridgeViewController.swift in Sources");
-    expect(bridgeSource).toContain(
-      "registerPluginInstance(TaskNotesAuthorityHttpPlugin())",
-    );
-    expect(bridgeSource).toContain("URLSessionConfiguration.ephemeral");
-    expect(bridgeSource).toContain("configuration.httpCookieStorage = nil");
-    expect(bridgeSource).toContain("configuration.urlCredentialStorage = nil");
-    expect(bridgeSource).toContain("request.httpShouldHandleCookies = false");
-    expect(bridgeSource).toContain('forHTTPHeaderField: "Origin"');
-    expect(bridgeSource).toContain('url.scheme == "https"');
-    expect(bridgeSource).toContain("Self.proofHeaders.allSatisfy");
-    expect(bridgeSource).toContain("task?.cancel()");
-    expect(bridgeSource).toContain("session.invalidateAndCancel()");
+    expect(storyboard).toContain('customClass="CAPBridgeViewController"');
+    expect(storyboard).toContain('customModule="Capacitor"');
+    expect(project).not.toContain("TaskNotesBridgeViewController");
     expect(capacitorConfig.ios.loggingBehavior).toBe("none");
-    expect(bridgeSource).toContain("completionHandler(nil)");
-    expect(bridgeSource).not.toMatch(
-      /didReceive challenge|serverTrust|print\(|NSLog/,
-    );
   });
 
   it("keeps both iOS marketing versions aligned with an app version newer than 1.0.8", async () => {

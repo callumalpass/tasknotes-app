@@ -16,9 +16,9 @@ React screens and feature components
                  │
          TaskRepository port
                  │
-      MdbaseTaskRepository
+       NextTaskRepository
                  │
-       MdbaseConnection API
+       @mdbase-dev/sdk client
                  │
        hosted or computer authority
 ```
@@ -33,9 +33,9 @@ authority topology.
 
 - The mdbase authority owns task records, view sources, collection resources,
   scratchpads, and attachment bytes.
-- `MdbaseTaskRepository` keeps an in-memory session cache for coherent reads,
-  search, optimistic UI coordination, and a last-result fallback during a
-  transient request failure. It is discarded when the page closes.
+- `NextTaskRepository` borrows the selected SDK connection and keeps bounded
+  in-memory read projections. The SDK owns captured writes, receipts and holds;
+  TaskNotes does not keep a second task replica or a legacy connection fallback.
 - IndexedDB does not contain a task or file replica. It may retain bounded UI
   intent that is not collection data, currently the 30-second undo window for
   a delayed deletion and attachment-operation coordination.
@@ -67,11 +67,12 @@ the portable TaskNotes type pack for collection provisioning. It requests full
 collection access because TaskNotes also edits Markdown bodies, manages saved
 views, scratchpads, and attachments.
 
-After authorization, TaskNotes constructs exactly one `MdbaseTaskRepository`
-from the credential-owning `MdbaseConnection`. Initialization resolves the
-collection contract and loads task records. Refresh re-reads canonical mdbase
-state. If the authority is unavailable, the current in-memory session can stay
-visible, but new writes and a new application session require the authority.
+The SDK owns authorization and the selected collection's lifetime. TaskNotes
+constructs one `NextTaskRepository` per held SDK connection generation, borrowing
+its record, file and people APIs. Initialization resolves the collection
+contract and loads task records. Refresh retires the previous READ cut and
+re-reads canonical state. The app retains exact SDK mutation identities for
+uncertain writes rather than submitting replacements.
 
 Native authorization opens the system browser and returns through
 `dev.tasknotes.app://auth/mdbase/callback`. Web authorization returns to the
@@ -143,15 +144,16 @@ No durable local index participates in either path.
 
 ## Testing boundaries
 
-- The shared repository contract runs against `MdbaseTaskRepository`.
-- Unit tests exercise model mapping, direct mutations, unknown-outcome retry,
-  views, scratchpads, attachments, reminders, and UI flows with an in-memory
-  mdbase protocol fixture.
+- The repository behavior suite runs against `NextTaskRepository`, including
+  bounds, model settings, recurrence, Scratchpad and exact read cancellation.
+- Unit tests exercise model mapping, direct mutations, exact unknown-outcome
+  recovery, views, scratchpads, attachments, reminders and UI flows with the
+  pinned SDK's `MemoryReplica`. Its synthetic catalog/query fixtures are not
+  native Core, Noise, real-account or production qualification.
 - TaskNotes conformance runs against the shared model package, and the mdbase
   oracle opens and mutates a generated real collection.
-- Playwright uses the mdbase Connect browser fixture and encrypted connector
-  operation boundary at desktop and phone viewports. It covers authorization,
-  collection selection, task reads and writes, delayed deletion, custom
-  contracts, and onboarding accessibility.
+- Local Playwright tests use SDK-held collection stand-ins and the disposable
+  demo at desktop and phone viewports. Real-account/connector dogfood is a
+  separate opt-in lane; local passes do not qualify production authorization.
 - `cap sync`, Android Gradle checks, and the iOS project validate that native
   packaging contains no obsolete filesystem bridge.

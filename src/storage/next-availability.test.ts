@@ -1,7 +1,7 @@
 import { MdbaseError } from "@mdbase-dev/sdk";
 import { afterEach, expect, it, vi } from "vitest";
 import { nextTaskFixture } from "../test/next-task-fixture";
-import { deferred } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
 
 // Original SDK client and protocol test replica, not native READ or LAB proof.
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];

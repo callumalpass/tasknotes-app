@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RepositoryProvider } from "../app/repository-context";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { todayString } from "../domain/task";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import type { NextTaskRepository } from "../storage/next-repository";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 import { TaskActions } from "./task-actions";
@@ -15,11 +15,11 @@ import { TaskActions } from "./task-actions";
 import type { Task } from "../domain/task";
 
 describe("TaskActions", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
   let task: Task;
 
   beforeEach(async () => {
-    repository = createTestMdbaseRepository();
+    ({ repository } = await nextTaskFixture());
     await repository.initialize();
     task = await repository.create({ title: "Menu parent" });
   });

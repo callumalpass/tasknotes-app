@@ -5,24 +5,31 @@ import { describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "./repository-context";
 import { useCalendarMutations } from "./use-calendar-mutations";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { buildCalendarEntries } from "@tasknotes/model/calendar";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { dateFromStorage, todayString } from "../domain/task";
 
 import type { ReactNode } from "react";
-import type { TaskView } from "../domain/view";
+import type { NextTaskRepository } from "../storage/next-repository";
+import type { TaskView, TaskViewExecution } from "../domain/view";
 
 describe("calendar mutations", () => {
   it("reschedules the concrete next recurring item without materializing it", async () => {
-    const repository = createTestMdbaseRepository();
+    const { repository } = await nextTaskFixture();
     await repository.initialize();
     const parent = await repository.create({
       title: "Weekly planning",
       scheduled: "2026-08-17T09:00",
       recurrence: "DTSTART:20260817T090000Z;FREQ=WEEKLY;BYDAY=MO",
     });
+    // The memory replica does not execute native Bases; the hook's job is to
+    // re-run the view after the edit and hand its result back.
+    const execution = { tasks: [] } as unknown as TaskViewExecution;
+    const executeView = vi
+      .spyOn(repository, "executeView")
+      .mockResolvedValue(execution);
     const onRefresh = vi.fn();
     const { result } = renderHook(
       () => useCalendarMutations(calendarView(), onRefresh, vi.fn()),
@@ -51,11 +58,12 @@ describe("calendar mutations", () => {
     expect(scheduled && todayString(scheduled)).toBe("2026-08-18");
     expect(scheduled?.getHours()).toBe(11);
     expect(scheduled?.getMinutes()).toBe(30);
-    await vi.waitFor(() => expect(onRefresh).toHaveBeenCalled());
+    expect(executeView).toHaveBeenCalledWith(calendarView());
+    await vi.waitFor(() => expect(onRefresh).toHaveBeenCalledWith(execution));
   });
 
   it("moves a virtual pattern by changing DTSTART time, not scheduled or notes", async () => {
-    const repository = createTestMdbaseRepository();
+    const { repository } = await nextTaskFixture();
     await repository.initialize();
     const parent = await repository.create({
       title: "Weekly planning",
@@ -91,9 +99,7 @@ describe("calendar mutations", () => {
   });
 });
 
-function repositoryWrapper(
-  repository: ReturnType<typeof createTestMdbaseRepository>,
-) {
+function repositoryWrapper(repository: NextTaskRepository) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
       <RepositoryProvider

@@ -1,75 +1,21 @@
-import type {
-  CollectionContractDescriptor,
-  CollectionTypeDescriptor,
-  JsonObject,
-} from "@mdbase-dev/connect";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { resolveTaskCollectionConfiguration } from "../domain/task-configuration";
-import {
-  readableTaskNotesContract,
-  taskNotesImplementationOf,
-  TASKNOTES_MISSING_CONTRACT_MESSAGE,
-} from "../domain/tasknotes-contract";
-
-export interface TaskCollectionResources {
-  contracts: CollectionContractDescriptor[];
-  types: CollectionTypeDescriptor[];
-}
-
-export interface ResolvedTaskCollection {
-  model: TaskNotesTaskModel;
-  typeName: string;
-  providers: ResolvedTaskProvider[];
-}
+import { taskNotesImplementationOf } from "../domain/tasknotes-contract";
 
 export interface ResolvedTaskProvider {
   model: TaskNotesTaskModel;
   typeName: string;
 }
 
-/**
- * The collection's TaskNotes providers. The current tasknotes.task contract
- * is preferred; a collection still on an earlier readable contract (rc.5)
- * resolves too, reading moved settings from its binding after the record.
- */
-export function resolveTaskCollection(
-  resources: TaskCollectionResources,
-  options: { settings?: Readonly<Record<string, unknown>> } = {},
-): ResolvedTaskCollection {
-  const contract = readableTaskNotesContract(resources.contracts);
-  if (!contract) throw new Error(TASKNOTES_MISSING_CONTRACT_MESSAGE);
-  const providers = contract.implementations.map((implementation) => {
-    const type = resources.types.find(
-      (candidate) => candidate.name === implementation.typeName,
-    );
-    if (!type)
-      throw new Error(
-        `The TaskNotes implementation type "${implementation.typeName}" is missing.`,
-      );
-    return resolveTaskTypeDefinition(type.definition ?? {}, {
-      typeName: implementation.typeName,
-      schema: type.schema,
-      fields: implementation.fields,
-      collection: type.collection,
-      configuration: implementation.binding,
-      version: contract.version,
-      settings: options.settings,
-    });
-  });
-  if (!providers.length)
-    throw new Error("The TaskNotes contract has no implementing types.");
-  return { ...providers[0], providers };
-}
-
 export function resolveTaskTypeDefinition(
   definition: Record<string, unknown>,
   overrides: {
     typeName?: string;
-    schema?: JsonObject;
-    fields?: JsonObject;
-    collection?: JsonObject;
-    configuration?: JsonObject;
+    schema?: Record<string, unknown>;
+    fields?: Record<string, unknown>;
+    collection?: Record<string, unknown>;
+    configuration?: Record<string, unknown>;
     /** The tasknotes.task version the catalog says the type implements. */
     version?: string;
     /** Frontmatter of the TaskNotes settings record, when there is one. */
@@ -77,7 +23,12 @@ export function resolveTaskTypeDefinition(
   } = {},
 ): ResolvedTaskProvider {
   const declared = taskNotesImplementationOf(definition) as
-    { version?: string; fields?: JsonObject; binding?: JsonObject } | undefined;
+    | {
+        version?: string;
+        fields?: Record<string, unknown>;
+        binding?: Record<string, unknown>;
+      }
+    | undefined;
   const configuration = overrides.configuration ?? declared?.binding;
   const fields = overrides.fields ?? declared?.fields;
   const implementation = {
@@ -95,9 +46,10 @@ export function resolveTaskTypeDefinition(
   const schema =
     overrides.schema ??
     ((definition.schema as Record<string, unknown> | undefined)?.value as
-      JsonObject | undefined);
+      Record<string, unknown> | undefined);
   const collection =
-    overrides.collection ?? (definition.collection as JsonObject | undefined);
+    overrides.collection ??
+    (definition.collection as Record<string, unknown> | undefined);
   const typeName =
     overrides.typeName ??
     (typeof definition.name === "string" ? definition.name : undefined);
@@ -126,7 +78,9 @@ export function resolveTaskTypeDefinition(
   };
 }
 
-function pathPattern(collection: JsonObject | undefined): string | undefined {
+function pathPattern(
+  collection: Record<string, unknown> | undefined,
+): string | undefined {
   const path = collection?.path;
   if (!path || typeof path !== "object" || Array.isArray(path))
     return undefined;
@@ -143,7 +97,9 @@ function pathPattern(collection: JsonObject | undefined): string | undefined {
   return `${folder}/${template}`;
 }
 
-function recordsFolder(collection: JsonObject | undefined): string {
+function recordsFolder(
+  collection: Record<string, unknown> | undefined,
+): string {
   const path = collection?.path;
   if (!path || typeof path !== "object" || Array.isArray(path)) return "tasks";
   const descriptor = path as Record<string, unknown>;
@@ -159,7 +115,7 @@ function recordsFolder(collection: JsonObject | undefined): string {
 }
 
 function taskNotesPathPattern(
-  configuration: JsonObject | undefined,
+  configuration: Record<string, unknown> | undefined,
   folder: string,
 ): string {
   const rawTitle = configuration?.title;
