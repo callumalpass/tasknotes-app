@@ -23,6 +23,8 @@ import {
 } from "react";
 import { ConnectionNoticeContext } from "./connection-notice";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 
 import { CollectionAvailability } from "../components/collection-availability";
@@ -208,18 +210,42 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    // The next entry has no reminder authority. Do not load a legacy owner or
-    // register/listen to notifications just because its workspace rendered.
+    // Listening never grants permission or opts in. The held connection binds
+    // its original timer consent before workspace effects can run.
     if (reminderAuthority !== "connect") return;
     let active = true;
     let stop: (() => void) | undefined;
     void import("../native/mdbase-notifications")
       .then(({ mdbaseNotifications }) => {
         if (!active) return;
-        stop = mdbaseNotifications.listen(({ opened }) => {
+        const stopWakes = mdbaseNotifications.listen(({ opened }) => {
           void refresh().catch(() => undefined);
           if (opened) navigate({ page: "home" }, true);
         });
+        const restore = () => {
+          if (active)
+            void mdbaseNotifications
+              .refreshRegistration()
+              .catch(() => undefined);
+        };
+        const visible = () => {
+          if (document.visibilityState === "visible") restore();
+        };
+        window.addEventListener("online", restore);
+        document.addEventListener("visibilitychange", visible);
+        const native = Capacitor.isNativePlatform()
+          ? App.addListener("appStateChange", ({ isActive }) => {
+              if (isActive) restore();
+            }).catch(() => null)
+          : null;
+        stop = () => {
+          stopWakes();
+          window.removeEventListener("online", restore);
+          document.removeEventListener("visibilitychange", visible);
+          void native
+            ?.then((handle) => handle?.remove())
+            .catch(() => undefined);
+        };
       })
       .catch(() => undefined);
     return () => {

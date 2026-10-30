@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
+import type { TimersApi } from "@mdbase-dev/sdk";
 
 import {
   MdbaseNotificationManager,
@@ -57,18 +57,6 @@ export function AndroidNotificationSmoke() {
 
 function createManager(): MdbaseNotificationManager {
   const options = {
-    connect: {
-      connection: () =>
-        ({ collectionId: "android-smoke" }) as MdbaseConnectionInfo,
-      capabilityState: () => "available",
-      registerNotifications: async () => ({}),
-      unregisterNotifications: async () => undefined,
-      registerNativeNotifications: async ({ token }: { token: string }) => {
-        localStorage.setItem(TOKEN_KEY, token);
-        return {};
-      },
-      unregisterNativeNotifications: async () => undefined,
-    },
     messaging: androidPushMessaging,
     webPush: {
       isSupported: () => false,
@@ -83,5 +71,16 @@ function createManager(): MdbaseNotificationManager {
     isNative: () => true,
     isConfigured: () => true,
   } as unknown as MdbaseNotificationManagerOptions;
-  return new MdbaseNotificationManager(options);
+  const manager = new MdbaseNotificationManager(options);
+  manager.bindScope({
+    key: "android-smoke",
+    timers: {
+      registerFcm: async ({ token }: { token: string }) => {
+        localStorage.setItem(TOKEN_KEY, token);
+        return {};
+      },
+      unregisterFcm: async () => undefined,
+    } as unknown as TimersApi,
+  });
+  return manager;
 }

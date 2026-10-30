@@ -1,31 +1,22 @@
 import type { Notification } from "@capacitor-firebase/messaging";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
-import {
-  MdbaseConnectError,
-  parseMdbaseNativeNotificationData,
-  type MdbaseCapabilityState,
-  type MdbaseConnectionInfo,
-  type MdbaseNotificationRegistration,
-  type MdbaseNativeNotificationRegistration,
-  type MdbaseNativeNotificationData,
-} from "@mdbase-dev/connect";
+import { MdbaseError, type TimersApi } from "@mdbase-dev/sdk";
 
-import { cloudSession } from "../cloud/connect";
-import { requireConnectOutcome } from "../cloud/outcome";
-import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   androidPushMessaging,
   type NativeMessaging,
   type NativeNotification,
 } from "./android-push-messaging";
 import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
+import {
+  readNotificationData,
+  type PrivateNotificationData,
+} from "./notification-payload";
 
-const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
+const ENABLED_KEY = "tasknotes:mdbase-notifications:v2:";
 const CHANNEL_ID = "mdbase-updates";
 const PERMISSION_CHECK_TIMEOUT_MS = 10_000;
-// Scheduling is required; delivery registration remains an explicit opt-in
-// through the notification APIs, not an application-readiness prerequisite.
-const TIMER_CAPABILITY = "background.schedule" as const;
+const CRITERIA = ["task.reminder"];
 
 export type MdbaseNotificationState =
   | "checking"
@@ -42,150 +33,270 @@ export interface MdbaseNotificationStatus {
   state: MdbaseNotificationState;
   optedIn: boolean;
 }
-
 export interface MdbaseNotificationWake {
-  notification: MdbaseNativeNotificationData;
+  notification: PrivateNotificationData;
   opened: boolean;
 }
 
-interface NotificationConnect {
-  connection(): MdbaseConnectionInfo | null;
-  capabilityState(
-    capability: typeof TIMER_CAPABILITY,
-  ): MdbaseCapabilityState | null;
-  registerNotifications(options: {
-    serviceWorker: ServiceWorkerRegistration;
-  }): Promise<MdbaseNotificationRegistration>;
-  unregisterNotifications(
-    serviceWorker?: ServiceWorkerRegistration,
-  ): Promise<void>;
-  registerNativeNotifications(options: {
-    token: string;
-  }): Promise<MdbaseNativeNotificationRegistration>;
-  unregisterNativeNotifications(): Promise<void>;
+export interface MdbaseNotificationScope {
+  /** Stable identity including account, collection and original approved grant.
+   * A new grant must never inherit consent from an old one. */
+  key: string;
+  timers: TimersApi | undefined;
 }
-
 export interface MdbaseNotificationManagerOptions {
-  connect: NotificationConnect;
   messaging: NativeMessaging;
   webPush: WebPushMessaging;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   isNative(): boolean;
   isConfigured(): boolean;
 }
+interface Binding extends MdbaseNotificationScope {
+  onOptInChange?: (enabled: boolean) => void | Promise<void>;
+  lifetime: AbortController;
+  listeners: Set<() => void>;
+}
+type Runtime = "native" | "web";
 
 export class MdbaseNotificationManager {
+  private binding: Binding | null = null;
+  // Serialize channel changes across scopes. The installation's push endpoint
+  // is shared: collection opt-out must never delete it.
+  private tail: Promise<unknown> = Promise.resolve();
+  private readonly statusListeners = new Set<() => void | Promise<void>>();
+
   constructor(private readonly options: MdbaseNotificationManagerOptions) {}
 
-  async status(): Promise<MdbaseNotificationStatus> {
-    const optedIn = this.enabled();
-    const runtime = this.runtime();
-    if (!runtime) return { state: "unavailable", optedIn: false };
-    const connection = this.options.connect.connection();
-    if (!connection) return { state: "not_connected", optedIn };
-    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
-      return { state: "reauthorization_required", optedIn: false };
-    if (runtime === "native" && !this.options.isConfigured())
-      return { state: "not_configured", optedIn };
-    const permission = await this.checkPermissions(runtime);
-    if (permission.receive === "denied") return { state: "denied", optedIn };
-    return {
-      state: optedIn && permission.receive === "granted" ? "enabled" : "off",
-      optedIn,
+  /** Detach cancels work/listeners, but does not revoke persistent consent or
+   * unregister a channel. Explicit sign-out must disable before port teardown. */
+  bindScope(
+    scope: MdbaseNotificationScope | null,
+    onOptInChange?: (enabled: boolean) => void | Promise<void>,
+  ): () => void {
+    this.detach();
+    if (!scope) return () => undefined;
+    if (!scope.key) throw new Error("Notification scope identity is required.");
+    const binding: Binding = {
+      ...scope,
+      onOptInChange,
+      lifetime: new AbortController(),
+      listeners: new Set(),
+    };
+    this.binding = binding;
+    // Scheduling resumes only once restoration confirms permission/registration.
+    void this.notifyOptIn(binding, false);
+    return () => {
+      if (this.binding === binding) this.detach();
     };
   }
 
-  async enable(): Promise<MdbaseNotificationStatus> {
-    const runtime = this.runtime();
-    if (!runtime) return { state: "unavailable", optedIn: false };
-    const connection = this.options.connect.connection();
-    if (!connection) return { state: "not_connected", optedIn: false };
-    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
-      return { state: "reauthorization_required", optedIn: false };
-    if (runtime === "native" && !this.options.isConfigured())
-      return { state: "not_configured", optedIn: false };
-    const provider =
-      runtime === "native" ? this.options.messaging : this.options.webPush;
-    const current = await this.checkPermissions(runtime);
-    const permission =
-      current.receive === "prompt" ||
-      current.receive === "prompt-with-rationale"
-        ? await provider.requestPermissions()
-        : current;
-    if (permission.receive !== "granted")
-      return { state: "denied", optedIn: false };
-    try {
-      await this.registerCurrentInstallation(runtime);
-    } catch (error) {
-      if (
-        error instanceof MdbaseConnectError &&
-        error.code === "notification_reauthorization_required"
-      ) {
-        return { state: "reauthorization_required", optedIn: false };
-      }
-      if (
-        error instanceof MdbaseConnectError &&
-        error.code === "managed_fcm_not_declared"
-      ) {
-        return { state: "not_configured", optedIn: false };
-      }
-      throw error;
-    }
-    this.options.storage.setItem(ENABLED_KEY, "1");
-    return { state: "enabled", optedIn: true };
+  /** Recheck status after channel work settles, including background restoration.
+   * Reads never emit, and observing a change never retries registration. */
+  subscribeStatus(listener: () => void | Promise<void>): () => void {
+    this.statusListeners.add(listener);
+    return () => {
+      this.statusListeners.delete(listener);
+    };
   }
 
-  async disable(): Promise<MdbaseNotificationStatus> {
+  async status(): Promise<MdbaseNotificationStatus> {
+    const binding = this.binding;
+    if (!binding) return { state: "not_connected", optedIn: false };
     const runtime = this.runtime();
-    if (!runtime) return { state: "unavailable", optedIn: false };
-    if (runtime === "native") {
-      await this.options.connect.unregisterNativeNotifications();
-      await this.options.messaging.deleteToken();
-    } else {
-      const serviceWorker = await this.options.webPush.serviceWorker();
-      await this.options.connect.unregisterNotifications(serviceWorker);
+    const optedIn = this.enabled(binding);
+    if (!runtime) return { state: "unavailable", optedIn };
+    if (!binding.timers)
+      return { state: "reauthorization_required", optedIn: false };
+    if (runtime === "native" && !this.options.isConfigured())
+      return { state: "not_configured", optedIn };
+    if (this.consent(binding) === "reauthorization_required") {
+      await this.notifyOptIn(binding, false);
+      return { state: "reauthorization_required", optedIn: false };
     }
-    this.options.storage.removeItem(ENABLED_KEY);
-    return this.status();
+    if (
+      this.consent(binding) === "pending" ||
+      this.consent(binding) === "stopping"
+    ) {
+      await this.notifyOptIn(binding, false);
+      return { state: "error", optedIn: false };
+    }
+    const permission = await this.checkPermissions(runtime).catch(
+      (error: unknown) => {
+        void this.notifyOptIn(binding, false);
+        throw error;
+      },
+    );
+    this.assertCurrent(binding);
+    const enabled = this.enabled(binding) && permission.receive === "granted";
+    if (!enabled) await this.notifyOptIn(binding, false);
+    if (permission.receive === "denied")
+      return { state: "denied", optedIn: this.enabled(binding) };
+    return {
+      state: enabled ? "enabled" : "off",
+      optedIn: this.enabled(binding),
+    };
+  }
+
+  enable(): Promise<MdbaseNotificationStatus> {
+    const binding = this.binding;
+    return this.enqueue(async () => {
+      if (!binding) return { state: "not_connected", optedIn: false };
+      this.assertCurrent(binding);
+      const runtime = this.runtime();
+      if (!runtime) return { state: "unavailable", optedIn: false };
+      if (!binding.timers)
+        return { state: "reauthorization_required", optedIn: false };
+      if (runtime === "native" && !this.options.isConfigured())
+        return { state: "not_configured", optedIn: false };
+      if (this.consent(binding) === "reauthorization_required")
+        return { state: "reauthorization_required", optedIn: false };
+      this.requireResolvedConsent(binding);
+      const provider =
+        runtime === "native" ? this.options.messaging : this.options.webPush;
+      const current = await this.checkPermissions(runtime);
+      this.assertCurrent(binding);
+      const permission =
+        current.receive === "prompt" ||
+        current.receive === "prompt-with-rationale"
+          ? await provider.requestPermissions()
+          : current;
+      this.assertCurrent(binding);
+      if (permission.receive !== "granted") {
+        await this.notifyOptIn(binding, false);
+        return { state: "denied", optedIn: false };
+      }
+      try {
+        await this.registerCurrentInstallation(binding, runtime);
+      } catch (error) {
+        const reason = errorReason(error);
+        if (
+          requiresReauthorization(reason) ||
+          (reason === "timer_refused" && errorCode(error) === "unauthenticated")
+        )
+          return { state: "reauthorization_required", optedIn: false };
+        if (reason === "managed_fcm_not_declared")
+          return { state: "not_configured", optedIn: false };
+        throw error;
+      }
+      return { state: "enabled", optedIn: true };
+    });
+  }
+
+  disable(): Promise<MdbaseNotificationStatus> {
+    const binding = this.binding;
+    return this.enqueue(async () => {
+      if (!binding) return { state: "not_connected", optedIn: false };
+      this.assertCurrent(binding);
+      const runtime = this.runtime();
+      if (!runtime) return { state: "unavailable", optedIn: false };
+      if (!binding.timers)
+        return { state: "reauthorization_required", optedIn: false };
+      if (this.consent(binding) === "reauthorization_required")
+        throw channelReapprovalError();
+      // Persist intent before draining: restart/rotation must not restore it.
+      this.options.storage.setItem(this.key(binding), "stopping");
+      await this.notifyOptIn(binding, false);
+      this.assertCurrent(binding);
+      const signal = binding.lifetime.signal;
+      try {
+        if (runtime === "native") {
+          await binding.timers.unregisterFcm({ signal });
+        } else {
+          // No worker: remove only this grant's channel, not the shared browser
+          // subscription used by other opted-in collections.
+          await binding.timers.unregisterWebPush(undefined, { signal });
+        }
+        this.assertCurrent(binding);
+      } catch (error) {
+        if (requiresReauthorization(errorReason(error)))
+          this.options.storage.setItem(
+            this.key(binding),
+            "reauthorization_required",
+          );
+        throw error;
+      }
+      this.options.storage.removeItem(this.key(binding));
+      return { state: "off", optedIn: false };
+    });
   }
 
   async disableIfEnabled(): Promise<void> {
-    if (!this.runtime() || !this.enabled()) return;
-    await this.disable();
+    if (this.binding && this.consent(this.binding)) {
+      const result = await this.disable();
+      // A missing timer grant is not a confirmed unregister either.
+      if (result.state !== "off") throw channelReapprovalError();
+    }
   }
 
-  async refreshRegistration(): Promise<void> {
-    const runtime = this.runtime();
-    if (!runtime || !this.enabled() || !this.options.connect.connection())
-      return;
-    if (runtime === "native" && !this.options.isConfigured()) return;
-    const permission = await this.checkPermissions(runtime);
-    if (permission.receive !== "granted") return;
-    await this.registerCurrentInstallation(runtime);
+  refreshRegistration(): Promise<void> {
+    const binding = this.binding;
+    return this.enqueue(async () => {
+      if (!binding) return;
+      this.assertCurrent(binding);
+      const runtime = this.runtime();
+      if (!runtime || !binding.timers || !this.enabled(binding)) return;
+      if (runtime === "native" && !this.options.isConfigured()) return;
+      const permission = await this.checkPermissions(runtime);
+      this.assertCurrent(binding);
+      if (permission.receive !== "granted") {
+        await this.notifyOptIn(binding, false);
+        return;
+      }
+      await this.registerCurrentInstallation(binding, runtime);
+    });
   }
 
   listen(onWake: (event: MdbaseNotificationWake) => void): () => void {
+    const binding = this.binding;
     const runtime = this.runtime();
-    if (!runtime || (runtime === "native" && !this.options.isConfigured()))
+    if (
+      !binding ||
+      !runtime ||
+      !binding.timers ||
+      (runtime === "native" && !this.options.isConfigured())
+    )
       return () => undefined;
     let disposed = false;
+    const active = () =>
+      !disposed && this.binding === binding && !binding.lifetime.signal.aborted;
     const handles: PluginListenerHandle[] = [];
     const keep = async (promise: Promise<PluginListenerHandle>) => {
       try {
         const handle = await promise;
-        if (disposed) await handle.remove();
+        if (!active()) await handle.remove();
         else handles.push(handle);
       } catch {
-        // Listening is best-effort; status/enable expose initialization failures.
+        /* status/enable expose initialization failures. */
       }
+    };
+    const wake = (event: MdbaseNotificationWake | null) => {
+      if (!active() || !event) return;
+      // A signal contains no task or collection routing data. Read current app
+      // state on wake; never use its opaque cursor as task content or identity.
+      onWake(event);
+      void this.refreshRegistration().catch(() => undefined);
     };
     if (runtime === "native") {
       void keep(
         this.options.messaging.addListener("tokenReceived", ({ token }) => {
-          if (!this.enabled() || !token) return;
-          void this.options.connect
-            .registerNativeNotifications({ token })
-            .catch(() => undefined);
+          if (!active() || !this.enabled(binding) || !token.trim()) return;
+          void this.enqueue(async () => {
+            if (!active() || !this.enabled(binding)) return;
+            const permission = await this.checkPermissions(runtime);
+            if (
+              !active() ||
+              !this.enabled(binding) ||
+              permission.receive !== "granted"
+            )
+              return;
+            await this.registerChannel(binding, () =>
+              binding.timers!.registerFcm({
+                token,
+                criteria: [...CRITERIA],
+                signal: binding.lifetime.signal,
+              }),
+            );
+          }).catch(() => undefined);
         }),
       );
       void keep(
@@ -193,7 +304,7 @@ export class MdbaseNotificationManager {
           "notificationReceived",
           ({ notification }) => {
             const data = mdbaseNotificationData(notification);
-            if (data) onWake({ notification: data, opened: false });
+            wake(data ? { notification: data, opened: false } : null);
           },
         ),
       );
@@ -202,36 +313,93 @@ export class MdbaseNotificationManager {
           "notificationActionPerformed",
           ({ notification }) => {
             const data = mdbaseNotificationData(notification);
-            if (data) onWake({ notification: data, opened: true });
+            wake(data ? { notification: data, opened: true } : null);
           },
         ),
       );
     } else {
       void keep(
-        this.options.webPush.addListener(({ data }) => {
-          const wake = mdbaseWebPushWake(data);
-          if (wake) onWake(wake);
-        }),
+        this.options.webPush.addListener(({ data }) =>
+          wake(mdbaseWebPushWake(data)),
+        ),
       );
     }
     void this.refreshRegistration().catch(() => undefined);
-    return () => {
+    const dispose = () => {
       disposed = true;
+      binding.listeners.delete(dispose);
       for (const handle of handles) void handle.remove().catch(() => undefined);
       handles.length = 0;
     };
+    binding.listeners.add(dispose);
+    return dispose;
   }
 
-  private enabled(): boolean {
-    return this.options.storage.getItem(ENABLED_KEY) === "1";
+  private detach(): void {
+    const binding = this.binding;
+    if (!binding) return;
+    void this.notifyOptIn(binding, false);
+    this.binding = null;
+    binding.lifetime.abort();
+    for (const dispose of binding.listeners) dispose();
   }
-
-  private runtime(): "native" | "web" | null {
+  private async notifyOptIn(binding: Binding, enabled: boolean): Promise<void> {
+    if (this.binding !== binding || binding.lifetime.signal.aborted) return;
+    try {
+      // Scheduling errors belong to the repository; never turn a confirmed
+      // channel registration into a failed/unknown registration outcome.
+      // false must pause new schedules and naturally drain the active request:
+      // aborting its promise does not free the SDK's single-flight port slot.
+      await binding.onOptInChange?.(enabled);
+    } catch {
+      /* The caller reports scheduling errors separately. */
+    }
+  }
+  private assertCurrent(binding: Binding): void {
+    if (this.binding !== binding || binding.lifetime.signal.aborted)
+      throw new Error(
+        "The notification scope changed. Try again in the current collection.",
+      );
+  }
+  private enqueue<T>(work: () => Promise<T>): Promise<T> {
+    const result = this.tail.then(work).finally(() => {
+      for (const listener of [...this.statusListeners]) {
+        try {
+          // Observers must not delay the queue or change an acknowledged outcome.
+          void Promise.resolve(listener()).catch(() => undefined);
+        } catch {
+          /* A failed observer is not a failed channel mutation. */
+        }
+      }
+    });
+    this.tail = result.catch(() => undefined);
+    return result;
+  }
+  private key(binding: Binding): string {
+    return ENABLED_KEY + encodeURIComponent(binding.key);
+  }
+  private consent(binding: Binding): string | null {
+    return this.options.storage.getItem(this.key(binding));
+  }
+  private enabled(binding: Binding): boolean {
+    return this.consent(binding) === "1";
+  }
+  private requireResolvedConsent(binding: Binding): void {
+    if (this.consent(binding) === "reauthorization_required")
+      throw channelReapprovalError();
+    if (
+      this.consent(binding) === "pending" ||
+      this.consent(binding) === "stopping"
+    )
+      throw new Error(
+        "Notification registration is unresolved. Turn reminders off before enabling again.",
+      );
+  }
+  private runtime(): Runtime | null {
     if (this.options.isNative()) return "native";
     return this.options.webPush.isSupported() ? "web" : null;
   }
-
-  private async checkPermissions(runtime: "native" | "web") {
+  private async checkPermissions(runtime: Runtime) {
     const provider =
       runtime === "native" ? this.options.messaging : this.options.webPush;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -254,13 +422,20 @@ export class MdbaseNotificationManager {
       clearTimeout(timeout);
     }
   }
-
   private async registerCurrentInstallation(
-    runtime: "native" | "web",
+    binding: Binding,
+    runtime: Runtime,
   ): Promise<void> {
     if (runtime === "web") {
       const serviceWorker = await this.options.webPush.serviceWorker();
-      await this.options.connect.registerNotifications({ serviceWorker });
+      this.assertCurrent(binding);
+      await this.registerChannel(binding, () =>
+        binding.timers!.registerWebPush({
+          serviceWorker,
+          criteria: [...CRITERIA],
+          signal: binding.lifetime.signal,
+        }),
+      );
       return;
     }
     await this.options.messaging
@@ -271,23 +446,115 @@ export class MdbaseNotificationManager {
         importance: 4,
       })
       .catch(() => undefined);
+    this.assertCurrent(binding);
     const { token } = await this.options.messaging.getToken();
+    this.assertCurrent(binding);
     if (!token.trim())
       throw new Error("Firebase did not return a notification token.");
-    await this.options.connect.registerNativeNotifications({ token });
+    await this.registerChannel(binding, () =>
+      binding.timers!.registerFcm({
+        token,
+        criteria: [...CRITERIA],
+        signal: binding.lifetime.signal,
+      }),
+    );
   }
+  private async registerChannel(
+    binding: Binding,
+    register: () => Promise<unknown>,
+  ): Promise<void> {
+    this.assertCurrent(binding);
+    this.requireResolvedConsent(binding);
+    const previous = this.consent(binding);
+    // A crash, an ambiguous response, or scope cancellation after dispatch must
+    // never silently opt in or retry registration on the next wake/restart.
+    this.options.storage.setItem(this.key(binding), "pending");
+    await this.notifyOptIn(binding, false);
+    this.assertCurrent(binding);
+    try {
+      await register();
+      this.assertCurrent(binding);
+      this.options.storage.setItem(this.key(binding), "1");
+      void this.notifyOptIn(binding, true);
+    } catch (error) {
+      const reason = errorReason(error);
+      if (
+        requiresReauthorization(reason) ||
+        (reason === "timer_refused" && errorCode(error) === "unauthenticated")
+      ) {
+        this.assertCurrent(binding);
+        this.options.storage.setItem(
+          this.key(binding),
+          "reauthorization_required",
+        );
+        throw error;
+      }
+      if (
+        binding.lifetime.signal.aborted ||
+        errorCode(error) === "outcome_unknown"
+      )
+        throw error;
+      // The pinned SDK reports confirmed HTTP refusals as timer_refused with
+      // several different codes. Pre-dispatch validation/busy errors are safe
+      // too; never mistake an outcome_unknown code's more specific reason for
+      // a confirmed refusal.
+      if (
+        reason === "timer_refused" ||
+        reason === "timer_port_busy" ||
+        reason === "managed_fcm_not_declared" ||
+        [
+          "permission_denied",
+          "unauthenticated",
+          "unauthorized",
+          "invalid_request",
+          "cancelled",
+        ].includes(errorCode(error) ?? "")
+      ) {
+        this.assertCurrent(binding);
+        if (previous) this.options.storage.setItem(this.key(binding), previous);
+        else this.options.storage.removeItem(this.key(binding));
+        // The rejected replacement did not change the acknowledged channel.
+        // Restore scheduling too, not only the persisted opt-in display.
+        if (previous === "1") void this.notifyOptIn(binding, true);
+      }
+      throw error;
+    }
+  }
+}
+
+function requiresReauthorization(reason: string | undefined): boolean {
+  return (
+    reason === "timer_channel_reapproval_required" ||
+    reason === "notification_reauthorization_required"
+  );
+}
+
+function channelReapprovalError(): MdbaseError {
+  return new MdbaseError({
+    code: "outcome_unknown",
+    reason: "timer_channel_reapproval_required",
+    recovery: "resolve_outcome",
+    message:
+      "Reminder channel removal is unconfirmed. Review access to approve a fresh grant.",
+  });
+}
+
+function errorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  return (error as { code?: string }).code;
+}
+
+function errorReason(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const value = error as { code?: string; reason?: string };
+  return value.reason ?? value.code;
 }
 
 export function mdbaseNotificationData(
   notification: Pick<NativeNotification, "data">,
-): MdbaseNativeNotificationData | null {
-  try {
-    return parseMdbaseNativeNotificationData(notification.data);
-  } catch {
-    return null;
-  }
+): PrivateNotificationData | null {
+  return readNotificationData(notification.data);
 }
-
 export function mdbaseWebPushWake(
   value: unknown,
 ): MdbaseNotificationWake | null {
@@ -298,7 +565,7 @@ export function mdbaseWebPushWake(
     typeof message.opened !== "boolean"
   )
     return null;
-  const notification = mdbaseNotificationData({ data: message.notification });
+  const notification = readNotificationData(message.notification);
   return notification ? { notification, opened: message.opened } : null;
 }
 
@@ -376,53 +643,6 @@ function firebaseMessaging() {
 }
 
 export const mdbaseNotifications = new MdbaseNotificationManager({
-  connect: {
-    connection: () => currentConnection()?.info() ?? null,
-    capabilityState: (capability) => {
-      const snapshot = cloudSession.getSnapshot();
-      return "capabilities" in snapshot
-        ? (snapshot.capabilities.values[capability]?.state ?? null)
-        : null;
-    },
-    registerNotifications: async (options) => {
-      const connection = currentConnection();
-      if (!connection) throw new Error("TaskNotes is not connected.");
-      return requireConnectOutcome(
-        await connection.registerNotifications({
-          ...options,
-          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-        }),
-      );
-    },
-    unregisterNotifications: async (serviceWorker) => {
-      const connection = currentConnection();
-      if (connection)
-        requireConnectOutcome(
-          await connection.unregisterNotifications(serviceWorker, {
-            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-          }),
-        );
-    },
-    registerNativeNotifications: async (options) => {
-      const connection = currentConnection();
-      if (!connection) throw new Error("TaskNotes is not connected.");
-      return requireConnectOutcome(
-        await connection.registerNativeNotifications({
-          ...options,
-          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-        }),
-      );
-    },
-    unregisterNativeNotifications: async () => {
-      const connection = currentConnection();
-      if (connection)
-        requireConnectOutcome(
-          await connection.unregisterNativeNotifications({
-            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-          }),
-        );
-    },
-  },
   messaging:
     Capacitor.getPlatform() === "android"
       ? androidPushMessaging
@@ -435,8 +655,3 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
       ? Capacitor.isPluginAvailable("PushNotifications")
       : Capacitor.isPluginAvailable("FirebaseMessaging"),
 });
-
-function currentConnection() {
-  const snapshot = cloudSession.getSnapshot();
-  return snapshot.status === "ready" ? cloudSession.connection() : null;
-}
