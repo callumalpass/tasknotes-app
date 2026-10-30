@@ -48,6 +48,12 @@ const manifestTargets = [
   resolve(projectRoot, "src", "generated", "mdbase-app.json"),
 ];
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+// The pinned SDK carries production trust for iOS and production; other
+// environments build with the same SDK source carrying their own trust.
+const environmentSdks = {
+  lab: "vendor/sdk-dev-eaa4e697-lab.tgz",
+  staging: "vendor/sdk-dev-eaa4e697-staging.tgz",
+};
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   await deployDevelopmentTaskNotes(process.env);
@@ -192,9 +198,10 @@ export async function deployDevelopmentTaskNotes(
     environment,
     deployment,
   );
+  const environmentSdk = environmentSdks[deployment.environment];
   const restoreTargets = [
     ...manifestTargets,
-    ...(deployment.environment === "staging"
+    ...(environmentSdk
       ? [
           resolve(projectRoot, "package.json"),
           resolve(projectRoot, "pnpm-lock.yaml"),
@@ -213,15 +220,10 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
-    if (deployment.environment === "staging") {
-      // Only this deployment uses staging trust; keep the production/iOS pin.
+    if (environmentSdk) {
       await dependencies.run(
         pnpm,
-        [
-          "add",
-          "--ignore-scripts",
-          "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
-        ],
+        ["add", "--ignore-scripts", `@mdbase-dev/sdk@file:${environmentSdk}`],
         deploymentEnvironment,
       );
     }

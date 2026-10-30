@@ -176,9 +176,14 @@ describe("TaskNotes development deployment", () => {
     await deployDevelopmentTaskNotes({}, { run, verifyBuild });
 
     expect(verifyBuild).toHaveBeenCalledOnce();
-    expect(run).toHaveBeenCalledTimes(3);
-    expect(run.mock.calls[0][1]).toEqual(["build:assets"]);
-    expect(run.mock.calls[1][1]).toEqual(
+    expect(run).toHaveBeenCalledTimes(4);
+    expect(run.mock.calls[0][1]).toEqual([
+      "add",
+      "--ignore-scripts",
+      "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-lab.tgz",
+    ]);
+    expect(run.mock.calls[1][1]).toEqual(["build:assets"]);
+    expect(run.mock.calls[2][1]).toEqual(
       expect.arrayContaining([
         `wrangler@${developmentDeployment.wranglerVersion}`,
         "pages",
@@ -188,7 +193,7 @@ describe("TaskNotes development deployment", () => {
         "--branch=lab",
       ]),
     );
-    expect(run.mock.calls[2]).toEqual([
+    expect(run.mock.calls[3]).toEqual([
       "node",
       ["scripts/production-smoke.mjs"],
       expect.objectContaining({
