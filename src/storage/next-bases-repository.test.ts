@@ -278,6 +278,49 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     expect(f.genericExecute).not.toHaveBeenCalled();
   });
+  it("keeps concurrent rediscoveries from staling each other, and retries a stale one", async () => {
+    const f = await fixture();
+    await f.repository.create({ title: "Invalidate the catalog" });
+    await vi.waitFor(async () =>
+      expect(await f.repository.cachedViews()).toEqual([]),
+    );
+    f.list.mockClear();
+    // The replica keeps one discovery per session; overlapping ones go stale.
+    const success = await f.list.getMockImplementation()!(
+      { captureTimezone: "UTC", limit: 128, continuation: null },
+      new AbortController().signal,
+    );
+    let open = 0;
+    let overlapped = false;
+    f.list.mockImplementation(async () => {
+      overlapped ||= open++ > 0;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      open--;
+      return success;
+    });
+    const [documents, result] = await Promise.all([
+      f.repository.listViews(),
+      f.repository.executeView(f.view),
+    ]);
+    expect(documents[0]!.views[0]!.key).toBe(f.view.key);
+    expect(result.rows).toHaveLength(1);
+    expect(overlapped).toBe(false);
+
+    await f.repository.create({ title: "Invalidate it again" });
+    await vi.waitFor(async () =>
+      expect(await f.repository.cachedViews()).toEqual([]),
+    );
+    f.list.mockResolvedValueOnce({
+      kind: "refusal",
+      problem: {
+        code: "conflict",
+        recovery: "refresh",
+        reason: "view_discovery_stale",
+        message: "discovery changed or expired; start fresh discovery",
+      },
+    });
+    await expect(f.repository.listViews()).resolves.toHaveLength(1);
+  });
   it.each(["revision", "path", "missing"] as const)(
     "refuses a %s declaration after rediscovery instead of silently reselecting it",
     async (drift) => {
