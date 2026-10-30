@@ -10,8 +10,13 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   page,
 }) => {
   await page.goto("?demo=12");
+  const overdue = section(page, "Overdue").getByRole("button", {
+    name: /^Complete /,
+  });
+  await expect(overdue.first()).toBeVisible();
+  const overdueCount = await overdue.count();
   const move = page.getByRole("button", {
-    name: "Move all to today, 4 overdue tasks",
+    name: `Move all to today, ${overdueCount} overdue tasks`,
   });
   await move.focus();
   await page.keyboard.press("Enter");
@@ -30,19 +35,19 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   ).toBeVisible();
   const undo = page.getByRole("button", { name: "Undo" });
   await expect(
-    page.getByText("Moved 4 tasks to today", { exact: true }),
+    page.getByText(`Moved ${overdueCount} tasks to today`, { exact: true }),
   ).toBeVisible();
   await expect(undo).toBeFocused();
 
   await undo.click();
   await expect(
-    page.getByRole("button", { name: "Overdue 4", exact: true }),
+    page.getByRole("button", { name: `Overdue ${overdueCount}`, exact: true }),
   ).toBeVisible();
   await expect(
     section(page, "Overdue").getByText("Confirm next week’s interviews"),
   ).toBeVisible();
   await expect(
-    page.getByText("Moved 4 tasks to today", { exact: true }),
+    page.getByText(`Moved ${overdueCount} tasks to today`, { exact: true }),
   ).toHaveCount(0);
 });
 
@@ -51,7 +56,9 @@ test("a finished day says Today is clear and leads to Upcoming", async ({
 }) => {
   await page.goto("?demo=12");
   await expect(
-    page.getByRole("button", { name: "Overdue 4", exact: true }),
+    section(page, "Overdue")
+      .getByRole("button", { name: /^Complete / })
+      .first(),
   ).toBeVisible();
   // The demo has an extra Today occurrence on MO/WE/FR. Count the planned
   // tasks before completing anything; overdue work is not part of this total.
