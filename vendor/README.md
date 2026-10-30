@@ -13,7 +13,7 @@ suites passed:
   `pnpm contracts:sync` fails until it is; see `vendor/mdbase-contracts`)
 - `../tasknotes-model` (`0.3.0-rc.20` from tasknotes-model PR #25, unpublished;
   replace with the registry version once it is published)
-- `../tasknotes-nlp-core` (`62a0d9d`, including wikilink-safe parsing)
+- `../tasknotes-nlp-core` (`0.3.0` at `abe88d9`, span-based parsing with input offsets)
 - `../tasknotes-spec`
 - `../mdbase`
 

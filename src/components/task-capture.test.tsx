@@ -175,6 +175,16 @@ it("marks recognized phrases behind the input and clears a removed one", async (
       ? {
           input: { title: "Call Sam", scheduled: "2026-10-12", tags: ["work"] },
           preview: [],
+          highlights: [
+            { start: 9, end: 17, kind: "scheduled" as const },
+            {
+              start: 18,
+              end: 23,
+              kind: "tag" as const,
+              propertyId: "tags",
+              value: "work",
+            },
+          ],
         }
       : { input: { title: text }, preview: [] },
   );

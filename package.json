@@ -89,7 +89,7 @@
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "tasknotes-nlp-core": "file:vendor/tasknotes-nlp-core-0.2.0-72e6cab.tgz",
+    "tasknotes-nlp-core": "file:vendor/tasknotes-nlp-core-0.3.0-abe88d9.tgz",
     "yaml": "2.9.0"
   },
   "devDependencies": {

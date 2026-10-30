@@ -5,6 +5,10 @@ import {
   type CreateTaskInput,
 } from "./task";
 import { captureTriggers } from "./capture-autosuggest";
+import {
+  captureHighlightsFromSpans,
+  type CaptureHighlight,
+} from "./capture-highlights";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type {
@@ -20,6 +24,8 @@ export interface TaskCapturePreview {
 export interface TaskCaptureResult {
   input: CreateTaskInput;
   preview: TaskCapturePreview[];
+  /** Where the parser found each value, as offsets in the parsed text. */
+  highlights?: CaptureHighlight[];
 }
 
 let parserModule: Promise<typeof import("tasknotes-nlp-core")> | undefined;
@@ -34,10 +40,23 @@ export async function parseTaskCapture(
   locale = browserLocale(),
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
-  return mapParsedCapture(
-    parser.parseInput(disambiguateCaptureText(text, supportedLanguage(locale))),
-    configuration,
+  const parsed = parser.parseInputWithSpans(text);
+  const { data } = parsed;
+  let { spans } = parsed;
+  // A frequency that stays in the title names the task ("weekly review");
+  // only a command such as "every week" makes it repeat.
+  if (spans.some((span) => span.kind === "recurrence" && span.inTitle)) {
+    delete data.recurrence;
+    spans = spans.filter((span) => span.kind !== "recurrence");
+  }
+  const highlights = captureHighlightsFromSpans(
+    spans,
+    captureTriggers(configuration),
   );
+  return {
+    ...mapParsedCapture(data, configuration),
+    ...(highlights.length ? { highlights } : {}),
+  };
 }
 
 export function preloadTaskCapture(): void {
@@ -216,14 +235,4 @@ function supportedLanguage(locale: string): string {
   ].includes(language)
     ? language
     : "en";
-}
-
-function disambiguateCaptureText(text: string, language: string): string {
-  if (language !== "en") return text;
-  // Preserve adjective uses such as "weekly review". Explicit phrases such as
-  // "every week" remain recurrence commands, as do trailing "weekly" tokens.
-  return text.replace(
-    /(?<![\p{L}\p{N}\p{M}_-])(daily|weekly|monthly|yearly|annually)(?![\p{L}\p{N}\p{M}_-])(?=\s+[\p{L}\p{N}])/giu,
-    "\\$1",
-  );
 }

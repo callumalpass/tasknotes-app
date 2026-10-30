@@ -93,8 +93,13 @@ export class CaptureSession {
       ...(this.state.result?.input ?? { title: this.state.text.trim() }),
       ...patch,
     };
+    const highlights = this.state.result?.highlights;
     this.publish({
-      result: { input, preview: taskCapturePreview(input, configuration) },
+      result: {
+        input,
+        preview: taskCapturePreview(input, configuration),
+        ...(highlights ? { highlights } : {}),
+      },
       // Field edits do not change the provenance of the underlying parse.
       version: this.state.version + 1,
     });
@@ -117,7 +122,11 @@ export class CaptureSession {
     // Edits made while the parser was working win over inferred values.
     const input = { ...parsed.input, ...this.fields };
     this.publish({
-      result: { input, preview: taskCapturePreview(input, configuration) },
+      result: {
+        input,
+        preview: taskCapturePreview(input, configuration),
+        ...(parsed.highlights ? { highlights: parsed.highlights } : {}),
+      },
       parsedText: text,
       parsing: false,
     });
@@ -308,13 +317,18 @@ export class CaptureSession {
     defaults: Partial<CreateTaskInput>,
   ): Promise<TaskCaptureResult> {
     let input: CreateTaskInput;
+    let highlights: TaskCaptureResult["highlights"];
     try {
-      input = (await parseTaskCapture(text, configuration)).input;
+      ({ input, highlights } = await parseTaskCapture(text, configuration));
     } catch {
       input = { title: text };
     }
     input = { ...mergeTaskCreationDefaults(defaults, input), ...this.fields };
-    return { input, preview: taskCapturePreview(input, configuration) };
+    return {
+      input,
+      preview: taskCapturePreview(input, configuration),
+      ...(highlights ? { highlights } : {}),
+    };
   }
   private publish(patch: Partial<CaptureSnapshot>) {
     this.state = { ...this.state, ...patch };
