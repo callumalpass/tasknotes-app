@@ -2,13 +2,9 @@ import "fake-indexeddb/auto";
 
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import {
-  createTestMdbaseRepository,
-  mdbaseFixture,
-} from "../test/mdbase-fixture";
+import type { NextTaskRepository } from "../storage/next-repository";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
 import { historyScope, readHistory } from "./search-history";
 import { TaskScreen } from "./task-screen";
@@ -16,14 +12,19 @@ import { TaskScreen } from "./task-screen";
 import type { Task } from "../domain/task";
 
 describe("TaskScreen", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
+  let client: Awaited<ReturnType<typeof nextTaskFixture>>["client"];
   let task: Task;
 
   beforeEach(async () => {
-    repository = createTestMdbaseRepository();
+    const fixture = await nextTaskFixture();
+    ({ repository, client } = fixture);
+    const record = seedTask(fixture.replica, { title: "Keep this draft" });
     await repository.initialize();
-    task = await repository.create({ title: "Keep this draft" });
+    task = (await repository.get(record.frontmatter.get("id") as string))!;
   });
+
+  afterEach(() => repository.dispose());
 
   function renderTask(onBack = vi.fn()) {
     render(
@@ -307,6 +308,9 @@ describe("TaskScreen", () => {
       target: { files: [file] },
     });
     expect(await screen.findByText("open.png")).toBeVisible();
+    // Let the attach write confirm first; its refresh reloads the list.
+    await waitFor(async () => expect(await client.pendingWrites()).toEqual([]));
+    await act(async () => {});
 
     const target = {
       close: vi.fn(),
@@ -316,7 +320,7 @@ describe("TaskScreen", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(target);
     const download = vi
       .spyOn(repository.files!, "download")
-      .mockRejectedValueOnce(new Error("Image download unavailable"));
+      .mockRejectedValue(new Error("Image download unavailable"));
 
     fireEvent.click(screen.getByRole("button", { name: "Open open.png" }));
     expect(open).toHaveBeenCalledWith("about:blank", "_blank");
@@ -366,15 +370,16 @@ describe("TaskScreen", () => {
 });
 
 describe("TaskScreen with a change made in another tab", () => {
-  let fixture: ReturnType<typeof mdbaseFixture>;
-  let repository: MdbaseTaskRepository;
+  let fixture: Awaited<ReturnType<typeof nextTaskFixture>>;
+  let repository: NextTaskRepository;
   let task: Task;
 
   beforeEach(async () => {
-    fixture = mdbaseFixture([]);
-    repository = new MdbaseTaskRepository(fixture.connect);
+    fixture = await nextTaskFixture();
+    ({ repository } = fixture);
+    const record = seedTask(fixture.replica, { title: "Alpha" });
     await repository.initialize();
-    task = await repository.create({ title: "Alpha" });
+    task = (await repository.get(record.frontmatter.get("id") as string))!;
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
@@ -385,11 +390,18 @@ describe("TaskScreen with a change made in another tab", () => {
     );
   });
 
+  afterEach(() => fixture.close());
+
   async function saveFromAnotherTab(input: { title: string; body?: string }) {
-    const otherTab = new MdbaseTaskRepository(fixture.connect);
-    await otherTab.initialize();
-    await otherTab.update(task.id, input);
-    // The collection reports the other tab's change to this tab.
+    // A confirmed external edit on the SDK stand-in, not a second app save.
+    const record = await fixture.client.get({ path: task.path });
+    fixture.replica.editElsewhere(record.id, {
+      frontmatter: {
+        ...Object.fromEntries(record.frontmatter),
+        title: input.title,
+      },
+      ...(input.body === undefined ? {} : { body: input.body }),
+    });
     await act(async () => void (await repository.refresh()));
   }
 

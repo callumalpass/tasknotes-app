@@ -1,31 +1,21 @@
 import { TASKNOTES_LEGACY_CONTRACT_DIGESTS } from "@tasknotes/model/mdbase";
 import { describe, expect, it } from "vitest";
+import { nextTaskFixture } from "../test/next-task-fixture";
 
-import { description } from "../test/mdbase-fixture";
-import { resolveTaskCollection } from "./tasknotes-collection";
-
-/** A collection still on tasknotes.task rc.5, its moved settings in the binding. */
-function rc5Collection() {
-  const described = description(false, true);
-  const contract = described.contracts[0]!;
-  contract.version = "0.3.0-rc.5";
-  contract.digest = TASKNOTES_LEGACY_CONTRACT_DIGESTS["0.3.0-rc.5"]!;
-  const definition = described.types[0]!.definition as {
-    implements: { contract: string; version: string }[];
-  };
-  for (const implementation of definition.implements)
-    if (implementation.contract === "tasknotes.task")
-      implementation.version = "0.3.0-rc.5";
-  return described;
-}
-
+/** Persisted rc.5 task definitions still carry settings in their binding. */
 describe("TaskNotes collection resolution", () => {
-  it("still resolves an rc.5 collection, reading moved settings from its binding", () => {
-    const resolved = resolveTaskCollection(rc5Collection());
-    expect(resolved.typeName).toBe("task");
-    expect(resolved.model.configuration().archive).toEqual({
-      moveOnArchive: true,
-      folder: "TaskNotes/Archive",
-    });
+  it("resolves an rc.5 collection through the SDK catalog, reading moved settings from its binding", async () => {
+    const fixture = await nextTaskFixture({}, true);
+    try {
+      const contract = fixture.catalog.contracts[0]!;
+      contract.version = "0.3.0-rc.5";
+      contract.digest = TASKNOTES_LEGACY_CONTRACT_DIGESTS["0.3.0-rc.5"]!;
+      fixture.catalog.types[0]!.implements[0]!.version = contract.version;
+      expect(await fixture.repository.taskConfiguration()).toMatchObject({
+        archive: { moveOnArchive: true, folder: "TaskNotes/Archive" },
+      });
+    } finally {
+      fixture.close();
+    }
   });
 });

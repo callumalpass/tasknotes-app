@@ -292,7 +292,8 @@ test("a completed row lingers checked, folds away, and Undo restores it", async 
   await page.goto("?demo=12");
   const overdue = page.locator(".task-section.is-overdue");
   const count = overdue.locator(".task-section-count");
-  await expect(count).toHaveText("4");
+  await expect(count).toHaveText(/^\d+$/);
+  const originalCount = Number(await count.textContent());
   const title = "Review the mobile navigation notes";
   await page
     .getByRole("button", { name: `Complete ${title}`, exact: true })
@@ -305,7 +306,7 @@ test("a completed row lingers checked, folds away, and Undo restores it", async 
     "aria-pressed",
     "true",
   );
-  await expect(count).toHaveText("3");
+  await expect(count).toHaveText(String(originalCount - 1));
   await expect(row).toHaveCount(0);
   const notice = page.locator(".task-completed-notice");
   await expect(notice).toContainText(`Completed “${title}”`);
@@ -313,7 +314,7 @@ test("a completed row lingers checked, folds away, and Undo restores it", async 
   await expect(
     page.getByRole("button", { name: `Complete ${title}`, exact: true }),
   ).toBeVisible();
-  await expect(count).toHaveText("4");
+  await expect(count).toHaveText(String(originalCount));
   await expect(notice).toHaveCount(0);
 });
 

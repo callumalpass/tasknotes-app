@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { mdbaseError } from "@mdbase-dev/sdk";
 
 // Reproduce the deployed rc.3 App receiving the actual rc.5 collection error.
 vi.mock("../generated/mdbase-app.json", () => ({
@@ -24,15 +25,14 @@ describe("newer collection setup guidance", () => {
       NEWER_TASKNOTES_COLLECTION_MESSAGE,
     );
   });
-  it("handles structured Connect problems and native callback failures", () => {
+  it("handles typed SDK collection validation failures", () => {
     expect(
-      collectionErrorMessage({
-        problem: {
-          code: "data_contract_version_mismatch",
-          message:
-            "Type 'task' requires data contract 'tasknotes.task' 0.3.0-rc.5, but no registered version satisfies it",
-        },
-      }),
+      collectionErrorMessage(
+        mdbaseError(
+          "invalid_record",
+          "Type 'task' requires data contract 'tasknotes.task' 0.3.0-rc.5, but no registered version satisfies it (data_contract_version_mismatch)",
+        ),
+      ),
     ).toBe(NEWER_TASKNOTES_COLLECTION_MESSAGE);
   });
   it.each(["0.3.0-rc.2", "0.3.0-rc.3"])(

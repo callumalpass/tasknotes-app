@@ -6,19 +6,13 @@ import {
   waitFor,
   within,
 } from "../test/render";
-import {
-  type JsonObject,
-  type MdbaseConnection,
-  type PendingMutation,
-} from "@mdbase-dev/connect";
-import { connectSuccess } from "@mdbase-dev/connect-testing";
 import { expect, it, vi } from "vitest";
+import { mdbaseError } from "@mdbase-dev/sdk";
 
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { taskRepositoryStub } from "../test/task-repository-stub";
-import { deferred, unknownOutcome } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
 import { todayString } from "../domain/task";
-import { runMdbaseMutation } from "../storage/mdbase-mutation-coordinator";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
@@ -288,18 +282,10 @@ it("offers edit and retry actions for an incompatible saved view", async () => {
     hasMore: false,
     groups: [],
   };
-  const failure = Object.assign(
-    new Error("Hosted ordering cannot use projection.task_day."),
-    {
-      problem: {
-        problem_version: 1,
-        code: "unknown",
-        category: "unknown",
-        recovery: "none",
-        message: "Hosted ordering cannot use projection.task_day.",
-        server_code: "unsupported_hosted_order",
-      },
-    },
+  const failure = mdbaseError(
+    "invalid_request",
+    "Hosted ordering cannot use projection.task_day.",
+    "unsupported_hosted_order",
   );
   const executeView = vi
     .fn<() => Promise<TaskViewExecution>>()
@@ -338,7 +324,7 @@ it("offers edit and retry actions for an incompatible saved view", async () => {
   ).not.toBeInTheDocument();
 });
 
-it("recovers an uncertain manual board write before sending the queued move", async () => {
+it("settles a pending manual board write before sending the queued move", async () => {
   const pending = deferred<void>();
   const execution = boardExecution();
   const queued = listTask("task-2", "Move next");
@@ -365,42 +351,17 @@ it("recovers an uncertain manual board write before sending the queued move", as
     }
     return { ...row.task, body: "" };
   };
-  let recoveryActive = false;
-  const providerUpdate = vi.fn(
-    async (id: string, input: { sortOrder?: string; status?: string }) => {
-      void id;
-      void input;
-      recoveryActive = true;
-      throw unknownOutcome("view-test-request");
-    },
-  );
-  const recovery = vi.fn(async () => {
-    await pending.promise;
-    const [id, input] = providerUpdate.mock.calls[0]!;
-    recoveryActive = false;
-    return connectSuccess(applyProviderUpdate(id, input));
-  });
-  const pendingMutation = {
-    requestId: "view-test-request",
-    operation: "update",
-    fingerprint: "view-test-fingerprint",
-    status: "outcome_unknown",
-    createdAt: "2026-08-05T00:00:00.000Z",
-    recover: recovery,
-  } satisfies PendingMutation<Task>;
-  const connection = {
-    pendingMutation: (requestId: string) =>
-      recoveryActive && requestId === pendingMutation.requestId
-        ? pendingMutation
-        : null,
-    pendingMutations: () => (recoveryActive ? [pendingMutation] : []),
-  } as unknown as MdbaseConnection<JsonObject>;
+  // The repository settles the first captured write before the UI sends the
+  // queued move. Exact receipt recovery is covered by the SDK repository tests.
+  let outcomeKnown = false;
   const update = vi.fn(
-    (id: string, input: { sortOrder?: string; status?: string }) =>
-      runMdbaseMutation(connection, () => providerUpdate(id, input), {
-        key: JSON.stringify(["view:update", id, input]),
-        mapRecovered: (task: Task) => task,
-      }),
+    async (id: string, input: { sortOrder?: string; status?: string }) => {
+      if (!outcomeKnown) {
+        await pending.promise;
+        outcomeKnown = true;
+      }
+      return applyProviderUpdate(id, input) as Task;
+    },
   );
   const updateMany = vi.fn(
     async (
@@ -502,8 +463,10 @@ it("recovers an uncertain manual board write before sending the queued move", as
   expect(queuedCard).toHaveClass("is-pending");
   expect(stationaryCard).toHaveAttribute("aria-busy", "false");
   expect(stationaryCard).not.toHaveClass("is-pending");
-  await waitFor(() => expect(recovery).toHaveBeenCalledOnce());
-  expect(providerUpdate).toHaveBeenCalledOnce();
+  await waitFor(() => expect(update).toHaveBeenCalledOnce());
+  // The queued move is not sent while the first write's outcome is unknown.
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  expect(update).toHaveBeenCalledOnce();
 
   await act(async () => pending.resolve());
   await waitFor(() =>
@@ -513,7 +476,7 @@ it("recovers an uncertain manual board write before sending the queued move", as
     ),
   );
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  expect(providerUpdate.mock.calls.at(-1)?.[0]).toBe("task-2");
+  expect(update.mock.calls.at(-1)?.[0]).toBe("task-2");
   expect(updateMany).toHaveBeenCalledTimes(2);
 });
 

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import { createTestMdbaseRepository, deferred } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import type { TaskStats } from "../domain/task";
 import {
@@ -12,11 +13,13 @@ import {
 
 const counts: TaskStats = { open: 3, total: 5, completed: 2, archived: 0 };
 
-function setup() {
-  const repository = createTestMdbaseRepository([]);
+async function setup() {
+  const { client, repository } = await nextTaskFixture();
   const stats = vi.spyOn(repository, "stats").mockResolvedValue(counts);
   const info = vi.spyOn(repository, "collectionInfo").mockResolvedValue({
     kind: "connect",
+    id: "summary-test",
+    collectionId: client.collection,
     name: "My tasks",
     location: "Live connection through mdbase",
     runtime: "native",
@@ -35,7 +38,7 @@ function useProbe() {
 }
 
 it("shows collection metadata while statistics are still pending", async () => {
-  const fixture = setup();
+  const fixture = await setup();
   const pending = deferred<TaskStats>();
   fixture.stats.mockReturnValue(pending.promise);
   const { result } = renderHook(useProbe, { wrapper: fixture.wrapper });
@@ -50,7 +53,7 @@ it("shows collection metadata while statistics are still pending", async () => {
 });
 
 it("reports failed statistics instead of remaining Opening and retries successfully", async () => {
-  const fixture = setup();
+  const fixture = await setup();
   fixture.stats.mockRejectedValueOnce(new Error("Statistics unavailable"));
   const { result } = renderHook(useProbe, { wrapper: fixture.wrapper });
   await waitFor(() =>
@@ -68,7 +71,7 @@ it("reports failed statistics instead of remaining Opening and retries successfu
 });
 
 it("reports metadata failure independently of successful statistics", async () => {
-  const fixture = setup();
+  const fixture = await setup();
   const { result } = renderHook(useProbe, { wrapper: fixture.wrapper });
   await waitFor(() => expect(result.current.summary.stats).toEqual(counts));
   fixture.info.mockRejectedValueOnce(new Error("Metadata unavailable"));
@@ -84,7 +87,7 @@ it("reports metadata failure independently of successful statistics", async () =
 });
 
 it("retains previous counts but exposes a failed refresh", async () => {
-  const fixture = setup();
+  const fixture = await setup();
   const { result } = renderHook(useProbe, { wrapper: fixture.wrapper });
   await waitFor(() => expect(result.current.summary.stats).toEqual(counts));
   fixture.stats.mockRejectedValueOnce(new Error("Refresh failed"));
@@ -100,7 +103,7 @@ it("retains previous counts but exposes a failed refresh", async () => {
 });
 
 it("ignores an old statistics response after retry replaces it", async () => {
-  const fixture = setup();
+  const fixture = await setup();
   const pending = deferred<TaskStats>();
   fixture.stats.mockReturnValueOnce(pending.promise);
   const { result } = renderHook(useProbe, { wrapper: fixture.wrapper });

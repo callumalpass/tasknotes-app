@@ -3,18 +3,18 @@ import "fake-indexeddb/auto";
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { beforeEach, expect, it, vi } from "vitest";
 
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import type { NextTaskRepository } from "../storage/next-repository";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider, useRepository } from "./repository-context";
 
 import type { Task } from "../domain/task";
 
-let repository: MdbaseTaskRepository;
+let repository: NextTaskRepository;
 let task: Task;
 
 beforeEach(async () => {
-  repository = createTestMdbaseRepository();
+  ({ repository } = await nextTaskFixture());
   await repository.initialize();
   task = await repository.create({ title: "Recoverable task" });
 });
@@ -57,12 +57,13 @@ it("waits for foreground before committing a deletion whose undo window expired"
   const button = screen.getByRole("button", { name: "Delete test task" });
   await waitFor(() => expect(button).toBeEnabled());
   const visibility = vi.spyOn(document, "visibilityState", "get");
-  vi.useFakeTimers();
+  // Only the undo window's clock is faked; the replica link keeps running.
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
   try {
     await act(async () => {
       fireEvent.click(button);
+      await vi.waitFor(() => expect(journal.snapshot()).toHaveLength(1));
     });
-    expect(journal.snapshot()).toHaveLength(1);
     visibility.mockReturnValue("hidden");
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));
@@ -76,7 +77,7 @@ it("waits for foreground before committing a deletion whose undo window expired"
       await vi.advanceTimersByTimeAsync(1);
     });
     expect(deleted).toHaveBeenCalledExactlyOnceWith(task.id);
-    expect(journal.snapshot()).toEqual([]);
+    await act(() => vi.waitFor(() => expect(journal.snapshot()).toEqual([])));
   } finally {
     vi.useRealTimers();
     visibility.mockRestore();

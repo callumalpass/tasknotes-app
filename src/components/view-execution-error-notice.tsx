@@ -1,7 +1,7 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { cleanOperationError } from "../app/operation-error";
 import { toOperationalError } from "../application/operational-error";
-import { connectProblemFromError } from "../cloud/outcome";
+import { connectProblemFromError } from "../application/connect-problem";
 
 export function ViewExecutionErrorNotice({
   reason,
@@ -64,25 +64,5 @@ export function ViewExecutionErrorNotice({
 }
 
 function isComputedQueryFailure(reason: unknown): boolean {
-  const problem = connectProblemFromError(reason);
-  if (!problem) return false;
-  const details = object(problem.details);
-  const codes = [
-    problem.code,
-    stringProperty(problem, "server_code"),
-    stringProperty(details, "semantic_code"),
-  ];
-  return codes.some((code) => code === "unsupported_hosted_order");
-}
-
-function object(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function stringProperty(value: object | null, key: string): string | undefined {
-  if (!value || !(key in value)) return;
-  const property = (value as Record<string, unknown>)[key];
-  return typeof property === "string" ? property : undefined;
+  return connectProblemFromError(reason)?.reason === "unsupported_hosted_order";
 }

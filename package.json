@@ -68,12 +68,11 @@
     "@lezer/highlight": "^1.2.3",
     "@lingui/core": "6.9.0",
     "@lingui/react": "6.9.0",
-    "@mdbase-dev/connect": "file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz",
     "@mdbase-dev/connect-protocol": "file:vendor/mdbase-dev-connect-protocol-0.1.0-beta.129-c280cd194ffd.tgz",
-    "@mdbase-dev/i18n": "0.1.0-beta.147",
+    "@mdbase-dev/i18n": "0.1.0-beta.148",
     "@mdbase-dev/obsidian-runtime": "file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz",
     "@mdbase-dev/sdk": "file:vendor/sdk-eaa4e697-production-beta141.tgz",
-    "@mdbase-dev/ui": "0.1.0-beta.147",
+    "@mdbase-dev/ui": "0.1.0-beta.148",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tanstack/react-virtual": "3.14.11",
     "@tasknotes/calendar": "0.1.4",
@@ -104,8 +103,6 @@
     "@lingui/format-po": "6.9.0",
     "@lingui/message-utils": "6.9.0",
     "@lingui/vite-plugin": "6.9.0",
-    "@mdbase-dev/connect-dev": "0.1.0-beta.125",
-    "@mdbase-dev/connect-testing": "0.1.0-beta.125",
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
@@ -127,11 +124,5 @@
     "typescript-eslint": "8.65.0",
     "vite": "8.1.5",
     "vitest": "4.1.10"
-  },
-  "pnpm": {
-    "overrides": {
-      "@mdbase-dev/connect": "file:vendor/connect-beta125-legacy-query-2a89e9ef.tgz",
-      "@mdbase-dev/connect-sync": "0.1.0-beta.125"
-    }
   }
 }

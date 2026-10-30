@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "../test/render";
 import { expect, it, vi } from "vitest";
-import { createTestMdbaseRepository, taskRecord } from "../test/mdbase-fixture";
+import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import type { RepositoryChange } from "../application/ports/task-repository";
 import {
@@ -11,13 +11,12 @@ import {
 } from "./repository-context";
 
 it("updates connectivity without reloading data queries on status-only events", async () => {
-  const repository = createTestMdbaseRepository([
-    taskRecord("one", "One", "r1"),
-  ]);
+  const { replica, repository } = await nextTaskFixture();
+  seedTask(replica, { title: "One" });
   let notify: (change?: RepositoryChange) => void = () => {};
   vi.spyOn(repository, "subscribe").mockImplementation((listener) => {
     notify = listener;
-    return () => {};
+    return () => true;
   });
   const list = vi.spyOn(repository, "listSummaries");
   render(
@@ -48,9 +47,8 @@ it("updates connectivity without reloading data queries on status-only events", 
 });
 
 it("refreshes silently when the window becomes visible again", async () => {
-  const repository = createTestMdbaseRepository([
-    taskRecord("one", "One", "r1"),
-  ]);
+  const { replica, repository } = await nextTaskFixture();
+  seedTask(replica, { title: "One" });
   const refresh = vi.spyOn(repository, "refresh");
   render(
     <RepositoryProvider
