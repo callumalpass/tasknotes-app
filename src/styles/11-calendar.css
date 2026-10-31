@@ -1133,15 +1133,7 @@
     padding-left: max(var(--page-inset), calc((100vw - 320px) / 2));
   }
 
-  .tasknotes-calendar-grid [role="gridcell"] {
-    width: 100%;
-    max-width: 44px;
-    height: 44px;
-    justify-self: center;
-  }
-
   .tasknotes-calendar-grid [role="gridcell"].is-today::after {
-    right: calc(50% - 2px);
     bottom: 5px;
   }
 

@@ -505,7 +505,8 @@
 }
 
 .tasknotes-calendar-popover {
-  width: 278px;
+  width: calc(7 * var(--control-min-size) + 20px);
+  max-width: calc(100vw - 2 * var(--page-inset));
   padding: 9px;
 }
 
@@ -561,8 +562,10 @@
 .tasknotes-calendar-grid [role="gridcell"] {
   position: relative;
   display: grid;
-  width: var(--control-min-size);
+  width: 100%;
+  max-width: var(--control-min-size);
   height: var(--control-min-size);
+  justify-self: center;
   padding: 0;
   place-items: center;
   color: var(--ink-soft);
@@ -612,7 +615,7 @@
 
 .tasknotes-calendar-grid [role="gridcell"].is-today::after {
   position: absolute;
-  right: 15px;
+  right: calc(50% - 2px);
   bottom: 4px;
   width: 4px;
   height: 4px;

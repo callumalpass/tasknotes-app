@@ -88,6 +88,46 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(trigger).toBeFocused();
     });
 
+    test("date picker shows every weekday column inside the popover", async ({
+      page,
+    }) => {
+      await page.goto("?demo=50");
+      await page
+        .getByRole("button", {
+          name: "Prepare quarterly planning session",
+          exact: true,
+        })
+        .click();
+      await page.getByText("Schedule and status", { exact: true }).click();
+      await page
+        .locator(".task-core-fields .tasknotes-date-trigger")
+        .first()
+        .click();
+      const popover = page.locator(".tasknotes-calendar-popover");
+      await expect(popover).toBeVisible();
+      await expect(popover).not.toHaveAttribute("data-state", "closed");
+      const bounds = (await popover.boundingBox())!;
+      const headers = popover.locator(".tasknotes-calendar-weekdays > span");
+      const week = popover
+        .locator('[role="row"]')
+        .first()
+        .getByRole("gridcell");
+      await expect(headers).toHaveCount(7);
+      await expect(week).toHaveCount(7);
+      for (let index = 0; index < 7; index++) {
+        const cell = (await week.nth(index).boundingBox())!;
+        const header = (await headers.nth(index).boundingBox())!;
+        expect(cell.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(cell.x + cell.width).toBeLessThanOrEqual(
+          bounds.x + bounds.width,
+        );
+        expect(cell.width).toBeGreaterThanOrEqual(40);
+        expect(
+          Math.abs(cell.x + cell.width / 2 - (header.x + header.width / 2)),
+        ).toBeLessThan(2);
+      }
+    });
+
     test("view fields stay subordinate to the name and property Save uses the shared action", async ({
       page,
     }) => {
