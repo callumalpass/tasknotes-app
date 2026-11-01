@@ -51,7 +51,7 @@ it("retains the supplied repository and original client across StrictMode effect
   await waitFor(() =>
     expect(screen.getByTestId("repository-status")).toHaveTextContent("ready"),
   );
-  expect(screen.getByTestId("reminder-authority")).toHaveTextContent("none");
+  expect(screen.getByTestId("reminder-authority")).toHaveTextContent("connect");
   expect(observed.length).toBeGreaterThan(0);
   expect(observed.every((repository) => repository === f.repository)).toBe(
     true,

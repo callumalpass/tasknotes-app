@@ -5250,6 +5250,10 @@ msgstr "Try fewer words or another spelling."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Try loading the view again. If the problem continues, edit its settings or choose another view."
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "Turn reminders off"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Type"
