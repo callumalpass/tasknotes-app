@@ -873,6 +873,9 @@ Occurrence body for {{title}}`,
 
   it("keeps an evening task's day when it starts repeating west of UTC", () => {
     vi.stubEnv("TZ", "America/New_York");
+    // Recurrence planning also reads today's date from the system clock.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-27T03:30:00Z"));
     try {
       // Thursday 29 October, 8:41 PM in New York.
       const task = model.create(
@@ -886,6 +889,7 @@ Occurrence body for {{title}}`,
       );
       expect(repeating.frontmatter.scheduled).toBe("2026-10-30T00:41:00Z");
     } finally {
+      vi.useRealTimers();
       vi.unstubAllEnvs();
     }
   });
