@@ -1,12 +1,11 @@
 /// <reference lib="webworker" />
 
 import {
-  nativeNotificationData,
-  parseNotificationPayload,
-  showNotificationPayload,
-} from "./native/notification-payload";
-
-import type { MdbaseNativeNotificationData } from "@mdbase-dev/connect";
+  parseMdbasePush,
+  readMdbaseNotificationData,
+  showMdbaseNotification,
+  type MdbaseNotification,
+} from "@mdbase-dev/sdk/notifications";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const MESSAGE_TYPE = "tasknotes:mdbase-notification";
@@ -19,22 +18,28 @@ worker.addEventListener("push", (event) => {
 
 worker.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(openTaskNotes(notificationData(event.notification.data)));
+  event.waitUntil(
+    openTaskNotes(readMdbaseNotificationData(event.notification.data)),
+  );
 });
 
 async function handlePush(event: PushEvent): Promise<void> {
   let payload;
   try {
-    payload = parseNotificationPayload(event.data?.json());
+    payload = event.data?.json();
+    parseMdbasePush(payload);
   } catch {
     return;
   }
-  await showNotificationPayload(worker.registration, payload);
-  await messageClients(nativeNotificationData(payload), false);
+  const notification = await showMdbaseNotification(
+    worker.registration,
+    payload,
+  );
+  await messageClients(notification, false);
 }
 
 async function openTaskNotes(
-  notification: MdbaseNativeNotificationData | null,
+  notification: MdbaseNotification | null,
 ): Promise<void> {
   const windows = (await worker.clients.matchAll({
     includeUncontrolled: true,
@@ -52,7 +57,7 @@ async function openTaskNotes(
 }
 
 async function messageClients(
-  notification: MdbaseNativeNotificationData,
+  notification: MdbaseNotification,
   opened: boolean,
 ): Promise<void> {
   const windows = await worker.clients.matchAll({
@@ -64,7 +69,7 @@ async function messageClients(
 
 function postWake(
   client: Client,
-  notification: MdbaseNativeNotificationData,
+  notification: MdbaseNotification,
   opened: boolean,
 ): void {
   client.postMessage({
@@ -72,23 +77,4 @@ function postWake(
     notification,
     opened,
   });
-}
-
-function notificationData(value: unknown): MdbaseNativeNotificationData | null {
-  if (!value || typeof value !== "object") return null;
-  const data = value as Record<string, unknown>;
-  if (
-    data.type !== "mdbase.notification" ||
-    typeof data.signal_id !== "string" ||
-    typeof data.criterion_id !== "string" ||
-    typeof data.cursor !== "string"
-  )
-    return null;
-  return {
-    type: "mdbase.notification",
-    version: 1,
-    signal_id: data.signal_id,
-    criterion_id: data.criterion_id,
-    cursor: data.cursor,
-  };
 }

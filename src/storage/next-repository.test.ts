@@ -488,7 +488,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
         throw new Error("Lost transition ACK");
       });
     await expect(f.repository.toggle(occurrence.task.id)).rejects.toMatchObject(
-      { problem: { code: "operation_outcome_unknown" } },
+      { code: "outcome_unknown" },
     );
     expect((await f.repository.toggle(occurrence.task.id)).completed).toBe(
       true,
@@ -523,7 +523,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       });
     await expect(
       f.repository.update(s.portableId, { title: "Original edit" }),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     await (
       await f.client.delete(await f.client.get(s.nativeId))
     ).confirmed;
@@ -541,10 +541,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     await expect(
       f.repository.update(s.portableId, { title: "Original edit" }),
     ).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        details: { request_id: spy.mock.calls[0]![2]!.mutationId },
-      },
+      code: "outcome_unknown",
+      mutationId: spy.mock.calls[0]![2]!.mutationId,
+
       cause: { code: "not_found" },
     });
     expect(spy).toHaveBeenCalledOnce();
@@ -636,11 +635,10 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       .catch((reason: unknown) => reason);
     const requestId = create.mock.calls[0]![1]!.mutationId;
     expect(failure).toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        recovery: "resolve_outcome",
-        details: { request_id: requestId },
-      },
+      code: "outcome_unknown",
+      recovery: "resolve_outcome",
+      mutationId: requestId,
+
       cause: { message: "Confirmed record read interrupted" },
     });
     expect(intent.authorityRequestId).toBe(requestId);
@@ -679,7 +677,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       });
     await expect(
       f.repository.create({ title: "Captured once" }, intent),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     expect(intent.authorityRequestId).toBe(spy.mock.calls[0]![1]!.mutationId);
     const task = await f.repository.create(
       { title: "Changed retry input must not resubmit" },
@@ -705,7 +703,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       });
     await expect(
       f.repository.create({ title: "First" }, first),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     const originalRequest = first.authorityRequestId;
     expect((await f.repository.create({ title: "Second" }, second)).title).toBe(
       "Second",
@@ -890,7 +888,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       intent,
     );
     const refused = expect(result).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     await reading;
     expect(create).toHaveBeenCalledOnce();

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { expect, it, vi } from "vitest";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { mdbaseError } from "@mdbase-dev/sdk";
 
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { TaskCapture } from "./task-capture";
@@ -224,9 +224,9 @@ it("marks recognized phrases behind the input and clears a removed one", async (
 
 it("preserves structured unknown acceptance and asks for exact recovery, not ordinary retry", async () => {
   const create = vi.fn(async () => {
-    throw connectError("operation_outcome_unknown", "Neutral diagnostic", {
-      operationOutcome: "unknown",
-      details: { request_id: "exact-request" },
+    throw mdbaseError("outcome_unknown", "Neutral diagnostic", {
+      // The SDK code already marks this outcome unknown.
+      details: new Map([["request_id", "exact-request"]]),
     });
   });
   render(
@@ -250,9 +250,9 @@ it("confirms an unconfirmed capture automatically with the retained exact intent
     .fn<TaskRepository["create"]>(async (input) => task(input))
     .mockImplementationOnce(async (_input, intent) => {
       intent!.authorityRequestId = "exact-request";
-      throw connectError("operation_outcome_unknown", "Unconfirmed", {
-        operationOutcome: "unknown",
-        details: { request_id: "exact-request" },
+      throw mdbaseError("outcome_unknown", "Unconfirmed", {
+        // The SDK code already marks this outcome unknown.
+        details: new Map([["request_id", "exact-request"]]),
       });
     });
   render(

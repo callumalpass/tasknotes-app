@@ -1,42 +1,45 @@
 import { describe, expect, it } from "vitest";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { MdbaseError, mdbaseError } from "@mdbase-dev/sdk";
 import { OperationalError, toOperationalError } from "./operational-error";
 
 describe("operational errors", () => {
   it.each([
-    ["connector_offline", "unavailable", true],
-    ["collection_access_denied", "permission-denied", false],
-    ["concurrent_modification", "conflict", true],
-    ["operation_invalid", "validation", false],
-    ["file_not_found", "not-found", false],
-    ["operation_cancelled", "cancelled", false],
+    ["unavailable", "unavailable", true],
+    ["forbidden", "permission-denied", false],
+    ["conflict", "conflict", false],
+    ["invalid_record", "validation", false],
+    ["not_found", "not-found", false],
+    ["cancelled", "cancelled", false],
   ] as const)(
     "classifies structured %s independently of wording",
     (providerCode, code, retryable) => {
-      const error = connectError(providerCode, "Neutral diagnostic");
+      const error = mdbaseError(providerCode, "Neutral diagnostic");
       expect(toOperationalError(error, "update-task")).toMatchObject({
         code,
         retryable,
         operation: "update-task",
         detail: "Neutral diagnostic",
-        problem: error.problem,
+        problem: expect.objectContaining(error.toProblem()),
       });
     },
   );
 
-  it("preserves exact unknown-outcome recovery even when the category is availability", () => {
-    const problem = {
-      ...connectError("connector_offline", "Neutral diagnostic").problem,
-      operation_outcome: "unknown",
+  it("preserves exact unknown-outcome recovery even for a conflicting earlier write", () => {
+    const error = new MdbaseError({
+      code: "conflict",
+      message: "Neutral diagnostic",
       recovery: "resolve_outcome",
-      details: { request_id: "exact-request" },
-    };
-    const failure = toOperationalError({ problem }, "create-task");
+      details: new Map([["request_id", "exact-request"]]),
+    });
+    const failure = toOperationalError(error, "create-task");
     expect(failure).toMatchObject({
       code: "outcome-unknown",
       retryable: false,
+      problem: {
+        recovery: "resolve_outcome",
+        details: new Map([["request_id", "exact-request"]]),
+      },
     });
-    expect(failure.problem).toBe(problem);
   });
 
   it.each([

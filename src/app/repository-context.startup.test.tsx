@@ -2,18 +2,28 @@ import { useEffect, useState } from "react";
 import { act, render, screen } from "../test/render";
 import { expect, it, vi } from "vitest";
 import { RepositoryProvider, useRepository } from "./repository-context";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
 import { ViewQuerySession } from "../application/view-query-session";
-import { deferred, mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
+import {
+  nextTaskFixture,
+  seedTask,
+  seedTaskView,
+} from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { AutoArchiveActivity } from "../application/auto-archive-activity";
 
+async function fixtureWith(title: string) {
+  const fixture = await nextTaskFixture();
+  seedTask(fixture.replica, { title }, { id: "one" });
+  seedTaskView(fixture.replica);
+  return fixture;
+}
+
 it("reopens through Try again and initializes command services after a describe failure", async () => {
-  const fixture = mdbaseFixture([
-    taskRecord("one", "First visible task", "r1"),
-  ]);
-  fixture.describe.mockRejectedValueOnce(new TypeError("Offline at opening"));
-  const repository = new MdbaseTaskRepository(fixture.connect);
+  const { client, repository } = await fixtureWith("First visible task");
+  vi.mocked(client.describe).mockRejectedValueOnce(
+    new TypeError("Offline at opening"),
+  );
   let context!: ReturnType<typeof useRepository>;
   function Probe() {
     const value = useRepository();
@@ -46,9 +56,7 @@ it("reopens through Try again and initializes command services after a describe 
 });
 
 it("retries command-journal initialization rather than announcing partial readiness", async () => {
-  const repository = new MdbaseTaskRepository(
-    mdbaseFixture([taskRecord("one", "One", "r1")]).connect,
-  );
+  const { repository } = await fixtureWith("One");
   const journal = new MemoryMutationJournal();
   const list = vi
     .spyOn(journal, "list")
@@ -82,7 +90,7 @@ it("retries command-journal initialization rather than announcing partial readin
 });
 
 it("keeps accepted effects when an interrupted journal startup finishes after the replacement", async () => {
-  const repository = new MdbaseTaskRepository(mdbaseFixture([]).connect);
+  const { repository } = await nextTaskFixture();
   const journal = new MemoryMutationJournal();
   const started = deferred<void>();
   const release = deferred<void>();
@@ -138,17 +146,14 @@ it("keeps accepted effects when an interrupted journal startup finishes after th
 });
 
 it("reopens after backgrounding during describe and ignores the old opening failure", async () => {
-  const fixture = mdbaseFixture([
-    taskRecord("one", "First visible task", "r1"),
-  ]);
+  const { client, repository } = await fixtureWith("First visible task");
   const started = deferred<void>();
   const release = deferred<void>();
-  fixture.describe.mockImplementationOnce(async () => {
+  vi.mocked(client.describe).mockImplementationOnce(async () => {
     started.resolve();
     await release.promise;
     throw new TypeError("Old opening failed");
   });
-  const repository = new MdbaseTaskRepository(fixture.connect);
   render(
     <RepositoryProvider
       repository={repository}
@@ -183,10 +188,7 @@ it("reopens after backgrounding during describe and ignores the old opening fail
 });
 
 it("shows a usable first view while enabled archive reconciliation and the metadata scan are blocked", async () => {
-  const fixture = mdbaseFixture([
-    taskRecord("one", "First visible task", "r1"),
-  ]);
-  const repository = new MdbaseTaskRepository(fixture.connect);
+  const { client, repository } = await fixtureWith("First visible task");
   const configuration = await repository.taskConfiguration();
   configuration.statuses = configuration.statuses.map((status) => ({
     ...status,
@@ -194,14 +196,15 @@ it("shows a usable first view while enabled archive reconciliation and the metad
     autoArchiveDelay: 5,
   }));
   vi.spyOn(repository, "taskConfiguration").mockResolvedValue(configuration);
-  const original = fixture.queryPages.getMockImplementation()!;
+  const pages = client.pages.bind(client);
   const release = deferred<void>();
-  fixture.queryPages.mockImplementation((input, options) =>
+  const scan = vi.spyOn(client, "pages").mockImplementation((...args) =>
     (async function* () {
       await release.promise;
-      yield* original(input, options);
+      yield* pages(...args);
     })(),
   );
+  const execute = vi.spyOn(client, "executeAppBases");
   const rendered = render(
     <RepositoryProvider
       repository={repository}
@@ -213,8 +216,8 @@ it("shows a usable first view while enabled archive reconciliation and the metad
   try {
     expect(await screen.findByText("First visible task")).toBeVisible();
     expect(screen.getByText("ready")).toBeVisible();
-    expect(fixture.queryPages).toHaveBeenCalledOnce();
-    expect(fixture.executeViewPages).toHaveBeenCalledOnce();
+    expect(scan).toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledOnce();
   } finally {
     await act(async () => {
       release.resolve();
@@ -265,9 +268,7 @@ function FirstView() {
 }
 
 it("a parent re-render with a new recovery callback never suspends the open repository or cancels its work", async () => {
-  const repository = new MdbaseTaskRepository(
-    mdbaseFixture([taskRecord("one", "One", "r1")]).connect,
-  );
+  const { repository } = await fixtureWith("One");
   const suspend = vi.spyOn(repository, "suspend");
   const journal = new MemoryMutationJournal();
   const view = (label: string) => (

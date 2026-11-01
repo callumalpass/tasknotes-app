@@ -9,7 +9,6 @@ import {
 } from "mdbase";
 import { stringify } from "yaml";
 import { MdbaseError, type MdbaseClient } from "@mdbase-dev/sdk";
-import type { JsonObject, TypePackProvision } from "@mdbase-dev/connect";
 import { TASKNOTES_READABLE_CONTRACTS } from "../domain/tasknotes-contract";
 import manifest from "../generated/mdbase-app.json";
 import bases from "../../vendor/obsidian-base-1.0.0.json";
@@ -31,7 +30,7 @@ const provisions = [
     (p) => p.manifest.id === id,
   );
   if (!provision) throw new Error(`The pinned ${id} provision is unavailable.`);
-  return provision as TypePackProvision;
+  return provision;
 });
 // This hashes actual declaration DATA only. Core independently binds actual
 // setup inputs; neither digest is a trusted native head or file witness.
@@ -159,7 +158,7 @@ async function configuration(
   return resolveTaskTypeDefinition(type.raw, {
     typeName: type.name,
     fields: Object.fromEntries(implementation.fields),
-    configuration: implementation.binding as JsonObject,
+    configuration: implementation.binding as Record<string, unknown>,
     version: implementation.version,
   }).model.configuration();
 }

@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { MdbaseError, mdbaseError } from "@mdbase-dev/sdk";
 
 import { TaskCommandService } from "./task-commands";
 import { TaskDeletionNotStartedError } from "./ports/task-repository";
@@ -195,10 +195,10 @@ describe("TaskCommandService", () => {
   it("does not retry a failed deletion on foreground changes", async () => {
     const repository = taskRepository();
     repository.delete.mockRejectedValueOnce(
-      connectError("operation_outcome_unknown", "Deletion outcome unknown", {
-        operationOutcome: "unknown",
-        details: { request_id: "delete-request-1" },
-      }),
+      new MdbaseError(
+        mdbaseError("outcome_unknown", "Deletion outcome unknown").toProblem(),
+        { mutationId: "delete-request-1" },
+      ),
     );
     const service = new TaskCommandService({
       repository,
@@ -285,7 +285,7 @@ describe("TaskCommandService", () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
     repository.delete.mockRejectedValueOnce(
-      connectError("hosted_provider_unavailable", "Storage unavailable"),
+      mdbaseError("unavailable", "Storage unavailable"),
     );
     const service = new TaskCommandService({ repository, journal });
     await service.initialize();
@@ -309,17 +309,41 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
+  it("does not pin a rejected deletion's mutation ID as uncertain recovery", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.delete.mockRejectedValueOnce(
+      new MdbaseError(
+        {
+          code: "conflict",
+          recovery: "resolve_conflict",
+          message: "The record changed.",
+        },
+        { mutationId: "rejected-delete" },
+      ),
+    );
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(journal.commands).toHaveLength(1);
+    expect(journal.commands[0]).not.toHaveProperty("authorityRequestId");
+    await service.retryDeletion();
+    expect(repository.delete).toHaveBeenNthCalledWith(2, "task-1");
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
   it("preserves an unknown authority request for explicit review after restart", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();
     repository.delete.mockRejectedValueOnce(
-      connectError(
-        "operation_outcome_unknown",
-        "The deletion may have completed.",
-        {
-          operationOutcome: "unknown",
-          details: { request_id: "delete-request-1" },
-        },
+      new MdbaseError(
+        mdbaseError(
+          "outcome_unknown",
+          "The deletion may have completed.",
+        ).toProblem(),
+        { mutationId: "delete-request-1" },
       ),
     );
     const first = new TaskCommandService({ repository, journal });

@@ -20,7 +20,6 @@ import {
   type SyncStatus,
   type WriteLedgerEntry,
 } from "@mdbase-dev/sdk";
-import { linksTo } from "@mdbase-dev/connect";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -1829,14 +1828,15 @@ export class NextTaskRepository implements TaskRepository {
     if (personPath === undefined) return undefined;
     const paths = new Set<string>();
     for (const provider of this.providers) {
+      const field = JSON.stringify(
+        provider.model.config.fieldMapping.assignees,
+      );
+      const target = JSON.stringify(personPath);
       for await (const page of this.client.pages(
         {
           types: [provider.typeName],
-          where: linksTo(
-            provider.model.config.fieldMapping.assignees,
-            personPath,
-            { multiple: true },
-          ),
+          // The replica resolves links; compare exact paths, never basenames.
+          where: `${field} in record && record[${field}] != null && record[${field}].exists(link, link != null && link.asFile() != null && link.asFile().file.path == ${target})`,
           limit: 1000,
         },
         undefined,
@@ -1915,6 +1915,7 @@ export class NextTaskRepository implements TaskRepository {
     options: { signal?: AbortSignal } = {},
   ): Promise<Task[]> {
     const signal = this.signal(options.signal);
+    signal.throwIfAborted();
     const selected = query.search?.trim()
       ? (await this.search(query, options)).map((r) => r.task)
       : await this.listSummaries(query);

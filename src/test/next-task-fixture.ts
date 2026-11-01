@@ -8,6 +8,7 @@ import {
 } from "@mdbase-dev/sdk";
 import {
   MemoryReplica,
+  type MemoryRecord,
   type MemoryReplicaOptions,
 } from "@mdbase-dev/sdk/testing";
 import {
@@ -21,6 +22,8 @@ import {
 } from "@tasknotes/model/frontmatter";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { vi } from "vitest";
+import type { CreateTaskInput } from "../domain/task";
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { NextTaskRepository } from "../storage/next-repository";
 
 /** SDK protocol stand-in. Catalog is synthetic: this is not native Core, Noise,
@@ -53,6 +56,7 @@ export async function attachTaskNotes(
     archive = false,
     modelConfig,
     connectorFactory,
+    wrapConnector = (connector) => connector,
     accountId = crypto.randomUUID(),
   }: {
     archive?: boolean;
@@ -61,6 +65,8 @@ export async function attachTaskNotes(
       replica: MemoryReplica,
       catalog: wire.DescribeResult,
     ) => Connector;
+    /** Observe the link (benchmarks meter it) without replacing the stand-in. */
+    wrapConnector?: (connector: Connector) => Connector;
     accountId?: string;
   } = {},
 ) {
@@ -121,7 +127,9 @@ export async function attachTaskNotes(
   const client =
     existing ??
     (await connect({
-      connector: connectorFactory?.(replica, catalog) ?? replica.connector(),
+      connector: wrapConnector(
+        connectorFactory?.(replica, catalog) ?? replica.connector(),
+      ),
       app: { name: "tasknotes-test", version: "test" },
       reconnect: false,
     }));
@@ -153,4 +161,87 @@ export async function attachTaskNotes(
     repository,
     close: () => repository.dispose(),
   };
+}
+
+/** Seed a confirmed record from plain frontmatter, as another app wrote it. */
+export function seedRecord(
+  replica: MemoryReplica,
+  record: {
+    path: string;
+    types: string[];
+    frontmatter: Record<string, unknown>;
+    body?: string;
+  },
+) {
+  return replica.seed({
+    ...record,
+    frontmatter: Object.fromEntries(
+      Object.entries(record.frontmatter).map(([field, value]) => [
+        field,
+        toValue(value as PlainValue),
+      ]),
+    ),
+  });
+}
+
+/** Seed a confirmed TaskNotes task record, as another app would have written it. */
+export function seedTask(
+  replica: MemoryReplica,
+  input: CreateTaskInput,
+  options: { id?: string; now?: string; path?: string } = {},
+) {
+  const task = new TaskNotesTaskModel().create(input, {
+    id: options.id ?? crypto.randomUUID(),
+    now: options.now ?? "2026-07-22T00:00:00.000Z",
+  });
+  return seedRecord(replica, {
+    path: options.path ?? task.path,
+    types: ["task"],
+    frontmatter: task.frontmatter,
+    body: task.body,
+  });
+}
+
+/** A saved task view the replica serves to app Bases reads. */
+export function seedTaskView(
+  replica: MemoryReplica,
+  {
+    path = "views/tasks.base",
+    name = "Tasks",
+    columns = ["file.path"],
+  }: { path?: string; name?: string; columns?: string[] } = {},
+) {
+  const view = replica.seedBaseView({ path, types: ["task"], columns, name });
+  // The replica stores its own view list as the body; the app reads the
+  // source as a Bases document.
+  replica.editElsewhere(view.record, {
+    body: `views:\n  - type: table\n    name: ${JSON.stringify(name)}\n`,
+  });
+  return view;
+}
+
+const literal = String.raw`("(?:[^"\\]|\\.)*")`;
+const bodyContains = new RegExp(
+  String.raw`^file\.body\.lower\(\)\.contains\(${literal}\)$`,
+);
+const pathOrTitleContains = new RegExp(
+  String.raw`^file\.path\.lower\(\)\.contains\(${literal}\) \|\| \("title" in record && record\.title\.lower\(\)\.contains\(${literal}\)\)$`,
+);
+
+/** `MemoryReplicaOptions.where` for the expressions TaskNotes sends: Notes
+ * search and link completion. Not Core's CEL; anything else is refused. */
+export function taskQueryWhere(expression: string, record: MemoryRecord) {
+  const body = bodyContains.exec(expression);
+  if (body)
+    return record.body.toLowerCase().includes(JSON.parse(body[1]!) as string);
+  const link = pathOrTitleContains.exec(expression);
+  if (link) {
+    const title = record.frontmatter.get("title");
+    return (
+      record.path.toLowerCase().includes(JSON.parse(link[1]!) as string) ||
+      (typeof title === "string" &&
+        title.toLowerCase().includes(JSON.parse(link[2]!) as string))
+    );
+  }
+  throw new Error(`Unsupported synthetic where: ${expression}`);
 }

@@ -1,25 +1,11 @@
-import type {
-  JsonObject,
-  MdbaseConnection,
-  PeopleDirectory as ConnectPeopleDirectory,
-} from "@mdbase-dev/connect";
-import { sameIdentity } from "@mdbase-dev/connect";
-import { requireConnectOutcome } from "../cloud/outcome";
+import {
+  sameIdentity,
+  type PeopleDirectory as SdkPeopleDirectory,
+} from "@mdbase-dev/sdk";
 import type { CurrentPerson, PeopleDirectory } from "../domain/people";
 
 /** Resolution happens once, in the SDK; this only adapts it for display. */
-export async function readPeopleDirectory(
-  connection: MdbaseConnection<JsonObject>,
-  signal?: AbortSignal,
-): Promise<PeopleDirectory> {
-  return peopleView(
-    requireConnectOutcome(
-      await connection.people.directory({ signal, members: "if-approved" }),
-    ),
-  );
-}
-
-export function peopleView(directory: ConnectPeopleDirectory): PeopleDirectory {
+export function peopleView(directory: SdkPeopleDirectory): PeopleDirectory {
   const identityKey = (identity: { issuer: string; subject: string }) =>
     JSON.stringify([identity.issuer, identity.subject]);
   const identityCounts = new Map<string, number>();

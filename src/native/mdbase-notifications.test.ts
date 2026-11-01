@@ -1,4 +1,4 @@
-import { connectError } from "@mdbase-dev/connect-testing";
+import { mdbaseError } from "@mdbase-dev/sdk";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -16,11 +16,9 @@ describe("mdbase native notifications", () => {
       optedIn: false,
     });
     expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
-    expect(fixture.connect.capabilityState).toHaveBeenCalledWith(
-      "background.schedule",
-    );
+    // The SDK connection owns timer authority; no legacy capability probe.
     // No delivery grant/registration is needed merely to be connected or off.
-    expect(fixture.connect.registerNativeNotifications).not.toHaveBeenCalled();
+    expect(fixture.connect.registerFcm).not.toHaveBeenCalled();
 
     expect(await fixture.subject.enable()).toEqual({
       state: "enabled",
@@ -33,8 +31,9 @@ describe("mdbase native notifications", () => {
         importance: 4,
       }),
     );
-    expect(fixture.connect.registerNativeNotifications).toHaveBeenCalledWith({
+    expect(fixture.connect.registerFcm).toHaveBeenCalledWith({
       token: "fcm-token",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -119,7 +118,7 @@ describe("mdbase native notifications", () => {
   it("removes the Connect channel before deleting the local token", async () => {
     const order: string[] = [];
     const fixture = manager({
-      unregisterNativeNotifications: vi.fn(async () => {
+      unregisterFcm: vi.fn(async () => {
         order.push("connect");
       }),
       deleteToken: vi.fn(async () => {
@@ -136,7 +135,7 @@ describe("mdbase native notifications", () => {
 
   it("requires renewed timer access before asking for notification permission", async () => {
     const fixture = manager({
-      capabilityState: vi.fn(() => "requires_authorization"),
+      noTimers: vi.fn(() => true),
     });
     expect(await fixture.subject.enable()).toEqual({
       state: "reauthorization_required",
@@ -185,8 +184,9 @@ describe("mdbase native notifications", () => {
       optedIn: true,
     });
     expect(fixture.webPush.requestPermissions).toHaveBeenCalledOnce();
-    expect(fixture.connect.registerNotifications).toHaveBeenCalledWith({
+    expect(fixture.connect.registerWebPush).toHaveBeenCalledWith({
       serviceWorker: fixture.serviceWorker,
+      signal: expect.any(AbortSignal),
     });
     expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
     expect(fixture.messaging.getToken).not.toHaveBeenCalled();
@@ -199,8 +199,9 @@ describe("mdbase native notifications", () => {
     });
     await fixture.subject.enable();
     await fixture.subject.disable();
-    expect(fixture.connect.unregisterNotifications).toHaveBeenCalledWith(
+    expect(fixture.connect.unregisterWebPush).toHaveBeenCalledWith(
       fixture.serviceWorker,
+      { signal: expect.any(AbortSignal) },
     );
     expect(fixture.storage.getItem("tasknotes:mdbase-notifications:v1")).toBe(
       null,
@@ -210,9 +211,7 @@ describe("mdbase native notifications", () => {
   it("does not contact either service when a disconnected collection was not opted in", async () => {
     const fixture = manager();
     await fixture.subject.disableIfEnabled();
-    expect(
-      fixture.connect.unregisterNativeNotifications,
-    ).not.toHaveBeenCalled();
+    expect(fixture.connect.unregisterFcm).not.toHaveBeenCalled();
     expect(fixture.messaging.deleteToken).not.toHaveBeenCalled();
   });
 
@@ -223,17 +222,19 @@ describe("mdbase native notifications", () => {
     fixture.storage.setItem("tasknotes:mdbase-notifications:v1", "1");
     await fixture.subject.refreshRegistration();
     expect(fixture.messaging.requestPermissions).not.toHaveBeenCalled();
-    expect(fixture.connect.registerNativeNotifications).toHaveBeenCalledWith({
+    expect(fixture.connect.registerFcm).toHaveBeenCalledWith({
       token: "fcm-token",
+      signal: expect.any(AbortSignal),
     });
   });
 
   it("requires renewed approval when the grant predates manifest criteria", async () => {
     const fixture = manager({
-      registerNativeNotifications: vi.fn(async () => {
-        throw connectError(
-          "notification_reauthorization_required",
+      registerFcm: vi.fn(async () => {
+        throw mdbaseError(
+          "forbidden",
           "Review the updated criteria.",
+          "timer_channel_reapproval_required",
         );
       }),
     });
@@ -245,6 +246,24 @@ describe("mdbase native notifications", () => {
       fixture.storage.getItem("tasknotes:mdbase-notifications:v1"),
     ).toBeNull();
   });
+
+  it.each([
+    ["timer_push_platform", "not_configured"],
+    ["push_registration_missing", "reauthorization_required"],
+  ])(
+    "maps the SDK timer refusal %s without enabling delivery",
+    async (reason, state) => {
+      const fixture = manager({
+        registerFcm: vi.fn(async () => {
+          throw mdbaseError("forbidden", "Delivery refused.", reason);
+        }),
+      });
+      expect(await fixture.subject.enable()).toEqual({ state, optedIn: false });
+      expect(
+        fixture.storage.getItem("tasknotes:mdbase-notifications:v1"),
+      ).toBeNull();
+    },
+  );
 
   it("routes only valid content-free mdbase notification data", () => {
     expect(
@@ -258,11 +277,11 @@ describe("mdbase native notifications", () => {
         },
       }),
     ).toEqual({
-      type: "mdbase.notification",
       version: 1,
-      signal_id: "signal",
-      criterion_id: "task.changed",
+      signalId: "signal",
+      criterionId: "task.changed",
       cursor: "42",
+      presentation: null,
     });
     expect(mdbaseNotificationData({ data: { path: "tasks/private.md" } })).toBe(
       null,
@@ -275,21 +294,21 @@ describe("mdbase native notifications", () => {
         type: "tasknotes:mdbase-notification",
         opened: true,
         notification: {
-          type: "mdbase.notification",
           version: 1,
-          signal_id: "signal",
-          criterion_id: "task.reminder",
+          signalId: "signal",
+          criterionId: "task.reminder",
           cursor: "42",
+          presentation: null,
         },
       }),
     ).toEqual({
       opened: true,
       notification: {
-        type: "mdbase.notification",
         version: 1,
-        signal_id: "signal",
-        criterion_id: "task.reminder",
+        signalId: "signal",
+        criterionId: "task.reminder",
         cursor: "42",
+        presentation: null,
       },
     });
     expect(
@@ -302,25 +321,20 @@ describe("mdbase native notifications", () => {
   });
 });
 
-function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
+function manager(
+  overrides: Record<
+    string,
+    ReturnType<typeof vi.fn<(...args: never[]) => unknown>>
+  > = {},
+) {
   const storage = localStorage;
   storage.clear();
   const connect = {
-    connection:
-      overrides.connection ??
-      vi.fn(() => ({
-        collectionId: "collection",
-        operations: ["reconcile_timers"],
-      })),
-    capabilityState: overrides.capabilityState ?? vi.fn(() => "available"),
-    registerNotifications:
-      overrides.registerNotifications ?? vi.fn(async () => ({})),
-    unregisterNotifications:
-      overrides.unregisterNotifications ?? vi.fn(async () => undefined),
-    registerNativeNotifications:
-      overrides.registerNativeNotifications ?? vi.fn(async () => ({})),
-    unregisterNativeNotifications:
-      overrides.unregisterNativeNotifications ?? vi.fn(async () => undefined),
+    registerWebPush: overrides.registerWebPush ?? vi.fn(async () => ({})),
+    unregisterWebPush:
+      overrides.unregisterWebPush ?? vi.fn(async () => undefined),
+    registerFcm: overrides.registerFcm ?? vi.fn(async () => ({})),
+    unregisterFcm: overrides.unregisterFcm ?? vi.fn(async () => undefined),
   };
   const messaging = {
     checkPermissions:
@@ -346,7 +360,14 @@ function manager(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
     addListener: vi.fn(async () => ({ remove: vi.fn(async () => undefined) })),
   };
   const subject = new MdbaseNotificationManager({
-    connect,
+    connect: {
+      connection:
+        overrides.connection ??
+        vi.fn(() => ({
+          id: "collection",
+          ...(overrides.noTimers?.() ? {} : { timers: connect }),
+        })),
+    },
     messaging,
     webPush,
     storage,

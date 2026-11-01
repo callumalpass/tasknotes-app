@@ -9,7 +9,7 @@ import {
 } from "../test/render";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
-import { deferred } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
 import { defaultCalendarPreferences } from "./calendar-preferences";
 import type { SettingsSection } from "./settings-sections";
 
