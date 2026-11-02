@@ -636,14 +636,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private assertCurrentData(revision: number) {
-    if (revision !== this.dataRevision)
-      throw new MdbaseError({
-        code: "conflict",
-        recovery: "refresh",
-        reason: "collection_changed",
-        message:
-          "The collection changed while data was loading. Refresh to read the current collection.",
-      });
+    if (revision !== this.dataRevision) throw collectionChanged();
   }
 
   private invalidateRemoteData(coalesce = false) {
@@ -2866,7 +2859,16 @@ export class NextTaskRepository implements TaskRepository {
           { captureTimezone: timezone, limit: 128, continuation },
           signal,
         );
-        if (result.kind === "refusal") throw new MdbaseError(result.problem);
+        if (result.kind === "refusal") {
+          // The replica retires a discovery cursor when the collection moves
+          // under it. That is a retired READ: start a fresh discovery.
+          if (
+            result.problem.code === "conflict" &&
+            result.problem.reason === "view_discovery_stale"
+          )
+            throw collectionChanged();
+          throw new MdbaseError(result.problem);
+        }
         return result;
       }, signal)) {
         this.assertCurrentData(revision);
@@ -3555,6 +3557,16 @@ export class NextTaskRepository implements TaskRepository {
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }
+}
+
+function collectionChanged(): MdbaseError {
+  return new MdbaseError({
+    code: "conflict",
+    recovery: "refresh",
+    reason: "collection_changed",
+    message:
+      "The collection changed while data was loading. Refresh to read the current collection.",
+  });
 }
 
 /**

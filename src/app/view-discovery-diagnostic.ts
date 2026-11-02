@@ -11,7 +11,12 @@ const reasons: Readonly<Record<string, readonly string[]>> = {
     "invalid_source",
     "unsupported",
   ],
-  conflict: ["collection_changed", "source_changed", "catalog_changed"],
+  conflict: [
+    "collection_changed",
+    "source_changed",
+    "catalog_changed",
+    "view_discovery_stale",
+  ],
   forbidden: ["insufficient_access"],
   cancelled: ["superseded"],
   unavailable: [
