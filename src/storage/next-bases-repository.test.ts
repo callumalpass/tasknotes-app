@@ -500,6 +500,22 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       "Second native cell",
     ]);
   });
+  it("restarts view discovery when the replica retires a stale discovery cursor", async () => {
+    const f = await fixture();
+    f.list.mockClear();
+    f.list.mockResolvedValueOnce({
+      kind: "refusal",
+      problem: {
+        code: "conflict",
+        recovery: "refresh",
+        reason: "view_discovery_stale",
+        message: "discovery changed or expired; start fresh discovery",
+      },
+    });
+    const documents = await f.repository.listViews();
+    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    expect(f.list).toHaveBeenCalledTimes(2);
+  });
   it("propagates native refusal and pre-cancellation without fallback or hydration", async () => {
     const f = await fixture();
     const get = vi.spyOn(f.client, "get");
