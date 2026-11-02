@@ -3,7 +3,10 @@ import { StrictMode } from "react";
 import { expect, it, vi } from "vitest";
 import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";
 import type { MdbaseSetupPlan } from "@mdbase-dev/sdk";
-import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
+import {
+  CollectionSwitcher,
+  type CollectionUiOptions,
+} from "@mdbase-dev/ui/collections";
 
 const starterViews = vi.hoisted(() => vi.fn(async () => []));
 vi.mock("../application/ensure-default-view-source", () => ({
@@ -110,7 +113,7 @@ function SwitcherWorkspace({
   actions,
   repository,
 }: {
-  actions: { collectionUi: Parameters<typeof CollectionSwitcher>[0] };
+  actions: { collectionUi: CollectionUiOptions };
   repository: { records: { collection: string } };
 }) {
   return (

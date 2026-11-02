@@ -29,7 +29,7 @@ const stage = {
   sqlite: member("native/sqlite3.wasm"),
   sqliteInitializer: member("native/sqlite3.js"),
 };
-test("production input matches the authenticated beta141 handoff and original SDK", async () => {
+test("production input matches the beta141 trust asset and the beta149 published SDK", async () => {
   assert.equal(
     pin.trustAssetSha256,
     "7912e40838213e60b65848350d319a48019021317b112e3326429b250f0133d7",
@@ -42,9 +42,9 @@ test("production input matches the authenticated beta141 handoff and original SD
   );
   assert.equal(
     sdk.sha256,
-    "e64771a90bed2fb3837d4b65df8930fcd124d3059fcb0bcbaf9d64dbfb148205",
+    "e573c3c2df74076a868e8422ec4e6cf233ede3007806757a03000aed865dedb6",
   );
-  assert.equal(sdk.sourceCommit, "eaa4e697fc1198f32fc3714f377342a24c56d985");
+  assert.equal(sdk.sourceCommit, "4443fd15c4a591e46538eae24cf8425708e6a7f0");
   assertSdkDependency(
     pin,
     sdk,
@@ -82,34 +82,32 @@ test("real staging bytes cannot satisfy production, nor source-only SDK output",
   );
 });
 test("trust, provenance and every original native asset are checked", () => {
-  const metadata = JSON.parse(
-    /^const metadata = (\{.*\});$/m.exec(stage.packagedTrust)[1],
+  const productionArchive = fileURLToPath(
+    new URL(`vendor/${sdk.artifact}`, root),
   );
-  const provenance = JSON.parse(stage.provenance);
-  Object.assign(metadata, {
-    environment: "production",
-    cpOrigin: pin.cpOrigin,
-    logOrigin: pin.logOrigin,
-    assetSha256: pin.trustAssetSha256,
-  });
-  Object.assign(provenance, { environment: "production" });
-  Object.assign(provenance.trust, {
-    environment: "production",
-    cpOrigin: pin.cpOrigin,
-    logOrigin: pin.logOrigin,
-    sha256: pin.trustAssetSha256,
-  });
+  const production = (name) =>
+    execFileSync("tar", ["-xOf", productionArchive, `package/dist/${name}`], {
+      maxBuffer: 8_000_000,
+    });
   const files = {
-    ...stage,
-    packagedTrust: `const metadata = ${JSON.stringify(metadata)};`,
-    provenance: JSON.stringify(provenance),
+    packagedTrust: production("application/packaged-trust.js").toString(),
+    provenance: production("native/provenance.json").toString(),
+    assetPins: JSON.parse(production("application/asset-pins.json")),
+    runtime: production("native/runtime.wasm"),
+    sqlite: production("native/sqlite3.wasm"),
+    sqliteInitializer: production("native/sqlite3.js"),
   };
-  assertPackagedSdk(pin, files); // Synthetic positive only, not authentication.
+  const metadata = JSON.parse(
+    /^const metadata = (\{.*\});$/m.exec(files.packagedTrust)[1],
+  );
+  const provenance = JSON.parse(files.provenance);
+  assertPackagedSdk(pin, files);
   for (const [field, value] of [
-    ["runtime", stage.runtime.subarray(1)],
+    ["runtime", files.runtime.subarray(1)],
     ["sqlite", undefined],
     ["sqliteInitializer", Buffer.from("bad")],
     ["provenance", undefined],
+    ["provenance", stage.provenance],
     ["packagedTrust", "export const metadata = {};"],
   ])
     assert.throws(() => assertPackagedSdk(pin, { ...files, [field]: value }));
@@ -120,7 +118,14 @@ test("trust, provenance and every original native asset are checked", () => {
         packagedTrust: `const metadata = ${JSON.stringify({ ...metadata, [field]: "wrong" })};`,
       }),
     );
-  for (const field of ["sha256", "environment", "cpOrigin", "logOrigin"])
+  for (const field of ["schema", "environment"])
+    assert.throws(() =>
+      assertPackagedSdk(pin, {
+        ...files,
+        provenance: JSON.stringify({ ...provenance, [field]: "wrong" }),
+      }),
+    );
+  for (const field of ["sha256", "package", "cpOrigin", "logOrigin"])
     assert.throws(() =>
       assertPackagedSdk(pin, {
         ...files,

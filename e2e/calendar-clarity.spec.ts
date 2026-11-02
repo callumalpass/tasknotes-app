@@ -157,16 +157,30 @@ test.describe("calendar drops", () => {
       .last()
       .textContent())!.trim();
     const from = (await event.getAttribute("data-date"))!;
-    // The quieter neighbouring day in the same week keeps the drop on screen
-    // rather than behind its "+N more".
+    // The quietest other day in the same week keeps the drop on screen
+    // rather than behind its "+N more". A full day renders only what fits, so
+    // its overflow button counts too; and a neighbour alone is not enough,
+    // since today can open the week beside an equally full day.
     const to = await page.evaluate((from) => {
       const cell = document.querySelector(`.tnc-dg-day[data-date="${from}"]`)!;
-      const load = (day: Element) =>
-        document.querySelectorAll(
-          `.tnc-dg .tnc-item[data-date="${day.getAttribute("data-date")}"]`,
-        ).length;
-      const [quietest] = [cell.previousElementSibling, cell.nextElementSibling]
-        .filter((day): day is Element => !!day)
+      const week = cell.closest(".tnc-dg-week")!;
+      const load = (day: Element) => {
+        const { left, right } = day.getBoundingClientRect();
+        const hidden = [...week.querySelectorAll(".tnc-more")]
+          .filter((more) => {
+            const { x } = more.getBoundingClientRect();
+            return x >= left && x < right;
+          })
+          .reduce((sum, more) => sum + parseInt(more.textContent!.slice(1)), 0);
+        return (
+          hidden +
+          week.querySelectorAll(
+            `.tnc-item[data-date="${day.getAttribute("data-date")}"]`,
+          ).length
+        );
+      };
+      const [quietest] = [...week.querySelectorAll(".tnc-dg-day")]
+        .filter((day) => day !== cell)
         .sort((a, b) => load(a) - load(b));
       return quietest!.getAttribute("data-date")!;
     }, from);

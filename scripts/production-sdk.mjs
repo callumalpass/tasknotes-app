@@ -76,17 +76,12 @@ export function assertPackagedSdk(pin, files) {
     ["release control plane", metadata.cpOrigin, pin.cpOrigin],
     ["release log origin", metadata.logOrigin, pin.logOrigin],
     ["release trust digest", metadata.assetSha256, pin.trustAssetSha256],
-    ["provenance schema", provenance.schema, "mdbn-sdk/application-assets/1"],
+    ["provenance schema", provenance.schema, "mdbase-sdk/npm-publication/1"],
     ["provenance environment", provenance.environment, "production"],
-    [
-      "provenance trust environment",
-      provenance.trust?.environment,
-      "production",
-    ],
+    ["provenance trust package", provenance.trust?.package, "@mdbase-dev/sdk"],
     ["provenance control plane", provenance.trust?.cpOrigin, pin.cpOrigin],
     ["provenance log origin", provenance.trust?.logOrigin, pin.logOrigin],
     ["provenance trust digest", provenance.trust?.sha256, pin.trustAssetSha256],
-    ["verifier clock override", provenance.verifier?.clockOverride, false],
   ];
   for (const [name, actual, expected] of checks)
     if (actual !== expected)

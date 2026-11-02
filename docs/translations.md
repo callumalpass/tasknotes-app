@@ -130,7 +130,7 @@ unchanged. Requalify this bundler integration when replacing the npm pins.
 ## Published shared packages
 
 Both `@mdbase-dev/i18n` and `@mdbase-dev/ui` use the exact npm version
-`0.1.0-beta.147`, not a dist-tag or range. The lockfile records registry integrity;
+`0.1.0-beta.149`, not a dist-tag or range. The lockfile records registry integrity;
 release tests verify both exact pins and installed versions. The vendored kit/UI
 archives, provenance manifests and archive-only checks have been removed.
 
