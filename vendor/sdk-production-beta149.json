@@ -11,10 +11,10 @@
     "repository": "mdbase-dev/mdbase-connect",
     "workflow": ".github/workflows/publish-sdk-npm.yml",
     "ref": "refs/tags/v0.1.0-beta.149",
-    "run_id": 41305238627,
-    "run_attempt": 1,
     "npm": "@mdbase-dev/sdk@0.1.0-beta.149",
-    "note": "Byte-identical to the npm tarball; Sigstore attestation verified for this source ref and workflow."
+    "integrity": "sha512-hoX+/4KYTbR+qN/gViUbvzX5s7f6lSOg9AOmQVE3USrtJ+9fpnb+4q8YBX9AWRcE43hkXysJH6gPqwgDfIE5Rg==",
+    "tarball": "https://registry.npmjs.org/@mdbase-dev/sdk/-/sdk-0.1.0-beta.149.tgz",
+    "attestations": "https://registry.npmjs.org/-/npm/v1/attestations/@mdbase-dev%2fsdk@0.1.0-beta.149"
   },
   "trust": {
     "package": "@mdbase-dev/sdk",
@@ -23,7 +23,8 @@
     "cpOrigin": "https://connect.mdbase.dev",
     "logOrigin": "https://log.mdbase.dev",
     "sourceCommit": "36abd4b065be9495a7f5ae0808865a1f2279af04",
-    "sourceVersion": "0.1.0-beta.141"
+    "sourceVersion": "0.1.0-beta.141",
+    "environment": "production"
   },
   "runtime": {
     "sha256": "643eef6203bc7d394c76f9e305faa8977ea97785758b9cb076efda05d4f4d83f",
@@ -34,6 +35,7 @@
       "commit": "e161f426a521c39adf8ca057255fa940338f7de4"
     }
   },
+  "packagedTrustModuleSha256": "cf9690968d68b3c1eed2356ccfa2c72198b2f8cf07b9b24b1bb7be499b05bffb",
   "bundledDependencies": [
     {
       "name": "@mdbase-dev/connect-protocol",
