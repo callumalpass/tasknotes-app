@@ -5250,6 +5250,10 @@ msgstr "减少搜索词或尝试其他拼写。"
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其设置或选择其他视图。"
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "关闭提醒"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "类型"

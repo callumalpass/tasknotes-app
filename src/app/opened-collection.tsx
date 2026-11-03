@@ -39,7 +39,7 @@ export function OpenedCollection({
       <RepositoryProvider
         mutationJournal={mutationJournal}
         discardPendingRecovery={discardPendingRecovery}
-        reminderAuthority="none"
+        reminderAuthority="connect"
         repository={repository}
       >
         <AppShell />

@@ -9,7 +9,6 @@ export const developmentDeployments = Object.freeze({
     appOrigin: "https://lab.tasknotes-app.pages.dev",
     editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
-    loopbackOrigin: "http://127.0.0.1:28487",
     project: "tasknotes-app",
     branch: "lab",
     wranglerVersion: "4.114.0",
@@ -97,7 +96,7 @@ export function developmentDeploymentFor(environment) {
     target,
     "VITE_MDBASE_CONNECT_URL",
   );
-  if (deployment.environment === "lab") {
+  if (deployment.loopbackOrigin) {
     requireMatchingOverride(
       environment.VITE_MDBASE_CONNECT_LOOPBACK_URL,
       deployment.loopbackOrigin,
@@ -162,7 +161,7 @@ export function developmentDeploymentEnvironment(
       "VITE_TASKNOTES_EDITOR_ORIGIN is required for this TaskNotes deployment target.",
     );
   const buildEnvironment = { ...environment };
-  // Do not let an inherited legacy/LAB value enter a native staging build,
+  // Do not let an inherited legacy value enter a NEXT LAB or staging build,
   // even when a caller passes an already-selected deployment explicitly.
   delete buildEnvironment.VITE_MDBASE_CONNECT_LOOPBACK_URL;
   return {
@@ -177,7 +176,7 @@ export function developmentDeploymentEnvironment(
     TASKNOTES_WEB_ONLY: "1",
     TASKNOTES_FIREBASE_PROJECT_ID: "",
     VITE_MDBASE_CONNECT_URL: deployment.connectOrigin,
-    ...(deployment.environment === "lab"
+    ...(deployment.loopbackOrigin
       ? { VITE_MDBASE_CONNECT_LOOPBACK_URL: deployment.loopbackOrigin }
       : {}),
   };
@@ -262,7 +261,9 @@ export async function deployDevelopmentTaskNotes(
   console.log(`Development TaskNotes deployed: ${deployment.appOrigin}/`);
 }
 
-async function verifyDevelopmentBuild(deployment = developmentDeployment) {
+export async function verifyDevelopmentBuild(
+  deployment = developmentDeployment,
+) {
   const manifestPath = resolve(
     projectRoot,
     "dist",

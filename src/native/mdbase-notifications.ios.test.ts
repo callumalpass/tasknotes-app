@@ -1,27 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const connect = vi.hoisted(() => ({
-  registerNativeNotifications: vi.fn(async () => ({ ok: true, value: {} })),
-  unregisterNativeNotifications: vi.fn(async () => ({
-    ok: true,
-    value: undefined,
-  })),
-}));
-
-vi.mock("../cloud/connect", () => ({
-  cloudSession: {
-    getSnapshot: () => ({
-      status: "ready",
-      capabilities: {
-        values: { "background.schedule": { state: "available" } },
-      },
-    }),
-    connection: () => ({
-      info: () => ({ collectionId: "collection" }),
-      ...connect,
-    }),
-  },
-}));
+const timers = {
+  registerFcm: vi.fn(async () => ({})),
+  unregisterFcm: vi.fn(async () => undefined),
+};
 
 let permission = "prompt";
 const listeners = new Map<string, (event: unknown) => void>();
@@ -79,6 +61,10 @@ afterEach(() => vi.unstubAllGlobals());
 
 it("loads the real iOS proxy without assimilating it as a thenable", async () => {
   const { mdbaseNotifications } = await import("./mdbase-notifications");
+  mdbaseNotifications.bindScope({
+    key: "ios",
+    timers: timers as unknown as import("@mdbase-dev/sdk").TimersApi,
+  });
   expect(await mdbaseNotifications.status()).toEqual({
     state: "off",
     optedIn: false,
@@ -98,18 +84,19 @@ it("loads the real iOS proxy without assimilating it as a thenable", async () =>
     state: "enabled",
     optedIn: true,
   });
-  expect(connect.registerNativeNotifications).toHaveBeenCalledWith({
+  expect(timers.registerFcm).toHaveBeenCalledWith({
     token: "fcm-token",
-    timeoutMs: 45_000,
+    criteria: ["task.reminder"],
+    signal: expect.any(AbortSignal),
   });
   await mdbaseNotifications.refreshRegistration();
-  expect(connect.registerNativeNotifications).toHaveBeenCalledTimes(2);
+  expect(timers.registerFcm).toHaveBeenCalledTimes(2);
 
   expect(await mdbaseNotifications.disable()).toEqual({
     state: "off",
     optedIn: false,
   });
-  expect(nativePromise.mock.calls.map(([, method]) => method)).toContain(
+  expect(nativePromise.mock.calls.map(([, method]) => method)).not.toContain(
     "deleteToken",
   );
   expect(nativePromise.mock.calls.map(([, method]) => method)).not.toContain(
@@ -119,6 +106,10 @@ it("loads the real iOS proxy without assimilating it as a thenable", async () =>
 
 it("attaches and removes all iOS listeners through the real proxy", async () => {
   const { mdbaseNotifications } = await import("./mdbase-notifications");
+  mdbaseNotifications.bindScope({
+    key: "ios",
+    timers: timers as unknown as import("@mdbase-dev/sdk").TimersApi,
+  });
   const wake = vi.fn();
   const dispose = mdbaseNotifications.listen(wake);
   await vi.waitFor(() => expect(listeners.size).toBe(3));
@@ -140,9 +131,10 @@ it("attaches and removes all iOS listeners through the real proxy", async () => 
   await mdbaseNotifications.enable();
   listeners.get("tokenReceived")!({ token: "rotated-token" });
   await vi.waitFor(() =>
-    expect(connect.registerNativeNotifications).toHaveBeenCalledWith({
+    expect(timers.registerFcm).toHaveBeenCalledWith({
       token: "rotated-token",
-      timeoutMs: 45_000,
+      criteria: ["task.reminder"],
+      signal: expect.any(AbortSignal),
     }),
   );
   dispose();

@@ -5250,6 +5250,10 @@ msgstr "검색어를 줄이거나 다른 철자를 시도하세요."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집하거나 다른 뷰를 선택하세요."
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "알림 끄기"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "유형"

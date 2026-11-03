@@ -5250,6 +5250,10 @@ msgstr "Используйте меньше слов или попробуйте
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Попробуйте загрузить представление ещё раз. Если проблема не исчезнет, измените его настройки или выберите другое представление."
 
+#: src/app/more-screen.tsx
+msgid "Turn reminders off"
+msgstr "Отключить напоминания"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Тип"

@@ -22,11 +22,29 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_WEB_ONLY: "1",
       TASKNOTES_FIREBASE_PROJECT_ID: "",
       VITE_MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
-      VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487",
       VITE_TASKNOTES_ENVIRONMENT: "lab",
       VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
       VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
     });
+  });
+
+  it("rejects legacy loopback input for NEXT LAB and never injects it", () => {
+    expect(developmentDeployments.lab).not.toHaveProperty("loopbackOrigin");
+    expect(developmentDeploymentEnvironment({})).not.toHaveProperty(
+      "VITE_MDBASE_CONNECT_LOOPBACK_URL",
+    );
+    expect(() =>
+      developmentDeploymentFor({
+        MDBASE_ENV: "lab",
+        VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487",
+      }),
+    ).toThrow(/VITE_MDBASE_CONNECT_LOOPBACK_URL/);
+    expect(
+      developmentDeploymentEnvironment(
+        { VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487" },
+        developmentDeployments.lab,
+      ),
+    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
   });
 
   it("refuses a mismatched LAB app origin and a missing Editor origin", () => {
@@ -114,6 +132,7 @@ describe("TaskNotes development deployment", () => {
       TASKNOTES_APP_URL: "https://candidate-b.tasknotes-app.pages.dev",
       VITE_MDBASE_CONNECT_URL:
         "https://mdbase-connect-candidate-b.onrender.com",
+      VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
       // Candidate B is a LAB-environment build against its own Connect.
       VITE_TASKNOTES_ENVIRONMENT: "lab",
       VITE_TASKNOTES_LAB_ORIGIN: "https://candidate-b.tasknotes-app.pages.dev",
