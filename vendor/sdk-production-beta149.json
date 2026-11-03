@@ -23,8 +23,7 @@
     "cpOrigin": "https://connect.mdbase.dev",
     "logOrigin": "https://log.mdbase.dev",
     "sourceCommit": "36abd4b065be9495a7f5ae0808865a1f2279af04",
-    "sourceVersion": "0.1.0-beta.141",
-    "environment": "production"
+    "sourceVersion": "0.1.0-beta.141"
   },
   "runtime": {
     "sha256": "643eef6203bc7d394c76f9e305faa8977ea97785758b9cb076efda05d4f4d83f",
