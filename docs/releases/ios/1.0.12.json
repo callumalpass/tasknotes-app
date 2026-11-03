@@ -1,0 +1,8 @@
+{
+  "version": "1.0.12",
+  "copyright": "2026 Callum Alpass",
+  "whatsNew": {
+    "en-AU": "This update stops \"Couldn't load your views\" from appearing after you edit a task or a Scratchpad note. TaskNotes now reloads your views quietly when the collection changes during the reload."
+  },
+  "reviewNotes": "TaskNotes 1.0.12 update\n\nHOW TO REVIEW\nTaskNotes needs an mdbase account. We have provided a review account in the App Review sign-in information. Its sample collection already contains tasks.\n1. Open TaskNotes and start the mdbase sign-in flow.\n2. An mdbase sign-in page opens in a browser sheet. Sign in with the review account, choose the collection \"[test] C hosted tasks\", and approve TaskNotes.\n3. You return to TaskNotes with that collection open.\n\nWHAT CHANGED\n- Editing a task or a Scratchpad note no longer shows a \"Couldn't load your views\" error. TaskNotes reloads the views list again when the collection changes while it is loading.\nThere are no new permissions, no new data collection and no in-app purchases. Screenshots are still representative.\n\nWHAT THE APP DOES\nTaskNotes is a task manager that stores tasks as portable Markdown records. Users can capture, edit, complete, search, assign and reorder tasks; set dates, priorities, repeats, reminders and time estimates; use lists, boards and calendars; attach images; and turn Scratchpad notes into tasks.\n\nSERVICES USED\nmdbase stores the user's collection and schedules reminders. Firebase Cloud Messaging and Apple Push Notification service deliver reminder notifications only after the user opts in. The notifications carry no task content."
+}
