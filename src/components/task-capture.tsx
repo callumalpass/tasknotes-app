@@ -32,11 +32,12 @@ import {
 export type { CaptureFollowUp as TaskCaptureFollowUp } from "../application/capture-session";
 import {
   combineTaskDateTime,
+  formatTaskDate,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
 import { successFeedback } from "../native/feedback";
-import { X } from "lucide-react";
+import { ArrowUp, X } from "lucide-react";
 
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
@@ -130,6 +131,8 @@ export function TaskCapture({
   }>({ key: "", items: [] });
   const [selectedSuggestion, setSelectedSuggestion] = useState<number>();
   const inputRef = useRef<HTMLInputElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const focusDetails = useRef(false);
   const inputId = useId();
   const suggestionsId = useId();
   const creationDefaults = defaults ?? emptyDefaults;
@@ -176,7 +179,9 @@ export function TaskCapture({
       ? suggestions.findIndex((item) =>
           suggestionMatches(item, typedQuery, "prefix"),
         )
-      : -1);
+      : suggestions.length
+        ? 0
+        : -1);
 
   useEffect(() => {
     if (!suggestionRequest || !suggestionKey) return;
@@ -253,10 +258,18 @@ export function TaskCapture({
       mirrorRef.current.style.transform = `translateX(${-input.scrollLeft}px)`;
   };
   useLayoutEffect(syncMirror);
+  useLayoutEffect(() => {
+    if (!expanded || !focusDetails.current || !detailsRef.current) return;
+    detailsRef.current
+      .querySelector<HTMLElement>("button, input, textarea")
+      ?.focus();
+    focusDetails.current = false;
+  });
 
   function changeText(value: string, nextCursor = value.length) {
     session.editText(value);
     setCursor(nextCursor);
+    setSelectedSuggestion(undefined);
     if (!value.trim()) setExpanded(false);
   }
 
@@ -272,6 +285,15 @@ export function TaskCapture({
   }
 
   function handleCaptureKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      setSuggestionResult({ key: "", items: [] });
+      focusDetails.current = true;
+      setDetailSections((current) => ({ ...current, timing: true }));
+      setExpanded(true);
+      return;
+    }
     if (!suggestions.length) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -288,7 +310,7 @@ export function TaskCapture({
       );
       return;
     }
-    if (event.key === "Enter" || event.key === "Tab") {
+    if (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey)) {
       if (activeSuggestion < 0) return;
       event.preventDefault();
       chooseSuggestion(suggestions[activeSuggestion]);
@@ -296,6 +318,7 @@ export function TaskCapture({
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       setSuggestionResult({ key: "", items: [] });
     }
   }
@@ -351,7 +374,7 @@ export function TaskCapture({
                 : undefined
             }
             aria-autocomplete="list"
-            aria-controls={suggestionsId}
+            aria-controls={suggestions.length ? suggestionsId : undefined}
             aria-expanded={suggestions.length > 0}
             autoComplete="off"
             enterKeyHint="done"
@@ -379,10 +402,14 @@ export function TaskCapture({
         </span>
         {text.trim() ? (
           <button
+            className="capture-submit"
+            aria-label={
+              capturing ? t({ message: "Adding" }) : t({ message: "Add" })
+            }
             disabled={capturing || error?.code === "outcome-unknown"}
             type="submit"
           >
-            {capturing ? t({ message: "Adding" }) : t({ message: "Add" })}
+            <ArrowUp aria-hidden="true" size={20} />
           </button>
         ) : null}
         {session.canRecover && !session.recovering ? (
@@ -413,6 +440,7 @@ export function TaskCapture({
               className={index === activeSuggestion ? "is-selected" : ""}
               key={`${suggestion.kind}:${suggestion.value}`}
               role="option"
+              tabIndex={-1}
               aria-selected={index === activeSuggestion}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
@@ -448,29 +476,51 @@ export function TaskCapture({
                     settled?.input,
                   );
                   const dated = item.key === "scheduled" || item.key === "due";
+                  const section: CaptureDetailSection =
+                    dated || item.key === "estimate"
+                      ? "timing"
+                      : item.key === "recurrence"
+                        ? "repeat"
+                        : "organize";
+                  const priority =
+                    item.key === "priority"
+                      ? configuration.priorities.find(
+                          (entry) => entry.value === settled?.input.priority,
+                        )
+                      : undefined;
+                  const label =
+                    item.key === "scheduled"
+                      ? t`Scheduled ${item.label}`
+                      : item.key === "due" && settled?.input.due
+                        ? t`Due ${formatTaskDate(settled.input.due)}`
+                        : item.key === "priority"
+                          ? t`Priority: ${item.label}`
+                          : item.key === "status"
+                            ? t`Status: ${item.label}`
+                            : item.label;
                   return (
                     <span className="capture-token" key={item.key}>
-                      {dated ? (
-                        <button
-                          type="button"
-                          disabled={capturing}
-                          aria-label={t`Edit ${item.key}`}
-                          onClick={() => {
-                            setExpanded(true);
-                            setDetailSections((current) => ({
-                              ...current,
-                              timing: true,
-                            }));
-                          }}
-                        >
-                          {item.key === "scheduled"
-                            ? t({ message: "Scheduled " })
-                            : ""}
-                          {item.label}
-                        </button>
-                      ) : (
-                        <span>{item.label}</span>
-                      )}
+                      <button
+                        type="button"
+                        disabled={capturing}
+                        aria-label={t`Edit ${dated ? item.key : item.label}`}
+                        onClick={() => {
+                          setExpanded(true);
+                          setDetailSections((current) => ({
+                            ...current,
+                            [section]: true,
+                          }));
+                        }}
+                      >
+                        {priority?.color ? (
+                          <span
+                            aria-hidden="true"
+                            className="value-color"
+                            style={{ backgroundColor: priority.color }}
+                          />
+                        ) : null}
+                        {label}
+                      </button>
                       {removal ? (
                         <button
                           type="button"
@@ -491,6 +541,7 @@ export function TaskCapture({
             className="text-action"
             type="button"
             aria-expanded={expanded}
+            title={t({ message: "Shift+Enter for details" })}
             onClick={() => setExpanded((value) => !value)}
           >
             {expanded
@@ -501,16 +552,18 @@ export function TaskCapture({
       ) : null}
 
       {expanded && result && parsedText === text.trim() ? (
-        <CaptureDetails
-          configuration={configuration}
-          completeField={completeField}
-          openSections={detailSections}
-          input={result.input}
-          onChange={change}
-          onToggleSection={(section, open) =>
-            setDetailSections((current) => ({ ...current, [section]: open }))
-          }
-        />
+        <div ref={detailsRef}>
+          <CaptureDetails
+            configuration={configuration}
+            completeField={completeField}
+            openSections={detailSections}
+            input={result.input}
+            onChange={change}
+            onToggleSection={(section, open) =>
+              setDetailSections((current) => ({ ...current, [section]: open }))
+            }
+          />
+        </div>
       ) : null}
 
       {error?.code === "outcome-unknown" && session.recovering ? (
@@ -896,7 +949,13 @@ function capturePreviewRemoval(
     return { contexts: input.contexts?.filter((item) => item !== value) };
   if (kind === "tag")
     return { tags: input.tags?.filter((item) => item !== value) };
-  if (kind === "scheduled" || kind === "due" || kind === "recurrence")
+  if (
+    kind === "scheduled" ||
+    kind === "due" ||
+    kind === "recurrence" ||
+    kind === "priority" ||
+    kind === "status"
+  )
     return { [kind]: undefined };
   if (kind === "estimate") return { timeEstimate: undefined };
   return null;

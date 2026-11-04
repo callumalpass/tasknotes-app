@@ -2,6 +2,7 @@ import { useLingui as useI18n } from "@lingui/react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
+import { useState } from "react";
 import { FeedbackNotice } from "./workspace-feedback";
 import type { TaskSummary } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
@@ -14,23 +15,35 @@ export function TaskAddedNotice({
   onDismiss,
   aboveMobileControls,
   repository,
+  onUndo,
 }: {
   task?: TaskSummary;
   repository?: TaskRepository;
   onOpen(task: TaskSummary): void;
   onDismiss(): void;
+  onUndo?(task: TaskSummary): Promise<void>;
   aboveMobileControls: boolean;
 }) {
   useI18n();
+  const [undoing, setUndoing] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
+  const [shown, setShown] = useState(task);
+  if (shown !== task) {
+    setShown(task);
+    setUndoing(false);
+    setUndoFailed(false);
+  }
   const state = useRecordWriteState(repository, {
     kind: "task",
     id: task?.id ?? "",
   });
-  const message = task
-    ? state === "failed"
-      ? t`Change rejected: ${task.title}`
-      : t`Task added: ${task.title}`
-    : "";
+  const message = undoFailed
+    ? t({ message: "Couldn’t undo. Try again." })
+    : task
+      ? state === "failed"
+        ? t`Change rejected: ${task.title}`
+        : t`Task added: ${task.title}`
+      : "";
   return (
     <FeedbackNotice>
       <span role="status" className="visually-hidden">
@@ -46,6 +59,26 @@ export function TaskAddedNotice({
               repository={repository}
               target={{ kind: "task", id: task.id }}
             />
+          ) : null}
+          {onUndo && state === undefined ? (
+            <button
+              type="button"
+              disabled={undoing}
+              onClick={async () => {
+                setUndoing(true);
+                setUndoFailed(false);
+                try {
+                  await onUndo(task);
+                  onDismiss();
+                } catch {
+                  setUndoFailed(true);
+                } finally {
+                  setUndoing(false);
+                }
+              }}
+            >
+              <Trans>Undo</Trans>
+            </button>
           ) : null}
           {state !== "failed" ? (
             <button

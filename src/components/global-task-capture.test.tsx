@@ -75,3 +75,54 @@ function Harness({
     </>
   );
 }
+
+it("Escape closes only autocomplete first, then keeps the draft when closing capture", async () => {
+  const repository = createTestMdbaseRepository();
+  await repository.initialize();
+  render(
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
+      <Harness onOpenTask={vi.fn()} />
+    </RepositoryProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  fireEvent.change(input, {
+    target: { value: "Call Rowan !", selectionStart: 12 },
+  });
+  await screen.findByRole("listbox", { name: "Task field suggestions" });
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(screen.queryByRole("listbox")).toBeNull();
+  expect(screen.getByRole("dialog", { name: "New task" })).toBeVisible();
+  fireEvent.keyDown(input, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+  expect(screen.getByRole("combobox", { name: "New task title" })).toHaveValue(
+    "Call Rowan !",
+  );
+});
+
+it("Shift+Enter opens details without adding a task", async () => {
+  const repository = createTestMdbaseRepository();
+  await repository.initialize();
+  const create = vi.spyOn(repository, "create");
+  render(
+    <RepositoryProvider
+      mutationJournal={new MemoryMutationJournal()}
+      repository={repository}
+    >
+      <Harness onOpenTask={vi.fn()} />
+    </RepositoryProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  fireEvent.change(input, { target: { value: "Call Rowan" } });
+  fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+  const date = await screen.findByRole("button", {
+    name: "Scheduled date",
+  });
+  await waitFor(() => expect(date).toHaveFocus());
+  expect(create).not.toHaveBeenCalled();
+});
