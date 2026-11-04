@@ -460,6 +460,11 @@ export function TaskCalendarView({
   }
 
   function createFromSelection(info: SelectArg) {
+    // Agenda days have their own Add task; a click on a heading only reads it.
+    if (agenda) {
+      calendarRef.current?.unselect();
+      return;
+    }
     const date = info.startStr.slice(0, 10);
     const timeEstimate = info.allDay
       ? undefined

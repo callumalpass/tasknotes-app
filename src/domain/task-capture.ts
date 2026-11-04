@@ -3,6 +3,7 @@ import {
   combineTaskDateTime,
   formatTaskDate,
   recurrenceLabel,
+  todayString,
   type CreateTaskInput,
 } from "./task";
 import { captureTriggers } from "./capture-autosuggest";
@@ -61,7 +62,14 @@ export async function parseTaskCapture(
         value,
       ),
     );
-  let parsed = parser.parseInputWithSpans(readable(text));
+  // The portable parser has no phrase for a day of the month.
+  const monthly = monthlyPhrase(text, locale);
+  const source = monthly
+    ? text.slice(0, monthly.start) +
+      " ".repeat(monthly.end - monthly.start) +
+      text.slice(monthly.end)
+    : text;
+  let parsed = parser.parseInputWithSpans(readable(source));
   // Rank shorthand belongs to the app: the portable parser only knows the
   // collection's names. Mask with equal-length spaces to preserve all offsets.
   const ranked = configuration.priorities
@@ -103,16 +111,22 @@ export async function parseTaskCapture(
       )
     : [];
   if (shorthand.length) {
-    let masked = text;
+    let masked = source;
     for (const { start, end } of shorthand)
       masked =
         masked.slice(0, start) + " ".repeat(end - start) + masked.slice(end);
     parsed = parser.parseInputWithSpans(readable(masked));
-    parsed.data.title = parsed.data.title.replace(/[ \t]+/gu, " ").trim();
     // A named priority is explicit; otherwise the last shorthand wins.
     parsed.data.priority ??= shorthand.at(-1)!.priority;
   }
   const { data } = parsed;
+  if (monthly || shorthand.length)
+    data.title = data.title.replace(/[ \t]+/gu, " ").trim();
+  if (monthly) {
+    data.recurrence = `FREQ=MONTHLY;BYMONTHDAY=${monthly.day}`;
+    if (!data.scheduledDate && !data.dueDate)
+      data.scheduledDate = nextMonthDay(monthly.day);
+  }
   let { spans } = parsed;
   data.projects = data.projects?.map((project) =>
     project.replaceAll(PROJECT_SPACE, " "),
@@ -158,11 +172,41 @@ export async function parseTaskCapture(
       kind: "priority" as const,
     })),
   );
+  if (monthly)
+    highlights.push({
+      start: monthly.start,
+      end: monthly.end,
+      kind: "recurrence" as const,
+    });
   highlights.sort((left, right) => left.start - right.start);
   return {
     ...mapParsedCapture(data, configuration),
     ...(highlights.length ? { highlights } : {}),
   };
+}
+
+/** "every 1st", "every month on the 15th": a repeating day of the month. */
+function monthlyPhrase(text: string, locale: string) {
+  if (!locale.toLowerCase().startsWith("en")) return null;
+  const match =
+    /(?:^|\s)(every\s+(?:month\s+on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th))(?=[\s.,;:!?]|$)/iu.exec(
+      text,
+    );
+  const day = Number(match?.[2]);
+  if (!match || day < 1 || day > 31) return null;
+  const start = match.index + match[0].length - match[1].length;
+  return { day, start, end: start + match[1].length };
+}
+
+/** The next date with this day, skipping months too short to have it. */
+function nextMonthDay(day: number): string {
+  const today = todayString();
+  const [year, month] = today.split("-").map(Number);
+  for (let offset = 0; ; offset++) {
+    const date = new Date(Date.UTC(year, month - 1 + offset, day));
+    const value = date.toISOString().slice(0, 10);
+    if (date.getUTCDate() === day && value >= today) return value;
+  }
 }
 
 /** Stands in for a space inside a project name, keeping every offset. */

@@ -130,7 +130,7 @@ test("the agenda keeps its strip in view and moves overdue work to today", async
     name: /^Move all to today, \d+ overdue tasks?$/,
   });
   await move.click();
-  await page.getByRole("button", { name: "Move them too" }).click();
+  await page.getByRole("button", { name: "Move deadlines too" }).click();
   await expect(page.locator(".undo-toast")).toContainText("to today");
   await expect.poll(() => items.count()).toBeLessThan(before);
   await expect(move).toHaveCount(0);

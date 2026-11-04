@@ -400,3 +400,15 @@ describe("known projects with spaces", () => {
     expect(input.projects).toEqual(["Product"]);
   });
 });
+
+describe("a day of the month", () => {
+  it.each(["Pay bills every 1st", "Pay bills every month on the 1st"])(
+    "repeats %s and leaves it out of the title",
+    async (text) => {
+      const { input } = await parseTaskCapture(text, configuration, "en");
+      expect(input.title).toBe("Pay bills");
+      expect(input.recurrence).toContain("FREQ=MONTHLY;BYMONTHDAY=1");
+      expect(input.scheduled?.slice(8, 10)).toBe("01");
+    },
+  );
+});

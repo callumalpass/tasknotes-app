@@ -1033,7 +1033,15 @@ export function TaskActions({
     const { t } = useLingui();
     const field = configuration.fieldMapping.projects;
     return (
-      <div className="task-actions-organize-editor">
+      <div
+        className="task-actions-organize-editor"
+        onKeyDownCapture={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          closeMenu(true);
+        }}
+      >
         <MultiValueField
           completion={
             configuration.fieldCompletions[field] ?? { kind: "records" }

@@ -2818,6 +2818,10 @@ msgstr "Manter como nota"
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Mantenha ambos se quiser preservar sua edição como arquivo."
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep deadlines"
+msgstr "Manter os prazos"
+
 #: src/app/view-editor.tsx
 msgid "Keep editing"
 msgstr "Continuar editando"
@@ -2865,10 +2869,6 @@ msgstr "Manter as datas planejadas, mesmo que você conclua a tarefa com atraso.
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
 msgstr "Manter o campo de adição rápida nesta visualização."
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Keep them"
-msgstr "Mantê-los"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
@@ -3250,6 +3250,10 @@ msgstr "Mover arquivos de tarefas arquivadas para uma pasta"
 msgid "Move dates one day later"
 msgstr "Mover datas um dia para depois"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move deadlines too"
+msgstr "Mover os prazos também"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
 msgstr "Mover item em foco"
@@ -3261,10 +3265,6 @@ msgstr "Mova Ordem manual para a primeira posição para ativar as alças de arr
 #: src/app/bulk-task-actions.tsx
 msgid "Move selected tasks to project"
 msgstr "Mover tarefas selecionadas para um projeto"
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Move them too"
-msgstr "Movê-los também"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts

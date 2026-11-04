@@ -2818,6 +2818,10 @@ msgstr "노트로 유지"
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "편집 내용을 파일로 보관하려면 대신 둘 다 유지하세요."
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep deadlines"
+msgstr "마감일 유지"
+
 #: src/app/view-editor.tsx
 msgid "Keep editing"
 msgstr "계속 편집"
@@ -2865,10 +2869,6 @@ msgstr "늦게 완료하더라도 계획된 날짜를 유지합니다."
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
 msgstr "이 뷰에 빠른 추가 입력란 유지"
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Keep them"
-msgstr "그대로 두기"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
@@ -3250,6 +3250,10 @@ msgstr "보관된 작업 파일을 폴더로 이동"
 msgid "Move dates one day later"
 msgstr "날짜를 하루 늦추기"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move deadlines too"
+msgstr "마감일도 이동"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
 msgstr "포커스된 항목 이동"
@@ -3261,10 +3265,6 @@ msgstr "드래그 핸들을 사용하려면 수동 순서를 첫 번째 위치�
 #: src/app/bulk-task-actions.tsx
 msgid "Move selected tasks to project"
 msgstr "선택한 작업을 프로젝트로 이동"
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Move them too"
-msgstr "함께 이동"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts

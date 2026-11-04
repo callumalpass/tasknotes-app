@@ -2818,6 +2818,10 @@ msgstr "保留为笔记"
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "如果想将你的编辑保留为文件，请改为同时保留两者。"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep deadlines"
+msgstr "保留截止日期"
+
 #: src/app/view-editor.tsx
 msgid "Keep editing"
 msgstr "继续编辑"
@@ -2865,10 +2869,6 @@ msgstr "即使你晚完成，也保留计划日期。"
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
 msgstr "在此视图中保留快速添加字段。"
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Keep them"
-msgstr "保留"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
@@ -3250,6 +3250,10 @@ msgstr "将已归档的任务文件移至文件夹"
 msgid "Move dates one day later"
 msgstr "将日期延后一天"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move deadlines too"
+msgstr "截止日期也一起移动"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
 msgstr "移动当前焦点项"
@@ -3261,10 +3265,6 @@ msgstr "将“手动排序”移到第一位以启用拖动手柄。"
 #: src/app/bulk-task-actions.tsx
 msgid "Move selected tasks to project"
 msgstr "将所选任务移至项目"
-
-#: src/components/overdue-schedule-actions.tsx
-msgid "Move them too"
-msgstr "一并移动"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts

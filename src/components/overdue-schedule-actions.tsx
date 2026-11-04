@@ -67,7 +67,7 @@ export function OverdueScheduleActions({
           type="button"
           onClick={() => answer(false)}
         >
-          <Trans>Move them too</Trans>
+          <Trans>Move deadlines too</Trans>
         </button>
         <button
           className={buttonClassName}
@@ -75,7 +75,7 @@ export function OverdueScheduleActions({
           type="button"
           onClick={() => answer(true)}
         >
-          <Trans>Keep them</Trans>
+          <Trans>Keep deadlines</Trans>
         </button>
       </span>
     );

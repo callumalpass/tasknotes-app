@@ -22,7 +22,7 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   await page.keyboard.press("Enter");
   // The choice takes focus, so Enter again confirms from the keyboard.
   await expect(
-    page.getByRole("button", { name: "Move them too" }),
+    page.getByRole("button", { name: "Move deadlines too" }),
   ).toBeFocused();
   await page.keyboard.press("Enter");
 

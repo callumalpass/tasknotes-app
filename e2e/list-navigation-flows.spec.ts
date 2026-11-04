@@ -20,7 +20,7 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   await page.getByLabel("Type a date").fill(value);
   await expect(page.locator(".task-date-hint")).toContainText("Enter to set");
   await page.getByLabel("Type a date").press("Enter");
-  await page.getByRole("button", { name: "Move them too" }).click();
+  await page.getByRole("button", { name: "Move deadlines too" }).click();
   const label = new Intl.DateTimeFormat("en", {
     weekday: "short",
     day: "numeric",
@@ -307,6 +307,9 @@ test("the task menu starts on the current priority and jumps by letter", async (
 }) => {
   await page.locator("body").press("j");
   await page.keyboard.press("p");
+  await expect(
+    page.locator(".task-actions-items [role='menuitemradio']").first(),
+  ).toBeVisible();
   const pressed = page.locator(
     ".task-actions-items [role='menuitemradio'][aria-checked='true']",
   );
@@ -411,4 +414,35 @@ test("Today and Upcoming agree on what is overdue", async ({ page }) => {
     `views/${encodeURIComponent("TaskNotes/Views/upcoming.base#upcoming")}?demo=60`,
   );
   await expect(page.locator(".tnc-list-lead .task-row")).toHaveCount(today);
+});
+
+test("one Escape closes the project picker and returns to the row", async ({
+  isMobile,
+  page,
+}) => {
+  test.skip(isMobile, "Phones move a task from its menu.");
+  await page.goto("?demo=60");
+  const title = page.locator(".task-row-title").first();
+  await title.focus();
+  await page.keyboard.press("+");
+  await expect(page.getByPlaceholder("Find a project")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByPlaceholder("Find a project")).toHaveCount(0);
+});
+
+test("a click on an Upcoming day heading stays where it is", async ({
+  isMobile,
+  page,
+}) => {
+  test.skip(isMobile, "Phones browse days by tapping them.");
+  await page.goto(
+    `views/${encodeURIComponent("TaskNotes/Views/upcoming.base#upcoming")}?demo=60`,
+  );
+  const heading = page.locator(".tnc-list-section .tnc-list-day").nth(1);
+  await heading.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => window.scrollY);
+  await heading.click({ position: { x: 400, y: 10 } });
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });
