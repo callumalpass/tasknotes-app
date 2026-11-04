@@ -683,7 +683,6 @@
   overscroll-behavior: contain;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  scrollbar-width: thin;
 }
 
 .tasknotes-time-list > button {

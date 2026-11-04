@@ -596,7 +596,6 @@ html.scratchpad-route .page-surface {
   max-height: min(320px, 42vh);
   background: transparent;
   font-family: "Atkinson Hyperlegible", sans-serif;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li {
