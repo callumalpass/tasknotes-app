@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 import {
   TaskDeletionNotStartedError,
@@ -122,22 +123,46 @@ export class TaskCommandService {
     return () => this.listeners.delete(listener);
   }
 
-  requestDeletion(taskId: string): Promise<void> {
+  requestDeletion(taskIds: string | readonly string[]): Promise<void> {
     return this.enqueue(async () => {
       if (!this.collectionId)
         throw new Error("Task commands have not been initialized.");
-      if (this.pendingDeletion?.taskId === taskId) return;
+      const ids =
+        typeof taskIds === "string" ? [taskIds] : [...new Set(taskIds)];
+      if (!ids.length) return;
+      if (
+        ids.length === 1 &&
+        this.pendingDeletion?.taskId === ids[0] &&
+        !this.pendingDeletion.additionalTasks?.length
+      )
+        return;
       if (this.pendingDeletion)
         await this.commitDeletionNow(this.pendingDeletion);
-      const task = await this.options.repository.getSummary(taskId);
-      if (!task) return;
+      const tasks = await Promise.all(
+        ids.map((id) => this.options.repository.getSummary(id)),
+      );
+      if (ids.length === 1 && !tasks[0]) return;
+      if (tasks.some((task) => !task))
+        throw new Error(
+          t({
+            message: "A selected task no longer exists. Review the selection.",
+          }),
+        );
+      const task = tasks[0]!;
       const requestedAt = this.clock.now();
       const command: PendingTaskDeletion = {
         kind: "delete-task",
         operationId: crypto.randomUUID(),
         collectionId: this.collectionId,
-        taskId,
+        taskId: task.id,
         title: task.title,
+        ...(typeof taskIds !== "string"
+          ? {
+              additionalTasks: tasks
+                .slice(1)
+                .map((task) => ({ taskId: task!.id, title: task!.title })),
+            }
+          : {}),
         requestedAt,
         commitAfter:
           requestedAt + (this.options.undoWindowMs ?? DEFAULT_UNDO_WINDOW_MS),
@@ -248,6 +273,23 @@ export class TaskCommandService {
       await acceptedWriteEffect("deletion follow-up could not complete", () =>
         this.options.onDeleted?.(command.taskId),
       );
+      if (command.additionalTasks?.length) {
+        const [next, ...rest] = command.additionalTasks;
+        const remaining: PendingTaskDeletion = {
+          ...command,
+          taskId: next.taskId,
+          title: next.title,
+          additionalTasks: rest,
+        };
+        delete remaining.authorityRequestId;
+        // Persist progress before issuing another delete. Restart and Undo retain
+        // only uncommitted rows, never recreate an already deleted task.
+        command = remaining;
+        this.pendingDeletion = remaining;
+        await this.options.journal.put(remaining);
+        this.publish();
+        return this.commitDeletionNow(remaining);
+      }
       await acceptedWriteEffect(
         "the accepted deletion's recovery journal could not be cleared",
         () => this.options.journal.remove(command.operationId),

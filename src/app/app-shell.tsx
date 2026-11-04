@@ -1,3 +1,4 @@
+import { TaskSelectionProvider } from "./task-selection";
 import { useLingui as useI18n } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
@@ -576,7 +577,9 @@ export function AppShell() {
         }}
       >
         <TaskCompletionReportContext.Provider value={reportCompleted}>
-          {shell}
+          <TaskSelectionProvider navigationKey={JSON.stringify(route)}>
+            {shell}
+          </TaskSelectionProvider>
         </TaskCompletionReportContext.Provider>
       </CollectionWriteStatus>
     </WorkspaceFeedback>
@@ -690,6 +693,7 @@ export function DeletionFeedback({
   pendingDeletion: {
     id: string;
     title: string;
+    ids?: string[];
     outcomeUnknown?: boolean;
   } | null;
   onRetry(): Promise<void>;
@@ -730,10 +734,16 @@ export function DeletionFeedback({
   return (
     <>
       <p aria-atomic="true" className="visually-hidden" role="status">
-        {t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
+        {pendingDeletion.ids && pendingDeletion.ids.length > 1
+          ? t`${pendingDeletion.ids.length} tasks scheduled for deletion. Undo is available for 30 seconds.`
+          : t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
       </p>
       <div className={`undo-toast${positionClass}`}>
-        <span>{t`Deleted “${pendingDeletion.title}”`}</span>
+        <span>
+          {pendingDeletion.ids && pendingDeletion.ids.length > 1
+            ? t`${pendingDeletion.ids.length} tasks scheduled for deletion`
+            : t`Deleted “${pendingDeletion.title}”`}
+        </span>
         <button
           aria-keyshortcuts="Control+Z Meta+Z"
           type="button"

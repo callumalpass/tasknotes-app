@@ -1,3 +1,5 @@
+import { TaskSelectionList, SelectTasksOption } from "./task-selection";
+import { ViewOptions } from "../components/view-options";
 import { useLingui } from "@lingui/react/macro";
 import { countLabel } from "../i18n/default-labels";
 import { Trans } from "@lingui/react/macro";
@@ -136,6 +138,9 @@ export function SearchScreen({
             <Trans>Across this collection</Trans>
           </p>
         </div>
+        <ViewOptions>
+          <SelectTasksOption />
+        </ViewOptions>
       </header>
       <div className="search-field">
         <Search aria-hidden="true" size={19} strokeWidth={1.7} />
@@ -263,17 +268,20 @@ export function SearchScreen({
               ? t({ message: "Refreshing results…" })
               : `${hasMore ? t`${tasks.length}+ tasks` : countLabel(tasks.length, "task")}${stale ? t({ message: " — previously loaded" }) : ""}`}
           </p>
-          <div className="task-list search-results">
-            {tasks.length > 100 ? (
-              <BoundedList
-                items={tasks}
-                getKey={(task) => task.id}
-                renderItem={renderTask}
-              />
-            ) : (
-              tasks.map(renderTask)
-            )}
-          </div>
+          <TaskSelectionList tasks={tasks}>
+            <div className="task-list search-results">
+              {tasks.length > 100 ? (
+                <BoundedList
+                  items={tasks}
+                  taskId={(task) => task.id}
+                  getKey={(task) => task.id}
+                  renderItem={renderTask}
+                />
+              ) : (
+                tasks.map(renderTask)
+              )}
+            </div>
+          </TaskSelectionList>
           {hasMore || refreshing ? (
             <button
               className="text-action view-pagination-action"

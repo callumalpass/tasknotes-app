@@ -1,0 +1,131 @@
+import { describe, expect, it, vi } from "vitest";
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import {
+  applyBulkEdits,
+  planTaskChange,
+  undoBulkEdits,
+  type BulkEditPort,
+  type BulkTaskChange,
+} from "./bulk-task-edit";
+import type { UpdateTaskInput } from "../domain/task";
+const model = new TaskNotesTaskModel();
+const fixture = () => {
+  const tasks = ["a", "b", "c"].map((id) =>
+    model.create(
+      {
+        title: id,
+        scheduled: "2026-11-01T10:30",
+        priority: "high",
+        projects: ["[[Old]]", "[[Other]]"],
+      },
+      { id },
+    ),
+  );
+  const current = new Map(tasks.map((task) => [task.id, task]));
+  const updateTask = vi.fn(async (id: string, input: UpdateTaskInput) => {
+    if (id === "b") throw new Error("conflict: changed elsewhere");
+    const saved = {
+      ...model.update(current.get(id)!, input),
+      revision: current.get(id)!.revision + 1,
+    };
+    current.set(id, saved);
+    return saved;
+  });
+  const port: BulkEditPort = {
+    getSummary: async (id) => current.get(id) ?? null,
+    updateTask,
+    setTaskArchived: vi.fn(async (id, archived) =>
+      updateTask(id, { archived }),
+    ),
+  };
+  return { tasks, current, port, updateTask };
+};
+describe("bulk edits", () => {
+  it.each<BulkTaskChange>([
+    { kind: "complete" },
+    { kind: "schedule", date: "2026-11-08" },
+    { kind: "schedule", date: null },
+    { kind: "priority", value: "low" },
+    { kind: "project", value: "[[New]]" },
+    { kind: "archive" },
+  ])("restores prior values and reports failed rows for %o", async (change) => {
+    const { tasks, port, current } = fixture();
+    const result = await applyBulkEdits(
+      tasks,
+      (task) => planTaskChange(task, change),
+      port,
+      "changed",
+      change.kind === "archive",
+    );
+    expect(result.receipts.map((receipt) => receipt.saved.id)).toEqual([
+      "a",
+      "c",
+    ]);
+    expect(result.failures.map((failure) => failure.task.id)).toEqual(["b"]);
+    expect(String(result.failures[0].reason)).toContain("conflict");
+    const undone = await undoBulkEdits(result.receipts, port, "changed");
+    expect(undone.failures).toEqual([]);
+    for (const id of ["a", "c"]) {
+      const before = tasks.find((task) => task.id === id)!;
+      const saved = current.get(id)!;
+      expect([
+        saved.completed,
+        saved.status,
+        saved.scheduled,
+        saved.priority,
+        saved.projects,
+        saved.archived,
+      ]).toEqual([
+        before.completed,
+        before.status,
+        before.scheduled,
+        before.priority,
+        before.projects,
+        before.archived,
+      ]);
+    }
+  });
+  it("keeps scheduled times and leaves Due alone", () => {
+    const { tasks } = fixture();
+    expect(
+      planTaskChange(tasks[0], { kind: "schedule", date: "2026-11-08" }),
+    ).toEqual({
+      input: { scheduled: "2026-11-08T10:30:00Z" },
+      undo: { scheduled: "2026-11-01T10:30:00Z" },
+    });
+  });
+  it("does not write stale selections or overwrite edits made after a bulk write", async () => {
+    const { tasks, current, port, updateTask } = fixture();
+    current.set("a", { ...tasks[0], revision: 99 });
+    const result = await applyBulkEdits(
+      tasks,
+      (task) => planTaskChange(task, { kind: "priority", value: "low" }),
+      port,
+      "changed",
+    );
+    expect(result.failures.map((failure) => failure.task.id)).toEqual([
+      "a",
+      "b",
+    ]);
+    expect(updateTask).not.toHaveBeenCalledWith("a", expect.anything());
+    current.set("c", { ...current.get("c")!, revision: 99, priority: "high" });
+    updateTask.mockClear();
+    const undone = await undoBulkEdits(result.receipts, port, "changed");
+    expect(undone.remaining).toHaveLength(1);
+    expect(undone.failures[0].task.id).toBe("c");
+    expect(updateTask).not.toHaveBeenCalled();
+  });
+  it("keeps uncertain outcomes as failures and never retries them", async () => {
+    const { tasks, port, updateTask } = fixture();
+    updateTask.mockRejectedValue(new Error("outcome-unknown"));
+    const result = await applyBulkEdits(
+      tasks,
+      (task) => planTaskChange(task, { kind: "complete" }),
+      port,
+      "changed",
+    );
+    expect(result.receipts).toEqual([]);
+    expect(result.failures).toHaveLength(3);
+    expect(updateTask).toHaveBeenCalledTimes(3);
+  });
+});
