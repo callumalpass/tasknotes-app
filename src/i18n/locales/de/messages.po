@@ -99,6 +99,16 @@ msgstr "{0, plural, one {# Bild wurde hinzugefügt.} other {# Bilder wurden hinz
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, one {# offen} other {# offen}}"
 
+#. placeholder {0}: failures.length
+#: src/app/bulk-task-actions.tsx
+msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
+msgstr "{0, plural, one {# Aufgabe konnte nicht aktualisiert werden. Öffnen Sie sie zur Prüfung, bevor Sie es erneut versuchen.} other {# Aufgaben konnten nicht aktualisiert werden. Öffnen Sie sie zur Prüfung, bevor Sie es erneut versuchen.}}"
+
+#. placeholder {0}: shownNotice.count
+#: src/app/bulk-task-actions.tsx
+msgid "{0, plural, one {# task updated} other {# tasks updated}}"
+msgstr "{0, plural, one {# Aufgabe aktualisiert} other {# Aufgaben aktualisiert}}"
+
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Account unlocked. # private collection still needs to finish key access; retry unlock when it is current.} other {Account unlocked. # private collections still need to finish key access; retry unlock when they are current.}}"
@@ -200,6 +210,22 @@ msgstr "{0} entfernt"
 msgid "{0} resumed"
 msgstr "{0} fortgesetzt"
 
+#. placeholder {0}: selected.length
+#. placeholder {0}: store.count
+#: src/app/bulk-task-actions.tsx
+msgid "{0} selected"
+msgstr "{0} ausgewählt"
+
+#. placeholder {0}: pendingDeletion.ids.length
+#: src/app/app-shell.tsx
+msgid "{0} tasks scheduled for deletion"
+msgstr "{0} Aufgaben werden gelöscht"
+
+#. placeholder {0}: pendingDeletion.ids.length
+#: src/app/app-shell.tsx
+msgid "{0} tasks scheduled for deletion. Undo is available for 30 seconds."
+msgstr "{0} Aufgaben werden gelöscht. Sie können dies 30 Sekunden lang rückgängig machen."
+
 #. placeholder {0}: formatMinutes(totals.liveMinutes)
 #: src/app/task-time-tracking.tsx
 msgid "{0} tracked"
@@ -271,6 +297,10 @@ msgstr "{action} wurde abgebrochen."
 #: src/components/tasknotes-controls.tsx
 msgid "{ariaLabel} suggestions"
 msgstr "Vorschläge für {ariaLabel}"
+
+#: src/app/task-subtasks.tsx
+msgid "{completed} of {total}"
+msgstr "{completed} von {total}"
 
 #: src/i18n/default-labels.ts
 msgid "{count, plural, =0 {# contexts} one {# context} other {# contexts}}"
@@ -372,6 +402,10 @@ msgstr "{count, selectordinal, other {#. Tag des Monats, vom Monatsende an gezä
 msgid "{estimate}m estimate"
 msgstr "{estimate} Min. geschätzt"
 
+#: src/app/bulk-task-actions.tsx
+msgid "{excluded, plural, one {# repeating task excluded. Open it to choose an occurrence or the series.} other {# repeating tasks excluded. Open each task to choose an occurrence or the series.}}"
+msgstr "{excluded, plural, one {# wiederkehrende Aufgabe ausgeschlossen. Öffnen Sie sie, um ein Vorkommen oder die Serie zu wählen.} other {# wiederkehrende Aufgaben ausgeschlossen. Öffnen Sie jede Aufgabe, um ein Vorkommen oder die Serie zu wählen.}}"
+
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
 msgstr "{hours} Std. {minutes} Min."
@@ -429,6 +463,19 @@ msgstr "Uhrzeit für {label}"
 #: src/components/duration-field.tsx
 msgid "{label} unit"
 msgstr "Einheit für {label}"
+
+#. placeholder {0}: countLabel(count, "task")
+#. placeholder {0}: countLabel(counts.total, "task")
+#: src/app/app-shell.tsx
+#: src/app/use-calendar-agenda.ts
+msgid "{label}, {0}"
+msgstr "{label}, {0}"
+
+#. placeholder {0}: countLabel(counts.total, "task")
+#. placeholder {1}: counts.overdue
+#: src/app/app-shell.tsx
+msgid "{label}, {0}, {1} overdue"
+msgstr "{label}, {0}, {1} überfällig"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -584,6 +631,7 @@ msgstr "Aktionen für {0}"
 msgid "Active"
 msgstr "Aktiv"
 
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/task-capture.tsx
@@ -651,6 +699,10 @@ msgstr "Fügen Sie einer aktiven Aufgabe ein Planungs- oder Fälligkeitsdatum hi
 #: src/app/view-editor-form.tsx
 msgid "Add a sort rule"
 msgstr "Sortierregel hinzufügen"
+
+#: src/app/task-subtasks.tsx
+msgid "Add a subtask…"
+msgstr "Unteraufgabe hinzufügen…"
 
 #: src/app/view-editor-form.tsx
 msgid "Add a tag"
@@ -722,6 +774,7 @@ msgstr "Erinnerung hinzufügen"
 msgid "Add starter views"
 msgstr "Startansichten hinzufügen"
 
+#: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
 msgid "Add subtask"
 msgstr "Unteraufgabe hinzufügen"
@@ -906,6 +959,10 @@ msgstr "App-Update"
 msgid "Appearance"
 msgstr "Erscheinungsbild"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Apply date"
+msgstr "Datum anwenden"
+
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
 msgstr "Regel anwenden"
@@ -914,6 +971,7 @@ msgstr "Regel anwenden"
 msgid "Approval required"
 msgstr "Genehmigung erforderlich"
 
+#: src/app/bulk-task-actions.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 msgid "Archive"
@@ -1031,6 +1089,10 @@ msgstr "Board-Spalten"
 msgid "Bold"
 msgstr "Fett"
 
+#: src/app/task-editor-layout.tsx
+msgid "Browse tasks"
+msgstr "Aufgaben durchblättern"
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Visueller Editor"
@@ -1039,6 +1101,7 @@ msgstr "Visueller Editor"
 msgid "Built-in working spaces"
 msgstr "Integrierte Arbeitsbereiche"
 
+#: src/app/keyboard-shortcuts.ts
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
 msgid "Calendar"
@@ -1088,6 +1151,11 @@ msgstr "Wiederkehrende Aufgabe ändern"
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "Sammlung wechseln"
+
+#. placeholder {0}: task.title
+#: src/components/task-actions.tsx
+msgid "Change dates for {0}"
+msgstr "Termine für {0} ändern"
 
 #: src/components/private-account-settings.tsx
 msgid "Change password"
@@ -1238,6 +1306,7 @@ msgstr "Wählen Sie aus, welche Aufgaben zu dieser Ansicht gehören."
 msgid "Choose…"
 msgstr "Auswählen…"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Clear"
@@ -1278,6 +1347,10 @@ msgstr "Suche leeren"
 #: src/app/scratchpad-screen.tsx
 msgid "Clear selection"
 msgstr "Auswahl aufheben"
+
+#: src/app/keyboard-shortcuts.ts
+msgid "Clear task selection"
+msgstr "Aufgabenauswahl aufheben"
 
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
@@ -1342,6 +1415,14 @@ msgstr "Einklappen"
 #: src/app/scratchpad-screen.tsx
 msgid "Collapse image"
 msgstr "Bild einklappen"
+
+#: src/app/app-shell.tsx
+msgid "Collapse sidebar"
+msgstr "Seitenleiste einklappen"
+
+#: src/app/app-shell.tsx
+msgid "Collapse sidebar (M)"
+msgstr "Seitenleiste einklappen (M)"
 
 #: src/app/settings-sections.ts
 msgid "Collection"
@@ -1426,6 +1507,7 @@ msgstr "Nebeneinander vergleichen"
 msgid "Comparison is not available from this backend."
 msgstr "Der Vergleich ist mit diesem Backend nicht verfügbar."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
@@ -1445,6 +1527,11 @@ msgstr "Erledigt"
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
 msgstr "„{title}“ abschließen"
+
+#. placeholder {0}: task.title
+#: src/app/task-subtasks.tsx
+msgid "Complete {0}"
+msgstr "{0} abschließen"
 
 #: src/components/task-actions.tsx
 msgid "Complete occurrence"
@@ -1580,6 +1667,10 @@ msgstr "Kontexte"
 msgid "Contexts"
 msgstr "Kontexte"
 
+#: src/app/task-editor-draft.ts
+msgid "Contexts, people, dependencies and custom properties"
+msgstr "Kontexte, Personen, Abhängigkeiten und benutzerdefinierte Eigenschaften"
+
 #: src/app/views/planner-view-handoff.tsx
 msgid "Continue on the timeline"
 msgstr "Auf der Zeitleiste fortfahren"
@@ -1638,6 +1729,10 @@ msgstr "Kontowiederherstellung konnte nicht geprüft werden. Prüfen Sie die Ver
 msgid "Could not confirm the outcome of your choice. Refresh and review the current protected edit before trying again."
 msgstr "Das Ergebnis Ihrer Auswahl konnte nicht bestätigt werden. Aktualisieren Sie die Sammlung und prüfen Sie die aktuelle geschützte Änderung, bevor Sie es erneut versuchen."
 
+#: src/app/bulk-task-actions.tsx
+msgid "Could not load projects."
+msgstr "Projekte konnten nicht geladen werden."
+
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
@@ -1664,6 +1759,10 @@ msgstr "Kopieren fehlgeschlagen"
 #: src/app/use-navigation-views.ts
 msgid "Couldn't load your views."
 msgstr "Ihre Ansichten konnten nicht geladen werden."
+
+#: src/components/task-added-notice.tsx
+msgid "Couldn’t undo. Try again."
+msgstr "Rückgängig machen fehlgeschlagen. Versuchen Sie es erneut."
 
 #: src/components/recurrence-field.tsx
 msgid "Count the interval from when you finish the task."
@@ -1812,6 +1911,7 @@ msgstr "Standardstatus"
 msgid "Defaults inferred from simple filter conditions are added when the task is created."
 msgstr "Aus einfachen Filterbedingungen abgeleitete Standardwerte werden beim Erstellen der Aufgabe hinzugefügt."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
@@ -1864,6 +1964,14 @@ msgstr "„{0}“ gelöscht. Sie können den Vorgang innerhalb von 30 Sekunden r
 #: src/app/app-shell.tsx
 msgid "Deletion needs review"
 msgstr "Löschung muss überprüft werden"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Deletion needs review. Use the recovery notice before editing these tasks."
+msgstr "Das Löschen muss geprüft werden. Verwenden Sie den Wiederherstellungshinweis, bevor Sie diese Aufgaben bearbeiten."
+
+#: src/app/bulk-task-actions.tsx
+msgid "Deletion stopped before this task was changed."
+msgstr "Das Löschen wurde beendet, bevor diese Aufgabe geändert wurde."
 
 #: src/app/app-shell.tsx
 msgid "Deletion waiting"
@@ -1947,10 +2055,15 @@ msgstr "Wiederherstellungsdaten verwerfen"
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "Beim Verwerfen werden alle gespeicherten Wiederherstellungsdaten entfernt und die Verbindung zu dieser Sammlung getrennt. Eine möglicherweise bereits abgeschlossene Löschung wird dadurch nicht rückgängig gemacht."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 msgid "Dismiss"
 msgstr "Ausblenden"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Dismiss bulk update notice"
+msgstr "Hinweis zur Sammelaktualisierung schließen"
 
 #: src/components/task-completed-notice.tsx
 msgid "Dismiss completion notice"
@@ -1976,6 +2089,7 @@ msgstr "Funktioniert TaskNotes offline?"
 msgid "done"
 msgstr "Erledigt"
 
+#: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/tasknotes-controls.tsx
@@ -2012,7 +2126,7 @@ msgid "due"
 msgstr "fällig"
 
 #: src/app/task-calendar-view.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
@@ -2027,8 +2141,10 @@ msgid "Due (not set)"
 msgstr "Fällig (nicht festgelegt)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.due)
+#. placeholder {0}: formatTaskDate(settled.input.due)
 #. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-editor-draft.ts
+#: src/components/task-capture.tsx
 #: src/i18n/presentation.ts
 msgid "Due {0}"
 msgstr "Fällig {0}"
@@ -2077,9 +2193,10 @@ msgstr "Weiter oben stehende Regeln haben Vorrang."
 msgid "Edit"
 msgstr "Bearbeiten"
 
+#. placeholder {0}: dated ? item.key : item.label
 #. placeholder {0}: detail.label
-#. placeholder {0}: item.key
-#. placeholder {0}: selected.name
+#. placeholder {0}: props.label
+#: src/app/task-core-properties.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -2186,6 +2303,14 @@ msgstr "Ausklappen"
 msgid "Expand image"
 msgstr "Bild ausklappen"
 
+#: src/app/app-shell.tsx
+msgid "Expand sidebar"
+msgstr "Seitenleiste ausklappen"
+
+#: src/app/app-shell.tsx
+msgid "Expand sidebar (M)"
+msgstr "Seitenleiste ausklappen (M)"
+
 #: src/app/view-editor-form.tsx
 msgid "Expression"
 msgstr "Ausdruck"
@@ -2193,6 +2318,10 @@ msgstr "Ausdruck"
 #: src/components/expression-builder.tsx
 msgid "Expression or filter YAML"
 msgstr "Ausdruck oder Filter-YAML"
+
+#: src/app/keyboard-shortcuts.ts
+msgid "Extend task selection"
+msgstr "Aufgabenauswahl erweitern"
 
 #: src/app/view-editor-form.tsx
 msgid "External app"
@@ -2771,6 +2900,10 @@ msgstr "Personen werden geladen…"
 msgid "Loading previous notes…"
 msgstr "Vorherige Notizen werden geladen…"
 
+#: src/app/task-subtasks.tsx
+msgid "Loading subtasks…"
+msgstr "Unteraufgaben werden geladen…"
+
 #: src/components/loading.tsx
 msgid "Loading tasks"
 msgstr "Aufgaben werden geladen"
@@ -3015,6 +3148,14 @@ msgstr "Fokussiertes Element verschieben"
 msgid "Move Manual order to the first position to enable drag handles."
 msgstr "Verschieben Sie „Manuelle Reihenfolge“ an die erste Stelle, um Ziehpunkte zu aktivieren."
 
+#: src/app/bulk-task-actions.tsx
+msgid "Move selected tasks to project"
+msgstr "Ausgewählte Aufgaben in Projekt verschieben"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Move to project"
+msgstr "In Projekt verschieben"
+
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "Verschoben: "
@@ -3081,6 +3222,10 @@ msgstr "Name"
 msgid "Name this view and choose its layout."
 msgstr "Benennen Sie diese Ansicht und wählen Sie ihr Layout."
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Navigation"
+msgstr "Navigation"
+
 #: src/components/expression-builder.tsx
 msgid "Nested group"
 msgstr "Verschachtelte Gruppe"
@@ -3119,8 +3264,8 @@ msgstr "Neue Aufgabe"
 
 #. placeholder {0}: shortcutLabel("N")
 #: src/app/app-shell.tsx
-msgid "New task ({0})"
-msgstr "Neue Aufgabe ({0})"
+msgid "New task (Q / N / {0})"
+msgstr "Neue Aufgabe (Q / N / {0})"
 
 #: src/components/task-capture.tsx
 msgid "New task title"
@@ -3139,6 +3284,7 @@ msgstr "Neue Aufgaben, wiederkehrende Aufgaben und Archiv"
 msgid "New view"
 msgstr "Neue Ansicht"
 
+#: src/app/use-calendar-agenda.ts
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Next month"
@@ -3150,12 +3296,22 @@ msgid "Next period"
 msgstr "Nächster Zeitraum"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/app/task-editor-layout.tsx
 msgid "Next task"
 msgstr "Nächste Aufgabe"
+
+#: src/app/task-editor-layout.tsx
+msgid "Next task (j or Alt+Down)"
+msgstr "Nächste Aufgabe (j oder Alt+Nach-unten)"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "next week"
 msgstr "nächste Woche"
+
+#: src/app/bulk-task-actions.tsx
+#: src/app/use-calendar-agenda.ts
+msgid "Next week"
+msgstr "Nächste Woche"
 
 #: src/app/today-clear.tsx
 msgid "Next: "
@@ -3190,6 +3346,7 @@ msgstr "Keine zwischengespeicherten Aufgaben für diese Ansicht."
 msgid "No computed properties."
 msgstr "Keine berechneten Eigenschaften."
 
+#: src/app/bulk-task-actions.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "Kein Datum"
@@ -3225,6 +3382,10 @@ msgstr "Es sind keine weiteren Personen zur Zuweisung verfügbar."
 #: src/app/views/kanban-columns.ts
 msgid "No priority"
 msgstr "Keine Priorität"
+
+#: src/app/bulk-task-actions.tsx
+msgid "No project"
+msgstr "Kein Projekt"
 
 #: src/app/view-editor-form.tsx
 msgid "No projections"
@@ -3616,6 +3777,10 @@ msgstr "Personen konnten nicht geladen werden."
 msgid "People could not be loaded. Existing assignments are unchanged. {0}"
 msgstr "Personen konnten nicht geladen werden. Bestehende Zuweisungen bleiben unverändert. {0}"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Pick date"
+msgstr "Datum wählen"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "Geplante Daten"
@@ -3650,6 +3815,7 @@ msgstr "Aufgaben in der Vorschau anzeigen"
 msgid "Preview updates after saving"
 msgstr "Die Vorschau wird nach dem Speichern aktualisiert"
 
+#: src/app/use-calendar-agenda.ts
 #: src/app/views/mini-calendar-view.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Previous month"
@@ -3670,8 +3836,17 @@ msgid "Previous period"
 msgstr "Vorheriger Zeitraum"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/app/task-editor-layout.tsx
 msgid "Previous task"
 msgstr "Vorherige Aufgabe"
+
+#: src/app/task-editor-layout.tsx
+msgid "Previous task (k or Alt+Up)"
+msgstr "Vorherige Aufgabe (k oder Alt+Nach-oben)"
+
+#: src/app/use-calendar-agenda.ts
+msgid "Previous week"
+msgstr "Vorherige Woche"
 
 #: src/app/search-screen.tsx
 msgid "Previously loaded results may be out of date."
@@ -3681,7 +3856,8 @@ msgstr "Zuvor geladene Ergebnisse sind möglicherweise veraltet."
 msgid "Primary"
 msgstr "Primär"
 
-#: src/app/task-screen.tsx
+#: src/app/bulk-task-actions.tsx
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -3692,9 +3868,20 @@ msgstr "Primär"
 msgid "Priority"
 msgstr "Priorität"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Priority for selected tasks"
+msgstr "Priorität der ausgewählten Aufgaben"
+
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
 msgstr "Priorität, Projekte, Abhängigkeiten, Kontexte und Tags"
+
+#. placeholder {0}: item.label
+#. placeholder {0}: option.label
+#: src/components/task-actions.tsx
+#: src/components/task-capture.tsx
+msgid "Priority: {0}"
+msgstr "Priorität: {0}"
 
 #: src/components/private-account-settings.tsx
 msgid "Private account recovery"
@@ -3708,6 +3895,10 @@ msgstr "Wiederherstellung des Zugriffs auf private Sammlungen"
 msgid "Private collections need your desktop online."
 msgstr "Für private Sammlungen muss Ihr Desktop-Computer online sein."
 
+#: src/app/task-core-properties.tsx
+msgid "Project"
+msgstr "Projekt"
+
 #: src/app/view-editor-form.tsx
 msgid "Projections"
 msgstr "Projektionen"
@@ -3716,8 +3907,8 @@ msgstr "Projektionen"
 msgid "projects"
 msgstr "Projekte"
 
+#: src/app/keyboard-shortcuts.ts
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -3980,6 +4171,11 @@ msgstr "Wieder öffnen"
 #: src/app/palette-commands.ts
 msgid "Reopen “{title}”"
 msgstr "„{title}“ wieder öffnen"
+
+#. placeholder {0}: task.title
+#: src/app/task-subtasks.tsx
+msgid "Reopen {0}"
+msgstr "{0} wieder öffnen"
 
 #: src/app/task-screen.tsx
 msgid "Reopen task"
@@ -4265,14 +4461,23 @@ msgstr "Sammlungsverhalten speichern"
 msgid "Saving…"
 msgstr "Wird gespeichert…"
 
-#: src/app/task-screen.tsx
-msgid "Schedule and status"
-msgstr "Planung und Status"
+#: src/app/bulk-task-actions.tsx
+msgid "Schedule"
+msgstr "Planen"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Schedule date"
+msgstr "Geplantes Datum"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/components/task-actions.tsx
 msgid "Schedule next week"
 msgstr "Für nächste Woche einplanen"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Schedule selected tasks"
+msgstr "Ausgewählte Aufgaben planen"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4290,7 +4495,7 @@ msgstr "Für morgen planen"
 msgid "scheduled"
 msgstr "geplant"
 
-#: src/app/task-screen.tsx
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
@@ -4301,16 +4506,14 @@ msgstr "geplant"
 msgid "Scheduled"
 msgstr "Geplant"
 
-#: src/components/task-capture.tsx
-msgid "Scheduled "
-msgstr "Geplant "
-
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "Planungsdatum (nicht festgelegt)"
 
 #. placeholder {0}: formatRelativeTaskDate(dates.scheduled)
+#. placeholder {0}: item.label
 #: src/app/task-editor-draft.ts
+#: src/components/task-capture.tsx
 msgid "Scheduled {0}"
 msgstr "Geplant {0}"
 
@@ -4323,6 +4526,7 @@ msgid "scratchpad"
 msgstr "Scratchpad"
 
 #: src/app/app-shell.tsx
+#: src/app/keyboard-shortcuts.ts
 #: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4355,6 +4559,7 @@ msgid "Scratchpad storage is unavailable."
 msgstr "Scratchpad-Speicher ist nicht verfügbar."
 
 #: src/app/app-shell.tsx
+#: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
 #: src/app/views/view-catalog.tsx
@@ -4403,9 +4608,21 @@ msgstr "Upcoming anzeigen"
 msgid "Select all"
 msgstr "Alle auswählen"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Select all visible tasks"
+msgstr "Alle sichtbaren Aufgaben auswählen"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Select branch"
 msgstr "Zweig auswählen"
+
+#: src/app/keyboard-shortcuts.ts
+msgid "Select focused task"
+msgstr "Fokussierte Aufgabe auswählen"
+
+#: src/app/task-selection.tsx
+msgid "Select tasks"
+msgstr "Aufgaben auswählen"
 
 #: src/i18n/ui-copy.ts
 msgid "selected collection"
@@ -4422,6 +4639,14 @@ msgstr "Ausgewählter Tag"
 #: src/app/scratchpad-screen.tsx
 msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
 msgstr "Ausgewählte Entwürfe werden an Ort und Stelle zu verknüpften TaskNotes-Aufgaben. Alles andere bleibt in diesem Scratchpad, damit Sie weiterarbeiten können."
+
+#: src/app/bulk-task-actions.tsx
+msgid "Selected tasks"
+msgstr "Ausgewählte Aufgaben"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Selection cleared"
+msgstr "Auswahl aufgehoben"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -4481,6 +4706,10 @@ msgstr "Erstellen Sie eine Gliederung, bevor Sie Aufgaben anlegen"
 #: src/app/more-screen.tsx
 msgid "Shared with everyone using this collection"
 msgstr "Mit allen geteilt, die diese Sammlung verwenden"
+
+#: src/components/task-capture.tsx
+msgid "Shift+Enter for details"
+msgstr "Umschalt+Eingabe für Details"
 
 #. placeholder {0}: group.values.length
 #: src/app/search-screen.tsx
@@ -4611,7 +4840,7 @@ msgstr "Startansichten"
 msgid "Starting…"
 msgstr "Wird gestartet…"
 
-#: src/app/task-screen.tsx
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -4624,6 +4853,11 @@ msgstr "Status"
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
 msgstr "Status, Priorität und Beziehungen"
+
+#. placeholder {0}: item.label
+#: src/components/task-capture.tsx
+msgid "Status: {0}"
+msgstr "Status: {0}"
 
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
@@ -4653,10 +4887,12 @@ msgstr "Der strikte Modus ist noch nicht für alle Wiederherstellungsziele priva
 msgid "Submitting…"
 msgstr "Wird übermittelt…"
 
+#: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
 msgid "Subtask title"
 msgstr "Titel der Unteraufgabe"
 
+#: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
 msgid "Subtasks"
 msgstr "Unteraufgaben"
@@ -4698,7 +4934,7 @@ msgid "tags"
 msgstr "Tags"
 
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -4710,6 +4946,10 @@ msgstr "Tags"
 #: src/app/scratchpad-screen.tsx
 msgid "Take photo"
 msgstr "Foto aufnehmen"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Tap tasks to select them."
+msgstr "Tippen Sie auf Aufgaben, um sie auszuwählen."
 
 #: src/app/task-screen.tsx
 #: src/i18n/ui-copy.ts
@@ -4752,6 +4992,7 @@ msgid "Task creation on"
 msgstr "Aufgabenerstellung aktiviert"
 
 #: src/app/app-shell.tsx
+#: src/app/keyboard-shortcuts.ts
 #: src/app/task-screen.tsx
 msgid "Task details"
 msgstr "Aufgabendetails"
@@ -4773,8 +5014,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "Aufgabendateien werden für einen festen Zeitraum vorgehalten, etwa für die nächsten 14 Tage."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time."
-msgstr "Tastenkürzel für Aufgaben wirken auf die fokussierte Zeile. Bei Tastenkürzeln für Datumsangaben bleibt eine vorhandene Planungsuhrzeit erhalten."
+msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
+msgstr "Aufgabentasten wirken auf die fokussierte Zeile. Datumstasten behalten eine geplante Uhrzeit bei. Drücken Sie Navigationsfolgen innerhalb einer Sekunde. M blendet die Seitenleiste außerhalb von Aufgabenzeilen ein oder aus; Umschalt M funktioniert auch in einer Aufgabenzeile."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -4783,6 +5024,10 @@ msgstr "Aufgabenlisten"
 #: src/app/task-screen.tsx
 msgid "Task not found. It may have been deleted or moved."
 msgstr "Aufgabe nicht gefunden. Sie wurde möglicherweise gelöscht oder verschoben."
+
+#: src/app/task-core-properties.tsx
+msgid "Task properties"
+msgstr "Aufgabeneigenschaften"
 
 #: src/app/more-screen.tsx
 msgid "Task reminders"
@@ -5007,9 +5252,9 @@ msgstr "Design, Scratchpad und Kalender"
 msgid "These choices apply as soon as you make them and don’t change the collection."
 msgstr "Diese Einstellungen werden sofort übernommen und ändern nichts an der Sammlung."
 
-#: src/app/task-screen.tsx
-msgid "These fields edit the series dates. The summary above shows this occurrence."
-msgstr "Diese Felder bearbeiten die Serientermine. Die Zusammenfassung oben zeigt dieses Vorkommen."
+#: src/app/task-core-properties.tsx
+msgid "These dates edit the repeating task, including future occurrences."
+msgstr "Diese Daten ändern die wiederkehrende Aufgabe einschließlich künftiger Vorkommen."
 
 #: src/app/view-editor-form.tsx
 msgid "These formulas are shared by views in the same source file."
@@ -5107,6 +5352,10 @@ msgstr "diese Aufgabe"
 msgid "This task changed somewhere else, so your edit wasn't saved."
 msgstr "Diese Aufgabe wurde an anderer Stelle geändert; Ihre Änderung wurde deshalb nicht gespeichert."
 
+#: src/app/bulk-task-actions.tsx
+msgid "This task changed. Open it to review before trying again."
+msgstr "Diese Aufgabe wurde geändert. Öffnen Sie sie zur Prüfung, bevor Sie es erneut versuchen."
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "Diese Aufgabe ist nicht mehr verfügbar."
@@ -5202,6 +5451,8 @@ msgstr "für heute eingeplant."
 msgid "today"
 msgstr "heute"
 
+#: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
 #: src/app/task-calendar-view.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
@@ -5211,18 +5462,32 @@ msgstr "heute"
 msgid "Today"
 msgstr "Heute"
 
+#: src/app/task-calendar-view.tsx
+msgid "Today · {label}"
+msgstr "Heute · {label}"
+
 #: src/app/today-clear.tsx
 msgid "Today is clear"
 msgstr "Für heute sind keine Aufgaben mehr offen"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Toggle sidebar"
+msgstr "Seitenleiste ein-/ausblenden"
+
+#: src/app/keyboard-shortcuts.ts
 msgid "tomorrow"
 msgstr "morgen"
 
+#: src/app/bulk-task-actions.tsx
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
 msgid "Tomorrow"
 msgstr "Morgen"
+
+#: src/app/task-calendar-view.tsx
+msgid "Tomorrow · {label}"
+msgstr "Morgen · {label}"
 
 #: src/components/private-account-settings.tsx
 msgid "Too many attempts. Wait before trying again."
@@ -5263,8 +5528,10 @@ msgid "Understanding…"
 msgstr "Wird interpretiert…"
 
 #: src/app/app-shell.tsx
+#: src/app/bulk-task-actions.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
+#: src/components/task-added-notice.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Undo"
 msgstr "Rückgängig"
@@ -5329,6 +5596,10 @@ msgstr "Überspringen des Vorkommens rückgängig machen"
 msgid "up"
 msgstr "nach oben"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Upcoming"
+msgstr "Anstehend"
+
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "Kommende wiederkehrende Vorkommen"
@@ -5363,7 +5634,7 @@ msgstr "Verwenden Sie das konfigurierte Fälligkeitsfeld."
 msgid "Use the configured scheduled field."
 msgstr "Verwenden Sie das konfigurierte Planungsfeld."
 
-#: src/app/task-screen.tsx
+#: src/app/task-core-properties.tsx
 msgid "Use the occurrence actions above to change this state."
 msgstr "Verwenden Sie die obigen Aktionen für dieses Vorkommen, um den Status zu ändern."
 
@@ -5442,10 +5713,6 @@ msgstr "Warten auf Ihren Computer. Zuvor geladene Aufgaben bleiben hier; sie wer
 msgid "Waiting for your computer. Try this action again when it reconnects."
 msgstr "Warten auf Ihren Computer. Versuchen Sie diese Aktion erneut, sobald die Verbindung wiederhergestellt ist."
 
-#: src/app/task-screen.tsx
-msgid "Website, Home"
-msgstr "Website, Zuhause"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/i18n/calendar-locale.ts
@@ -5511,10 +5778,6 @@ msgstr "Wikilinks"
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
 msgstr "Arbeitssitzung"
-
-#: src/app/task-screen.tsx
-msgid "work, important"
-msgstr "Arbeit, wichtig"
 
 #: src/components/private-account-settings.tsx
 msgid "Working…"
