@@ -10,6 +10,7 @@ export const developmentDeployments = Object.freeze({
     editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28487",
+    sdkArtifact: "vendor/sdk-4443fd15-lab-beta149.tgz",
     project: "tasknotes-app",
     branch: "lab",
     wranglerVersion: "4.114.0",
@@ -20,6 +21,7 @@ export const developmentDeployments = Object.freeze({
     editorOrigin: "https://editor-staging.mdbase.dev",
     connectOrigin: "https://connect-staging.mdbase.dev",
     // Native staging has no local Connect loopback authority.
+    sdkArtifact: "vendor/sdk-dev-eaa4e697-staging.tgz",
     project: "tasknotes-app",
     branch: "staging",
     wranglerVersion: "4.114.0",
@@ -194,7 +196,7 @@ export async function deployDevelopmentTaskNotes(
   );
   const restoreTargets = [
     ...manifestTargets,
-    ...(deployment.environment === "staging"
+    ...(deployment.sdkArtifact
       ? [
           resolve(projectRoot, "package.json"),
           resolve(projectRoot, "pnpm-lock.yaml"),
@@ -213,14 +215,15 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
-    if (deployment.environment === "staging") {
-      // Only this deployment uses staging trust; keep the production/iOS pin.
+    if (deployment.sdkArtifact) {
+      // The SDK refuses any environment but the one its trust was built for.
+      // Only this deployment swaps it; keep the production/iOS pin.
       await dependencies.run(
         pnpm,
         [
           "add",
           "--ignore-scripts",
-          "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
+          `@mdbase-dev/sdk@file:${deployment.sdkArtifact}`,
         ],
         deploymentEnvironment,
       );
@@ -298,6 +301,27 @@ async function verifyDevelopmentBuild(deployment = developmentDeployment) {
         `TaskNotes deployment bundle does not contain ${expected}.`,
       );
     }
+  }
+  requireBundledTrust(sources, deployment);
+}
+
+/** A build whose SDK trusts another environment deploys cleanly and passes the
+ * smoke, then stops on first load, so it never leaves this machine. */
+export function requireBundledTrust(sources, deployment) {
+  const environments = sources.flatMap((source) =>
+    [
+      ...source.matchAll(
+        /mdbn-app-trust\/release\/1[`"'],\s*"?environment"?:\s*[`"'](\w+)/g,
+      ),
+    ].map((match) => match[1]),
+  );
+  if (
+    !environments.length ||
+    environments.some((value) => value !== deployment.environment)
+  ) {
+    throw new Error(
+      `TaskNotes ${deployment.environment} bundle carries SDK trust for ${environments.join(", ") || "no environment"}.`,
+    );
   }
 }
 
