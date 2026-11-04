@@ -1,4 +1,3 @@
-import { sectionCollapsed } from "../../application/section-preferences";
 import { TaskSelectionList } from "../task-selection";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";

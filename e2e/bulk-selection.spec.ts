@@ -220,7 +220,7 @@ test("page menu enters selection mode, query collapse and navigation clear selec
   await page
     .getByRole("combobox", { name: "Search commands and tasks" })
     .fill("Search");
-  await page.getByRole("option", { name: "Search", exact: true }).click();
+  await page.getByRole("option", { name: /^Search/ }).click();
   await expect(page.locator(".bulk-actions")).toHaveCount(0);
   await page.getByRole("searchbox", { name: "Search tasks" }).fill("Review");
   await expect(rows(page).first()).toBeVisible();

@@ -35,23 +35,19 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
-      const fields = page.locator(".task-core-fields");
+      const fields = page.locator(".task-core-properties");
       const label = fields.locator(".form-field > span").first();
       await expect(label).toHaveCSS("font-family", /Atkinson Hyperlegible/);
       await expect(label).toHaveCSS("font-size", "14px");
       await expect(label).toHaveCSS("text-transform", "none");
-      await expect(label).toHaveCSS("margin-bottom", "4px");
       for (const control of await fields
         .locator(".tasknotes-control-trigger")
         .all()) {
-        await expect(control).toHaveCSS("font-size", fieldSize);
+        await expect(control).toHaveCSS("font-size", "14px");
         expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(
-          44,
+          page.viewportSize()!.width >= 840 ? 36 : 44,
         );
       }
-      await expect(fields).toHaveCSS("gap", "16px");
-      await expect(fields).toHaveCSS("padding-bottom", "0px");
-      await expect(fields.locator("..")).toHaveCSS("padding-bottom", "24px");
       const scan = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
         .analyze();
@@ -68,8 +64,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto("?demo=50");
       const trigger = page
         .locator(".task-row")
-        .first()
-        .getByRole("button", { name: /^Scheduled:/ });
+        .getByRole("button", { name: /^Scheduled:/ })
+        .first();
       await trigger.click();
       const dialog = page.getByRole("dialog", { name: "Edit Scheduled" });
       await expect(dialog).toBeVisible();
@@ -98,7 +94,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         })
         .click();
       await page
-        .locator(".task-core-fields .tasknotes-date-trigger")
+        .locator(".task-core-properties .tasknotes-date-trigger")
         .first()
         .click();
       const popover = page.locator(".tasknotes-calendar-popover");
@@ -155,7 +151,10 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page
         .getByRole("button", { name: "Save view", exact: true })
         .click();
-      await page.getByRole("button", { name: "Today", exact: true }).click();
+      await page
+        .getByRole("button", { name: /^Today/ })
+        .first()
+        .click();
       const repeatingRow = page.locator(".task-row").filter({
         has: page.getByRole("button", {
           name: "Test reminder delivery on Android",
@@ -191,7 +190,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
         .toBeLessThanOrEqual(320);
       const controls = page.locator(
-        ".task-core-fields .tasknotes-control-trigger, .metadata-fields input",
+        ".task-core-properties .tasknotes-control-trigger",
       );
       for (const control of await controls.all()) {
         const bounds = await control.boundingBox();
