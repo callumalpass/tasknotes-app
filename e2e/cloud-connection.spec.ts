@@ -157,7 +157,7 @@ test("opens the original held client without relay traffic and preserves navigat
   await page
     .getByRole("button", { name: "Open synced fixture collection" })
     .click();
-  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByRole("button", { name: /^Today(,|$)/ }).click();
   await expect(
     page.getByText("Task from the held client", { exact: true }),
   ).toBeVisible();
@@ -528,8 +528,8 @@ test("edits a contract-defined task without collapsing custom status or fields t
     .filter({ hasText: /^Organize/ })
     .click();
   await expect(
-    page.getByRole("button", { name: "Right now", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("combobox", { name: "Priority" }),
+  ).toHaveAttribute("data-value", "now");
   await expect(page.getByLabel("Energy level")).toHaveValue("4");
   await expect(page.getByLabel("Client")).toHaveValue("Acme");
   await expect(page.getByRole("combobox", { name: "Owner *" })).toHaveAttribute(

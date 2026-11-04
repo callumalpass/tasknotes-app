@@ -162,7 +162,6 @@ test("French capture, accepted-write notice and task actions", async ({
     exact: true,
   });
   await expect(dialog).toContainText("Continuer à ajouter des tâches");
-  await expect(dialog).toContainText("Call Sam tomorrow 9am #work");
   await dialog
     .getByRole("combobox", { name: "Titre de la nouvelle tâche" })
     .fill("Une tâche française #work");
@@ -184,8 +183,8 @@ test("French capture, accepted-write notice and task actions", async ({
       .or(actions.getByRole("menuitem", { name: "Supprimer", exact: true })),
   ).toBeVisible();
   await actions.getByText("Dates", { exact: true }).click();
-  await expect(actions).toContainText("Planifier pour aujourd’hui");
-  await expect(actions).toContainText("Échéance demain");
+  await expect(actions).toContainText("Échéance");
+  await expect(actions).toContainText("Demain");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });

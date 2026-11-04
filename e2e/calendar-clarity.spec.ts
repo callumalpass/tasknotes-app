@@ -110,6 +110,7 @@ test("the agenda keeps its strip in view and moves overdue work to today", async
   const strip = page.locator(".tnc-strip");
   await expect(strip.getByLabel("Calendar layout")).toBeVisible();
   await expect(page.locator(".full-calendar-commandbar")).toBeHidden();
+  await page.mouse.move(700, 500);
   await page.mouse.wheel(0, 1500);
   await expect
     .poll(async () => (await strip.boundingBox())?.y ?? -1)

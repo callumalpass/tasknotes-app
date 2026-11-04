@@ -1292,14 +1292,6 @@ export function ViewsScreen({
                         other="# overdue"
                       />
                     </button>
-                    <button
-                      className="today-overdue-move"
-                      type="button"
-                      disabled={reschedulePending}
-                      onClick={() => void moveOverdueToToday(overdueLane.rows)}
-                    >
-                      <Trans>Move all to today</Trans>
-                    </button>
                   </span>
                 ) : null}
               </p>

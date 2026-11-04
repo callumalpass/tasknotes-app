@@ -8,7 +8,7 @@ const task = (projects: string[], completed = false) => ({
 });
 
 describe("projectShortcuts", () => {
-  it("counts open tasks by readable project name, busiest first", () => {
+  it("counts open tasks by readable project name, in name order", () => {
     expect(
       projectShortcuts([
         task(["[[Projects/Field research]]"]),
@@ -17,13 +17,16 @@ describe("projectShortcuts", () => {
         task(["Operations"], true),
       ]),
     ).toEqual([
-      { label: "Operations", count: 2 },
       { label: "Field research", count: 1 },
+      { label: "Operations", count: 2 },
     ]);
   });
 
-  it("keeps the list short", () => {
-    const tasks = ["a", "b", "c"].map((name) => task([name]));
-    expect(projectShortcuts(tasks, 2)).toHaveLength(2);
+  it("keeps the busiest when the list is short", () => {
+    const tasks = ["z", "z", "a", "b"].map((name) => task([name]));
+    expect(projectShortcuts(tasks, 2).map(({ label }) => label)).toEqual([
+      "a",
+      "z",
+    ]);
   });
 });

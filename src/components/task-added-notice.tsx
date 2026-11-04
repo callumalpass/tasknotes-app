@@ -2,12 +2,14 @@ import { useLingui as useI18n } from "@lingui/react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FeedbackNotice } from "./workspace-feedback";
 import type { TaskSummary } from "../domain/task";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { RecordWriteNotice } from "./record-write-notice";
 import { useRecordWriteState } from "./use-record-write-state";
+
+const NOTICE_MS = 10000;
 
 export function TaskAddedNotice({
   task,
@@ -37,6 +39,12 @@ export function TaskAddedNotice({
     kind: "task",
     id: task?.id ?? "",
   });
+  const settled = task && !undoing && !undoFailed && state !== "failed";
+  useEffect(() => {
+    if (!settled) return;
+    const timeout = window.setTimeout(onDismiss, NOTICE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [settled, task, onDismiss]);
   const message = undoFailed
     ? t({ message: "Couldn’t undo. Try again." })
     : task

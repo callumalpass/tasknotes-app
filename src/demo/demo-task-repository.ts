@@ -14,7 +14,7 @@ import {
 } from "@tasknotes/model/settings";
 import { parse } from "yaml";
 
-import { completeTaskValues } from "../storage/completions";
+import { completeTaskValues, usedValuesFirst } from "../storage/completions";
 import { appendViewPage } from "../application/view-query-session";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
@@ -301,7 +301,7 @@ export class DemoTaskRepository implements TaskRepository {
     if (request.kind === "values")
       return completeTaskValues([...this.tasks.values()], request);
     const query = request.query?.trim().toLocaleLowerCase() ?? "";
-    return [...this.tasks.values()]
+    const records = [...this.tasks.values()]
       .filter(
         (task) =>
           !query ||
@@ -317,6 +317,7 @@ export class DemoTaskRepository implements TaskRepository {
         path: task.path,
         taskId: task.id,
       }));
+    return usedValuesFirst(this.tasks.values(), request, records);
   }
 
   async create(

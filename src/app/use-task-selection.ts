@@ -13,6 +13,7 @@ export function useTaskSelection(id: string) {
     selected,
     selectable,
     active: () => selectable && store!.mode,
+    holdsTasks: () => selectable && store!.count > 0,
     start: () => {
       if (selectable) {
         store!.enter();

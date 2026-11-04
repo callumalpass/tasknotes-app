@@ -1,5 +1,6 @@
 import {
   completionMatches,
+  linkDisplayLabel,
   recordCompletion,
   type CollectionRecord,
   type FieldCompletion,
@@ -71,6 +72,33 @@ export function completeRecords(
   return [...values.values()]
     .sort(compareCompletions)
     .slice(0, completionLimit(request));
+}
+
+/**
+ * Values the collection already uses come before other linkable records, so a
+ * project reads as a project even when it was never given a note of its own.
+ */
+export function usedValuesFirst(
+  tasks: Iterable<TaskSummary>,
+  request: FieldCompletionRequest,
+  records: FieldCompletion[],
+): FieldCompletion[] {
+  const used = completeTaskValues(tasks, {
+    ...request,
+    configuredValues: undefined,
+  }).map((completion) => ({
+    ...completion,
+    label: linkDisplayLabel(completion.value),
+  }));
+  const seen = new Set(used.map(({ value }) => value));
+  const labels = new Set(used.map(({ label }) => label.toLocaleLowerCase()));
+  return [
+    ...used,
+    ...records.filter(
+      ({ value, label }) =>
+        !seen.has(value) && !labels.has(label.toLocaleLowerCase()),
+    ),
+  ].slice(0, completionLimit(request));
 }
 
 export function completionLimit(request: FieldCompletionRequest): number {

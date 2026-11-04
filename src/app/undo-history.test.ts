@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearUndoHistory,
   forgetUndo,
+  onUndoNotice,
   rememberUndo,
   takeUndo,
 } from "./undo-history";
@@ -36,4 +37,14 @@ describe("undo history", () => {
     expect(labels).toHaveLength(20);
     expect(labels.at(-1)).toBe("5");
   });
+});
+
+it("announces only edits that carry a notice", () => {
+  const heard = vi.fn();
+  const stop = onUndoNotice(heard);
+  rememberUndo(entry("quiet"));
+  rememberUndo({ ...entry("loud"), notice: "Moved" });
+  stop();
+  expect(heard).toHaveBeenCalledTimes(1);
+  expect(heard.mock.calls[0][0].notice).toBe("Moved");
 });

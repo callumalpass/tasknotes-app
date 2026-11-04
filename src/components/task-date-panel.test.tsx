@@ -42,7 +42,7 @@ describe("TaskDatePanel", () => {
 
   it("keeps a task's time when a preset moves the day", () => {
     const onApply = renderPanel({ scheduled: "2026-01-02T09:30" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Today" }));
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
     expect(onApply).toHaveBeenCalledWith({
       scheduled: `${todayString()}T09:30`,
     });

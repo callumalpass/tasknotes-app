@@ -9,6 +9,7 @@ import type { PaletteCommand } from "./command-palette-model";
 import {
   focusAdjacentTaskRow,
   plainShortcutsSuspended,
+  rememberRowPlace,
   subscribeShortcutAnnouncements,
 } from "./keyboard-shortcuts";
 import {
@@ -142,11 +143,7 @@ export function KeyboardLayer({
         setSheetOpen(true);
         return;
       }
-      if (
-        key === "m" &&
-        toggleSidebar &&
-        (event.shiftKey || !document.activeElement?.closest(".task-row"))
-      ) {
+      if (key === "m" && toggleSidebar && event.shiftKey) {
         event.preventDefault();
         toggleSidebar();
         return;
@@ -182,11 +179,14 @@ export function KeyboardLayer({
       if (!direction) return;
       if (focusAdjacentTaskRow(direction) || onRow) event.preventDefault();
     };
+    const trackRow = (event: FocusEvent) => rememberRowPlace(event.target);
+    window.addEventListener("focusin", trackRow);
     window.addEventListener("keydown", sequenceKeydown, true);
     window.addEventListener("keydown", keydown);
     window.addEventListener("blur", clearPrefix);
     window.addEventListener("focusin", clearPrefix);
     return () => {
+      window.removeEventListener("focusin", trackRow);
       window.removeEventListener("keydown", sequenceKeydown, true);
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("blur", clearPrefix);

@@ -3195,12 +3195,22 @@ msgid "Move selected tasks to project"
 msgstr "Move selected tasks to project"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "Move to project"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "Moved "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "Moved “{title}” and its deadline to {when}"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "Moved “{title}” to {when}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4708,6 +4718,11 @@ msgstr "Session end"
 msgid "Session start"
 msgstr "Session start"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "Set priority"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "Set up recovery"
@@ -5058,8 +5073,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "Task files are kept for a fixed span of dates, such as the next 14 days."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5661,6 +5676,11 @@ msgstr "Upcoming"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "Upcoming recurring instances"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "Updated “{title}”"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

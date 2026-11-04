@@ -1693,11 +1693,6 @@
 .today-overdue button:hover {
   text-decoration: underline;
 }
-.today-overdue .today-overdue-move {
-  margin-left: 10px;
-  color: var(--ink-soft);
-  font-weight: 400;
-}
 .today-progress {
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;

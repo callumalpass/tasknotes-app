@@ -334,7 +334,9 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       .getByRole("combobox", { name: "Schedule selected tasks" })
       .click();
     await page
-      .getByRole("option", { name: choice === "none" ? "No date" : "Pick date" })
+      .getByRole("option", {
+        name: choice === "none" ? "No date" : "Pick date",
+      })
       .click();
     if (choice === "pick") {
       await page

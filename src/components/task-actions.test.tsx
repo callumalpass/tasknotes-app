@@ -101,7 +101,7 @@ describe("TaskActions", () => {
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
     fireEvent.click(screen.getByRole("radio", { name: "Due" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Tomorrow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tomorrow" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({
@@ -145,7 +145,7 @@ describe("TaskActions", () => {
       </RepositoryProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Priority: high" }));
+    fireEvent.click(screen.getByRole("button", { name: "Priority: High" }));
     const editor = screen.getByRole("dialog", { name: "Edit Priority" });
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");

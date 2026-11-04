@@ -3195,12 +3195,22 @@ msgid "Move selected tasks to project"
 msgstr "Mover las tareas seleccionadas a un proyecto"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "Mover a proyecto"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "Se movió "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "“{title}” y su fecha límite movidas a {when}"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "“{title}” movida a {when}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4708,6 +4718,11 @@ msgstr "Fin de la sesión"
 msgid "Session start"
 msgstr "Inicio de la sesión"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "Establecer prioridad"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "Configurar la recuperación"
@@ -5058,8 +5073,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "Los archivos de tarea se conservan durante un período fijo, por ejemplo, los próximos 14 días."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "Las teclas de tarea actúan sobre la fila enfocada. Las teclas de fecha conservan la hora programada. Pulsa las secuencias de navegación en menos de un segundo. M muestra u oculta la barra lateral fuera de las filas de tareas; Mayús M también funciona desde una fila."
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "Las teclas de tarea actúan sobre la fila enfocada o sobre todas las tareas seleccionadas. Las teclas de fecha conservan la hora programada. Pulsa las secuencias de navegación en menos de un segundo."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5661,6 +5676,11 @@ msgstr "Próximas"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "Próximas repeticiones"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "“{title}” actualizada"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

@@ -43,6 +43,7 @@ import { useProjectShortcuts } from "./use-project-shortcuts";
 import {
   clearUndoHistory,
   forgetUndo,
+  onUndoNotice,
   rememberUndo,
   takeUndo,
   type UndoEntry,
@@ -204,7 +205,9 @@ export function AppShell() {
         const key = views?.find(
           (view) => starterViewKind(view) === "projects",
         )?.key;
-        if (key) navigate({ page: "views", key });
+        const current = routeRef.current;
+        if (key && !(current.page === "views" && current.key === key))
+          navigate({ page: "views", key });
       }),
     [navigate, views],
   );
@@ -233,6 +236,14 @@ export function AppShell() {
     [repository, undoCompletion],
   );
   const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
+  useEffect(
+    () =>
+      onUndoNotice(() => {
+        setAddedNotice(undefined);
+        setCompletedNotice(undefined);
+      }),
+    [],
+  );
   if (
     completedNotice &&
     (completedNotice.repository !== repository ||
@@ -628,6 +639,7 @@ export function AppShell() {
           route.page !== "task" &&
           (showBottomNavigation || showGlobalCaptureFab)
         }
+        hidden={Boolean(addedTask || completedNotice)}
         paused={Boolean(pendingDeletion)}
         repository={repository}
       />
@@ -808,26 +820,48 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
   );
 }
 
-const UNDO_NOTICE_MS = 4000;
+const UNDO_NOTICE_MS = 6000;
 
-/** Ctrl or Cmd+Z reverses the latest edit once its toast has gone. */
+/** Confirms a quiet edit with Undo; Ctrl or Cmd+Z reverses it at any time. */
 function UndoFeedback({
   aboveMobileControls,
+  hidden,
   paused,
   repository,
 }: {
   aboveMobileControls: boolean;
+  hidden: boolean;
   paused: boolean;
   repository: unknown;
 }) {
   const { t } = useLingui();
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<{
+    message: string;
+    entry?: UndoEntry;
+  }>();
   useEffect(() => clearUndoHistory, [repository]);
+  useEffect(
+    () =>
+      onUndoNotice((entry) =>
+        setNotice({ message: entry.notice ?? entry.label, entry }),
+      ),
+    [],
+  );
   useEffect(() => {
-    if (!message) return;
-    const timer = window.setTimeout(() => setMessage(""), UNDO_NOTICE_MS);
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(undefined), UNDO_NOTICE_MS);
     return () => window.clearTimeout(timer);
-  }, [message]);
+  }, [notice]);
+  const undo = useCallback(
+    (entry: UndoEntry) => {
+      const { label } = entry;
+      void entry.run().then(
+        () => setNotice({ message: t`Undid change to “${label}”` }),
+        () => setNotice({ message: t`Couldn’t undo. Try again.` }),
+      );
+    },
+    [t],
+  );
   useEffect(() => {
     if (paused) return;
     const undoShortcut = (event: KeyboardEvent) => {
@@ -843,16 +877,13 @@ function UndoFeedback({
       const entry = takeUndo();
       if (!entry) return;
       event.preventDefault();
-      const { label } = entry;
-      void entry.run().then(
-        () => setMessage(t`Undid change to “${label}”`),
-        () => setMessage(t`Couldn’t undo. Try again.`),
-      );
+      undo(entry);
     };
     window.addEventListener("keydown", undoShortcut);
     return () => window.removeEventListener("keydown", undoShortcut);
-  }, [paused, t]);
-  if (!message) return null;
+  }, [paused, undo]);
+  if (!notice || hidden) return null;
+  const { entry, message } = notice;
   return (
     <FeedbackNotice>
       <div
@@ -860,6 +891,17 @@ function UndoFeedback({
         role="status"
       >
         <span>{message}</span>
+        {entry ? (
+          <button
+            type="button"
+            onClick={() => {
+              forgetUndo(entry);
+              undo(entry);
+            }}
+          >
+            {t`Undo`}
+          </button>
+        ) : null}
       </div>
     </FeedbackNotice>
   );

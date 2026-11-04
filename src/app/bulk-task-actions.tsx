@@ -3,6 +3,7 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Archive, Check, Trash2, X } from "lucide-react";
 import {
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useRef,
   useState,
@@ -20,9 +21,14 @@ import {
 } from "../application/bulk-task-edit";
 import { todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
-import { nextWeekStart } from "./keyboard-shortcuts";
+import {
+  nextWeekStart,
+  returnFocusToList,
+  taskRowShortcut,
+} from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
 import { rememberUndo } from "./undo-history";
+import type { TaskShortcutAction } from "./keyboard-shortcuts";
 import type { TaskSelectionStore } from "./task-selection-store";
 import { linkDisplayLabel } from "../domain/completion";
 import type { FieldCompletion } from "../domain/completion";
@@ -164,6 +170,38 @@ export function BulkTaskActions({
     else setAnnouncement((previous) => (previous ? t`Selection cleared` : ""));
   }, [store, selectionVersion, t]);
 
+  // Row keys act on the whole selection while one is held.
+  const keyed = useRef(false);
+  const keyedChange = useEffectEvent((action: TaskShortcutAction) => {
+    if (action === "open" || disabled) return false;
+    keyed.current = true;
+    const menus = actionBar.current?.querySelectorAll<HTMLElement>(
+      ".tasknotes-select-trigger",
+    );
+    const menu =
+      menus?.[["dates", "priority", "project"].indexOf(action)] ?? null;
+    if (menu) {
+      menu.focus();
+      menu.click();
+    } else if (action === "toggle") void run({ kind: "complete" });
+    else
+      void run({
+        kind: "schedule",
+        date: scheduleDate(action === "next-week" ? "week" : action),
+      });
+    return true;
+  });
+  useEffect(() => {
+    if (!store.count) return;
+    const keydown = (event: KeyboardEvent) => {
+      if (actionBar.current?.querySelector("[aria-expanded='true']")) return;
+      const action = taskRowShortcut(event);
+      if (action && keyedChange(action)) event.preventDefault();
+    };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, [store, store.count]);
+
   const changedMessage = t`This task changed. Open it to review before trying again.`;
   async function run(change: BulkTaskChange) {
     if (store.busy || !eligible.length) return;
@@ -197,7 +235,14 @@ export function BulkTaskActions({
           receipts: result.receipts,
           navigationKey: origin,
         });
-        window.requestAnimationFrame(() => undoRef.current?.focus());
+        window.requestAnimationFrame(() => {
+          if (!keyed.current) undoRef.current?.focus();
+          else {
+            (document.activeElement as HTMLElement | null)?.blur();
+            returnFocusToList();
+          }
+          keyed.current = false;
+        });
       }
     } finally {
       store.setBusy(false);
@@ -341,18 +386,7 @@ export function BulkTaskActions({
                     setPicking(true);
                     return;
                   }
-                  const today = todayString();
-                  void run({
-                    kind: "schedule",
-                    date:
-                      value === "none"
-                        ? null
-                        : value === "today"
-                          ? today
-                          : value === "tomorrow"
-                            ? shiftTaskDate(today, 1)
-                            : nextWeekStart(today),
-                  });
+                  void run({ kind: "schedule", date: scheduleDate(value) });
                 }}
               />
               <TaskNotesSelect
@@ -508,4 +542,11 @@ export function BulkTaskActions({
       </FeedbackNotice>
     </>
   );
+}
+
+function scheduleDate(value: string): string | null {
+  const today = todayString();
+  if (value === "none") return null;
+  if (value === "today") return today;
+  return value === "tomorrow" ? shiftTaskDate(today, 1) : nextWeekStart(today);
 }

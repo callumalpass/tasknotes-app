@@ -174,6 +174,7 @@ import {
   completeTaskValues,
   completeRecords,
   completionLimit,
+  usedValuesFirst,
 } from "./completions";
 
 function createRecordOp(
@@ -2000,16 +2001,20 @@ export class NextTaskRepository implements TaskRepository {
       frontmatter: plainFields(r.effective ?? r.frontmatter),
       types: r.types,
     }));
-    return completeRecords(
-      records,
+    return usedValuesFirst(
+      [...this.cache.values()].map((r) => r.task),
       request,
-      this.providers[0]!.model.config.linkWriteFormat,
-    ).map((completion) => {
-      const task = completion.path
-        ? this.cache.atPath(completion.path)?.task
-        : undefined;
-      return task ? { ...completion, taskId: task.id } : completion;
-    });
+      completeRecords(
+        records,
+        request,
+        this.providers[0]!.model.config.linkWriteFormat,
+      ).map((completion) => {
+        const task = completion.path
+          ? this.cache.atPath(completion.path)?.task
+          : undefined;
+        return task ? { ...completion, taskId: task.id } : completion;
+      }),
+    );
   }
 
   async create(

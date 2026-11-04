@@ -1168,7 +1168,7 @@
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
   flex: 0 1 auto;
   flex-wrap: nowrap;
-  min-width: min(4.5rem, 100%);
+  min-width: min(2.75rem, 100%);
   max-width: max-content;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {

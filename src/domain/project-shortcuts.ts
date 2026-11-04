@@ -11,7 +11,7 @@ export function projectLabel(value: string): string {
   return linkLabel(value) ?? linkTarget(value).split("/").at(-1) ?? value;
 }
 
-/** Busiest projects first, from metadata already in memory. */
+/** The busiest projects in name order, so a capture never reshuffles them. */
 export function projectShortcuts(
   tasks: Iterable<Pick<TaskSummary, "completed" | "archived" | "projects">>,
   limit = 6,
@@ -30,5 +30,6 @@ export function projectShortcuts(
       (left, right) =>
         right.count - left.count || left.label.localeCompare(right.label),
     )
-    .slice(0, limit);
+    .slice(0, limit)
+    .sort((left, right) => left.label.localeCompare(right.label));
 }

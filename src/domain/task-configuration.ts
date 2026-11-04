@@ -607,18 +607,15 @@ function humanize(value: string): string {
   return words ? `${words[0].toUpperCase()}${words.slice(1)}` : value;
 }
 
-/** The stored colour of a priority above the collection's default. */
-export function raisedPriorityColorOf(
+/** The stored colour of a priority other than the collection's default. */
+export function markedPriorityColorOf(
   value: string | undefined,
   configuration: Pick<TaskCollectionConfiguration, "priorities" | "defaults">,
 ): string | undefined {
   const priority = configuration.priorities.find(
     (option) => option.value === value,
   );
-  const fallback = configuration.priorities.find(
-    (option) => option.value === configuration.defaults.priority,
-  );
-  return priority && priority.weight > (fallback?.weight ?? 0)
+  return priority && priority.value !== configuration.defaults.priority
     ? priority.color
     : undefined;
 }

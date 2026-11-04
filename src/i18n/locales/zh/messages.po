@@ -3195,12 +3195,22 @@ msgid "Move selected tasks to project"
 msgstr "将所选任务移至项目"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "移至项目"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "已移动 "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "已将“{title}”及其截止日期移至{when}"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "已将“{title}”移至{when}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4708,6 +4718,11 @@ msgstr "会话结束时间"
 msgid "Session start"
 msgstr "会话开始时间"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "设置优先级"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "设置恢复"
@@ -5058,8 +5073,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "任务文件会保留一段固定的日期范围，例如未来 14 天。"
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "任务键作用于当前焦点行。日期键会保留已安排的时间。请在一秒内按完导航组合键。在任务行之外，M 可切换侧边栏；在任务行中也可使用 Shift M。"
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "任务快捷键作用于当前行或所有选中的任务。日期快捷键保留已安排的时间。请在一秒内按完导航序列。"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5661,6 +5676,11 @@ msgstr "即将到来"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "即将发生的重复项"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "已更新“{title}”"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

@@ -12,6 +12,7 @@ for (const day of [25, 26, 27, 28, 29, 30, 31]) {
     await page.goto(
       `views/${encodeURIComponent("TaskNotes/Views/calendar.base#calendar")}?demo=50`,
     );
+    await page.getByLabel("Calendar layout", { exact: true }).click();
     await page.getByRole("button", { name: "Week", exact: true }).click();
     // The demo advances its Mon/Wed/Fri series to the next scheduled date.
     // From Thursday onward this week has no generated patterns left; use

@@ -34,7 +34,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { rememberUndo } from "../app/undo-history";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { completionKey } from "../application/task-mutations";
@@ -48,7 +48,11 @@ import { rescheduleInput, shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
 import { taskRecordLink } from "../domain/task-links";
-import { shortcutSchedule } from "../app/keyboard-shortcuts";
+import {
+  TASK_MENU_PANEL_EVENT,
+  returnFocusToList,
+  shortcutSchedule,
+} from "../app/keyboard-shortcuts";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
@@ -196,13 +200,15 @@ export function TaskActions({
   useEffect(() => {
     if (!position || panel === "subtask") return;
     queueMicrotask(() => {
+      const finePointer = !window.matchMedia?.("(pointer: coarse)").matches;
       const selector =
         panel === "delete"
           ? "[data-safe-action]"
           : isOrganizeEditor(panel)
-            ? "[data-panel-back]"
-            : panel === "dates" &&
-                !window.matchMedia?.("(pointer: coarse)").matches
+            ? finePointer
+              ? ".multi-value-control input"
+              : "[data-panel-back]"
+            : panel === "dates" && finePointer
               ? ".task-date-input"
               : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
@@ -230,6 +236,23 @@ export function TaskActions({
     openFromTrigger();
     setPanels(["actions", "dates"]);
   }
+
+  const openPanel = useEffectEvent((event: Event) => {
+    const panel = (event as CustomEvent<string>).detail;
+    openFromTrigger();
+    setPanels(
+      panel === "project"
+        ? ["actions", "organize", "projects"]
+        : ["actions", "priority"],
+    );
+  });
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const listener = (event: Event) => openPanel(event);
+    trigger.addEventListener(TASK_MENU_PANEL_EVENT, listener);
+    return () => trigger.removeEventListener(TASK_MENU_PANEL_EVENT, listener);
+  }, []);
 
   function openMenu(x: number, y: number) {
     const width = 304;
@@ -281,8 +304,10 @@ export function TaskActions({
       ]),
     ) as UpdateTaskInput;
     await updateTask(task.id, input);
+    const title = task.title;
     rememberUndo({
-      label: task.title,
+      label: title,
+      notice: t`Updated “${title}”`,
       run: () => updateTask(task.id, earlier),
     });
   }
@@ -295,8 +320,10 @@ export function TaskActions({
       await beforeAction?.();
       await action();
       actionFeedback();
-      closeMenu();
+      closeMenu(true);
       after?.();
+      // The edit can move this row out of the list along with its menu.
+      window.setTimeout(() => returnFocusToList(), 200);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -317,13 +344,17 @@ export function TaskActions({
   const rootRole =
     panel === "delete"
       ? "alertdialog"
-      : mobile || panel === "subtask" || isOrganizeEditor(panel)
+      : mobile ||
+          panel === "subtask" ||
+          panel === "dates" ||
+          isOrganizeEditor(panel)
         ? "dialog"
         : "menu";
   const actionMenuRole =
     mobile &&
     panel !== "subtask" &&
     panel !== "delete" &&
+    panel !== "dates" &&
     !isOrganizeEditor(panel);
   useOverlay({
     open: Boolean(position),
@@ -559,6 +590,7 @@ export function TaskActions({
                         disabled={busy || (!task.due && !task.scheduled)}
                         icon={ChevronRight}
                         label={t({ message: "Move dates one day later" })}
+                        plain
                         onClick={() =>
                           void run(() =>
                             change({
@@ -1057,6 +1089,7 @@ function MenuAction({
   next = false,
   iconColor,
   labelColor,
+  plain = false,
   radio = false,
   onClick,
 }: {
@@ -1069,6 +1102,8 @@ function MenuAction({
   next?: boolean;
   iconColor?: string;
   labelColor?: string;
+  /** Inside a dialog panel, where a menu role has no menu around it. */
+  plain?: boolean;
   radio?: boolean;
   onClick(): void;
 }) {
@@ -1078,7 +1113,7 @@ function MenuAction({
       aria-checked={radio ? checked : undefined}
       className={danger ? "danger" : undefined}
       disabled={disabled}
-      role={radio ? "menuitemradio" : "menuitem"}
+      role={plain ? undefined : radio ? "menuitemradio" : "menuitem"}
       type="button"
       onClick={onClick}
     >

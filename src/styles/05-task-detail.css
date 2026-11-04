@@ -610,7 +610,7 @@
 }
 
 .tasknotes-calendar-grid [role="gridcell"].is-outside {
-  color: color-mix(in srgb, var(--ink-muted), transparent 45%);
+  color: var(--ink-muted);
 }
 
 .tasknotes-calendar-grid [role="gridcell"].is-today::after {

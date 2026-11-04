@@ -3196,12 +3196,22 @@ msgid "Move selected tasks to project"
 msgstr "Déplacer les tâches sélectionnées vers un projet"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "Déplacer vers un projet"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "Déplacement de "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "« {title} » et sa date limite déplacées à {when}"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "« {title} » déplacée à {when}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4709,6 +4719,11 @@ msgstr "Fin de la session"
 msgid "Session start"
 msgstr "Début de la session"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "Définir la priorité"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "Configurer la récupération"
@@ -5059,8 +5074,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "Les fichiers de tâche sont conservés sur une période fixe, par exemple les 14 prochains jours."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "Les touches de tâche agissent sur la ligne active. Les touches de date conservent l’heure planifiée. Saisissez les séquences de navigation en moins d’une seconde. M affiche ou masque la barre latérale hors des lignes de tâche ; Maj M fonctionne aussi depuis une ligne de tâche."
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "Les touches de tâche agissent sur la ligne active, ou sur toutes les tâches sélectionnées. Les touches de date conservent l’heure prévue. Appuyez sur les séquences de navigation en moins d’une seconde."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5662,6 +5677,11 @@ msgstr "À venir"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "Occurrences récurrentes à venir"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "« {title} » mise à jour"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

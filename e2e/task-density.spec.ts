@@ -119,26 +119,19 @@ for (const colorScheme of ["light", "dark"] as const) {
         await expect(event).toHaveCSS("min-height", "24px");
         expect((await event.boundingBox())!.height).toBeLessThanOrEqual(28);
       }
+      await page.getByLabel("Calendar layout", { exact: true }).click();
       await page.getByRole("button", { name: "Agenda", exact: true }).click();
       const agenda = page.locator(".tnc-item--list").first();
       await expect(agenda).toBeVisible();
-      await expect(agenda).toHaveCSS("padding-top", "4px");
+      await expect(agenda).toHaveCSS("padding-top", "0px");
       // Wrapped metadata may grow on phones; only the padding overhead is fixed.
-      // Phones stack the time above the title, so it is content, not padding.
-      const contentHeight = (await agenda
-        .locator(".full-calendar-event-content")
-        .boundingBox())!.height;
-      const stackedTime = phone
-        ? await agenda
-            .locator(".full-calendar-event-time")
-            .evaluate((time) => time.getBoundingClientRect().height)
-        : 0;
+      const contentHeight = (await agenda.locator(".task-row").boundingBox())!
+        .height;
       expect(
-        (await agenda.boundingBox())!.height - contentHeight - stackedTime,
+        (await agenda.boundingBox())!.height - contentHeight,
       ).toBeLessThanOrEqual(9);
       // Phone agendas keep the layouts in their date strip's menu.
-      if (phone)
-        await page.locator(".tnc-strip").getByLabel("Calendar layout").click();
+      await page.getByLabel("Calendar layout", { exact: true }).click();
       await page.getByRole("button", { name: "Month", exact: true }).click();
       await page.setViewportSize({ width: 390, height: 844 });
       // Phone months draw dots; tapping a day lists its tasks below the grid.

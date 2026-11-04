@@ -48,7 +48,7 @@ import { preserveRowFocus } from "../app/keyboard-shortcuts";
 import { requestProjectJump } from "../app/project-jump";
 import { rescheduleInput } from "../domain/task-date-actions";
 import { projectLabel } from "../domain/project-shortcuts";
-import { raisedPriorityColorOf } from "../domain/task-configuration";
+import { markedPriorityColorOf } from "../domain/task-configuration";
 import { rememberUndo } from "../app/undo-history";
 import {
   COMPLETION_FOLD_MS,
@@ -134,7 +134,7 @@ export function TaskRow({
   const statusColor = distinctStatus ? status?.color : undefined;
   const raisedPriorityColor = displayedTask.completed
     ? undefined
-    : raisedPriorityColorOf(task.priority, configuration);
+    : markedPriorityColorOf(task.priority, configuration);
   const [seenCompleted, setSeenCompleted] = useState(displayedTask.completed);
   if (seenCompleted !== displayedTask.completed) {
     setSeenCompleted(displayedTask.completed);
@@ -175,6 +175,7 @@ export function TaskRow({
       if (field === "archived") return detail.rawValue !== false;
       return true;
     })
+    .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   const shownDetails = sectionDetails(allDetails, sectionDay, configuration);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -190,18 +191,21 @@ export function TaskRow({
     toggle: async () => {
       if (!(await complete())) throw new Error("Completion failed");
     },
-    schedule: async (scheduled) => {
+    yieldToSelection: selection.holdsTasks,
+    schedule: async (scheduled, when) => {
       try {
         const earlier = {
           scheduled: task.scheduled ?? null,
           due: task.due ?? null,
         };
-        await updateTask(task.id, {
-          ...rescheduleInput(task, taskDatePart(scheduled)),
-          scheduled,
-        });
+        const input = rescheduleInput(task, taskDatePart(scheduled));
+        await updateTask(task.id, { ...input, scheduled });
+        const title = task.title;
         rememberUndo({
-          label: task.title,
+          label: title,
+          notice: input.due
+            ? t`Moved “${title}” and its deadline to ${when}`
+            : t`Moved “${title}” to ${when}`,
           run: () => updateTask(task.id, earlier),
         });
         actionFeedback();
@@ -645,7 +649,7 @@ function withRaisedPriority(
   const fallback = configuration.priorities.find(
     (option) => option.value === configuration.defaults.priority,
   );
-  if (!priority || priority.weight <= (fallback?.weight ?? 0)) return details;
+  if (!priority || priority.value === fallback?.value) return details;
   return [
     ...details,
     {
@@ -655,6 +659,20 @@ function withRaisedPriority(
       rawValue: priority.value,
     },
   ];
+}
+
+/** A selected priority property reads as its option, as the menus name it. */
+function priorityOptionDetail(
+  detail: TaskRowDetail,
+  configuration: RowConfiguration,
+): TaskRowDetail {
+  const key = propertyField(detail);
+  if (key !== configuration.fieldMapping.priority && key !== "priority")
+    return detail;
+  const option = configuration.priorities.find(
+    ({ value }) => value === detail.rawValue,
+  );
+  return option ? { ...detail, value: option.label } : detail;
 }
 
 function isProjectDetail(

@@ -22,7 +22,7 @@ import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 import { TaskCoreProperties } from "./task-core-properties";
 import { TaskSubtasks } from "./task-subtasks";
 import { useTaskDetailKeys } from "./use-task-detail-keys";
-import { raisedPriorityColorOf } from "../domain/task-configuration";
+import { markedPriorityColorOf } from "../domain/task-configuration";
 import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
@@ -751,7 +751,7 @@ function TaskEditor({
   };
   const ringColor = task.completed
     ? undefined
-    : raisedPriorityColorOf(draft.priority, configuration);
+    : markedPriorityColorOf(draft.priority, configuration);
   useTaskDetailKeys({
     onEscape: () => void leave(),
     onNavigate: onNavigate ? navigateAdjacent : undefined,

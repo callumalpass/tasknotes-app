@@ -1,6 +1,10 @@
 import { expect, it } from "vitest";
 
-import { completeRecords, completeTaskValues } from "./completions";
+import {
+  completeRecords,
+  completeTaskValues,
+  usedValuesFirst,
+} from "./completions";
 
 import type { Task } from "../domain/task";
 
@@ -80,5 +84,26 @@ it("honors known target types while retaining untyped portable notes", () => {
   expect(values.map(({ value }) => value)).toEqual([
     "[[Projects/portable|Portable project]]",
     "[[Projects/typed|Typed project]]",
+  ]);
+});
+
+it("offers values the collection uses before other linkable records", () => {
+  const tasks = [
+    { frontmatter: { projects: ["Operations"] } },
+    { frontmatter: { projects: ["[[notes/launch|Launch]]"] } },
+  ] as unknown as Task[];
+  const record = (label: string) => ({
+    kind: "record" as const,
+    value: `[[notes/${label}]]`,
+    label,
+    detail: `notes/${label}.md`,
+  });
+  const request = { field: "projects", kind: "records" as const };
+  expect(
+    usedValuesFirst(tasks, request, [record("Launch"), record("Refine copy")]),
+  ).toEqual([
+    { kind: "value", value: "[[notes/launch|Launch]]", label: "Launch" },
+    { kind: "value", value: "Operations", label: "Operations" },
+    record("Refine copy"),
   ]);
 });

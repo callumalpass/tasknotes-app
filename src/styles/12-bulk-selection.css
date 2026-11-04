@@ -45,7 +45,8 @@
   font-size: var(--type-supporting);
 }
 .bulk-selection-count button,
-.bulk-action-controls button {
+.bulk-action-controls > button,
+.bulk-action-controls .tasknotes-select-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,8 +63,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
 }
-.bulk-action-controls button,
-.bulk-action-controls select {
+.bulk-action-controls > button,
+.bulk-action-controls .tasknotes-select-trigger {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -74,7 +75,8 @@
   color: var(--ink);
   font-size: var(--type-supporting);
 }
-.bulk-action-controls :is(button, select):hover {
+.bulk-action-controls > button:hover,
+.bulk-action-controls .tasknotes-select-trigger:hover {
   background-color: var(--paper-soft);
 }
 .bulk-action-controls :disabled {
@@ -99,6 +101,9 @@
 .bulk-pick-date input {
   min-height: 44px;
   color-scheme: inherit;
+}
+body:has(.bulk-actions) .task-row {
+  scroll-margin-bottom: calc(var(--task-selection-height, 160px) + 32px);
 }
 .app-shell:has(~ .bulk-actions) .screen {
   padding-bottom: calc(var(--task-selection-height, 160px) + 80px);
@@ -143,11 +148,31 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   .bulk-action-controls {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
+  .bulk-actions {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding: 8px 12px;
+  }
+  .bulk-actions > :is(.bulk-selection-hint, .bulk-pick-date) {
+    grid-column: 2;
+    margin: 0;
+  }
   .bulk-selection-count {
     min-height: 36px;
   }
+  .bulk-action-controls > button,
+  .bulk-action-controls .tasknotes-select-trigger {
+    min-height: 40px;
+  }
   body:has(.bulk-actions) .workspace-feedback {
     bottom: calc(var(--task-selection-height, 120px) + 32px);
+  }
+}
+@media (min-width: 840px) {
+  .app-shell.sidebar-collapsed ~ .bulk-actions {
+    left: 92px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -158,7 +183,7 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   }
 }
 
-@media (max-width: 439px) {
+@media (max-width: 359px) {
   .bulk-action-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -181,8 +206,11 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   border-radius: var(--radius-control);
 }
 
-/* The bar sits at the foot of the screen, so its menus open upward. */
-.bulk-actions .tasknotes-popover {
-  top: auto;
-  bottom: calc(100% + 6px);
+/* The bar sits at the foot of the screen, so its menus open upward. Phones
+   keep the shared bottom sheet. */
+@media (min-width: 641px) {
+  .bulk-actions .tasknotes-popover {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
 }

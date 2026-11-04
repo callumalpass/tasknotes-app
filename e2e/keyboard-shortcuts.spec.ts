@@ -113,7 +113,7 @@ test("? opens the shortcut sheet, which lists the global keys", async ({
   for (const description of [
     "Command palette",
     "New task",
-    "Undo a deleted task",
+    "Undo last action",
     "Schedule next week",
   ])
     await expect(sheet).toContainText(description);
@@ -191,7 +191,7 @@ test("desktop rail collapses, reflows, persists, and names the Today count", asy
     .toBe(count - 1);
   const before = await page.locator("#main-content").boundingBox();
   await page.locator("#main-content").focus();
-  await page.keyboard.press("m");
+  await page.keyboard.press("Shift+M");
   await expect(
     rail.getByRole("button", { name: "Expand sidebar" }),
   ).toBeVisible();
@@ -224,5 +224,59 @@ test("a saved collapse preference leaves phone bottom navigation unchanged", asy
     page
       .locator(".bottom-navigation")
       .getByRole("button", { name: "Today", exact: true }),
+  ).toBeVisible();
+});
+
+test("row keys act on the whole selection and keep the list place", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  await expect(page.locator("button.task-row-title").first()).toBeVisible();
+  await page.keyboard.press("j");
+  const rows = page.locator(".task-row[data-task-id]");
+  await expect(rows.first()).toBeVisible();
+  const movable = rows.filter({ has: page.locator(".task-row-quick-date") });
+  await expect(movable.first()).toBeVisible();
+  const first = await movable.first().getAttribute("data-task-id");
+  await page.keyboard.press("v");
+  await page.keyboard.press("Shift+J");
+  await expect(page.locator(".bulk-selection-count")).toContainText(
+    "2 selected",
+  );
+  await page.keyboard.press("m");
+  await expect(page.locator(`[data-task-id="${first}"]`)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  await expect(page.locator(".app-shell")).not.toHaveClass(/sidebar-collapsed/);
+  await expect(rows.locator(".task-row-title:focus")).toHaveCount(1);
+});
+
+test("a single reschedule confirms itself with Undo", async ({ page }) => {
+  await page.goto("?demo=60");
+  const first = page.locator("button.task-row-title").first();
+  await expect(first).toBeVisible();
+  const title = (await first.textContent())!;
+  await page.keyboard.press("j");
+  await page.keyboard.press("m");
+  const toast = page.locator(".undo-toast");
+  await expect(toast).toContainText("tomorrow");
+  await toast.getByRole("button", { name: "Undo" }).click();
+  await expect(toast).toContainText("Undid change");
+  await expect(page.getByRole("button", { name: title }).first()).toBeVisible();
+});
+
+test("priority and project keys open their pickers", async ({ page }) => {
+  await page.goto("?demo=60");
+  await expect(page.locator("button.task-row-title").first()).toBeVisible();
+  await page.keyboard.press("j");
+  await page.keyboard.press("p");
+  await expect(page.getByRole("menuitemradio", { name: "High" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await page.locator("button.task-row-title").first().focus();
+  await page.keyboard.press("+");
+  await expect(page.locator(".multi-value-control input")).toBeFocused();
+  await page.keyboard.type("Oper");
+  await expect(
+    page.getByRole("option", { name: "Operations" }).first(),
   ).toBeVisible();
 });

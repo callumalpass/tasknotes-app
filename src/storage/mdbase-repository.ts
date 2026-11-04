@@ -96,6 +96,7 @@ import {
   completeRecords,
   completeTaskValues,
   completionLimit,
+  usedValuesFirst,
 } from "./completions";
 
 import type {
@@ -770,11 +771,14 @@ export class MdbaseTaskRepository implements TaskRepository {
     request: FieldCompletionRequest,
   ): Promise<FieldCompletion[]> {
     await this.ensureTaskIndex();
-    if (request.kind === "values")
-      return completeTaskValues(
-        [...this.cache.values()].map(({ task }) => task),
-        request,
-      );
+    const tasks = [...this.cache.values()].map(({ task }) => task);
+    if (request.kind === "values") return completeTaskValues(tasks, request);
+    return usedValuesFirst(tasks, request, await this.completeRecords(request));
+  }
+
+  private completeRecords(
+    request: FieldCompletionRequest,
+  ): Promise<FieldCompletion[]> {
     const key = JSON.stringify({
       field: request.field,
       query: request.query?.trim().toLocaleLowerCase() ?? "",
@@ -783,7 +787,7 @@ export class MdbaseTaskRepository implements TaskRepository {
     });
     const cached = this.completionCache.get(key);
     if (cached && cached.expiresAt > Date.now())
-      return structuredClone(cached.values);
+      return Promise.resolve(structuredClone(cached.values));
     const pending = this.completionsInFlight.get(key);
     if (pending) return pending;
     const run = this.completeRecordsFromProvider(request)

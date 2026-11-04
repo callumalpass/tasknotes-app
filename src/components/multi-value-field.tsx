@@ -147,10 +147,11 @@ export function MultiValueField({
       if (removed) setAnnouncement(t`${labelFor(removed)} removed`);
       return;
     }
-    if (event.key === "Escape" && open) {
+    if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      setOpen(false);
+      if (open) setOpen(false);
+      else event.currentTarget.blur();
     }
   }
 

@@ -1,4 +1,6 @@
+import { t } from "@lingui/core/macro";
 import { useRepository } from "./repository-context";
+import { rememberUndo } from "./undo-history";
 import type { CalendarTaskEdit } from "../domain/calendar-edit";
 import type { TaskSummary } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
@@ -8,10 +10,23 @@ export function useCalendarMutations(
   onRefresh: (execution: TaskViewExecution) => void,
   onRefreshError: (view: TaskView, reason: unknown) => void,
 ) {
-  const { repository, editCalendar } = useRepository();
+  const { repository, editCalendar, updateTask } = useRepository();
   return {
     async edit(task: TaskSummary, edit: CalendarTaskEdit) {
       await editCalendar(task.id, edit);
+      if (!task.recurrence && !task.recurrenceParent) {
+        const { title } = task;
+        const earlier = {
+          scheduled: task.scheduled ?? null,
+          due: task.due ?? null,
+          timeEstimate: task.timeEstimate ?? null,
+        };
+        rememberUndo({
+          label: title,
+          notice: t`Updated “${title}”`,
+          run: () => updateTask(task.id, earlier),
+        });
+      }
       // Refresh query membership/order, not calendar range projection.
       if (view)
         void repository

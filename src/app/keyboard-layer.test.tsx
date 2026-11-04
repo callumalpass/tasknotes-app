@@ -141,18 +141,18 @@ it("announces row actions politely, repeating identical messages", () => {
   expect(region.textContent).not.toBe(first);
 });
 
-it("captures with q/n, toggles the rail without stealing row m, and guards plain keys", () => {
+it("captures with q/n, toggles the rail with Shift M, and guards plain keys", () => {
   const { newTask, toggleSidebar, navigate } = renderLayer();
   for (const key of ["q", "n"]) fireEvent.keyDown(document.body, { key });
   expect(newTask).toHaveBeenCalledTimes(2);
   fireEvent.keyDown(document.body, { key: "m" });
-  expect(toggleSidebar).toHaveBeenCalledTimes(1);
+  expect(toggleSidebar).not.toHaveBeenCalled();
   const row = screen.getByRole("button", { name: "One" });
   row.focus();
   fireEvent.keyDown(row, { key: "m" });
-  expect(toggleSidebar).toHaveBeenCalledTimes(1);
+  expect(toggleSidebar).not.toHaveBeenCalled();
   fireEvent.keyDown(row, { key: "M", shiftKey: true });
-  expect(toggleSidebar).toHaveBeenCalledTimes(2);
+  expect(toggleSidebar).toHaveBeenCalledTimes(1);
   const input = screen.getByRole("textbox");
   for (const key of ["q", "n", "/", "g", "M"]) {
     fireEvent.keyDown(input, { key });
@@ -160,7 +160,7 @@ it("captures with q/n, toggles the rail without stealing row m, and guards plain
     fireEvent.keyDown(document.body, { key, isComposing: true });
   }
   expect(newTask).toHaveBeenCalledTimes(2);
-  expect(toggleSidebar).toHaveBeenCalledTimes(2);
+  expect(toggleSidebar).toHaveBeenCalledTimes(1);
   expect(navigate).not.toHaveBeenCalled();
 });
 

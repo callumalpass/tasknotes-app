@@ -9,15 +9,25 @@ import {
 
 /** Actions a focused task row (or the command palette) can run on its task. */
 export type TaskShortcutAction =
-  "open" | "toggle" | "dates" | "today" | "tomorrow" | "next-week";
+  | "open"
+  | "toggle"
+  | "dates"
+  | "priority"
+  | "project"
+  | "today"
+  | "tomorrow"
+  | "next-week";
 
 export const TASK_SHORTCUT_EVENT = "tasknotes:task-shortcut";
+/** Asks a row's action menu to open on one panel. */
+export const TASK_MENU_PANEL_EVENT = "tasknotes:task-menu-panel";
 
 /** Single-letter keys for a focused task row. Enter also opens (native button). */
 const rowKeys: Record<string, TaskShortcutAction> = {
   o: "open",
   x: "toggle",
   d: "dates",
+  p: "priority",
   t: "today",
   m: "tomorrow",
   w: "next-week",
@@ -59,6 +69,9 @@ export function plainShortcutsSuspended(
 export function taskRowShortcut(
   event: KeyboardEvent,
 ): TaskShortcutAction | null {
+  // "+" needs Shift on many layouts, and matches the capture syntax.
+  if (event.key === "+")
+    return plainShortcutsSuspended(event) ? null : "project";
   if (event.shiftKey || plainShortcutsSuspended(event)) return null;
   return rowKeys[event.key.toLocaleLowerCase()] ?? null;
 }
@@ -147,6 +160,42 @@ function focusRow(row: HTMLElement) {
   title.scrollIntoView?.({ block: "nearest" });
 }
 
+let rowPlace: { id: string; index: number; href: string } | undefined;
+
+/** Keeps the keyboard's place in a list after focus leaves it. */
+export function rememberRowPlace(target: EventTarget | null) {
+  if (!(target instanceof Element)) return;
+  const row = target.closest<HTMLElement>(ROW_SELECTOR);
+  const region = row?.closest("#main-content");
+  if (!row || !region) return;
+  rowPlace = {
+    id: row.dataset.taskId!,
+    index: taskRowsIn(region).indexOf(row),
+    href: location.href,
+  };
+}
+
+function placedRow(rows: HTMLElement[]): {
+  row: HTMLElement;
+  stillThere: boolean;
+} | null {
+  if (!rowPlace || rowPlace.href !== location.href) return null;
+  const { id, index } = rowPlace;
+  const same = rows.find((row) => row.dataset.taskId === id);
+  const row = same ?? rows[Math.min(index, rows.length - 1)];
+  return row ? { row, stillThere: Boolean(same) } : null;
+}
+
+/** Returns focus to the list after a menu or edit has taken it away. */
+export function returnFocusToList(
+  main: ParentNode | null = document.getElementById("main-content"),
+) {
+  const active = document.activeElement;
+  if (active && active !== document.body && active !== main) return;
+  const place = main && placedRow(taskRowsIn(main));
+  if (place) focusRow(place.row);
+}
+
 /**
  * Move focus to the next or previous task row. With no row focused, start
  * from the first row in view (or the last, moving up) of the main content.
@@ -162,6 +211,14 @@ export function focusAdjacentTaskRow(
   const rows = taskRowsIn(region);
   if (!rows.length) return false;
   if (!current || !rows.includes(current)) {
+    const place = placedRow(rows);
+    if (place) {
+      const next = place.stillThere
+        ? (rows[rows.indexOf(place.row) + direction] ?? place.row)
+        : place.row;
+      focusRow(next);
+      return true;
+    }
     const inView = rows.filter((row) => {
       const bounds = row.getBoundingClientRect();
       return bounds.bottom > 0 && bounds.top < window.innerHeight;
@@ -283,7 +340,7 @@ export function keyboardShortcutGroups(): {
         { keys: ["x"], description: t({ message: "Complete or reopen" }) },
         { keys: ["v"], description: t({ message: "Select focused task" }) },
         {
-          keys: ["Shift+j", "Shift+↓", "Shift+k", "Shift+↑"],
+          keys: ["Shift+j", "Shift+k"],
           description: t({ message: "Extend task selection" }),
         },
         {
@@ -292,6 +349,8 @@ export function keyboardShortcutGroups(): {
         },
         { keys: ["Esc"], description: t({ message: "Clear task selection" }) },
         { keys: ["d"], description: t({ message: "Change dates" }) },
+        { keys: ["p"], description: t({ message: "Set priority" }) },
+        { keys: ["+"], description: t({ message: "Move to project" }) },
         { keys: ["t"], description: t({ message: "Schedule today" }) },
         { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },
         { keys: ["w"], description: t({ message: "Schedule next week" }) },

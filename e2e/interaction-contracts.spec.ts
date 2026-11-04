@@ -187,8 +187,8 @@ test("mobile property editing is truly modal and restores its trigger", async ({
   await page.goto("?demo=50");
   const trigger = page
     .locator(".task-row")
-    .first()
-    .getByRole("button", { name: /^Scheduled:/ });
+    .getByRole("button", { name: /^Scheduled:/ })
+    .first();
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Edit Scheduled" });
   await expect(dialog).toBeVisible();

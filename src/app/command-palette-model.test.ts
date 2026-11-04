@@ -159,6 +159,8 @@ describe("task commands", () => {
     expect(commands.map((item) => item.label)).toEqual([
       "Open “Write brief”",
       "Complete “Write brief”",
+      "Set priority",
+      "Move to project",
       "Schedule today",
       "Schedule tomorrow",
       "Schedule next week",
@@ -167,6 +169,8 @@ describe("task commands", () => {
     expect(requested.mock.calls.flat()).toEqual([
       "open",
       "toggle",
+      "priority",
+      "project",
       "today",
       "tomorrow",
       "next-week",

@@ -125,7 +125,6 @@ export function TaskDatePanel({
       <div className="task-date-presets">
         <button
           disabled={busy}
-          role="menuitem"
           type="button"
           onClick={() => apply(today)}
         >
@@ -133,7 +132,6 @@ export function TaskDatePanel({
         </button>
         <button
           disabled={busy}
-          role="menuitem"
           type="button"
           onClick={() => apply(shiftTaskDate(today, 1))}
         >
@@ -141,7 +139,6 @@ export function TaskDatePanel({
         </button>
         <button
           disabled={busy}
-          role="menuitem"
           type="button"
           onClick={() => apply(nextWeekStart(today))}
         >
@@ -157,7 +154,6 @@ export function TaskDatePanel({
         <button
           className="task-date-clear"
           disabled={busy}
-          role="menuitem"
           type="button"
           onClick={() => onApply({ [target]: null })}
         >

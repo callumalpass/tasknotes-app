@@ -3195,12 +3195,22 @@ msgid "Move selected tasks to project"
 msgstr "Переместить выбранные задачи в проект"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "Переместить в проект"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "Перенесено "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "«{title}» и крайний срок перенесены: {when}"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "«{title}» перенесена: {when}"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4708,6 +4718,11 @@ msgstr "Конец сеанса"
 msgid "Session start"
 msgstr "Начало сеанса"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "Задать приоритет"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "Настроить восстановление"
@@ -5058,8 +5073,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "Файлы задач сохраняются в течение фиксированного периода, например следующих 14 дней."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "Клавиши задач действуют на строку в фокусе. Клавиши дат сохраняют запланированное время. Нажимайте последовательности навигации в течение секунды. M переключает боковую панель вне строк задач; Shift M работает и в строке задачи."
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "Клавиши задач действуют на выделенную строку или на все выбранные задачи. Клавиши дат сохраняют запланированное время. Нажимайте последовательности навигации в течение одной секунды."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5661,6 +5676,11 @@ msgstr "Предстоящие"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "Предстоящие повторения"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "«{title}» обновлена"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

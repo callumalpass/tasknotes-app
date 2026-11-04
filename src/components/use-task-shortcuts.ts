@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 import {
+  TASK_MENU_PANEL_EVENT,
   TASK_SHORTCUT_EVENT,
   announceShortcut,
   preserveRowFocus,
@@ -18,11 +19,13 @@ export interface TaskShortcutHandlers {
   reschedulable: boolean;
   open(): void;
   toggle(): Promise<void>;
-  schedule(scheduled: string): Promise<void>;
+  schedule(scheduled: string, when: string): Promise<void>;
+  /** A held selection takes the keys, so they act on every selected task. */
+  yieldToSelection(): boolean;
 }
 
 /**
- * Row keys (o, x, t, m, w) for a focused task row, plus the same actions
+ * Row keys (o, x, d, p, +, t, m, w) for a focused task row, plus the same actions
  * requested by the command palette through TASK_SHORTCUT_EVENT.
  */
 export function useTaskShortcuts(
@@ -47,6 +50,14 @@ export function useTaskShortcuts(
         row.querySelector<HTMLButtonElement>(".task-row-quick-date")?.click();
         return;
       }
+      if (action === "priority" || action === "project") {
+        row
+          .querySelector(".task-actions-trigger")
+          ?.dispatchEvent(
+            new CustomEvent(TASK_MENU_PANEL_EVENT, { detail: action }),
+          );
+        return;
+      }
       const restoreFocus = preserveRowFocus(row);
       try {
         if (action === "toggle") {
@@ -60,10 +71,9 @@ export function useTaskShortcuts(
           );
           return;
         } else {
-          await schedule(shortcutSchedule(action, task.scheduled));
-          announceShortcut(
-            `Scheduled ${task.title} for ${shortcutScheduleLabel(action)}.`,
-          );
+          const when = shortcutScheduleLabel(action);
+          await schedule(shortcutSchedule(action, task.scheduled), when);
+          announceShortcut(`Scheduled ${task.title} for ${when}.`);
         }
       } catch {
         // The row shows the mutation error and its retry action.
@@ -74,6 +84,7 @@ export function useTaskShortcuts(
     const keydown = (event: KeyboardEvent) => {
       const action = taskRowShortcut(event);
       if (!action) return;
+      if (action !== "open" && latest.current.yieldToSelection()) return;
       event.preventDefault();
       void run(action);
     };

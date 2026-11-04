@@ -3195,12 +3195,22 @@ msgid "Move selected tasks to project"
 msgstr "선택한 작업을 프로젝트로 이동"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 msgid "Move to project"
 msgstr "프로젝트로 이동"
 
 #: src/app/views-screen.tsx
 msgid "Moved "
 msgstr "이동됨 "
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” and its deadline to {when}"
+msgstr "“{title}”과(와) 마감일을 {when}(으)로 옮겼습니다"
+
+#: src/components/task-row.tsx
+msgid "Moved “{title}” to {when}"
+msgstr "“{title}”을(를) {when}(으)로 옮겼습니다"
 
 #. placeholder {0}: row.task.title
 #. placeholder {1}: vertical < 0 ? uiCopy("up") : uiCopy("down")
@@ -4708,6 +4718,11 @@ msgstr "세션 종료"
 msgid "Session start"
 msgstr "세션 시작"
 
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set priority"
+msgstr "우선순위 설정"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "복구 설정"
@@ -5058,8 +5073,8 @@ msgid "Task files are kept for a fixed span of dates, such as the next 14 days."
 msgstr "작업 파일은 향후 14일과 같이 정해진 날짜 범위 동안 유지됩니다."
 
 #: src/components/keyboard-shortcuts-sheet.tsx
-msgid "Task keys act on the focused row. Date keys keep any scheduled time. Press navigation sequences within one second. M toggles the sidebar outside task rows; Shift M also works from a task row."
-msgstr "작업 키는 포커스된 행에 적용됩니다. 날짜 키는 예약된 시간을 유지합니다. 탐색 키는 1초 안에 이어서 누르세요. M은 작업 행 밖에서 사이드바를 전환하며, Shift M은 작업 행에서도 작동합니다."
+msgid "Task keys act on the focused row, or on every selected task. Date keys keep any scheduled time. Press navigation sequences within one second."
+msgstr "작업 키는 포커스된 행 또는 선택한 모든 작업에 적용됩니다. 날짜 키는 예정된 시간을 유지합니다. 이동 키 조합은 1초 안에 누르세요."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Task lists"
@@ -5661,6 +5676,11 @@ msgstr "예정"
 #: src/app/view-editor-form.tsx
 msgid "Upcoming recurring instances"
 msgstr "예정된 반복 항목"
+
+#: src/app/use-calendar-mutations.ts
+#: src/components/task-actions.tsx
+msgid "Updated “{title}”"
+msgstr "“{title}”을(를) 업데이트했습니다"
 
 #: src/app/views-screen.tsx
 msgid "Updating view"

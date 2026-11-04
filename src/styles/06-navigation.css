@@ -652,8 +652,18 @@
   font-size: var(--type-supporting);
 }
 
+.keyboard-shortcuts-sheet dt {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .keyboard-shortcuts-sheet dd {
+  flex: 0 1 auto;
   margin: 0;
+  text-align: end;
+}
+
+.keyboard-shortcuts-sheet dd > span {
   white-space: nowrap;
 }
 
@@ -911,6 +921,7 @@
 
   .sidebar-collapsed .navigation-rail {
     padding: var(--space-lg) var(--space-sm);
+    overflow-x: hidden;
   }
 
   .sidebar-collapsed .navigation-rail .rail-heading {
@@ -932,7 +943,7 @@
     padding-left: 0;
   }
 
-  .keyboard-shortcuts-sheet > section {
+  .keyboard-shortcuts-sheet > section:not(:last-of-type) {
     break-inside: avoid;
   }
 }
