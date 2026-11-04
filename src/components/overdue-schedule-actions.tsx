@@ -1,7 +1,10 @@
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useState } from "react";
-import { todayString } from "../domain/task";
+import { useRef, useState } from "react";
+import { taskDatePart, todayString } from "../domain/task";
+import { TaskDatePopover } from "./task-detail-dates";
+
+const NO_DATES = { scheduled: undefined, due: undefined };
 
 export function OverdueScheduleActions({
   count,
@@ -14,7 +17,7 @@ export function OverdueScheduleActions({
 }) {
   const { t } = useLingui();
   const [picking, setPicking] = useState(false);
-  const [date, setDate] = useState("");
+  const trigger = useRef<HTMLButtonElement>(null);
   return (
     <span className="overdue-schedule-actions">
       <button
@@ -30,31 +33,29 @@ export function OverdueScheduleActions({
         <Trans>Move all to today</Trans>
       </button>
       <button
-        className="section-heading-action"
-        type="button"
-        disabled={pending}
         aria-expanded={picking}
+        aria-haspopup="dialog"
+        className="section-heading-action"
+        disabled={pending}
+        ref={trigger}
+        type="button"
         onClick={() => setPicking(!picking)}
       >
         <Trans>Choose date</Trans>
       </button>
       {picking ? (
-        <span className="overdue-pick-date">
-          <input
-            type="date"
-            aria-label={t`Date for overdue tasks`}
-            value={date}
-            onChange={(event) => setDate(event.currentTarget.value)}
-          />
-          <button
-            type="button"
-            className="section-heading-action"
-            disabled={pending || !date}
-            onClick={() => void onSchedule(date).then(() => setPicking(false))}
-          >
-            <Trans>Schedule all</Trans>
-          </button>
-        </span>
+        <TaskDatePopover
+          draft={NO_DATES}
+          planOnly
+          target="scheduled"
+          title={t`Date for overdue tasks`}
+          trigger={trigger}
+          onClose={() => setPicking(false)}
+          onApply={({ scheduled }) => {
+            setPicking(false);
+            if (scheduled) void onSchedule(taskDatePart(scheduled));
+          }}
+        />
       ) : null}
     </span>
   );

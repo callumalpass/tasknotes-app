@@ -811,9 +811,6 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
       aria-label={t`Busiest projects`}
       className="navigation-project-section"
       role="group"
-      onFocusCapture={(event) =>
-        event.currentTarget.closest("aside")?.scrollTo?.({ top: 0 })
-      }
     >
       {projects.map(({ label, count }) => (
         <button

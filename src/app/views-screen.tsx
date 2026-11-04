@@ -21,7 +21,12 @@ import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty, starterViewKind } from "../domain/default-view-source";
 import { ProjectPropertyOffer } from "./views/project-property-offer";
-import { kanbanRowValue, valueKey } from "./views/kanban-columns";
+import { kanbanPropertyRole } from "../domain/kanban";
+import {
+  kanbanColumnLabel,
+  kanbanRowValue,
+  valueKey,
+} from "./views/kanban-columns";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
@@ -852,7 +857,11 @@ export function ViewsScreen({
         order.placement,
         changesColumn ? input : {},
       );
-      if (!saved) clearBoardMove(row.task.id, sequence);
+      if (!saved) {
+        clearBoardMove(row.task.id, sequence);
+        return;
+      }
+      if (changesColumn) rememberBoardMove(row, property, value, input);
       return;
     }
 
@@ -899,6 +908,7 @@ export function ViewsScreen({
         boardMutationQueues.current.delete(row.task.id);
     }
 
+    if (changesColumn) rememberBoardMove(row, property, value, input);
     if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
     try {
       const refreshed = await repository.executeView(selected);
@@ -914,6 +924,53 @@ export function ViewsScreen({
     } finally {
       clearBoardMovePending(row.task.id, sequence);
     }
+  }
+
+  function rememberBoardMove(
+    row: TaskViewRow,
+    property: string,
+    destination: unknown,
+    input: UpdateTaskInput,
+  ) {
+    if (!selected) return;
+    const view = selected;
+    const { id, title } = row.task;
+    const earlier = Object.fromEntries(
+      Object.keys(input).map((key) => [
+        key,
+        row.task[key as keyof TaskSummary] ?? null,
+      ]),
+    ) as UpdateTaskInput;
+    const role = kanbanPropertyRole(property, configuration.fieldMapping);
+    const options =
+      role === "status"
+        ? configuration.statuses
+        : role === "priority"
+          ? configuration.priorities
+          : [];
+    const column = kanbanColumnLabel(
+      {
+        value: destination,
+        label: options.find((option) => option.value === destination)?.label,
+      },
+      role,
+    );
+    rememberUndo({
+      label: title,
+      notice: t`Moved “${title}” to ${column}`,
+      run: async () => {
+        viewMutationSequence.current.set(
+          id,
+          (viewMutationSequence.current.get(id) ?? 0) + 1,
+        );
+        await updateTask(id, earlier);
+        clearBoardMove(id);
+        const refreshed = await repository.executeView(view);
+        if (selectedKeyRef.current !== view.key) return;
+        setExecution(refreshed);
+        setExecutionError(null);
+      },
+    });
   }
 
   function clearBoardMove(taskId: string, sequence?: number) {

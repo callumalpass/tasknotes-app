@@ -606,6 +606,20 @@ export class DemoTaskRepository implements TaskRepository {
           }),
         )
       : [];
+    // Configured columns keep their order when a move empties or fills one.
+    const { fieldMapping, statuses, priorities } = this.model.configuration();
+    const configuredOrder = (
+      groupProperty === fieldMapping.status
+        ? statuses
+        : groupProperty === fieldMapping.priority
+          ? priorities
+          : []
+    ).map((option) => option.value as unknown);
+    const position = (value: unknown) => {
+      const index = configuredOrder.indexOf(value);
+      return index < 0 ? configuredOrder.length : index;
+    };
+    groupValues.sort((left, right) => position(left) - position(right));
     const execution: TaskViewExecution = {
       view,
       rows: clone(rows),

@@ -99,8 +99,8 @@
   outline: 0;
 }
 
-/* Recognized phrases sit on a backdrop that mirrors the input's text, so the
-   caret, selection, and IME remain native. Only the marks are visible. */
+/* The text is drawn by a backdrop that mirrors the input, so recognised
+   phrases can take colour while the caret, selection, and IME remain native. */
 .capture-field {
   position: relative;
   display: flex;
@@ -118,6 +118,13 @@
 .quick-capture .capture-field input {
   position: relative;
   z-index: 1;
+  color: transparent;
+  caret-color: var(--ink);
+}
+
+.quick-capture .capture-field input::selection {
+  color: transparent;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .capture-highlights {
@@ -129,15 +136,19 @@
   pointer-events: none;
   font-size: var(--type-control);
   white-space: pre;
-  color: transparent;
+  color: var(--ink);
 }
 
 .capture-highlights > span {
   will-change: transform;
 }
 
+.capture-link-bracket {
+  opacity: 0.3;
+}
+
 .capture-highlights mark {
-  color: transparent;
+  color: var(--accent);
   background: color-mix(in srgb, var(--accent) 13%, transparent);
   border-radius: 3px;
   /* A spread ring pads the tint without moving the mirrored glyphs. */

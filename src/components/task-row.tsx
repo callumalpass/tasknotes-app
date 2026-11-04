@@ -156,8 +156,13 @@ export function TaskRow({
     }
   }
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
-  const allDetails = withRaisedPriority(
-    details ?? defaultTaskDetails(displayedTask, metadata, configuration),
+  const allDetails = withDistinctStatus(
+    withRaisedPriority(
+      details ?? defaultTaskDetails(displayedTask, metadata, configuration),
+      ensurePriority,
+      displayedTask,
+      configuration,
+    ),
     ensurePriority,
     displayedTask,
     configuration,
@@ -656,6 +661,39 @@ function withRaisedPriority(
       value: priority.label,
       rawValue: priority.value,
     },
+  ];
+}
+
+/** A status beyond the default is named, since its colour alone can't say it. */
+function withDistinctStatus(
+  details: TaskRowDetail[],
+  ensure: boolean,
+  task: TaskSummary,
+  configuration: RowConfiguration,
+): TaskRowDetail[] {
+  const status = configuration.statuses.find(
+    (option) => option.value === task.status,
+  );
+  if (
+    !ensure ||
+    task.completed ||
+    !status ||
+    status.value === "none" ||
+    status.value === configuration.defaults.status ||
+    details.some((detail) => {
+      const key = propertyField(detail);
+      return key === configuration.fieldMapping.status || key === "status";
+    })
+  )
+    return details;
+  return [
+    {
+      key: "status",
+      label: t({ message: "Status" }),
+      value: status.label,
+      rawValue: status.value,
+    },
+    ...details,
   ];
 }
 

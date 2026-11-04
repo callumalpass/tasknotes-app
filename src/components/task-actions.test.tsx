@@ -150,12 +150,9 @@ describe("TaskActions", () => {
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Close property editor" }),
-      ).toHaveFocus(),
+      expect(screen.getByRole("button", { name: "High" })).toHaveFocus(),
     );
-    fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
-    fireEvent.click(screen.getByRole("option", { name: "Low" }));
+    fireEvent.click(screen.getByRole("button", { name: "Low" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({ priority: "low" }),

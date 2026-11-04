@@ -930,11 +930,26 @@ function highlightSegments(
     if (start > position) segments.push(text.slice(position, start));
     // Keyed by position so a phrase that grows ("tomorrow at 3pm") keeps its
     // tint instead of fading in again.
-    segments.push(<mark key={start}>{text.slice(start, end)}</mark>);
+    segments.push(
+      <mark key={start}>{linkBrackets(text.slice(start, end))}</mark>,
+    );
     position = end;
   }
   segments.push(text.slice(position));
   return segments;
+}
+
+/** Link markup recedes so a project reads by its name while typing. */
+function linkBrackets(phrase: string) {
+  return phrase.split(/(\[\[|\]\])/u).map((part, index) =>
+    index % 2 ? (
+      <span className="capture-link-bracket" key={index}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
 }
 
 /** True once `active` has held for `delay` ms without `restart` changing;

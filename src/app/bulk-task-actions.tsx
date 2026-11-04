@@ -18,7 +18,7 @@ import {
   type BulkTaskChange,
   planTaskChange,
 } from "../application/bulk-task-edit";
-import { todayString } from "../domain/task";
+import { taskDatePart, todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import {
   nextWeekStart,
@@ -27,12 +27,15 @@ import {
   taskRowShortcut,
 } from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
+import { TaskDatePopover } from "../components/task-detail-dates";
 import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
 import { bulkTaskFeedback } from "./bulk-task-feedback";
 import type { TaskShortcutAction } from "./keyboard-shortcuts";
 import type { TaskSelectionStore } from "./task-selection-store";
 import { linkDisplayLabel } from "../domain/completion";
 import type { FieldCompletion } from "../domain/completion";
+
+const NO_DATES = { scheduled: undefined, due: undefined };
 
 export function BulkTaskActions({
   store,
@@ -72,7 +75,6 @@ export function BulkTaskActions({
   const [undoing, setUndoing] = useState(false);
   const [held, setHeld] = useState(false);
   const [picking, setPicking] = useState(false);
-  const [pickedDate, setPickedDate] = useState("");
   const [projects, setProjects] = useState<FieldCompletion[]>([]);
   const [projectError, setProjectError] = useState("");
   const actionBar = useRef<HTMLElement>(null);
@@ -467,23 +469,22 @@ export function BulkTaskActions({
             </div>
           )}
           {picking ? (
-            <label className="bulk-pick-date">
-              <Trans>Schedule date</Trans>
-              <input
-                type="date"
-                aria-label={t`Schedule date`}
-                disabled={disabled}
-                value={pickedDate}
-                onChange={(event) => setPickedDate(event.target.value)}
-              />
-              <button
-                type="button"
-                disabled={disabled || !pickedDate}
-                onClick={() => void run({ kind: "schedule", date: pickedDate })}
-              >
-                <Trans>Apply date</Trans>
-              </button>
-            </label>
+            <TaskDatePopover
+              draft={NO_DATES}
+              planOnly
+              target="scheduled"
+              title={t`Schedule date`}
+              trigger={actionBar}
+              onClose={() => setPicking(false)}
+              onApply={({ scheduled }) => {
+                setPicking(false);
+                if (scheduled)
+                  void run({
+                    kind: "schedule",
+                    date: taskDatePart(scheduled),
+                  });
+              }}
+            />
           ) : null}
           {deletionNeedsReview ? (
             <p className="bulk-selection-hint">

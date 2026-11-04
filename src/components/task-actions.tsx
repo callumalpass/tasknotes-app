@@ -214,7 +214,14 @@ export function TaskActions({
             : panel === "dates" && finePointer
               ? ".task-date-input"
               : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
-      menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
+      const menu = menuRef.current;
+      const current =
+        panel === "status" || panel === "priority"
+          ? menu?.querySelector<HTMLButtonElement>(
+              "[role='menuitemradio'][aria-checked='true']:not(:disabled)",
+            )
+          : null;
+      (current ?? menu?.querySelector<HTMLButtonElement>(selector))?.focus();
     });
   }, [panel, position]);
 
@@ -1068,7 +1075,17 @@ export function TaskActions({
       cells[(current + step + cells.length) % cells.length]?.focus();
       return;
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const typing =
+      event.key.length === 1 &&
+      event.key !== " " &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey;
+    if (
+      !typing &&
+      !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+    )
+      return;
     const items = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
         panel === "subtask" || panel === "delete"
@@ -1079,6 +1096,10 @@ export function TaskActions({
     if (!items.length) return;
     event.preventDefault();
     const current = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (typing) {
+      typeAheadMatch(items, current, event.key)?.focus();
+      return;
+    }
     const target =
       event.key === "Home"
         ? 0
@@ -1089,6 +1110,18 @@ export function TaskActions({
             : (current - 1 + items.length) % items.length;
     items[target]?.focus();
   }
+}
+
+/** The next menu item starting with a typed letter, cycling past the current one. */
+function typeAheadMatch(
+  items: HTMLButtonElement[],
+  current: number,
+  key: string,
+) {
+  const letter = key.toLocaleLowerCase();
+  return [...items.slice(current + 1), ...items.slice(0, current + 1)].find(
+    (item) => item.textContent?.trim().toLocaleLowerCase().startsWith(letter),
+  );
 }
 
 function QuickAction({

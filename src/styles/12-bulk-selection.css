@@ -102,17 +102,6 @@
     display: none;
   }
 }
-.bulk-pick-date {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-}
-.bulk-pick-date input {
-  min-height: 44px;
-  color-scheme: inherit;
-}
 body:has(.bulk-actions) .task-row {
   scroll-margin-bottom: calc(
     var(--task-selection-height, 160px) + var(--nav-height) +
@@ -174,7 +163,7 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
     gap: 16px;
     padding: 8px 12px;
   }
-  .bulk-actions > :is(.bulk-selection-hint, .bulk-pick-date) {
+  .bulk-actions > .bulk-selection-hint {
     grid-column: 2;
     margin: 0;
   }

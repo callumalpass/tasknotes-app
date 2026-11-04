@@ -69,7 +69,7 @@ export function TaskDetailDates({
         );
       })}
       {target ? (
-        <DetailDatePopover
+        <TaskDatePopover
           key={target}
           draft={draft}
           target={target}
@@ -88,16 +88,21 @@ export function TaskDetailDates({
   );
 }
 
-function DetailDatePopover({
+/** The date tool anchored to a trigger, for any surface that sets a date. */
+export function TaskDatePopover({
   draft,
+  planOnly = false,
   target,
+  title,
   trigger,
   onClose,
   onApply,
 }: {
   draft: Pick<Draft, DateTarget>;
+  planOnly?: boolean;
   target: DateTarget;
-  trigger: RefObject<HTMLButtonElement | null>;
+  title?: string;
+  trigger: RefObject<HTMLElement | null>;
   onClose(): void;
   onApply(input: UpdateTaskInput): void;
 }) {
@@ -144,14 +149,12 @@ function DetailDatePopover({
   return createPortal(
     <div
       className="task-detail-date-popover"
-      aria-label={t`${label} date calendar`}
+      aria-label={title ?? t`${label} date calendar`}
       ref={root}
       role="dialog"
     >
       <header>
-        <strong>
-          <Trans>Dates</Trans>
-        </strong>
+        <strong>{title ?? <Trans>Dates</Trans>}</strong>
         <button
           aria-label={t`Close dates`}
           className="icon-button"
@@ -164,6 +167,7 @@ function DetailDatePopover({
       <TaskDatePanel
         busy={false}
         initialTarget={target}
+        planOnly={planOnly}
         task={draft}
         onApply={onApply}
       />

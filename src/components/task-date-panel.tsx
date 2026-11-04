@@ -23,11 +23,14 @@ export function TaskDatePanel({
   busy,
   task,
   initialTarget,
+  planOnly = false,
   onApply,
 }: {
   busy: boolean;
   task: Pick<TaskSummary, "scheduled" | "due">;
   initialTarget?: DateTarget;
+  /** For choosing one plan date across many tasks. */
+  planOnly?: boolean;
   onApply(input: UpdateTaskInput): void;
 }) {
   const { t } = useLingui();
@@ -76,26 +79,28 @@ export function TaskDatePanel({
 
   return (
     <div className="task-date-panel">
-      <div
-        aria-label={t`Date to change`}
-        className="task-date-target"
-        role="radiogroup"
-      >
-        {(["scheduled", "due"] as const).map((option) => (
-          <button
-            aria-checked={target === option}
-            key={option}
-            role="radio"
-            type="button"
-            onClick={() => setTarget(option)}
-          >
-            {option === "scheduled" ? t`Scheduled` : t`Due`}
-            {task[option] ? (
-              <small>{formatTaskDate(task[option])}</small>
-            ) : null}
-          </button>
-        ))}
-      </div>
+      {planOnly ? null : (
+        <div
+          aria-label={t`Date to change`}
+          className="task-date-target"
+          role="radiogroup"
+        >
+          {(["scheduled", "due"] as const).map((option) => (
+            <button
+              aria-checked={target === option}
+              key={option}
+              role="radio"
+              type="button"
+              onClick={() => setTarget(option)}
+            >
+              {option === "scheduled" ? t`Scheduled` : t`Due`}
+              {task[option] ? (
+                <small>{formatTaskDate(task[option])}</small>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      )}
       <input
         aria-describedby={hintId}
         aria-invalid={unreadable}

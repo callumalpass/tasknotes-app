@@ -1053,10 +1053,12 @@
 }
 
 @media (min-width: 840px) {
+  /* Short windows scroll the whole rail; Manage stays pinned to its foot. */
   .navigation-rail {
     height: 100dvh;
-    overflow: hidden;
-    padding-block: 16px;
+    padding-block: 16px 0;
+    overflow-y: auto;
+    scroll-padding-block-end: 11rem;
   }
   .navigation-rail > * {
     flex-shrink: 0;
@@ -1064,17 +1066,11 @@
   .navigation-rail .rail-heading {
     margin-bottom: 12px;
   }
-  .navigation-rail .navigation-project-section {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-  .navigation-rail .navigation-project-section button {
-    flex-shrink: 0;
-  }
   .navigation-rail .navigation-utility {
-    padding-top: 8px;
+    position: sticky;
+    bottom: 0;
+    padding-block: 8px 16px;
+    background: var(--paper-soft);
   }
 }
 

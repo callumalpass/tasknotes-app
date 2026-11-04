@@ -28,10 +28,29 @@ export function KanbanColumnJump({
       },
       { root: board, threshold: [0.5, 0.75] },
     );
-    board
-      .querySelectorAll<HTMLElement>("[data-kanban-column-key]")
-      .forEach((column) => observer.observe(column));
-    return () => observer.disconnect();
+    const columnElements = board.querySelectorAll<HTMLElement>(
+      "[data-kanban-column-key]",
+    );
+    columnElements.forEach((column) => observer.observe(column));
+    // A resize reflows the columns without a useful intersection change.
+    const resize =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => {
+            const left = board.getBoundingClientRect().left;
+            const nearest = [...columnElements].sort(
+              (a, b) =>
+                Math.abs(a.getBoundingClientRect().left - left) -
+                Math.abs(b.getBoundingClientRect().left - left),
+            )[0];
+            if (nearest?.dataset.kanbanColumnKey)
+              setActiveKey(nearest.dataset.kanbanColumnKey);
+          });
+    resize?.observe(board);
+    return () => {
+      observer.disconnect();
+      resize?.disconnect();
+    };
   }, [boardRef, columns]);
 
   if (columns.length < 2) return null;

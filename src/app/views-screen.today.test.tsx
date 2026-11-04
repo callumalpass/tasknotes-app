@@ -99,12 +99,19 @@ it("schedules overdue work for another day and names moved deadlines in its undo
   const updateMany = vi.fn<TaskRepository["updateMany"]>(async (updates) =>
     updates.map(({ id, input }) => apply(tasks, id, input)),
   );
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
   renderToday(repository(tasks, { updateMany }));
   fireEvent.click(await screen.findByRole("button", { name: "Choose date" }));
-  fireEvent.change(screen.getByLabelText("Date for overdue tasks"), {
-    target: { value: date },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Schedule all" }));
+  const typed = screen.getByLabelText("Type a date");
+  fireEvent.change(typed, { target: { value: date } });
+  await screen.findByText(/^Enter to set/);
+  fireEvent.keyDown(typed, { key: "Enter" });
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${date}T09:30`, due: date } },

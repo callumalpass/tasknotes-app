@@ -1,5 +1,7 @@
 import { expect, test } from "./local-test";
 
+const workBoard = `views/${encodeURIComponent("TaskNotes/Views/work-board.base#work-board")}?demo=60`;
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?demo=60&many-options");
   await expect(page.locator(".task-row").first()).toBeVisible();
@@ -15,8 +17,8 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   const date = new Date();
   date.setDate(date.getDate() + 4);
   const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  await page.getByLabel("Date for overdue tasks").fill(value);
-  await page.getByRole("button", { name: "Schedule all", exact: true }).click();
+  await page.getByLabel("Type a date").fill(value);
+  await page.getByLabel("Type a date").press("Enter");
   const label = new Intl.DateTimeFormat("en", {
     weekday: "short",
     day: "numeric",
@@ -255,4 +257,70 @@ test("long project and priority labels keep their metadata lanes", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test("a board move confirms with Undo and restores the card", async ({
+  page,
+}) => {
+  await page.goto(workBoard);
+  const columns = page.locator(".kanban-column");
+  const card = columns.nth(1).locator("[data-kanban-card-id]").first();
+  const id = (await card.getAttribute("data-kanban-card-id"))!;
+  await card.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".undo-toast")).toContainText("In progress");
+  await expect(
+    columns.nth(1).locator(`[data-kanban-card-id="${id}"]`),
+  ).toHaveCount(0);
+  await page
+    .locator(".undo-toast")
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
+  await expect(
+    columns.nth(1).locator(`[data-kanban-card-id="${id}"]`),
+  ).toBeVisible();
+});
+
+test("the phone board fills the screen", async ({ page }) => {
+  await page.setViewportSize({ width: 412, height: 686 });
+  await page.goto(workBoard);
+  await expect(page.locator(".kanban-card").first()).toBeVisible();
+  const board = (await page.locator(".kanban-board").boundingBox())!;
+  expect(board.y + board.height).toBeGreaterThan(660);
+});
+
+test("project shortcuts stay reachable in a short window", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 620 });
+  const project = page.locator(".navigation-project-section button").last();
+  await project.scrollIntoViewIfNeeded();
+  const box = (await project.boundingBox())!;
+  const manage = (await page.locator(".navigation-utility").boundingBox())!;
+  expect(box.height).toBeGreaterThan(30);
+  expect(box.y + box.height).toBeLessThanOrEqual(manage.y);
+  expect(manage.y + manage.height).toBeLessThanOrEqual(620);
+});
+
+test("the task menu starts on the current priority and jumps by letter", async ({
+  page,
+}) => {
+  await page.locator("body").press("j");
+  await page.keyboard.press("p");
+  const pressed = page.locator(
+    ".task-actions-items [role='menuitemradio'][aria-checked='true']",
+  );
+  if (await pressed.count()) await expect(pressed).toBeFocused();
+  const focused = page.locator(".task-actions-items :focus");
+  const other = await page
+    .locator(".task-actions-items [role='menuitemradio']")
+    .evaluateAll((items) =>
+      items
+        .map((item) => item.textContent!.trim())
+        .find(
+          (label) =>
+            label[0] !== document.activeElement!.textContent!.trim()[0],
+        )!,
+    );
+  await page.keyboard.press(other[0]!.toLowerCase());
+  await expect(focused).toHaveText(new RegExp(`^${other[0]}`));
+  await expect(focused).toHaveCSS("outline-style", "solid");
 });
