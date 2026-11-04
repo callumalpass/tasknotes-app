@@ -854,3 +854,111 @@
     transform: translateX(24px);
   }
 }
+
+/* Desktop display preferences leave the phone navigation untouched. */
+@media (min-width: 840px) {
+  .app-shell:not(.sidebar-collapsed) {
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+
+  .navigation-rail .rail-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xl);
+  }
+
+  .navigation-rail .wordmark {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .navigation-rail .sidebar-toggle {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    color: var(--ink-muted);
+    background: transparent;
+  }
+
+  .navigation-rail button > svg {
+    flex: none;
+  }
+
+  .navigation-rail .navigation-count {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    width: 7ch;
+    margin-left: auto;
+    color: var(--ink-muted);
+    font-size: var(--type-label);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .navigation-count.is-unknown {
+    visibility: hidden;
+  }
+
+  .app-shell.sidebar-collapsed,
+  .app-shell.sidebar-collapsed:not(.has-detail) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .sidebar-collapsed .navigation-rail {
+    padding: var(--space-lg) var(--space-sm);
+  }
+
+  .sidebar-collapsed .navigation-rail .rail-heading {
+    justify-content: center;
+  }
+
+  .sidebar-collapsed .navigation-rail .wordmark,
+  .sidebar-collapsed .rail-collection-switcher,
+  .sidebar-collapsed .navigation-rail button > span,
+  .sidebar-collapsed .navigation-rail button > kbd,
+  .sidebar-collapsed .navigation-rail .navigation-count {
+    display: none;
+  }
+
+  .app-shell.sidebar-collapsed .navigation-rail button {
+    justify-content: center;
+    min-width: 44px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .keyboard-shortcuts-sheet > section {
+    break-inside: avoid;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell.has-detail:not(.sidebar-collapsed) {
+    grid-template-columns: 232px minmax(400px, 1fr) minmax(380px, 440px);
+  }
+
+  .app-shell.sidebar-collapsed.has-detail {
+    grid-template-columns: 72px minmax(400px, 1fr) minmax(380px, 440px);
+  }
+
+  .keyboard-shortcuts-sheet {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--space-xl);
+    width: min(960px, calc(100vw - 48px));
+  }
+
+  .keyboard-shortcuts-sheet > section {
+    min-width: 0;
+  }
+
+  .keyboard-shortcuts-sheet > header,
+  .keyboard-shortcuts-sheet > p {
+    grid-column: 1 / -1;
+  }
+}

@@ -3,6 +3,9 @@ import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
 import {
+  ClockAlert,
+  PanelLeftClose,
+  PanelLeftOpen,
   Columns3,
   Command,
   Ellipsis,
@@ -62,6 +65,14 @@ import {
   type CollectionUiOptions,
 } from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
+import { countLabel } from "../i18n/default-labels";
+import type { TodayTaskCounts } from "../domain/today-summary";
+import { useTodayTaskCounts } from "./use-today-task-counts";
+import {
+  readSidebarCollapsed,
+  saveSidebarCollapsed,
+} from "./sidebar-preferences";
+import { viewNavigationShortcut } from "./palette-commands";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
   isApplePlatform,
@@ -96,6 +107,17 @@ import type { OperationalError } from "../application/operational-error";
 export function AppShell() {
   const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
+  const todayCounts = useTodayTaskCounts();
+  const [sidebarCollapsed, setSidebarCollapsed] =
+    useState(readSidebarCollapsed);
+  const toggleSidebar = useCallback(
+    () =>
+      setSidebarCollapsed((current) => {
+        saveSidebarCollapsed(!current);
+        return !current;
+      }),
+    [],
+  );
   const {
     repository,
     connection,
@@ -319,20 +341,45 @@ export function AppShell() {
   );
   const shell = (
     <div
-      className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
+      className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
       <a className="skip-link" href="#main-content">
         <Trans>Skip to content</Trans>
       </a>
       <aside className="navigation-rail" aria-label={t({ message: "Primary" })}>
-        <button
-          className="wordmark"
-          type="button"
-          onClick={() => navigate({ page: "home" })}
-        >
-          <img alt="" src={tasknotesMarkUrl} />
-          <span>TaskNotes</span>
-        </button>
+        <div className="rail-heading">
+          <button
+            aria-label="TaskNotes"
+            title="TaskNotes"
+            className="wordmark"
+            type="button"
+            onClick={() => navigate({ page: "home" })}
+          >
+            <img alt="" src={tasknotesMarkUrl} />
+            <span>TaskNotes</span>
+          </button>
+          <button
+            className="sidebar-toggle icon-action"
+            type="button"
+            aria-expanded={!sidebarCollapsed}
+            aria-label={
+              sidebarCollapsed
+                ? t({ message: "Expand sidebar" })
+                : t({ message: "Collapse sidebar" })
+            }
+            title={
+              sidebarCollapsed ? t`Expand sidebar (M)` : t`Collapse sidebar (M)`
+            }
+            aria-keyshortcuts="Shift+M"
+            onClick={toggleSidebar}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen aria-hidden="true" size={20} />
+            ) : (
+              <PanelLeftClose aria-hidden="true" size={20} />
+            )}
+          </button>
+        </div>
         {collectionUi ? (
           <CollectionSwitcher
             {...collectionUi}
@@ -345,7 +392,7 @@ export function AppShell() {
           aria-keyshortcuts="Control+N Meta+N"
           aria-label={t({ message: "New task" })}
           className="global-capture-navigation"
-          title={translate`New task (${shortcutLabel("N")})`}
+          title={translate`New task (Q / N / ${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
@@ -359,6 +406,7 @@ export function AppShell() {
           active={activePage}
           homeKey={homeKey}
           onMove={moveNavigationView}
+          todayCounts={todayCounts}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -504,6 +552,7 @@ export function AppShell() {
         navigate={navigate}
         navigationKeys={navigationKeys}
         newTask={openCapture}
+        toggleSidebar={toggleSidebar}
         paletteRequest={paletteRequest}
         route={route}
         views={views ?? []}
@@ -963,6 +1012,7 @@ export function Navigation({
   onNavigate,
   onMove,
   onCommands,
+  todayCounts,
 }: {
   active: string;
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
@@ -974,6 +1024,7 @@ export function Navigation({
   onNavigate(route: Route): void;
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
+  todayCounts?: TodayTaskCounts | null;
 }) {
   const { t } = useLingui();
   const navigationEntries: {
@@ -982,10 +1033,13 @@ export function Navigation({
     label: string;
     icon: LucideIcon;
     route: Route;
+    shortcut?: string;
+    today?: boolean;
   }[] = [];
   for (const key of navigationKeys) {
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
       navigationEntries.push({
+        shortcut: "g s",
         key: "scratchpad",
         navigationKey: key,
         label: t({ message: "Scratchpad" }),
@@ -996,6 +1050,7 @@ export function Navigation({
     }
     if (key === SEARCH_NAVIGATION_KEY) {
       navigationEntries.push({
+        shortcut: "/",
         key: "search",
         navigationKey: key,
         label: t({ message: "Search" }),
@@ -1007,6 +1062,8 @@ export function Navigation({
     const view = views.find((candidate) => candidate.key === key);
     if (view)
       navigationEntries.push({
+        shortcut: viewNavigationShortcut(view),
+        today: view.id === "today",
         key: `view:${view.key}`,
         navigationKey: key,
         label: view.name,
@@ -1097,45 +1154,64 @@ export function Navigation({
     onNavigate(route);
   }
 
+  function renderDestination(entry: (typeof navigationEntries)[number]) {
+    const {
+      key,
+      navigationKey,
+      label,
+      icon: Icon,
+      route,
+      shortcut,
+      today,
+    } = entry;
+    const counts = mode === "desktop" && today ? todayCounts : null;
+    const accessibleLabel = counts
+      ? counts.overdue
+        ? t`${label}, ${countLabel(counts.total, "task")}, ${counts.overdue} overdue`
+        : t`${label}, ${countLabel(counts.total, "task")}`
+      : label;
+    return (
+      <button
+        {...reorder.itemProps(navigationKey, label)}
+        aria-label={accessibleLabel}
+        aria-current={active === key ? "page" : undefined}
+        className={active === key ? "is-active" : undefined}
+        key={key}
+        title={
+          mode === "desktop"
+            ? shortcut
+              ? `${accessibleLabel} (${shortcut})`
+              : accessibleLabel
+            : undefined
+        }
+        type="button"
+        onClick={() => onNavigate(route)}
+      >
+        <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>{label}</span>
+        {mode === "desktop" && today ? (
+          <small
+            aria-hidden="true"
+            className={`navigation-count${counts ? "" : " is-unknown"}`}
+          >
+            {counts?.overdue ? <ClockAlert size={13} /> : null}
+            {counts?.total ?? "0"}
+          </small>
+        ) : null}
+      </button>
+    );
+  }
+
   return (
     <>
-      {items.map(({ key, navigationKey, label, icon: Icon, route }) => (
-        <button
-          {...reorder.itemProps(navigationKey, label)}
-          aria-current={active === key ? "page" : undefined}
-          className={active === key ? "is-active" : undefined}
-          key={key}
-          title={mode === "desktop" ? label : undefined}
-          type="button"
-          onClick={() => onNavigate(route)}
-        >
-          <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-          <span>{label}</span>
-        </button>
-      ))}
+      {items.map(renderDestination)}
       {mode === "desktop" ? (
         <div
           aria-label={t({ message: "Views" })}
           className="navigation-view-section"
           role="group"
         >
-          {additionalViews.map((view) => {
-            const Icon = view.icon;
-            return (
-              <button
-                {...reorder.itemProps(view.navigationKey, view.label)}
-                aria-current={active === view.key ? "page" : undefined}
-                className={active === view.key ? "is-active" : undefined}
-                key={view.key}
-                title={view.label}
-                type="button"
-                onClick={() => onNavigate(view.route)}
-              >
-                <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-                <span>{view.label}</span>
-              </button>
-            );
-          })}
+          {additionalViews.map(renderDestination)}
         </div>
       ) : (
         <>
@@ -1246,6 +1322,7 @@ export function Navigation({
         >
           {onCommands ? (
             <button
+              aria-label={t({ message: "Commands" })}
               aria-keyshortcuts="Control+K Meta+K"
               className="navigation-commands"
               title={translate`Commands (${shortcutLabel("K")})`}
@@ -1262,6 +1339,8 @@ export function Navigation({
           <button
             aria-current={active === "views" ? "page" : undefined}
             className={active === "views" ? "is-active" : undefined}
+            aria-label={t({ message: "Manage views" })}
+            title={t({ message: "Manage views" })}
             type="button"
             onClick={() => onNavigate({ page: "views" })}
           >
@@ -1273,6 +1352,8 @@ export function Navigation({
           <button
             aria-current={active === "more" ? "page" : undefined}
             className={active === "more" ? "is-active" : undefined}
+            aria-label={t({ message: "Settings" })}
+            title={t({ message: "Settings" })}
             type="button"
             onClick={() => onNavigate({ page: "more" })}
           >

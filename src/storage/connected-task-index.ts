@@ -1,3 +1,8 @@
+import { todayString } from "../domain/task";
+import {
+  todayTaskContribution,
+  type TodayTaskCounts,
+} from "../domain/today-summary";
 import {
   compareTasks,
   selectTaskSummaries,
@@ -18,6 +23,25 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   private readonly searchMetadata = new WeakMap<TaskSummary, string>();
   private readonly trackers = new Set<Set<string>>();
 
+  private countDay = todayString();
+  private counts: TodayTaskCounts = { total: 0, overdue: 0 };
+
+  /** No queries or sorting; changes adjust two counters. Rollover scans metadata once. */
+  todayCounts(today: string): TodayTaskCounts {
+    if (today !== this.countDay) {
+      this.countDay = today;
+      this.counts = { total: 0, overdue: 0 };
+      for (const { task } of this.values()) this.adjustCounts(task, 1);
+    }
+    return { ...this.counts };
+  }
+
+  private adjustCounts(task: TaskSummary, direction: 1 | -1) {
+    const contribution = todayTaskContribution(task, this.countDay);
+    this.counts.total += direction * contribution.total;
+    this.counts.overdue += direction * contribution.overdue;
+  }
+
   constructor() {
     // Map(entries) calls the override before subclass indexes exist.
     super();
@@ -26,7 +50,11 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   override set(id: string, value: Value): this {
     const previous = this.get(id);
     if (previous === value) return this;
-    if (previous) this.paths.delete(previous.task.path);
+    if (previous) {
+      this.paths.delete(previous.task.path);
+      this.adjustCounts(previous.task, -1);
+    }
+    this.adjustCounts(value.task, 1);
     this.paths.set(value.task.path, id);
     if (
       value.task.recurrence &&
@@ -46,6 +74,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     const previous = this.get(id);
     if (!previous) return false;
     this.paths.delete(previous.task.path);
+    this.adjustCounts(previous.task, -1);
     this.rolling.delete(id);
     for (const paths of this.trackers) paths.add(previous.task.path);
     this.ordered = undefined;

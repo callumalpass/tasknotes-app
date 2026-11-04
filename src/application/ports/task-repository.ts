@@ -148,6 +148,10 @@ export interface TaskRepository {
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setArchived(id: string, archived: boolean): Promise<Task>;
   delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
+  /** Session metadata only; null until the existing index is complete. Never starts a read. */
+  todayTaskCounts?(
+    today: string,
+  ): import("../../domain/today-summary").TodayTaskCounts | null;
   stats(): Promise<TaskStats>;
   /** Intent policy only, never evidence of READ readiness or write authority.
    * Explicit-only repositories must not seed view sources during navigation.

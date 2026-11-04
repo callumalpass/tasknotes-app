@@ -120,3 +120,109 @@ test("? opens the shortcut sheet, which lists the global keys", async ({
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
 });
+
+// Global reach must work with real row handlers, not just the shell listener.
+test("plain capture, search, and g sequences respect typing and row actions", async ({
+  page,
+}) => {
+  await openDemo(page);
+  for (const key of ["q", "n"]) {
+    await page.locator("body").press(key);
+    const capture = page.getByRole("dialog", { name: "New task" });
+    await expect(capture).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(capture).toBeHidden();
+  }
+  for (const [key, heading] of [
+    ["u", "Upcoming"],
+    ["s", "Scratchpad"],
+    ["c", "Calendar"],
+    ["p", "Projects"],
+    ["t", "Today"],
+  ]) {
+    // Blur Scratchpad's editor before invoking a plain shortcut.
+    await page.locator("#main-content").focus();
+    await page.keyboard.press("g");
+    await page.keyboard.press(key);
+    await expect(
+      page.getByRole("heading", { name: heading, exact: true }).first(),
+    ).toBeVisible();
+  }
+  await page.locator("body").press("j");
+  const firstTitle = await focusedRowTitle(page).textContent();
+  await page.keyboard.press("g");
+  await page.keyboard.press("t");
+  await expect(
+    page.getByRole("button", { name: firstTitle!, exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(`Scheduled ${firstTitle} for today.`),
+  ).toHaveCount(0);
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("/");
+  const search = page.getByRole("searchbox", { name: "Search tasks" });
+  await expect(search).toBeFocused();
+  await search.fill("qn/gtm");
+  await expect(search).toHaveValue("qn/gtm");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("/");
+  await expect(search).toBeFocused();
+});
+
+test("desktop rail collapses, reflows, persists, and names the Today count", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Desktop-only display preference");
+  await openDemo(page);
+  const rail = page.locator("aside.navigation-rail");
+  const today = rail.getByRole("button", {
+    name: /^Today, \d+ tasks?(, \d+ overdue)?$/,
+  });
+  await expect(today).toBeVisible();
+  const count = Number(await today.locator(".navigation-count").textContent());
+  await page.locator("body").press("j");
+  await page.keyboard.press("x");
+  await expect
+    .poll(async () =>
+      Number(await today.locator(".navigation-count").textContent()),
+    )
+    .toBe(count - 1);
+  const before = await page.locator("#main-content").boundingBox();
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("m");
+  await expect(
+    rail.getByRole("button", { name: "Expand sidebar" }),
+  ).toBeVisible();
+  const after = await page.locator("#main-content").boundingBox();
+  expect(after!.width).toBeGreaterThan(before!.width);
+  await expect(today).toHaveAttribute("title", /g t/);
+  await page.reload();
+  await expect(
+    rail.getByRole("button", { name: "Expand sidebar" }),
+  ).toBeVisible();
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("Shift+M");
+  await expect(
+    rail.getByRole("button", { name: "Collapse sidebar" }),
+  ).toBeVisible();
+});
+
+test("a saved collapse preference leaves phone bottom navigation unchanged", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "Phone-only navigation");
+  await page.addInitScript(() =>
+    localStorage.setItem("tasknotes:sidebar-collapsed", "true"),
+  );
+  await openDemo(page);
+  await expect(page.locator("aside.navigation-rail")).toBeHidden();
+  await expect(page.locator(".bottom-navigation")).toBeVisible();
+  await expect(
+    page
+      .locator(".bottom-navigation")
+      .getByRole("button", { name: "Today", exact: true }),
+  ).toBeVisible();
+});

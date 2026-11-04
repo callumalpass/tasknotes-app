@@ -237,12 +237,27 @@ export function keyboardShortcutGroups(): {
           keys: [shortcutLabel("K")],
           description: t({ message: "Command palette" }),
         },
-        { keys: [shortcutLabel("N")], description: t({ message: "New task" }) },
+        {
+          keys: ["q", "n", shortcutLabel("N")],
+          description: t({ message: "New task" }),
+        },
         {
           keys: [shortcutLabel("Z")],
           description: t({ message: "Undo a deleted task" }),
         },
         { keys: ["?"], description: t({ message: "Keyboard shortcuts" }) },
+      ],
+    },
+    {
+      title: t({ message: "Navigation" }),
+      shortcuts: [
+        { keys: ["/"], description: t({ message: "Search" }) },
+        { keys: ["g → t"], description: t({ message: "Today" }) },
+        { keys: ["g → u"], description: t({ message: "Upcoming" }) },
+        { keys: ["g → s"], description: t({ message: "Scratchpad" }) },
+        { keys: ["g → c"], description: t({ message: "Calendar" }) },
+        { keys: ["g → p"], description: t({ message: "Projects" }) },
+        { keys: ["Shift M"], description: t({ message: "Toggle sidebar" }) },
       ],
     },
     {

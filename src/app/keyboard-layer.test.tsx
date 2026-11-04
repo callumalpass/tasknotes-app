@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { announceShortcut } from "./keyboard-shortcuts";
 import { KeyboardLayer } from "./keyboard-layer";
+import type { Route } from "./use-workspace-navigation";
 import type { TaskView } from "../domain/view";
 
 const useTaskSearch = vi.fn<
@@ -17,9 +18,10 @@ afterEach(() => {
   useTaskSearch.mockClear();
 });
 
-function renderLayer(paletteRequest = 0) {
+function renderLayer(paletteRequest = 0, route: Route = { page: "home" }) {
   const navigate = vi.fn();
   const newTask = vi.fn();
+  const toggleSidebar = vi.fn();
   const view = (request: number) => (
     <>
       <main id="main-content">
@@ -37,9 +39,10 @@ function renderLayer(paletteRequest = 0) {
         navigate={navigate}
         navigationKeys={["today"]}
         newTask={newTask}
+        toggleSidebar={toggleSidebar}
         paletteRequest={request}
-        route={{ page: "home" }}
-        views={[{ key: "today", name: "Today" } as TaskView]}
+        route={route}
+        views={[{ key: "today", id: "today", name: "Today" } as TaskView]}
       />
     </>
   );
@@ -47,6 +50,7 @@ function renderLayer(paletteRequest = 0) {
   return {
     navigate,
     newTask,
+    toggleSidebar,
     rerender: (request: number) => result.rerender(view(request)),
   };
 }
@@ -135,4 +139,80 @@ it("announces row actions politely, repeating identical messages", () => {
   const first = region.textContent;
   act(() => announceShortcut("Completed One."));
   expect(region.textContent).not.toBe(first);
+});
+
+it("captures with q/n, toggles the rail without stealing row m, and guards plain keys", () => {
+  const { newTask, toggleSidebar, navigate } = renderLayer();
+  for (const key of ["q", "n"]) fireEvent.keyDown(document.body, { key });
+  expect(newTask).toHaveBeenCalledTimes(2);
+  fireEvent.keyDown(document.body, { key: "m" });
+  expect(toggleSidebar).toHaveBeenCalledTimes(1);
+  const row = screen.getByRole("button", { name: "One" });
+  row.focus();
+  fireEvent.keyDown(row, { key: "m" });
+  expect(toggleSidebar).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(row, { key: "M", shiftKey: true });
+  expect(toggleSidebar).toHaveBeenCalledTimes(2);
+  const input = screen.getByRole("textbox");
+  for (const key of ["q", "n", "/", "g", "M"]) {
+    fireEvent.keyDown(input, { key });
+    fireEvent.keyDown(document.body, { key, altKey: true });
+    fireEvent.keyDown(document.body, { key, isComposing: true });
+  }
+  expect(newTask).toHaveBeenCalledTimes(2);
+  expect(toggleSidebar).toHaveBeenCalledTimes(2);
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+it("consumes g t before a focused row can schedule and expires or cancels prefixes", () => {
+  vi.useFakeTimers();
+  try {
+    const { navigate } = renderLayer();
+    const row = screen.getByRole("button", { name: "One" });
+    const schedule = vi.fn();
+    row.addEventListener("keydown", schedule);
+    row.focus();
+    fireEvent.keyDown(row, { key: "g" });
+    schedule.mockClear();
+    fireEvent.keyDown(row, { key: "t" });
+    expect(navigate).toHaveBeenCalledExactlyOnceWith({ page: "home" });
+    expect(schedule).not.toHaveBeenCalled();
+    navigate.mockClear();
+    fireEvent.keyDown(row, { key: "g" });
+    vi.advanceTimersByTime(1_001);
+    fireEvent.keyDown(row, { key: "t" });
+    expect(navigate).not.toHaveBeenCalled();
+    fireEvent.keyDown(row, { key: "g" });
+    screen.getByRole("textbox").focus();
+    row.focus();
+    fireEvent.keyDown(row, { key: "t" });
+    expect(navigate).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("focuses Search and suspends capture and navigation while an overlay is open", () => {
+  const { navigate, newTask, toggleSidebar } = renderLayer();
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(navigate).toHaveBeenCalledWith({ page: "search" });
+  const search = screen.getByRole("textbox");
+  search.setAttribute("type", "search");
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(search).toHaveFocus();
+  search.blur();
+  navigate.mockClear();
+  fireEvent.keyDown(document.body, { key: "?" });
+  for (const key of ["q", "n", "/", "g", "t", "M"])
+    fireEvent.keyDown(document.activeElement!, { key });
+  expect(navigate).not.toHaveBeenCalled();
+  expect(newTask).not.toHaveBeenCalled();
+  expect(toggleSidebar).not.toHaveBeenCalled();
+});
+
+it("leaves the detail route for Search even when the underlying workspace has a search field", () => {
+  const { navigate } = renderLayer(0, { page: "task", id: "t0" });
+  screen.getByRole("textbox").setAttribute("type", "search");
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(navigate).toHaveBeenCalledExactlyOnceWith({ page: "search" });
 });

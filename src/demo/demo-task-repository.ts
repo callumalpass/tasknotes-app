@@ -39,6 +39,7 @@ import {
   taskNotesDefaultBaseSources,
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
+import { todayTaskContribution } from "../domain/today-summary";
 import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
@@ -500,6 +501,16 @@ export class DemoTaskRepository implements TaskRepository {
 
   async delete(id: string): Promise<void> {
     if (this.tasks.delete(id)) this.changed();
+  }
+
+  todayTaskCounts(today: string) {
+    const counts = { total: 0, overdue: 0 };
+    for (const task of this.tasks.values()) {
+      const part = todayTaskContribution(task, today);
+      counts.total += part.total;
+      counts.overdue += part.overdue;
+    }
+    return counts;
   }
 
   async stats(): Promise<TaskStats> {

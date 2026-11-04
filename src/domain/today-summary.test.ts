@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { summarizeToday } from "./today-summary";
+import { summarizeToday, todayTaskContribution } from "./today-summary";
 
 import type { TaskSummary } from "./task";
 
@@ -98,3 +98,31 @@ function task(id: string, patch: Partial<TaskSummary> = {}): TaskSummary {
     ...patch,
   } as TaskSummary;
 }
+
+it("counts open dated tasks and overdue deadlines, excluding Anytime and finished work", () => {
+  const open = (patch: Partial<TaskSummary>) =>
+    task("a", { completed: false, ...patch });
+  expect(
+    todayTaskContribution(open({ scheduled: today + "T09:00" }), today),
+  ).toEqual({ total: 1, overdue: 0 });
+  expect(
+    todayTaskContribution(
+      open({ due: "2026-07-25", scheduled: "2026-07-28" }),
+      today,
+    ),
+  ).toEqual({ total: 1, overdue: 1 });
+  expect(
+    todayTaskContribution(open({ scheduled: "2026-07-25" }), today),
+  ).toEqual({ total: 1, overdue: 0 });
+  for (const patch of [
+    {},
+    { scheduled: "2026-07-27" },
+    { due: today, archived: true },
+    { due: today, completed: true },
+    { due: today, skipped: true },
+  ])
+    expect(todayTaskContribution(open(patch), today)).toEqual({
+      total: 0,
+      overdue: 0,
+    });
+});
