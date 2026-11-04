@@ -1670,6 +1670,14 @@
 .today-overdue {
   white-space: nowrap;
 }
+@media (max-width: 640px) {
+  .today-overdue {
+    display: block;
+  }
+  .today-overdue-separator {
+    display: none;
+  }
+}
 .today-overdue button {
   min-height: 28px;
   padding: 0;

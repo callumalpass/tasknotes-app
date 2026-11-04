@@ -1277,7 +1277,7 @@ export function ViewsScreen({
                 ) : null}
                 {overdueLane?.rows.length ? (
                   <span className="today-overdue">
-                    {" · "}
+                    <span className="today-overdue-separator"> · </span>
                     <button
                       type="button"
                       onClick={() =>
