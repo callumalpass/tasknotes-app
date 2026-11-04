@@ -458,9 +458,14 @@ msgstr "Menge für {label}"
 msgid "{label} column"
 msgstr "{label}-Spalte"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "Datum für {label}"
+
+#: src/components/task-detail-dates.tsx
+msgid "{label} date calendar"
+msgstr "Datumskalender: {label}"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
@@ -476,6 +481,7 @@ msgstr "{label} verschoben."
 msgid "{label} suggestions"
 msgstr "Vorschläge für {label}"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "Uhrzeit für {label}"
@@ -1421,6 +1427,14 @@ msgstr "Weitere Aufgaben schließen"
 msgid "Close comparison"
 msgstr "Vergleich schließen"
 
+#: src/components/task-detail-dates.tsx
+msgid "Close dates"
+msgstr "Datumsangaben schließen"
+
+#: src/app/task-calendar-view.tsx
+msgid "Close day details"
+msgstr "Tagesdetails schließen"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
 msgstr "Bilderfassung schließen"
@@ -1909,6 +1923,7 @@ msgid "Date to change"
 msgstr "Zu änderndes Datum"
 
 #: src/components/task-actions.tsx
+#: src/components/task-detail-dates.tsx
 msgid "Dates"
 msgstr "Daten"
 
@@ -2172,12 +2187,13 @@ msgstr "Bilder hier ablegen, um sie hinzuzufügen"
 msgid "due"
 msgstr "fällig"
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
-#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
@@ -3417,6 +3433,7 @@ msgid "No computed properties."
 msgstr "Keine berechneten Eigenschaften."
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "Kein Datum"
@@ -3965,6 +3982,7 @@ msgstr "Wiederherstellung des Zugriffs auf private Sammlungen"
 msgid "Private collections need your desktop online."
 msgstr "Für private Sammlungen muss Ihr Desktop-Computer online sein."
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
@@ -4566,12 +4584,13 @@ msgstr "Für morgen planen"
 msgid "scheduled"
 msgstr "geplant"
 
-#: src/app/task-core-properties.tsx
+#: src/app/calendar-row-details.ts
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts

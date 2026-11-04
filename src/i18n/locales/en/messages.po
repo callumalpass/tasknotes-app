@@ -458,9 +458,14 @@ msgstr "{label} amount"
 msgid "{label} column"
 msgstr "{label} column"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "{label} date"
+
+#: src/components/task-detail-dates.tsx
+msgid "{label} date calendar"
+msgstr "{label} date calendar"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
@@ -476,6 +481,7 @@ msgstr "{label} moved."
 msgid "{label} suggestions"
 msgstr "{label} suggestions"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "{label} time"
@@ -1421,6 +1427,14 @@ msgstr "Close additional tasks"
 msgid "Close comparison"
 msgstr "Close comparison"
 
+#: src/components/task-detail-dates.tsx
+msgid "Close dates"
+msgstr "Close dates"
+
+#: src/app/task-calendar-view.tsx
+msgid "Close day details"
+msgstr "Close day details"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
 msgstr "Close image capture"
@@ -1909,6 +1923,7 @@ msgid "Date to change"
 msgstr "Date to change"
 
 #: src/components/task-actions.tsx
+#: src/components/task-detail-dates.tsx
 msgid "Dates"
 msgstr "Dates"
 
@@ -2172,12 +2187,13 @@ msgstr "Drop images to add them"
 msgid "due"
 msgstr "due"
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
-#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
@@ -3417,6 +3433,7 @@ msgid "No computed properties."
 msgstr "No computed properties."
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "No date"
@@ -3965,6 +3982,7 @@ msgstr "Private collection recovery"
 msgid "Private collections need your desktop online."
 msgstr "Private collections need your desktop online."
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
@@ -4566,12 +4584,13 @@ msgstr "Schedule tomorrow"
 msgid "scheduled"
 msgstr "scheduled"
 
-#: src/app/task-core-properties.tsx
+#: src/app/calendar-row-details.ts
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts

@@ -458,9 +458,14 @@ msgstr "{label} 数量"
 msgid "{label} column"
 msgstr "{label} 列"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "{label} 日期"
+
+#: src/components/task-detail-dates.tsx
+msgid "{label} date calendar"
+msgstr "{label}日期日历"
 
 #. placeholder {0}: direction < 0 ? uiCopy("up") : uiCopy("down")
 #. placeholder {1}: next === 0 ? uiCopy(", now Home") : ""
@@ -476,6 +481,7 @@ msgstr "{label} 已移动。"
 msgid "{label} suggestions"
 msgstr "{label} 建议"
 
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "{label} 时间"
@@ -1421,6 +1427,14 @@ msgstr "关闭其他任务"
 msgid "Close comparison"
 msgstr "关闭比较视图"
 
+#: src/components/task-detail-dates.tsx
+msgid "Close dates"
+msgstr "关闭日期"
+
+#: src/app/task-calendar-view.tsx
+msgid "Close day details"
+msgstr "关闭当日详情"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Close image capture"
 msgstr "关闭图片捕获"
@@ -1909,6 +1923,7 @@ msgid "Date to change"
 msgstr "要更改的日期"
 
 #: src/components/task-actions.tsx
+#: src/components/task-detail-dates.tsx
 msgid "Dates"
 msgstr "日期"
 
@@ -2172,12 +2187,13 @@ msgstr "拖放图片以添加"
 msgid "due"
 msgstr "截止日期"
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
-#: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
@@ -3417,6 +3433,7 @@ msgid "No computed properties."
 msgstr "没有计算属性。"
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "无日期"
@@ -3965,6 +3982,7 @@ msgstr "私有集合恢复"
 msgid "Private collections need your desktop online."
 msgstr "私有集合需要你的桌面设备保持在线。"
 
+#: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
@@ -4566,12 +4584,13 @@ msgstr "安排在明天"
 msgid "scheduled"
 msgstr "计划日期"
 
-#: src/app/task-core-properties.tsx
+#: src/app/calendar-row-details.ts
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-date-panel.tsx
+#: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
