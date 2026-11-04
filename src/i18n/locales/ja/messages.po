@@ -3285,6 +3285,7 @@ msgstr "「{title}」を{column}に移動しました"
 msgid "Moved “{title}” to {project}"
 msgstr "「{title}」を{project}に移動しました"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
 msgstr "「{title}」を{when}に移動しました"
@@ -4872,6 +4873,11 @@ msgstr "優先度を設定"
 #: src/app/bulk-task-feedback.ts
 msgid "Set priority to {value} for {tasks}"
 msgstr "優先度を {value} に設定しました: {tasks}"
+
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set status"
+msgstr "ステータスを設定"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

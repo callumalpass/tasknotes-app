@@ -3286,6 +3286,7 @@ msgstr "« {title} » déplacée vers {column}"
 msgid "Moved “{title}” to {project}"
 msgstr "« {title} » déplacée vers {project}"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
 msgstr "« {title} » déplacée à {when}"
@@ -4873,6 +4874,11 @@ msgstr "Définir la priorité"
 #: src/app/bulk-task-feedback.ts
 msgid "Set priority to {value} for {tasks}"
 msgstr "Priorité {value} définie : {tasks}"
+
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set status"
+msgstr "Définir le statut"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

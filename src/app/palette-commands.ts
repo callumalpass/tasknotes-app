@@ -177,6 +177,15 @@ export function taskCommands(
       run: request("priority"),
     },
     {
+      id: "task:status",
+      label: t({ message: "Set status" }),
+      section: "task",
+      keywords: ["state", "progress", "stage"],
+      shortcut: "s",
+      detail: title,
+      run: request("status"),
+    },
+    {
       id: "task:project",
       label: t({ message: "Move to project" }),
       section: "task",

@@ -50,7 +50,11 @@ export function useTaskShortcuts(
         row.querySelector<HTMLButtonElement>(".task-row-quick-date")?.click();
         return;
       }
-      if (action === "priority" || action === "project") {
+      if (
+        action === "priority" ||
+        action === "status" ||
+        action === "project"
+      ) {
         row
           .querySelector(".task-actions-trigger")
           ?.dispatchEvent(

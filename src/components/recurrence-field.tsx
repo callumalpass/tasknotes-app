@@ -6,7 +6,10 @@ import {
 } from "../i18n/presentation";
 import { t, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
-import { ordinal as localizedOrdinal } from "../i18n/presentation";
+import {
+  ordinal as localizedOrdinal,
+  recurrenceLabel,
+} from "../i18n/presentation";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { generateRecurringInstances } from "@tasknotes/model/recurrence";
 import { useMemo, useState } from "react";
@@ -183,7 +186,11 @@ export function RecurrenceField({
             ...(preset === "advanced"
               ? [{ value: "advanced", label: t({ message: "Advanced rule" }) }]
               : []),
-          ]}
+          ].map((option) =>
+            option.value === preset && rule.interval > 1
+              ? { ...option, label: recurrenceLabel(value!) }
+              : option,
+          )}
           value={preset}
           onChange={(next) => {
             if (next === "advanced") {

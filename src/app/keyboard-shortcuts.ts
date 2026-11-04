@@ -13,6 +13,7 @@ export type TaskShortcutAction =
   | "toggle"
   | "dates"
   | "priority"
+  | "status"
   | "project"
   | "today"
   | "tomorrow"
@@ -28,6 +29,7 @@ const rowKeys: Record<string, TaskShortcutAction> = {
   x: "toggle",
   d: "dates",
   p: "priority",
+  s: "status",
   t: "today",
   m: "tomorrow",
   w: "next-week",
@@ -373,6 +375,7 @@ export function keyboardShortcutGroups(): {
         { keys: ["Esc"], description: t({ message: "Clear task selection" }) },
         { keys: ["d"], description: t({ message: "Change dates" }) },
         { keys: ["p"], description: t({ message: "Set priority" }) },
+        { keys: ["s"], description: t({ message: "Set status" }) },
         { keys: ["+"], description: t({ message: "Move to project" }) },
         { keys: ["t"], description: t({ message: "Schedule today" }) },
         { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },

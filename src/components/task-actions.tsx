@@ -251,7 +251,9 @@ export function TaskActions({
   const openPanel = useEffectEvent((event: Event) => {
     const panel = (event as CustomEvent<string>).detail;
     openFromTrigger();
-    setPanels(panel === "project" ? ["move"] : ["priority"]);
+    setPanels([
+      panel === "project" ? "move" : panel === "status" ? "status" : "priority",
+    ]);
   });
   useEffect(() => {
     const trigger = triggerRef.current;

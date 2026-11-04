@@ -98,6 +98,17 @@ export function taskMeta(
 
 export function recurrenceLabel(value: string): string {
   const rule = value.toUpperCase();
+  const interval = Number(/INTERVAL=(\d+)/.exec(rule)?.[1] ?? 1);
+  if (interval > 1) {
+    if (rule.includes("FREQ=DAILY"))
+      return plural(interval, { 1: "Every day", other: "Every # days" });
+    if (rule.includes("FREQ=WEEKLY"))
+      return plural(interval, { 1: "Every week", other: "Every # weeks" });
+    if (rule.includes("FREQ=MONTHLY"))
+      return plural(interval, { 1: "Every month", other: "Every # months" });
+    if (rule.includes("FREQ=YEARLY"))
+      return plural(interval, { 1: "Every year", other: "Every # years" });
+  }
   if (rule.includes("FREQ=DAILY") && rule.includes("BYDAY=MO,TU,WE,TH,FR"))
     return t`Weekdays`;
   if (rule.includes("FREQ=DAILY")) return t`Daily`;

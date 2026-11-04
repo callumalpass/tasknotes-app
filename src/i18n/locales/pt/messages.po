@@ -3285,6 +3285,7 @@ msgstr "“{title}” movida para {column}"
 msgid "Moved “{title}” to {project}"
 msgstr "“{title}” movida para {project}"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
 msgstr "“{title}” movida para {when}"
@@ -4872,6 +4873,11 @@ msgstr "Definir prioridade"
 #: src/app/bulk-task-feedback.ts
 msgid "Set priority to {value} for {tasks}"
 msgstr "Prioridade {value} definida: {tasks}"
+
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set status"
+msgstr "Definir status"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

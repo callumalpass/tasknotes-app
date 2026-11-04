@@ -3285,6 +3285,7 @@ msgstr "“{title}”을(를) {column}(으)로 이동했습니다"
 msgid "Moved “{title}” to {project}"
 msgstr "“{title}”을(를) {project}(으)로 옮겼습니다"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
 msgstr "“{title}”을(를) {when}(으)로 옮겼습니다"
@@ -4872,6 +4873,11 @@ msgstr "우선순위 설정"
 #: src/app/bulk-task-feedback.ts
 msgid "Set priority to {value} for {tasks}"
 msgstr "우선순위를 {value}(으)로 설정함: {tasks}"
+
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set status"
+msgstr "상태 설정"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

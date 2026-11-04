@@ -540,3 +540,17 @@ test("an overdue row carries one red date", async ({ page }) => {
   await expect(row.locator(".is-overdue")).toHaveCount(1);
   await expect(row.locator(".is-late")).toHaveCount(0);
 });
+
+test("s opens status from a row and the palette offers it", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Keyboard path.");
+  await page.keyboard.press("j");
+  await page.keyboard.press("s");
+  await expect(page.getByRole("menuitemradio").first()).toBeVisible();
+  await expect(page.getByRole("menu")).toContainText("Triage");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+k");
+  await page.keyboard.type("status");
+  await expect(page.getByRole("option", { name: /Set status/ })).toBeVisible();
+});

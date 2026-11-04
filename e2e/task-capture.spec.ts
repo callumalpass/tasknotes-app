@@ -161,3 +161,18 @@ test("inline Today and Project capture share priority parsing", async ({
     page.getByRole("button", { name: "Project inline", exact: true }),
   ).toBeVisible();
 });
+
+test("capture names a two-week repeat and Discard keeps the caret", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const dialog = await openCapture(page);
+  const input = dialog.getByRole("combobox", { name: "New task title" });
+  await input.fill("Pay supplier next tuesday every 2 weeks");
+  await expect(dialog.locator(".capture-interpretation")).toContainText(
+    "Every 2 weeks",
+  );
+  await dialog.getByRole("button", { name: "Discard draft" }).click();
+  await expect(input).toHaveValue("");
+  await expect(input).toBeFocused();
+});

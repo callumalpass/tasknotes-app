@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { formatRelativeTaskDate } from "../i18n/presentation";
 import { useRepository } from "./repository-context";
 import { rememberUndo } from "./undo-history";
 import type { CalendarTaskEdit } from "../domain/calendar-edit";
@@ -13,9 +14,12 @@ export function useCalendarMutations(
   const { repository, editCalendar, updateTask } = useRepository();
   return {
     async edit(task: TaskSummary, edit: CalendarTaskEdit) {
-      await editCalendar(task.id, edit);
+      const updated = await editCalendar(task.id, edit);
       if (!task.recurrence && !task.recurrenceParent) {
         const { title } = task;
+        const when = updated.scheduled
+          ? formatRelativeTaskDate(updated.scheduled)
+          : "";
         const earlier = {
           scheduled: task.scheduled ?? null,
           due: task.due ?? null,
@@ -23,7 +27,10 @@ export function useCalendarMutations(
         };
         rememberUndo({
           label: title,
-          notice: t`Updated “${title}”`,
+          notice:
+            updated.scheduled && updated.scheduled !== task.scheduled
+              ? t`Moved “${title}” to ${when}`
+              : t`Updated “${title}”`,
           run: () => updateTask(task.id, earlier),
         });
       }

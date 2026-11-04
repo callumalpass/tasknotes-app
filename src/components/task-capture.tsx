@@ -38,6 +38,7 @@ import {
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
+import { recurrenceLabel } from "../i18n/presentation";
 import { successFeedback } from "../native/feedback";
 import { ArrowUp, X } from "lucide-react";
 
@@ -566,7 +567,10 @@ export function TaskCapture({
                           ? t`Priority: ${item.label}`
                           : item.key === "status"
                             ? t`Status: ${item.label}`
-                            : item.label;
+                            : item.key === "recurrence" &&
+                                settled?.input.recurrence
+                              ? recurrenceLabel(settled.input.recurrence)
+                              : item.label;
                   return (
                     <span className="capture-token" key={item.key}>
                       <button

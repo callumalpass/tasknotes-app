@@ -163,7 +163,12 @@ export function GlobalTaskCapture({
               type="button"
               className="text-action capture-discard"
               disabled={snapshot.status === "submitting"}
-              onClick={() => session.discard()}
+              onClick={() => {
+                session.discard();
+                dialogRef.current
+                  ?.querySelector<HTMLInputElement>(".quick-capture input")
+                  ?.focus();
+              }}
             >
               <Trans>Discard draft</Trans>
             </button>

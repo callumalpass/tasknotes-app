@@ -3285,6 +3285,7 @@ msgstr "已将“{title}”移到{column}"
 msgid "Moved “{title}” to {project}"
 msgstr "已将“{title}”移至 {project}"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
 msgstr "已将“{title}”移至{when}"
@@ -4872,6 +4873,11 @@ msgstr "设置优先级"
 #: src/app/bulk-task-feedback.ts
 msgid "Set priority to {value} for {tasks}"
 msgstr "已将优先级设为 {value}：{tasks}"
+
+#: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
+msgid "Set status"
+msgstr "设置状态"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
