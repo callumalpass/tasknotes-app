@@ -309,7 +309,7 @@ export async function nativeResourceSetupAssessment(
   const expected = new Set(TASKNOTES_DEFAULT_VIEW_SOURCES.map((s) => s.path));
   const seen = new Set<string>();
   if (generated.length !== expected.size)
-    throw new Error("The exact five TaskNotes sources are unavailable.");
+    throw new Error("The exact TaskNotes starter sources are unavailable.");
   for (const source of generated) {
     if (
       !expected.has(source.path) ||

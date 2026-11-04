@@ -1,4 +1,5 @@
 import { projectShortcuts } from "../domain/project-shortcuts";
+import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -528,6 +529,10 @@ export class DemoTaskRepository implements TaskRepository {
 
   projectShortcuts() {
     return projectShortcuts(this.tasks.values());
+  }
+
+  navigationTaskCounts(today: string) {
+    return navigationTaskCounts(this.tasks.values(), today);
   }
 
   async stats(): Promise<TaskStats> {
@@ -1118,6 +1123,12 @@ function demoViewDocuments(
       type: "tasknotes.task-list",
       options: { create: false },
     },
+    {
+      id: "unplanned",
+      name: "Unplanned",
+      type: "tasknotes.task-list",
+      options: {},
+    },
   ];
   const defaults = definitions.map((definition) => {
     const path = taskNotesViewSourcePath(definition.name);
@@ -1185,6 +1196,8 @@ function demoViewDocuments(
 function fallbackTasksForView(view: TaskView, tasks: Task[]): Task[] {
   const active = tasks.filter((task) => !task.archived && !task.completed);
   if (view.id === "archive") return tasks.filter((task) => task.archived);
+  if (view.id === "unplanned")
+    return active.filter((task) => !task.scheduled && !task.due);
   if (view.id === "projects")
     return active.filter((task) => task.projects.length);
   if (view.id === "work-board") return tasks.filter((task) => !task.archived);

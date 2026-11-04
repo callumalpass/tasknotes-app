@@ -109,7 +109,7 @@ describe("TaskNotes starter views", () => {
       created,
       defaultTaskCollectionConfiguration(),
     );
-    expect(repository.createViewSource).toHaveBeenCalledTimes(5);
+    expect(repository.createViewSource).toHaveBeenCalledTimes(6);
   });
 
   it("resumes an ambiguous create while preserving an upgraded legacy source", async () => {
@@ -149,8 +149,8 @@ describe("TaskNotes starter views", () => {
         [legacy],
         defaultTaskCollectionConfiguration(),
       ),
-    ).resolves.toHaveLength(6);
-    expect(createViewSource).toHaveBeenCalledTimes(5);
+    ).resolves.toHaveLength(7);
+    expect(createViewSource).toHaveBeenCalledTimes(6);
     expect(updateViewSource).not.toHaveBeenCalled();
     expect(deleteViewSource).not.toHaveBeenCalled();
   });
@@ -184,7 +184,48 @@ describe("TaskNotes starter views", () => {
       "TaskNotes/Views/calendar.base#calendar",
       "TaskNotes/Views/projects.base#projects",
       "TaskNotes/Views/archive.base#archive",
+      "TaskNotes/Views/unplanned.base#unplanned",
     ]);
+  });
+
+  it("adds only Unplanned to an existing collection, retaining every existing source", async () => {
+    const stored = starterDocuments().filter(
+      (document) => document.id !== "unplanned",
+    );
+    const before = structuredClone(stored);
+    const createViewSource = vi.fn(async (input: { path: string }) => {
+      stored.push(starterDocument("unplanned"));
+      return {
+        path: input.path,
+        format: "obsidian.base",
+        document: "",
+        revision: "1",
+      };
+    });
+    const repository = {
+      listViews: async () => stored,
+      createViewSource,
+    } as unknown as TaskRepository;
+    await addTaskNotesStarterViews(
+      repository,
+      defaultTaskCollectionConfiguration(),
+    );
+    expect(createViewSource).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ path: "TaskNotes/Views/unplanned.base" }),
+    );
+    expect(stored.slice(0, before.length)).toEqual(before);
+    const source = taskNotesDefaultBaseSources(
+      defaultTaskCollectionConfiguration(),
+    ).find((entry) => entry.name === "Unplanned")!;
+    expect(parse(source.document).views[0].filters.and).toEqual(
+      expect.arrayContaining([
+        'note["scheduled"].isEmpty()',
+        'note["due"].isEmpty()',
+      ]),
+    );
+    expect(
+      starterViewKind({ ...starterDocument("unplanned").views[0], id: "0" }),
+    ).toBe("unplanned");
   });
 
   it("keeps legacy navigation available while upgraded sources are created", () => {
@@ -274,7 +315,7 @@ describe("explicit starter views after setup", () => {
     const configuration = defaultTaskCollectionConfiguration();
     await expect(
       addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true }),
-    ).resolves.toHaveLength(5);
+    ).resolves.toHaveLength(6);
     await addTaskNotesStarterViews(tab, configuration, { onlyIfNoViews: true });
     await addTaskNotesStarterViews(tab, configuration);
     expect(shared.creates).toEqual(
@@ -282,7 +323,7 @@ describe("explicit starter views after setup", () => {
     );
     // Navigation keeps #218's guarantee: it never writes.
     await ensureTaskNotesDefaultViewSource(tab, [], configuration);
-    expect(shared.creates).toHaveLength(5);
+    expect(shared.creates).toHaveLength(6);
   });
 
   it("is safe when two tabs finish setup at the same time", async () => {
@@ -296,9 +337,9 @@ describe("explicit starter views after setup", () => {
         onlyIfNoViews: true,
       }),
     ]);
-    expect(results.map((documents) => documents.length)).toEqual([5, 5]);
-    expect(new Set(shared.creates).size).toBe(5);
-    expect(shared.creates).toHaveLength(5);
+    expect(results.map((documents) => documents.length)).toEqual([6, 6]);
+    expect(new Set(shared.creates).size).toBe(6);
+    expect(shared.creates).toHaveLength(6);
   });
 
   it("leaves a collection that already has views untouched after setup", async () => {
@@ -314,9 +355,14 @@ describe("explicit starter views after setup", () => {
 });
 
 function starterDocuments(): TaskViewDocument[] {
-  return ["today", "upcoming", "calendar", "projects", "archive"].map((id) =>
-    starterDocument(id),
-  );
+  return [
+    "today",
+    "upcoming",
+    "calendar",
+    "projects",
+    "archive",
+    "unplanned",
+  ].map((id) => starterDocument(id));
 }
 
 function starterDocument(id: string): TaskViewDocument {
