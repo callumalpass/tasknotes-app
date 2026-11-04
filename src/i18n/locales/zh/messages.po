@@ -109,14 +109,7 @@ msgstr "{0, plural, other {# 项逾期}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {有 # 个任务无法更新。请打开查看后再试。}}"
 
-#. placeholder {0}: shownNotice.count
-#: src/app/bulk-task-actions.tsx
-msgid "{0, plural, one {# task updated} other {# tasks updated}}"
-msgstr "{0, plural, other {已更新 # 个任务}}"
-
-#. placeholder {0}: result.receipts.length
 #. placeholder {0}: updates.length
-#: src/app/bulk-task-actions.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, other {# 个任务}}"
@@ -131,10 +124,8 @@ msgstr "{0, plural, other {账户已解锁。# 个私有集合尚未完成密钥
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {已创建 # 条任务记录}}"
 
-#. placeholder {0}: lane.rows.length
 #. placeholder {0}: overdueRows.length
 #: src/app/task-calendar-view.tsx
-#: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
 
@@ -142,6 +133,11 @@ msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
 msgstr "{0, plural, other {恢复已设置。# 个私有集合尚未完成密钥访问。}}"
+
+#. placeholder {0}: updates.length
+#: src/app/views-screen.tsx
+msgid "{0, plural, one {Restored dates for # task} other {Restored dates for # tasks}}"
+msgstr "{0, plural, other {已恢复 # 个任务的日期}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
@@ -397,6 +393,10 @@ msgstr "{count, plural, other {天}}"
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, other {个月}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{count, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
+msgstr "{count, plural, other {全部移到今天，# 个逾期任务}}"
 
 #: src/app/views-screen.tsx
 msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
@@ -870,8 +870,8 @@ msgid "Adding…"
 msgstr "正在添加…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds Today, Upcoming, Calendar, Projects, and Archive."
-msgstr "添加“今天”“即将到来”“日历”“项目”和“归档”视图。"
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
+msgstr "添加缺少的“今天”“即将到来”“日历”“项目”“归档”和 Unplanned 视图。现有文件和导航设置保持不变。"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -1024,6 +1024,10 @@ msgstr "归档文件夹"
 #: src/i18n/default-labels.ts
 msgid "Archived"
 msgstr "已归档"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Archived {tasks}"
+msgstr "已归档：{tasks}"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
@@ -1316,6 +1320,10 @@ msgstr "选择另一个集合"
 msgid "Choose assignees"
 msgstr "选择负责人"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Choose date"
+msgstr "选择日期"
+
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
 msgstr "选择任务的分组和排序方式。"
@@ -1398,6 +1406,10 @@ msgstr "清除任务选择"
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
 msgstr "清除值"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Click tasks to select them."
+msgstr "点击任务以选择。"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -1537,15 +1549,6 @@ msgstr "逗号分隔的值"
 msgid "Command palette"
 msgstr "命令面板"
 
-#: src/app/app-shell.tsx
-msgid "Commands"
-msgstr "命令"
-
-#. placeholder {0}: shortcutLabel("K")
-#: src/app/app-shell.tsx
-msgid "Commands ({0})"
-msgstr "命令（{0}）"
-
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
 msgstr "紧凑行"
@@ -1601,6 +1604,15 @@ msgstr "完成任务"
 #: src/i18n/default-labels.ts
 msgid "Completed"
 msgstr "已完成"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}”"
+msgstr "已完成“{0}”"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Completed {tasks}"
+msgstr "已完成：{tasks}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
@@ -1815,7 +1827,13 @@ msgstr "无法加载你的视图。"
 msgid "Couldn’t read that date"
 msgstr "无法识别该日期"
 
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Couldn’t reopen “{0}”"
+msgstr "无法重新打开“{0}”"
+
 #: src/app/app-shell.tsx
+#: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "无法撤销。请重试。"
@@ -1917,6 +1935,10 @@ msgstr "日期"
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
 msgstr "日期与议程"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "Date for overdue tasks"
+msgstr "逾期任务的日期"
 
 #: src/components/task-date-panel.tsx
 msgid "Date to change"
@@ -3023,7 +3045,6 @@ msgstr "创建重复项笔记"
 msgid "Manage"
 msgstr "管理"
 
-#: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/views-screen.tsx
 msgid "Manage views"
@@ -3202,7 +3223,7 @@ msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
 #: src/app/task-calendar-view.tsx
-#: src/app/views-screen.tsx
+#: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "全部移至今天"
 
@@ -3276,6 +3297,11 @@ msgstr "已将 {0} 下移。"
 msgid "Moved {0} to {1}."
 msgstr "已将 {0} 移至 {1}。"
 
+#. placeholder {0}: countLabel(count, "task")
+#: src/app/views-screen.tsx
+msgid "Moved {0} to {date}"
+msgstr "已将 {0} 移到 {date}"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
@@ -3285,6 +3311,10 @@ msgstr "已将 {0} 上移。"
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "已移动 {0}。"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Moved {tasks} to {value}"
+msgstr "已将 {tasks} 移到 {value}"
 
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
@@ -4027,6 +4057,15 @@ msgstr "要排序的属性"
 msgid "Protected edits"
 msgstr "受保护的编辑"
 
+#: src/app/app-shell.tsx
+msgid "Quick actions"
+msgstr "快捷操作"
+
+#. placeholder {0}: shortcutLabel("K")
+#: src/app/app-shell.tsx
+msgid "Quick actions ({0})"
+msgstr "快捷操作 ({0})"
+
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
 msgstr "快捷日期"
@@ -4249,6 +4288,14 @@ msgstr "移除提醒 {0}"
 msgid "Remove this image card from Scratchpad? The image file will be kept."
 msgstr "从随手记中移除此图片卡片？图片文件会保留。"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Removed projects from {tasks}"
+msgstr "已移除项目：{tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed scheduled dates from {tasks}"
+msgstr "已移除计划日期：{tasks}"
+
 #: src/app/task-screen.tsx
 msgid "Rendering…"
 msgstr "正在渲染…"
@@ -4269,6 +4316,11 @@ msgstr "重新打开“{0}”"
 #: src/app/task-screen.tsx
 msgid "Reopen task"
 msgstr "重新打开任务"
+
+#. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
+msgid "Reopened “{0}”"
+msgstr "已重新打开“{0}”"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
@@ -4336,6 +4388,26 @@ msgstr "恢复"
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
 msgstr "恢复未保存的编辑"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored {tasks} from archive"
+msgstr "已从归档恢复：{tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored completion states for {tasks}"
+msgstr "已恢复完成状态：{tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored dates for {tasks}"
+msgstr "已恢复日期：{tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored priorities for {tasks}"
+msgstr "已恢复优先级：{tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored projects for {tasks}"
+msgstr "已恢复项目：{tasks}"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -4554,6 +4626,10 @@ msgstr "正在保存…"
 msgid "Schedule"
 msgstr "安排"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Schedule all"
+msgstr "全部安排"
+
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "计划日期"
@@ -4607,6 +4683,11 @@ msgstr "未设置计划日期"
 #: src/components/task-capture.tsx
 msgid "Scheduled {0}"
 msgstr "计划日期：{0}"
+
+#. placeholder {0}: formatTaskDate(change.date)
+#: src/app/bulk-task-feedback.ts
+msgid "Scheduled {tasks} for {0}"
+msgstr "已安排到 {0}：{tasks}"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4759,6 +4840,10 @@ msgstr "会话开始时间"
 #: src/app/palette-commands.ts
 msgid "Set priority"
 msgstr "设置优先级"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Set priority to {value} for {tasks}"
+msgstr "已将优先级设为 {value}：{tasks}"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

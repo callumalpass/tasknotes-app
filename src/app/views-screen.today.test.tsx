@@ -1,3 +1,4 @@
+import { formatTaskDate } from "../i18n/presentation";
 import {
   act,
   fireEvent,
@@ -110,7 +111,7 @@ it("schedules overdue work for another day and names moved deadlines in its undo
     ]),
   );
   expect(await screen.findByRole("status")).toHaveTextContent(
-    `Moved 1 task to ${date}, 1 deadline moved too`,
+    `Moved 1 task to ${formatTaskDate(date)}, 1 deadline moved too`,
   );
   fireEvent.click(screen.getByRole("button", { name: "Undo" }));
   await waitFor(() => expect(updateMany).toHaveBeenCalledTimes(2));

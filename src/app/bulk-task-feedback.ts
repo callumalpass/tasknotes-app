@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { countLabel } from "../i18n/default-labels";
+import { formatTaskDate } from "../i18n/presentation";
 import type { BulkTaskChange } from "../application/bulk-task-edit";
 
 export function bulkTaskFeedback(
@@ -17,7 +18,7 @@ export function bulkTaskFeedback(
     case "schedule":
       return {
         message: change.date
-          ? t`Scheduled ${tasks} for ${change.date}`
+          ? t`Scheduled ${tasks} for ${formatTaskDate(change.date)}`
           : t`Removed scheduled dates from ${tasks}`,
         undoNotice: t`Restored dates for ${tasks}`,
       };

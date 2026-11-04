@@ -109,14 +109,7 @@ msgstr "{0, plural, one {# atrasada} many {# atrasadas} other {# atrasadas}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, one {No se pudo actualizar # tarea. Ábrela para revisarla antes de volver a intentarlo.} many {No se pudieron actualizar # tareas. Ábrelas para revisarlas antes de volver a intentarlo.} other {No se pudieron actualizar # tareas. Ábrelas para revisarlas antes de volver a intentarlo.}}"
 
-#. placeholder {0}: shownNotice.count
-#: src/app/bulk-task-actions.tsx
-msgid "{0, plural, one {# task updated} other {# tasks updated}}"
-msgstr "{0, plural, one {# tarea actualizada} many {# tareas actualizadas} other {# tareas actualizadas}}"
-
-#. placeholder {0}: result.receipts.length
 #. placeholder {0}: updates.length
-#: src/app/bulk-task-actions.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, one {# tarea} many {# tareas} other {# tareas}}"
@@ -131,10 +124,8 @@ msgstr "{0, plural, one {Cuenta desbloqueada. # colección privada aún tiene qu
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {Se creó # nota de tarea} other {Se crearon # notas de tarea}}"
 
-#. placeholder {0}: lane.rows.length
 #. placeholder {0}: overdueRows.length
 #: src/app/task-calendar-view.tsx
-#: src/app/views-screen.tsx
 msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
 msgstr "{0, plural, one {Mover todas a hoy: # tarea atrasada} other {Mover todas a hoy: # tareas atrasadas}}"
 
@@ -142,6 +133,11 @@ msgstr "{0, plural, one {Mover todas a hoy: # tarea atrasada} other {Mover todas
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
 msgstr "{0, plural, one {La recuperación está configurada. # colección privada aún tiene que completar el acceso a las claves.} many {La recuperación está configurada. # colecciones privadas aún tienen que completar el acceso a las claves.} other {La recuperación está configurada. # colecciones privadas aún tienen que completar el acceso a las claves.}}"
+
+#. placeholder {0}: updates.length
+#: src/app/views-screen.tsx
+msgid "{0, plural, one {Restored dates for # task} other {Restored dates for # tasks}}"
+msgstr "{0, plural, one {Fechas restauradas para # tarea} many {Fechas restauradas para # tareas} other {Fechas restauradas para # tareas}}"
 
 #. placeholder {0}: result.pending.length
 #: src/components/private-account-settings.tsx
@@ -397,6 +393,10 @@ msgstr "{count, plural, one {día} other {días}}"
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, one {mes} other {meses}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{count, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
+msgstr "{count, plural, one {Mover todo a hoy, # tarea vencida} many {Mover todo a hoy, # tareas vencidas} other {Mover todo a hoy, # tareas vencidas}}"
 
 #: src/app/views-screen.tsx
 msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
@@ -870,8 +870,8 @@ msgid "Adding…"
 msgstr "Añadiendo…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds Today, Upcoming, Calendar, Projects, and Archive."
-msgstr "Añade Today, Upcoming, Calendar, Projects y Archive."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
+msgstr "Añade las vistas que faltan: Hoy, Próximas, Calendario, Proyectos, Archivo y Unplanned. Los archivos existentes y las opciones de navegación no cambian."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -1024,6 +1024,10 @@ msgstr "Carpeta de archivo"
 #: src/i18n/default-labels.ts
 msgid "Archived"
 msgstr "Archivadas"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Archived {tasks}"
+msgstr "Archivado: {tasks}"
 
 #: src/app/view-empty-state.tsx
 msgid "Archived tasks are kept, not deleted. You can restore them from their task menu."
@@ -1316,6 +1320,10 @@ msgstr "Elegir otra colección"
 msgid "Choose assignees"
 msgstr "Elige las personas asignadas"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Choose date"
+msgstr "Elegir fecha"
+
 #: src/app/view-editor-form.tsx
 msgid "Choose how tasks are grouped and ordered."
 msgstr "Elige cómo agrupar y ordenar las tareas."
@@ -1398,6 +1406,10 @@ msgstr "Borrar la selección de tareas"
 #: src/components/task-property-editor.tsx
 msgid "Clear value"
 msgstr "Borrar valor"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Click tasks to select them."
+msgstr "Haz clic en las tareas para seleccionarlas."
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
@@ -1537,15 +1549,6 @@ msgstr "Valores separados por comas"
 msgid "Command palette"
 msgstr "Paleta de comandos"
 
-#: src/app/app-shell.tsx
-msgid "Commands"
-msgstr "Comandos"
-
-#. placeholder {0}: shortcutLabel("K")
-#: src/app/app-shell.tsx
-msgid "Commands ({0})"
-msgstr "Comandos ({0})"
-
 #: src/app/view-editor-form.tsx
 msgid "Compact rows"
 msgstr "Filas compactas"
@@ -1601,6 +1604,15 @@ msgstr "Completar tarea"
 #: src/i18n/default-labels.ts
 msgid "Completed"
 msgstr "Completadas"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}”"
+msgstr "“{0}” completada"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Completed {tasks}"
+msgstr "Completado: {tasks}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Completed draft"
@@ -1815,7 +1827,13 @@ msgstr "No se pudieron cargar tus vistas."
 msgid "Couldn’t read that date"
 msgstr "No se pudo leer esa fecha"
 
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Couldn’t reopen “{0}”"
+msgstr "No se pudo reabrir “{0}”"
+
 #: src/app/app-shell.tsx
+#: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "No se pudo deshacer. Inténtalo de nuevo."
@@ -1917,6 +1935,10 @@ msgstr "Fecha"
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
 msgstr "Fecha y agenda"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "Date for overdue tasks"
+msgstr "Fecha para las tareas vencidas"
 
 #: src/components/task-date-panel.tsx
 msgid "Date to change"
@@ -3023,7 +3045,6 @@ msgstr "Crear nota de repetición"
 msgid "Manage"
 msgstr "Administrar"
 
-#: src/app/app-shell.tsx
 #: src/app/palette-commands.ts
 #: src/app/views-screen.tsx
 msgid "Manage views"
@@ -3202,7 +3223,7 @@ msgid "Move {label} up"
 msgstr "Mover {label} hacia arriba"
 
 #: src/app/task-calendar-view.tsx
-#: src/app/views-screen.tsx
+#: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "Mover todo a hoy"
 
@@ -3276,6 +3297,11 @@ msgstr "Se movió {0} hacia abajo."
 msgid "Moved {0} to {1}."
 msgstr "Se movió {0} a {1}."
 
+#. placeholder {0}: countLabel(count, "task")
+#: src/app/views-screen.tsx
+msgid "Moved {0} to {date}"
+msgstr "{0} movido a {date}"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0} up."
@@ -3285,6 +3311,10 @@ msgstr "Se movió {0} hacia arriba."
 #: src/app/views/task-list-view.tsx
 msgid "Moved {0}."
 msgstr "Se movió {0}."
+
+#: src/app/bulk-task-feedback.ts
+msgid "Moved {tasks} to {value}"
+msgstr "{tasks} movido a {value}"
 
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Moving “{title}” clears its completed or skipped occurrences on or after the new date: {dates}. They will no longer be marked complete or skipped."
@@ -4027,6 +4057,15 @@ msgstr "Propiedad para ordenar"
 msgid "Protected edits"
 msgstr "Ediciones protegidas"
 
+#: src/app/app-shell.tsx
+msgid "Quick actions"
+msgstr "Acciones rápidas"
+
+#. placeholder {0}: shortcutLabel("K")
+#: src/app/app-shell.tsx
+msgid "Quick actions ({0})"
+msgstr "Acciones rápidas ({0})"
+
 #: src/components/task-property-editor.tsx
 msgid "Quick dates"
 msgstr "Fechas rápidas"
@@ -4249,6 +4288,14 @@ msgstr "Quitar recordatorio {0}"
 msgid "Remove this image card from Scratchpad? The image file will be kept."
 msgstr "¿Quitar esta tarjeta de imagen del bloc de notas? El archivo de imagen se conservará."
 
+#: src/app/bulk-task-feedback.ts
+msgid "Removed projects from {tasks}"
+msgstr "Proyectos quitados: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed scheduled dates from {tasks}"
+msgstr "Fechas programadas quitadas: {tasks}"
+
 #: src/app/task-screen.tsx
 msgid "Rendering…"
 msgstr "Procesando…"
@@ -4269,6 +4316,11 @@ msgstr "Reabrir {0}"
 #: src/app/task-screen.tsx
 msgid "Reopen task"
 msgstr "Volver a abrir tarea"
+
+#. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
+msgid "Reopened “{0}”"
+msgstr "“{0}” reabierta"
 
 #: src/i18n/ui-copy.ts
 msgid "reorder"
@@ -4336,6 +4388,26 @@ msgstr "Restaurar"
 #: src/components/recovered-edit-notice.tsx
 msgid "Restore unsaved edits"
 msgstr "Restaurar ediciones sin guardar"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored {tasks} from archive"
+msgstr "Restaurado del archivo: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored completion states for {tasks}"
+msgstr "Estados de finalización restaurados: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored dates for {tasks}"
+msgstr "Fechas restauradas: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored priorities for {tasks}"
+msgstr "Prioridades restauradas: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored projects for {tasks}"
+msgstr "Proyectos restaurados: {tasks}"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -4554,6 +4626,10 @@ msgstr "Guardando…"
 msgid "Schedule"
 msgstr "Programar"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Schedule all"
+msgstr "Programar todo"
+
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "Fecha programada"
@@ -4607,6 +4683,11 @@ msgstr "Programada (sin fecha)"
 #: src/components/task-capture.tsx
 msgid "Scheduled {0}"
 msgstr "Programada {0}"
+
+#. placeholder {0}: formatTaskDate(change.date)
+#: src/app/bulk-task-feedback.ts
+msgid "Scheduled {tasks} for {0}"
+msgstr "Programado para {0}: {tasks}"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4759,6 +4840,10 @@ msgstr "Inicio de la sesión"
 #: src/app/palette-commands.ts
 msgid "Set priority"
 msgstr "Establecer prioridad"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Set priority to {value} for {tasks}"
+msgstr "Prioridad {value} establecida: {tasks}"
 
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"

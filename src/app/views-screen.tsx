@@ -58,6 +58,7 @@ import { useRepository, useTasks } from "./repository-context";
 import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
 import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
 import { countLabel } from "../i18n/default-labels";
+import { formatTaskDate } from "../i18n/presentation";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
@@ -1776,14 +1777,15 @@ function addTaskPrompt(name: string) {
 function rescheduledSummary({
   count,
   deadlines,
-  date,
+  date: scheduled,
 }: {
   count: number;
   deadlines: number;
   date: string;
 }): string {
+  const date = formatTaskDate(scheduled);
   const moved =
-    date === todayString()
+    scheduled === todayString()
       ? plural(count, {
           one: "Moved # task to today",
           other: "Moved # tasks to today",
