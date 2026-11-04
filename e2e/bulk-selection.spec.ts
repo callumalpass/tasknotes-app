@@ -350,8 +350,7 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       page.getByText(
         choice === "none"
           ? "Removed scheduled dates from 2 tasks"
-          : "Scheduled 2 tasks for Thu, Nov 12",
-        { exact: true },
+          : /^Scheduled 2 tasks for Thu, Nov 12( and moved \d missed due dates?)?$/,
       ),
     ).toBeVisible();
     await page.getByRole("button", { name: "Undo", exact: true }).click();

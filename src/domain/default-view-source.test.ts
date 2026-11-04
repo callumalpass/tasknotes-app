@@ -70,7 +70,7 @@ describe("TaskNotes starter views", () => {
       displayName: "Manual order",
       hidden: true,
     });
-    expect(parse(sources[4].document).views[0].filters.and).toEqual([
+    expect(parse(sources[5].document).views[0].filters.and).toEqual([
       'file.hasTag("retired") == true',
     ]);
     expect(JSON.stringify(sources)).not.toContain('note[\\"status\\"]');
@@ -181,20 +181,20 @@ describe("TaskNotes starter views", () => {
     expect(defaultNavigationViewKeys(starterDocuments())).toEqual([
       "TaskNotes/Views/today.base#today",
       "TaskNotes/Views/upcoming.base#upcoming",
+      "TaskNotes/Views/inbox.base#inbox",
       "TaskNotes/Views/calendar.base#calendar",
       "TaskNotes/Views/projects.base#projects",
       "TaskNotes/Views/archive.base#archive",
-      "TaskNotes/Views/unplanned.base#unplanned",
     ]);
   });
 
-  it("adds only Unplanned to an existing collection, retaining every existing source", async () => {
+  it("adds only Inbox to an existing collection, retaining every existing source", async () => {
     const stored = starterDocuments().filter(
-      (document) => document.id !== "unplanned",
+      (document) => document.id !== "inbox",
     );
     const before = structuredClone(stored);
     const createViewSource = vi.fn(async (input: { path: string }) => {
-      stored.push(starterDocument("unplanned"));
+      stored.push(starterDocument("inbox"));
       return {
         path: input.path,
         format: "obsidian.base",
@@ -211,12 +211,12 @@ describe("TaskNotes starter views", () => {
       defaultTaskCollectionConfiguration(),
     );
     expect(createViewSource).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ path: "TaskNotes/Views/unplanned.base" }),
+      expect.objectContaining({ path: "TaskNotes/Views/inbox.base" }),
     );
     expect(stored.slice(0, before.length)).toEqual(before);
     const source = taskNotesDefaultBaseSources(
       defaultTaskCollectionConfiguration(),
-    ).find((entry) => entry.name === "Unplanned")!;
+    ).find((entry) => entry.name === "Inbox")!;
     expect(parse(source.document).views[0].filters.and).toEqual(
       expect.arrayContaining([
         'note["scheduled"].isEmpty()',
@@ -224,8 +224,8 @@ describe("TaskNotes starter views", () => {
       ]),
     );
     expect(
-      starterViewKind({ ...starterDocument("unplanned").views[0], id: "0" }),
-    ).toBe("unplanned");
+      starterViewKind({ ...starterDocument("inbox").views[0], id: "0" }),
+    ).toBe("inbox");
   });
 
   it("keeps legacy navigation available while upgraded sources are created", () => {
@@ -361,7 +361,7 @@ function starterDocuments(): TaskViewDocument[] {
     "calendar",
     "projects",
     "archive",
-    "unplanned",
+    "inbox",
   ].map((id) => starterDocument(id));
 }
 

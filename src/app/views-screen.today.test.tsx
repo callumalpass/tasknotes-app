@@ -46,7 +46,7 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
     screen.getByRole("button", { name: "Overdue 2" }).closest("h2"),
   ).not.toBeNull();
   fireEvent.click(action);
-  fireEvent.click(screen.getByRole("button", { name: "Move deadlines too" }));
+  fireEvent.click(screen.getByRole("button", { name: "Move due dates too" }));
 
   // Rows move before the batch is accepted.
   const todaySection = () =>
@@ -113,7 +113,7 @@ it("schedules overdue work for another day and names moved deadlines in its undo
   fireEvent.change(typed, { target: { value: date } });
   await screen.findByText(/^Enter to set/);
   fireEvent.keyDown(typed, { key: "Enter" });
-  fireEvent.click(await screen.findByRole("button", { name: "Move deadlines too" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Move due dates too" }));
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${date}T09:30`, due: date } },
@@ -401,7 +401,7 @@ it("keeps missed deadlines when asked to move only the plan", async () => {
     }),
   );
   expect(updateMany).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Keep deadlines" }));
+  fireEvent.click(screen.getByRole("button", { name: "Keep due dates" }));
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${today}T09:30` } },

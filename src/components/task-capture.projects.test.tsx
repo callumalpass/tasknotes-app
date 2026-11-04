@@ -89,7 +89,7 @@ it("highlights ranked shorthand with an editable, removable priority chip and sw
     <TaskCapture configuration={configuration} createTask={vi.fn()} />,
   );
   fireEvent.change(screen.getByLabelText("New task title"), {
-    target: { value: "Call Rowan p1" },
+    target: { value: `Call Rowan !${highest.value}` },
   });
   const chip = await screen.findByRole("button", {
     name: `Edit ${highest.label}`,
@@ -98,7 +98,7 @@ it("highlights ranked shorthand with an editable, removable priority chip and sw
   expect(chip.querySelector(".value-color")).toHaveStyle({
     backgroundColor: highest.color,
   });
-  expect(container.querySelector("mark")).toHaveTextContent("p1");
+  expect(container.querySelector("mark")).toHaveTextContent(`!${highest.value}`);
   fireEvent.click(chip);
   expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
   fireEvent.click(

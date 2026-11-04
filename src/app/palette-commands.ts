@@ -235,7 +235,7 @@ export function viewNavigationShortcut(view: TaskView): string | undefined {
         calendar: "g c",
         projects: "g p",
         archive: undefined,
-        unplanned: undefined,
+        inbox: "g i",
       }[kind]
     : undefined;
 }

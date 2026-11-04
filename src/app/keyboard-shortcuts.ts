@@ -342,6 +342,7 @@ export function keyboardShortcutGroups(): {
         { keys: ["/"], description: t({ message: "Search" }) },
         { keys: ["g → t"], description: t({ message: "Today" }) },
         { keys: ["g → u"], description: t({ message: "Upcoming" }) },
+        { keys: ["g → i"], description: t({ message: "Inbox" }) },
         { keys: ["g → s"], description: t({ message: "Scratchpad" }) },
         { keys: ["g → c"], description: t({ message: "Calendar" }) },
         { keys: ["g → p"], description: t({ message: "Projects" }) },

@@ -67,6 +67,7 @@ msgstr "»…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "«{0}» — вычисляемый раздел; переместить сюда задачи нельзя."
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "«{title}»: срок — {date}"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, one {# срок тоже перенесён} few {# срока тоже перенесены} many {# сроков тоже перенесено} other {# сроков тоже перенесено}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, one {# пропущенный срок} few {# пропущенных срока} many {# пропущенных сроков} other {# пропущенных сроков}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, one {# срок прошёл} few {# срока прошло} many {# сроков прошло} other {# сроков прошло}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}, {0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, просрочено: {1}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, one {{tasks}: запланировано на {date}, перенесён # просроченный срок} few {{tasks}: запланировано на {date}, перенесено # просроченных срока} many {{tasks}: запланировано на {date}, перенесено # просроченных сроков} other {{tasks}: запланировано на {date}, перенесено # просроченных сроков}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "Добавление…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "Добавляет недостающие представления: «Сегодня», «Предстоящие», «Календарь», «Проекты», «Архив» и Unplanned. Существующие файлы и настройки навигации не меняются."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "Добавляет недостающие представления: «Сегодня», «Предстоящие», «Календарь», «Проекты», «Архив» и «Входящие». Существующие файлы и настройки навигации не меняются."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "Срок и запланированная дата"
 msgid "Due dates"
 msgstr "Сроки"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "Прошедшие сроки"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "Срок задан"
@@ -2710,6 +2719,10 @@ msgstr "В навигации"
 msgid "In one week"
 msgstr "Через неделю"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "Входящие"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "Включать выполненные повторения."
@@ -2815,7 +2828,7 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Чтобы сохранить изменение отдельным файлом, выберите «Сохранить оба варианта»."
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
+msgid "Keep due dates"
 msgstr "Оставить сроки"
 
 #: src/app/view-editor.tsx
@@ -3168,10 +3181,6 @@ msgstr "Минута"
 msgid "Minutes"
 msgstr "Минуты"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "Пропущенные сроки"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,7 +3255,7 @@ msgid "Move dates one day later"
 msgstr "Перенести даты на один день позже"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
+msgid "Move due dates too"
 msgstr "Перенести и сроки"
 
 #: src/app/scratchpad-screen.tsx
@@ -3268,9 +3277,10 @@ msgstr "Переместить выбранные задачи в проект"
 msgid "Move to project"
 msgstr "Переместить в проект"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "«{title}» и крайний срок перенесены: {when}"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "«{title}» и срок перенесены на {when}"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4860,6 +4870,10 @@ msgstr "Конец сеанса"
 msgid "Session start"
 msgstr "Начало сеанса"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "Для «{title}» задано: {value}"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "Созданную задачу TaskNote не удалось найти.
 msgid "The current scratchpad is unavailable."
 msgstr "Текущий блокнот недоступен."
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "Крайний срок"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "Удаление"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "Попробуйте загрузить представление ещё раз. Если проблема не исчезнет, измените его настройки или выберите другое представление."
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "Например: завтра 9:00, +проект, #тег"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "Например: завтра 9:00, +проект, #тег, !приоритет"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "Что нужно сделать?"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "Когда я выберу"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "Когда нужно закончить"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

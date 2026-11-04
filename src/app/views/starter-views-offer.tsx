@@ -16,7 +16,7 @@ export function StarterViewsOffer({ onAdded }: { onAdded(): Promise<void> }) {
         <p>
           <Trans>
             Adds missing Today, Upcoming, Calendar, Projects, Archive, and
-            Unplanned views. Existing files and navigation choices stay
+            Inbox views. Existing files and navigation choices stay
             unchanged.
           </Trans>
         </p>

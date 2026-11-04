@@ -346,8 +346,8 @@ Today             Search       More
   shows a quiet Quick actions entry in the sidebar foot. Option lists keep the
   active option in view, and typed letters jump within them. In capture, a
   status or priority name counts only with its trigger, or beside the word
-  priority, so ordinary words stay in the title. Past five priorities, rows
-  draw priority as one ordered ramp from rank.
+  priority, so ordinary words stay in the title. Rows draw each priority in the
+  colour its collection gave it, however many there are.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.

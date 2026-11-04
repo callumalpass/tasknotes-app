@@ -227,7 +227,7 @@ export function TaskRow({
         rememberUndo({
           label: title,
           notice: input.due
-            ? t`Moved “${title}” and its deadline to ${when}`
+            ? t`Moved “${title}” and its due date to ${when}`
             : t`Moved “${title}” to ${when}`,
           run: () => updateTask(task.id, earlier),
         });

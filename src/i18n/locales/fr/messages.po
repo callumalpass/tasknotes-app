@@ -67,6 +67,7 @@ msgstr "» a bien été enregistrée…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "« {0} » est une section calculée et ne peut pas recevoir de tâches déplacées."
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "« {title} » est due pour {date}"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, one {# échéance déplacée aussi} many {# échéances déplacées aussi} other {# échéances déplacées aussi}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, one {# échéance manquée} many {# échéances manquées} other {# échéances manquées}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, one {# échéance dépassée} many {# échéances dépassées} other {# échéances dépassées}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}, {0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, {1} en retard"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, one {{tasks} planifiées pour {date}, # échéance dépassée déplacée} many {{tasks} planifiées pour {date}, # échéances dépassées déplacées} other {{tasks} planifiées pour {date}, # échéances dépassées déplacées}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -874,8 +879,8 @@ msgid "Adding…"
 msgstr "Ajout en cours…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "Ajoute les vues manquantes Aujourd’hui, À venir, Calendrier, Projets, Archives et Unplanned. Les fichiers existants et vos choix de navigation restent inchangés."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "Ajoute les vues manquantes Aujourd’hui, À venir, Calendrier, Projets, Archives et Boîte de réception. Les fichiers existants et vos choix de navigation restent inchangés."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2249,6 +2254,10 @@ msgstr "Échéance et date planifiée"
 msgid "Due dates"
 msgstr "Échéances"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "Échéances dépassées"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "Échéance définie"
@@ -2711,6 +2720,10 @@ msgstr "Dans la navigation"
 msgid "In one week"
 msgstr "Dans une semaine"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "Boîte de réception"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "Inclure les occurrences terminées."
@@ -2816,7 +2829,7 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Choisissez plutôt « Conserver les deux » pour garder votre modification sous forme de fichier."
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
+msgid "Keep due dates"
 msgstr "Conserver les échéances"
 
 #: src/app/view-editor.tsx
@@ -3169,10 +3182,6 @@ msgstr "Minute"
 msgid "Minutes"
 msgstr "Minutes"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "Échéances manquées"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3247,7 +3256,7 @@ msgid "Move dates one day later"
 msgstr "Décaler les dates d’un jour"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
+msgid "Move due dates too"
 msgstr "Déplacer aussi les échéances"
 
 #: src/app/scratchpad-screen.tsx
@@ -3269,9 +3278,10 @@ msgstr "Déplacer les tâches sélectionnées vers un projet"
 msgid "Move to project"
 msgstr "Déplacer vers un projet"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "« {title} » et sa date limite déplacées à {when}"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "« {title} » et son échéance déplacés à {when}"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4861,6 +4871,10 @@ msgstr "Fin de la session"
 msgid "Session start"
 msgstr "Début de la session"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "« {title} » défini sur {value}"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5367,10 +5381,6 @@ msgstr "La note de tâche créée est introuvable."
 msgid "The current scratchpad is unavailable."
 msgstr "Le bloc-notes actuel est indisponible."
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "La date limite"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "La suppression"
@@ -5716,8 +5726,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "Essayez de recharger la vue. Si le problème persiste, modifiez ses paramètres ou choisissez une autre vue."
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "Essayez demain 9h, +projet, #étiquette"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "Essayez demain 9h, +projet, #étiquette, !priorité"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5973,6 +5983,10 @@ msgstr "Que faut-il faire ?"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "Quand je choisis"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "Quand elle doit être terminée"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

@@ -67,6 +67,7 @@ msgstr "» se guardó…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "«{0}» se calcula y no puede recibir tareas movidas."
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "«{title}» vence {date}"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, one {también se movió # fecha límite} many {también se movieron # fechas límite} other {también se movieron # fechas límite}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, one {# fecha límite vencida} many {# fechas límite vencidas} other {# fechas límite vencidas}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, one {# fecha de vencimiento pasada} many {# fechas de vencimiento pasadas} other {# fechas de vencimiento pasadas}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}, {0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, {1} atrasadas"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, one {{tasks} programadas para {date}, # fecha de vencimiento pasada movida} many {{tasks} programadas para {date}, # fechas de vencimiento pasadas movidas} other {{tasks} programadas para {date}, # fechas de vencimiento pasadas movidas}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "Añadiendo…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "Añade las vistas que faltan: Hoy, Próximas, Calendario, Proyectos, Archivo y Unplanned. Los archivos existentes y las opciones de navegación no cambian."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "Añade las vistas que faltan: Hoy, Próximas, Calendario, Proyectos, Archivo y Bandeja de entrada. Los archivos existentes y las opciones de navegación no cambian."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "Vencimiento y fecha programada"
 msgid "Due dates"
 msgstr "Fechas de vencimiento"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "Fechas de vencimiento pasadas"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "Vencimiento establecido"
@@ -2710,6 +2719,10 @@ msgstr "En la navegación"
 msgid "In one week"
 msgstr "Dentro de una semana"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "Bandeja de entrada"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "Incluir las repeticiones completadas."
@@ -2815,8 +2828,8 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Elige conservar ambas versiones si quieres guardar tu edición como archivo."
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
-msgstr "Mantener las fechas límite"
+msgid "Keep due dates"
+msgstr "Mantener las fechas de vencimiento"
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
@@ -3168,10 +3181,6 @@ msgstr "Minuto"
 msgid "Minutes"
 msgstr "Minutos"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "Fechas límite vencidas"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,8 +3255,8 @@ msgid "Move dates one day later"
 msgstr "Retrasar las fechas un día"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
-msgstr "Mover también las fechas límite"
+msgid "Move due dates too"
+msgstr "Mover también las fechas de vencimiento"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
@@ -3268,9 +3277,10 @@ msgstr "Mover las tareas seleccionadas a un proyecto"
 msgid "Move to project"
 msgstr "Mover a proyecto"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "“{title}” y su fecha límite movidas a {when}"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "«{title}» y su fecha de vencimiento movidos a {when}"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4860,6 +4870,10 @@ msgstr "Fin de la sesión"
 msgid "Session start"
 msgstr "Inicio de la sesión"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "«{title}» cambiado a {value}"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "No se encontró la TaskNote creada."
 msgid "The current scratchpad is unavailable."
 msgstr "El bloc de notas actual no está disponible."
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "La fecha límite"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "La eliminación"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "Intenta cargar la vista de nuevo. Si el problema continúa, edita su configuración o elige otra vista."
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "Prueba mañana 9am, +proyecto, #etiqueta"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "Prueba mañana 9am, +proyecto, #etiqueta, !prioridad"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "¿Qué hay que hacer?"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "Cuando elijo"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "Cuándo debe estar hecha"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

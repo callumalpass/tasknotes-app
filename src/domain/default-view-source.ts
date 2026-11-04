@@ -12,10 +12,10 @@ export const TASKNOTES_VIEW_SOURCE_FOLDER = "TaskNotes/Views";
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Today",
   "Upcoming",
+  "Inbox",
   "Calendar",
   "Projects",
   "Archive",
-  "Unplanned",
 ] as const;
 export const TASKNOTES_DEFAULT_VIEW_SOURCES = TASKNOTES_DEFAULT_VIEW_NAMES.map(
   (name) => ({
@@ -170,7 +170,7 @@ export function taskNotesDefaultBaseDocument(
         },
         {
           type: "tasknotesTaskList",
-          name: "Unplanned",
+          name: "Inbox",
           filters: {
             and: [
               ...activeTaskFilters(configuration),
@@ -225,8 +225,8 @@ export function taskNotesDefaultCanonicalDocument(
           },
         },
         {
-          id: "unplanned",
-          name: "Unplanned",
+          id: "inbox",
+          name: "Inbox",
           where: `(${sharedWhere}) && ${scheduled}.isEmpty() && ${due}.isEmpty()`,
           select: [...selection, fields.projects],
           order_by: [{ field: fields.sortOrder, direction: "desc" }],
@@ -304,7 +304,7 @@ export function isTaskNotesDefaultViewDocument(
 }
 
 export type StarterViewKind =
-  "today" | "upcoming" | "calendar" | "projects" | "archive" | "unplanned";
+  "today" | "upcoming" | "inbox" | "calendar" | "projects" | "archive";
 
 /**
  * Which starter view this is, if any. Base views are identified by their

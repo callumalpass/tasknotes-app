@@ -128,7 +128,7 @@ export function TaskDatePanel({
             ? t`Couldn’t read that date`
             : target === "scheduled"
               ? t`When you plan to work on it`
-              : t`The deadline`}
+              : t`When it has to be done`}
       </p>
       <div className="task-date-presets">
         <button disabled={busy} type="button" onClick={() => apply(today)}>

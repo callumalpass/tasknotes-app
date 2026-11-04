@@ -78,6 +78,7 @@ export function BulkTaskActions({
   const [projects, setProjects] = useState<FieldCompletion[]>([]);
   const [projectError, setProjectError] = useState("");
   const actionBar = useRef<HTMLElement>(null);
+  const pickAnchor = useRef<HTMLElement>(null);
   const deleting = useRef<{ navigationKey: string; ids: string[] } | null>(
     null,
   );
@@ -238,6 +239,7 @@ export function BulkTaskActions({
           : change.kind === "project"
             ? linkDisplayLabel(change.value)
             : "",
+        result.receipts.filter(({ undo }) => "due" in undo).length,
       );
       let undoReceipts = result.receipts;
       const entry: UndoEntry = {
@@ -413,7 +415,12 @@ export function BulkTaskActions({
                 value=""
                 onChange={(value) => {
                   if (value === "pick") {
-                    setPicking(true);
+                    // The closing list returns focus to its button first.
+                    pickAnchor.current =
+                      actionBar.current?.querySelector<HTMLElement>(
+                        ".tasknotes-select-trigger",
+                      ) ?? null;
+                    window.requestAnimationFrame(() => setPicking(true));
                     return;
                   }
                   void run({ kind: "schedule", date: scheduleDate(value) });
@@ -474,7 +481,7 @@ export function BulkTaskActions({
               planOnly
               target="scheduled"
               title={t`Schedule date`}
-              trigger={actionBar}
+              trigger={pickAnchor}
               onClose={() => setPicking(false)}
               onApply={({ scheduled }) => {
                 setPicking(false);

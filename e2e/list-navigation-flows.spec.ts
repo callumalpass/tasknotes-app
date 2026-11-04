@@ -20,7 +20,7 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   await page.getByLabel("Type a date").fill(value);
   await expect(page.locator(".task-date-hint")).toContainText("Enter to set");
   await page.getByLabel("Type a date").press("Enter");
-  await page.getByRole("button", { name: "Move deadlines too" }).click();
+  await page.getByRole("button", { name: "Move due dates too" }).click();
   const label = new Intl.DateTimeFormat("en", {
     weekday: "short",
     day: "numeric",
@@ -86,17 +86,17 @@ test("extended selection keeps the focused row above the bulk bar", async ({
     ).toBe(true);
 });
 
-test("Unplanned lists only undated work and retains a count", async ({
+test("Inbox lists only undated work and retains a count", async ({
   page,
   isMobile,
 }) => {
   if (isMobile)
     await page.getByRole("button", { name: "More", exact: true }).click();
   await page
-    .getByRole(isMobile ? "menuitem" : "button", { name: /^Unplanned/ })
+    .getByRole(isMobile ? "menuitem" : "button", { name: /^Inbox/ })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Unplanned", exact: true }),
+    page.getByRole("heading", { name: "Inbox", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".task-row").first()).toBeVisible();
   await expect(
@@ -194,7 +194,7 @@ test("list destinations share a content column", async ({ page, isMobile }) => {
     "Today",
     "Upcoming",
     "Projects",
-    "Unplanned",
+    "Inbox",
     "Search",
     "Archive",
   ]) {

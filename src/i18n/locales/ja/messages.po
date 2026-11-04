@@ -67,6 +67,7 @@ msgstr "」を保存しました…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "「{0}」は計算値のため、移動したタスクを受け入れられません。"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "「{title}」の期限は{date}です"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, other {期限も#件移動しました}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, other {期限切れの締切 # 件}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, other {# 件の期限が過ぎています}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}、{0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}、{0}、期限超過 {1} 件"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, other {{tasks}を{date}に予定し、過ぎた期限 # 件を移動しました}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "追加中…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "不足している「今日」「今後」「カレンダー」「プロジェクト」「アーカイブ」「Unplanned」ビューを追加します。既存のファイルとナビゲーションの設定は変更されません。"
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "不足している「今日」「今後」「カレンダー」「プロジェクト」「アーカイブ」「受信トレイ」ビューを追加します。既存のファイルとナビゲーションの設定は変更されません。"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "期限と予定"
 msgid "Due dates"
 msgstr "期限日"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "過ぎた期限"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "期限を設定しました"
@@ -2710,6 +2719,10 @@ msgstr "ナビゲーション内"
 msgid "In one week"
 msgstr "1週間以内"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "受信トレイ"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "完了済みの発生分を含める。"
@@ -2815,8 +2828,8 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "両方を保持してください。編集内容をファイルとして残せます。"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
-msgstr "締切はそのまま"
+msgid "Keep due dates"
+msgstr "期限はそのまま"
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
@@ -3168,10 +3181,6 @@ msgstr "分"
 msgid "Minutes"
 msgstr "分"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "期限切れの締切"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,8 +3255,8 @@ msgid "Move dates one day later"
 msgstr "日付を1日後に移動"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
-msgstr "締切も移動"
+msgid "Move due dates too"
+msgstr "期限も移動"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
@@ -3268,9 +3277,10 @@ msgstr "選択したタスクをプロジェクトに移動"
 msgid "Move to project"
 msgstr "プロジェクトに移動"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "「{title}」と締め切りを{when}に移動しました"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "「{title}」と期限を{when}に移動しました"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4860,6 +4870,10 @@ msgstr "セッション終了"
 msgid "Session start"
 msgstr "セッション開始"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "「{title}」を{value}に設定しました"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "作成したTaskNoteが見つかりませんでした。"
 msgid "The current scratchpad is unavailable."
 msgstr "現在のスクラッチパッドを利用できません。"
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "締め切り"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "削除"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "もう一度ビューを読み込んでください。問題が続く場合は、設定を編集するか別のビューを選択してください。"
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "例: 明日 9時、+プロジェクト、#タグ"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "明日 9時、+プロジェクト、#タグ、!優先度 と入力"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "何をする必要がありますか？"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "選択したとき"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "完了しなければならない日"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

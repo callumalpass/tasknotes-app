@@ -51,10 +51,10 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
     expect(assessment.sources.map((s) => s.path)).toEqual([
       "TaskNotes/Views/today.base",
       "TaskNotes/Views/upcoming.base",
+      "TaskNotes/Views/inbox.base",
       "TaskNotes/Views/calendar.base",
       "TaskNotes/Views/projects.base",
       "TaskNotes/Views/archive.base",
-      "TaskNotes/Views/unplanned.base",
     ]);
     const generated = taskNotesDefaultBaseSources(factory.mock.calls[0]![0]);
     expect(assessment.sources).toEqual(

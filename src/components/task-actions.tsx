@@ -145,6 +145,8 @@ export function TaskActions({
   const panelHeadingId = `${menuId}-panel-heading`;
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // A row key opens the menu without touching "…", so focus goes back to the row.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const panel = panels.at(-1) ?? "actions";
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
   const virtualOccurrence = Boolean(
@@ -251,6 +253,10 @@ export function TaskActions({
   const openPanel = useEffectEvent((event: Event) => {
     const panel = (event as CustomEvent<string>).detail;
     openFromTrigger();
+    returnFocusRef.current =
+      triggerRef.current
+        ?.closest(".task-row")
+        ?.querySelector<HTMLElement>(".task-row-title") ?? triggerRef.current;
     setPanels([
       panel === "project" ? "move" : panel === "status" ? "status" : "priority",
     ]);
@@ -264,6 +270,7 @@ export function TaskActions({
   }, []);
 
   function openMenu(x: number, y: number) {
+    returnFocusRef.current = triggerRef.current;
     const width = 304;
     const estimatedHeight = 640;
     setError("");
@@ -291,7 +298,7 @@ export function TaskActions({
   function closeMenu(restoreFocus = false) {
     setPosition(null);
     subtaskIntent.current = null;
-    if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
+    if (restoreFocus) queueMicrotask(() => returnFocusRef.current?.focus());
   }
 
   function navigate(next: MenuPanel) {
@@ -316,9 +323,24 @@ export function TaskActions({
     const title = task.title;
     rememberUndo({
       label: title,
-      notice: notice ?? t`Updated “${title}”`,
+      notice: notice ?? fieldNotice(input) ?? t`Updated “${title}”`,
       run: () => updateTask(task.id, earlier),
     });
+  }
+
+  function movedDueNotice(input: UpdateTaskInput) {
+    if (!input.due || typeof input.scheduled !== "string") return undefined;
+    const { title } = task;
+    const when = formatTaskDate(input.scheduled);
+    return t`Moved “${title}” and its due date to ${when}`;
+  }
+
+  function fieldNotice({ priority, status }: UpdateTaskInput) {
+    const { title } = task;
+    const value =
+      configuration.priorities.find(({ value }) => value === priority)?.label ??
+      configuration.statuses.find(({ value }) => value === status)?.label;
+    return value ? t`Set “${title}” to ${value}` : undefined;
   }
 
   function dateNotice({ scheduled, due }: UpdateTaskInput) {
@@ -382,7 +404,7 @@ export function TaskActions({
     open: Boolean(position),
     rootRef: menuRef,
     modal: rootRole !== "menu",
-    returnFocusRef: triggerRef,
+    returnFocusRef,
     onDismiss: (reason) => {
       if (reason === "escape" && panels.length > 1) goBack();
       else closeMenu();
@@ -824,14 +846,11 @@ export function TaskActions({
   function TaskActionList({ series = false }: { series?: boolean }) {
     const { t } = useLingui();
     const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
-      void run(() =>
-        change(
-          rescheduleInput(
-            task,
-            taskDatePart(shortcutSchedule(action, task.scheduled)),
-          ),
-        ),
+      const input = rescheduleInput(
+        task,
+        taskDatePart(shortcutSchedule(action, task.scheduled)),
       );
+      void run(() => change(input, movedDueNotice(input)));
     };
     // A collection can define any number of priorities; only a short list fits
     // a row of icons, and the Priority panel always offers all of them.

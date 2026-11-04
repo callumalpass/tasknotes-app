@@ -495,6 +495,26 @@
   border-bottom: 0;
 }
 
+/* A pointer reveals "…" over the card, so the title keeps that column. */
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card .task-row {
+    position: relative;
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding-right: 8px;
+  }
+
+  .kanban-card .task-actions-trigger {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--paper);
+  }
+}
+
+.kanban-card .task-row-property > strong {
+  white-space: nowrap;
+}
+
 .kanban-card .task-row-content {
   padding-left: 0;
   cursor: pointer;

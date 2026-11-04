@@ -16,7 +16,7 @@ it("counts undated open tasks and dated work in the upcoming week without mutati
   ];
   const before = structuredClone(tasks);
   expect(navigationTaskCounts(tasks, "2026-11-04")).toEqual({
-    unplanned: 1,
+    inbox: 1,
     upcoming: 2,
   });
   expect(tasks).toEqual(before);

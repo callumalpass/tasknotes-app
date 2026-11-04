@@ -1138,8 +1138,8 @@ function demoViewDocuments(
       options: { create: false },
     },
     {
-      id: "unplanned",
-      name: "Unplanned",
+      id: "inbox",
+      name: "Inbox",
       type: "tasknotes.task-list",
       options: {},
     },
@@ -1210,7 +1210,7 @@ function demoViewDocuments(
 function fallbackTasksForView(view: TaskView, tasks: Task[]): Task[] {
   const active = tasks.filter((task) => !task.archived && !task.completed);
   if (view.id === "archive") return tasks.filter((task) => task.archived);
-  if (view.id === "unplanned")
+  if (view.id === "inbox")
     return active.filter((task) => !task.scheduled && !task.due);
   if (view.id === "projects")
     return active.filter((task) => task.projects.length);

@@ -5,6 +5,7 @@ import {
   ChartNoAxesGantt,
   Columns3,
   FolderKanban,
+  Inbox,
   List,
   Sun,
   type LucideIcon,
@@ -37,6 +38,7 @@ export function taskViewIcon(view: TaskView): LucideIcon {
   }
   if (presentation?.options?.sections === "day") return Sun;
   const starter = starterViewKind(view);
+  if (starter === "inbox") return Inbox;
   if (starter === "projects") return FolderKanban;
   if (starter === "archive") return Archive;
   return List;

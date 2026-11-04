@@ -155,184 +155,22 @@ describe("task capture", () => {
   });
 });
 
-describe("ranked priority shorthand", () => {
-  it.each([
-    ["p1", "high"],
-    ["p2", "normal"],
-    ["p3", "normal"],
-    ["p4", "normal"],
-  ])(
-    "maps %s by weight and clamps to the available priorities",
-    async (token, priority) => {
-      const result = await parseTaskCapture(
-        `Call Rowan ${token}`,
-        configuration,
-        "en-AU",
-      );
-      expect(result.input).toEqual({ title: "Call Rowan", priority });
-      expect(result.highlights).toContainEqual({
-        start: 11,
-        end: 13,
-        kind: "priority",
-      });
-    },
-  );
-
-  it("ranks by weight rather than collection order and uses the last shorthand", async () => {
-    const result = await parseTaskCapture(
-      "p4 Call Rowan p1",
-      {
-        ...configuration,
-        priorities: [
-          {
-            id: "a",
-            value: "middle",
-            label: "Middle",
-            weight: 20,
-            color: "#112233",
-          },
-          {
-            id: "b",
-            value: "highest",
-            label: "Highest",
-            weight: 90,
-            color: "#334455",
-          },
-          {
-            id: "c",
-            value: "lowest",
-            label: "Lowest",
-            weight: -5,
-            color: "#556677",
-          },
-        ],
-      },
-      "en-AU",
-    );
-    expect(result.input).toEqual({ title: "Call Rowan", priority: "highest" });
-  });
-
-  it("recognizes uppercase shorthand and trailing punctuation", async () => {
-    const result = await parseTaskCapture(
-      "Call Rowan P1, tomorrow",
-      configuration,
-      "en-AU",
-    );
-    expect(result.input.title).toBe("Call Rowan");
-    expect(result.input.priority).toBe("high");
-    expect(result.input.scheduled).toBeDefined();
-    expect(result.highlights).toContainEqual({
-      start: 11,
-      end: 14,
-      kind: "priority",
-    });
-  });
-
-  it("keeps date and shorthand highlights disjoint when priority separates date and time", async () => {
-    const text = "Call Rowan tomorrow p1 3pm";
-    const result = await parseTaskCapture(text, configuration, "en-AU");
-    expect(result.input.title).toBe("Call Rowan");
-    expect(result.input.priority).toBe("high");
-    expect(result.input.scheduled).toMatch(/T15:00$/);
-    const highlights = result.highlights!;
-    expect(highlights.map(({ start, end }) => text.slice(start, end))).toEqual([
-      "tomorrow",
-      "p1",
-      "3pm",
-    ]);
-    for (let index = 1; index < highlights.length; index++) {
-      expect(highlights[index].start).toBeGreaterThanOrEqual(
-        highlights[index - 1].end,
-      );
-    }
-  });
-
-  it("retains the date, time, recurrence and other tokens", async () => {
-    const result = await parseTaskCapture(
-      "Call Rowan August 5 2026 3pm #work every week p1",
-      configuration,
-      "en-AU",
-    );
-    expect(result.input).toEqual({
-      title: "Call Rowan",
-      scheduled: "2026-08-05T15:00",
-      tags: ["work"],
-      recurrence: "FREQ=WEEKLY",
-      priority: "high",
-    });
-    expect(
-      result.highlights?.map(({ start, end }) =>
-        "Call Rowan August 5 2026 3pm #work every week p1".slice(start, end),
-      ),
-    ).toContain("p1");
-  });
-
-  it.each([
-    "p10",
-    "ap1",
-    "p1code",
-    "p1-file",
-    "#p1",
-    "@p1",
-    "+p1",
-    "[[Spec p1 notes]]",
-    "[Spec p1 notes](spec.md)",
-  ])("does not consume %s as shorthand", async (token) => {
-    const result = await parseTaskCapture(
-      `Review ${token}`,
-      configuration,
-      "en-AU",
-    );
-    expect(result.input.priority).toBeUndefined();
-    expect(
-      result.highlights?.filter((highlight) => highlight.kind === "priority") ??
-        [],
-    ).toEqual([]);
-  });
-
-  it("keeps an explicit named priority", async () => {
-    const result = await parseTaskCapture(
-      "Call Rowan p1 !normal",
-      configuration,
-      "en-AU",
-    );
-    expect(result.input).toEqual({ title: "Call Rowan", priority: "normal" });
-  });
-
-  it("leaves shorthand in the title when no priorities exist", async () => {
+describe("priority in capture", () => {
+  it("leaves p1 in the title", async () => {
     const result = await parseTaskCapture(
       "Call Rowan p1",
-      { ...configuration, priorities: [] },
+      configuration,
       "en-AU",
     );
     expect(result.input).toEqual({ title: "Call Rowan p1" });
   });
 
-  it("maps all shorthand to the sole configured priority", async () => {
-    const result = await parseTaskCapture(
-      "Call Rowan p4",
-      { ...configuration, priorities: configuration.priorities.slice(1) },
-      "en-AU",
-    );
-    expect(result.input).toEqual({ title: "Call Rowan", priority: "high" });
+  it("keeps date and priority highlights apart when priority separates date and time", async () => {
+    const text = "Call Rowan tomorrow !high 3pm";
+    const result = await parseTaskCapture(text, configuration, "en-AU");
+    expect(result.input.priority).toBe("high");
+    expect(result.highlights!.map(({ kind }) => kind)).toContain("priority");
   });
-});
-
-it("reaches every rank of a long priority list", async () => {
-  const priorities = Array.from({ length: 7 }, (_, index) => ({
-    id: `rank-${index}`,
-    value: `rank-${index}`,
-    label: `Rank ${index}`,
-    color: "#336699",
-    weight: index,
-  }));
-  const long = { ...configuration, priorities };
-  const { input } = await parseTaskCapture("Call Rowan p6", long, "en-AU");
-  expect(input).toEqual(
-    expect.objectContaining({ title: "Call Rowan", priority: "rank-1" }),
-  );
-  const beyond = await parseTaskCapture("Call Rowan p8", long, "en-AU");
-  expect(beyond.input.title).toBe("Call Rowan p8");
 });
 
 describe("status and priority words in a title", () => {

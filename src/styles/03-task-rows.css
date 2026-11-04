@@ -989,8 +989,12 @@
   }
 }
 
-/* Wide lists read like a table: the project settles at the far edge. */
-@media (min-width: 840px) {
+/* Wide lists read like a table: the project settles at the far edge. A list
+   narrowed by the detail pane keeps it inline instead. */
+.task-row:not(.kanban-card *) .task-row-content {
+  container-type: inline-size;
+}
+@container (min-width: 600px) {
   .task-row:not(.kanban-card *) .task-row-properties:has(.is-project) {
     padding-right: min(30%, 14rem);
     position: relative;
@@ -1260,13 +1264,14 @@
 
 /* List rows keep wrapped metadata on an even 24px rhythm. A project, status,
    or priority value shrinks to an ellipsis on the line it starts rather than
-   dropping alone onto another; its full value stays in the accessible name. */
+   dropping alone onto another; its full value stays in the accessible name.
+   Only a real lack of room, as at 320px or 200% text, starts a new line. */
 .task-row:not(.kanban-card *) .task-row-properties {
   row-gap: 0;
   column-gap: 12px;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
-  flex: 0 1 auto;
+  flex: 1 1 2.75rem;
   flex-wrap: nowrap;
   min-width: min(2.75rem, 100%);
   max-width: max-content;

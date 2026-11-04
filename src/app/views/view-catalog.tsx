@@ -125,8 +125,10 @@ export function ViewCatalog({
       )
       .map((view) => view.key),
   );
+  // Order is settled on arrival, so pinning leaves the row under the pointer.
+  const [arrivalKeys] = useState(() => new Set(navigationViewKeys));
   const allPinned = (document: TaskViewDocument) =>
-    document.views.every((view) => navigationViewKeys.includes(view.key));
+    document.views.every((view) => arrivalKeys.has(view.key));
   const visibleDocuments = documents
     .map((document) => ({
       ...document,
@@ -134,9 +136,7 @@ export function ViewCatalog({
     }))
     .filter((document) => document.views.length > 0)
     // The sidebar already reaches pinned views, so the rest lead here.
-    .sort(
-      (left, right) => Number(allPinned(left)) - Number(allPinned(right)),
-    );
+    .sort((left, right) => Number(allPinned(left)) - Number(allPinned(right)));
   const visibleCount = visibleTools.length + visibleViewKeys.size;
 
   return (

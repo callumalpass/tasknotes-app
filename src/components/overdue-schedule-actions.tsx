@@ -44,7 +44,7 @@ export function OverdueScheduleActions({
   if (asking)
     return (
       <span
-        aria-label={t`Missed deadlines`}
+        aria-label={t`Due dates that have passed`}
         className="overdue-deadline-choice"
         role="group"
         onKeyDown={(event) => {
@@ -56,8 +56,8 @@ export function OverdueScheduleActions({
         <span>
           <Plural
             value={deadlines}
-            one="# missed deadline"
-            other="# missed deadlines"
+            one="# due date has passed"
+            other="# due dates have passed"
           />
         </span>
         <button
@@ -67,7 +67,7 @@ export function OverdueScheduleActions({
           type="button"
           onClick={() => answer(false)}
         >
-          <Trans>Move deadlines too</Trans>
+          <Trans>Move due dates too</Trans>
         </button>
         <button
           className={buttonClassName}
@@ -75,7 +75,7 @@ export function OverdueScheduleActions({
           type="button"
           onClick={() => answer(true)}
         >
-          <Trans>Keep deadlines</Trans>
+          <Trans>Keep due dates</Trans>
         </button>
       </span>
     );

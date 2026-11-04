@@ -19,7 +19,7 @@ async function openCapture(page: import("@playwright/test").Page) {
   return dialog;
 }
 
-test("compact capture, ranked priority and keyboard completion in both themes", async ({
+test("compact capture, priority and keyboard completion in both themes", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize(
@@ -30,14 +30,14 @@ test("compact capture, ranked priority and keyboard completion in both themes", 
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
   const input = dialog.getByRole("combobox", { name: "New task title" });
-  await input.fill("Call Rowan tomorrow 3pm #work every week p1");
+  await input.fill("Call Rowan tomorrow 3pm #work every week !high");
   await expect(dialog.locator(".capture-title-preview")).toHaveText(
     "Task: Call Rowan",
   );
   await expect(
     dialog.getByRole("button", { name: "Edit High", exact: true }),
   ).toHaveText("Priority: High");
-  await expect(dialog.locator("mark").last()).toHaveText("p1");
+  await expect(dialog.locator("mark").last()).toHaveText("!high");
   await expect(
     dialog.getByRole("button", { name: "Remove scheduled" }),
   ).toBeVisible();
@@ -89,7 +89,7 @@ test("Enter captures without navigation and Undo removes that task through the n
 }) => {
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
-  await dialog.getByRole("combobox").fill("Capture to undo p1");
+  await dialog.getByRole("combobox").fill("Capture to undo !high");
   await dialog.getByRole("combobox").press("Enter");
   await expect(dialog).toHaveCount(0);
   await expect(
@@ -137,7 +137,7 @@ test("inline Today and Project capture share priority parsing", async ({
   );
   await page.goto("?demo=60");
   const inline = page.locator(".view-detail > .capture-composer");
-  await inline.getByRole("combobox").fill("Today inline p1");
+  await inline.getByRole("combobox").fill("Today inline !high");
   await expect(
     inline.getByRole("button", { name: "Edit High", exact: true }),
   ).toBeVisible();
@@ -148,7 +148,7 @@ test("inline Today and Project capture share priority parsing", async ({
   await page
     .getByRole("button", { name: "Add task to Field research" })
     .click();
-  await inline.getByRole("combobox").fill("Project inline p1");
+  await inline.getByRole("combobox").fill("Project inline !high");
   await expect(
     inline.getByRole("button", { name: "Edit +Field research", exact: true }),
   ).toBeVisible();

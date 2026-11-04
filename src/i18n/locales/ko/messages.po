@@ -67,6 +67,7 @@ msgstr "”이(가) 저장되었습니다…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}”은(는) 계산된 값이므로 작업을 이동할 수 없습니다."
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "“{title}” 마감일은 {date}입니다"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, other {마감일 #개도 옮겼습니다}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, other {지난 마감일 #개}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, other {마감일 #개가 지났습니다}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}, {0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, 기한 초과 {1}개"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, other {{tasks}을(를) {date}(으)로 예약하고 지난 마감일 #개를 옮겼습니다}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "추가 중…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "없는 오늘, 예정, 캘린더, 프로젝트, 보관함, Unplanned 보기를 추가합니다. 기존 파일과 탐색 설정은 그대로 유지됩니다."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "없는 오늘, 예정, 캘린더, 프로젝트, 보관함, 받은 편지함 보기를 추가합니다. 기존 파일과 탐색 설정은 그대로 유지됩니다."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "마감 및 예정"
 msgid "Due dates"
 msgstr "마감일"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "지난 마감일"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "마감일 설정됨"
@@ -2710,6 +2719,10 @@ msgstr "탐색 메뉴에 있음"
 msgid "In one week"
 msgstr "1주 후"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "받은 편지함"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "완료된 반복 항목을 포함합니다."
@@ -2815,7 +2828,7 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "편집 내용을 파일로 보관하려면 대신 둘 다 유지하세요."
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
+msgid "Keep due dates"
 msgstr "마감일 유지"
 
 #: src/app/view-editor.tsx
@@ -3168,10 +3181,6 @@ msgstr "분"
 msgid "Minutes"
 msgstr "분"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "지난 마감일"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,7 +3255,7 @@ msgid "Move dates one day later"
 msgstr "날짜를 하루 늦추기"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
+msgid "Move due dates too"
 msgstr "마감일도 이동"
 
 #: src/app/scratchpad-screen.tsx
@@ -3268,8 +3277,9 @@ msgstr "선택한 작업을 프로젝트로 이동"
 msgid "Move to project"
 msgstr "프로젝트로 이동"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
+msgid "Moved “{title}” and its due date to {when}"
 msgstr "“{title}”과(와) 마감일을 {when}(으)로 옮겼습니다"
 
 #: src/app/views-screen.tsx
@@ -4860,6 +4870,10 @@ msgstr "세션 종료"
 msgid "Session start"
 msgstr "세션 시작"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "“{title}”을(를) {value}(으)로 설정했습니다"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "생성된 TaskNote를 찾을 수 없습니다."
 msgid "The current scratchpad is unavailable."
 msgstr "현재 스크래치패드를 사용할 수 없습니다."
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "마감일"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "삭제"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집하거나 다른 뷰를 선택하세요."
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "예: 내일 오전 9시, +프로젝트, #태그"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "내일 오전 9시, +프로젝트, #태그, !우선순위처럼 입력"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "무엇을 해야 하나요?"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "선택할 때"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "완료해야 하는 날짜"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

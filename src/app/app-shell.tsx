@@ -223,12 +223,17 @@ export function AppShell() {
   const undoCompletion = useCallback(
     async ({ task, occurrenceDate, advanced }: TaskCompletion) => {
       const origin = routeRef.current;
-      await setTaskCompletion({
+      const reopened = await setTaskCompletion({
         id: task.id,
         occurrenceDate,
         completed: false,
       });
-      if (advanced) await updateTask(task.id, advanced);
+      const { status } = task;
+      if (advanced || reopened.status !== status)
+        await updateTask(task.id, {
+          ...advanced,
+          ...(reopened.status !== status ? { status } : {}),
+        });
       setCompletedNotice(undefined);
       if (routeRef.current === origin) focusRestoredTaskRow(task.id);
     },
@@ -1233,7 +1238,7 @@ export function Navigation({
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
   todayCounts?: TodayTaskCounts | null;
-  navigationCounts?: { unplanned: number; upcoming: number } | null;
+  navigationCounts?: { inbox: number; upcoming: number } | null;
   projects?: ProjectShortcut[];
 }) {
   const { t } = useLingui();
@@ -1383,7 +1388,7 @@ export function Navigation({
         : today
           ? todayCounts
           : navigationCounts &&
-              (countKind === "unplanned" || countKind === "upcoming")
+              (countKind === "inbox" || countKind === "upcoming")
             ? { total: navigationCounts[countKind], overdue: 0 }
             : null;
     const accessibleLabel = counts

@@ -67,6 +67,7 @@ msgstr "” foi salvo…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}” é calculada e não pode receber tarefas movidas."
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "“{title}” vence em {date}"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, one {# prazo também movido} many {# prazos também movidos} other {# prazos também movidos}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, one {# prazo perdido} many {# prazos perdidos} other {# prazos perdidos}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, one {# data de vencimento passada} many {# datas de vencimento passadas} other {# datas de vencimento passadas}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}, {0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, {1} atrasadas"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, one {{tasks} agendadas para {date}, # data de vencimento passada movida} many {{tasks} agendadas para {date}, # datas de vencimento passadas movidas} other {{tasks} agendadas para {date}, # datas de vencimento passadas movidas}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "Adicionando…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "Adiciona as vistas em falta: Hoje, Próximas, Calendário, Projetos, Arquivo e Unplanned. Os ficheiros existentes e as opções de navegação não mudam."
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "Adiciona as vistas em falta: Hoje, Próximas, Calendário, Projetos, Arquivo e Caixa de entrada. Os ficheiros existentes e as opções de navegação não mudam."
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "Vencimento e agendamento"
 msgid "Due dates"
 msgstr "Datas de vencimento"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "Datas de vencimento passadas"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "Vencimento definido"
@@ -2710,6 +2719,10 @@ msgstr "Na navegação"
 msgid "In one week"
 msgstr "Em uma semana"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "Caixa de entrada"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "Incluir ocorrências concluídas."
@@ -2815,8 +2828,8 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Mantenha ambos se quiser preservar sua edição como arquivo."
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
-msgstr "Manter os prazos"
+msgid "Keep due dates"
+msgstr "Manter datas de vencimento"
 
 #: src/app/view-editor.tsx
 msgid "Keep editing"
@@ -3168,10 +3181,6 @@ msgstr "Minuto"
 msgid "Minutes"
 msgstr "Minutos"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "Prazos perdidos"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,8 +3255,8 @@ msgid "Move dates one day later"
 msgstr "Mover datas um dia para depois"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
-msgstr "Mover os prazos também"
+msgid "Move due dates too"
+msgstr "Mover também as datas de vencimento"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
@@ -3268,9 +3277,10 @@ msgstr "Mover tarefas selecionadas para um projeto"
 msgid "Move to project"
 msgstr "Mover para projeto"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "“{title}” e o prazo movidos para {when}"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "“{title}” e a data de vencimento movidos para {when}"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4860,6 +4870,10 @@ msgstr "Fim da sessão"
 msgid "Session start"
 msgstr "Início da sessão"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "“{title}” definido como {value}"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "Não foi possível encontrar a nota de tarefa criada."
 msgid "The current scratchpad is unavailable."
 msgstr "O bloco de notas atual está indisponível."
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "O prazo"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "a exclusão"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "Tente carregar a visualização novamente. Se o problema continuar, edite as configurações ou escolha outra visualização."
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "Experimente amanhã 9h, +projeto, #etiqueta"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "Tente amanhã 9h, +projeto, #etiqueta, !prioridade"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "O que precisa ser feito?"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "Quando eu escolher"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "Quando precisa estar concluída"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

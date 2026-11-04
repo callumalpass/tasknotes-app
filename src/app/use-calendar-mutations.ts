@@ -20,6 +20,7 @@ export function useCalendarMutations(
         const when = updated.scheduled
           ? formatRelativeTaskDate(updated.scheduled)
           : "";
+        const date = updated.due ? formatRelativeTaskDate(updated.due) : "";
         const earlier = {
           scheduled: task.scheduled ?? null,
           due: task.due ?? null,
@@ -30,7 +31,9 @@ export function useCalendarMutations(
           notice:
             updated.scheduled && updated.scheduled !== task.scheduled
               ? t`Moved “${title}” to ${when}`
-              : t`Updated “${title}”`,
+              : updated.due && updated.due !== task.due
+                ? t`“${title}” is due ${date}`
+                : t`Updated “${title}”`,
           run: () => updateTask(task.id, earlier),
         });
       }

@@ -67,6 +67,7 @@ msgstr "” 已保存…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}”由计算得出，无法接收移入的任务。"
 
+#: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
 msgid "“{title}” is due {date}"
 msgstr "“{title}”的截止日期为 {date}"
@@ -418,8 +419,8 @@ msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved t
 msgstr "{deadlines, plural, other {# 个截止日期也已移动}}"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
-msgstr "{deadlines, plural, other {# 个已错过的截止日期}}"
+msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
+msgstr "{deadlines, plural, other {# 个截止日期已过}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -505,6 +506,10 @@ msgstr "{label}，{0}"
 #: src/app/app-shell.tsx
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}，{0}，{1} 项逾期"
+
+#: src/app/bulk-task-feedback.ts
+msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
+msgstr "{movedDueDates, plural, other {已将 {tasks} 安排到 {date}，并移动了 # 个已过的截止日期}}"
 
 #: src/components/assignee-editor.tsx
 msgid "{name} (no matching person record)"
@@ -873,8 +878,8 @@ msgid "Adding…"
 msgstr "正在添加…"
 
 #: src/app/views/starter-views-offer.tsx
-msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Unplanned views. Existing files and navigation choices stay unchanged."
-msgstr "添加缺少的“今天”“即将到来”“日历”“项目”“归档”和 Unplanned 视图。现有文件和导航设置保持不变。"
+msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
+msgstr "添加缺少的“今天”“即将到来”“日历”“项目”“归档”和 收件箱 视图。现有文件和导航设置保持不变。"
 
 #: src/app/view-empty-state.tsx
 msgid "Adjust this view’s filters or choose another view."
@@ -2248,6 +2253,10 @@ msgstr "截止日期和计划日期"
 msgid "Due dates"
 msgstr "截止日期"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Due dates that have passed"
+msgstr "已过的截止日期"
+
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "已设置截止日期"
@@ -2710,6 +2719,10 @@ msgstr "在导航中"
 msgid "In one week"
 msgstr "一周后"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Inbox"
+msgstr "收件箱"
+
 #: src/app/view-editor-form.tsx
 msgid "Include completed occurrences."
 msgstr "包含已完成的重复项。"
@@ -2815,7 +2828,7 @@ msgid "Keep both instead if you want your edit kept as a file."
 msgstr "如果想将你的编辑保留为文件，请改为同时保留两者。"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Keep deadlines"
+msgid "Keep due dates"
 msgstr "保留截止日期"
 
 #: src/app/view-editor.tsx
@@ -3168,10 +3181,6 @@ msgstr "分钟"
 msgid "Minutes"
 msgstr "分钟"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Missed deadlines"
-msgstr "已错过的截止日期"
-
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3246,8 +3255,8 @@ msgid "Move dates one day later"
 msgstr "将日期延后一天"
 
 #: src/components/overdue-schedule-actions.tsx
-msgid "Move deadlines too"
-msgstr "截止日期也一起移动"
+msgid "Move due dates too"
+msgstr "同时移动截止日期"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Move focused item"
@@ -3268,9 +3277,10 @@ msgstr "将所选任务移至项目"
 msgid "Move to project"
 msgstr "移至项目"
 
+#: src/components/task-actions.tsx
 #: src/components/task-row.tsx
-msgid "Moved “{title}” and its deadline to {when}"
-msgstr "已将“{title}”及其截止日期移至{when}"
+msgid "Moved “{title}” and its due date to {when}"
+msgstr "已将“{title}”及其截止日期移至 {when}"
 
 #: src/app/views-screen.tsx
 msgid "Moved “{title}” to {column}"
@@ -4860,6 +4870,10 @@ msgstr "会话结束时间"
 msgid "Session start"
 msgstr "会话开始时间"
 
+#: src/components/task-actions.tsx
+msgid "Set “{title}” to {value}"
+msgstr "已将“{title}”设为 {value}"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Set priority"
@@ -5366,10 +5380,6 @@ msgstr "找不到已创建的 TaskNote。"
 msgid "The current scratchpad is unavailable."
 msgstr "当前随手记不可用。"
 
-#: src/components/task-date-panel.tsx
-msgid "The deadline"
-msgstr "截止日期"
-
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "删除操作"
@@ -5715,8 +5725,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其设置或选择其他视图。"
 
 #: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag"
-msgstr "试试 明天上午9点、+项目、#标签"
+msgid "Try tomorrow 9am, +project, #tag, !priority"
+msgstr "试试 明天上午9点、+项目、#标签、!优先级"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5972,6 +5982,10 @@ msgstr "有什么待办事项？"
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "由我选择"
+
+#: src/components/task-date-panel.tsx
+msgid "When it has to be done"
+msgstr "必须完成的时间"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"

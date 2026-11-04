@@ -15,7 +15,7 @@ export function useNavigationTaskCounts() {
     () => "null",
   );
   return JSON.parse(serialized) as {
-    unplanned: number;
+    inbox: number;
     upcoming: number;
   } | null;
 }

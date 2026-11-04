@@ -72,58 +72,9 @@ export async function parseTaskCapture(
       " ".repeat(monthly.end - monthly.start) +
       text.slice(monthly.end)
     : text;
-  let parsed = parser.parseInputWithSpans(readable(source));
-  // Rank shorthand belongs to the app: the portable parser only knows the
-  // collection's names. Mask with equal-length spaces to preserve all offsets.
-  const ranked = configuration.priorities
-    .map((priority, index) => ({
-      ...priority,
-      weight: priority.weight ?? index,
-    }))
-    .sort((left, right) => right.weight - left.weight);
-  const links = [...text.matchAll(/\[\[[\s\S]*?\]\]|\[[^\]]*\]\([^)]+\)/gu)];
-  const shorthand = ranked.length
-    ? [...text.matchAll(/(?:^|\s)(p(\d{1,2})[.,;:!?]?)(?=\s|$)/giu)].flatMap(
-        (match) => {
-          const rank = Number(match[2]);
-          // A rank in this collection's own list, however long. The familiar
-          // first four always work, and settle on the lowest in a short list.
-          if (rank < 1 || rank > Math.max(4, ranked.length)) return [];
-          const start = match.index + match[0].length - match[1].length;
-          const end = start + match[1].length;
-          if (
-            parsed.spans.some(
-              (span) =>
-                span.kind !== "priority" &&
-                span.start < end &&
-                span.end > start,
-            ) ||
-            links.some(
-              (link) => link.index < end && link.index + link[0].length > start,
-            )
-          )
-            return [];
-          return [
-            {
-              start,
-              end,
-              priority: ranked[Math.min(rank, ranked.length) - 1].value,
-            },
-          ];
-        },
-      )
-    : [];
-  if (shorthand.length) {
-    let masked = source;
-    for (const { start, end } of shorthand)
-      masked =
-        masked.slice(0, start) + " ".repeat(end - start) + masked.slice(end);
-    parsed = parser.parseInputWithSpans(readable(masked));
-    // A named priority is explicit; otherwise the last shorthand wins.
-    parsed.data.priority ??= shorthand.at(-1)!.priority;
-  }
+  const parsed = parser.parseInputWithSpans(readable(source));
   const { data } = parsed;
-  if (monthly || shorthand.length)
+  if (monthly)
     data.title = data.title.replace(/[ \t]+/gu, " ").trim();
   if (monthly) {
     data.recurrence = `FREQ=MONTHLY;BYMONTHDAY=${monthly.day}`;
@@ -144,36 +95,6 @@ export async function parseTaskCapture(
   const highlights = captureHighlightsFromSpans(
     spans,
     captureTriggers(configuration),
-  ).flatMap((highlight) => {
-    if (!shorthand.length) return [highlight];
-    // A date span can bridge the masked shorthand ("tomorrow p1 3pm").
-    // Keep its pieces separate so each chip still owns exactly its own tint.
-    let pieces = [highlight];
-    for (const token of shorthand) {
-      pieces = pieces.flatMap((piece) => {
-        if (piece.end <= token.start || piece.start >= token.end)
-          return [piece];
-        return [
-          { ...piece, end: Math.min(piece.end, token.start) },
-          { ...piece, start: Math.max(piece.start, token.end) },
-        ].filter((part) => part.start < part.end);
-      });
-    }
-    return pieces
-      .map((piece) => {
-        let { start, end } = piece;
-        while (start < end && /\s/u.test(text[start])) start++;
-        while (end > start && /\s/u.test(text[end - 1])) end--;
-        return { ...piece, start, end };
-      })
-      .filter((piece) => piece.start < piece.end);
-  });
-  highlights.push(
-    ...shorthand.map(({ start, end }) => ({
-      start,
-      end,
-      kind: "priority" as const,
-    })),
   );
   if (monthly)
     highlights.push({
