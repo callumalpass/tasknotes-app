@@ -67,6 +67,10 @@ msgstr "” was saved…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}” is calculated and cannot accept moved tasks."
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "“{title}” is due {date}"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "“{title}” is still in the collection."
@@ -939,6 +943,10 @@ msgstr "All day"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "All matching tasks loaded"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "All projects"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4684,6 +4692,10 @@ msgstr "scheduled"
 msgid "Scheduled"
 msgstr "Scheduled"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "Scheduled “{title}” for {date}"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "Scheduled (not set)"
@@ -5171,14 +5183,6 @@ msgstr "Task actions for {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Task added: {0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "Task created, but this view does not show it. Its filters or result limit may exclude it."
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "Task created. It may be in an unloaded page or excluded by this view’s filters."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

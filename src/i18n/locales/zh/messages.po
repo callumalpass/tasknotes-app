@@ -67,6 +67,10 @@ msgstr "” 已保存…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}”由计算得出，无法接收移入的任务。"
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "“{title}”的截止日期为 {date}"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "“{title}”仍在集合中。"
@@ -939,6 +943,10 @@ msgstr "全天"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "已加载所有匹配的任务"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "所有项目"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4684,6 +4692,10 @@ msgstr "计划日期"
 msgid "Scheduled"
 msgstr "计划日期"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "已将“{title}”安排在 {date}"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "未设置计划日期"
@@ -5171,14 +5183,6 @@ msgstr "{0}的任务操作"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "已添加任务：{0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "任务已创建，但此视图不显示该任务。筛选条件或结果上限可能将其排除。"
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "任务已创建。它可能位于尚未加载的页面中，或被此视图的筛选条件排除。"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

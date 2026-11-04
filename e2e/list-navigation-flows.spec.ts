@@ -359,3 +359,45 @@ test("a known project with spaces is typed by its plain name", async ({
     page.locator(".capture-token").filter({ hasText: "+Product refresh" }),
   ).toBeVisible();
 });
+
+test("a sidebar project opens as its own page and returns to all projects", async ({
+  isMobile,
+  page,
+}) => {
+  test.skip(isMobile, "The sidebar is a desktop surface.");
+  await page.goto("?demo=60");
+  const shortcut = page
+    .getByRole("group", { name: "Busiest projects" })
+    .getByRole("button", { name: /Operations/ });
+  await shortcut.click();
+  await expect(page.locator(".project-group")).toHaveCount(1);
+  await expect(shortcut).toHaveAttribute("aria-current", "page");
+  await page.getByRole("button", { name: "All projects" }).click();
+  await expect(page.locator(".project-group").nth(1)).toBeVisible();
+  await expect(shortcut).not.toHaveAttribute("aria-current", "page");
+});
+
+test("stepping through tasks moves the open row and Escape returns to it", async ({
+  isMobile,
+  page,
+}) => {
+  test.skip(isMobile, "Phones show one task at a time.");
+  await page.goto("?demo=60");
+  await page.locator(".task-row-title").first().click();
+  await expect(page.locator(".task-row.is-open")).toHaveCount(1);
+  await expect(
+    page
+      .locator(".detail-inspector h1, .detail-inspector .title-field")
+      .first(),
+  ).toBeVisible();
+  await page.keyboard.press("j");
+  const second = page.locator(".task-row[data-task-id]").nth(1);
+  await expect(second).toHaveClass(/is-open/);
+  const title = await second.getAttribute("data-task-title");
+  await expect(
+    page.locator(".detail-inspector").getByText(title ?? ""),
+  ).not.toHaveCount(0);
+  await page.waitForTimeout(300);
+  await page.keyboard.press("Escape");
+  await expect(second.locator(".task-row-title")).toBeFocused();
+});

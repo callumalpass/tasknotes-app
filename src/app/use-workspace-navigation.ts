@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { setOpenTask } from "./open-task";
 import { nativeBackAction } from "../native/navigation";
 import { isSettingsSection, type SettingsSection } from "./settings-sections";
 import {
@@ -67,23 +68,34 @@ export function useWorkspaceNavigation(
   const routeRef = useRef(route);
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
+  const lastTaskId = useRef<string | null>(null);
+  const openTaskId = route.page === "task" ? route.id : null;
   // Restore before paint so a route's view transition captures the result.
   useLayoutEffect(() => {
     const wasTask = previousPage.current === "task";
     previousPage.current = route.page;
-    if (route.page === "task")
+    setOpenTask(openTaskId);
+    if (route.page === "task") {
+      lastTaskId.current = openTaskId;
       detailRef.current?.focus({ preventScroll: true });
-    else if (wasTask && taskReturn.current) {
+    } else if (wasTask && taskReturn.current) {
       const target = taskReturn.current;
       taskReturn.current = null;
       if (target.workspaceUrl !== currentRouteUrl) return;
       window.scrollTo({ top: target.scrollY, left: 0 });
-      if (target.element?.isConnected)
+      // Stepping through tasks moves the reader on: return to where they got to.
+      const reached = document.querySelector<HTMLElement>(
+        `#main-content .task-row[data-task-id="${CSS.escape(lastTaskId.current ?? "")}"] .task-row-title`,
+      );
+      if (reached) {
+        reached.focus({ preventScroll: true });
+        reached.scrollIntoView?.({ block: "nearest" });
+      } else if (target.element?.isConnected)
         target.element.focus({ preventScroll: true });
       else
         document.getElementById("main-content")?.focus({ preventScroll: true });
     }
-  }, [route.page, currentRouteUrl]);
+  }, [route.page, openTaskId, currentRouteUrl]);
 
   useEffect(() => {
     const pop = (event: PopStateEvent) => {

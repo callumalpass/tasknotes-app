@@ -67,6 +67,10 @@ msgstr "」を保存しました…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "「{0}」は計算値のため、移動したタスクを受け入れられません。"
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "「{title}」の期限は{date}です"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "「{title}」はまだコレクション内にあります。"
@@ -939,6 +943,10 @@ msgstr "終日"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "一致するタスクをすべて読み込みました"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "すべてのプロジェクト"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4684,6 +4692,10 @@ msgstr "予定"
 msgid "Scheduled"
 msgstr "予定"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "「{title}」を{date}に予定しました"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "予定日（未設定）"
@@ -5171,14 +5183,6 @@ msgstr "{0}のタスク操作"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "タスクを追加しました：{0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "タスクを作成しましたが、このビューには表示されません。フィルターまたは結果上限によって除外されている可能性があります。"
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "タスクを作成しました。未読み込みのページにあるか、ビューのフィルターで除外されている可能性があります。"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

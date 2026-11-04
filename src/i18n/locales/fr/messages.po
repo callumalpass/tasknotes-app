@@ -67,6 +67,10 @@ msgstr "» a bien été enregistrée…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "« {0} » est une section calculée et ne peut pas recevoir de tâches déplacées."
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "« {title} » est due pour {date}"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "« {title} » est toujours dans la collection."
@@ -940,6 +944,10 @@ msgstr "Toute la journée"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "Toutes les tâches correspondantes sont chargées"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "Tous les projets"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4685,6 +4693,10 @@ msgstr "date planifiée"
 msgid "Scheduled"
 msgstr "Planifiée"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "« {title} » planifiée pour {date}"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "Date planifiée (non définie)"
@@ -5172,14 +5184,6 @@ msgstr "Actions de tâche pour {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Tâche ajoutée : {0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "Tâche créée, mais cette vue ne l’affiche pas. Ses filtres ou sa limite de résultats peuvent l’exclure."
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "Tâche créée. Elle peut être dans une page non chargée ou exclue par les filtres de cette vue."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

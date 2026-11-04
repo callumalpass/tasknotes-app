@@ -1220,20 +1220,9 @@ export function ViewsScreen({
       captureSession.getSnapshot().version === draftVersion
     )
       setCreationContext(null);
-    if (!refreshed) return;
-    return refreshed.rows.some((row) => row.task.id === task.id)
-      ? undefined
-      : {
-          message: refreshed.hasMore
-            ? t({
-                message:
-                  "Task created. It may be in an unloaded page or excluded by this view’s filters.",
-              })
-            : t({
-                message:
-                  "Task created, but this view does not show it. Its filters or result limit may exclude it.",
-              }),
-        };
+    // A task this view leaves out is normal; say where it went, once.
+    if (refreshed && !refreshed.rows.some((row) => row.task.id === task.id))
+      onTaskAdded?.(task);
   }
 
   function createInBoardColumn(

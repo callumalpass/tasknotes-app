@@ -67,6 +67,10 @@ msgstr "“ gespeichert wurde…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "„{0}“ wird berechnet und kann keine verschobenen Aufgaben aufnehmen."
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "„{title}“ ist am {date} fällig"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "„{title}“ befindet sich weiterhin in der Sammlung."
@@ -939,6 +943,10 @@ msgstr "Ganztägig"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "Alle passenden Aufgaben wurden geladen"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "Alle Projekte"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4684,6 +4692,10 @@ msgstr "geplant"
 msgid "Scheduled"
 msgstr "Geplant"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "„{title}“ für {date} geplant"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "Planungsdatum (nicht festgelegt)"
@@ -5171,14 +5183,6 @@ msgstr "Aktionen für Aufgabe {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Aufgabe hinzugefügt: {0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "Aufgabe erstellt, aber in dieser Ansicht nicht angezeigt. Möglicherweise schließen Filter oder Ergebnislimit sie aus."
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "Aufgabe erstellt. Sie befindet sich möglicherweise auf einer nicht geladenen Seite oder wird durch die Filter dieser Ansicht ausgeschlossen."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

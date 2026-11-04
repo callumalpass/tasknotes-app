@@ -132,6 +132,7 @@ it("retains date labels and omits routine defaults in saved rows", () => {
 it("draws a coloured status as the ring and names it, without a fill", () => {
   const { container, rerender } = render(
     <TaskRow
+      ensurePriority={false}
       task={{ ...task, status: "in-progress" } as Task}
       onOpen={vi.fn()}
       onToggle={vi.fn()}

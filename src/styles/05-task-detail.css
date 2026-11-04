@@ -673,7 +673,6 @@
   display: block;
   padding: 2px 9px 5px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
 }
 
@@ -2103,6 +2102,11 @@
 
 .task-core-properties .date-time-field > div > * {
   min-width: 0;
+}
+
+/* A time is short and exact, so the date gives way before the time clips. */
+.task-core-properties .date-time-field > div > .tasknotes-time-picker {
+  flex: none;
 }
 
 .task-core-properties .tasknotes-date-trigger,

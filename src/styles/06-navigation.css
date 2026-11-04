@@ -52,7 +52,8 @@
 .bottom-navigation button,
 .navigation-rail nav button,
 .navigation-rail .navigation-view-section button,
-.navigation-rail > button:not(.wordmark) {
+.navigation-rail > button:not(.wordmark),
+.navigation-destinations > button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1032,6 +1033,11 @@
     cursor: pointer;
   }
 
+  .navigation-rail .navigation-project-section button.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
   .navigation-rail .navigation-project-section button:hover {
     color: var(--ink);
     background: var(--paper-soft);
@@ -1053,24 +1059,30 @@
 }
 
 @media (min-width: 840px) {
-  /* Short windows scroll the whole rail; Manage stays pinned to its foot. */
+  /* Destinations scroll between the fixed head and foot of the rail. */
   .navigation-rail {
     height: 100dvh;
     padding-block: 16px 0;
-    overflow-y: auto;
-    scroll-padding-block-end: 11rem;
+    overflow: hidden;
   }
   .navigation-rail > * {
+    flex-shrink: 0;
+  }
+  .navigation-destinations {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .navigation-destinations > * {
     flex-shrink: 0;
   }
   .navigation-rail .rail-heading {
     margin-bottom: 12px;
   }
   .navigation-rail .navigation-utility {
-    position: sticky;
-    bottom: 0;
     padding-block: 8px 16px;
-    background: var(--paper-soft);
   }
 }
 

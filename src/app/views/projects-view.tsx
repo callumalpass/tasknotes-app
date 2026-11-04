@@ -2,7 +2,7 @@ import { TaskSelectionList } from "../task-selection";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { countLabel } from "../../i18n/default-labels";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useContext, useEffect, useEffectEvent, useId, useState } from "react";
 import {
   sectionCollapsed,
@@ -11,7 +11,12 @@ import {
 
 import { TaskRow } from "../../components/task-row";
 import { TaskNotesSelect } from "../../components/tasknotes-controls";
-import { onProjectJump, takeProjectJump } from "../project-jump";
+import {
+  onProjectJump,
+  setFocusedProject,
+  takeProjectJump,
+  useFocusedProject,
+} from "../project-jump";
 import {
   TaskCompletionHoldsContext,
   TaskDeparturesContext,
@@ -125,6 +130,16 @@ export function ProjectsView({
         left.label.localeCompare(right.label) ||
         (left.path ?? "").localeCompare(right.path ?? ""),
     );
+  const focusedLabel = useFocusedProject();
+  const focused = ordered.find((project) => project.label === focusedLabel);
+  const shown = focused ? [focused] : ordered;
+  const focusProject = (label: string | null) => {
+    const project = ordered.find((candidate) => candidate.label === label);
+    if (!project) return;
+    collapse(project.key, false);
+    setFocusedProject(project.label);
+    window.scrollTo({ top: 0 });
+  };
   const jumpTo = (label: string | null) => {
     const index = ordered.findIndex((project) => project.label === label);
     const project = ordered[index];
@@ -137,13 +152,14 @@ export function ProjectsView({
       heading?.scrollIntoView({ block: "start" });
     });
   };
-  const takeJump = useEffectEvent(() => jumpTo(takeProjectJump()));
+  const takeJump = useEffectEvent(() => focusProject(takeProjectJump()));
   useEffect(() => {
     const frame = requestAnimationFrame(takeJump);
     const stop = onProjectJump(takeJump);
     return () => {
       cancelAnimationFrame(frame);
       stop();
+      setFocusedProject(null);
     };
   }, []);
   if (!ordered.length)
@@ -159,28 +175,40 @@ export function ProjectsView({
     );
   return (
     <TaskSelectionList
-      tasks={ordered.flatMap((project) =>
+      tasks={shown.flatMap((project) =>
         (collapsed[project.key] ?? sectionCollapsed(preferenceKey(project.key)))
           ? []
           : project.tasks.filter((task) => !departing.has(task.id)),
       )}
     >
-      <div className="projects-view">
-        <label className="project-index">
-          <span>{countLabel(ordered.length, "project")}</span>
-          <TaskNotesSelect
-            ariaLabel={t({ message: "Jump to project" })}
-            options={ordered.map((project) => ({
-              value: project.label,
-              label: `${project.label} (${project.count})`,
-              description: project.path,
-            }))}
-            placeholder={t({ message: "Jump to project" })}
-            value=""
-            onChange={jumpTo}
-          />
-        </label>
-        {ordered.map((project, index) => {
+      <div className={`projects-view${focused ? " is-focused" : ""}`}>
+        {focused ? (
+          <button
+            className="project-back"
+            type="button"
+            onClick={() => setFocusedProject(null)}
+          >
+            <ChevronLeft aria-hidden="true" size={16} />
+            <Trans>All projects</Trans>
+          </button>
+        ) : (
+          <label className="project-index">
+            <span>{countLabel(ordered.length, "project")}</span>
+            <TaskNotesSelect
+              ariaLabel={t({ message: "Jump to project" })}
+              options={ordered.map((project) => ({
+                value: project.label,
+                label: `${project.label} (${project.count})`,
+                description: project.path,
+              }))}
+              placeholder={t({ message: "Jump to project" })}
+              value=""
+              onChange={jumpTo}
+            />
+          </label>
+        )}
+        {shown.map((project) => {
+          const index = ordered.indexOf(project);
           const isCollapsed =
             collapsed[project.key] ??
             sectionCollapsed(preferenceKey(project.key));
@@ -199,9 +227,15 @@ export function ProjectsView({
                       type="button"
                       aria-expanded={!isCollapsed}
                       aria-controls={listId}
-                      onClick={() => collapse(project.key, !isCollapsed)}
+                      onClick={() =>
+                        focused
+                          ? undefined
+                          : collapse(project.key, !isCollapsed)
+                      }
                     >
-                      <ChevronRight aria-hidden="true" size={16} />
+                      {focused ? null : (
+                        <ChevronRight aria-hidden="true" size={16} />
+                      )}
                       <span>{project.label}</span>
                       <span className="project-count">
                         {project.count}{" "}

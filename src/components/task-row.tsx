@@ -44,6 +44,7 @@ import { useExitingValue } from "./overlays/use-presence";
 import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
+import { useTaskOpen } from "../app/open-task";
 import { requestProjectJump } from "../app/project-jump";
 import { rescheduleInput } from "../domain/task-date-actions";
 import { projectLabel } from "../domain/project-shortcuts";
@@ -68,7 +69,8 @@ export function TaskRow({
   details,
   occurrence,
   supportingText,
-  ensurePriority = false,
+  supportingInline = false,
+  ensurePriority = true,
   sectionDay,
 }: {
   task: TaskSummary;
@@ -77,6 +79,7 @@ export function TaskRow({
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
   supportingText?: string;
+  supportingInline?: boolean;
   /** Show a raised priority even when the view does not select the property. */
   ensurePriority?: boolean;
   /** The day the surrounding section names; a matching date is not repeated. */
@@ -188,7 +191,18 @@ export function TaskRow({
   );
   const statusColor =
     distinctStatus && !statusNamed ? status?.color : undefined;
+  const context = supportingText ? (
+    <small id={supportingId} className="task-row-context">
+      {supportingText}
+    </small>
+  ) : null;
+  const contextLeadsDetails =
+    supportingInline && Boolean(details) && shownDetails.length > 0;
   const rowRef = useRef<HTMLDivElement>(null);
+  const open = useTaskOpen(task.id);
+  useLayoutEffect(() => {
+    if (open) rowRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [open]);
   useCompletionDeparture(
     rowRef,
     useContext(TaskDeparturesContext).get(task.id),
@@ -242,7 +256,7 @@ export function TaskRow({
   return (
     <div
       {...swipe.handlers}
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${selection.selected ? " is-selected" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${selection.selected ? " is-selected" : ""}${open ? " is-open" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
       data-selected={selection.selectable ? selection.selected : undefined}
       data-task-id={task.id}
       data-task-title={task.title}
@@ -362,15 +376,12 @@ export function TaskRow({
             <span>{task.title}</span>
           </span>
         </button>
-        {supportingText ? (
-          <small id={supportingId} className="task-row-context">
-            {supportingText}
-          </small>
-        ) : null}
+        {context && !contextLeadsDetails ? context : null}
         {details ? (
           tracking || shownDetails.length ? (
             <span className="task-row-properties">
               {tracking ? <TrackingIndicator /> : null}
+              {contextLeadsDetails ? context : null}
               {shownDetails.map((detail) => (
                 <button
                   className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}${isLateSchedule(detail, displayedTask, configuration) ? " is-late" : ""}`}

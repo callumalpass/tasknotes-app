@@ -142,6 +142,11 @@
   min-width: 0;
 }
 
+.task-row-properties .task-row-context {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .task-row-context {
   color: var(--ink-muted);
   font-size: var(--type-label);
@@ -173,6 +178,32 @@
 }
 .project-group {
   scroll-margin-top: 16px;
+}
+.project-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 8px 0 0;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.project-back:hover {
+  color: var(--ink);
+}
+.projects-view.is-focused {
+  gap: 8px;
+}
+.projects-view.is-focused .project-group > header h2 {
+  font-size: var(--type-section);
+}
+.projects-view.is-focused .project-toggle {
+  cursor: default;
 }
 .project-group > header .project-toggle {
   color: var(--ink);

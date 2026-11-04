@@ -779,9 +779,11 @@ export function TaskCalendarView({
                         : formatDay(arg.day),
                     )}
                     occurrence={entry.occurrence}
+                    supportingInline
                     supportingText={
-                      [kind, arg.timeText].filter(Boolean).join(" · ") ||
-                      undefined
+                      [kind, agendaTime(arg.timeText, entry.task)]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
                     }
                     task={entry.task}
                     onOpen={onOpen}
@@ -950,6 +952,11 @@ function withRevision(item: TaskCalendarItem): TaskCalendarItem {
   const data = { ...item.data! } as Partial<CalendarEventData>;
   delete data.metadata;
   return { ...item, rev: JSON.stringify({ ...item, data }) };
+}
+
+/** A task with no estimate has a start, not an end this list should invent. */
+function agendaTime(timeText: string, task: TaskSummary) {
+  return task.timeEstimate ? timeText : timeText.split(" – ")[0];
 }
 
 function calendarEventContent(

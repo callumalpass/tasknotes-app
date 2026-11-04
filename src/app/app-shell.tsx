@@ -38,7 +38,12 @@ import {
 } from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
-import { onProjectJump, requestProjectJump } from "./project-jump";
+import {
+  onProjectJump,
+  requestProjectJump,
+  setFocusedProject,
+  useFocusedProject,
+} from "./project-jump";
 import { useProjectShortcuts } from "./use-project-shortcuts";
 import {
   clearUndoHistory,
@@ -805,6 +810,7 @@ function EmptyViewsNotice({
 
 function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
   const { t } = useLingui();
+  const focused = useFocusedProject();
   if (!projects.length) return null;
   return (
     <div
@@ -814,6 +820,8 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
     >
       {projects.map(({ label, count }) => (
         <button
+          aria-current={focused === label ? "page" : undefined}
+          className={focused === label ? "is-active" : undefined}
           key={label}
           title={label}
           type="button"
@@ -1398,7 +1406,10 @@ export function Navigation({
             : undefined
         }
         type="button"
-        onClick={() => onNavigate(route)}
+        onClick={() => {
+          setFocusedProject(null);
+          onNavigate(route);
+        }}
       >
         <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
         <span>{label}</span>
@@ -1417,9 +1428,9 @@ export function Navigation({
 
   return (
     <>
-      {items.map(renderDestination)}
       {mode === "desktop" ? (
-        <>
+        <div className="navigation-destinations">
+          {items.map(renderDestination)}
           <div
             aria-label={t({ message: "Views" })}
             className="navigation-view-section"
@@ -1428,9 +1439,10 @@ export function Navigation({
             {additionalViews.map(renderDestination)}
           </div>
           <SidebarProjects projects={projects} />
-        </>
+        </div>
       ) : (
         <>
+          {items.map(renderDestination)}
           <button
             aria-controls={menuPosition ? menuId : undefined}
             aria-current={

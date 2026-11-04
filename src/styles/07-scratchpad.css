@@ -1479,8 +1479,9 @@ html.scratchpad-route .page-surface {
   align-items: center;
   gap: 12px;
   padding: 4px 4px 4px 16px;
-  color: var(--paper-raised);
-  background: var(--ink);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow: 0 10px 28px var(--color-shadow);
 }
@@ -1500,9 +1501,8 @@ html.scratchpad-route .page-surface {
   width: auto;
   min-width: auto;
   padding: 0 9px;
-  color: var(--paper-raised);
+  color: var(--accent);
   font-weight: 700;
-  border: 1px solid color-mix(in srgb, var(--paper-raised), transparent 62%);
 }
 
 @media (hover: hover) and (pointer: fine) {

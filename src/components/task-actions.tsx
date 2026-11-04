@@ -1,3 +1,4 @@
+import { formatTaskDate } from "../i18n/presentation";
 import { countLabel } from "../i18n/default-labels";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -318,6 +319,19 @@ export function TaskActions({
     });
   }
 
+  function dateNotice({ scheduled, due }: UpdateTaskInput) {
+    const { title } = task;
+    if (typeof scheduled === "string") {
+      const date = formatTaskDate(scheduled);
+      return t`Scheduled “${title}” for ${date}`;
+    }
+    if (typeof due === "string") {
+      const date = formatTaskDate(due);
+      return t`“${title}” is due ${date}`;
+    }
+    return undefined;
+  }
+
   async function run(action: () => Promise<unknown>, after?: () => void) {
     if (busy) return;
     setBusy(true);
@@ -591,7 +605,9 @@ export function TaskActions({
                       <TaskDatePanel
                         busy={busy}
                         task={task}
-                        onApply={(input) => void run(() => change(input))}
+                        onApply={(input) =>
+                          void run(() => change(input, dateNotice(input)))
+                        }
                       />
                       <MenuSeparator />
                       <MenuAction

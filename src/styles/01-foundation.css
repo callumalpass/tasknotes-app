@@ -218,6 +218,10 @@ button:disabled {
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
 }
 
+.detail-inspector:focus {
+  outline: 0;
+}
+
 .detail-inspector {
   min-width: 0;
   min-height: 100vh;

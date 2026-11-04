@@ -67,6 +67,10 @@ msgstr "»…"
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "«{0}» — вычисляемый раздел; переместить сюда задачи нельзя."
 
+#: src/components/task-actions.tsx
+msgid "“{title}” is due {date}"
+msgstr "«{title}»: срок — {date}"
+
 #: src/app/app-shell.tsx
 msgid "“{title}” is still in the collection."
 msgstr "«{title}» всё ещё находится в коллекции."
@@ -939,6 +943,10 @@ msgstr "Весь день"
 #: src/app/views-screen.tsx
 msgid "All matching tasks loaded"
 msgstr "Все подходящие задачи загружены"
+
+#: src/app/views/projects-view.tsx
+msgid "All projects"
+msgstr "Все проекты"
 
 #: src/app/view-editor-form.tsx
 msgid "All tasks"
@@ -4684,6 +4692,10 @@ msgstr "запланировано"
 msgid "Scheduled"
 msgstr "Запланировано"
 
+#: src/components/task-actions.tsx
+msgid "Scheduled “{title}” for {date}"
+msgstr "«{title}» запланирована на {date}"
+
 #: src/components/reminder-editor.tsx
 msgid "Scheduled (not set)"
 msgstr "Запланированная дата (не задана)"
@@ -5171,14 +5183,6 @@ msgstr "Действия с задачей {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Задача добавлена: {0}"
-
-#: src/app/views-screen.tsx
-msgid "Task created, but this view does not show it. Its filters or result limit may exclude it."
-msgstr "Задача создана, но не отображается в этом представлении. Возможно, она исключена фильтрами или ограничением результатов."
-
-#: src/app/views-screen.tsx
-msgid "Task created. It may be in an unloaded page or excluded by this view’s filters."
-msgstr "Задача создана. Возможно, она находится на незагруженной странице или исключена фильтрами представления."
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"

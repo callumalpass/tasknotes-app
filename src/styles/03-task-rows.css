@@ -78,6 +78,11 @@
   }
 }
 
+.task-row.is-open {
+  background: var(--accent-soft);
+  border-radius: var(--radius-control);
+}
+
 .task-row.is-tracking {
   background: var(--paper-soft);
 }
@@ -855,10 +860,9 @@
   color: var(--danger);
 }
 
-/* A missed plan is not a missed deadline, but inside Overdue it is why the
-   task is there. */
-.task-section.is-overdue .task-row-meta .is-late,
-.task-section.is-overdue .task-row-property.is-late > strong {
+/* A missed plan reads the same in every list that shows it. */
+.task-row-meta .is-late,
+.task-row-property.is-late > strong {
   color: var(--danger);
 }
 
