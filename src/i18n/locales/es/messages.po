@@ -5310,6 +5310,10 @@ msgstr "Las tareas son registros Markdown portátiles en el formato mdbase v0.3.
 msgid "Tasks for {0}"
 msgstr "Tareas para {0}"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "Las tareas sin fecha llegan aquí."
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "Tareas, etiquetas y proyectos"
@@ -6083,6 +6087,10 @@ msgstr "Tu edición ya no está disponible en este dispositivo. Descártala para
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "No se guardó tu edición."
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "Tu bandeja de entrada está vacía."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

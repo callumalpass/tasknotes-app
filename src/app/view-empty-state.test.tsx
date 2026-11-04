@@ -26,3 +26,8 @@ it("recognizes a starter Base by source, since its id is an ordinal", () => {
   render(<ViewEmptyState view={view} />);
   expect(screen.getByRole("heading")).toHaveTextContent(/done for today/);
 });
+it("tells an empty Inbox that undated tasks land there", () => {
+  render(<ViewEmptyState view={{ ...view, id: "inbox", name: "Inbox" }} />);
+  expect(screen.getByRole("heading")).toHaveTextContent("Your Inbox is clear.");
+  expect(screen.getByText("Tasks with no date land here.")).toBeVisible();
+});

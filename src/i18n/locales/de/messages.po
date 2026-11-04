@@ -5310,6 +5310,10 @@ msgstr "Aufgaben sind portable Markdown-Datensätze im Format mdbase v0.3."
 msgid "Tasks for {0}"
 msgstr "Aufgaben für {0}"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "Aufgaben ohne Datum landen hier."
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "Aufgaben, Tags, Projekte"
@@ -6083,6 +6087,10 @@ msgstr "Ihre Änderung ist auf diesem Gerät nicht mehr verfügbar. Verwerfen Si
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "Ihre Änderung wurde nicht gespeichert."
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "Dein Eingang ist leer."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

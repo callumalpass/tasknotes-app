@@ -1771,6 +1771,10 @@
 .view-options {
   position: relative;
 }
+.search-header > .view-options {
+  margin-left: auto;
+}
+
 .view-options > summary {
   display: flex;
   align-items: center;

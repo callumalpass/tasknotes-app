@@ -58,16 +58,20 @@ test("a priority key returns focus to the row and names the change", async ({
   await expect(title).toBeFocused();
 });
 
-test("list metadata stays on one line beside the detail pane", async ({
+test("beside the detail pane the project gives way before the status", async ({
   page,
 }) => {
   await page.goto("?demo=60&many-options");
   await page.locator(".task-row-title").first().click();
   await expect(page.locator(".task-screen").first()).toBeVisible();
-  const heights = await page
-    .locator(".task-row:not(.kanban-card *) .task-row-properties")
-    .evaluateAll((lists) => lists.map((list) => list.clientHeight));
-  expect(Math.max(...heights)).toBeLessThanOrEqual(26);
+  const cut = await page
+    .locator(
+      ".task-row:not(.kanban-card *) .task-row-property:not(.is-project) strong",
+    )
+    .evaluateAll((labels) =>
+      labels.filter((label) => label.scrollWidth > label.clientWidth + 1),
+    );
+  expect(cut).toEqual([]);
 });
 
 test("board titles use the card's width", async ({ page }) => {
@@ -81,4 +85,12 @@ test("board titles use the card's width", async ({ page }) => {
     title.boundingBox(),
   ]);
   expect(text!.width).toBeGreaterThan(card!.width * 0.7);
+});
+
+test("Ctrl+A from blank page space selects the list", async ({ page }) => {
+  await page.goto("?demo=60");
+  await expect(page.locator(".task-row").first()).toBeVisible();
+  await page.mouse.click(1000, 40);
+  await page.keyboard.press("Control+a");
+  await expect(page.locator(".bulk-actions")).toContainText("selected");
 });

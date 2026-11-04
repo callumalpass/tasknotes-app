@@ -156,6 +156,49 @@ describe("task capture", () => {
 });
 
 describe("priority in capture", () => {
+  it("does not read part of a chosen multi-word name as another choice", async () => {
+    const wordy = resolveTaskCollectionConfiguration({
+      name: "task",
+      schema: {
+        value: {
+          type: "object",
+          properties: {
+            title: { type: "string", tn_role: "title" },
+            priority: {
+              type: "string",
+              tn_role: "priority",
+              enum: ["high", "very-high"],
+            },
+          },
+        },
+      },
+      implements: [
+        {
+          contract: "tasknotes.task",
+          version: "0.3.0-rc.5",
+          fields: { title: "title", priority: "priority" },
+          binding: {
+            priority: {
+              definitions: [
+                { value: "high", label: "High", order: 0 },
+                { value: "very-high", label: "Very high", order: 1 },
+              ],
+            },
+          },
+        },
+      ],
+    } as never);
+    const parsed = (text: string) =>
+      parseTaskCapture(text, wordy, "en-AU");
+    for (const text of ["Call Rowan !very-high", "Call Rowan !Very high"]) {
+      const result = await parsed(text);
+      expect(result.input).toEqual({
+        title: "Call Rowan",
+        priority: "very-high",
+      });
+    }
+  });
+
   it("leaves p1 in the title", async () => {
     const result = await parseTaskCapture(
       "Call Rowan p1",

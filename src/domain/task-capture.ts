@@ -222,6 +222,22 @@ function choiceWordsInTitle(
       [label, value].map((name) => ({ name, property: "priority" })),
     ),
   ];
+  // "!very-high" and "!Very high" are one choice; "high" inside them is no word.
+  const chosen = words
+    .filter(({ name }) => name.trim())
+    .flatMap(({ name, property }) =>
+      [
+        ...text.matchAll(
+          new RegExp(
+            `${escape(triggerOf(property))}${escape(name)}(?![\\p{L}\\p{N}_-])`,
+            "giu",
+          ),
+        ),
+      ].map((match) => ({
+        start: match.index,
+        end: match.index + match[0].length,
+      })),
+    );
   const found = new Map<number, number>();
   for (const { name, property } of words) {
     if (!name.trim()) continue;
@@ -231,6 +247,8 @@ function choiceWordsInTitle(
     );
     for (const match of text.matchAll(pattern)) {
       const end = match.index + match[0].length;
+      if (chosen.some((span) => span.start < end && span.end > match.index))
+        continue;
       const explicit =
         property === "priority" &&
         (/^\s*priority\b/iu.test(text.slice(end)) ||

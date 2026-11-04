@@ -136,6 +136,7 @@ export function TaskCalendarView({
     onOpenTask(task, occurrenceDate);
   }
   const calendarRef = useRef<Calendar<CalendarEventData> | null>(null);
+  const inspectorRef = useRef<HTMLElement>(null);
   const [initialDate] = useState(selected);
   const [mode, setMode] = useState<CalendarMode>(() =>
     calendarMode(execution.view.presentation?.options.calendarView),
@@ -442,6 +443,11 @@ export function TaskCalendarView({
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
     setInspectingDay(true);
+    // Below the side-by-side width the day's tasks open under the grid.
+    if (!window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches)
+      requestAnimationFrame(() =>
+        inspectorRef.current?.scrollIntoView?.({ block: "nearest" }),
+      );
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
     // Below twelve months the day's tasks would be out of sight, so a year
@@ -820,6 +826,7 @@ export function TaskCalendarView({
         </div>
         {!listMode && inspectingDay ? (
           <aside
+            ref={inspectorRef}
             className="full-calendar-inspector"
             aria-label={t`Selected day`}
           >

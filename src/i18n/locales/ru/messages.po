@@ -5310,6 +5310,10 @@ msgstr "Задачи — это переносимые записи Markdown в 
 msgid "Tasks for {0}"
 msgstr "Задачи для {0}"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "Задачи без даты попадают сюда."
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "Задачи, теги, проекты"
@@ -6083,6 +6087,10 @@ msgstr "Ваше изменение больше недоступно на эт�
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "Ваше изменение не сохранено."
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "Входящие пусты."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

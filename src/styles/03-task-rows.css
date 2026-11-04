@@ -1262,19 +1262,22 @@
   color: var(--ink-muted);
 }
 
-/* List rows keep wrapped metadata on an even 24px rhythm. A project, status,
-   or priority value shrinks to an ellipsis on the line it starts rather than
-   dropping alone onto another; its full value stays in the accessible name.
-   Only a real lack of room, as at 320px or 200% text, starts a new line. */
+/* List rows keep wrapped metadata on an even 24px rhythm. A project shrinks to
+   an ellipsis on the line it starts rather than dropping alone onto another; its
+   full value stays in the accessible name. A status or priority names a state,
+   so it stays whole and starts a new line when it has to. */
 .task-row:not(.kanban-card *) .task-row-properties {
   row-gap: 0;
   column-gap: 12px;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
-  flex: 1 1 2.75rem;
+  flex: 0 1 auto;
   flex-wrap: nowrap;
   min-width: min(2.75rem, 100%);
   max-width: max-content;
+}
+.task-row:not(.kanban-card *) .task-row-property.is-project {
+  flex: 1 1 2.75rem;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
   display: block;

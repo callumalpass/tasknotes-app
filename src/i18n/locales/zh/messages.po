@@ -5310,6 +5310,10 @@ msgstr "任务是 mdbase v0.3 格式的可移植 Markdown 记录。"
 msgid "Tasks for {0}"
 msgstr "{0}的任务"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "没有日期的任务会出现在这里。"
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "任务、标签、项目"
@@ -6083,6 +6087,10 @@ msgstr "此设备上已无法访问你的编辑。放弃该编辑以加载最新
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "你的编辑未保存。"
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "收件箱已清空。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

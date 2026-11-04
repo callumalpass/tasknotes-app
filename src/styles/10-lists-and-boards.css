@@ -503,11 +503,18 @@
     padding-right: 8px;
   }
 
+  .kanban-card .task-row-title-text {
+    padding-right: 24px;
+  }
+
   .kanban-card .task-actions-trigger {
     position: absolute;
     top: 4px;
-    right: 4px;
-    background: var(--paper);
+    right: 0;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
   }
 }
 

@@ -5310,6 +5310,10 @@ msgstr "작업은 mdbase v0.3 형식의 이식 가능한 Markdown 레코드입�
 msgid "Tasks for {0}"
 msgstr "{0} 작업"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "날짜가 없는 작업은 여기에 표시됩니다."
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "작업, 태그, 프로젝트"
@@ -6083,6 +6087,10 @@ msgstr "이 기기에서 편집 내용을 더 이상 사용할 수 없습니다.
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "편집 내용이 저장되지 않았습니다."
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "받은 편지함이 비어 있습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

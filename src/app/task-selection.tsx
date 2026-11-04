@@ -107,15 +107,20 @@ function SelectionKeyboard({ store }: { store: TaskSelectionStore }) {
       const row = target?.closest<HTMLElement>(
         "[data-task-selection-list] .task-row[data-task-id]",
       );
-      const region = target?.closest<HTMLElement>("[data-task-selection-list]");
-      if (!region) return;
       const key = event.key.toLowerCase();
-      if (
+      const selectAll =
         (event.ctrlKey || event.metaKey) &&
         !event.altKey &&
         !event.shiftKey &&
-        key === "a"
-      ) {
+        key === "a";
+      // Select all also answers from blank page space, not only from a row.
+      const region =
+        target?.closest<HTMLElement>("[data-task-selection-list]") ??
+        (selectAll
+          ? document.querySelector("[data-task-selection-list]")
+          : null);
+      if (!region) return;
+      if (selectAll) {
         event.preventDefault();
         store.all();
         return;

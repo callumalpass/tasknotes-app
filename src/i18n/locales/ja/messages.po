@@ -5310,6 +5310,10 @@ msgstr "タスクはmdbase v0.3形式の持ち運び可能なMarkdownレコー�
 msgid "Tasks for {0}"
 msgstr "{0}のタスク"
 
+#: src/app/view-empty-state.tsx
+msgid "Tasks with no date land here."
+msgstr "日付のないタスクはここに入ります。"
+
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "タスク、タグ、プロジェクト"
@@ -6083,6 +6087,10 @@ msgstr "このデバイスでは編集内容を利用できなくなりました
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "編集内容は保存されませんでした。"
+
+#: src/app/view-empty-state.tsx
+msgid "Your Inbox is clear."
+msgstr "受信トレイは空です。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
