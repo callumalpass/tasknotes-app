@@ -707,7 +707,7 @@ test("keeps view management clear and scalable", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Choose what appears in navigation, change its order, and manage saved views.",
+      "Open a saved view, or choose what appears in navigation.",
     ),
   ).toBeVisible();
   await expect(
@@ -719,7 +719,7 @@ test("keeps view management clear and scalable", async ({ page }) => {
   ).toBeVisible();
   await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
   await expect(allViews.getByText("Saved views")).toBeVisible();
-  await expect(allViews.getByText("TaskNotes/Views/today.base")).toBeVisible();
+  await expect(allViews.getByTitle("TaskNotes/Views/today.base")).toBeVisible();
   const toolMembership = allViews.getByRole("button", {
     name: "Remove Scratchpad from navigation",
   });
@@ -769,6 +769,8 @@ test("keeps view management clear and scalable", async ({ page }) => {
   const dragToday = page.getByRole("button", {
     name: "Move Today. Drag, or use up and down arrow keys.",
   });
+  await dragToday.scrollIntoViewIfNeeded();
+  await dragScratchpad.scrollIntoViewIfNeeded();
   const [scratchpadBox, todayBox] = await Promise.all([
     dragScratchpad.boundingBox(),
     dragToday.boundingBox(),

@@ -193,7 +193,7 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
   await startupLocale(page, "fr");
   await page.goto("views?demo=12");
   await expect(
-    page.getByRole("heading", { name: "Gérer les vues", exact: true }),
+    page.getByRole("heading", { name: "Vues", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Créer une vue", exact: true })
