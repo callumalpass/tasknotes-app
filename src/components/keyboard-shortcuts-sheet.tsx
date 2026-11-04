@@ -48,31 +48,37 @@ export function KeyboardShortcutsSheet({
             <X aria-hidden="true" size={20} />
           </button>
         </header>
-        {keyboardShortcutGroups().map((group) => (
-          <section key={group.title} aria-label={group.title}>
-            <h3>{group.title}</h3>
-            <dl>
-              {group.shortcuts.map((shortcut) => (
-                <div key={shortcut.description}>
-                  <dt>{shortcut.description}</dt>
-                  <dd>
-                    {shortcut.keys.map((key, index) => (
-                      <span key={key}>
-                        {index ? (
-                          <span className="shortcut-or">
-                            {" "}
-                            <Trans>or</Trans>{" "}
-                          </span>
-                        ) : null}
-                        <kbd>{key}</kbd>
-                      </span>
-                    ))}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ))}
+        {keyboardShortcutGroups()
+          .reverse()
+          .map((group, index) => (
+            <section
+              key={group.title}
+              aria-label={group.title}
+              className={index === 0 ? "task-shortcuts-primary" : undefined}
+            >
+              <h3>{group.title}</h3>
+              <dl>
+                {group.shortcuts.map((shortcut) => (
+                  <div key={shortcut.description}>
+                    <dt>{shortcut.description}</dt>
+                    <dd>
+                      {shortcut.keys.map((key, index) => (
+                        <span key={key}>
+                          {index ? (
+                            <span className="shortcut-or">
+                              {" "}
+                              <Trans>or</Trans>{" "}
+                            </span>
+                          ) : null}
+                          <kbd>{key}</kbd>
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
         <p className="keyboard-shortcuts-note">
           <Trans>
             Task keys act on the focused row, or on every selected task. Date

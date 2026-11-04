@@ -823,7 +823,7 @@ test("supports project capture and saved-view editing in the demo", async ({
     }),
   ).toBeVisible();
 
-  await openNavigationItem(page, "Manage views");
+  await openNavigationItem(page, "Views");
   await page.getByRole("button", { name: "More actions for Today" }).click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const viewName = page.getByRole("textbox", { name: "View name" });

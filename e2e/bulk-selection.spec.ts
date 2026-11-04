@@ -89,9 +89,7 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
   await selectTwo(page);
   await page.getByRole("combobox", { name: "Schedule selected tasks" }).click();
   await page.getByRole("option", { name: "Tomorrow" }).click();
-  await expect(
-    page.getByText("2 tasks updated", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(/^Scheduled 2 tasks for /)).toBeVisible();
   for (const title of [titles[0], titles[2]])
     await expect(
       rows(page).getByRole("button", { name: title, exact: true }),
@@ -147,7 +145,7 @@ for (const action of [
       ).toBeVisible();
     else
       await expect(
-        page.getByText("2 tasks updated", { exact: true }),
+        page.locator(".bulk-update-notice").getByRole("status"),
       ).toBeVisible();
     await page.getByRole("button", { name: "Undo", exact: true }).click();
     for (const id of ids)
@@ -209,16 +207,17 @@ test("virtual lists select all data and extend beyond the mounted window", async
 
 test("page menu enters selection mode, query collapse and navigation clear selections", async ({
   page,
+  isMobile,
 }) => {
   await openDemo(page);
   await page.getByLabel("View options", { exact: true }).click();
   await page.getByRole("button", { name: "Select tasks", exact: true }).click();
   await expect(page.locator(".bulk-actions")).toContainText(
-    "Tap tasks to select them.",
+    isMobile ? "Tap tasks to select them." : "Click tasks to select them.",
   );
   await rows(page).first().locator(".task-row-title").click();
   await expect(selectedRows(page)).toHaveCount(1);
-  await page.getByRole("button", { name: /^Today \d+$/ }).click();
+  await page.locator(".task-section-toggle").first().click();
   await expect(selectedRows(page)).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.keyboard.press("ControlOrMeta+k");
@@ -329,6 +328,9 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
 }) => {
   await openDemo(page);
   for (const choice of ["none", "pick"]) {
+    const titles = await rows(page)
+      .locator(".task-row-title")
+      .allTextContents();
     await selectTwo(page);
     await page
       .getByRole("combobox", { name: "Schedule selected tasks" })
@@ -348,14 +350,17 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
         .click();
     }
     await expect(
-      page.getByText("2 tasks updated", { exact: true }),
+      page.getByText(
+        choice === "none"
+          ? "Removed scheduled dates from 2 tasks"
+          : "Scheduled 2 tasks for 2026-11-12",
+        { exact: true },
+      ),
     ).toBeVisible();
     await page.getByRole("button", { name: "Undo", exact: true }).click();
-    await expect(rows(page).first().locator(".task-row-title")).toHaveText(
-      "Send the research summary to Rowan",
-    );
-    await expect(rows(page).nth(2).locator(".task-row-title")).toHaveText(
-      "Review demo task 17",
-    );
+    for (const title of [titles[0], titles[2]])
+      await expect(
+        rows(page).getByRole("button", { name: title, exact: true }),
+      ).toBeVisible();
   }
 });

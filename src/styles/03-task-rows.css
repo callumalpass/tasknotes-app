@@ -987,6 +987,19 @@
 
 /* Wide lists read like a table: the project settles at the far edge. */
 @media (min-width: 840px) {
+  .task-row:not(.kanban-card *) .task-row-properties:has(.is-project) {
+    padding-right: min(30%, 14rem);
+    position: relative;
+    min-height: 24px;
+  }
+  .task-row:not(.kanban-card *) .task-row-property.is-project {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: min(30%, 14rem);
+    justify-content: flex-end;
+    text-align: right;
+  }
 }
 
 .task-property-editor-scrim {
@@ -1207,7 +1220,7 @@
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
   flex: 0 1 auto;
   flex-wrap: nowrap;
-  min-width: min(2.75rem, 100%);
+  min-width: 0;
   max-width: max-content;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
@@ -1219,6 +1232,11 @@
 .task-row:not(.kanban-card *) .task-row-property.is-compact .task-row-glyph {
   margin-right: 4px;
   vertical-align: -2px;
+}
+@media (pointer: coarse) {
+  .task-row:not(.kanban-card *) .task-row-property.is-compact {
+    min-width: min(2.75rem, 100%);
+  }
 }
 
 .undo-toast.task-completed-notice {

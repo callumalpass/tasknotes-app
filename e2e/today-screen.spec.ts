@@ -94,7 +94,7 @@ test("a finished day says Today is clear and leads to Upcoming", async ({
   ).toBeVisible();
 });
 
-test("the phone Add task button narrows while scrolling and clears the last row", async ({
+test("the phone Add task button stays compact at rest and clears row metadata", async ({
   page,
   isMobile,
 }) => {
@@ -102,7 +102,10 @@ test("the phone Add task button narrows while scrolling and clears the last row"
   await page.goto("?demo=50");
   const fab = page.locator(".view-context-capture");
   await expect(fab).toContainText("Add task");
-  const wide = (await fab.boundingBox())!.width;
+  await expect(fab).toHaveAccessibleName("New task");
+  expect((await fab.boundingBox())!.width).toBe(44);
+  const meta = await page.locator(".task-row-properties").first().boundingBox();
+  expect(meta!.x + meta!.width).toBeLessThan((await fab.boundingBox())!.x);
 
   await page.mouse.move(200, 400);
   for (let step = 0; step < 4; step += 1) {
@@ -111,10 +114,7 @@ test("the phone Add task button narrows while scrolling and clears the last row"
   }
   await expect(fab).toHaveClass(/is-collapsed/);
   await expect(fab).toHaveAccessibleName("New task");
-  await expect
-    .poll(async () => (await fab.boundingBox())!.width)
-    .toBeLessThan(wide);
-  // Settling restores the label.
+  expect((await fab.boundingBox())!.width).toBe(44);
   await expect(fab).not.toHaveClass(/is-collapsed/, { timeout: 2_000 });
 
   await page.evaluate(() =>
