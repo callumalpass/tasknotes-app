@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "../test/render";
+import { act, cleanup, fireEvent, render } from "../test/render";
 import { activateAppLocale } from "../i18n/app";
 import type { ItemArg } from "@tasknotes/calendar";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -215,6 +215,106 @@ describe("year layout", () => {
     );
     expect(onSelect).toHaveBeenCalledWith("2026-03-12", "2026-03-12");
     expect(calendar.props!.view).toBe("month");
+  });
+});
+
+describe("shared agenda", () => {
+  it("uses the agenda, overdue lead and date-aware capture on desktop without changing Base options", () => {
+    const current = execution("2026-07-24");
+    current.view.presentation!.options = {
+      calendarView: "listWeek",
+      listDayCount: 11,
+    };
+    const onCreate = vi.fn();
+    const onSelect = vi.fn();
+    const preferences = { ...defaultCalendarPreferences("en-US"), firstDay: 1 };
+    render(
+      <TaskCalendarView
+        execution={current}
+        identityTasks={current.rows.map((row) => row.task)}
+        preferences={preferences}
+        selected="2026-07-24"
+        selectedCreateValue="2026-07-24"
+        titleProperty="title"
+        onCreate={onCreate}
+        onSelect={onSelect}
+        onOpen={vi.fn()}
+        onToggle={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
+    expect(calendar.props).toMatchObject({
+      view: "list",
+      listAgenda: true,
+      dateStrip: true,
+      listLeadTitle: "Overdue",
+      listAddText: "Add task",
+      firstDay: 1,
+      listDayCount: 11,
+    });
+    act(() =>
+      (calendar.props!.onListAdd as (arg: unknown) => void)({
+        dateStr: "2026-07-29",
+      }),
+    );
+    expect(onSelect).toHaveBeenCalledWith("2026-07-29");
+    expect(onCreate).toHaveBeenCalledWith("2026-07-29");
+    expect(current.view.presentation!.options).toEqual({
+      calendarView: "listWeek",
+      listDayCount: 11,
+    });
+  });
+
+  it("mounts ordinary task controls without a surrounding calendar button", async () => {
+    const current = execution("2026-07-24T09:30");
+    current.view.presentation!.options.calendarView = "listWeek";
+    const onOpen = vi.fn();
+    const onToggle = vi.fn();
+    const view = render(
+      <TaskCalendarView
+        execution={current}
+        identityTasks={current.rows.map((row) => row.task)}
+        preferences={defaultCalendarPreferences("en-US")}
+        selected="2026-07-24"
+        selectedCreateValue="2026-07-24"
+        titleProperty="title"
+        onCreate={vi.fn()}
+        onSelect={vi.fn()}
+        onOpen={onOpen}
+        onToggle={onToggle}
+        onEdit={vi.fn()}
+      />,
+    );
+    const item = items().find((item) => item.id === "scheduled-one")!;
+    const el = document.createElement("div");
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+    const arg = {
+      item,
+      el,
+      variant: "list",
+      isMirror: false,
+      day: parseDay("2026-07-24"),
+      timeText: "9:30am",
+    };
+    el.append((calendar.props!.listItemContent as (arg: unknown) => Node)(arg));
+    view.container.append(el);
+    act(() => (calendar.props!.itemDidMount as (arg: unknown) => void)(arg));
+    expect(el).not.toHaveAttribute("role");
+    expect(el).not.toHaveAttribute("tabindex");
+    expect(el.querySelector(".task-row")).toBeTruthy();
+    expect(el).toHaveTextContent("9:30am");
+    fireEvent.click(view.getByRole("button", { name: "Calendar task" }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      fireEvent.click(
+        view.getByRole("button", { name: "Complete Calendar task" }),
+      ),
+    );
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    act(() => (calendar.props!.itemWillUnmount as (arg: unknown) => void)(arg));
+    expect(el.querySelector(".task-row")).toBeNull();
   });
 });
 

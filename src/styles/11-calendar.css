@@ -1420,3 +1420,198 @@
   color: var(--ink-soft);
   cursor: default;
 }
+
+/* A quiet layout disclosure keeps all six saved calendar modes available. */
+.full-calendar-view .view-options > summary {
+  gap: var(--space-sm);
+  width: auto;
+  min-width: 44px;
+  padding-inline: var(--space-sm);
+  font-size: var(--type-supporting);
+}
+
+.full-calendar-commandbar > .view-options {
+  justify-self: end;
+  margin-inline-start: auto;
+}
+
+/* Upcoming shares the calendar's scrolling/drag layer and the lists' rows. */
+.full-calendar-view.is-agenda .tnc {
+  border-top: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-strip {
+  padding: 0 0 var(--space-sm);
+  z-index: 10;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-head {
+  padding: 0 0 var(--space-sm);
+}
+
+.full-calendar-view.is-agenda
+  :is(.tnc-strip-nav, .tnc-strip-today, .tnc-strip-title) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-today {
+  border-radius: var(--radius-control);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-dows,
+.full-calendar-view.is-agenda .tnc-strip-dot,
+.full-calendar-view.is-agenda .tnc-strip-handle {
+  display: none;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-grid {
+  gap: var(--space-xs);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-day {
+  gap: 2px;
+  min-height: 92px;
+  padding: var(--space-sm) var(--space-xs);
+  color: var(--ink-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-day.is-focus {
+  background: var(--paper-soft);
+  border-color: var(--line-strong);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-day.is-today {
+  color: var(--accent);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-day.is-today .agenda-strip-weekday {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-num {
+  width: 32px;
+  font-size: var(--type-section);
+}
+
+.agenda-strip-weekday,
+.agenda-strip-count {
+  font-size: var(--type-label);
+  line-height: 1.4;
+}
+
+.agenda-strip-count {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-today[hidden] {
+  display: block;
+}
+
+.full-calendar-view.is-agenda .tnc-list-body {
+  border-top: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-list-section {
+  padding-top: var(--space-md);
+}
+
+.full-calendar-view.is-agenda .tnc-list-day {
+  position: sticky;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: var(--space-sm) 0;
+  color: var(--ink);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--type-body);
+  z-index: 2;
+}
+
+.agenda-day-count {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.full-calendar-view.is-agenda .tnc-list-lead-title {
+  margin-right: 0;
+  color: var(--danger);
+}
+
+.full-calendar-view.is-agenda .tnc-list-lead-slot {
+  margin-inline-start: auto;
+}
+
+.full-calendar-view.is-agenda .tnc-item--list {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: auto;
+}
+
+.full-calendar-view.is-agenda .tnc-item--list .tnc-item-main {
+  display: block;
+}
+
+.agenda-task-slot {
+  min-width: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-list-add {
+  min-height: 44px;
+  padding: var(--space-sm) 12px;
+  font-size: var(--type-supporting);
+}
+
+.full-calendar-view.is-agenda .tnc-list-section.is-empty {
+  padding-top: var(--space-xs);
+}
+
+.full-calendar-view.is-agenda .tnc-list-section.is-empty .tnc-list-day {
+  color: var(--ink-soft);
+}
+
+.full-calendar-view.is-agenda
+  .tnc-list-lead
+  .task-row-property.is-overdue
+  > span,
+.full-calendar-view.is-agenda
+  .tnc-list-lead
+  .task-row-property.is-overdue
+  > strong,
+.full-calendar-view.is-agenda .tnc-list-lead .task-row-meta .is-overdue {
+  color: var(--ink-muted);
+}
+
+.full-calendar-view.is-agenda .tnc-strip.is-expanded .agenda-strip-weekday {
+  display: none;
+}
+
+.full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-dows {
+  display: grid;
+}
+
+@media (max-width: 839px) {
+  .full-calendar-view.is-agenda .tnc-strip-day {
+    min-height: 82px;
+    padding-inline: 0;
+  }
+
+  .full-calendar-view.is-agenda .tnc-strip-grid {
+    gap: 0;
+  }
+
+  .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-day {
+    min-height: 58px;
+    padding-block: var(--space-xs);
+  }
+}
