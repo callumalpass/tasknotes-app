@@ -37,8 +37,8 @@ export function TaskCompletedNotice({
   }, [completion, held, undoing, failed, onDismiss]);
   const message = completion
     ? failed
-      ? `Couldn’t reopen “${completion.task.title}”`
-      : `Completed “${completion.task.title}”`
+      ? translate`Couldn’t reopen “${completion.task.title}”`
+      : translate`Completed “${completion.task.title}”`
     : "";
   return (
     <FeedbackNotice>

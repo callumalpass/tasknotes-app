@@ -4,6 +4,7 @@ import { registerOverlay } from "../components/overlays/overlay-stack";
 import {
   announceShortcut,
   focusAdjacentTaskRow,
+  focusRestoredTaskRow,
   keyboardShortcutGroups,
   nextWeekStart,
   plainShortcutsSuspended,
@@ -15,6 +16,16 @@ import {
 
 afterEach(() => {
   document.body.innerHTML = "";
+});
+
+it("restores task focus after a delayed list refresh brings the row back", async () => {
+  const main = rows(["First", "Restored"]);
+  const restored = main.lastElementChild!;
+  restored.remove();
+  focusRestoredTaskRow("t1");
+  main.append(restored);
+  await Promise.resolve();
+  expect(document.activeElement).toBe(restored.querySelector("button"));
 });
 
 function keydown(key: string, init: KeyboardEventInit = {}, target?: Element) {

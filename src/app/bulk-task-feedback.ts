@@ -1,0 +1,42 @@
+import { t } from "@lingui/core/macro";
+import { countLabel } from "../i18n/default-labels";
+import type { BulkTaskChange } from "../application/bulk-task-edit";
+
+export function bulkTaskFeedback(
+  change: BulkTaskChange,
+  count: number,
+  value: string,
+) {
+  const tasks = countLabel(count, "task");
+  switch (change.kind) {
+    case "complete":
+      return {
+        message: t`Completed ${tasks}`,
+        undoNotice: t`Restored completion states for ${tasks}`,
+      };
+    case "schedule":
+      return {
+        message: change.date
+          ? t`Scheduled ${tasks} for ${change.date}`
+          : t`Removed scheduled dates from ${tasks}`,
+        undoNotice: t`Restored dates for ${tasks}`,
+      };
+    case "priority":
+      return {
+        message: t`Set priority to ${value} for ${tasks}`,
+        undoNotice: t`Restored priorities for ${tasks}`,
+      };
+    case "project":
+      return {
+        message: value
+          ? t`Moved ${tasks} to ${value}`
+          : t`Removed projects from ${tasks}`,
+        undoNotice: t`Restored projects for ${tasks}`,
+      };
+    case "archive":
+      return {
+        message: t`Archived ${tasks}`,
+        undoNotice: t`Restored ${tasks} from archive`,
+      };
+  }
+}

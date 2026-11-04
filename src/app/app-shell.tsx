@@ -80,6 +80,7 @@ import { useCollectionGate } from "./collection-context";
 import { countLabel } from "../i18n/default-labels";
 import type { TodayTaskCounts } from "../domain/today-summary";
 import { useTodayTaskCounts } from "./use-today-task-counts";
+import { useNavigationTaskCounts } from "./use-navigation-task-counts";
 import {
   readSidebarCollapsed,
   saveSidebarCollapsed,
@@ -88,6 +89,7 @@ import { starterViewKind } from "../domain/default-view-source";
 import { viewNavigationShortcut } from "./palette-commands";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
+  focusRestoredTaskRow,
   isApplePlatform,
   isEditableTarget,
   shortcutLabel,
@@ -122,6 +124,7 @@ export function AppShell() {
   const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
   const todayCounts = useTodayTaskCounts();
+  const navigationCounts = useNavigationTaskCounts();
   const projectLinks = useProjectShortcuts();
   const [sidebarCollapsed, setSidebarCollapsed] =
     useState(readSidebarCollapsed);
@@ -214,12 +217,15 @@ export function AppShell() {
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
   const undoCompletion = useCallback(
     async ({ task, occurrenceDate, advanced }: TaskCompletion) => {
+      const origin = routeRef.current;
       await setTaskCompletion({
         id: task.id,
         occurrenceDate,
         completed: false,
       });
       if (advanced) await updateTask(task.id, advanced);
+      setCompletedNotice(undefined);
+      if (routeRef.current === origin) focusRestoredTaskRow(task.id);
     },
     [setTaskCompletion, updateTask],
   );
@@ -229,6 +235,7 @@ export function AppShell() {
       setCompletedNotice({ completion, repository, route: routeRef.current });
       completionUndo.current = {
         label: completion.task.title,
+        undoNotice: translate`Reopened “${completion.task.title}”`,
         run: () => undoCompletion(completion),
       };
       rememberUndo(completionUndo.current);
@@ -460,6 +467,7 @@ export function AppShell() {
           homeKey={homeKey}
           onMove={moveNavigationView}
           todayCounts={todayCounts}
+          navigationCounts={navigationCounts}
           projects={projectLinks}
           mode="desktop"
           navigationKeys={navigationKeys}
@@ -803,6 +811,9 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
       aria-label={t`Busiest projects`}
       className="navigation-project-section"
       role="group"
+      onFocusCapture={(event) =>
+        event.currentTarget.closest("aside")?.scrollTo?.({ top: 0 })
+      }
     >
       {projects.map(({ label, count }) => (
         <button
@@ -856,7 +867,10 @@ function UndoFeedback({
     (entry: UndoEntry) => {
       const { label } = entry;
       void entry.run().then(
-        () => setNotice({ message: t`Undid change to “${label}”` }),
+        () =>
+          setNotice({
+            message: entry.undoNotice ?? t`Undid change to “${label}”`,
+          }),
         () => setNotice({ message: t`Couldn’t undo. Try again.` }),
       );
     },
@@ -1200,6 +1214,7 @@ export function Navigation({
   onMove,
   onCommands,
   todayCounts,
+  navigationCounts,
   projects = [],
 }: {
   active: string;
@@ -1213,6 +1228,7 @@ export function Navigation({
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
   todayCounts?: TodayTaskCounts | null;
+  navigationCounts?: { unplanned: number; upcoming: number } | null;
   projects?: ProjectShortcut[];
 }) {
   const { t } = useLingui();
@@ -1224,6 +1240,7 @@ export function Navigation({
     route: Route;
     shortcut?: string;
     today?: boolean;
+    kind?: ReturnType<typeof starterViewKind>;
   }[] = [];
   for (const key of navigationKeys) {
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
@@ -1253,6 +1270,7 @@ export function Navigation({
       navigationEntries.push({
         shortcut: viewNavigationShortcut(view),
         today: starterViewKind(view) === "today",
+        kind: starterViewKind(view),
         key: `view:${view.key}`,
         navigationKey: key,
         label: view.name,
@@ -1353,7 +1371,16 @@ export function Navigation({
       shortcut,
       today,
     } = entry;
-    const counts = mode === "desktop" && today ? todayCounts : null;
+    const countKind = entry.kind;
+    const counts =
+      mode !== "desktop"
+        ? null
+        : today
+          ? todayCounts
+          : navigationCounts &&
+              (countKind === "unplanned" || countKind === "upcoming")
+            ? { total: navigationCounts[countKind], overdue: 0 }
+            : null;
     const accessibleLabel = counts
       ? counts.overdue
         ? t`${label}, ${countLabel(counts.total, "task")}, ${counts.overdue} overdue`
@@ -1378,7 +1405,7 @@ export function Navigation({
       >
         <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
         <span>{label}</span>
-        {mode === "desktop" && today ? (
+        {mode === "desktop" && (today || counts) ? (
           <small
             aria-hidden="true"
             className={`navigation-count${counts ? "" : " is-unknown"}`}
@@ -1482,7 +1509,7 @@ export function Navigation({
                   >
                     <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
                     <span>
-                      <Trans>Manage views</Trans>
+                      <Trans>Views</Trans>
                     </span>
                   </button>
                   <button
@@ -1514,16 +1541,16 @@ export function Navigation({
         >
           {onCommands ? (
             <button
-              aria-label={t({ message: "Commands" })}
+              aria-label={t({ message: "Quick actions" })}
               aria-keyshortcuts="Control+K Meta+K"
               className="navigation-commands"
-              title={translate`Commands (${shortcutLabel("K")})`}
+              title={translate`Quick actions (${shortcutLabel("K")})`}
               type="button"
               onClick={onCommands}
             >
               <Command aria-hidden="true" size={20} strokeWidth={1.7} />
               <span>
-                <Trans>Commands</Trans>
+                <Trans>Quick actions</Trans>
               </span>
               {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
@@ -1531,14 +1558,14 @@ export function Navigation({
           <button
             aria-current={active === "views" ? "page" : undefined}
             className={active === "views" ? "is-active" : undefined}
-            aria-label={t({ message: "Manage views" })}
-            title={t({ message: "Manage views" })}
+            aria-label={t({ message: "Views" })}
+            title={t({ message: "Views" })}
             type="button"
             onClick={() => onNavigate({ page: "views" })}
           >
             <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
             <span>
-              <Trans>Manage views</Trans>
+              <Trans>Views</Trans>
             </span>
           </button>
           <button

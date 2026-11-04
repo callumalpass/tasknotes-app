@@ -143,7 +143,9 @@ function SelectionKeyboard({ store }: { store: TaskSelectionStore }) {
       );
       if (title) {
         title.focus({ preventScroll: true });
-        title.scrollIntoView({ block: "nearest" });
+        window.requestAnimationFrame(() =>
+          title.closest(".task-row")?.scrollIntoView({ block: "nearest" }),
+        );
       } else
         region.dispatchEvent(
           new CustomEvent("tasknotes:reveal-task", { detail: next }),

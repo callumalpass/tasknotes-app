@@ -157,7 +157,30 @@ function focusRow(row: HTMLElement) {
   const title = rowTitle(row);
   if (!title) return;
   title.focus({ preventScroll: true });
-  title.scrollIntoView?.({ block: "nearest" });
+  row.scrollIntoView?.({ block: "nearest" });
+}
+
+export function focusRestoredTaskRow(taskId: string) {
+  const main = document.getElementById("main-content");
+  if (!main) return;
+  const href = location.href;
+  const restore = () => {
+    const row = main.querySelector<HTMLElement>(
+      `.task-row[data-task-id="${CSS.escape(taskId)}"]`,
+    );
+    if (!row || location.href !== href) return false;
+    focusRow(row);
+    return true;
+  };
+  if (restore()) return;
+  const observer = new MutationObserver(() => {
+    if (location.href !== href || restore()) {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+    }
+  });
+  const timeout = window.setTimeout(() => observer.disconnect(), 5_000);
+  observer.observe(main, { childList: true, subtree: true });
 }
 
 let rowPlace: { id: string; index: number; href: string } | undefined;
