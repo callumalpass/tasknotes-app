@@ -20,7 +20,6 @@ import {
   type SyncStatus,
   type WriteLedgerEntry,
 } from "@mdbase-dev/sdk";
-import { linksTo } from "@mdbase-dev/connect";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -126,26 +125,12 @@ import {
 } from "../domain/task-occurrence";
 import {
   newViewSourcePath,
-  taskNotesDefaultBaseSources,
   viewSourceFormat,
   viewSourceRecord,
 } from "../domain/default-view-source";
 import { normalizePresentationType } from "../domain/view-renderer";
-import {
-  requireSetupAvailability,
-  setupAvailability,
-} from "./next-setup-availability";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import { NextMutations, RejectedNextMutation } from "./next-mutations";
-import { NativeModelSetup } from "./next-model-setup";
-import { NativeResourceSetup } from "./next-resource-setup";
-import {
-  TaskNotesModelRequiredError,
-  type ModelSetupJournal,
-  type ModelResourceSetupJournal,
-  type TaskNotesModelSetup,
-  type ModelSetupProgressListener,
-} from "../application/ports/model-setup";
 import {
   nextTaskCatalog,
   nextTaskProviders,
@@ -249,11 +234,9 @@ function plainFields(fields: wire.FmMap): Record<string, unknown> {
  */
 export class NextTaskRepository implements TaskRepository {
   readonly files: NextCollectionFileStore;
-  readonly modelSetup?: TaskNotesModelSetup;
   readonly defaultViewSourceCreation = "explicit-only" as const;
   private scope = new AbortController();
   private disposed = false;
-  private creatorSetupPending: boolean;
   private providers: NextTaskProvider[] = [];
   private models = new Map<string, TaskNotesTaskModel>();
   private initialization: {
@@ -397,16 +380,6 @@ export class NextTaskRepository implements TaskRepository {
       /** Host-owned clients survive this adapter's disposal; default remains owned. */
       clientOwnership?: "owned" | "borrowed";
       peopleClient?: Pick<MdbasePeopleClient, "directory">;
-      modelSetupJournal?: ModelSetupJournal;
-      /** Actual original-controller completion flag, not resource readiness. */
-      requiresTaskNotesModelSetup?: boolean;
-      /** Completion recording only after the original client's receipt/readback. */
-      onModelSetupVerified?: (signal: AbortSignal) => Promise<void>;
-      /** Display/session assessment, never creator completion or write authority. */
-      onModelSetupAssessment?: (
-        state: "ready" | "setup_required",
-        signal: AbortSignal,
-      ) => Promise<void>;
     } = {},
   ) {
     this.clientOwnership = options.clientOwnership ?? "owned";
@@ -469,105 +442,6 @@ export class NextTaskRepository implements TaskRepository {
     this.stopLedger = client.ledger.subscribe(() => {
       if (!this.disposed && !this.scope.signal.aborted) this.emit("status");
     });
-    this.creatorSetupPending = options.requiresTaskNotesModelSetup === true;
-    if (
-      this.creatorSetupPending &&
-      (!options.modelSetupJournal || !options.onModelSetupVerified)
-    )
-      throw new Error("Original creator completion owner unavailable.");
-    if (options.modelSetupJournal) {
-      const onVerified = options.onModelSetupVerified;
-      const journal = options.modelSetupJournal;
-      const verified = async (signal: AbortSignal) => {
-        const owner = this.scope;
-        signal.throwIfAborted();
-        owner.signal.throwIfAborted();
-        this.invalidateRemoteData();
-        await onVerified?.(signal);
-        // Preserve the operation's original owner AND deadline. A renewed
-        // repository scope cannot make an old completion current again.
-        signal.throwIfAborted();
-        owner.signal.throwIfAborted();
-        if (this.disposed || owner !== this.scope)
-          throw new Error("Original creator completion owner unavailable.");
-        this.creatorSetupPending = false;
-      };
-      const legacy = (signal?: AbortSignal) =>
-        new NativeModelSetup(
-          client,
-          journal,
-          () => this.setupOwnerSignal(signal),
-          verified,
-        );
-      // The real protected store implements both ports. Legacy-only adapters
-      // retain their original seam; no v1/v2 intent is enlarged into v3.
-      const resourceJournal = journal as Partial<ModelResourceSetupJournal>;
-      const supportsResources =
-        typeof resourceJournal.prepareResources === "function" &&
-        typeof resourceJournal.recordResourceAttempt === "function" &&
-        typeof resourceJournal.recordResourceConfirmed === "function" &&
-        typeof resourceJournal.recordResourceVerified === "function";
-      const setup = supportsResources
-        ? new NativeResourceSetup(
-            client,
-            journal as ModelResourceSetupJournal,
-            () => this.setupOwnerSignal(),
-            taskNotesDefaultBaseSources,
-            verified,
-            legacy,
-          )
-        : legacy();
-      this.modelSetup = Object.freeze({
-        inspect: async () => {
-          const waiting = setupAvailability(client.status);
-          if (waiting) return waiting;
-          const assessmentSignal = this.signal();
-          const owner = this.scope;
-          const revision = this.dataRevision;
-          const inspected = await setup.inspect();
-          const result = setupAvailability(client.status) ?? inspected;
-          if (
-            options.onModelSetupAssessment &&
-            (result.state === "ready" || result.state === "required")
-          ) {
-            // The current READ must also load a usable task provider. An inspect
-            // result alone cannot bypass an original creator-completion gate.
-            if (result.state === "ready")
-              await this.initialize({ deferTaskIndex: true });
-            assessmentSignal.throwIfAborted();
-            owner.signal.throwIfAborted();
-            this.assertCurrentData(revision);
-            await options.onModelSetupAssessment(
-              result.state === "ready" ? "ready" : "setup_required",
-              assessmentSignal,
-            );
-            assessmentSignal.throwIfAborted();
-            owner.signal.throwIfAborted();
-            this.assertCurrentData(revision);
-          }
-          return setupAvailability(client.status) ?? result;
-        },
-        onReadinessChange: (listener: () => void) => {
-          let previous = setupAvailability(client.status)?.reason;
-          return client.onStatus((status) => {
-            if (this.disposed || this.scope.signal.aborted) return;
-            const next = setupAvailability(status)?.reason;
-            if (next !== previous) {
-              previous = next;
-              listener();
-            }
-          });
-        },
-        install: async (progress?: ModelSetupProgressListener) => {
-          requireSetupAvailability(client.status);
-          return setup.install(progress);
-        },
-        resume: async (progress?: ModelSetupProgressListener) => {
-          requireSetupAvailability(client.status);
-          return setup.resume(progress);
-        },
-      });
-    }
     let syncConnection = client.status?.connection;
     this.stopStatus = client.onStatus((status: SyncStatus) => {
       if (this.disposed) return;
@@ -615,16 +489,6 @@ export class NextTaskRepository implements TaskRepository {
     });
   }
 
-  /** Setup owns its bounded submit/receipt window, not a foreground read budget.
-   * Pin this lifecycle before entering it; owner aborts are never renewed. */
-  private setupOwnerSignal(extra?: AbortSignal): AbortSignal {
-    if (this.disposed)
-      throw new Error("The native collection instance has been disposed.");
-    this.scope.signal.throwIfAborted();
-    return extra
-      ? AbortSignal.any([this.scope.signal, extra])
-      : this.scope.signal;
-  }
   private signal(extra?: AbortSignal): AbortSignal {
     if (this.disposed)
       throw new Error("The native collection instance has been disposed.");
@@ -748,18 +612,6 @@ export class NextTaskRepository implements TaskRepository {
 
   private async initializeModel(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
-    // Do not reclassify ordinary pending task work in an already loaded model
-    // as missing setup. This gate protects the first/invalidated model read.
-    const unavailableSetup =
-      this.modelSetup &&
-      !this.providers.length &&
-      setupAvailability(this.client.status);
-    if (unavailableSetup)
-      throw new TaskNotesModelRequiredError(unavailableSetup.message);
-    if (this.creatorSetupPending)
-      throw new TaskNotesModelRequiredError(
-        "Complete this original collection's TaskNotes setup before opening tasks and views.",
-      );
     await this.observeChanges(signal);
     for (;;) {
       signal.throwIfAborted();
@@ -1822,14 +1674,15 @@ export class NextTaskRepository implements TaskRepository {
     if (personPath === undefined) return undefined;
     const paths = new Set<string>();
     for (const provider of this.providers) {
+      const field = JSON.stringify(
+        provider.model.config.fieldMapping.assignees,
+      );
+      const target = JSON.stringify(personPath);
       for await (const page of this.client.pages(
         {
           types: [provider.typeName],
-          where: linksTo(
-            provider.model.config.fieldMapping.assignees,
-            personPath,
-            { multiple: true },
-          ),
+          // The replica resolves links; compare exact paths, never basenames.
+          where: `${field} in record && record[${field}] != null && record[${field}].exists(link, link != null && link.asFile() != null && link.asFile().file.path == ${target})`,
           limit: 1000,
         },
         undefined,
@@ -1908,6 +1761,7 @@ export class NextTaskRepository implements TaskRepository {
     options: { signal?: AbortSignal } = {},
   ): Promise<Task[]> {
     const signal = this.signal(options.signal);
+    signal.throwIfAborted();
     const selected = query.search?.trim()
       ? (await this.search(query, options)).map((r) => r.task)
       : await this.listSummaries(query);

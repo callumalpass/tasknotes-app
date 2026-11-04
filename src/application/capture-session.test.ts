@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { mdbaseError } from "@mdbase-dev/sdk";
 import { CaptureSession } from "./capture-session";
 import { OperationalError } from "./operational-error";
 import type { TaskRepository } from "./ports/task-repository";
@@ -72,9 +72,9 @@ describe("capture session lifetime", () => {
       .fn<TaskRepository["create"]>(async () => created)
       .mockImplementationOnce(async (_input, intent) => {
         intent!.authorityRequestId = "exact-request";
-        throw connectError("operation_outcome_unknown", "Unconfirmed", {
-          operationOutcome: "unknown",
-          details: { request_id: "exact-request" },
+        throw mdbaseError("outcome_unknown", "Unconfirmed", {
+          // The SDK code already marks this outcome unknown.
+          details: new Map([["request_id", "exact-request"]]),
         });
       })
       .mockRejectedValueOnce(new Error("Receipt missing"));

@@ -20,11 +20,14 @@ PERF_SIZES=10000,50000 PERF_ROUNDS=7 \
   PERF_OUTPUT=benchmarks/results/latest.json pnpm bench:collections
 ```
 
-The harness uses the real `MdbaseTaskRepository`, model decoding, filtering,
-sorting, and refresh code. Its **synthetic authority** serializes and parses every
-response, paginates at 1,000 records, and counts requests, records, JSON bytes,
-and body bytes. It does not measure Connect's real query engine, relay latency,
-HTTP compression, React rendering, browser long tasks, or device memory.
+The current harness uses the real `NextTaskRepository`, model decoding,
+filtering, sorting and refresh code over the SDK's `MemoryReplica`. It meters
+actual CBOR frames and SDK-returned record/body bytes, including native Bases
+window reads. It does not measure native Core, Noise, relay latency, HTTP
+compression, React rendering, browser long tasks or device memory.
+
+The saved measurements below are historical legacy-client results, not an SDK
+baseline. Do not compare their JSON bytes or timings directly with new runs.
 
 The dataset is 10k/50k **task records**, all open, each with a 2,048-byte body,
 unique ID/path/title, and one of 50 tags. This stresses resident task volume; it
@@ -41,19 +44,9 @@ ordering; its cost is visible in the recorded p95 (with seven samples, p95 is
 just the maximum). The first rare search follows common searches, not a fresh
 process. These are directional measurements, not browser latency SLOs.
 
-Baseline source is `c27e1e6`. To run the same harness against it without reverting
-working code:
-
-```sh
-# This temporary source directory must not already exist.
-test ! -e .performance-baseline && mkdir .performance-baseline
-git archive c27e1e6 src | tar -x -C .performance-baseline
-PERF_REPOSITORY_MODULE=../.performance-baseline/src/storage/mdbase-repository \
-  PERF_REVISION=c27e1e6 PERF_OUTPUT=benchmarks/results/baseline-bounded-loading.json \
-  pnpm bench:collections
-# Remove only this generated source directory after the run.
-rm -r .performance-baseline
-```
+Baseline source is `c27e1e6`. Replaying that historical harness requires a
+separate checkout with its own locked dependencies; the current SDK harness
+does not load an alternate legacy repository module.
 
 Do not run the ordinary test suite with the temporary baseline source present.
 Both saved runs use the locked Connect beta.96 / task model rc.11 dependencies,
@@ -243,8 +236,8 @@ intrinsically faster. No p95 or mobile SLO is established by these single sample
 ```sh
 PERF_STARTUP_OUTPUT=benchmarks/results/startup-latest.json \
   pnpm exec vitest run --config benchmarks/vitest.config.ts benchmarks/startup.perf.ts
-# To compare: use the temporary source procedure above with dca721a,
-# PERF_REPOSITORY_MODULE and PERF_REVISION=dca721a.
+# Historical dca721a comparisons require that revision's own locked checkout;
+# its legacy JSON fixture is not comparable with the SDK's CBOR stand-in.
 ```
 
 Regression coverage deliberately stalls metadata loading while a real

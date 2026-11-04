@@ -442,10 +442,6 @@ msgstr "{name} (kein Personen-Datensatz)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} muss in der Navigation bleiben, bis eine weitere Ansicht hinzugefügt wird"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "{open} offen · {total} insgesamt"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1072,10 +1068,6 @@ msgstr "Bestätigung abbrechen"
 msgid "Cancelled moving {title}."
 msgstr "Verschieben von {title} abgebrochen."
 
-#: src/app/model-setup-screen.tsx
-msgid "Catching up"
-msgstr "Wird auf den aktuellen Stand gebracht"
-
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL-Ausdruck"
@@ -1084,7 +1076,6 @@ msgstr "CEL-Ausdruck"
 msgid "Change a recurring task"
 msgstr "Wiederkehrende Aufgabe ändern"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "Sammlung wechseln"
@@ -1134,10 +1125,6 @@ msgstr "Änderungen müssen überprüft werden"
 msgid "Check account status"
 msgstr "Kontostatus prüfen"
 
-#: src/app/model-setup-screen.tsx
-msgid "Check setup"
-msgstr "Einrichtung prüfen"
-
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
 msgstr "Abschluss des strikten Modus prüfen"
@@ -1154,21 +1141,9 @@ msgstr "Wird geprüft"
 msgid "Checking account recovery…"
 msgstr "Kontowiederherstellung wird geprüft…"
 
-#: src/app/model-setup-screen.tsx
-msgid "Checking collection access…"
-msgstr "Zugriff auf die Sammlung wird geprüft…"
-
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
 msgstr "Sammlungseinstellungen werden geprüft…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking TaskNotes setup…"
-msgstr "TaskNotes-Einrichtung wird geprüft…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking whether setup finished…"
-msgstr "Es wird geprüft, ob die Einrichtung abgeschlossen wurde…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
@@ -1197,10 +1172,6 @@ msgstr "Eigenschaft auswählen"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Wert auswählen"
-
-#: src/app/model-setup-screen.tsx
-msgid "Choose another collection"
-msgstr "Weitere Sammlung auswählen"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1347,16 +1318,6 @@ msgstr "Bild einklappen"
 msgid "Collection"
 msgstr "Sammlung"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "Sammlung"
-
-#: src/app/model-setup-screen.tsx
-msgid "Collection access is unavailable."
-msgstr "Der Zugriff auf die Sammlung ist nicht verfügbar."
-
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
@@ -1383,7 +1344,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "Sammlungseinstellungen"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "Sammlung nicht verfügbar"
@@ -1539,12 +1499,10 @@ msgstr "Es wird bestätigt, dass „"
 msgid "Conflicting changes"
 msgstr "Widersprüchliche Änderungen"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "Verbunden"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "Verbindung wird hergestellt"
@@ -1552,11 +1510,6 @@ msgstr "Verbindung wird hergestellt"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Verbindung wird hergestellt…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "Verbindung"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2359,6 @@ msgstr "Gruppierte Spalten"
 msgid "Heading"
 msgstr "Überschrift"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Hallo {name}. Lesen Sie <0>die Dokumentation</0>."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "Hilfe"
@@ -2440,7 +2388,6 @@ msgstr "Stunde"
 msgid "Hours"
 msgstr "Stunden"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "Aufgabenspeicherung"
@@ -2524,10 +2471,6 @@ msgstr "TaskNotes installieren"
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
 msgstr "Installieren Sie TaskNotes, um die App über Ihren Startbildschirm zu öffnen."
-
-#: src/app/model-setup-screen.tsx
-msgid "Installing TaskNotes setup…"
-msgstr "TaskNotes-Einrichtung wird installiert…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
@@ -2680,10 +2623,6 @@ msgstr "Letzter Tag"
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "Bei der letzten Aktualisierung wurden {0} Datensätze in {1} ms geprüft."
-
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "Bei der letzten Aktualisierung wurden {scanned, plural, one {# Datensatz} other {# Datensätze}} in {elapsed} ms geprüft."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
@@ -2870,7 +2809,6 @@ msgstr "Abgleichmodus"
 msgid "Matched in {0}"
 msgstr "Treffer in {0}"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase-Sammlung"
@@ -2887,7 +2825,6 @@ msgstr "mdbase hat bestätigt, dass die Wiederherstellungsziele den strikten Mod
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase stellt Erinnerungen zu, auch wenn TaskNotes geschlossen ist. Benachrichtigungen enthalten niemals Aufgabeninhalte."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase ist die maßgebliche Quelle. Änderungen erfordern eine Verbindung."
@@ -3493,14 +3430,6 @@ msgstr "Aufgabe öffnen"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "Öffnen Sie das Teilen-Menü Ihres Browsers und wählen Sie „Zum Startbildschirm hinzufügen“."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "Wird geöffnet"
-
-#: src/app/model-setup-screen.tsx
-msgid "Opening collection"
-msgstr "Sammlung wird geöffnet"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
 msgstr "Aktuelle Notiz wird geöffnet…"
@@ -3839,12 +3768,10 @@ msgstr "Wiederholung und Vorlage"
 msgid "Recurrence rule"
 msgstr "Wiederholungsregel"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "Jetzt aktualisieren"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "Wird aktualisiert"
@@ -4064,10 +3991,6 @@ msgstr "Ergebnisse"
 msgid "Resume as current"
 msgstr "Als aktuelle Notiz fortsetzen"
 
-#: src/app/model-setup-screen.tsx
-msgid "Resume original setup"
-msgstr "Ursprüngliche Einrichtung fortsetzen"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
 msgstr "Wird fortgesetzt…"
@@ -4132,10 +4055,6 @@ msgstr "Wiederverwendbare Werte für Gruppierung und angezeigte Felder."
 #: src/app/app-shell.tsx
 msgid "Review access"
 msgstr "Zugriff überprüfen"
-
-#: src/app/model-setup-screen.tsx
-msgid "Review collection permission"
-msgstr "Sammlungsberechtigung überprüfen"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4443,10 +4362,6 @@ msgstr "Sitzungsbeginn"
 msgid "Set up recovery"
 msgstr "Kontowiederherstellung einrichten"
 
-#: src/app/model-setup-screen.tsx
-msgid "Set up TaskNotes"
-msgstr "TaskNotes einrichten"
-
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
 msgstr "Legen Sie fest, was passiert, wenn aus dieser Ansicht eine Aufgabe hinzugefügt wird."
@@ -4464,10 +4379,6 @@ msgstr "Einstellungsbereiche"
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
 msgstr "Einrichtung erfordert Aufmerksamkeit"
-
-#: src/app/model-setup-screen.tsx
-msgid "Setup outcome unknown. "
-msgstr "Ergebnis der Einrichtung unbekannt. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -4820,10 +4731,6 @@ msgstr "TaskNotes muss neu gestartet werden."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "TaskNotes benötigt erneut Ihre Genehmigung in mdbase, bevor es diese Sammlung öffnen kann."
 
-#: src/app/model-setup-screen.tsx
-msgid "TaskNotes setup is unavailable."
-msgstr "Die Einrichtung von TaskNotes ist nicht verfügbar."
-
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "TaskNotes-Werkzeug"
@@ -5046,10 +4953,6 @@ msgstr "Dieses Board gruppiert nach einer berechneten Eigenschaft. Karten könne
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "Diese Sammlung legt keinen Status für abgeschlossene Aufgaben fest."
-
-#: src/app/model-setup-screen.tsx
-msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr "Diese Sammlung muss für TaskNotes eingerichtet werden, bevor Aufgaben und Ansichten geöffnet werden können. Eine neue Einrichtung installiert die veröffentlichten Modelle und fügt „Today“, „Upcoming“, „Calendar“, „Projects“ und „Archive“ hinzu. Vorhandene Ansichtsquellen bleiben unverändert; eine unterbrochene Einrichtung setzt nur ihre ursprünglichen Änderungen fort."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
@@ -5421,14 +5324,6 @@ msgstr "In Ihrer Sammlung gespeicherte Ansichten"
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
 msgstr "Die visuelle Bearbeitung ist nicht verfügbar, weil diese Regel {0} verwendet."
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for access"
-msgstr "Warten auf Zugriff"
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for setup confirmation…"
-msgstr "Warten auf die Bestätigung der Einrichtung…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"

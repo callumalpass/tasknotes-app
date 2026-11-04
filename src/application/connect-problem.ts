@@ -1,22 +1,29 @@
-import type { ConnectProblem } from "@mdbase-dev/connect";
 import {
   isMdbaseError,
   type ErrorCode,
   type MdbaseError,
 } from "@mdbase-dev/sdk";
 
-/** Preserve the SDK problem rather than passing replica codes through the
- * legacy Connect catalog, which does not recognize most of them. */
-type ReplicaProblem = ReturnType<MdbaseError["toProblem"]> & {
-  category: ConnectProblem["category"];
-  operation_outcome?: ConnectProblem["operation_outcome"];
+/** Application policy over the SDK's typed failures; diagnostics stay intact. */
+export type ApplicationConnectProblem = ReturnType<MdbaseError["toProblem"]> & {
+  category:
+    | "validation"
+    | "conflict"
+    | "authorization"
+    | "integrity"
+    | "availability"
+    | "compatibility"
+    | "cancellation"
+    | "internal"
+    | "unknown";
   mutationId?: MdbaseError["mutationId"];
   mutationIds?: MdbaseError["mutationIds"];
 };
 
-export type ApplicationConnectProblem = ConnectProblem | ReplicaProblem;
-
-const REPLICA_CATEGORIES: Record<ErrorCode, ConnectProblem["category"]> = {
+const REPLICA_CATEGORIES: Record<
+  ErrorCode,
+  ApplicationConnectProblem["category"]
+> = {
   invalid_request: "validation",
   invalid_record: "validation",
   not_found: "validation",
@@ -34,24 +41,15 @@ const REPLICA_CATEGORIES: Record<ErrorCode, ConnectProblem["category"]> = {
   internal: "internal",
 };
 
-/** Read real replica exceptions and preserve legacy structured carriers.
- * Bare codes and developer messages are never treated as structured failures. */
+/** Bare codes, developer prose and lookalike carriers are not SDK failures. */
 export function connectProblemFromError(
   error: unknown,
 ): ApplicationConnectProblem | null {
-  if (isMdbaseError(error)) {
-    return {
-      ...error.toProblem(),
-      category: REPLICA_CATEGORIES[error.code] ?? "unknown",
-      mutationId: error.mutationId,
-      mutationIds: error.mutationIds,
-    };
-  }
-  if (!error || typeof error !== "object" || !("problem" in error)) return null;
-  const problem = error.problem;
-  if (!problem || typeof problem !== "object") return null;
-  if (!("code" in problem) || typeof problem.code !== "string") return null;
-  if (!("message" in problem) || typeof problem.message !== "string")
-    return null;
-  return problem as ConnectProblem;
+  if (!isMdbaseError(error)) return null;
+  return {
+    ...error.toProblem(),
+    category: REPLICA_CATEGORIES[error.code],
+    mutationId: error.mutationId,
+    mutationIds: error.mutationIds,
+  };
 }

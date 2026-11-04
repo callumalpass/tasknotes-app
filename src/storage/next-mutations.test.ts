@@ -84,7 +84,7 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
     });
     await expect(
       run(f.mutations, "create:lost", lost, f.signal),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     const requestId = realCreate.mock.calls[0]![0];
     const retry = create(f.client, "must-not-be-created.md");
     const receipt = await run(f.mutations, "create:lost", retry, f.signal);
@@ -139,10 +139,8 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
       controller.signal,
     );
     await expect(result).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        details: { request_id: expect.any(String) },
-      },
+      code: "outcome_unknown",
+      mutationId: expect.any(String),
     });
     f.replica.confirmAll();
     const retry = create(f.client, "duplicate.md");
@@ -198,11 +196,10 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
       .run(operation, f.signal)
       .catch((reason: unknown) => reason);
     expect(failure).toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        recovery: "resolve_outcome",
-        details: { request_id: submit.mock.calls[0]![0] },
-      },
+      code: "outcome_unknown",
+      recovery: "resolve_outcome",
+      mutationId: submit.mock.calls[0]![0],
+
       cause: { message: "Read unavailable" },
     });
     expect(read.mock.calls[0]![0].mutation).toBe(submit.mock.calls[0]![0]);
@@ -249,10 +246,9 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
       .catch((reason: unknown) => reason);
     const id = submit.mock.calls[0]![0];
     expect(failure).toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        details: { request_id: id },
-      },
+      code: "outcome_unknown",
+      mutationId: id,
+
       cause: { name: "AbortError" },
     });
     const prepare = vi.fn(operation.prepare);
@@ -291,7 +287,7 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
         },
         f.signal,
       ),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     const remapped = vi.fn(async () => "different-native-id");
     const prepare = vi.fn(
       async (id: string, signal: AbortSignal) => () => submit(id, signal),
@@ -350,10 +346,8 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
     await expect(
       run(f.mutations, "recover-original", submit, f.signal, id),
     ).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        details: { request_id: id },
-      },
+      code: "outcome_unknown",
+      mutationId: id,
     });
     expect(submit).not.toHaveBeenCalled();
     expect(
