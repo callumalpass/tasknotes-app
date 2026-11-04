@@ -344,6 +344,11 @@ export function TaskCapture({
   }
 
   function handleCaptureKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // An empty field has nothing to cancel, so Escape returns to the list.
+    if (event.key === "Escape" && !text && !suggestions.length) {
+      event.currentTarget.blur();
+      return;
+    }
     if (event.nativeEvent.isComposing) return;
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();

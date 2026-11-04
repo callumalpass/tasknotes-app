@@ -554,7 +554,6 @@ export function TaskCalendarView({
           {agenda && leadSlot && onMoveOverdueToToday && overdueRows.length
             ? createPortal(
                 <OverdueScheduleActions
-                  buttonClassName="full-calendar-reschedule"
                   count={overdueRows.length}
                   deadlines={missedDeadlineCount(overdueRows)}
                   pending={Boolean(movingOverdue)}

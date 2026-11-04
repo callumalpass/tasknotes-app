@@ -1482,22 +1482,6 @@
   overflow: visible;
 }
 
-.full-calendar-view .full-calendar-reschedule {
-  min-height: 32px;
-  padding: 0 8px;
-  color: var(--accent);
-  font-weight: 700;
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-}
-
-.full-calendar-view .full-calendar-reschedule:disabled {
-  color: var(--ink-soft);
-  cursor: default;
-}
-
 /* A quiet layout disclosure keeps all six saved calendar modes available. */
 .full-calendar-view .view-options > summary {
   gap: var(--space-sm);
