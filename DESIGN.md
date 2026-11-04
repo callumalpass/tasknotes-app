@@ -433,12 +433,19 @@ Today             Search       More
 - Agenda and calendar entries use proportional type and the same relative date
   labels as task rows. An entry on a task's due day, when the task is also
   scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".
-  Agenda day headings appear once. Phones stack the time above the title so
-  titles keep the full width. A calendar view with a capture row has no second
-  Add task button in its toolbar. Agenda content uses a 36px minimum with
-  4px vertical cell padding, keeping simple rows near 44px. Metadata and wrapped
-  content may grow naturally. Calendar toolbar, More links, and overflow-panel
-  events retain 44px targets; desktop grid events remain independently tappable.
+  Upcoming uses one agenda on desktop and phones, with the ordinary task row's
+  completion, properties and actions; timed entries name their time beneath
+  the title without a reserved time column. Its sticky week strip follows the
+  first-day-of-week preference, shows weekday/date/count, distinguishes today
+  and selection, and supports keyboard navigation and drag-to-day rescheduling.
+  Overdue work leads the agenda with a count and Move all to today (with Undo),
+  rather than being repeated in today's group. Sticky day headings name Today
+  and Tomorrow, show counts, and retain a quiet Add task even on empty days.
+  Empty days remain compact. All six calendar modes live in a compact layout
+  disclosure beside date navigation. A calendar view with a capture row has no
+  second Add task button in its toolbar. Metadata and wrapped content grow
+  naturally. Calendar toolbar, More links, and overflow-panel events retain
+  44px targets; desktop grid events remain independently tappable.
 - Desktop calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within

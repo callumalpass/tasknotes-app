@@ -24,6 +24,7 @@ import {
 } from "./calendar-items";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
+import { useCalendarAgenda } from "./use-calendar-agenda";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -136,9 +137,9 @@ export function TaskCalendarView({
   );
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
-  // Phones get a date strip above a list that keeps loading days, and above
-  // day grids; the strip replaces the date row there.
-  const agenda = phone && mode === "listWeek";
+  // One agenda on every screen: keep the calendar's date navigation, lazy
+  // day loading and drag semantics, with ordinary task rows inside it.
+  const agenda = mode === "listWeek";
   const stripped =
     agenda ||
     (phone && (mode === "timeGridThreeDay" || mode === "timeGridDay"));
@@ -211,6 +212,17 @@ export function TaskCalendarView({
       withPendingMoves(built.items, pendingMoves, execution).map(withRevision),
     [built, execution, pendingMoves],
   );
+  const agendaRows = useCalendarAgenda({
+    root: rootRef,
+    calendar: calendarRef,
+    enabled: agenda,
+    items,
+    locale,
+    execution,
+    identityTasks,
+    configuration,
+    display,
+  });
   const legend = useMemo(
     () =>
       calendarPriorityLegend(
@@ -487,6 +499,36 @@ export function TaskCalendarView({
     return [...rows.values()];
   }, [items]);
 
+  const layoutSwitcher = (
+    <ViewOptions
+      label={t`Calendar layout`}
+      icon={
+        <>
+          <LayoutGrid aria-hidden="true" size={16} />
+          <span>
+            {calendarModes.find(({ value }) => value === mode)?.label}
+          </span>
+        </>
+      }
+    >
+      {calendarModes.map(({ value, label }) => (
+        <button
+          aria-pressed={mode === value}
+          key={value}
+          type="button"
+          onClick={() => setMode(value)}
+        >
+          {mode === value ? (
+            <Check aria-hidden="true" size={18} />
+          ) : (
+            <span aria-hidden="true" className="layout-option-space" />
+          )}
+          {label}
+        </button>
+      ))}
+    </ViewOptions>
+  );
+
   return (
     <div
       ref={rootRef}
@@ -514,34 +556,7 @@ export function TaskCalendarView({
               )
             : null}
           {stripped && stripSlot
-            ? createPortal(
-                <ViewOptions
-                  label={t`Calendar layout`}
-                  icon={<LayoutGrid aria-hidden="true" size={18} />}
-                >
-                  {calendarModes
-                    .filter(({ compact }) => compact)
-                    .map(({ value, label }) => (
-                      <button
-                        aria-pressed={mode === value}
-                        key={value}
-                        type="button"
-                        onClick={() => setMode(value)}
-                      >
-                        {mode === value ? (
-                          <Check aria-hidden="true" size={18} />
-                        ) : (
-                          <span
-                            aria-hidden="true"
-                            className="layout-option-space"
-                          />
-                        )}{" "}
-                        {label}
-                      </button>
-                    ))}
-                </ViewOptions>,
-                stripSlot,
-              )
+            ? createPortal(layoutSwitcher, stripSlot)
             : null}
           <div className="full-calendar-commandbar" hidden={stripped}>
             <div className="full-calendar-navigation">
@@ -575,22 +590,7 @@ export function TaskCalendarView({
               </button>
             </div>
             <h2 aria-live="polite">{title}</h2>
-            <div
-              className="full-calendar-modes"
-              aria-label={t`Calendar layout`}
-            >
-              {calendarModes.map(({ value, label, compact }) => (
-                <button
-                  aria-pressed={mode === value}
-                  className={compact ? undefined : "wide-mode"}
-                  key={value}
-                  type="button"
-                  onClick={() => setMode(value)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {stripped ? null : layoutSwitcher}
           </div>
           {historyRequest ? (
             <ClearRecurringHistoryDialog
@@ -631,7 +631,9 @@ export function TaskCalendarView({
               timeZone={timezone}
               locale={locale}
               // Selected day and imperative entry labels follow app language.
-              renderKey={`${selected}|${built.locale}`}
+              // Agenda selection belongs to the date strip. Rebuilding its
+              // whole list here would lose the position just scrolled to.
+              renderKey={`${agenda ? "agenda" : selected}|${built.locale}`}
               view={calendarView(mode)}
               date={initialDate}
               dayCount={numberOption(
@@ -698,15 +700,26 @@ export function TaskCalendarView({
               }
               itemContent={(arg) => calendarEventContent(arg, configuration)}
               listItemContent={(arg) =>
-                calendarEventContent(arg, configuration)
+                agenda && !arg.isMirror
+                  ? Object.assign(document.createElement("div"), {
+                      className: "agenda-task-slot",
+                    })
+                  : calendarEventContent(arg, configuration)
               }
-              itemDidMount={(arg) => describeEvent(arg, configuration)}
+              itemDidMount={(arg) => {
+                describeEvent(arg, configuration);
+                if (agenda) agendaRows.mount(arg);
+              }}
+              itemWillUnmount={agendaRows.unmount}
               onItemClick={({ item }) => {
+                if (agenda) return;
                 const metadata = item.data?.metadata;
                 if (metadata)
                   onOpen(metadata.entry.task, metadata.occurrence?.date);
               }}
-              onItemContextMenu={(arg) => openContextActions(arg)}
+              onItemContextMenu={(arg) => {
+                if (!agenda) openContextActions(arg);
+              }}
               onItemDrop={(info) => void moveEvent(info)}
               onItemResize={(info) => void resizeEvent(info)}
               onSelect={createFromSelection}
@@ -720,6 +733,48 @@ export function TaskCalendarView({
                 });
               }}
             />
+            {[...agendaRows.slots].map(([slot, arg]) => {
+              const item = items.find(({ id }) => id === arg.item.id);
+              const entry = item?.data?.metadata.entry;
+              if (!item || !entry || !agenda) return null;
+              const kind = localizedEntryKind(
+                calendarEntryKind(
+                  item.data?.kind,
+                  item.data?.details ?? [],
+                  true,
+                  configuration,
+                ),
+              );
+              return createPortal(
+                <div
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => {
+                    // Row buttons act normally; dragging the title or row space
+                    // still reaches the calendar's existing move gesture.
+                    if (
+                      (event.target as HTMLElement).closest(
+                        "button:not(.task-row-title), input, select, textarea",
+                      )
+                    )
+                      event.stopPropagation();
+                  }}
+                >
+                  <TaskRow
+                    details={inspectorDetails(entry)}
+                    occurrence={entry.occurrence}
+                    supportingText={
+                      [kind, arg.timeText].filter(Boolean).join(" · ") ||
+                      undefined
+                    }
+                    task={entry.task}
+                    onOpen={onOpen}
+                    onToggle={onToggle}
+                  />
+                </div>,
+                slot,
+                `${arg.item.id}:${arg.day}`,
+              );
+            })}
           </div>
           {legend.length && !listMode ? (
             <ul
@@ -791,7 +846,6 @@ const calendarModes: Array<{
   value: CalendarMode;
   view: ViewType;
   label: string;
-  compact: boolean;
 }> = [
   {
     value: "dayGridMonth",
@@ -799,7 +853,6 @@ const calendarModes: Array<{
     get label() {
       return t`Month`;
     },
-    compact: true,
   },
   {
     value: "timeGridWeek",
@@ -807,7 +860,6 @@ const calendarModes: Array<{
     get label() {
       return t`Week`;
     },
-    compact: false,
   },
   {
     value: "timeGridThreeDay",
@@ -815,7 +867,6 @@ const calendarModes: Array<{
     get label() {
       return t`3 days`;
     },
-    compact: true,
   },
   {
     value: "timeGridDay",
@@ -823,7 +874,6 @@ const calendarModes: Array<{
     get label() {
       return t`Day`;
     },
-    compact: false,
   },
   {
     value: "listWeek",
@@ -831,7 +881,6 @@ const calendarModes: Array<{
     get label() {
       return t`Agenda`;
     },
-    compact: true,
   },
   {
     value: "multiMonthYear",
@@ -839,7 +888,6 @@ const calendarModes: Array<{
     get label() {
       return t`Year`;
     },
-    compact: true,
   },
 ];
 
@@ -983,11 +1031,19 @@ function calendarEventLabel(item: TaskCalendarItem): string {
 }
 
 function listDayLabel(date: Date): string {
-  return new Intl.DateTimeFormat(appLocale(), {
+  const label = new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     month: "long",
     day: "numeric",
   }).format(date);
+  const day = todayString(date);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return day === todayString()
+    ? t`Today · ${label}`
+    : day === todayString(tomorrow)
+      ? t`Tomorrow · ${label}`
+      : label;
 }
 
 function useMediaQuery(query: string): boolean {
