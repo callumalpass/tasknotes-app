@@ -862,6 +862,7 @@ export class NextTaskRepository implements TaskRepository {
           this.cache.set(id, value);
         }
       this.indexReady = true;
+      if (!this.hasLoadedIndex) this.emit("status");
       this.hasLoadedIndex = true;
       this.reached();
     })().finally(() => {
@@ -2711,6 +2712,10 @@ export class NextTaskRepository implements TaskRepository {
       },
       this.scope.signal,
     );
+  }
+
+  todayTaskCounts(today: string) {
+    return this.indexReady ? this.cache.todayCounts(today) : null;
   }
 
   async stats() {

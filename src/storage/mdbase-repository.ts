@@ -303,6 +303,7 @@ export class MdbaseTaskRepository implements TaskRepository {
       await this.reloadCache(undefined, signal);
       signal.throwIfAborted();
       this.taskIndexReady = true;
+      if (!this.taskIndexPreviouslyReady) this.emit({ kind: "status" });
       this.setConnected();
       if (this.taskIndexPreviouslyReady) this.emit();
       this.taskIndexPreviouslyReady = true;
@@ -1178,6 +1179,10 @@ export class MdbaseTaskRepository implements TaskRepository {
         throw reason;
       }
     });
+  }
+
+  todayTaskCounts(today: string) {
+    return this.taskIndexReady ? this.cache.todayCounts(today) : null;
   }
 
   async stats(): Promise<TaskStats> {

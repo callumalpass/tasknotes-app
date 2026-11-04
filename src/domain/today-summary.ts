@@ -54,3 +54,24 @@ export function summarizeToday(
   ).groups[0]?.tasks[0];
   return { completedToday, ...(next ? { next } : {}) };
 }
+
+/** Metadata-only navigation badge. Undated tasks belong to Anytime, not the badge. */
+export interface TodayTaskCounts {
+  total: number;
+  overdue: number;
+}
+
+export function todayTaskContribution(
+  task: TaskSummary,
+  today: string,
+): TodayTaskCounts {
+  if (task.completed || task.archived || task.skipped)
+    return { total: 0, overdue: 0 };
+  const date = taskDatePart(task.scheduled ?? task.due);
+  const due = taskDatePart(task.due);
+  const overdue = Boolean(due && due < today);
+  return {
+    total: Number(Boolean(date && date <= today) || overdue),
+    overdue: Number(overdue),
+  };
+}

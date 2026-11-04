@@ -33,6 +33,7 @@ export function KeyboardLayer({
   navigate,
   newTask,
   paletteRequest,
+  toggleSidebar,
 }: {
   route: Route;
   navigationKeys: readonly string[];
@@ -40,6 +41,7 @@ export function KeyboardLayer({
   homeKey?: string;
   navigate(route: Route): void;
   newTask(): void;
+  toggleSidebar?(): void;
   /** Increments when the sidebar asks for the palette. */
   paletteRequest: number;
 }) {
@@ -85,6 +87,33 @@ export function KeyboardLayer({
   );
 
   useEffect(() => {
+    let prefixUntil = 0;
+    const navigation = navigationCommands({
+      navigationKeys,
+      views,
+      homeKey,
+      navigate,
+      newTask,
+      showShortcuts: () => setSheetOpen(true),
+      toggleSidebar,
+    });
+    const clearPrefix = () => {
+      prefixUntil = 0;
+    };
+    // Capture the second key before a focused row can interpret t as Schedule today.
+    const sequenceKeydown = (event: KeyboardEvent) => {
+      if (!prefixUntil) return;
+      const pending = Date.now() < prefixUntil;
+      clearPrefix();
+      if (!pending || event.shiftKey || plainShortcutsSuspended(event)) return;
+      const command = navigation.find(
+        (entry) => entry.shortcut === `g ${event.key.toLowerCase()}`,
+      );
+      if (!command) return;
+      event.preventDefault();
+      event.stopPropagation();
+      command.run();
+    };
     const keydown = (event: KeyboardEvent) => {
       if (event.isComposing) return;
       const key = event.key.toLocaleLowerCase();
@@ -104,13 +133,44 @@ export function KeyboardLayer({
         openPalette();
         return;
       }
-      if (plainShortcutsSuspended(event)) return;
+      if (plainShortcutsSuspended(event)) {
+        clearPrefix();
+        return;
+      }
       if (event.key === "?") {
         event.preventDefault();
         setSheetOpen(true);
         return;
       }
+      if (
+        key === "m" &&
+        toggleSidebar &&
+        (event.shiftKey || !document.activeElement?.closest(".task-row"))
+      ) {
+        event.preventDefault();
+        toggleSidebar();
+        return;
+      }
       if (event.shiftKey) return;
+      if (key === "g") {
+        event.preventDefault();
+        prefixUntil = Date.now() + 1_000;
+        return;
+      }
+      if (key === "q" || key === "n") {
+        event.preventDefault();
+        newTask();
+        return;
+      }
+      if (key === "/") {
+        event.preventDefault();
+        const input = document.querySelector<HTMLInputElement>(
+          "#main-content input[type='search']",
+        );
+        if (input && route.page !== "task") input.focus();
+        else navigation.find((entry) => entry.id === "go:search")?.run();
+        return;
+      }
       const active = document.activeElement;
       const onRow = Boolean(active?.matches(".task-row-title"));
       const direction =
@@ -122,9 +182,26 @@ export function KeyboardLayer({
       if (!direction) return;
       if (focusAdjacentTaskRow(direction) || onRow) event.preventDefault();
     };
+    window.addEventListener("keydown", sequenceKeydown, true);
     window.addEventListener("keydown", keydown);
-    return () => window.removeEventListener("keydown", keydown);
-  }, [openPalette]);
+    window.addEventListener("blur", clearPrefix);
+    window.addEventListener("focusin", clearPrefix);
+    return () => {
+      window.removeEventListener("keydown", sequenceKeydown, true);
+      window.removeEventListener("keydown", keydown);
+      window.removeEventListener("blur", clearPrefix);
+      window.removeEventListener("focusin", clearPrefix);
+    };
+  }, [
+    openPalette,
+    navigationKeys,
+    views,
+    homeKey,
+    navigate,
+    newTask,
+    toggleSidebar,
+    route,
+  ]);
 
   const openTaskId = route.page === "task" ? route.id : undefined;
   const commands = [
@@ -136,6 +213,7 @@ export function KeyboardLayer({
       navigate,
       newTask,
       showShortcuts: () => setSheetOpen(true),
+      toggleSidebar,
     }),
   ];
 

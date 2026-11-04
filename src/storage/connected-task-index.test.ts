@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ConnectedTaskIndex } from "./connected-task-index";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { compareTasks, matchesArchiveFilter } from "../domain/task-query";
@@ -120,4 +120,27 @@ describe("session task index", () => {
     expect(index.list()).toEqual([]);
     expect(index.atPath(next.path)).toBeUndefined();
   });
+});
+
+it("maintains Today counters incrementally, with one rebuild at day rollover", () => {
+  const index = new ConnectedTaskIndex<{ task: Task }>();
+  const today = "2026-09-19";
+  index.todayCounts(today);
+  const a = task("a", { scheduled: today });
+  const b = task("b", { scheduled: "2026-09-20", due: "2026-09-18" });
+  index.set(a.id, { task: a });
+  index.set(b.id, { task: b });
+  const enumerate = vi.spyOn(index, "values");
+  expect(index.todayCounts(today)).toEqual({ total: 2, overdue: 1 });
+  index.set(a.id, { task: { ...a, completed: true } });
+  expect(index.todayCounts(today)).toEqual({ total: 1, overdue: 1 });
+  index.delete(b.id);
+  expect(index.todayCounts(today)).toEqual({ total: 0, overdue: 0 });
+  index.set(a.id, { task: { ...a, completed: false, due: today } });
+  expect(index.todayCounts(today)).toEqual({ total: 1, overdue: 0 });
+  expect(enumerate).not.toHaveBeenCalled();
+  expect(index.todayCounts("2026-09-20")).toEqual({ total: 1, overdue: 1 });
+  expect(enumerate).toHaveBeenCalledTimes(1);
+  index.clear();
+  expect(index.todayCounts("2026-09-20")).toEqual({ total: 0, overdue: 0 });
 });

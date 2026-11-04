@@ -1424,3 +1424,26 @@ function taskReads(read: { mock: { calls: { path: string }[][] } }): number {
     ([input]) => input?.path !== "_settings/dev.tasknotes.md",
   ).length;
 }
+
+it("exposes Today counts only from the complete existing index without starting reads", async () => {
+  const today = "2026-09-19";
+  const record = taskRecord("badge", "Counted task", "r1");
+  record.frontmatter.scheduled = today;
+  record.frontmatter.due = "2026-09-18";
+  const fixture = mdbaseFixture([record]);
+  const repository = new MdbaseTaskRepository(fixture.connect);
+  expect(repository.todayTaskCounts(today)).toBeNull();
+  await repository.initialize({ deferTaskIndex: true });
+  expect(repository.todayTaskCounts(today)).toBeNull();
+  expect(fixture.queryPages).not.toHaveBeenCalled();
+  const listener = vi.fn();
+  repository.subscribe(listener);
+  await repository.listSummaries();
+  const reads = fixture.queryPages.mock.calls.length;
+  expect(repository.todayTaskCounts(today)).toEqual({ total: 1, overdue: 1 });
+  expect(repository.todayTaskCounts(today)).toEqual({ total: 1, overdue: 1 });
+  expect(fixture.queryPages).toHaveBeenCalledTimes(reads);
+  expect(listener).toHaveBeenCalledWith({ kind: "status" });
+  await repository.toggle("badge", undefined, true);
+  expect(repository.todayTaskCounts(today)).toEqual({ total: 0, overdue: 0 });
+});

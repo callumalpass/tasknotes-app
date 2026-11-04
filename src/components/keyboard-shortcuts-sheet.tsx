@@ -76,6 +76,8 @@ export function KeyboardShortcutsSheet({
         <p className="keyboard-shortcuts-note">
           <Trans>
             Task keys act on the focused row. Date keys keep any scheduled time.
+            Press navigation sequences within one second. M toggles the sidebar
+            outside task rows; Shift M also works from a task row.
           </Trans>
         </p>
       </section>
