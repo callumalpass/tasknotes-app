@@ -15,6 +15,7 @@ import {
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import {
+  createElement,
   useContext,
   useEffect,
   useId,
@@ -508,16 +509,14 @@ function PropertyGlyph({ detail }: { detail: TaskRowDetail }) {
   const Icon = propertyIcon(detail, configuration);
   if (!Icon) return null;
   const color = detailPriorityColor(detail, configuration);
-  return (
-    <Icon
-      aria-hidden="true"
-      className="task-row-glyph"
-      fill={color ?? "none"}
-      size={13}
-      strokeWidth={1.8}
-      style={color ? { color } : undefined}
-    />
-  );
+  return createElement(Icon, {
+    "aria-hidden": true,
+    className: "task-row-glyph",
+    fill: color ?? "none",
+    size: 13,
+    strokeWidth: 1.8,
+    style: color ? { color } : undefined,
+  });
 }
 
 function propertyField(detail: TaskRowDetail): string {

@@ -1428,8 +1428,8 @@ function taskReads(read: { mock: { calls: { path: string }[][] } }): number {
 it("exposes Today counts only from the complete existing index without starting reads", async () => {
   const today = "2026-09-19";
   const record = taskRecord("badge", "Counted task", "r1");
-  record.frontmatter.scheduled = today;
-  record.frontmatter.due = "2026-09-18";
+  record.frontmatter.scheduled = "2026-09-18";
+  record.frontmatter.due = "2026-09-20";
   const fixture = mdbaseFixture([record]);
   const repository = new MdbaseTaskRepository(fixture.connect);
   expect(repository.todayTaskCounts(today)).toBeNull();

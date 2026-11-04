@@ -211,10 +211,7 @@ describe("todayCaptureDefaults", () => {
       today,
     );
     expect(
-      sections.map(({ key, rows }) => [
-        key,
-        rows.map(({ task }) => task.id),
-      ]),
+      sections.map(({ key, rows }) => [key, rows.map(({ task }) => task.id)]),
     ).toEqual([
       ["today", ["answered"]],
       ["overdue", ["deferred", "slipped"]],
