@@ -401,3 +401,14 @@ test("stepping through tasks moves the open row and Escape returns to it", async
   await page.keyboard.press("Escape");
   await expect(second.locator(".task-row-title")).toBeFocused();
 });
+
+test("Today and Upcoming agree on what is overdue", async ({ page }) => {
+  await page.goto("?demo=60");
+  const overdue = page.locator(".task-section.is-overdue .task-row");
+  await expect(overdue.first()).toBeVisible();
+  const today = await overdue.count();
+  await page.goto(
+    `views/${encodeURIComponent("TaskNotes/Views/upcoming.base#upcoming")}?demo=60`,
+  );
+  await expect(page.locator(".tnc-list-lead .task-row")).toHaveCount(today);
+});

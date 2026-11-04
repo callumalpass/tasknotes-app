@@ -40,6 +40,7 @@ export function TaskDetailDates({
             <span>{label}</span>
             <div>
               <button
+                aria-description={date ? formatTaskDate(date) : t`No date`}
                 aria-expanded={target === field}
                 aria-haspopup="dialog"
                 aria-label={t`${label} date`}
