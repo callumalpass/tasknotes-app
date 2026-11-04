@@ -4,33 +4,32 @@ import { fireEvent, render, screen, waitFor } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskModelSettingsEditor } from "./task-model-settings";
 
 async function renderEditor() {
-  const repository = createTestMdbaseRepository();
+  const { repository } = await nextTaskFixture();
   await repository.initialize();
-  const element = (
-    <RepositoryProvider
-      mutationJournal={new MemoryMutationJournal()}
-      repository={repository}
-    >
-      <TaskModelSettingsEditor />
+  const journal = new MemoryMutationJournal();
+  // Leaving Settings unmounts the editor; the collection stays open.
+  const tree = (editor: boolean) => (
+    <RepositoryProvider mutationJournal={journal} repository={repository}>
+      {editor ? <TaskModelSettingsEditor /> : null}
     </RepositoryProvider>
   );
-  const view = render(element);
+  const view = render(tree(true));
   await waitFor(() =>
     expect(
       screen.getByRole("combobox", { name: "Default priority" }),
     ).toBeEnabled(),
   );
-  return { view, element };
+  return { view, tree };
 }
 
 describe("TaskModelSettingsEditor", () => {
   it("displays the contextual source label after settings access fails", async () => {
-    const repository = createTestMdbaseRepository();
+    const { repository } = await nextTaskFixture();
     await repository.initialize();
     const access = vi
       .spyOn(repository, "taskModelSettingsAccess")
@@ -57,14 +56,14 @@ describe("TaskModelSettingsEditor", () => {
   });
 
   it("keeps unsaved choices when Settings is left and offers Discard", async () => {
-    const { view, element } = await renderEditor();
+    const { view, tree } = await renderEditor();
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Start new tasks from a template" }),
     );
     expect(screen.getByText(/Unsaved changes/)).toBeVisible();
-    view.unmount();
+    view.rerender(tree(false));
 
-    render(element);
+    view.rerender(tree(true));
     expect(
       await screen.findByRole("checkbox", {
         name: "Start new tasks from a template",

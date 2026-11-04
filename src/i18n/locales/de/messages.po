@@ -442,10 +442,6 @@ msgstr "{name} (kein Personen-Datensatz)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} muss in der Navigation bleiben, bis eine weitere Ansicht hinzugefügt wird"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "{open} offen · {total} insgesamt"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1084,7 +1080,6 @@ msgstr "CEL-Ausdruck"
 msgid "Change a recurring task"
 msgstr "Wiederkehrende Aufgabe ändern"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "Sammlung wechseln"
@@ -1347,12 +1342,6 @@ msgstr "Bild einklappen"
 msgid "Collection"
 msgstr "Sammlung"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "Sammlung"
-
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
 msgstr "Der Zugriff auf die Sammlung ist nicht verfügbar."
@@ -1383,7 +1372,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "Sammlungseinstellungen"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "Sammlung nicht verfügbar"
@@ -1539,12 +1527,10 @@ msgstr "Es wird bestätigt, dass „"
 msgid "Conflicting changes"
 msgstr "Widersprüchliche Änderungen"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "Verbunden"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "Verbindung wird hergestellt"
@@ -1552,11 +1538,6 @@ msgstr "Verbindung wird hergestellt"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Verbindung wird hergestellt…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "Verbindung"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2387,6 @@ msgstr "Gruppierte Spalten"
 msgid "Heading"
 msgstr "Überschrift"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Hallo {name}. Lesen Sie <0>die Dokumentation</0>."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "Hilfe"
@@ -2440,7 +2416,6 @@ msgstr "Stunde"
 msgid "Hours"
 msgstr "Stunden"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "Aufgabenspeicherung"
@@ -2681,10 +2656,6 @@ msgstr "Letzter Tag"
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "Bei der letzten Aktualisierung wurden {0} Datensätze in {1} ms geprüft."
 
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "Bei der letzten Aktualisierung wurden {scanned, plural, one {# Datensatz} other {# Datensätze}} in {elapsed} ms geprüft."
-
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
@@ -2870,7 +2841,6 @@ msgstr "Abgleichmodus"
 msgid "Matched in {0}"
 msgstr "Treffer in {0}"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase-Sammlung"
@@ -2887,7 +2857,6 @@ msgstr "mdbase hat bestätigt, dass die Wiederherstellungsziele den strikten Mod
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase stellt Erinnerungen zu, auch wenn TaskNotes geschlossen ist. Benachrichtigungen enthalten niemals Aufgabeninhalte."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase ist die maßgebliche Quelle. Änderungen erfordern eine Verbindung."
@@ -3493,10 +3462,6 @@ msgstr "Aufgabe öffnen"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "Öffnen Sie das Teilen-Menü Ihres Browsers und wählen Sie „Zum Startbildschirm hinzufügen“."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "Wird geöffnet"
-
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
 msgstr "Sammlung wird geöffnet"
@@ -3839,12 +3804,10 @@ msgstr "Wiederholung und Vorlage"
 msgid "Recurrence rule"
 msgstr "Wiederholungsregel"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "Jetzt aktualisieren"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "Wird aktualisiert"

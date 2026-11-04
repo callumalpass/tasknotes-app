@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "../test/render";
-import { connectError } from "@mdbase-dev/connect-testing";
+import { mdbaseError } from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 
 import {
@@ -39,7 +39,7 @@ it("separates reviewing the current collection's access from choosing another", 
   render(
     <StorageErrorScreen
       changeCollection={changeCollection}
-      error={connectError("authorization_expired", "The grant expired.")}
+      error={mdbaseError("unauthenticated", "The grant expired.")}
       reauthorizeCurrentCollection={reauthorizeCurrentCollection}
       retry={vi.fn()}
     />,

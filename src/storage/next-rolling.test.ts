@@ -76,7 +76,7 @@ describe("atomic native rolling windows (SDK stand-in, not Core/Noise/LAB)", () 
         throw new Error("Lost window ACK");
       });
     await expect(f.repository.create(input, intent)).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     expect(intent.authorityRequestId).toBe(spy.mock.calls[0]![1]!.mutationId);
     expect((await f.repository.create(input, intent)).id).toBe(intent.id);

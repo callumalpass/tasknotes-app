@@ -5,17 +5,17 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import type { NextTaskRepository } from "../storage/next-repository";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { GlobalTaskCapture } from "./global-task-capture";
 
 describe("GlobalTaskCapture", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
 
   beforeEach(async () => {
     localStorage.clear();
-    repository = createTestMdbaseRepository();
+    ({ repository } = await nextTaskFixture());
     await repository.initialize();
   });
 

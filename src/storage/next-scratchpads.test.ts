@@ -303,7 +303,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
         throw new Error("Lost image ACK");
       });
     await expect(f.repository.createScratchImage(input)).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     expect((await f.repository.createScratchImage(input)).id).toBe(input.id);
     expect(spy).toHaveBeenCalledOnce();
@@ -376,7 +376,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
       .spyOn(f.client, "get")
       .mockRejectedValueOnce(new Error("READ unavailable"));
     await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     const op = submit.mock.calls[0]![0][0]!;
     expect(op.kind).toBe("create");
@@ -430,10 +430,10 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
         };
       });
       await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       expect(submit).toHaveBeenCalledOnce();
     },
@@ -470,7 +470,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     await expect(
       f.repository.saveScratchpad(saveInput(current, "Edit")),
     ).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
       cause: {
         message:
           "The saved scratchpad's portable identity changed. Reload before continuing.",
@@ -626,7 +626,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
         throw new Error("Lost ACK");
       });
     await expect(f.repository.startNewScratchpad(input)).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     const result = await f.repository.startNewScratchpad(input);
     expect(result.previous.body).toBe("- Final");
@@ -647,7 +647,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
         throw new Error("Lost save ACK");
       });
     await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
     });
     await (
       await f.client.delete(original.id)
@@ -655,10 +655,9 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     seed(f, "portable-note", "active", "2026-08-01T12:00:00Z", "- Replacement");
     spy.mockClear();
     await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        details: { request_id: expect.any(String) },
-      },
+      code: "outcome_unknown",
+      mutationId: expect.any(String),
+
       cause: { code: "not_found" },
     });
     expect(spy).not.toHaveBeenCalled();

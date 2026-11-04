@@ -442,10 +442,6 @@ msgstr "{name} (사람 레코드가 아님)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "다른 뷰를 추가할 때까지 {name}을(를) 탐색 메뉴에 유지해야 합니다."
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "열림 {open}개 · 전체 {total}개"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1084,7 +1080,6 @@ msgstr "CEL 표현식"
 msgid "Change a recurring task"
 msgstr "반복 작업 변경"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "컬렉션 변경"
@@ -1347,12 +1342,6 @@ msgstr "이미지 접기"
 msgid "Collection"
 msgstr "컬렉션"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "컬렉션"
-
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
 msgstr "컬렉션에 접근할 수 없습니다."
@@ -1383,7 +1372,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "컬렉션 설정"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "컬렉션을 사용할 수 없음"
@@ -1539,12 +1527,10 @@ msgstr "확인 중: “"
 msgid "Conflicting changes"
 msgstr "충돌하는 변경 사항"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "연결됨"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "연결 중"
@@ -1552,11 +1538,6 @@ msgstr "연결 중"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "연결 중…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "연결"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2387,6 @@ msgstr "그룹화된 열"
 msgid "Heading"
 msgstr "제목"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "안녕하세요, {name}님. <0>문서</0>를 읽어보세요."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "도움말"
@@ -2440,7 +2416,6 @@ msgstr "시간"
 msgid "Hours"
 msgstr "시간"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "작업 저장 방식"
@@ -2681,10 +2656,6 @@ msgstr "마지막 날"
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "마지막 새로고침에서 {1}ms 동안 레코드 {0}개를 확인했습니다."
 
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "마지막 새로고침에서 {elapsed}ms 동안 레코드 {scanned, plural, other {#개}}를 확인했습니다."
-
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
@@ -2870,7 +2841,6 @@ msgstr "일치 방식"
 msgid "Matched in {0}"
 msgstr "{0}에서 일치"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 컬렉션"
@@ -2887,7 +2857,6 @@ msgstr "mdbase에서 복구 대상에 엄격 모드가 적용되었음을 확인
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "TaskNotes가 닫혀 있어도 mdbase가 리마인더를 전달합니다. 알림에는 작업 내용이 포함되지 않습니다."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase가 권한 원본입니다. 변경하려면 연결이 필요합니다."
@@ -3493,10 +3462,6 @@ msgstr "작업 열기"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "브라우저의 공유 메뉴를 열고 홈 화면에 추가를 선택하세요."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "여는 중"
-
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
 msgstr "컬렉션 여는 중"
@@ -3839,12 +3804,10 @@ msgstr "반복 및 템플릿"
 msgid "Recurrence rule"
 msgstr "반복 규칙"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "지금 새로고침"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "새로고침 중"

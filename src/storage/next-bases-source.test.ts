@@ -139,7 +139,7 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       .mockRejectedValueOnce(new Error("READ unavailable"));
     const input = { path: "new.base", document };
     await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
-      problem: { code: "operation_outcome_unknown" },
+      code: "outcome_unknown",
       cause: { message: "READ unavailable" },
     });
     const originalId = create.mock.calls[0]![0].id;
@@ -215,10 +215,10 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       });
       const input = { path: "new.base", document };
       await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       await expect(f.repository.createViewSource(input)).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       expect(create).toHaveBeenCalledOnce();
       expect(f.generic).not.toHaveBeenCalled();
@@ -388,10 +388,8 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       .mockRejectedValueOnce(new Error("READ unavailable"));
     const input = { path: f.record.path, document: changed };
     await expect(f.repository.updateViewSource(input)).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        operation_outcome: "unknown",
-      },
+      code: "outcome_unknown",
+
       cause: { message: "READ unavailable" },
     });
     expect((await f.repository.updateViewSource(input)).document).toBe(changed);
@@ -416,18 +414,12 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     await expect(
       f.repository.updateViewSource({ path: f.record.path, document: changed }),
     ).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        operation_outcome: "unknown",
-      },
+      code: "outcome_unknown",
     });
     await expect(
       f.repository.updateViewSource({ path: f.record.path, document: changed }),
     ).rejects.toMatchObject({
-      problem: {
-        code: "operation_outcome_unknown",
-        operation_outcome: "unknown",
-      },
+      code: "outcome_unknown",
     });
     expect(replace).toHaveBeenCalledTimes(1);
     expect(await f.repository.cachedViews()).toEqual([]);
@@ -508,10 +500,10 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       const replace = vi.spyOn(f.client, "replaceDocument");
       const input = { path: f.record.path, document: changed };
       await expect(f.repository.updateViewSource(input)).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       await expect(f.repository.updateViewSource(input)).rejects.toMatchObject({
-        problem: { code: "operation_outcome_unknown" },
+        code: "outcome_unknown",
       });
       expect(replace).toHaveBeenCalledOnce();
     },
@@ -568,7 +560,7 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       .mockImplementation(find);
     await expect(
       f.repository.deleteViewSource(f.record.path),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     await f.repository.deleteViewSource(f.record.path);
     expect(remove).toHaveBeenCalledOnce();
     expect(absence).toHaveBeenCalledTimes(2);
@@ -582,10 +574,10 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     vi.spyOn(f.client, "find").mockResolvedValue(f.record);
     await expect(
       f.repository.deleteViewSource(f.record.path),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     await expect(
       f.repository.deleteViewSource(f.record.path),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     expect(remove).toHaveBeenCalledOnce();
   });
   it("deletes only the native UUID with READ revision CAS and retires its descriptors", async () => {

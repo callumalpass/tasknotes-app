@@ -442,10 +442,6 @@ msgstr "{name}（不是人员记录）"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "添加其他视图前，必须保留 {name} 在导航中"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "{open} 个未完成 · 共 {total} 个"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1084,7 +1080,6 @@ msgstr "CEL 表达式"
 msgid "Change a recurring task"
 msgstr "更改重复任务"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "更换集合"
@@ -1347,12 +1342,6 @@ msgstr "关闭图片"
 msgid "Collection"
 msgstr "集合"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "集合"
-
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
 msgstr "无法访问集合。"
@@ -1383,7 +1372,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "集合设置"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "集合不可用"
@@ -1539,12 +1527,10 @@ msgstr "正在确认“"
 msgid "Conflicting changes"
 msgstr "冲突的更改"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "已连接"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "正在连接"
@@ -1552,11 +1538,6 @@ msgstr "正在连接"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "正在连接…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "连接"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2387,6 @@ msgstr "分组列"
 msgid "Heading"
 msgstr "标题"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "你好，{name}。请阅读<0>文档</0>。"
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "帮助"
@@ -2440,7 +2416,6 @@ msgstr "小时"
 msgid "Hours"
 msgstr "小时"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "任务的存储方式"
@@ -2681,10 +2656,6 @@ msgstr "最后一天"
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "最近一次刷新检查了 {0} 条记录，耗时 {1} 毫秒。"
 
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "上次刷新在 {elapsed} 毫秒内检查了 {scanned, plural, other {# 条记录}}。"
-
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
@@ -2870,7 +2841,6 @@ msgstr "匹配模式"
 msgid "Matched in {0}"
 msgstr "在 {0} 中匹配"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 集合"
@@ -2887,7 +2857,6 @@ msgstr "mdbase 已确认恢复目标已应用严格模式。"
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "即使 TaskNotes 已关闭，mdbase 也会发送提醒。通知不会包含任务内容。"
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase 是权威数据源。更改需要连接。"
@@ -3493,10 +3462,6 @@ msgstr "打开任务"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "打开浏览器的分享菜单，然后选择“添加到主屏幕”。"
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "正在打开"
-
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
 msgstr "正在打开集合"
@@ -3839,12 +3804,10 @@ msgstr "重复规则和模板"
 msgid "Recurrence rule"
 msgstr "重复规则"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "立即刷新"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "正在刷新"

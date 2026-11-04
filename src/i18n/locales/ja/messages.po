@@ -442,10 +442,6 @@ msgstr "{name}（人物レコードではありません）"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "別のビューが追加されるまで、{name}をナビゲーションに残す必要があります"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "未完了 {open}件 / 合計 {total}件"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1084,7 +1080,6 @@ msgstr "CEL式"
 msgid "Change a recurring task"
 msgstr "繰り返しタスクを変更"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "コレクションを変更"
@@ -1347,12 +1342,6 @@ msgstr "画像を折りたたむ"
 msgid "Collection"
 msgstr "コレクション"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "コレクション"
-
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
 msgstr "コレクションにアクセスできません。"
@@ -1383,7 +1372,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "コレクションの設定"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "コレクションを利用できません"
@@ -1539,12 +1527,10 @@ msgstr "「"
 msgid "Conflicting changes"
 msgstr "競合する変更"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "接続済み"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "接続中"
@@ -1552,11 +1538,6 @@ msgstr "接続中"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "接続中…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "接続"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2387,6 @@ msgstr "グループ列"
 msgid "Heading"
 msgstr "見出し"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "こんにちは、{name}さん。<0>ドキュメント</0>をお読みください。"
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "ヘルプ"
@@ -2440,7 +2416,6 @@ msgstr "時間"
 msgid "Hours"
 msgstr "時間"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "タスクの保存方法"
@@ -2681,10 +2656,6 @@ msgstr "最終日"
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "最終更新では{1}ミリ秒で{0}件のレコードを確認しました。"
 
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "最後の更新では{elapsed}ミリ秒で{scanned, plural, other {レコード#件}}を確認しました。"
-
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
@@ -2870,7 +2841,6 @@ msgstr "一致モード"
 msgid "Matched in {0}"
 msgstr "{0}で一致"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbaseコレクション"
@@ -2887,7 +2857,6 @@ msgstr "mdbaseにより、すべての復元対象で厳格モードが適用さ
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "TaskNotesを閉じていてもmdbaseがリマインダーを配信します。通知にタスクの内容は含まれません。"
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbaseが正本です。変更には接続が必要です。"
@@ -3493,10 +3462,6 @@ msgstr "タスクを開く"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "ブラウザーの共有メニューを開き、「ホーム画面に追加」を選択します。"
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "開いています"
-
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
 msgstr "コレクションを開いています"
@@ -3839,12 +3804,10 @@ msgstr "繰り返しとテンプレート"
 msgid "Recurrence rule"
 msgstr "繰り返しルール"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "今すぐ更新"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "更新中"

@@ -221,7 +221,7 @@ describe("native local-result orchestration (protocol stand-in, not native quali
         },
         f.signal,
       ),
-    ).rejects.toMatchObject({ problem: { code: "operation_outcome_unknown" } });
+    ).rejects.toMatchObject({ code: "outcome_unknown" });
     // The SDK ledger keeps the captured write; nobody has to ask for recovery.
     expect(f.client.ledger.stateOf(recordId)).not.toBe("saved");
     receipt.mockRestore();

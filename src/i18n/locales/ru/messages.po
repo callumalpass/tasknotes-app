@@ -442,10 +442,6 @@ msgstr "{name} (не является записью участника)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} должно оставаться в навигации, пока не будет добавлено другое представление"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "Открыто: {open} · всего: {total}"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1084,7 +1080,6 @@ msgstr "Выражение CEL"
 msgid "Change a recurring task"
 msgstr "Изменение повторяющейся задачи"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "Сменить коллекцию"
@@ -1347,12 +1342,6 @@ msgstr "Свернуть изображение"
 msgid "Collection"
 msgstr "Коллекция"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "Коллекция"
-
 #: src/app/model-setup-screen.tsx
 msgid "Collection access is unavailable."
 msgstr "Доступ к коллекции недоступен."
@@ -1383,7 +1372,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "Настройки коллекции"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "Коллекция недоступна"
@@ -1539,12 +1527,10 @@ msgstr "Проверяем, сохранена ли «"
 msgid "Conflicting changes"
 msgstr "Конфликтующие изменения"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "Подключено"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "Подключение"
@@ -1552,11 +1538,6 @@ msgstr "Подключение"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Подключение…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "Подключение"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2406,11 +2387,6 @@ msgstr "Сгруппированные столбцы"
 msgid "Heading"
 msgstr "Заголовок"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Здравствуйте, {name}. Ознакомьтесь с <0>документацией</0>."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "Справка"
@@ -2440,7 +2416,6 @@ msgstr "Час"
 msgid "Hours"
 msgstr "Часы"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "Как хранятся задачи"
@@ -2681,10 +2656,6 @@ msgstr "Последний день"
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "При последнем обновлении проверено записей: {0}; время — {1} мс."
 
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "При последнем обновлении {scanned, plural, one {проверена # запись} few {проверены # записи} many {проверено # записей} other {проверено # записи}} за {elapsed} мс."
-
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
 msgid "Later"
@@ -2870,7 +2841,6 @@ msgstr "Режим соответствия"
 msgid "Matched in {0}"
 msgstr "Совпадение в разделе «{0}»"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "Коллекция mdbase"
@@ -2887,7 +2857,6 @@ msgstr "mdbase подтвердил, что целевые коллекции п
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase доставляет напоминания, даже когда TaskNotes закрыт. Уведомления не содержат текст задач."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase — основной источник данных. Для внесения изменений требуется подключение."
@@ -3493,10 +3462,6 @@ msgstr "Открыть задачу"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "Откройте меню «Поделиться» в браузере и выберите «На экран „Домой“»."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "Открытие"
-
 #: src/app/model-setup-screen.tsx
 msgid "Opening collection"
 msgstr "Открытие коллекции"
@@ -3839,12 +3804,10 @@ msgstr "Повторение и шаблон"
 msgid "Recurrence rule"
 msgstr "Правило повторения"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "Обновить сейчас"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "Обновление"

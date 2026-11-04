@@ -1,5 +1,4 @@
 import { expect, it } from "vitest";
-import { connectError } from "@mdbase-dev/connect-testing";
 import { MdbaseError, mdbaseError } from "@mdbase-dev/sdk";
 import { toOperationalError } from "./operational-error";
 import { connectProblemFromError } from "./connect-problem";
@@ -71,13 +70,15 @@ it("keeps the original SDK write identity and does not make uncertain writes ret
   expect(operational.problem).toMatchObject({ mutationId, mutationIds });
 });
 
-it("preserves structured problems regardless of their carrier", () => {
-  const error = connectError(
-    "hosted_provider_unavailable",
-    "Neutral diagnostic",
-  );
-  expect(connectProblemFromError(error)).toBe(error.problem);
-  expect(connectProblemFromError({ problem: error.problem })).toBe(
-    error.problem,
-  );
+it("does not accept a legacy or lookalike problem carrier as an SDK failure", () => {
+  expect(
+    connectProblemFromError({
+      problem: {
+        code: "hosted_provider_unavailable",
+        message: "Neutral diagnostic",
+        category: "availability",
+        recovery: "retry",
+      },
+    }),
+  ).toBeNull();
 });

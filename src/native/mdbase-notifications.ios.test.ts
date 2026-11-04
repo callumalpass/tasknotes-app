@@ -1,26 +1,19 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const connect = vi.hoisted(() => ({
-  registerNativeNotifications: vi.fn(async () => ({ ok: true, value: {} })),
-  unregisterNativeNotifications: vi.fn(async () => ({
-    ok: true,
-    value: undefined,
-  })),
+  registerFcm: vi.fn(async () => ({})),
+  unregisterFcm: vi.fn(async () => undefined),
 }));
 
-vi.mock("../cloud/connect", () => ({
-  cloudSession: {
+vi.mock("../cloud/tasknotes-application", () => ({
+  taskNotesMdbase: () => ({
     getSnapshot: () => ({
-      status: "ready",
-      capabilities: {
-        values: { "background.schedule": { state: "available" } },
+      phase: {
+        kind: "ready",
+        connection: { id: "collection", timers: connect },
       },
     }),
-    connection: () => ({
-      info: () => ({ collectionId: "collection" }),
-      ...connect,
-    }),
-  },
+  }),
 }));
 
 let permission = "prompt";
@@ -78,6 +71,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 it("loads the real iOS proxy without assimilating it as a thenable", async () => {
+  const deadline = vi.spyOn(AbortSignal, "timeout");
   const { mdbaseNotifications } = await import("./mdbase-notifications");
   expect(await mdbaseNotifications.status()).toEqual({
     state: "off",
@@ -98,12 +92,13 @@ it("loads the real iOS proxy without assimilating it as a thenable", async () =>
     state: "enabled",
     optedIn: true,
   });
-  expect(connect.registerNativeNotifications).toHaveBeenCalledWith({
+  expect(connect.registerFcm).toHaveBeenCalledWith({
     token: "fcm-token",
-    timeoutMs: 45_000,
+    signal: expect.any(AbortSignal),
   });
+  expect(deadline).toHaveBeenCalledWith(45_000);
   await mdbaseNotifications.refreshRegistration();
-  expect(connect.registerNativeNotifications).toHaveBeenCalledTimes(2);
+  expect(connect.registerFcm).toHaveBeenCalledTimes(2);
 
   expect(await mdbaseNotifications.disable()).toEqual({
     state: "off",
@@ -135,14 +130,14 @@ it("attaches and removes all iOS listeners through the real proxy", async () => 
   });
   expect(wake).toHaveBeenCalledWith({
     opened: false,
-    notification: expect.objectContaining({ signal_id: "signal" }),
+    notification: expect.objectContaining({ signalId: "signal" }),
   });
   await mdbaseNotifications.enable();
   listeners.get("tokenReceived")!({ token: "rotated-token" });
   await vi.waitFor(() =>
-    expect(connect.registerNativeNotifications).toHaveBeenCalledWith({
+    expect(connect.registerFcm).toHaveBeenCalledWith({
       token: "rotated-token",
-      timeoutMs: 45_000,
+      signal: expect.any(AbortSignal),
     }),
   );
   dispose();

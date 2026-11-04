@@ -11,7 +11,7 @@ import { expect, it, vi } from "vitest";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { todayString } from "../domain/task";
 import { taskRepositoryStub } from "../test/task-repository-stub";
-import { deferred } from "../test/mdbase-fixture";
+import { deferred } from "../test/deferred";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
