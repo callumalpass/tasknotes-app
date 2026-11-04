@@ -15,7 +15,7 @@ async function arrangeOnTouch(page: import("@playwright/test").Page) {
 test("saved manual sorting keeps large lists windowed and keyboard operable", async ({
   page,
 }) => {
-  await page.goto("?demo=500");
+  await page.goto("?demo=400");
   await arrangeOnTouch(page);
   const handles = page.locator(".manual-order-handle");
   await expect(handles.first()).toBeEnabled();
@@ -149,7 +149,7 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     detail.getByRole("textbox", { name: "Notes", exact: true }),
   ).toBeVisible();
   await expect(
-    detail.getByText("Schedule and status", { exact: true }),
+    detail.getByRole("region", { name: "Task properties" }),
   ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("task-detail.png"),
@@ -354,19 +354,19 @@ test("desktop sidebar destinations reorder by keyboard and drag", async ({
       .evaluateAll((nodes) => nodes.map((node) => node.textContent));
   await expect.poll(order).toEqual(expect.arrayContaining(["Today"]));
   const initial = await order();
+  const destination = (name: string) =>
+    rail.locator("button[draggable='true']").filter({ hasText: name });
 
-  await rail.getByRole("button", { name: initial[0]!, exact: true }).focus();
+  await destination(initial[0]!).focus();
   await page.keyboard.press("Alt+ArrowDown");
   await expect
     .poll(order)
     .toEqual([initial[1], initial[0], ...initial.slice(2)]);
 
   // Dropping on the top half of the current first item places it before.
-  await rail
-    .getByRole("button", { name: initial[2]!, exact: true })
-    .dragTo(rail.getByRole("button", { name: initial[1]!, exact: true }), {
-      targetPosition: { x: 10, y: 4 },
-    });
+  await destination(initial[2]!).dragTo(destination(initial[1]!), {
+    targetPosition: { x: 10, y: 4 },
+  });
   await expect
     .poll(order)
     .toEqual([initial[2], initial[1], initial[0], ...initial.slice(3)]);

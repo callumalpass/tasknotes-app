@@ -35,7 +35,6 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
-      await page.getByText("Schedule and status", { exact: true }).click();
       const fields = page.locator(".task-core-fields");
       const label = fields.locator(".form-field > span").first();
       await expect(label).toHaveCSS("font-family", /Atkinson Hyperlegible/);
@@ -98,7 +97,6 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
-      await page.getByText("Schedule and status", { exact: true }).click();
       await page
         .locator(".task-core-fields .tasknotes-date-trigger")
         .first()
@@ -186,8 +184,6 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
-      await page.getByText("Schedule and status", { exact: true }).click();
-      await page.getByText("Organize", { exact: true }).click();
       await page.addStyleTag({
         content: ":root { font-size: 200% !important; }",
       });

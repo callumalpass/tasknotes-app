@@ -1446,7 +1446,13 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip-head {
+  flex-wrap: wrap;
   padding: 0 0 var(--space-sm);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-slot {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .full-calendar-view.is-agenda
