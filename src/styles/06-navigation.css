@@ -1073,7 +1073,11 @@
     flex: 1 1 0;
     flex-direction: column;
     min-height: 0;
+    padding-bottom: 16px;
     overflow-y: auto;
+    scrollbar-width: none;
+    /* Rows fade into the foot, which says there is more without a bar. */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
   }
   .navigation-destinations > * {
     flex-shrink: 0;

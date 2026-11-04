@@ -776,7 +776,9 @@ function isLateSchedule(
   return (
     (key === fieldMapping.scheduled || key === "scheduled") &&
     !task.completed &&
-    Boolean(task.scheduled && isTaskDateOverdue(task.scheduled))
+    Boolean(task.scheduled && isTaskDateOverdue(task.scheduled)) &&
+    // One red date to a row: a missed deadline outranks a missed plan.
+    !(task.due && isTaskDateOverdue(task.due))
   );
 }
 

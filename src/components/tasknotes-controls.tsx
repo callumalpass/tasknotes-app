@@ -63,6 +63,7 @@ export function TaskNotesSelect({
     Math.max(selectedIndex, firstEnabledIndex(options)),
   );
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const typed = useRef<{ text: string; timer?: number }>({ text: "" });
 
   useActiveOptionInView(id, open, activeIndex);
 
@@ -103,10 +104,43 @@ export function TaskNotesSelect({
       );
       return;
     }
+    if (event.key === " " && open && typed.current.text) {
+      event.preventDefault();
+      typeAhead(event.key);
+      return;
+    }
     if ((event.key === "Enter" || event.key === " ") && open) {
       event.preventDefault();
       choose(activeIndex);
+      return;
     }
+    if (
+      open &&
+      event.key.length === 1 &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      typeAhead(event.key);
+    }
+  }
+
+  // Letters jump within a long list, as they do in a native select.
+  function typeAhead(key: string) {
+    window.clearTimeout(typed.current.timer);
+    const text = `${typed.current.text}${key}`.toLocaleLowerCase();
+    typed.current = {
+      text,
+      timer: window.setTimeout(() => {
+        typed.current.text = "";
+      }, 700),
+    };
+    const match = options.findIndex(
+      (option) =>
+        !option.disabled && option.label.toLocaleLowerCase().startsWith(text),
+    );
+    if (match >= 0) setActiveIndex(match);
   }
 
   return (

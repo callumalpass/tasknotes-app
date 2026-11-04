@@ -133,7 +133,7 @@ export function GlobalTaskCapture({
           createTask={createTask}
           completeField={completeField}
           focusRequest={open ? 1 : undefined}
-          placeholder={t`What needs doing? Try tomorrow 9am, +project, #tag`}
+          placeholder={t`Try tomorrow 9am, +project, #tag`}
           onCreated={onCreated}
           onAccepted={(task, version) => {
             if (!keepAddingRef.current && session.canCloseAccepted(version)) {

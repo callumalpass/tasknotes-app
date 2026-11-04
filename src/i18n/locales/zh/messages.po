@@ -426,8 +426,8 @@ msgid "{estimate}m estimate"
 msgstr "预计 {estimate} 分钟"
 
 #: src/app/bulk-task-actions.tsx
-msgid "{excluded, plural, one {# repeating task excluded. Open it to choose an occurrence or the series.} other {# repeating tasks excluded. Open each task to choose an occurrence or the series.}}"
-msgstr "{excluded, plural, other {已排除 # 个重复任务。请打开各任务，选择某一次或整个系列。}}"
+msgid "{excluded, plural, one {# repeating task won’t change. Open it to choose an occurrence or the series.} other {# repeating tasks won’t change. Open each one to choose an occurrence or the series.}}"
+msgstr "{excluded, plural, other {# 个重复任务不会更改。请打开任务，选择单次或整个系列。}}"
 
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
@@ -5713,6 +5713,10 @@ msgstr "减少搜索词或尝试其他拼写。"
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其设置或选择其他视图。"
 
+#: src/components/global-task-capture.tsx
+msgid "Try tomorrow 9am, +project, #tag"
+msgstr "试试 明天上午9点、+项目、#标签"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "类型"
@@ -5963,10 +5967,6 @@ msgstr "mdbase 是什么？"
 #: src/app/scratchpad-screen.tsx
 msgid "What needs doing?"
 msgstr "有什么待办事项？"
-
-#: src/components/global-task-capture.tsx
-msgid "What needs doing? Try tomorrow 9am, +project, #tag"
-msgstr "要做什么？试试 明天上午9点、+项目、#标签"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

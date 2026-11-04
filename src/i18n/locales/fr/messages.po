@@ -426,8 +426,8 @@ msgid "{estimate}m estimate"
 msgstr "Estimation : {estimate} min"
 
 #: src/app/bulk-task-actions.tsx
-msgid "{excluded, plural, one {# repeating task excluded. Open it to choose an occurrence or the series.} other {# repeating tasks excluded. Open each task to choose an occurrence or the series.}}"
-msgstr "{excluded, plural, one {# tâche récurrente exclue. Ouvrez-la pour choisir une occurrence ou la série.} many {# tâches récurrentes exclues. Ouvrez chaque tâche pour choisir une occurrence ou la série.} other {# tâches récurrentes exclues. Ouvrez chaque tâche pour choisir une occurrence ou la série.}}"
+msgid "{excluded, plural, one {# repeating task won’t change. Open it to choose an occurrence or the series.} other {# repeating tasks won’t change. Open each one to choose an occurrence or the series.}}"
+msgstr "{excluded, plural, one {# tâche récurrente ne changera pas. Ouvrez-la pour choisir une occurrence ou la série.} many {# tâches récurrentes ne changeront pas. Ouvrez chacune pour choisir une occurrence ou la série.} other {# tâches récurrentes ne changeront pas. Ouvrez chacune pour choisir une occurrence ou la série.}}"
 
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
@@ -5714,6 +5714,10 @@ msgstr "Essayez moins de mots ou une autre orthographe."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Essayez de recharger la vue. Si le problème persiste, modifiez ses paramètres ou choisissez une autre vue."
 
+#: src/components/global-task-capture.tsx
+msgid "Try tomorrow 9am, +project, #tag"
+msgstr "Essayez demain 9h, +projet, #étiquette"
+
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Type"
@@ -5964,10 +5968,6 @@ msgstr "Qu’est-ce que mdbase ?"
 #: src/app/scratchpad-screen.tsx
 msgid "What needs doing?"
 msgstr "Que faut-il faire ?"
-
-#: src/components/global-task-capture.tsx
-msgid "What needs doing? Try tomorrow 9am, +project, #tag"
-msgstr "Que faut-il faire ? Essayez demain 9h, +projet, #étiquette"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

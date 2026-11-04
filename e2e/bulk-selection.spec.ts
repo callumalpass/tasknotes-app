@@ -169,7 +169,7 @@ test("repeating tasks stay selected and explain why they are excluded", async ({
   await repeating.locator(".task-row-title").focus();
   await page.keyboard.press("v");
   await expect(page.locator(".bulk-actions")).toContainText(
-    "1 repeating task excluded",
+    "1 repeating task won’t change",
   );
   await expect(
     page

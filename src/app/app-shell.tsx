@@ -1548,6 +1548,23 @@ export function Navigation({
           className="navigation-utility"
           role="group"
         >
+          <button
+            aria-current={active === "views" ? "page" : undefined}
+            className={
+              active === "views"
+                ? "navigation-views is-active"
+                : "navigation-views"
+            }
+            aria-label={t({ message: "Views" })}
+            title={t({ message: "Views" })}
+            type="button"
+            onClick={() => onNavigate({ page: "views" })}
+          >
+            <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
+            <span>
+              <Trans>Views</Trans>
+            </span>
+          </button>
           {onCommands ? (
             <button
               aria-label={t({ message: "Quick actions" })}
@@ -1564,19 +1581,6 @@ export function Navigation({
               {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
           ) : null}
-          <button
-            aria-current={active === "views" ? "page" : undefined}
-            className={active === "views" ? "is-active" : undefined}
-            aria-label={t({ message: "Views" })}
-            title={t({ message: "Views" })}
-            type="button"
-            onClick={() => onNavigate({ page: "views" })}
-          >
-            <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
-            <span>
-              <Trans>Views</Trans>
-            </span>
-          </button>
           <button
             aria-current={active === "more" ? "page" : undefined}
             className={active === "more" ? "is-active" : undefined}

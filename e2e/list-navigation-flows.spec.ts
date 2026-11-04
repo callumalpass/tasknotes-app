@@ -503,3 +503,40 @@ test("long status and priority lists keep the keyboard's place in view", async (
     await trigger.press("Escape");
   }
 });
+
+test("letters jump within a long option list", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Keyboard path.");
+  await page.locator(".task-row-title").first().click();
+  const trigger = page
+    .getByRole("combobox", { name: "Status", exact: true })
+    .first();
+  await trigger.focus();
+  await trigger.press("Enter");
+  const list = page.locator(".tasknotes-select-popover[data-state='open']");
+  const label = (await list.getByRole("option").nth(9).innerText()).trim();
+  await page.keyboard.type(label.slice(0, 4));
+  await expect(list.locator("button.is-active")).toHaveId(/-option-9$/);
+  await expect(list.locator("button.is-active")).toBeInViewport({ ratio: 1 });
+  await trigger.press("Escape");
+});
+
+test("a board's columns fit a laptop width before it scrolls", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Desktop board.");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(workBoard);
+  await expect(page.locator(".kanban-column")).toHaveCount(4);
+  const overflow = await page
+    .locator(".kanban-board")
+    .evaluate((board) => board.scrollWidth - board.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("an overdue row carries one red date", async ({ page }) => {
+  const row = page
+    .locator(".task-row")
+    .filter({ hasText: "Prepare quarterly planning session" });
+  await expect(row.locator(".is-overdue")).toHaveCount(1);
+  await expect(row.locator(".is-late")).toHaveCount(0);
+});

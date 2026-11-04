@@ -172,10 +172,9 @@ Today             Search       More
   list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
   "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
-  time so overdue rows stay compact. Only a past due date is overdue and takes
-  the danger color beside its visible label; a missed scheduled date is a plan,
-  not lateness, and stays muted. Inside the Overdue section the heading label
-  alone carries the danger color, and row dates read as ordinary metadata. A
+  time so overdue rows stay compact. A row carries one red date: a past due
+  date beside its visible label, or a missed scheduled date when no deadline
+  has passed. A
   coloured non-default status draws the completion ring in that color and names
   the status in the control's label and tooltip. On list rows, wrapped
   metadata keeps an even 24px rhythm, and a project, status, or priority value

@@ -359,7 +359,7 @@
 /* Desktop columns share the available width before the board scrolls. */
 @media (min-width: 840px) {
   .kanban-column {
-    flex: 1 0 250px;
+    flex: 1 0 216px;
     max-width: 360px;
   }
 }

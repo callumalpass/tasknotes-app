@@ -707,7 +707,7 @@
 
   .navigation-utility {
     display: flex;
-    flex-direction: column;
+    gap: var(--space-xs);
     margin-top: auto;
     padding-top: var(--space-md);
     border-top: 1px solid var(--line);
@@ -718,16 +718,48 @@
     align-items: center;
     gap: var(--space-sm);
     flex-direction: row;
-    justify-content: flex-start;
-    width: 100%;
+    flex: none;
+    justify-content: center;
+    width: 44px;
     min-height: 44px;
-    padding: 0 10px;
+    padding: 0;
     color: var(--ink-muted);
     font-size: var(--type-supporting);
     background: transparent;
     border: 0;
     border-radius: var(--radius-control);
     cursor: pointer;
+  }
+
+  .navigation-rail .navigation-utility button > :not(svg) {
+    display: none;
+  }
+
+  .navigation-rail .navigation-utility .navigation-views {
+    flex: 1;
+    justify-content: flex-start;
+    width: auto;
+    padding: 0 10px;
+  }
+
+  .navigation-rail .navigation-utility .navigation-views > span {
+    display: inline;
+  }
+
+  .sidebar-collapsed .navigation-utility {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sidebar-collapsed .navigation-rail .navigation-utility .navigation-views {
+    flex: none;
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .sidebar-collapsed .navigation-rail .navigation-utility .navigation-views > span {
+    display: none;
   }
 
   .navigation-rail .navigation-utility button.is-active {

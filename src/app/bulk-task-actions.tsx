@@ -498,8 +498,8 @@ export function BulkTaskActions({
             <p className="bulk-selection-hint">
               <Plural
                 value={excluded}
-                one="# repeating task excluded. Open it to choose an occurrence or the series."
-                other="# repeating tasks excluded. Open each task to choose an occurrence or the series."
+                one="# repeating task won’t change. Open it to choose an occurrence or the series."
+                other="# repeating tasks won’t change. Open each one to choose an occurrence or the series."
               />
             </p>
           ) : null}

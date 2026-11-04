@@ -211,38 +211,6 @@ export function ViewCatalog({
           </div>
         ) : (
           <div className="view-document-list">
-            {visibleTools.length ? (
-              <section
-                aria-labelledby="view-document-tasknotes"
-                className="view-document"
-              >
-                <header className="view-document-heading">
-                  <div>
-                    <h3 id="view-document-tasknotes">
-                      <Trans>TaskNotes tools</Trans>
-                    </h3>
-                    <p>
-                      <Trans>Built-in working spaces</Trans>
-                    </p>
-                  </div>
-                </header>
-                <div className="saved-view-list">
-                  {visibleTools.map((tool) => (
-                    <ToolRow
-                      inNavigation={navigationViewKeys.includes(tool.key)}
-                      isOnlyNavigationEntry={
-                        navigationViewKeys.length === 1 &&
-                        navigationViewKeys[0] === tool.key
-                      }
-                      key={tool.key}
-                      tool={tool}
-                      onToggleNavigation={onToggleNavigation}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
             {visibleDocuments.length ? (
               <section
                 className="saved-views-section"
@@ -300,6 +268,37 @@ export function ViewCatalog({
                     </div>
                   </section>
                 ))}
+              </section>
+            ) : null}
+            {visibleTools.length ? (
+              <section
+                aria-labelledby="view-document-tasknotes"
+                className="view-document"
+              >
+                <header className="view-document-heading">
+                  <div>
+                    <h3 id="view-document-tasknotes">
+                      <Trans>TaskNotes tools</Trans>
+                    </h3>
+                    <p>
+                      <Trans>Built-in working spaces</Trans>
+                    </p>
+                  </div>
+                </header>
+                <div className="saved-view-list">
+                  {visibleTools.map((tool) => (
+                    <ToolRow
+                      inNavigation={navigationViewKeys.includes(tool.key)}
+                      isOnlyNavigationEntry={
+                        navigationViewKeys.length === 1 &&
+                        navigationViewKeys[0] === tool.key
+                      }
+                      key={tool.key}
+                      tool={tool}
+                      onToggleNavigation={onToggleNavigation}
+                    />
+                  ))}
+                </div>
               </section>
             ) : null}
           </div>

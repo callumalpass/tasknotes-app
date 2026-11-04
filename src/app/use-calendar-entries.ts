@@ -34,6 +34,7 @@ export function useCalendarEntries(
         ...context,
         settings: calendarSettings(execution, configuration, display),
       },
+      { showMissedRepeats: true },
     );
   }, [index, execution, range, identityTasks, configuration, display]);
 }

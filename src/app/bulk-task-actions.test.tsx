@@ -114,7 +114,7 @@ it("excludes series and materialized occurrences without making any write", asyn
   ]);
   only.all();
   render(<BulkTaskActions store={only} navigationKey="today" />);
-  expect(screen.getByText(/2 repeating tasks excluded/)).toBeVisible();
+  expect(screen.getByText(/2 repeating tasks won’t change/)).toBeVisible();
   expect(screen.getByRole("button", { name: /^Complete$/ })).toBeDisabled();
   expect(fixture.updateTask).not.toHaveBeenCalled();
   await waitFor(() =>

@@ -112,6 +112,7 @@ export class AppCalendarEntryIndex {
     range: CalendarRange,
     identityTasks: readonly TaskSummary[],
     context: CalendarContext,
+    { showMissedRepeats = false }: { showMissedRepeats?: boolean } = {},
   ): Map<string, CalendarEntry[]> {
     const materializedOccurrences: Record<string, string[]> = {};
     for (const key of materializedOccurrenceKeys(identityTasks)) {
@@ -166,6 +167,7 @@ export class AppCalendarEntryIndex {
       rows,
       context.timezone,
       range,
+      showMissedRepeats ? todayString(new Date(context.now)) : undefined,
     );
   }
 
@@ -201,6 +203,7 @@ export function calendarEvents(
       ...context,
       settings: calendarSettings(execution, configuration, display),
     },
+    { showMissedRepeats: true },
   );
 }
 
@@ -213,11 +216,13 @@ function groupCalendarEntries(
   rows: Map<string, TaskViewRow>,
   timezone: string,
   range: CalendarRange,
+  today?: string,
 ): Map<string, CalendarEntry[]> {
   const result = new Map<string, CalendarEntry[]>();
-  const today = todayString();
   const inRange =
-    today >= range.start.slice(0, 10) && today < range.end.slice(0, 10);
+    today &&
+    today >= range.start.slice(0, 10) &&
+    today < range.end.slice(0, 10);
   for (const modelEntry of [
     ...entries,
     ...(inRange ? missedRepeats(entries, rows, today) : []),
