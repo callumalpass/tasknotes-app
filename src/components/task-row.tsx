@@ -1,4 +1,4 @@
-import { useTaskSelection } from "../app/use-task-selection";
+import { useTaskSelecting, useTaskSelection } from "../app/use-task-selection";
 import { taskMeta } from "../i18n/presentation";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -85,6 +85,7 @@ export function TaskRow({
   const { t } = useLingui();
   const supportingId = useId();
   const selection = useTaskSelection(task.id);
+  const selecting = useTaskSelecting();
   const { configuration, mutations, repository, updateTask } = useRepository();
   const command = useMutationState(
     mutations,
@@ -130,7 +131,6 @@ export function TaskRow({
     Boolean(status) &&
     displayedTask.status !== configuration.defaults.status &&
     displayedTask.status !== "none";
-  const statusColor = distinctStatus ? status?.color : undefined;
   const raisedPriorityColor = displayedTask.completed
     ? undefined
     : markedPriorityColorOf(task.priority, configuration);
@@ -182,6 +182,12 @@ export function TaskRow({
     .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   const shownDetails = sectionDetails(allDetails, sectionDay, configuration);
+  // A status the row names carries its colour there; the circle stays clear.
+  const statusNamed = shownDetails.some(
+    (detail) => propertyIcon(detail, configuration) === Circle,
+  );
+  const statusColor =
+    distinctStatus && !statusNamed ? status?.color : undefined;
   const rowRef = useRef<HTMLDivElement>(null);
   useCompletionDeparture(
     rowRef,
@@ -299,8 +305,14 @@ export function TaskRow({
       <button
         className={`completion-control${statusColor ? " has-status" : ""}${raisedPriorityColor ? " has-priority" : ""}`}
         type="button"
-        aria-label={`${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
-        aria-pressed={displayedTask.completed}
+        aria-label={
+          selecting
+            ? selection.selected
+              ? t`Deselect ${task.title}`
+              : t`Select ${task.title}`
+            : `${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`
+        }
+        aria-pressed={selecting ? selection.selected : displayedTask.completed}
         aria-busy={pending}
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
@@ -314,7 +326,10 @@ export function TaskRow({
               : {}),
           } as React.CSSProperties
         }
-        onClick={() => void complete()}
+        onClick={() => {
+          if (selecting) selection.toggle();
+          else void complete();
+        }}
       >
         <span aria-hidden="true" />
       </button>
@@ -392,6 +407,9 @@ export function TaskRow({
                 }
                 aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
+                // Row keys and the actions menu reach these without a Tab
+                // stop for every date, tag and project in a long list.
+                tabIndex={-1}
                 title={`${detail.label}: ${detail.value}`}
                 type="button"
                 onClick={(event) => openDetail(detail, event.currentTarget)}
@@ -569,7 +587,9 @@ function PropertyGlyph({ detail }: { detail: TaskRowDetail }) {
   const { configuration } = useRepository();
   const Icon = propertyIcon(detail, configuration);
   if (!Icon) return null;
-  const color = detailPriorityColor(detail, configuration);
+  const color =
+    detailPriorityColor(detail, configuration) ??
+    detailStatusColor(detail, configuration);
   return createElement(Icon, {
     "aria-hidden": true,
     className: "task-row-glyph",
@@ -578,6 +598,15 @@ function PropertyGlyph({ detail }: { detail: TaskRowDetail }) {
     strokeWidth: 1.8,
     style: color ? { color } : undefined,
   });
+}
+
+function detailStatusColor(
+  detail: TaskRowDetail,
+  { fieldMapping, statuses }: RowConfiguration,
+): string | undefined {
+  const key = propertyField(detail);
+  if (key !== fieldMapping.status && key !== "status") return undefined;
+  return statuses.find(({ value }) => value === detail.rawValue)?.color;
 }
 
 function propertyField(detail: TaskRowDetail): string {

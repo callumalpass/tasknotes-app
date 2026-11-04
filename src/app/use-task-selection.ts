@@ -2,6 +2,16 @@ import { useContext, useSyncExternalStore, type MouseEvent } from "react";
 import { SelectionContext, SelectableContext } from "./task-selection-context";
 const noopSubscribe = () => () => {};
 
+/** Whether taps select. Rows re-render only as selecting starts and ends. */
+export function useTaskSelecting() {
+  const store = useContext(SelectionContext);
+  const selectable = useContext(SelectableContext) && Boolean(store);
+  return useSyncExternalStore(
+    selectable ? store!.subscribe : noopSubscribe,
+    () => selectable && store!.mode,
+  );
+}
+
 export function useTaskSelection(id: string) {
   const store = useContext(SelectionContext);
   const selectable = useContext(SelectableContext) && Boolean(store);
@@ -12,6 +22,9 @@ export function useTaskSelection(id: string) {
   return {
     selected,
     selectable,
+    toggle: () => {
+      if (selectable) store!.toggle(id);
+    },
     active: () => selectable && store!.mode,
     holdsTasks: () => selectable && store!.count > 0,
     start: () => {

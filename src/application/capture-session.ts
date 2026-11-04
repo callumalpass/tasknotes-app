@@ -50,6 +50,8 @@ export class CaptureSession {
     accepted: null,
   };
   private fields: Partial<CreateTaskInput> = {};
+  /** Lets a project with spaces in its name be typed without link markup. */
+  knownProjects: readonly string[] = [];
   private parseGeneration = 0;
   private submission: {
     intent: TaskCreateIntent;
@@ -323,7 +325,12 @@ export class CaptureSession {
     let input: CreateTaskInput;
     let highlights: TaskCaptureResult["highlights"];
     try {
-      ({ input, highlights } = await parseTaskCapture(text, configuration));
+      ({ input, highlights } = await parseTaskCapture(
+        text,
+        configuration,
+        undefined,
+        this.knownProjects,
+      ));
     } catch {
       input = { title: text };
     }

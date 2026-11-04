@@ -124,11 +124,6 @@ msgstr "{0, plural, one {Account unlocked. # private collection still needs to f
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {Created # task note} other {Created # task notes}}"
 
-#. placeholder {0}: overdueRows.length
-#: src/app/task-calendar-view.tsx
-msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
@@ -417,6 +412,10 @@ msgstr "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-la
 #: src/app/views-screen.tsx
 msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
 msgstr "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
+msgstr "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -988,10 +987,6 @@ msgstr "App update"
 #: src/app/more-screen.tsx
 msgid "Appearance"
 msgstr "Appearance"
-
-#: src/app/bulk-task-actions.tsx
-msgid "Apply date"
-msgstr "Apply date"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
@@ -2073,6 +2068,11 @@ msgstr "Descending"
 msgid "Description"
 msgstr "Description"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Deselect {0}"
+msgstr "Deselect {0}"
+
 #: src/components/task-attachments.tsx
 msgid "Detach"
 msgstr "Detach"
@@ -2858,6 +2858,10 @@ msgstr "Keep the planned dates, even if you finish late."
 msgid "Keep the quick-add field on this view."
 msgstr "Keep the quick-add field on this view."
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep them"
+msgstr "Keep them"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "Keep writing"
@@ -3161,6 +3165,10 @@ msgstr "Minute"
 msgid "Minutes"
 msgstr "Minutes"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Missed deadlines"
+msgstr "Missed deadlines"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3222,7 +3230,6 @@ msgstr "Move {label} down"
 msgid "Move {label} up"
 msgstr "Move {label} up"
 
-#: src/app/task-calendar-view.tsx
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "Move all to today"
@@ -3247,6 +3254,10 @@ msgstr "Move Manual order to the first position to enable drag handles."
 msgid "Move selected tasks to project"
 msgstr "Move selected tasks to project"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move them too"
+msgstr "Move them too"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -3257,6 +3268,10 @@ msgstr "Move to project"
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "Moved “{title}” and its deadline to {when}"
+
+#: src/app/views-screen.tsx
+msgid "Moved “{title}” to {column}"
+msgstr "Moved “{title}” to {column}"
 
 #: src/components/task-actions.tsx
 msgid "Moved “{title}” to {project}"
@@ -4626,10 +4641,6 @@ msgstr "Saving…"
 msgid "Schedule"
 msgstr "Schedule"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Schedule all"
-msgstr "Schedule all"
-
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "Schedule date"
@@ -4775,6 +4786,11 @@ msgstr "Second"
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
 msgstr "See Upcoming"
+
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Select {0}"
+msgstr "Select {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -5027,6 +5043,7 @@ msgstr "Starting…"
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "Status"
@@ -5940,9 +5957,12 @@ msgid "What is mdbase?"
 msgstr "What is mdbase?"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/global-task-capture.tsx
 msgid "What needs doing?"
 msgstr "What needs doing?"
+
+#: src/components/global-task-capture.tsx
+msgid "What needs doing? Try tomorrow 9am, +project, #tag"
+msgstr "What needs doing? Try tomorrow 9am, +project, #tag"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

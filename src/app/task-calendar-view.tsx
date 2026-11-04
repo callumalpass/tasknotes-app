@@ -1,6 +1,8 @@
 import "@tasknotes/calendar/calendar.css";
-import { plural, t } from "@lingui/core/macro";
+import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
+import { missedDeadlineCount } from "../domain/task-list-sections";
 import { appLocale } from "../i18n/app";
 import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
@@ -118,7 +120,11 @@ export function TaskCalendarView({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
-  onMoveOverdueToToday?(rows: readonly TaskViewRow[]): void;
+  onMoveOverdueToToday?(
+    rows: readonly TaskViewRow[],
+    date: string,
+    keepDeadlines: boolean,
+  ): Promise<void>;
   movingOverdue?: boolean;
 }) {
   const { t } = useLingui();
@@ -547,18 +553,15 @@ export function TaskCalendarView({
         <div className="full-calendar-main">
           {agenda && leadSlot && onMoveOverdueToToday && overdueRows.length
             ? createPortal(
-                <button
-                  aria-label={plural(overdueRows.length, {
-                    one: "Move all to today, # overdue task",
-                    other: "Move all to today, # overdue tasks",
-                  })}
-                  className="full-calendar-reschedule"
-                  disabled={movingOverdue}
-                  type="button"
-                  onClick={() => onMoveOverdueToToday(overdueRows)}
-                >
-                  <Trans>Move all to today</Trans>
-                </button>,
+                <OverdueScheduleActions
+                  buttonClassName="full-calendar-reschedule"
+                  count={overdueRows.length}
+                  deadlines={missedDeadlineCount(overdueRows)}
+                  pending={Boolean(movingOverdue)}
+                  onSchedule={(date, keepDeadlines) =>
+                    onMoveOverdueToToday(overdueRows, date, keepDeadlines)
+                  }
+                />,
                 leadSlot,
               )
             : null}

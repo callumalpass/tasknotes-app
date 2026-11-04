@@ -20,6 +20,11 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   });
   await move.focus();
   await page.keyboard.press("Enter");
+  // The choice takes focus, so Enter again confirms from the keyboard.
+  await expect(
+    page.getByRole("button", { name: "Move them too" }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
 
   // An emptied section leaves the page until a drag needs it as a destination.
   await expect(page.getByRole("button", { name: /^Overdue \d+$/ })).toHaveCount(

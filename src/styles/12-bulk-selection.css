@@ -213,7 +213,6 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   }
 }
 
-.bulk-pick-date button,
 .bulk-failures button {
   min-height: 44px;
   padding: 6px 12px;

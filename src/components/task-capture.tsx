@@ -238,6 +238,44 @@ export function TaskCapture({
     return () => window.cancelAnimationFrame(frame);
   }, [focusRequest]);
 
+  const projectField = configuration.fieldMapping.projects;
+  const projectCompletion = configuration.fieldCompletions[projectField];
+  const projectTrigger = captureTriggers(configuration).find(
+    ({ propertyId }) => propertyId === "projects",
+  )?.trigger;
+  const typingProject = Boolean(
+    projectTrigger && text.includes(projectTrigger),
+  );
+  useEffect(() => {
+    if (!typingProject || !completeField) return;
+    let current = true;
+    void completeField({
+      field: projectField,
+      kind: projectCompletion?.kind ?? "records",
+      query: "",
+      limit: 200,
+      targetTypes: projectCompletion?.targetTypes,
+    }).then(
+      (projects) => {
+        if (!current) return;
+        session.knownProjects = projects.map(({ label }) => label);
+        void session.parse(configuration, creationDefaults);
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [
+    completeField,
+    configuration,
+    creationDefaults,
+    projectCompletion,
+    projectField,
+    session,
+    typingProject,
+  ]);
+
   useEffect(() => {
     if (!text.trim()) return;
     const timeout = window.setTimeout(

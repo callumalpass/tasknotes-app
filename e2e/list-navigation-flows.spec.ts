@@ -18,7 +18,9 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   date.setDate(date.getDate() + 4);
   const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   await page.getByLabel("Type a date").fill(value);
+  await expect(page.locator(".task-date-hint")).toContainText("Enter to set");
   await page.getByLabel("Type a date").press("Enter");
+  await page.getByRole("button", { name: "Move them too" }).click();
   const label = new Intl.DateTimeFormat("en", {
     weekday: "short",
     day: "numeric",
@@ -323,4 +325,35 @@ test("the task menu starts on the current priority and jumps by letter", async (
   await page.keyboard.press(other[0]!.toLowerCase());
   await expect(focused).toHaveText(new RegExp(`^${other[0]}`));
   await expect(focused).toHaveCSS("outline-style", "solid");
+});
+
+test("a task's circle selects rather than completes while selecting", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  await page
+    .getByRole("button", { name: /Select tasks/ })
+    .first()
+    .click();
+  const row = page.locator(".task-row").first();
+  const title = await row.locator(".task-row-title").textContent();
+  await row.locator(".completion-control").click();
+  await expect(page.locator(".bulk-actions")).toContainText("1 selected");
+  await page.getByRole("button", { name: `Deselect ${title}` }).click();
+  await expect(page.locator(".bulk-actions")).toContainText("0 selected");
+  await expect(row).toContainText(title!);
+  await expect(row).not.toHaveClass(/is-complete/);
+});
+
+test("a known project with spaces is typed by its plain name", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  await page
+    .locator(".quick-capture input")
+    .first()
+    .fill("Call dentist +Product refresh");
+  await expect(
+    page.locator(".capture-token").filter({ hasText: "+Product refresh" }),
+  ).toBeVisible();
 });

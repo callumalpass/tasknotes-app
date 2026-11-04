@@ -124,11 +124,6 @@ msgstr "{0, plural, one {Учётная запись разблокирован�
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, one {Создана # заметка задачи} few {Созданы # заметки задач} many {Создано # заметок задач} other {Создано # заметки задачи}}"
 
-#. placeholder {0}: overdueRows.length
-#: src/app/task-calendar-view.tsx
-msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr "{0, plural, one {Перенести на сегодня все просроченные задачи: # задача} few {Перенести на сегодня все просроченные задачи: # задачи} many {Перенести на сегодня все просроченные задачи: # задач} other {Перенести на сегодня все просроченные задачи: # задачи}}"
-
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
@@ -417,6 +412,10 @@ msgstr "{count, selectordinal, other {#-й день с конца месяца}}
 #: src/app/views-screen.tsx
 msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
 msgstr "{deadlines, plural, one {# срок тоже перенесён} few {# срока тоже перенесены} many {# сроков тоже перенесено} other {# сроков тоже перенесено}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
+msgstr "{deadlines, plural, one {# пропущенный срок} few {# пропущенных срока} many {# пропущенных сроков} other {# пропущенных сроков}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -988,10 +987,6 @@ msgstr "Обновление приложения"
 #: src/app/more-screen.tsx
 msgid "Appearance"
 msgstr "Внешний вид"
-
-#: src/app/bulk-task-actions.tsx
-msgid "Apply date"
-msgstr "Применить дату"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
@@ -2073,6 +2068,11 @@ msgstr "По убыванию"
 msgid "Description"
 msgstr "Описание"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Deselect {0}"
+msgstr "Снять выбор: {0}"
+
 #: src/components/task-attachments.tsx
 msgid "Detach"
 msgstr "Отвязать"
@@ -2858,6 +2858,10 @@ msgstr "Сохранять запланированные даты, даже е�
 msgid "Keep the quick-add field on this view."
 msgstr "Оставить поле быстрого добавления в этом представлении."
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep them"
+msgstr "Оставить"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "Продолжить писать"
@@ -3161,6 +3165,10 @@ msgstr "Минута"
 msgid "Minutes"
 msgstr "Минуты"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Missed deadlines"
+msgstr "Пропущенные сроки"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3222,7 +3230,6 @@ msgstr "Переместить {label} вниз"
 msgid "Move {label} up"
 msgstr "Переместить {label} вверх"
 
-#: src/app/task-calendar-view.tsx
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "Перенести все задачи на сегодня"
@@ -3247,6 +3254,10 @@ msgstr "Переместите «Ручной порядок» на первое
 msgid "Move selected tasks to project"
 msgstr "Переместить выбранные задачи в проект"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move them too"
+msgstr "Перенести тоже"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -3257,6 +3268,10 @@ msgstr "Переместить в проект"
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "«{title}» и крайний срок перенесены: {when}"
+
+#: src/app/views-screen.tsx
+msgid "Moved “{title}” to {column}"
+msgstr "«{title}» перемещена в {column}"
 
 #: src/components/task-actions.tsx
 msgid "Moved “{title}” to {project}"
@@ -4626,10 +4641,6 @@ msgstr "Сохранение…"
 msgid "Schedule"
 msgstr "Запланировать"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Schedule all"
-msgstr "Запланировать всё"
-
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "Запланированная дата"
@@ -4775,6 +4786,11 @@ msgstr "Второй"
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
 msgstr "Открыть «Предстоящие»"
+
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Select {0}"
+msgstr "Выбрать: {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -5027,6 +5043,7 @@ msgstr "Запуск…"
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "Статус"
@@ -5940,9 +5957,12 @@ msgid "What is mdbase?"
 msgstr "Что такое mdbase?"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/global-task-capture.tsx
 msgid "What needs doing?"
 msgstr "Что нужно сделать?"
+
+#: src/components/global-task-capture.tsx
+msgid "What needs doing? Try tomorrow 9am, +project, #tag"
+msgstr "Что нужно сделать? Например: завтра 9:00, +проект, #тег"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

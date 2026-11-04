@@ -164,6 +164,14 @@ export function SearchScreen({
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.nativeEvent.isComposing)
               rememberSearch(query);
+            if (event.key === "ArrowDown") {
+              const first = document.querySelector<HTMLElement>(
+                "#main-content .task-row-title",
+              );
+              if (!first) return;
+              event.preventDefault();
+              first.focus();
+            }
           }}
         />
         {query ? (

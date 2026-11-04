@@ -124,11 +124,6 @@ msgstr "{0, plural, other {계정 잠금이 해제되었습니다. 비공개 컬
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {작업 노트 #개를 만들었습니다.}}"
 
-#. placeholder {0}: overdueRows.length
-#: src/app/task-calendar-view.tsx
-msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr "{0, plural, other {모든 작업을 오늘로 이동, 기한 초과 #개}}"
-
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
@@ -417,6 +412,10 @@ msgstr "{count, selectordinal, other {월말부터 #번째 날}}"
 #: src/app/views-screen.tsx
 msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
 msgstr "{deadlines, plural, other {마감일 #개도 옮겼습니다}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
+msgstr "{deadlines, plural, other {지난 마감일 #개}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -988,10 +987,6 @@ msgstr "앱 업데이트"
 #: src/app/more-screen.tsx
 msgid "Appearance"
 msgstr "모양"
-
-#: src/app/bulk-task-actions.tsx
-msgid "Apply date"
-msgstr "날짜 적용"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
@@ -2073,6 +2068,11 @@ msgstr "내림차순"
 msgid "Description"
 msgstr "설명"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Deselect {0}"
+msgstr "{0} 선택 해제"
+
 #: src/components/task-attachments.tsx
 msgid "Detach"
 msgstr "분리"
@@ -2858,6 +2858,10 @@ msgstr "늦게 완료하더라도 계획된 날짜를 유지합니다."
 msgid "Keep the quick-add field on this view."
 msgstr "이 뷰에 빠른 추가 입력란 유지"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep them"
+msgstr "그대로 두기"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "계속 작성"
@@ -3161,6 +3165,10 @@ msgstr "분"
 msgid "Minutes"
 msgstr "분"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Missed deadlines"
+msgstr "지난 마감일"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3222,7 +3230,6 @@ msgstr "{label} 아래로 이동"
 msgid "Move {label} up"
 msgstr "{label} 위로 이동"
 
-#: src/app/task-calendar-view.tsx
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "모두 오늘로 이동"
@@ -3247,6 +3254,10 @@ msgstr "드래그 핸들을 사용하려면 수동 순서를 첫 번째 위치�
 msgid "Move selected tasks to project"
 msgstr "선택한 작업을 프로젝트로 이동"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move them too"
+msgstr "함께 이동"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -3257,6 +3268,10 @@ msgstr "프로젝트로 이동"
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "“{title}”과(와) 마감일을 {when}(으)로 옮겼습니다"
+
+#: src/app/views-screen.tsx
+msgid "Moved “{title}” to {column}"
+msgstr "“{title}”을(를) {column}(으)로 이동했습니다"
 
 #: src/components/task-actions.tsx
 msgid "Moved “{title}” to {project}"
@@ -4626,10 +4641,6 @@ msgstr "저장 중…"
 msgid "Schedule"
 msgstr "예약"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Schedule all"
-msgstr "모두 예약"
-
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "예정일"
@@ -4775,6 +4786,11 @@ msgstr "초"
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
 msgstr "예정 보기"
+
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Select {0}"
+msgstr "{0} 선택"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -5027,6 +5043,7 @@ msgstr "시작 중…"
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "상태"
@@ -5940,9 +5957,12 @@ msgid "What is mdbase?"
 msgstr "mdbase란 무엇인가요?"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/global-task-capture.tsx
 msgid "What needs doing?"
 msgstr "무엇을 해야 하나요?"
+
+#: src/components/global-task-capture.tsx
+msgid "What needs doing? Try tomorrow 9am, +project, #tag"
+msgstr "무엇을 해야 하나요? 예: 내일 오전 9시, +프로젝트, #태그"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

@@ -1081,10 +1081,7 @@ export function TaskActions({
       !event.ctrlKey &&
       !event.metaKey &&
       !event.altKey;
-    if (
-      !typing &&
-      !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
-    )
+    if (!typing && !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
       return;
     const items = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(

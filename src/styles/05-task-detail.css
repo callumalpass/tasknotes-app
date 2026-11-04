@@ -2096,7 +2096,7 @@
 
 .task-core-properties .date-time-field > div {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0 4px;
   min-width: 0;
 }

@@ -1,3 +1,4 @@
+import type { NlpTriggerConfig } from "@tasknotes/model/types";
 import {
   combineTaskDateTime,
   formatTaskDate,
@@ -39,16 +40,26 @@ export async function parseTaskCapture(
   text: string,
   configuration: TaskCollectionConfiguration,
   locale = browserLocale(),
+  knownProjects: readonly string[] = [],
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
   const titleWords = dayPartsInTitle(text);
+  const projectWords = knownProjectSpaces(
+    text,
+    knownProjects,
+    captureTriggers(configuration),
+  );
   const readable = (value: string) =>
-    titleWords.reduce(
-      (current, { start, end }) =>
-        current.slice(0, start) +
-        titleWordMask(end - start) +
-        current.slice(end),
-      value,
+    projectWords.reduce(
+      (current, space) =>
+        current.slice(0, space) + PROJECT_SPACE + current.slice(space + 1),
+      titleWords.reduce(
+        (current, { start, end }) =>
+          current.slice(0, start) +
+          titleWordMask(end - start) +
+          current.slice(end),
+        value,
+      ),
     );
   let parsed = parser.parseInputWithSpans(readable(text));
   // Rank shorthand belongs to the app: the portable parser only knows the
@@ -103,6 +114,9 @@ export async function parseTaskCapture(
   }
   const { data } = parsed;
   let { spans } = parsed;
+  data.projects = data.projects?.map((project) =>
+    project.replaceAll(PROJECT_SPACE, " "),
+  );
   data.title = restoreTitleWords(data.title, titleWords, text);
   // A frequency that stays in the title names the task ("weekly review");
   // only a command such as "every week" makes it repeat.
@@ -149,6 +163,47 @@ export async function parseTaskCapture(
     ...mapParsedCapture(data, configuration),
     ...(highlights.length ? { highlights } : {}),
   };
+}
+
+/** Stands in for a space inside a project name, keeping every offset. */
+const PROJECT_SPACE = "\u01C2";
+
+/**
+ * Finds the spaces inside a known project typed after its trigger, so
+ * `+Product refresh` reads as that project, not `Product` and a stray word.
+ * The longest name wins, and only whole words match.
+ */
+function knownProjectSpaces(
+  text: string,
+  projects: readonly string[],
+  triggers: readonly NlpTriggerConfig[],
+): number[] {
+  const trigger = triggers.find(
+    ({ propertyId }) => propertyId === "projects",
+  )?.trigger;
+  if (!trigger) return [];
+  const names = projects
+    .filter((name) => /\s/u.test(name))
+    .sort((left, right) => right.length - left.length);
+  const lowered = text.toLocaleLowerCase();
+  const spaces: number[] = [];
+  let index = lowered.indexOf(trigger);
+  while (index >= 0) {
+    const start = index + trigger.length;
+    if (index === 0 || /\s/u.test(text[index - 1])) {
+      const name = names.find((candidate) => {
+        const end = start + candidate.length;
+        return (
+          lowered.startsWith(candidate.toLocaleLowerCase(), start) &&
+          (end === text.length || /[\s.,;:!?]/u.test(text[end]))
+        );
+      });
+      for (let offset = 0; name && offset < name.length; offset++)
+        if (/\s/u.test(name[offset])) spaces.push(start + offset);
+    }
+    index = lowered.indexOf(trigger, start);
+  }
+  return spaces;
 }
 
 /** The parser drops symbols, so a stand-in has to read as a word of equal length. */

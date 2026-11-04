@@ -46,6 +46,7 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
     screen.getByRole("button", { name: "Overdue 2" }).closest("h2"),
   ).not.toBeNull();
   fireEvent.click(action);
+  fireEvent.click(screen.getByRole("button", { name: "Move them too" }));
 
   // Rows move before the batch is accepted.
   const todaySection = () =>
@@ -112,6 +113,7 @@ it("schedules overdue work for another day and names moved deadlines in its undo
   fireEvent.change(typed, { target: { value: date } });
   await screen.findByText(/^Enter to set/);
   fireEvent.keyDown(typed, { key: "Enter" });
+  fireEvent.click(await screen.findByRole("button", { name: "Move them too" }));
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${date}T09:30`, due: date } },
@@ -380,3 +382,29 @@ function task(id: string, title: string, patch: Partial<Task> = {}): Task {
     ...patch,
   };
 }
+
+it("keeps missed deadlines when asked to move only the plan", async () => {
+  const today = todayString();
+  const tasks = [
+    task("late", "Late task", {
+      scheduled: `${shiftTaskDate(today, -2)}T09:30`,
+      due: shiftTaskDate(today, -1),
+    }),
+  ];
+  const updateMany = vi.fn<TaskRepository["updateMany"]>(async (updates) =>
+    updates.map(({ id, input }) => apply(tasks, id, input)),
+  );
+  renderToday(repository(tasks, { updateMany }));
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Move all to today, 1 overdue task",
+    }),
+  );
+  expect(updateMany).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Keep them" }));
+  await waitFor(() =>
+    expect(updateMany).toHaveBeenCalledWith([
+      { id: "late", input: { scheduled: `${today}T09:30` } },
+    ]),
+  );
+});

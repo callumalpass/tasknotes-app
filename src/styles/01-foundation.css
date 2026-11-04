@@ -119,6 +119,13 @@
   }
 }
 
+@media (min-width: 840px) {
+  html {
+    /* Dialogs lock page scroll; the page keeps its width when they do. */
+    scrollbar-gutter: stable;
+  }
+}
+
 * {
   box-sizing: border-box;
   scrollbar-width: thin;

@@ -124,11 +124,6 @@ msgstr "{0, plural, other {账户已解锁。# 个私有集合尚未完成密钥
 msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
 msgstr "{0, plural, other {已创建 # 条任务记录}}"
 
-#. placeholder {0}: overdueRows.length
-#: src/app/task-calendar-view.tsx
-msgid "{0, plural, one {Move all to today, # overdue task} other {Move all to today, # overdue tasks}}"
-msgstr "{0, plural, other {将 # 个逾期任务全部移至今天}}"
-
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
 msgid "{0, plural, one {Recovery is set up. # private collection still needs to finish key access.} other {Recovery is set up. # private collections still need to finish key access.}}"
@@ -417,6 +412,10 @@ msgstr "{count, selectordinal, other {月末倒数第 # 天}}"
 #: src/app/views-screen.tsx
 msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
 msgstr "{deadlines, plural, other {# 个截止日期也已移动}}"
+
+#: src/components/overdue-schedule-actions.tsx
+msgid "{deadlines, plural, one {# missed deadline} other {# missed deadlines}}"
+msgstr "{deadlines, plural, other {# 个已错过的截止日期}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -988,10 +987,6 @@ msgstr "应用更新"
 #: src/app/more-screen.tsx
 msgid "Appearance"
 msgstr "外观"
-
-#: src/app/bulk-task-actions.tsx
-msgid "Apply date"
-msgstr "应用日期"
 
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
@@ -2073,6 +2068,11 @@ msgstr "降序"
 msgid "Description"
 msgstr "描述"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Deselect {0}"
+msgstr "取消选择 {0}"
+
 #: src/components/task-attachments.tsx
 msgid "Detach"
 msgstr "分离"
@@ -2858,6 +2858,10 @@ msgstr "即使你晚完成，也保留计划日期。"
 msgid "Keep the quick-add field on this view."
 msgstr "在此视图中保留快速添加字段。"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Keep them"
+msgstr "保留"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "继续书写"
@@ -3161,6 +3165,10 @@ msgstr "分钟"
 msgid "Minutes"
 msgstr "分钟"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Missed deadlines"
+msgstr "已错过的截止日期"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -3222,7 +3230,6 @@ msgstr "将 {label} 下移"
 msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
-#: src/app/task-calendar-view.tsx
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "全部移至今天"
@@ -3247,6 +3254,10 @@ msgstr "将“手动排序”移到第一位以启用拖动手柄。"
 msgid "Move selected tasks to project"
 msgstr "将所选任务移至项目"
 
+#: src/components/overdue-schedule-actions.tsx
+msgid "Move them too"
+msgstr "一并移动"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -3257,6 +3268,10 @@ msgstr "移至项目"
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "已将“{title}”及其截止日期移至{when}"
+
+#: src/app/views-screen.tsx
+msgid "Moved “{title}” to {column}"
+msgstr "已将“{title}”移到{column}"
 
 #: src/components/task-actions.tsx
 msgid "Moved “{title}” to {project}"
@@ -4626,10 +4641,6 @@ msgstr "正在保存…"
 msgid "Schedule"
 msgstr "安排"
 
-#: src/components/overdue-schedule-actions.tsx
-msgid "Schedule all"
-msgstr "全部安排"
-
 #: src/app/bulk-task-actions.tsx
 msgid "Schedule date"
 msgstr "计划日期"
@@ -4775,6 +4786,11 @@ msgstr "第二个"
 #: src/app/today-clear.tsx
 msgid "See Upcoming"
 msgstr "查看“即将到来”"
+
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Select {0}"
+msgstr "选择 {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Select all"
@@ -5027,6 +5043,7 @@ msgstr "正在启动…"
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "状态"
@@ -5940,9 +5957,12 @@ msgid "What is mdbase?"
 msgstr "mdbase 是什么？"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/global-task-capture.tsx
 msgid "What needs doing?"
 msgstr "有什么待办事项？"
+
+#: src/components/global-task-capture.tsx
+msgid "What needs doing? Try tomorrow 9am, +project, #tag"
+msgstr "要做什么？试试 明天上午9点、+项目、#标签"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"

@@ -35,6 +35,7 @@ import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
 import { todayString } from "../domain/task";
 import {
+  missedDeadlineCount,
   scheduleRowsTodayUpdates,
   sectionTaskViewRows,
   todayCaptureDefaults,
@@ -1106,10 +1107,16 @@ export function ViewsScreen({
   async function moveOverdueToToday(
     rows: readonly TaskViewRow[],
     date = todayString(),
+    keepDeadlines = false,
   ) {
     if (!selected || reschedulePending) return;
     const view = selected;
-    const updates = scheduleRowsTodayUpdates(rows, date, todayString());
+    const updates = scheduleRowsTodayUpdates(
+      rows,
+      date,
+      todayString(),
+      keepDeadlines,
+    );
     if (!updates.length) return;
     setReschedulePending(true);
     setRescheduled(null);
@@ -1681,7 +1688,7 @@ export function ViewsScreen({
             onOpen={openTask}
             onToggle={toggleTask}
             onEdit={calendarMutations.edit}
-            onMoveOverdueToToday={(rows) => void moveOverdueToToday(rows)}
+            onMoveOverdueToToday={moveOverdueToToday}
             movingOverdue={reschedulePending}
           />
         ) : (
@@ -1717,8 +1724,11 @@ export function ViewsScreen({
               lane.key === "section:overdue" && lane.rows.length ? (
                 <OverdueScheduleActions
                   count={lane.rows.length}
+                  deadlines={missedDeadlineCount(lane.rows)}
                   pending={reschedulePending}
-                  onSchedule={(date) => moveOverdueToToday(lane.rows, date)}
+                  onSchedule={(date, keepDeadlines) =>
+                    moveOverdueToToday(lane.rows, date, keepDeadlines)
+                  }
                 />
               ) : null
             }

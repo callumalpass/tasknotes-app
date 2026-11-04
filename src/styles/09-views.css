@@ -1917,6 +1917,15 @@
 }
 
 .overdue-schedule-actions,
+.overdue-deadline-choice {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.overdue-deadline-choice > span {
+  color: var(--ink-soft);
+}
 @media (max-width: 839px) {
   .screen:has(.task-row) {
     padding-bottom: calc(

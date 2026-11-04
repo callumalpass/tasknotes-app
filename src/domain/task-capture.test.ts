@@ -373,3 +373,30 @@ describe("day parts in a title", () => {
     expect(input.scheduled).toContain(tomorrow);
   });
 });
+
+describe("known projects with spaces", () => {
+  it("keeps a project name whole without link markup", async () => {
+    const { input, highlights } = await parseTaskCapture(
+      "Call dentist tomorrow 9am +Product refresh #health",
+      configuration,
+      "en",
+      ["Product refresh", "Operations"],
+    );
+    expect(input.title).toBe("Call dentist");
+    expect(input.projects).toEqual(["Product refresh"]);
+    expect(highlights?.find(({ kind }) => kind === "project")).toMatchObject({
+      start: 26,
+      end: 42,
+    });
+  });
+
+  it("leaves a word that only begins like a project", async () => {
+    const { input } = await parseTaskCapture(
+      "Plan +Product refreshments",
+      configuration,
+      "en",
+      ["Product refresh"],
+    );
+    expect(input.projects).toEqual(["Product"]);
+  });
+});

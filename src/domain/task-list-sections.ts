@@ -71,6 +71,17 @@ export function taskListSectionMoveInput(
     : input;
 }
 
+/** How many rows would have a missed deadline moved along with their plan. */
+export function missedDeadlineCount(
+  rows: readonly TaskViewRow[],
+  today = todayString(),
+): number {
+  return rows.filter(({ task }) => {
+    const due = taskDatePart(task.due);
+    return !task.completed && due && due < today;
+  }).length;
+}
+
 function isSectionKey(value: string): value is TaskListSectionKey {
   return ["overdue", "today", "anytime", "later"].includes(value);
 }
@@ -78,18 +89,21 @@ function isSectionKey(value: string): value is TaskListSectionKey {
 /**
  * Updates that bring rows onto today with the same meaning as the `t`
  * shortcut and the Schedule today action: Scheduled moves to today, keeping
- * any time, and a missed Due moves with it. Each update carries the input
- * that restores it.
+ * any time, and a missed Due moves with it unless `keepDeadlines` is set.
+ * Each update carries the input that restores it.
  */
 export function scheduleRowsTodayUpdates(
   rows: readonly TaskViewRow[],
   date = todayString(),
   today = date,
+  keepDeadlines = false,
 ): { id: string; input: UpdateTaskInput; undo: UpdateTaskInput }[] {
   return rows
     .filter(({ task }) => !task.completed)
     .map(({ task }) => {
-      const input = rescheduleInput(task, date, today);
+      const { due, ...scheduled } = rescheduleInput(task, date, today);
+      const input =
+        due === undefined || keepDeadlines ? scheduled : { ...scheduled, due };
       return {
         id: task.id,
         input,

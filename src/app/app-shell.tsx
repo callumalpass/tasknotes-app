@@ -828,7 +828,7 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
   );
 }
 
-const UNDO_NOTICE_MS = 6000;
+const UNDO_NOTICE_MS = 10000;
 
 /** Confirms a quiet edit with Undo; Ctrl or Cmd+Z reverses it at any time. */
 function UndoFeedback({
