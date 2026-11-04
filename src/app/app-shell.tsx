@@ -129,6 +129,7 @@ export function AppShell() {
     deletionError,
     undoTaskDeletion,
     retryTaskDeletion,
+    deleteTask,
     setTaskCompletion,
     updateTask,
   } = useRepository();
@@ -565,6 +566,7 @@ export function AppShell() {
       />
       <TaskAddedNotice
         repository={repository}
+        onUndo={(task) => deleteTask(task.id)}
         task={!pendingDeletion && !deletionError ? addedTask : undefined}
         onDismiss={() => setAddedNotice(undefined)}
         onOpen={(task) => navigate({ page: "task", id: task.id })}

@@ -61,6 +61,14 @@ export function GlobalTaskCapture({
     if (!open) return;
     const viewport = window.visualViewport;
     const resize = () => {
+      scrimRef.current?.toggleAttribute(
+        "data-keyboard-occluded",
+        (viewport?.scale ?? 1) === 1 &&
+          window.innerHeight -
+            (viewport?.height ?? window.innerHeight) -
+            (viewport?.offsetTop ?? 0) >
+            120,
+      );
       scrimRef.current?.style.setProperty(
         "--capture-viewport-height",
         `${viewport?.height ?? window.innerHeight}px`,
@@ -86,7 +94,16 @@ export function GlobalTaskCapture({
     [repository],
   );
 
-  useOverlay({ open, rootRef: dialogRef, modal: true, onDismiss: onClose });
+  useOverlay({
+    open,
+    rootRef: dialogRef,
+    modal: true,
+    onDismiss: onClose,
+    initialFocus: () =>
+      dialogRef.current?.querySelector<HTMLInputElement>(
+        ".quick-capture input",
+      ) ?? null,
+  });
   const present = usePresence(open, scrimRef);
 
   if (!present) return null;
@@ -101,25 +118,13 @@ export function GlobalTaskCapture({
       <section
         aria-labelledby={titleId}
         aria-modal="true"
-        className="global-capture-dialog"
+        className="global-capture-dialog is-compact"
         ref={dialogRef}
         role="dialog"
       >
-        <header>
-          <div>
-            <h2 id={titleId}>
-              <Trans>New task</Trans>
-            </h2>
-          </div>
-          <button
-            aria-label={t({ message: "Close new task" })}
-            className="icon-action"
-            type="button"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" size={20} />
-          </button>
-        </header>
+        <h2 className="visually-hidden" id={titleId}>
+          <Trans>New task</Trans>
+        </h2>
         <TaskCapture
           session={session}
           defaults={defaults}
@@ -127,9 +132,8 @@ export function GlobalTaskCapture({
           configuration={configuration}
           createTask={createTask}
           completeField={completeField}
-          focusRequest={1}
+          focusRequest={open ? 1 : undefined}
           placeholder={t({ message: "What needs doing?" })}
-          showGuide
           onCreated={onCreated}
           onAccepted={(task, version) => {
             if (!keepAddingRef.current && session.canCloseAccepted(version)) {
@@ -142,29 +146,37 @@ export function GlobalTaskCapture({
             onOpenTask(task);
           }}
         />
-        {snapshot.text.trim() ? (
-          <div className="capture-draft-actions">
+        <footer className="capture-footer">
+          <label className="capture-keep-adding">
+            <input
+              type="checkbox"
+              checked={keepAdding}
+              onChange={(event) => {
+                keepAddingRef.current = event.target.checked;
+                setKeepAdding(event.target.checked);
+              }}
+            />
+            <Trans>Keep adding tasks</Trans>
+          </label>
+          {snapshot.text.trim() ? (
             <button
               type="button"
-              className="text-action"
+              className="text-action capture-discard"
               disabled={snapshot.status === "submitting"}
               onClick={() => session.discard()}
             >
               <Trans>Discard draft</Trans>
             </button>
-          </div>
-        ) : null}
-        <label className="capture-keep-adding">
-          <input
-            type="checkbox"
-            checked={keepAdding}
-            onChange={(event) => {
-              keepAddingRef.current = event.target.checked;
-              setKeepAdding(event.target.checked);
-            }}
-          />
-          <Trans>Keep adding tasks</Trans>
-        </label>
+          ) : null}
+          <button
+            aria-label={t({ message: "Close new task" })}
+            className="icon-action capture-close"
+            type="button"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" size={18} />
+          </button>
+        </footer>
       </section>
     </div>,
     document.body,

@@ -5,6 +5,7 @@ import {
   type CreateTaskInput,
 } from "./task";
 import { captureTriggers } from "./capture-autosuggest";
+import { linkDisplayLabel } from "./completion";
 import {
   captureHighlightsFromSpans,
   type CaptureHighlight,
@@ -40,7 +41,54 @@ export async function parseTaskCapture(
   locale = browserLocale(),
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
-  const parsed = parser.parseInputWithSpans(text);
+  let parsed = parser.parseInputWithSpans(text);
+  // Rank shorthand belongs to the app: the portable parser only knows the
+  // collection's names. Mask with equal-length spaces to preserve all offsets.
+  const ranked = configuration.priorities
+    .map((priority, index) => ({
+      ...priority,
+      weight: priority.weight ?? index,
+    }))
+    .sort((left, right) => right.weight - left.weight);
+  const links = [...text.matchAll(/\[\[[\s\S]*?\]\]|\[[^\]]*\]\([^)]+\)/gu)];
+  const shorthand = ranked.length
+    ? [...text.matchAll(/(?:^|\s)(p([1-4])[.,;:!?]?)(?=\s|$)/giu)].flatMap(
+        (match) => {
+          const start = match.index + match[0].length - match[1].length;
+          const end = start + match[1].length;
+          if (
+            parsed.spans.some(
+              (span) =>
+                span.kind !== "priority" &&
+                span.start < end &&
+                span.end > start,
+            ) ||
+            links.some(
+              (link) => link.index < end && link.index + link[0].length > start,
+            )
+          )
+            return [];
+          return [
+            {
+              start,
+              end,
+              priority:
+                ranked[Math.min(Number(match[2]) - 1, ranked.length - 1)].value,
+            },
+          ];
+        },
+      )
+    : [];
+  if (shorthand.length) {
+    let masked = text;
+    for (const { start, end } of shorthand)
+      masked =
+        masked.slice(0, start) + " ".repeat(end - start) + masked.slice(end);
+    parsed = parser.parseInputWithSpans(masked);
+    parsed.data.title = parsed.data.title.replace(/[ \t]+/gu, " ").trim();
+    // A named priority is explicit; otherwise the last shorthand wins.
+    parsed.data.priority ??= shorthand.at(-1)!.priority;
+  }
   const { data } = parsed;
   let { spans } = parsed;
   // A frequency that stays in the title names the task ("weekly review");
@@ -52,7 +100,38 @@ export async function parseTaskCapture(
   const highlights = captureHighlightsFromSpans(
     spans,
     captureTriggers(configuration),
+  ).flatMap((highlight) => {
+    if (!shorthand.length) return [highlight];
+    // A date span can bridge the masked shorthand ("tomorrow p1 3pm").
+    // Keep its pieces separate so each chip still owns exactly its own tint.
+    let pieces = [highlight];
+    for (const token of shorthand) {
+      pieces = pieces.flatMap((piece) => {
+        if (piece.end <= token.start || piece.start >= token.end)
+          return [piece];
+        return [
+          { ...piece, end: Math.min(piece.end, token.start) },
+          { ...piece, start: Math.max(piece.start, token.end) },
+        ].filter((part) => part.start < part.end);
+      });
+    }
+    return pieces
+      .map((piece) => {
+        let { start, end } = piece;
+        while (start < end && /\s/u.test(text[start])) start++;
+        while (end > start && /\s/u.test(text[end - 1])) end--;
+        return { ...piece, start, end };
+      })
+      .filter((piece) => piece.start < piece.end);
+  });
+  highlights.push(
+    ...shorthand.map(({ start, end }) => ({
+      start,
+      end,
+      kind: "priority" as const,
+    })),
   );
+  highlights.sort((left, right) => left.start - right.start);
   return {
     ...mapParsedCapture(data, configuration),
     ...(highlights.length ? { highlights } : {}),
@@ -183,9 +262,15 @@ export function taskCapturePreview(
   if (input.timeEstimate)
     preview.push({ key: "estimate", label: formatMinutes(input.timeEstimate) });
   for (const project of input.projects ?? [])
-    preview.push({ key: `project:${project}`, label: `+${project}` });
+    preview.push({
+      key: `project:${project}`,
+      label: `+${linkDisplayLabel(project)}`,
+    });
   for (const context of input.contexts ?? [])
-    preview.push({ key: `context:${context}`, label: `@${context}` });
+    preview.push({
+      key: `context:${context}`,
+      label: `@${linkDisplayLabel(context)}`,
+    });
   for (const tag of input.tags ?? [])
     preview.push({ key: `tag:${tag}`, label: `#${tag}` });
   return preview;

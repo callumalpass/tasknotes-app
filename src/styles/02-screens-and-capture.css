@@ -606,8 +606,9 @@
   padding-right: 0;
 }
 .capture-token > button {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 32px;
   padding: 0;
   color: inherit;
@@ -617,7 +618,11 @@
   cursor: pointer;
 }
 .capture-token > button:first-child {
-  padding-right: 4px;
+  padding-right: var(--space-xs);
+  color: var(--ink-soft);
+  text-align: start;
+}
+.capture-token > button:first-child:hover {
   color: var(--accent);
 }
 .capture-token > button:last-child {
@@ -642,14 +647,69 @@
     inset: -6px;
   }
 }
+.global-capture-scrim {
+  position: fixed;
+  z-index: 60;
+  inset: var(--capture-viewport-top, 0px) 0 auto;
+  height: var(--capture-viewport-height, 100dvh);
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px
+    max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--color-scrim);
+  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] {
+  animation: motion-scrim-out var(--motion-exit) var(--ease-in) forwards;
+}
+
+.global-capture-dialog {
+  width: min(100%, 660px);
+  max-height: calc(var(--capture-viewport-height, 100dvh) - 48px);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sheet);
+  box-shadow: 0 24px 70px var(--color-shadow);
+  transform-origin: top center;
+  animation: motion-dialog-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] .global-capture-dialog {
+  animation: motion-dialog-out var(--motion-exit) var(--ease-in) forwards;
+}
+
+/* Sliding up from below would cross an already visible keyboard. */
+.global-capture-scrim[data-keyboard-occluded] .global-capture-dialog {
+  animation: none;
+}
+
+@media (min-width: 840px) {
+  .global-capture-scrim {
+    padding-top: clamp(48px, 10vh, 96px);
+  }
+}
+
+@media (max-width: 839px) {
+  .global-capture-dialog.is-compact {
+    padding: var(--space-sm) var(--page-inset)
+      calc(var(--space-sm) + env(safe-area-inset-bottom));
+  }
+}
+
 .capture-keep-adding {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  margin-top: 12px;
-  color: var(--ink-soft);
-  font-size: var(--type-supporting);
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
 }
 .capture-keep-adding input {
   accent-color: var(--accent);
@@ -671,4 +731,65 @@
   padding: 0;
   color: var(--ink-muted);
   border-left: 0;
+}
+
+/* Capture owns its floating surface on desktop and its keyboard-aware sheet. */
+.capture-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-md);
+}
+.capture-footer .capture-discard {
+  min-height: 44px;
+  margin-inline-start: auto;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 400;
+}
+.capture-footer .capture-discard:hover {
+  color: var(--danger);
+}
+.capture-footer .capture-close {
+  margin-inline-start: auto;
+}
+.capture-footer .capture-discard + .capture-close {
+  margin-inline-start: 0;
+}
+.quick-capture .capture-submit {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  padding: 0;
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}
+.quick-capture .capture-submit:disabled {
+  color: var(--ink-muted);
+  background: var(--paper-soft);
+}
+.capture-interpretation > .text-action {
+  min-height: 32px;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 400;
+}
+.capture-interpretation > .text-action:hover {
+  color: var(--accent);
+}
+.capture-token > button:first-child > .value-color {
+  padding: 0;
+}
+@media (max-width: 479px) {
+  .capture-interpretation {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .capture-interpretation > div {
+    flex-basis: 100%;
+  }
+  .capture-interpretation > .text-action {
+    margin-inline-start: auto;
+  }
 }
