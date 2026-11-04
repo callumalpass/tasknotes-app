@@ -7,7 +7,6 @@ import {
   AtSign,
   CalendarDays,
   Circle,
-  Flag,
   Folder,
   Hash,
   Square,
@@ -301,8 +300,8 @@ export function TaskRow({
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
         style={
-          // Priority draws the ring and status the dot inside it; the label
-          // names the status.
+          // Priority draws the tick beside the circle and status the dot
+          // inside it; the row's label names both.
           {
             ...(statusColor ? { "--status-color": statusColor } : {}),
             ...(raisedPriorityColor
@@ -592,7 +591,6 @@ function propertyIcon(
   if (key === fieldMapping.scheduled || key === "scheduled")
     return CalendarDays;
   if (key === fieldMapping.due || key === "due") return Target;
-  if (key === fieldMapping.priority || key === "priority") return Flag;
   if (key === fieldMapping.status || key === "status") return Circle;
   if (key === fieldMapping.projects || key === "projects") return Folder;
   if (key === fieldMapping.contexts || key === "contexts") return AtSign;

@@ -398,6 +398,10 @@ msgstr "{count, plural, other {天}}"
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, other {个月}}"
 
+#: src/app/views-screen.tsx
+msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
+msgstr "{count, plural, other {已将 # 个任务移至今天}}"
+
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
 msgstr "{count, plural, other {周}}"
@@ -409,6 +413,10 @@ msgstr "{count, plural, other {年}}"
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
 msgstr "{count, selectordinal, other {月末倒数第 # 天}}"
+
+#: src/app/views-screen.tsx
+msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
+msgstr "{deadlines, plural, other {# 个截止日期也已移动}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -2419,6 +2427,10 @@ msgstr "筛选值"
 msgid "Filter views"
 msgstr "筛选视图"
 
+#: src/components/task-actions.tsx
+msgid "Find a project"
+msgstr "查找项目"
+
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "查找任务"
@@ -2771,6 +2783,10 @@ msgstr "保留过去日期的文件"
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
 msgstr "为重复日期保留单独的 Markdown 笔记。"
+
+#: src/components/task-actions.tsx
+msgid "Keep it in several projects"
+msgstr "保留在多个项目中"
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
@@ -3197,16 +3213,17 @@ msgstr "将所选任务移至项目"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "移至项目"
-
-#: src/app/views-screen.tsx
-msgid "Moved "
-msgstr "已移动 "
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "已将“{title}”及其截止日期移至{when}"
+
+#: src/components/task-actions.tsx
+msgid "Moved “{title}” to {project}"
+msgstr "已将“{title}”移至 {project}"
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
@@ -3949,6 +3966,7 @@ msgid "Private collections need your desktop online."
 msgstr "私有集合需要你的桌面设备保持在线。"
 
 #: src/app/task-core-properties.tsx
+#: src/components/task-actions.tsx
 msgid "Project"
 msgstr "项目"
 
@@ -5015,7 +5033,6 @@ msgstr "点按任务即可选择。"
 msgid "Tap to retry."
 msgstr "轻点以重试。"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
 msgstr "任务"
@@ -5136,7 +5153,6 @@ msgstr "TaskNotes 工具"
 msgid "TaskNotes tools"
 msgstr "TaskNotes 工具"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
 msgstr "任务"
@@ -5501,14 +5517,6 @@ msgstr "标题：“{title}”。 "
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "到"
-
-#: src/app/views-screen.tsx
-msgid "to today"
-msgstr "移至今天"
-
-#: src/app/views-screen.tsx
-msgid "to today."
-msgstr "已移至今天。"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"

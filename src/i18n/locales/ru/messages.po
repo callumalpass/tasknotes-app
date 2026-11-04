@@ -398,6 +398,10 @@ msgstr "{count, plural, one {день} few {дня} many {дней} other {дн�
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, one {месяц} few {месяца} many {месяцев} other {месяца}}"
 
+#: src/app/views-screen.tsx
+msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
+msgstr "{count, plural, one {# задача перенесена на сегодня} few {# задачи перенесены на сегодня} many {# задач перенесено на сегодня} other {# задач перенесено на сегодня}}"
+
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
 msgstr "{count, plural, one {неделю} few {недели} many {недель} other {недели}}"
@@ -409,6 +413,10 @@ msgstr "{count, plural, one {год} few {года} many {лет} other {год�
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
 msgstr "{count, selectordinal, other {#-й день с конца месяца}}"
+
+#: src/app/views-screen.tsx
+msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
+msgstr "{deadlines, plural, one {# срок тоже перенесён} few {# срока тоже перенесены} many {# сроков тоже перенесено} other {# сроков тоже перенесено}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -2419,6 +2427,10 @@ msgstr "Значение фильтра"
 msgid "Filter views"
 msgstr "Фильтровать представления"
 
+#: src/components/task-actions.tsx
+msgid "Find a project"
+msgstr "Найти проект"
+
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "Найти задачу"
@@ -2771,6 +2783,10 @@ msgstr "Сохранять файлы для прошедших дат"
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
 msgstr "Создавать отдельные Markdown-заметки для повторяющихся дат."
+
+#: src/components/task-actions.tsx
+msgid "Keep it in several projects"
+msgstr "Оставить в нескольких проектах"
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
@@ -3197,16 +3213,17 @@ msgstr "Переместить выбранные задачи в проект"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "Переместить в проект"
-
-#: src/app/views-screen.tsx
-msgid "Moved "
-msgstr "Перенесено "
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "«{title}» и крайний срок перенесены: {when}"
+
+#: src/components/task-actions.tsx
+msgid "Moved “{title}” to {project}"
+msgstr "«{title}» перемещена в {project}"
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
@@ -3949,6 +3966,7 @@ msgid "Private collections need your desktop online."
 msgstr "Чтобы пользоваться закрытыми коллекциями, компьютер должен быть подключён к сети."
 
 #: src/app/task-core-properties.tsx
+#: src/components/task-actions.tsx
 msgid "Project"
 msgstr "Проект"
 
@@ -5015,7 +5033,6 @@ msgstr "Нажимайте на задачи, чтобы выбрать их."
 msgid "Tap to retry."
 msgstr "Нажмите, чтобы повторить попытку."
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
 msgstr "задача"
@@ -5136,7 +5153,6 @@ msgstr "Инструмент TaskNotes"
 msgid "TaskNotes tools"
 msgstr "Инструменты TaskNotes"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
 msgstr "задачи"
@@ -5501,14 +5517,6 @@ msgstr "Название: «{title}». "
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "до"
-
-#: src/app/views-screen.tsx
-msgid "to today"
-msgstr "на сегодня"
-
-#: src/app/views-screen.tsx
-msgid "to today."
-msgstr "на сегодня."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"

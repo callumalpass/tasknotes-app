@@ -41,7 +41,16 @@ export async function parseTaskCapture(
   locale = browserLocale(),
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
-  let parsed = parser.parseInputWithSpans(text);
+  const titleWords = dayPartsInTitle(text);
+  const readable = (value: string) =>
+    titleWords.reduce(
+      (current, { start, end }) =>
+        current.slice(0, start) +
+        titleWordMask(end - start) +
+        current.slice(end),
+      value,
+    );
+  let parsed = parser.parseInputWithSpans(readable(text));
   // Rank shorthand belongs to the app: the portable parser only knows the
   // collection's names. Mask with equal-length spaces to preserve all offsets.
   const ranked = configuration.priorities
@@ -52,8 +61,12 @@ export async function parseTaskCapture(
     .sort((left, right) => right.weight - left.weight);
   const links = [...text.matchAll(/\[\[[\s\S]*?\]\]|\[[^\]]*\]\([^)]+\)/gu)];
   const shorthand = ranked.length
-    ? [...text.matchAll(/(?:^|\s)(p([1-4])[.,;:!?]?)(?=\s|$)/giu)].flatMap(
+    ? [...text.matchAll(/(?:^|\s)(p(\d{1,2})[.,;:!?]?)(?=\s|$)/giu)].flatMap(
         (match) => {
+          const rank = Number(match[2]);
+          // A rank in this collection's own list, however long. The familiar
+          // first four always work, and settle on the lowest in a short list.
+          if (rank < 1 || rank > Math.max(4, ranked.length)) return [];
           const start = match.index + match[0].length - match[1].length;
           const end = start + match[1].length;
           if (
@@ -72,8 +85,7 @@ export async function parseTaskCapture(
             {
               start,
               end,
-              priority:
-                ranked[Math.min(Number(match[2]) - 1, ranked.length - 1)].value,
+              priority: ranked[Math.min(rank, ranked.length) - 1].value,
             },
           ];
         },
@@ -84,13 +96,14 @@ export async function parseTaskCapture(
     for (const { start, end } of shorthand)
       masked =
         masked.slice(0, start) + " ".repeat(end - start) + masked.slice(end);
-    parsed = parser.parseInputWithSpans(masked);
+    parsed = parser.parseInputWithSpans(readable(masked));
     parsed.data.title = parsed.data.title.replace(/[ \t]+/gu, " ").trim();
     // A named priority is explicit; otherwise the last shorthand wins.
     parsed.data.priority ??= shorthand.at(-1)!.priority;
   }
   const { data } = parsed;
   let { spans } = parsed;
+  data.title = restoreTitleWords(data.title, titleWords, text);
   // A frequency that stays in the title names the task ("weekly review");
   // only a command such as "every week" makes it repeat.
   if (spans.some((span) => span.kind === "recurrence" && span.inTitle)) {
@@ -136,6 +149,42 @@ export async function parseTaskCapture(
     ...mapParsedCapture(data, configuration),
     ...(highlights.length ? { highlights } : {}),
   };
+}
+
+/** The parser drops symbols, so a stand-in has to read as a word of equal length. */
+function titleWordMask(length: number): string {
+  return "zqxj".repeat(length).slice(0, length);
+}
+
+const DATE_WORD_BEFORE =
+  /(?:^|[\s,])(?:at|by|in the|last|next|on|this|today|tomorrow|tonight|yesterday|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\s+$/iu;
+
+/**
+ * Finds "morning" and the like where they name the task ("Morning appointment
+ * tomorrow 9am") instead of the time ("tomorrow morning"). Left in, the date
+ * parser reads them as a date and ignores the one the person typed.
+ */
+function dayPartsInTitle(text: string): { start: number; end: number }[] {
+  return [
+    ...text.matchAll(
+      /(?<![\p{L}\p{N}])(?:morning|afternoon|evening|night)(?![\p{L}\p{N}])/giu,
+    ),
+  ]
+    .filter((match) => !DATE_WORD_BEFORE.test(text.slice(0, match.index)))
+    .map((match) => ({
+      start: match.index,
+      end: match.index + match[0].length,
+    }));
+}
+
+function restoreTitleWords(
+  title: string,
+  words: readonly { start: number; end: number }[],
+  text: string,
+): string {
+  return words.reduce((current, { start, end }) => {
+    return current.replace(titleWordMask(end - start), text.slice(start, end));
+  }, title);
 }
 
 export function preloadTaskCapture(): void {

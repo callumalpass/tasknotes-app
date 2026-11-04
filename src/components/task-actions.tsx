@@ -15,7 +15,7 @@ import {
   Clipboard,
   Copy,
   FileText,
-  Flag,
+  FolderInput,
   FolderTree,
   Link2,
   MoreHorizontal,
@@ -26,7 +26,7 @@ import {
   Repeat2,
   SkipForward,
   Square,
-  Star,
+  ChevronsUp,
   Sun,
   Sunrise,
   Tags,
@@ -65,6 +65,8 @@ interface MenuPosition {
   y: number;
 }
 
+const MAX_QUICK_PRIORITIES = 5;
+
 type MenuPanel =
   | "actions"
   | "series"
@@ -72,6 +74,7 @@ type MenuPanel =
   | "priority"
   | "dates"
   | "organize"
+  | "move"
   | "projects"
   | "contexts"
   | "tags"
@@ -204,7 +207,7 @@ export function TaskActions({
       const selector =
         panel === "delete"
           ? "[data-safe-action]"
-          : isOrganizeEditor(panel)
+          : isFieldEditor(panel)
             ? finePointer
               ? ".multi-value-control input"
               : "[data-panel-back]"
@@ -234,17 +237,13 @@ export function TaskActions({
 
   function openDates() {
     openFromTrigger();
-    setPanels(["actions", "dates"]);
+    setPanels(["dates"]);
   }
 
   const openPanel = useEffectEvent((event: Event) => {
     const panel = (event as CustomEvent<string>).detail;
     openFromTrigger();
-    setPanels(
-      panel === "project"
-        ? ["actions", "organize", "projects"]
-        : ["actions", "priority"],
-    );
+    setPanels(panel === "project" ? ["move"] : ["priority"]);
   });
   useEffect(() => {
     const trigger = triggerRef.current;
@@ -296,7 +295,7 @@ export function TaskActions({
   }
 
   /** Saves an edit and keeps the fields it replaced for the Undo shortcut. */
-  async function change(input: UpdateTaskInput) {
+  async function change(input: UpdateTaskInput, notice?: string) {
     const earlier = Object.fromEntries(
       Object.keys(input).map((field) => [
         field,
@@ -307,7 +306,7 @@ export function TaskActions({
     const title = task.title;
     rememberUndo({
       label: title,
-      notice: t`Updated “${title}”`,
+      notice: notice ?? t`Updated “${title}”`,
       run: () => updateTask(task.id, earlier),
     });
   }
@@ -347,7 +346,7 @@ export function TaskActions({
       : mobile ||
           panel === "subtask" ||
           panel === "dates" ||
-          isOrganizeEditor(panel)
+          isFieldEditor(panel)
         ? "dialog"
         : "menu";
   const actionMenuRole =
@@ -355,7 +354,7 @@ export function TaskActions({
     panel !== "subtask" &&
     panel !== "delete" &&
     panel !== "dates" &&
-    !isOrganizeEditor(panel);
+    !isFieldEditor(panel);
   useOverlay({
     open: Boolean(position),
     rootRef: menuRef,
@@ -443,20 +442,20 @@ export function TaskActions({
                 }
                 aria-labelledby={
                   rootRole !== "menu"
-                    ? isOrganizeEditor(panel)
+                    ? isFieldEditor(panel)
                       ? panelHeadingId
                       : headingId
                     : undefined
                 }
                 aria-modal={rootRole !== "menu" ? true : undefined}
                 className={`task-actions-menu${
-                  isOrganizeEditor(panel) ? " is-organize-editor" : ""
+                  isFieldEditor(panel) ? " is-organize-editor" : ""
                 }`}
                 id={menuId}
                 ref={menuRef}
                 role={rootRole}
                 style={{
-                  left: isOrganizeEditor(panel)
+                  left: isFieldEditor(panel)
                     ? Math.max(8, Math.min(shownPosition.x, innerWidth - 428))
                     : shownPosition.x,
                   top: shownPosition.y,
@@ -471,15 +470,17 @@ export function TaskActions({
                 </div>
                 {panel !== "actions" ? (
                   <div className="task-actions-subheading">
-                    <button
-                      aria-label={t({ message: "Back to previous actions" })}
-                      data-panel-back
-                      role={rootRole === "menu" ? "menuitem" : undefined}
-                      type="button"
-                      onClick={goBack}
-                    >
-                      <ChevronLeft aria-hidden="true" size={18} />
-                    </button>
+                    {panels.length > 1 ? (
+                      <button
+                        aria-label={t({ message: "Back to previous actions" })}
+                        data-panel-back
+                        role={rootRole === "menu" ? "menuitem" : undefined}
+                        type="button"
+                        onClick={goBack}
+                      >
+                        <ChevronLeft aria-hidden="true" size={18} />
+                      </button>
+                    ) : null}
                     <strong id={panelHeadingId}>{panelTitle(panel)}</strong>
                   </div>
                 ) : null}
@@ -567,10 +568,10 @@ export function TaskActions({
                         <MenuAction
                           checked={option.value === task.priority}
                           disabled={busy}
-                          icon={option.value === task.priority ? Check : Star}
+                          icon={option.value === task.priority ? Check : Circle}
+                          iconColor={option.color}
                           key={option.value}
                           label={option.label}
-                          labelColor={option.color}
                           radio
                           onClick={() =>
                             void run(() => change({ priority: option.value }))
@@ -618,6 +619,12 @@ export function TaskActions({
                   {panel === "organize" ? (
                     <>
                       <MenuAction
+                        icon={FolderInput}
+                        label={t({ message: "Move to project" })}
+                        next
+                        onClick={() => navigate("move")}
+                      />
+                      <MenuAction
                         detail={valueSummary(
                           task.projects.map(organizeValueLabel),
                         )}
@@ -661,7 +668,9 @@ export function TaskActions({
                       ) : null}
                     </>
                   ) : null}
-                  {isOrganizeEditor(panel) ? (
+                  {panel === "move" ? (
+                    <ProjectMoveEditor />
+                  ) : isOrganizeEditor(panel) ? (
                     <OrganizeFieldEditor field={panel} />
                   ) : null}
                   {panel === "subtask" ? (
@@ -799,6 +808,12 @@ export function TaskActions({
         ),
       );
     };
+    // A collection can define any number of priorities; only a short list fits
+    // a row of icons, and the Priority panel always offers all of them.
+    const quickPriorities =
+      configuration.priorities.length <= MAX_QUICK_PRIORITIES
+        ? configuration.priorities
+        : [];
     return (
       <>
         {!series && !task.completed ? (
@@ -830,12 +845,12 @@ export function TaskActions({
               />
             </div>
             <div className="task-actions-quick-row">
-              {configuration.priorities.slice(0, 5).map((option) => (
+              {quickPriorities.map((option) => (
                 <QuickAction
                   checked={option.value === task.priority}
                   color={option.color}
                   disabled={busy}
-                  icon={Flag}
+                  icon={Circle}
                   key={option.value}
                   label={t`Priority: ${option.label}`}
                   onClick={() =>
@@ -865,7 +880,7 @@ export function TaskActions({
         />
         <MenuAction
           detail={task.priority === "none" ? undefined : priority}
-          icon={Star}
+          icon={ChevronsUp}
           label={t({ message: "Priority" })}
           next
           onClick={() => navigate("priority")}
@@ -988,6 +1003,39 @@ export function TaskActions({
             : t`Save ${label.toLocaleLowerCase()}`}
         </button>
       </form>
+    );
+  }
+
+  function ProjectMoveEditor() {
+    const { t } = useLingui();
+    const field = configuration.fieldMapping.projects;
+    return (
+      <div className="task-actions-organize-editor">
+        <MultiValueField
+          completion={
+            configuration.fieldCompletions[field] ?? { kind: "records" }
+          }
+          completeField={(request) => repository.completeField(request)}
+          field={field}
+          label={t({ message: "Project" })}
+          placeholder={t`Find a project`}
+          usedFirst
+          values={task.projects}
+          onPick={(value, project) => {
+            const title = task.title;
+            void run(() =>
+              change({ projects: [value] }, t`Moved “${title}” to ${project}`),
+            );
+          }}
+        />
+        <button
+          className="task-actions-organize-more"
+          type="button"
+          onClick={() => navigate("projects")}
+        >
+          <Trans>Keep it in several projects</Trans>
+        </button>
+      </div>
     );
   }
 
@@ -1152,12 +1200,17 @@ function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
   if (panel === "priority") return t({ message: "Priority" });
   if (panel === "dates") return t({ message: "Dates" });
   if (panel === "organize") return t({ message: "Organize" });
+  if (panel === "move") return t({ message: "Move to project" });
   if (panel === "projects") return t({ message: "Projects" });
   if (panel === "contexts") return t({ message: "Contexts" });
   if (panel === "tags") return t({ message: "Tags" });
   if (panel === "subtask") return t({ message: "New subtask" });
   if (panel === "copy") return t({ message: "Copy" });
   return t({ message: "Delete task" });
+}
+
+function isFieldEditor(panel: MenuPanel): boolean {
+  return panel === "move" || isOrganizeEditor(panel);
 }
 
 function isOrganizeEditor(

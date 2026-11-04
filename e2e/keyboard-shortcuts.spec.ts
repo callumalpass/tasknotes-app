@@ -280,3 +280,23 @@ test("priority and project keys open their pickers", async ({ page }) => {
     page.getByRole("option", { name: "Operations" }).first(),
   ).toBeVisible();
 });
+
+test("plus moves the focused task to one project in a single step", async ({
+  page,
+}) => {
+  await page.goto("?demo=50");
+  await expect(page.locator(".task-row-title").first()).toBeVisible();
+  await page.keyboard.press("j");
+  await page.keyboard.press("+");
+  const search = page.getByRole("combobox", { name: "Project" });
+  await expect(search).toBeFocused();
+  await search.pressSequentially("Oper");
+  await expect(page.getByRole("option", { name: "Operations" })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByText(/^Moved “.+” to Operations$/)).toBeVisible();
+  await page.keyboard.press("+");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByRole("menu")).toBeHidden();
+});

@@ -35,7 +35,9 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   ).toBeVisible();
   const undo = page.getByRole("button", { name: "Undo" });
   await expect(
-    page.getByText(`Moved ${overdueCount} tasks to today`, { exact: true }),
+    page
+      .locator(".undo-toast")
+      .getByText(new RegExp(`^Moved ${overdueCount} tasks to today`)),
   ).toBeVisible();
   await expect(undo).toBeFocused();
 
@@ -47,7 +49,9 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
     section(page, "Overdue").getByText("Confirm next week’s interviews"),
   ).toBeVisible();
   await expect(
-    page.getByText(`Moved ${overdueCount} tasks to today`, { exact: true }),
+    page
+      .locator(".undo-toast")
+      .getByText(new RegExp(`^Moved ${overdueCount} tasks to today`)),
   ).toHaveCount(0);
 });
 

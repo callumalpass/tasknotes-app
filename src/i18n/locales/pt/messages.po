@@ -398,6 +398,10 @@ msgstr "{count, plural, one {dia} other {dias}}"
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, one {mês} other {meses}}"
 
+#: src/app/views-screen.tsx
+msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
+msgstr "{count, plural, one {# tarefa movida para hoje} many {# tarefas movidas para hoje} other {# tarefas movidas para hoje}}"
+
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
 msgstr "{count, plural, one {semana} other {semanas}}"
@@ -409,6 +413,10 @@ msgstr "{count, plural, one {ano} other {anos}}"
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
 msgstr "{count, selectordinal, other {#º contado a partir do fim do mês}}"
+
+#: src/app/views-screen.tsx
+msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
+msgstr "{deadlines, plural, one {# prazo também movido} many {# prazos também movidos} other {# prazos também movidos}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -2419,6 +2427,10 @@ msgstr "Valor do filtro"
 msgid "Filter views"
 msgstr "Filtrar visualizações"
 
+#: src/components/task-actions.tsx
+msgid "Find a project"
+msgstr "Encontrar um projeto"
+
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "Localizar uma tarefa"
@@ -2771,6 +2783,10 @@ msgstr "Manter arquivos de datas anteriores"
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
 msgstr "Manter notas Markdown individuais para datas recorrentes."
+
+#: src/components/task-actions.tsx
+msgid "Keep it in several projects"
+msgstr "Manter em vários projetos"
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
@@ -3197,16 +3213,17 @@ msgstr "Mover tarefas selecionadas para um projeto"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "Mover para projeto"
-
-#: src/app/views-screen.tsx
-msgid "Moved "
-msgstr "Movido "
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "“{title}” e o prazo movidos para {when}"
+
+#: src/components/task-actions.tsx
+msgid "Moved “{title}” to {project}"
+msgstr "“{title}” movida para {project}"
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
@@ -3949,6 +3966,7 @@ msgid "Private collections need your desktop online."
 msgstr "Coleções privadas precisam que seu computador esteja online."
 
 #: src/app/task-core-properties.tsx
+#: src/components/task-actions.tsx
 msgid "Project"
 msgstr "Projeto"
 
@@ -5015,7 +5033,6 @@ msgstr "Toque nas tarefas para selecioná-las."
 msgid "Tap to retry."
 msgstr "Toque para tentar novamente."
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
 msgstr "tarefa"
@@ -5136,7 +5153,6 @@ msgstr "Ferramenta do TaskNotes"
 msgid "TaskNotes tools"
 msgstr "Ferramentas do TaskNotes"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
 msgstr "tarefas"
@@ -5501,14 +5517,6 @@ msgstr "Título: “{title}”. "
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "para"
-
-#: src/app/views-screen.tsx
-msgid "to today"
-msgstr "até hoje"
-
-#: src/app/views-screen.tsx
-msgid "to today."
-msgstr "até hoje."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"

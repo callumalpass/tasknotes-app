@@ -398,6 +398,10 @@ msgstr "{count, plural, other {日}}"
 msgid "{count, plural, one {month} other {months}}"
 msgstr "{count, plural, other {か月}}"
 
+#: src/app/views-screen.tsx
+msgid "{count, plural, one {Moved # task to today} other {Moved # tasks to today}}"
+msgstr "{count, plural, other {#件のタスクを今日に移動しました}}"
+
 #: src/components/recurrence-field.tsx
 msgid "{count, plural, one {week} other {weeks}}"
 msgstr "{count, plural, other {週間}}"
@@ -409,6 +413,10 @@ msgstr "{count, plural, other {年}}"
 #: src/i18n/presentation.ts
 msgid "{count, selectordinal, one {#st-to-last day of the month} two {#nd-to-last day of the month} few {#rd-to-last day of the month} other {#th-to-last day of the month}}"
 msgstr "{count, selectordinal, other {月末から#番目の日}}"
+
+#: src/app/views-screen.tsx
+msgid "{deadlines, plural, one {# deadline moved too} other {# deadlines moved too}}"
+msgstr "{deadlines, plural, other {期限も#件移動しました}}"
 
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
@@ -2419,6 +2427,10 @@ msgstr "フィルター値"
 msgid "Filter views"
 msgstr "ビューを絞り込む"
 
+#: src/components/task-actions.tsx
+msgid "Find a project"
+msgstr "プロジェクトを検索"
+
 #: src/components/dependency-editor.tsx
 msgid "Find a task"
 msgstr "タスクを検索"
@@ -2771,6 +2783,10 @@ msgstr "過去の日付のファイルを保持"
 #: src/app/occurrence-policy-field.tsx
 msgid "Keep individual Markdown notes for recurring dates."
 msgstr "繰り返し日ごとに個別のMarkdownノートを保持します。"
+
+#: src/components/task-actions.tsx
+msgid "Keep it in several projects"
+msgstr "複数のプロジェクトに入れる"
 
 #: src/components/held-edits.tsx
 msgid "Keep mine instead if you want to keep your edit."
@@ -3197,16 +3213,17 @@ msgstr "選択したタスクをプロジェクトに移動"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "プロジェクトに移動"
-
-#: src/app/views-screen.tsx
-msgid "Moved "
-msgstr "今日への移動："
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” and its deadline to {when}"
 msgstr "「{title}」と締め切りを{when}に移動しました"
+
+#: src/components/task-actions.tsx
+msgid "Moved “{title}” to {project}"
+msgstr "「{title}」を{project}に移動しました"
 
 #: src/components/task-row.tsx
 msgid "Moved “{title}” to {when}"
@@ -3949,6 +3966,7 @@ msgid "Private collections need your desktop online."
 msgstr "プライベートコレクションを利用するには、パソコンをオンラインにしてください。"
 
 #: src/app/task-core-properties.tsx
+#: src/components/task-actions.tsx
 msgid "Project"
 msgstr "プロジェクト"
 
@@ -5015,7 +5033,6 @@ msgstr "タスクをタップして選択します。"
 msgid "Tap to retry."
 msgstr "タップして再試行してください。"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "task"
 msgstr "タスク"
@@ -5136,7 +5153,6 @@ msgstr "TaskNotesツール"
 msgid "TaskNotes tools"
 msgstr "TaskNotesツール"
 
-#: src/app/views-screen.tsx
 #: src/app/views/projects-view.tsx
 msgid "tasks"
 msgstr "タスク"
@@ -5501,14 +5517,6 @@ msgstr "タイトル：「{title}」。 "
 #: src/i18n/ui-copy.ts
 msgid "to"
 msgstr "宛先"
-
-#: src/app/views-screen.tsx
-msgid "to today"
-msgstr "。"
-
-#: src/app/views-screen.tsx
-msgid "to today."
-msgstr "。"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "today"

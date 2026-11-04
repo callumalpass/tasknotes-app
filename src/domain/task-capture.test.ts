@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { todayString } from "./task";
 import { resolveTaskCollectionConfiguration } from "./task-configuration";
 import { parseTaskCapture } from "./task-capture";
 
@@ -314,5 +315,61 @@ describe("ranked priority shorthand", () => {
       "en-AU",
     );
     expect(result.input).toEqual({ title: "Call Rowan", priority: "high" });
+  });
+});
+
+it("reaches every rank of a long priority list", async () => {
+  const priorities = Array.from({ length: 7 }, (_, index) => ({
+    id: `rank-${index}`,
+    value: `rank-${index}`,
+    label: `Rank ${index}`,
+    color: "#336699",
+    weight: index,
+  }));
+  const long = { ...configuration, priorities };
+  const { input } = await parseTaskCapture("Call Rowan p6", long, "en-AU");
+  expect(input).toEqual(
+    expect.objectContaining({ title: "Call Rowan", priority: "rank-1" }),
+  );
+  const beyond = await parseTaskCapture("Call Rowan p8", long, "en-AU");
+  expect(beyond.input.title).toBe("Call Rowan p8");
+});
+
+describe("day parts in a title", () => {
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  const tomorrow = todayString(next);
+
+  it.each([
+    ["Morning appointment tomorrow 9am", "Morning appointment", "T09:00"],
+    ["Afternoon tea tomorrow 3pm", "Afternoon tea", "T15:00"],
+    ["Book night shift tomorrow 9am", "Book night shift", "T09:00"],
+  ])(
+    "keeps %s as the title and honours its time",
+    async (text, title, time) => {
+      const { input } = await parseTaskCapture(text, configuration, "en-AU");
+      expect(input.title).toBe(title);
+      expect(input.scheduled).toContain(`${tomorrow}${time}`);
+    },
+  );
+
+  it("does not schedule a task only because its title has a day part", async () => {
+    const { input } = await parseTaskCapture(
+      "Morning run",
+      configuration,
+      "en-AU",
+    );
+    expect(input).toEqual(expect.objectContaining({ title: "Morning run" }));
+    expect(input.scheduled).toBeUndefined();
+  });
+
+  it("still reads a day part that follows a date", async () => {
+    const { input } = await parseTaskCapture(
+      "Call Rowan tomorrow morning",
+      configuration,
+      "en-AU",
+    );
+    expect(input.title).toBe("Call Rowan");
+    expect(input.scheduled).toContain(tomorrow);
   });
 });

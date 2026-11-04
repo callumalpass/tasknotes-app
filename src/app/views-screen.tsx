@@ -247,6 +247,7 @@ export function ViewsScreen({
   const [rescheduled, setRescheduled] = useState<{
     viewKey: string;
     count: number;
+    deadlines: number;
     undo: { id: string; input: UpdateTaskInput }[];
   } | null>(null);
   const [reschedulePending, setReschedulePending] = useState(false);
@@ -1063,7 +1064,12 @@ export function ViewsScreen({
           run: () => updateTasks(undo),
         });
         if (selectedKeyRef.current !== view.key) return;
-        setRescheduled({ viewKey: view.key, count: updates.length, undo });
+        setRescheduled({
+          viewKey: view.key,
+          count: updates.length,
+          deadlines: updates.filter(({ input }) => "due" in input).length,
+          undo,
+        });
         window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
       }
     } finally {
@@ -1676,23 +1682,11 @@ export function ViewsScreen({
         {rescheduled && rescheduled.viewKey === selected?.key ? (
           <>
             <p aria-atomic="true" className="visually-hidden" role="status">
-              <Trans>Moved </Trans>
-              {rescheduled.count}{" "}
-              {rescheduled.count === 1
-                ? translate({ message: "task" })
-                : translate({ message: "tasks" })}{" "}
-              <Trans>to today.</Trans>
+              {rescheduledSummary(rescheduled)}
             </p>
             {!pendingDeletion ? (
               <div className="undo-toast is-above-mobile-controls">
-                <span>
-                  <Trans>Moved </Trans>
-                  {rescheduled.count}{" "}
-                  {rescheduled.count === 1
-                    ? translate({ message: "task" })
-                    : translate({ message: "tasks" })}{" "}
-                  <Trans>to today</Trans>
-                </span>
+                <span>{rescheduledSummary(rescheduled)}</span>
                 <button
                   ref={rescheduleUndoRef}
                   type="button"
@@ -1755,4 +1749,24 @@ function addTaskPrompt(name: string) {
     comment:
       "Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, +project, #tag). Catalogue extraction does not change the input grammar.",
   });
+}
+
+/** Moving late work also moves any deadline it missed, so the summary says so. */
+function rescheduledSummary({
+  count,
+  deadlines,
+}: {
+  count: number;
+  deadlines: number;
+}): string {
+  const moved = plural(count, {
+    one: "Moved # task to today",
+    other: "Moved # tasks to today",
+  });
+  if (!deadlines) return moved;
+  const also = plural(deadlines, {
+    one: "# deadline moved too",
+    other: "# deadlines moved too",
+  });
+  return `${moved}, ${also}`;
 }

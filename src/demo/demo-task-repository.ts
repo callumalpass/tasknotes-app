@@ -133,7 +133,18 @@ export class DemoTaskRepository implements TaskRepository {
   private readonly scratchImages = new Map<string, ScratchImage>();
   private sourceRevision = 1;
 
-  constructor(requestedCount = 50) {
+  constructor(
+    requestedCount = 50,
+    adjustDefinition?: (
+      definition: Record<string, unknown>,
+    ) => Record<string, unknown>,
+  ) {
+    if (adjustDefinition) {
+      this.modelDefinition = adjustDefinition(this.modelDefinition);
+      this.model = new TaskNotesTaskModel(
+        resolveTaskCollectionConfiguration(this.modelDefinition),
+      );
+    }
     const count = Math.max(
       1,
       Math.min(

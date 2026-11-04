@@ -24,7 +24,7 @@ import {
 } from "./calendar-items";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
-import { useCalendarAgenda } from "./use-calendar-agenda";
+import { plannedElsewhere, useCalendarAgenda } from "./use-calendar-agenda";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -237,7 +237,10 @@ export function TaskCalendarView({
     [built, configuration],
   );
   const selectedEntries = (entries.get(selected) ?? []).filter(
-    (entry) => !entry.timeEntry,
+    (entry) =>
+      !entry.timeEntry &&
+      (entry.modelEntry.isOverdueOnToday ||
+        !plannedElsewhere(entry.row.task, selected)),
   );
   const listMode = mode === "listWeek";
 
@@ -916,7 +919,10 @@ function repeatsPlannedTask(item: TaskCalendarItem): boolean {
     !!planned &&
     !entry?.modelEntry.isOverdueOnToday &&
     !task?.recurrence &&
-    planned !== calendarDay(String(item.start))
+    planned !==
+      (item.allDay
+        ? calendarDay(String(item.start))
+        : todayString(new Date(item.start)))
   );
 }
 

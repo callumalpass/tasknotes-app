@@ -615,7 +615,9 @@ export function markedPriorityColorOf(
   const priority = configuration.priorities.find(
     (option) => option.value === value,
   );
-  return priority && priority.value !== configuration.defaults.priority
+  return priority &&
+    priority.value !== configuration.defaults.priority &&
+    priority.value !== "none"
     ? priority.color
     : undefined;
 }

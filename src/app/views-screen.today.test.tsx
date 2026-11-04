@@ -61,7 +61,9 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
 
   await act(async () => write.resolve());
   const undo = await screen.findByRole("button", { name: "Undo" });
-  expect(screen.getByText("Moved 2 tasks to today")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Moved 2 tasks to today, 1 deadline moved too",
+  );
   await waitFor(() => expect(undo).toHaveFocus());
 
   fireEvent.click(undo);
@@ -81,7 +83,7 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
   expect(
     within(overdue.closest("section")!).getByText("Late due"),
   ).toBeVisible();
-  expect(screen.queryByText("Moved 2 tasks to today")).toBeNull();
+  expect(screen.queryByText(/^Moved 2 tasks to today/)).toBeNull();
 });
 
 it("returns rows to Overdue when the batch is rejected", async () => {

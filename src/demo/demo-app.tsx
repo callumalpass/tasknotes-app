@@ -6,8 +6,17 @@ import { RepositoryProvider } from "../app/repository-context";
 import { DemoMutationJournal } from "./demo-mutation-journal";
 import { DemoTaskRepository } from "./demo-task-repository";
 
-export function DemoApp({ count }: { count: number }) {
-  const repository = useMemo(() => new DemoTaskRepository(count), [count]);
+export function DemoApp({
+  count,
+  adjustDefinition,
+}: {
+  count: number;
+  adjustDefinition?: ConstructorParameters<typeof DemoTaskRepository>[1];
+}) {
+  const repository = useMemo(
+    () => new DemoTaskRepository(count, adjustDefinition),
+    [adjustDefinition, count],
+  );
   const mutationJournal = useMemo(() => new DemoMutationJournal(), []);
   const collectionActions = useMemo(
     () => ({

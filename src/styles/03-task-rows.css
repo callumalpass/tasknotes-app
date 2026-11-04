@@ -374,6 +374,7 @@
 }
 
 .task-actions-subheading strong {
+  grid-column: 2;
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
@@ -442,6 +443,34 @@
   display: grid;
   gap: 18px;
   padding: 12px 10px 8px;
+}
+
+.task-actions-items.is-move .field-suggestions {
+  position: static;
+  max-height: 15rem;
+  padding: 4px 0 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.task-actions-organize-more {
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0 8px;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--type-supporting);
+}
+
+.task-actions-organize-more:hover,
+.task-actions-organize-more:focus-visible {
+  color: var(--ink);
+  background: var(--paper-soft);
 }
 
 .task-actions-organize-editor .form-field > label {
@@ -627,17 +656,27 @@
     background-color 160ms var(--ease-out);
 }
 
-/* A raised priority tints the ring, so rank reads without leaving the
-   checkbox column. */
-.completion-control.has-priority span {
-  border-width: 2px;
-  border-color: var(--priority-color);
-  border-color: oklch(from var(--priority-color) min(l, 0.58) c h);
-  background: color-mix(in srgb, var(--priority-color) 10%, transparent);
+/* A marked priority sets a tick in the row's margin. It takes the colour the
+   collection gave that priority, so it holds for any number of them. */
+.completion-control.has-priority {
+  position: relative;
 }
 
-:root[data-theme="dark"] .completion-control.has-priority span {
-  border-color: oklch(from var(--priority-color) max(l, 0.68) c h);
+.completion-control.has-priority::before {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--priority-color);
+  background: oklch(from var(--priority-color) min(l, 0.58) c h);
+  content: "";
+  transform: translateY(-50%);
+}
+
+:root[data-theme="dark"] .completion-control.has-priority::before {
+  background: oklch(from var(--priority-color) max(l, 0.68) c h);
 }
 
 /* A coloured, non-default status sets a dot inside the ring, and names the

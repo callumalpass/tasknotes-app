@@ -107,3 +107,13 @@ it("offers values the collection uses before other linkable records", () => {
     record("Refine copy"),
   ]);
 });
+
+it("treats leftover text as the project a link of the same name already is", () => {
+  const tasks = [
+    { frontmatter: { projects: ["[[Projects/Operations]]"] } },
+    { frontmatter: { projects: ["Operations"] } },
+  ] as unknown as Task[];
+  expect(
+    usedValuesFirst(tasks, { field: "projects", kind: "records" }, []),
+  ).toEqual([expect.objectContaining({ value: "[[Projects/Operations]]" })]);
+});

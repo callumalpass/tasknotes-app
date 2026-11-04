@@ -16,9 +16,11 @@ import { registerReloadParticipant } from "../pwa/reload";
 import {
   activeCaptureToken,
   applyCaptureSuggestion,
+  captureSuggestionText,
   captureSuggestionRequest,
   captureTriggers,
   configuredCaptureSuggestions,
+  linkCapturedProjects,
 } from "../domain/capture-autosuggest";
 import {
   currentCaptureHighlights,
@@ -200,9 +202,11 @@ export function TaskCapture({
     if (!suggestionRequest || !suggestionKey) return;
     let active = true;
     const fallback = configuredCaptureSuggestions(suggestionRequest);
-    const completion = completeField
-      ? completeField(suggestionRequest)
-      : Promise.resolve(fallback);
+    // The collection's own list keeps its labels and rank, however long it is.
+    const completion =
+      completeField && !suggestionRequest.configuredValues?.length
+        ? completeField(suggestionRequest)
+        : Promise.resolve(fallback);
     void completion.then(
       (next) => {
         if (!active) return;
@@ -288,7 +292,11 @@ export function TaskCapture({
 
   function chooseSuggestion(completion: FieldCompletion) {
     if (capturing || !activeToken) return;
-    const next = applyCaptureSuggestion(text, activeToken, completion.value);
+    const next = applyCaptureSuggestion(
+      text,
+      activeToken,
+      captureSuggestionText(completion),
+    );
     changeText(next.text, next.cursor);
     setSuggestionResult({ key: "", items: [] });
     window.requestAnimationFrame(() => {
@@ -340,6 +348,12 @@ export function TaskCapture({
     event.preventDefault();
     if (session.getSnapshot().status === "submitting") return;
     await session.submit({
+      ...(completeField
+        ? {
+            finalizeInput: (input: CreateTaskInput) =>
+              linkCapturedProjects(input, configuration, completeField),
+          }
+        : {}),
       configuration,
       defaults: creationDefaults,
       create: createTask,

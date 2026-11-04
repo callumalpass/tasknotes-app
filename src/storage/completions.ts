@@ -1,6 +1,7 @@
 import {
   completionMatches,
   linkDisplayLabel,
+  linkTarget,
   recordCompletion,
   type CollectionRecord,
   type FieldCompletion,
@@ -90,10 +91,22 @@ export function usedValuesFirst(
     ...completion,
     label: linkDisplayLabel(completion.value),
   }));
-  const seen = new Set(used.map(({ value }) => value));
-  const labels = new Set(used.map(({ label }) => label.toLocaleLowerCase()));
+  const linked = new Set(
+    used
+      .filter(({ value }) => linkTarget(value) !== value)
+      .map(({ label }) => label.toLocaleLowerCase()),
+  );
+  // Text left over from before a link existed is the same project by another spelling.
+  const distinct = used.filter(
+    ({ value, label }) =>
+      linkTarget(value) !== value || !linked.has(label.toLocaleLowerCase()),
+  );
+  const seen = new Set(distinct.map(({ value }) => value));
+  const labels = new Set(
+    distinct.map(({ label }) => label.toLocaleLowerCase()),
+  );
   return [
-    ...used,
+    ...distinct,
     ...records.filter(
       ({ value, label }) =>
         !seen.has(value) && !labels.has(label.toLocaleLowerCase()),

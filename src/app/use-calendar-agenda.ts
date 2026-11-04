@@ -198,7 +198,7 @@ export function useCalendarAgenda({
 }
 
 /** The agenda lists a task on its planned day, so only that day counts it. */
-function plannedElsewhere(task: TaskSummary, day: string): boolean {
+export function plannedElsewhere(task: TaskSummary, day: string): boolean {
   const planned = taskDatePart(task.scheduled);
   return !!planned && !task.recurrence && planned !== day;
 }
