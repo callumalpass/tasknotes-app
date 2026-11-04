@@ -94,6 +94,8 @@ interface RepositoryContextValue {
   pendingDeletion: {
     id: string;
     title: string;
+    ids?: string[];
+    bulk?: boolean;
     outcomeUnknown: boolean;
   } | null;
   deletionError: OperationalError | null;
@@ -115,7 +117,7 @@ interface RepositoryContextValue {
   editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setTaskArchived(id: string, archived: boolean): Promise<Task>;
-  deleteTask(id: string): Promise<void>;
+  deleteTask(id: string | readonly string[]): Promise<void>;
   undoTaskDeletion(): Promise<void>;
   retryTaskDeletion(): Promise<void>;
   updateTaskModelSettings(
@@ -238,6 +240,8 @@ export function RepositoryProvider({
   const [pendingDeletion, setPendingDeletion] = useState<{
     id: string;
     title: string;
+    ids?: string[];
+    bulk?: boolean;
     outcomeUnknown: boolean;
   } | null>(null);
   const [deletionError, setDeletionError] = useState<OperationalError | null>(
@@ -420,6 +424,14 @@ export function RepositoryProvider({
                 ? {
                     id: snapshot.pendingDeletion.taskId,
                     title: snapshot.pendingDeletion.title,
+                    bulk:
+                      snapshot.pendingDeletion.additionalTasks !== undefined,
+                    ids: [
+                      snapshot.pendingDeletion.taskId,
+                      ...(snapshot.pendingDeletion.additionalTasks ?? []).map(
+                        (task) => task.taskId,
+                      ),
+                    ],
                     outcomeUnknown: Boolean(
                       snapshot.pendingDeletion.authorityRequestId,
                     ),
@@ -663,7 +675,7 @@ export function RepositoryProvider({
     },
     [acceptTask, repository],
   );
-  const deleteTask = useCallback(async (id: string) => {
+  const deleteTask = useCallback(async (id: string | readonly string[]) => {
     const commands = await taskCommandsReadyRef.current;
     if (!commands) throw new Error("Task commands are not ready.");
     await commands.requestDeletion(id);
@@ -821,6 +833,7 @@ function useRepositoryTaskQuery<Value>(
 ): TaskQueryState<Value> {
   const {
     pendingDeletion,
+    deletionError,
     repository,
     status,
     error: openingError,
@@ -872,9 +885,15 @@ function useRepositoryTaskQuery<Value>(
   ]);
   const tasks = state.key === key ? (state.data ?? []) : [];
   return {
-    tasks: pendingDeletion
-      ? tasks.filter((task) => reader.id(task) !== pendingDeletion.id)
-      : tasks,
+    tasks:
+      pendingDeletion && !(pendingDeletion.bulk && deletionError)
+        ? tasks.filter(
+            (task) =>
+              !(pendingDeletion.ids ?? [pendingDeletion.id]).includes(
+                reader.id(task),
+              ),
+          )
+        : tasks,
     loading:
       status === "opening" || state.key !== key || state.status === "loading",
     refreshing: state.status === "refreshing",
@@ -889,7 +908,8 @@ export function useTask(id: string | null): {
   loading: boolean;
   error: Error | null;
 } {
-  const { pendingDeletion, repository, status } = useRepository();
+  const { pendingDeletion, deletionError, repository, status } =
+    useRepository();
   const revision = useRepositoryRevision(`task:${id ?? "none"}`);
   const [task, setTask] = useState<Task | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -902,7 +922,15 @@ export function useTask(id: string | null): {
       .get(id)
       .then((result) => {
         if (!active) return;
-        setTask(pendingDeletion?.id === id ? null : result);
+        setTask(
+          !(pendingDeletion?.bulk && deletionError) &&
+            (
+              pendingDeletion?.ids ??
+              (pendingDeletion ? [pendingDeletion.id] : [])
+            ).includes(id)
+            ? null
+            : result,
+        );
         setError(null);
         setResolved(id);
       })
@@ -914,7 +942,7 @@ export function useTask(id: string | null): {
     return () => {
       active = false;
     };
-  }, [id, pendingDeletion, repository, revision, status]);
+  }, [id, pendingDeletion, deletionError, repository, revision, status]);
 
   return {
     task,

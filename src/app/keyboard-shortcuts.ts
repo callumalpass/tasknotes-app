@@ -279,6 +279,16 @@ export function keyboardShortcutGroups(): {
         { keys: ["k", "↑"], description: t({ message: "Previous task" }) },
         { keys: ["o", "Enter"], description: t({ message: "Open task" }) },
         { keys: ["x"], description: t({ message: "Complete or reopen" }) },
+        { keys: ["v"], description: t({ message: "Select focused task" }) },
+        {
+          keys: ["Shift+j", "Shift+↓", "Shift+k", "Shift+↑"],
+          description: t({ message: "Extend task selection" }),
+        },
+        {
+          keys: [shortcutLabel("A")],
+          description: t({ message: "Select all visible tasks" }),
+        },
+        { keys: ["Esc"], description: t({ message: "Clear task selection" }) },
         { keys: ["t"], description: t({ message: "Schedule today" }) },
         { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },
         { keys: ["w"], description: t({ message: "Schedule next week" }) },

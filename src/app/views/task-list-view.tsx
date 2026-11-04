@@ -1,4 +1,5 @@
 import { sectionCollapsed } from "../../application/section-preferences";
+import { TaskSelectionList } from "../task-selection";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
@@ -36,6 +37,7 @@ import {
   type ManualOrderPlacement,
 } from "../../domain/manual-order";
 import { groupTaskViewRows } from "../../domain/view-grouping";
+import { sectionCollapsed } from "../../application/section-preferences";
 import { sectionTaskViewRows } from "../../domain/task-list-sections";
 import { groupLabel } from "../../i18n/view-presentation";
 import { ViewTaskRow } from "./view-task-row";
@@ -175,6 +177,9 @@ export function TaskListView({
               ? JSON.stringify([sectionScope, execution.view.key])
               : undefined
           }
+          selectionEnabled={
+            execution.view.presentation?.type === "tasknotes.task-list"
+          }
           lanes={lanes}
           grouped={grouped}
           daySections={daySections}
@@ -188,6 +193,9 @@ export function TaskListView({
     );
   return (
     <ManualTaskRows
+      selectionEnabled={
+        execution.view.presentation?.type === "tasknotes.task-list"
+      }
       daySectionsClear={clear}
       orderUnavailable={orderUnavailable}
       preferenceScope={
@@ -214,6 +222,7 @@ export function TaskListView({
 const ROW_DRAG_THRESHOLD = 6;
 
 function ManualTaskRows({
+  selectionEnabled,
   orderUnavailable,
   preferenceScope,
   configuration,
@@ -230,6 +239,7 @@ function ManualTaskRows({
   sectionAction,
   daySectionsClear,
 }: {
+  selectionEnabled: boolean;
   sectionAction?(lane: TaskListLane): ReactNode;
   daySectionsClear: ReactNode;
   orderUnavailable: boolean;
@@ -253,6 +263,16 @@ function ManualTaskRows({
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
   const { t } = useLingui();
+  const [sectionChoices, setSectionChoices] = useState<Record<string, boolean>>(
+    {},
+  );
+  const collapsedLane = (key: string) =>
+    sectionChoices[key] ??
+    sectionCollapsed(
+      preferenceScope
+        ? `tasknotes:section:${preferenceScope}:${key}`
+        : undefined,
+    );
   const [dragging, setDragging] = useState<{
     taskId: string;
     sourceLaneKey: string;
@@ -568,6 +588,9 @@ function ManualTaskRows({
               orderPending ||
               orderUnavailable ||
               !event.isPrimary ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey ||
               event.button !== 0 ||
               draggingRef.current ||
               !(event.target instanceof Element) ||
@@ -707,7 +730,20 @@ function ManualTaskRows({
     daySectionsClear && manualOrder && grouped && !virtualized,
   );
   return (
-    <>
+    <TaskSelectionList
+      enabled={selectionEnabled}
+      tasks={
+        virtualized
+          ? []
+          : shownLanes.flatMap((lane) =>
+              grouped && collapsedLane(lane.key)
+                ? []
+                : lane.rows
+                    .filter((row) => !departing.has(row.task.id))
+                    .map((row) => row.task),
+            )
+      }
+    >
       {daySectionsClear && !clearInTodayLane ? daySectionsClear : null}
       <div
         aria-busy={orderPending}
@@ -721,6 +757,7 @@ function ManualTaskRows({
         {virtualized ? (
           <div className={manualOrder ? "manual-order-list" : undefined}>
             <VirtualTaskList
+              selectionEnabled={selectionEnabled}
               lanes={shownLanes}
               grouped={grouped}
               daySections={daySections}
@@ -778,6 +815,13 @@ function ManualTaskRows({
                 label={lane.label ?? translate({ message: "Other" })}
                 count={settledRowCount(lane.rows, departing)}
                 action={sectionAction?.(lane)}
+                collapsed={collapsedLane(lane.key)}
+                onCollapsedChange={(value) =>
+                  setSectionChoices((current) => ({
+                    ...current,
+                    [lane.key]: value,
+                  }))
+                }
                 showEmpty={Boolean(manualOrder) || lane.rows.length > 0}
               >
                 {rows}
@@ -797,6 +841,6 @@ function ManualTaskRows({
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>
-    </>
+    </TaskSelectionList>
   );
 }

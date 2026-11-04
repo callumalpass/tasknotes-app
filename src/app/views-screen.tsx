@@ -1,4 +1,5 @@
 import type { TaskNavigationTarget } from "./use-workspace-navigation";
+import { SelectTasksOption } from "./task-selection";
 import { t as translate, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -165,6 +166,7 @@ export function ViewsScreen({
     updateTasks,
     configuration,
     pendingDeletion,
+    deletionError,
   } = useRepository();
   // A completed row that leaves the results is held where it was, so it can
   // linger and fold away; rows that stay (or move) are left to the result.
@@ -466,8 +468,13 @@ export function ViewsScreen({
         : { execution: ranked, departing: new Map<string, number | null>() };
     return {
       execution:
-        held.execution && pendingDeletion
-          ? executionWithoutTask(held.execution, pendingDeletion.id)
+        held.execution &&
+        pendingDeletion &&
+        !(pendingDeletion.bulk && deletionError)
+          ? (pendingDeletion.ids ?? [pendingDeletion.id]).reduce(
+              (result, id) => executionWithoutTask(result, id),
+              held.execution,
+            )
           : held.execution,
       departing: held.departing,
     };
@@ -477,6 +484,7 @@ export function ViewsScreen({
     manualOrder,
     manualRanks,
     pendingDeletion,
+    deletionError,
     selected,
     visibleExecution,
   ]);
@@ -609,6 +617,9 @@ export function ViewsScreen({
     viewCaptureDefaults && todayScreen
       ? todayCaptureDefaults(viewCaptureDefaults, today)
       : viewCaptureDefaults;
+  const selectionAvailable =
+    selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.projects";
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
     selected?.presentation?.type === "tasknotes.planner"
@@ -1265,7 +1276,8 @@ export function ViewsScreen({
               </small>
             ) : null}
           </div>
-          {!editing && (selected?.source.writable || operational) ? (
+          {!editing &&
+          (selected?.source.writable || operational || selectionAvailable) ? (
             <div className="view-header-actions">
               {operational ? (
                 <button
@@ -1279,6 +1291,7 @@ export function ViewsScreen({
               ) : null}
               {selected?.source.writable ? (
                 <ViewOptions>
+                  {selectionAvailable ? <SelectTasksOption /> : null}
                   <button
                     type="button"
                     aria-pressed={Boolean(manualOrder)}
@@ -1312,6 +1325,10 @@ export function ViewsScreen({
                     <Pencil aria-hidden="true" size={18} />{" "}
                     <Trans>Edit view</Trans>
                   </button>
+                </ViewOptions>
+              ) : selectionAvailable ? (
+                <ViewOptions>
+                  <SelectTasksOption />
                 </ViewOptions>
               ) : null}
             </div>

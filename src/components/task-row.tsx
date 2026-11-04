@@ -1,7 +1,9 @@
+import { useTaskSelection } from "../app/use-task-selection";
 import { taskMeta } from "../i18n/presentation";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
+  Check,
   AtSign,
   CalendarDays,
   Circle,
@@ -72,6 +74,7 @@ export function TaskRow({
 }) {
   const { t } = useLingui();
   const supportingId = useId();
+  const selection = useTaskSelection(task.id);
   const { configuration, mutations, repository, updateTask } = useRepository();
   const command = useMutationState(
     mutations,
@@ -177,6 +180,8 @@ export function TaskRow({
   });
   const swipe = useSwipeActions({
     disabled: pending,
+    onLongPress: selection.selectable ? selection.start : undefined,
+    selectionActive: selection.active,
     onSwipe: (direction) => {
       if (direction === "complete") void complete();
       else
@@ -188,7 +193,8 @@ export function TaskRow({
   return (
     <div
       {...swipe.handlers}
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${selection.selected ? " is-selected" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      data-selected={selection.selectable ? selection.selected : undefined}
       data-task-id={task.id}
       data-task-title={task.title}
       data-task-completed={displayedTask.completed ? "true" : undefined}
@@ -208,6 +214,10 @@ export function TaskRow({
           ? ({ "--swipe-x": `${swipe.offset}px` } as React.CSSProperties)
           : undefined
       }
+      onClickCapture={(event) => {
+        swipe.handlers.onClickCapture(event);
+        if (!event.defaultPrevented) selection.click(event);
+      }}
       onClick={(event) => {
         const target = event.target as HTMLElement;
         // Portaled menus/editors bubble through React, but are not row space.
@@ -224,6 +234,8 @@ export function TaskRow({
         onOpen(task, occurrence?.date);
       }}
       onContextMenu={(event) => {
+        swipe.handlers.onContextMenu(event);
+        if (event.defaultPrevented) return;
         if ((event.target as HTMLElement).closest(".task-actions-trigger"))
           return;
         const trigger = event.currentTarget.querySelector<HTMLButtonElement>(
@@ -259,6 +271,9 @@ export function TaskRow({
       >
         <span aria-hidden="true" />
       </button>
+      {selection.selected ? (
+        <Check className="task-selection-mark" aria-hidden="true" size={16} />
+      ) : null}
       <div className="task-row-content">
         {error ? (
           <p className="task-row-error" role="alert">
@@ -275,6 +290,7 @@ export function TaskRow({
         {command.warning ? <p role="status">{command.warning}</p> : null}
         <button
           className="task-row-title"
+          aria-pressed={selection.selectable ? selection.selected : undefined}
           aria-describedby={supportingText ? supportingId : undefined}
           title={task.title}
           type="button"

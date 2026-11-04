@@ -1,0 +1,182 @@
+/* Selection and bulk editing share the existing task-row and paper tokens. */
+[data-task-selection-list] {
+  display: contents;
+}
+.task-row.is-selected {
+  position: relative;
+  background: var(--accent-soft);
+  border-radius: var(--radius-control);
+}
+.task-row.is-selected .completion-control > span {
+  visibility: hidden;
+}
+.task-row .task-selection-mark {
+  position: absolute;
+  top: 14px;
+  left: 11px;
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border-radius: var(--radius-control);
+  color: var(--paper);
+  background: var(--accent);
+  pointer-events: none;
+}
+.bulk-actions {
+  position: fixed;
+  z-index: 24;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12px);
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: 0 8px 28px var(--color-shadow);
+}
+.bulk-selection-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--type-supporting);
+}
+.bulk-selection-count button,
+.bulk-action-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.bulk-selection-count button {
+  color: var(--ink-soft);
+  border: 0;
+  background: transparent;
+}
+.bulk-action-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.bulk-action-controls button,
+.bulk-action-controls select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background-color: var(--paper);
+  color: var(--ink);
+  font-size: var(--type-supporting);
+}
+.bulk-action-controls :is(button, select):hover {
+  background-color: var(--paper-soft);
+}
+.bulk-action-controls :disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.bulk-action-controls .bulk-delete {
+  color: var(--danger);
+}
+.bulk-selection-hint {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+.bulk-pick-date {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.bulk-pick-date input {
+  min-height: 44px;
+  color-scheme: inherit;
+}
+.app-shell:has(~ .bulk-actions) .screen {
+  padding-bottom: calc(var(--task-selection-height, 160px) + 80px);
+}
+body:has(.bulk-actions) :is(.view-context-capture, .global-capture-fab) {
+  visibility: hidden;
+}
+.bulk-failures {
+  max-height: 32vh;
+  overflow: auto;
+  padding: 12px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font-size: var(--type-supporting);
+}
+.bulk-failures p {
+  margin: 0;
+}
+.bulk-failures ul {
+  padding-left: 20px;
+  margin-block: 8px;
+}
+.bulk-update-notice {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+body:has(.bulk-actions) .workspace-feedback {
+  bottom: calc(
+    var(--nav-height) + env(safe-area-inset-bottom) +
+      var(--task-selection-height, 160px) + 24px
+  );
+}
+body:has(.bulk-actions) .workspace-feedback > .undo-toast {
+  position: static;
+}
+@media (min-width: 840px) {
+  .bulk-actions {
+    left: 210px;
+    right: 20px;
+    bottom: 20px;
+  }
+  .bulk-action-controls {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .bulk-selection-count {
+    min-height: 36px;
+  }
+  body:has(.bulk-actions) .workspace-feedback {
+    bottom: calc(var(--task-selection-height, 120px) + 32px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulk-actions,
+  .bulk-update-notice {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 439px) {
+  .bulk-action-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (pointer: coarse) {
+  .task-row[data-selected] .task-row-title {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+.bulk-pick-date button,
+.bulk-failures button {
+  min-height: 44px;
+  padding: 6px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
