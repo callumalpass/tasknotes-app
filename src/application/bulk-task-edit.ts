@@ -1,4 +1,4 @@
-import { setTaskDate } from "../domain/task-date-actions";
+import { rescheduleInput } from "../domain/task-date-actions";
 import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 
 export type BulkTaskChange =
@@ -76,6 +76,17 @@ export async function undoBulkEdits(
   return { failures, remaining };
 }
 
+function rescheduleChange(task: TaskSummary, date: string | null) {
+  const input = date ? rescheduleInput(task, date) : { scheduled: null };
+  return {
+    input,
+    undo: {
+      scheduled: task.scheduled ?? null,
+      ...("due" in input ? { due: task.due ?? null } : {}),
+    },
+  };
+}
+
 export function planTaskChange(task: TaskSummary, change: BulkTaskChange) {
   switch (change.kind) {
     case "complete":
@@ -85,12 +96,7 @@ export function planTaskChange(task: TaskSummary, change: BulkTaskChange) {
       };
     case "schedule":
       return {
-        input: {
-          scheduled: change.date
-            ? setTaskDate(task.scheduled, change.date)
-            : null,
-        },
-        undo: { scheduled: task.scheduled ?? null },
+        ...rescheduleChange(task, change.date),
       };
     case "priority":
       return {

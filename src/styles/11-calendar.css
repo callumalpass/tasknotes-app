@@ -1587,16 +1587,12 @@
   color: var(--ink-soft);
 }
 
+.full-calendar-view.is-agenda .tnc-list-lead .task-row-meta .is-late,
 .full-calendar-view.is-agenda
   .tnc-list-lead
-  .task-row-property.is-overdue
-  > span,
-.full-calendar-view.is-agenda
-  .tnc-list-lead
-  .task-row-property.is-overdue
-  > strong,
-.full-calendar-view.is-agenda .tnc-list-lead .task-row-meta .is-overdue {
-  color: var(--ink-muted);
+  .task-row-property.is-late
+  > strong {
+  color: var(--danger);
 }
 
 .full-calendar-view.is-agenda .tnc-strip.is-expanded .agenda-strip-weekday {

@@ -820,10 +820,14 @@ msgid "Add title"
 msgstr "タイトルを追加"
 
 #. placeholder {0}: currentCreationContext.label
-#. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
 msgstr "{0}に追加"
+
+#. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, +project, #tag). Catalogue extraction does not change the input grammar.
+#: src/app/views-screen.tsx
+msgid "Add to {name} — tomorrow 9am, +project, #tag"
+msgstr "{name} に追加 — tomorrow 9am, +project, #tag"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
@@ -1117,6 +1121,10 @@ msgstr "ビルダー"
 msgid "Built-in working spaces"
 msgstr "組み込みの作業スペース"
 
+#: src/app/app-shell.tsx
+msgid "Busiest projects"
+msgstr "タスクの多いプロジェクト"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1340,7 +1348,7 @@ msgstr "消去して移動"
 msgid "Clear checklist items in the note on each repeat"
 msgstr "繰り返しのたびにノートのチェックボックスをリセット"
 
-#: src/components/task-actions.tsx
+#: src/components/task-date-panel.tsx
 msgid "Clear due date"
 msgstr "期限日をクリア"
 
@@ -1357,6 +1365,7 @@ msgid "Clear recorded occurrences?"
 msgstr "記録済みの発生分を消去しますか？"
 
 #: src/components/task-actions.tsx
+#: src/components/task-date-panel.tsx
 msgid "Clear scheduled date"
 msgstr "予定日をクリア"
 
@@ -2087,6 +2096,7 @@ msgstr "破棄すると保存済みの復元データがすべて削除され、
 #: src/app/bulk-task-actions.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
+#: src/components/task-capture.tsx
 msgid "Dismiss"
 msgstr "閉じる"
 
@@ -5199,6 +5209,10 @@ msgstr "作成したTaskNoteが見つかりませんでした。"
 msgid "The current scratchpad is unavailable."
 msgstr "現在のスクラッチパッドを利用できません。"
 
+#: src/components/task-date-panel.tsx
+msgid "The deadline"
+msgstr "締め切り"
+
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "削除"
@@ -5805,6 +5819,10 @@ msgstr "選択したとき"
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
 msgstr "前のタスクの完了時"
+
+#: src/components/task-date-panel.tsx
+msgid "When you plan to work on it"
+msgstr "取り組む予定の日"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"

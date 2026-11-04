@@ -1331,9 +1331,9 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
+              {selectionAvailable ? <SelectTasksOption /> : null}
               {selected?.source.writable ? (
                 <ViewOptions>
-                  {selectionAvailable ? <SelectTasksOption /> : null}
                   <button
                     type="button"
                     aria-pressed={Boolean(manualOrder)}
@@ -1367,10 +1367,6 @@ export function ViewsScreen({
                     <Pencil aria-hidden="true" size={18} />{" "}
                     <Trans>Edit view</Trans>
                   </button>
-                </ViewOptions>
-              ) : selectionAvailable ? (
-                <ViewOptions>
-                  <SelectTasksOption />
                 </ViewOptions>
               ) : null}
             </div>
@@ -1495,7 +1491,7 @@ export function ViewsScreen({
             placeholder={
               currentCreationContext
                 ? t`Add to ${currentCreationContext.label}`
-                : t`Add to ${selected?.name ?? uiCopy("this view")}`
+                : addTaskPrompt(selected?.name ?? uiCopy("this view"))
             }
             onCreated={refreshAfterCreate}
             onOpenCreated={onOpenTask}
@@ -1759,4 +1755,12 @@ function CompletionMotion({
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function addTaskPrompt(name: string) {
+  return translate({
+    message: `Add to ${name} — tomorrow 9am, +project, #tag`,
+    comment:
+      "Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, +project, #tag). Catalogue extraction does not change the input grammar.",
+  });
 }

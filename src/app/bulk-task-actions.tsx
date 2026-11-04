@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { FeedbackNotice } from "../components/workspace-feedback";
 import {
   applyBulkEdits,
@@ -323,12 +324,19 @@ export function BulkTaskActions({
                 <Check size={17} aria-hidden="true" />
                 <Trans>Complete</Trans>
               </button>
-              <select
-                aria-label={t`Schedule selected tasks`}
+              <TaskNotesSelect
+                ariaLabel={t`Schedule selected tasks`}
                 disabled={disabled}
+                options={[
+                  { value: "today", label: t`Today` },
+                  { value: "tomorrow", label: t`Tomorrow` },
+                  { value: "week", label: t`Next week` },
+                  { value: "pick", label: t`Pick date` },
+                  { value: "none", label: t`No date` },
+                ]}
+                placeholder={t`Schedule`}
                 value=""
-                onChange={(event) => {
-                  const value = event.target.value;
+                onChange={(value) => {
                   if (value === "pick") {
                     setPicking(true);
                     return;
@@ -346,51 +354,37 @@ export function BulkTaskActions({
                             : nextWeekStart(today),
                   });
                 }}
-              >
-                <option value="" disabled>{t`Schedule`}</option>
-                <option value="today">{t`Today`}</option>
-                <option value="tomorrow">{t`Tomorrow`}</option>
-                <option value="week">{t`Next week`}</option>
-                <option value="pick">{t`Pick date`}</option>
-                <option value="none">{t`No date`}</option>
-              </select>
-              <select
-                aria-label={t`Priority for selected tasks`}
+              />
+              <TaskNotesSelect
+                ariaLabel={t`Priority for selected tasks`}
                 disabled={disabled}
+                options={configuration.priorities.map((priority) => ({
+                  value: priority.value,
+                  label: priority.label,
+                }))}
+                placeholder={t`Priority`}
                 value=""
-                onChange={(event) =>
-                  void run({ kind: "priority", value: event.target.value })
-                }
-              >
-                <option value="" disabled>{t`Priority`}</option>
-                {configuration.priorities.map((priority) => (
-                  <option key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label={t`Move selected tasks to project`}
+                onChange={(value) => void run({ kind: "priority", value })}
+              />
+              <TaskNotesSelect
+                ariaLabel={t`Move selected tasks to project`}
                 disabled={disabled}
+                options={[
+                  { value: "__none__", label: t`No project` },
+                  ...projects.map((project) => ({
+                    value: project.value,
+                    label: project.label,
+                  })),
+                ]}
+                placeholder={t`Move to project`}
                 value=""
-                onChange={(event) =>
+                onChange={(value) =>
                   void run({
                     kind: "project",
-                    value:
-                      event.target.value === "__none__"
-                        ? ""
-                        : event.target.value,
+                    value: value === "__none__" ? "" : value,
                   })
                 }
-              >
-                <option value="" disabled>{t`Move to project`}</option>
-                <option value="__none__">{t`No project`}</option>
-                {projects.map((project) => (
-                  <option key={project.value} value={project.value}>
-                    {project.label}
-                  </option>
-                ))}
-              </select>
+              />
               <button
                 type="button"
                 disabled={disabled}

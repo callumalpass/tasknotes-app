@@ -87,7 +87,8 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
   await openDemo(page);
   const titles = await rows(page).locator(".task-row-title").allTextContents();
   await selectTwo(page);
-  await page.getByLabel("Schedule selected tasks").selectOption("tomorrow");
+  await page.getByRole("combobox", { name: "Schedule selected tasks" }).click();
+  await page.getByRole("option", { name: "Tomorrow" }).click();
   await expect(
     page.getByText("2 tasks updated", { exact: true }),
   ).toBeVisible();
@@ -122,13 +123,17 @@ for (const action of [
       elements[2].getAttribute("data-task-id"),
     ]);
     await selectTwo(page);
-    if (action === "priority")
-      await page.getByLabel("Priority for selected tasks").selectOption("low");
-    else if (action === "project")
+    if (action === "priority") {
       await page
-        .getByLabel("Move selected tasks to project")
-        .selectOption({ label: "Operations" });
-    else
+        .getByRole("combobox", { name: "Priority for selected tasks" })
+        .click();
+      await page.getByRole("option", { name: "Low" }).click();
+    } else if (action === "project") {
+      await page
+        .getByRole("combobox", { name: "Move selected tasks to project" })
+        .click();
+      await page.getByRole("option", { name: "Operations" }).click();
+    } else
       await page
         .locator(".bulk-actions")
         .getByRole("button", {
@@ -325,7 +330,12 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
   await openDemo(page);
   for (const choice of ["none", "pick"]) {
     await selectTwo(page);
-    await page.getByLabel("Schedule selected tasks").selectOption(choice);
+    await page
+      .getByRole("combobox", { name: "Schedule selected tasks" })
+      .click();
+    await page
+      .getByRole("option", { name: choice === "none" ? "No date" : "Pick date" })
+      .click();
     if (choice === "pick") {
       await page
         .getByLabel("Schedule date", { exact: true })

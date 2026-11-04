@@ -60,6 +60,8 @@ import type {
 const emptyDefaults: Partial<CreateTaskInput> = {};
 type CaptureDetailSection = "timing" | "organize" | "repeat" | "notes";
 
+const FOLLOW_UP_MS = 12000;
+
 export function TaskCapture({
   configuration,
   createTask,
@@ -117,9 +119,20 @@ export function TaskCapture({
   const warning = accepted?.task.operationWarnings
     ?.map(cleanTemplateWarning)
     .join(" ");
-  const followUp = accepted?.followUp
-    ? { task: accepted.task, message: accepted.followUp }
-    : null;
+  const [dismissedFollowUp, setDismissedFollowUp] = useState<unknown>(null);
+  const followUp =
+    accepted?.followUp && accepted !== dismissedFollowUp
+      ? { task: accepted.task, message: accepted.followUp }
+      : null;
+  const followUpShown = followUp ? accepted : null;
+  useEffect(() => {
+    if (!followUpShown) return;
+    const timer = window.setTimeout(
+      () => setDismissedFollowUp(followUpShown),
+      FOLLOW_UP_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [followUpShown]);
   const [expanded, setExpanded] = useState(false);
   const [detailSections, setDetailSections] = useState<
     Record<CaptureDetailSection, boolean>
@@ -603,6 +616,13 @@ export function TaskCapture({
               <Trans>Open task</Trans>
             </button>
           ) : null}
+          <button
+            className="text-action"
+            type="button"
+            onClick={() => setDismissedFollowUp(accepted)}
+          >
+            <Trans>Dismiss</Trans>
+          </button>
         </div>
       ) : null}
     </form>

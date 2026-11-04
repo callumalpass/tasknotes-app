@@ -820,10 +820,14 @@ msgid "Add title"
 msgstr "Titel hinzufügen"
 
 #. placeholder {0}: currentCreationContext.label
-#. placeholder {0}: selected?.name ?? uiCopy("this view")
 #: src/app/views-screen.tsx
 msgid "Add to {0}"
 msgstr "Zu {0} hinzufügen"
+
+#. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, +project, #tag). Catalogue extraction does not change the input grammar.
+#: src/app/views-screen.tsx
+msgid "Add to {name} — tomorrow 9am, +project, #tag"
+msgstr "Zu {name} hinzufügen — tomorrow 9am, +project, #tag"
 
 #: src/components/dependency-editor.tsx
 msgid "Add work that must happen before this task."
@@ -1117,6 +1121,10 @@ msgstr "Visueller Editor"
 msgid "Built-in working spaces"
 msgstr "Integrierte Arbeitsbereiche"
 
+#: src/app/app-shell.tsx
+msgid "Busiest projects"
+msgstr "Aktivste Projekte"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
@@ -1340,7 +1348,7 @@ msgstr "Löschen und verschieben"
 msgid "Clear checklist items in the note on each repeat"
 msgstr "Die Kontrollkästchen in der Notiz bei jeder Wiederholung zurücksetzen"
 
-#: src/components/task-actions.tsx
+#: src/components/task-date-panel.tsx
 msgid "Clear due date"
 msgstr "Fälligkeitsdatum löschen"
 
@@ -1357,6 +1365,7 @@ msgid "Clear recorded occurrences?"
 msgstr "Erfasste Vorkommen löschen?"
 
 #: src/components/task-actions.tsx
+#: src/components/task-date-panel.tsx
 msgid "Clear scheduled date"
 msgstr "Planungsdatum löschen"
 
@@ -2087,6 +2096,7 @@ msgstr "Beim Verwerfen werden alle gespeicherten Wiederherstellungsdaten entfern
 #: src/app/bulk-task-actions.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
+#: src/components/task-capture.tsx
 msgid "Dismiss"
 msgstr "Ausblenden"
 
@@ -5199,6 +5209,10 @@ msgstr "Die erstellte TaskNote konnte nicht gefunden werden."
 msgid "The current scratchpad is unavailable."
 msgstr "Das aktuelle Scratchpad ist nicht verfügbar."
 
+#: src/components/task-date-panel.tsx
+msgid "The deadline"
+msgstr "Die Frist"
+
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "Die Löschung"
@@ -5805,6 +5819,10 @@ msgstr "Wenn ich es auswähle"
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
 msgstr "Wenn das vorherige Vorkommen abgeschlossen ist"
+
+#: src/components/task-date-panel.tsx
+msgid "When you plan to work on it"
+msgstr "Wann Sie daran arbeiten möchten"
 
 #: src/components/recurrence-field.tsx
 msgid "Which"

@@ -1,4 +1,5 @@
-import { taskDatePart } from "./task";
+import { taskDatePart, todayString } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 
 /**
  * Move a TaskNotes date or datetime by whole local calendar days while
@@ -47,4 +48,23 @@ export function setTaskDate(
     Number(target[3]),
   );
   return instant.toISOString().replace(".000Z", "Z");
+}
+
+/**
+ * Moves a task's plan to a day. A deadline already missed moves with it: the
+ * person has decided when the work happens, and leaving the old date would
+ * keep the task overdue wherever it was sent. A future deadline stays put.
+ */
+export function rescheduleInput(
+  task: Pick<TaskSummary, "scheduled" | "due">,
+  date: string,
+  today = todayString(),
+): Pick<UpdateTaskInput, "scheduled" | "due"> {
+  const due = taskDatePart(task.due);
+  return {
+    scheduled: setTaskDate(task.scheduled, date),
+    ...(due && due < today && date >= today
+      ? { due: setTaskDate(task.due, date) }
+      : {}),
+  };
 }

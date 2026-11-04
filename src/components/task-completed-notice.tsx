@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { TaskCompletion } from "./task-completion-motion";
 
-const NOTICE_MS = 6000;
+const NOTICE_MS = 10000;
 
 export function TaskCompletedNotice({
   completion,

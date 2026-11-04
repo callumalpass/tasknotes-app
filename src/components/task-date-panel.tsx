@@ -2,8 +2,12 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { useEffect, useId, useRef, useState } from "react";
 import { todayString } from "../domain/task";
 import { nextWeekStart } from "../app/keyboard-shortcuts";
-import { setTaskDate, shiftTaskDate } from "../domain/task-date-actions";
-import { formatTaskDate } from "../domain/task";
+import {
+  rescheduleInput,
+  setTaskDate,
+  shiftTaskDate,
+} from "../domain/task-date-actions";
+import { formatTaskDate, taskDatePart } from "../domain/task";
 import { parseTaskCapture } from "../domain/task-capture";
 import { useRepository } from "../app/repository-context";
 import { StandaloneCalendar } from "./tasknotes-controls";
@@ -36,7 +40,9 @@ export function TaskDatePanel({
   const today = todayString();
   const current = task[target];
   const shownDate = parsed?.text === text ? parsed.date : undefined;
-  const unreadable = Boolean(text.trim() && parsed?.text === text && !shownDate);
+  const unreadable = Boolean(
+    text.trim() && parsed?.text === text && !shownDate,
+  );
 
   useEffect(() => {
     const value = text.trim();
@@ -45,7 +51,10 @@ export function TaskDatePanel({
     void parseTaskCapture(value, configuration).then(
       ({ input }) => {
         if (requested.current === text)
-          setParsed({ text, date: input[target] ?? input.scheduled ?? input.due });
+          setParsed({
+            text,
+            date: input[target] ?? input.scheduled ?? input.due,
+          });
       },
       () => {
         if (requested.current === text) setParsed({ text });
@@ -55,7 +64,11 @@ export function TaskDatePanel({
 
   function apply(date: string) {
     const value = date.includes("T") ? date : setTaskDate(current, date);
-    onApply({ [target]: value });
+    onApply(
+      target === "scheduled"
+        ? { ...rescheduleInput(task, taskDatePart(date)), scheduled: value }
+        : { due: value },
+    );
   }
 
   return (
@@ -74,7 +87,9 @@ export function TaskDatePanel({
             onClick={() => setTarget(option)}
           >
             {option === "scheduled" ? t`Scheduled` : t`Due`}
-            {task[option] ? <small>{formatTaskDate(task[option])}</small> : null}
+            {task[option] ? (
+              <small>{formatTaskDate(task[option])}</small>
+            ) : null}
           </button>
         ))}
       </div>
@@ -95,12 +110,17 @@ export function TaskDatePanel({
           apply(shownDate);
         }}
       />
-      <p className={`task-date-hint${unreadable ? " is-error" : ""}`} id={hintId}>
+      <p
+        className={`task-date-hint${unreadable ? " is-error" : ""}`}
+        id={hintId}
+      >
         {shownDate
           ? t`Enter to set ${formatTaskDate(shownDate)}`
           : unreadable
             ? t`Couldn’t read that date`
-            : " "}
+            : target === "scheduled"
+              ? t`When you plan to work on it`
+              : t`The deadline`}
       </p>
       <div className="task-date-presets">
         <button
@@ -133,6 +153,17 @@ export function TaskDatePanel({
         value={current?.slice(0, 10)}
         onChoose={(date) => apply(date)}
       />
+      {current ? (
+        <button
+          className="task-date-clear"
+          disabled={busy}
+          role="menuitem"
+          type="button"
+          onClick={() => onApply({ [target]: null })}
+        >
+          {target === "scheduled" ? t`Clear scheduled date` : t`Clear due date`}
+        </button>
+      ) : null}
     </div>
   );
 }

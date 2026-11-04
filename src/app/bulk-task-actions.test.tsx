@@ -73,9 +73,10 @@ const setup = () => {
 it("announces only accepted rows, names failures and keeps them selected", async () => {
   const { store } = setup();
   render(<BulkTaskActions store={store} navigationKey="today" />);
-  fireEvent.change(screen.getByLabelText("Priority for selected tasks"), {
-    target: { value: "low" },
-  });
+  fireEvent.click(
+    screen.getByRole("combobox", { name: "Priority for selected tasks" }),
+  );
+  fireEvent.click(await screen.findByRole("option", { name: "Low" }));
   await waitFor(() => expect(store.busy).toBe(false));
   expect(screen.getByText("1 task updated")).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent(
@@ -118,7 +119,7 @@ it("excludes series and materialized occurrences without making any write", asyn
   expect(fixture.updateTask).not.toHaveBeenCalled();
   await waitFor(() =>
     expect(
-      screen.getByLabelText("Move selected tasks to project"),
+      screen.getByRole("combobox", { name: "Move selected tasks to project" }),
     ).toBeDisabled(),
   );
 });

@@ -210,9 +210,12 @@ export function TaskCalendarView({
   const items = useMemo(
     () =>
       withPendingMoves(built.items, pendingMoves, execution)
-        .filter((item) => !repeatsToday(item))
+        .filter(
+          (item) =>
+            !repeatsToday(item) && !(agenda && repeatsPlannedTask(item)),
+        )
         .map(withRevision),
-    [built, execution, pendingMoves],
+    [agenda, built, execution, pendingMoves],
   );
   const agendaRows = useCalendarAgenda({
     root: rootRef,
@@ -901,6 +904,19 @@ function repeatsToday(item: TaskCalendarItem): boolean {
   return (
     !!entry?.modelEntry.isOverdueOnToday &&
     taskDatePart(entry.row.task.scheduled) === todayString()
+  );
+}
+
+/** The agenda lists a task on the day planned; its row names the deadline. */
+function repeatsPlannedTask(item: TaskCalendarItem): boolean {
+  const entry = item.data?.metadata.entry;
+  const task = entry?.row.task;
+  const planned = taskDatePart(task?.scheduled);
+  return (
+    !!planned &&
+    !entry?.modelEntry.isOverdueOnToday &&
+    !task?.recurrence &&
+    planned !== calendarDay(String(item.start))
   );
 }
 

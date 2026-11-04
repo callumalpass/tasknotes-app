@@ -152,6 +152,8 @@ export interface TaskRepository {
   todayTaskCounts?(
     today: string,
   ): import("../../domain/today-summary").TodayTaskCounts | null;
+  /** Session metadata only, like todayTaskCounts. Never starts a read. */
+  projectShortcuts?(): import("../../domain/project-shortcuts").ProjectShortcut[];
   stats(): Promise<TaskStats>;
   /** Intent policy only, never evidence of READ readiness or write authority.
    * Explicit-only repositories must not seed view sources during navigation.

@@ -22,6 +22,7 @@ import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 import { TaskCoreProperties } from "./task-core-properties";
 import { TaskSubtasks } from "./task-subtasks";
 import { useTaskDetailKeys } from "./use-task-detail-keys";
+import { raisedPriorityColorOf } from "../domain/task-configuration";
 import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
@@ -748,6 +749,9 @@ function TaskEditor({
     const target = direction > 0 ? nextTask : previousTask;
     if (target && onNavigate) void leave(() => onNavigate(target));
   };
+  const ringColor = task.completed
+    ? undefined
+    : raisedPriorityColorOf(draft.priority, configuration);
   useTaskDetailKeys({
     onEscape: () => void leave(),
     onNavigate: onNavigate ? navigateAdjacent : undefined,
@@ -1029,7 +1033,12 @@ function TaskEditor({
           {!occurrenceDate && !task.occurrenceDate ? (
             <button
               type="button"
-              className="completion-control"
+              className={`completion-control${ringColor ? " has-priority" : ""}`}
+              style={
+                ringColor
+                  ? ({ "--priority-color": ringColor } as React.CSSProperties)
+                  : undefined
+              }
               aria-label={
                 task.completed
                   ? t({ message: "Reopen task" })

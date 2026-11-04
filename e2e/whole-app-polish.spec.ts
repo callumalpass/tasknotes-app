@@ -279,9 +279,8 @@ test("projects remember collapsing and provide a focused jump", async ({
   await expect(group.locator(".task-row")).toHaveCount(0);
   await page.reload();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await page
-    .getByRole("combobox", { name: "Jump to project" })
-    .selectOption("0");
+  await page.getByRole("combobox", { name: "Jump to project" }).click();
+  await page.getByRole("listbox").getByRole("option").first().click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(toggle).toBeFocused();
   await expect(group.locator(".task-row").first()).toBeVisible();

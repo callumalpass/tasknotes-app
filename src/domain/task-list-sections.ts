@@ -1,4 +1,8 @@
-import { setTaskDate, shiftTaskDate } from "./task-date-actions";
+import {
+  rescheduleInput,
+  setTaskDate,
+  shiftTaskDate,
+} from "./task-date-actions";
 import { taskDatePart, taskDayStanding, todayString } from "./task";
 
 import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
@@ -64,7 +68,7 @@ export function taskListSectionMoveInput(
   const input = { [field]: setTaskDate(task[field], targetDate) };
   // A missed deadline would keep the task overdue wherever it was dropped.
   const due = taskDatePart(task.due);
-  return destination === "later" && due && due < today
+  return destination !== "overdue" && due && due < today
     ? { ...input, due: setTaskDate(task.due, targetDate) }
     : input;
 }
@@ -76,9 +80,8 @@ function isSectionKey(value: string): value is TaskListSectionKey {
 /**
  * Updates that bring rows onto today with the same meaning as the `t`
  * shortcut and the Schedule today action: Scheduled moves to today, keeping
- * any time, and Due stays the deadline the person recorded. A row overdue
- * only by Due therefore gains today's Scheduled date and keeps its overdue
- * Due label. Each update carries the input that restores it.
+ * any time, and a missed Due moves with it. Each update carries the input
+ * that restores it.
  */
 export function scheduleRowsTodayUpdates(
   rows: readonly TaskViewRow[],
@@ -86,11 +89,17 @@ export function scheduleRowsTodayUpdates(
 ): { id: string; input: UpdateTaskInput; undo: UpdateTaskInput }[] {
   return rows
     .filter(({ task }) => !task.completed)
-    .map(({ task }) => ({
-      id: task.id,
-      input: { scheduled: setTaskDate(task.scheduled, today) },
-      undo: { scheduled: task.scheduled ?? null },
-    }));
+    .map(({ task }) => {
+      const input = rescheduleInput(task, today, today);
+      return {
+        id: task.id,
+        input,
+        undo: {
+          scheduled: task.scheduled ?? null,
+          ...("due" in input ? { due: task.due ?? null } : {}),
+        },
+      };
+    });
 }
 
 /**

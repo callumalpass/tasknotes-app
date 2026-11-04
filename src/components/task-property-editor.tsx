@@ -1,3 +1,7 @@
+import {
+  editableProperty,
+  type EditableProperty,
+} from "./task-property-kind";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import {
@@ -32,13 +36,6 @@ import type {
   TaskUserMappedField,
 } from "../domain/task-configuration";
 import type { TaskPropertyEditorAnchor, TaskRowDetail } from "./task-row";
-
-type EditableProperty =
-  | {
-      kind: "status" | "priority" | "scheduled" | "due" | "recurrence";
-      key: string;
-    }
-  | { kind: "custom"; key: string; field: TaskUserMappedField };
 
 export function TaskPropertyEditor({
   task,
@@ -470,32 +467,6 @@ function customInputValue(
       .map((item) => item.trim())
       .filter(Boolean);
   return value;
-}
-
-function editableProperty(
-  key: string,
-  configuration: TaskCollectionConfiguration,
-): EditableProperty | null {
-  if (key.startsWith("file.")) return null;
-  const normalized = notePropertyName(key);
-  const semantic = (
-    ["status", "priority", "scheduled", "due", "recurrence"] as const
-  ).find(
-    (kind) =>
-      normalized === kind || normalized === configuration.fieldMapping[kind],
-  );
-  if (semantic) return { kind: semantic, key: normalized };
-  const field = configuration.userFields.find(
-    (candidate) => candidate.key === normalized,
-  );
-  return field && !field.readOnly
-    ? { kind: "custom", key: normalized, field }
-    : null;
-}
-
-function notePropertyName(key: string): string {
-  if (key.startsWith("note.")) return key.slice(5);
-  return /^note\[(["'])(.+)\1\]$/.exec(key)?.[2] ?? key;
 }
 
 function propertyValue(

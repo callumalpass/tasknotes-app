@@ -99,7 +99,7 @@ describe("sectionTaskViewRows", () => {
 });
 
 describe("scheduleRowsTodayUpdates", () => {
-  it("schedules overdue rows today like the t shortcut, keeping Due", () => {
+  it("schedules overdue rows today like the t shortcut, moving only a missed Due", () => {
     const rows = [
       row("scheduled", { scheduled: "2026-07-20T09:30", due: "2026-07-30" }),
       row("due-only", { due: "2026-07-24" }),
@@ -118,8 +118,8 @@ describe("scheduleRowsTodayUpdates", () => {
       },
       {
         id: "due-only",
-        input: { scheduled: "2026-07-26" },
-        undo: { scheduled: null },
+        input: { scheduled: "2026-07-26", due: "2026-07-26" },
+        undo: { scheduled: null, due: "2026-07-24" },
       },
       {
         id: "repeating",

@@ -1,3 +1,4 @@
+import { projectShortcuts } from "../domain/project-shortcuts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -511,6 +512,10 @@ export class DemoTaskRepository implements TaskRepository {
       counts.overdue += part.overdue;
     }
     return counts;
+  }
+
+  projectShortcuts() {
+    return projectShortcuts(this.tasks.values());
   }
 
   async stats(): Promise<TaskStats> {

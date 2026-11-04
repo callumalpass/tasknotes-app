@@ -1673,6 +1673,7 @@
 @media (max-width: 640px) {
   .today-overdue {
     display: block;
+    white-space: normal;
   }
   .today-overdue-separator {
     display: none;
@@ -1893,4 +1894,9 @@
 
 .starter-views-offer button {
   min-height: 44px;
+}
+
+/* Lists read at a measure: titles and their details stay within one glance. */
+.views-screen.has-list-capture:not(.detail-inspector *) {
+  width: min(100%, 860px);
 }

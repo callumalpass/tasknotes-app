@@ -4,6 +4,7 @@ import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
 import {
+  Folder,
   ClockAlert,
   PanelLeftClose,
   PanelLeftOpen,
@@ -37,6 +38,8 @@ import {
 } from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
+import { onProjectJump, requestProjectJump } from "./project-jump";
+import { useProjectShortcuts } from "./use-project-shortcuts";
 import {
   clearUndoHistory,
   forgetUndo,
@@ -110,6 +113,7 @@ import {
   type CalendarPreferences,
 } from "./calendar-preferences";
 
+import type { ProjectShortcut } from "../domain/project-shortcuts";
 import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
 
@@ -117,6 +121,7 @@ export function AppShell() {
   const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
   const todayCounts = useTodayTaskCounts();
+  const projectLinks = useProjectShortcuts();
   const [sidebarCollapsed, setSidebarCollapsed] =
     useState(readSidebarCollapsed);
   const toggleSidebar = useCallback(
@@ -193,6 +198,16 @@ export function AppShell() {
   useEffect(() => {
     routeRef.current = route;
   });
+  useEffect(
+    () =>
+      onProjectJump(() => {
+        const key = views?.find(
+          (view) => starterViewKind(view) === "projects",
+        )?.key;
+        if (key) navigate({ page: "views", key });
+      }),
+    [navigate, views],
+  );
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
   const undoCompletion = useCallback(
     async ({ task, occurrenceDate, advanced }: TaskCompletion) => {
@@ -434,6 +449,7 @@ export function AppShell() {
           homeKey={homeKey}
           onMove={moveNavigationView}
           todayCounts={todayCounts}
+          projects={projectLinks}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -764,6 +780,31 @@ function EmptyViewsNotice({
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </section>
+  );
+}
+
+function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
+  const { t } = useLingui();
+  if (!projects.length) return null;
+  return (
+    <div
+      aria-label={t`Busiest projects`}
+      className="navigation-project-section"
+      role="group"
+    >
+      {projects.map(({ label, count }) => (
+        <button
+          key={label}
+          title={label}
+          type="button"
+          onClick={() => requestProjectJump(label)}
+        >
+          <Folder aria-hidden="true" size={15} strokeWidth={1.7} />
+          <span>{label}</span>
+          <small>{count}</small>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -1117,6 +1158,7 @@ export function Navigation({
   onMove,
   onCommands,
   todayCounts,
+  projects = [],
 }: {
   active: string;
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
@@ -1129,6 +1171,7 @@ export function Navigation({
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
   todayCounts?: TodayTaskCounts | null;
+  projects?: ProjectShortcut[];
 }) {
   const { t } = useLingui();
   const navigationEntries: {
@@ -1310,13 +1353,16 @@ export function Navigation({
     <>
       {items.map(renderDestination)}
       {mode === "desktop" ? (
-        <div
-          aria-label={t({ message: "Views" })}
-          className="navigation-view-section"
-          role="group"
-        >
-          {additionalViews.map(renderDestination)}
-        </div>
+        <>
+          <div
+            aria-label={t({ message: "Views" })}
+            className="navigation-view-section"
+            role="group"
+          >
+            {additionalViews.map(renderDestination)}
+          </div>
+          <SidebarProjects projects={projects} />
+        </>
       ) : (
         <>
           <button

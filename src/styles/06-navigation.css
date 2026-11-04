@@ -962,3 +962,53 @@
     grid-column: 1 / -1;
   }
 }
+
+.navigation-project-section {
+  display: none;
+}
+
+@media (min-width: 840px) {
+  .navigation-project-section {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .navigation-rail .navigation-project-section button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 36px;
+    padding: 0 10px;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--type-supporting);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+  }
+
+  .navigation-rail .navigation-project-section button:hover {
+    color: var(--ink);
+    background: var(--paper-soft);
+  }
+
+  .navigation-project-section span {
+    overflow: hidden;
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .navigation-project-section small {
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+}

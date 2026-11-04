@@ -43,8 +43,8 @@ import { useOverlay } from "./overlays/use-overlay";
 import { useExitingValue, usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget } from "../domain/completion";
-import { activeTimeEntry } from "../domain/task";
-import { shiftTaskDate } from "../domain/task-date-actions";
+import { activeTimeEntry, taskDatePart } from "../domain/task";
+import { rescheduleInput, shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
 import { taskRecordLink } from "../domain/task-links";
@@ -201,7 +201,8 @@ export function TaskActions({
           ? "[data-safe-action]"
           : isOrganizeEditor(panel)
             ? "[data-panel-back]"
-            : panel === "dates" && !matchMedia("(pointer: coarse)").matches
+            : panel === "dates" &&
+                !window.matchMedia?.("(pointer: coarse)").matches
               ? ".task-date-input"
               : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
@@ -525,9 +526,7 @@ export function TaskActions({
                           iconColor={option.color}
                           radio
                           onClick={() =>
-                            void run(() =>
-                              change({ status: option.value }),
-                            )
+                            void run(() => change({ status: option.value }))
                           }
                         />
                       ))
@@ -543,9 +542,7 @@ export function TaskActions({
                           labelColor={option.color}
                           radio
                           onClick={() =>
-                            void run(() =>
-                              change({ priority: option.value }),
-                            )
+                            void run(() => change({ priority: option.value }))
                           }
                         />
                       ))
@@ -577,28 +574,6 @@ export function TaskActions({
                           )
                         }
                       />
-                      {task.due ? (
-                        <MenuAction
-                          disabled={busy}
-                          icon={Trash2}
-                          label={t({ message: "Clear due date" })}
-                          onClick={() =>
-                            void run(() => change({ due: null }))
-                          }
-                        />
-                      ) : null}
-                      {task.scheduled ? (
-                        <MenuAction
-                          disabled={busy}
-                          icon={Trash2}
-                          label={t({ message: "Clear scheduled date" })}
-                          onClick={() =>
-                            void run(() =>
-                              change({ scheduled: null }),
-                            )
-                          }
-                        />
-                      ) : null}
                       {onOpen ? (
                         <MenuAction
                           icon={Pencil}
@@ -784,9 +759,12 @@ export function TaskActions({
     const { t } = useLingui();
     const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
       void run(() =>
-        change({
-          scheduled: shortcutSchedule(action, task.scheduled),
-        }),
+        change(
+          rescheduleInput(
+            task,
+            taskDatePart(shortcutSchedule(action, task.scheduled)),
+          ),
+        ),
       );
     };
     return (
@@ -816,9 +794,7 @@ export function TaskActions({
                 disabled={busy || !task.scheduled}
                 icon={CalendarOff}
                 label={t({ message: "Clear scheduled date" })}
-                onClick={() =>
-                  void run(() => change({ scheduled: null }))
-                }
+                onClick={() => void run(() => change({ scheduled: null }))}
               />
             </div>
             <div className="task-actions-quick-row">
@@ -831,9 +807,7 @@ export function TaskActions({
                   key={option.value}
                   label={t`Priority: ${option.label}`}
                   onClick={() =>
-                    void run(() =>
-                      change({ priority: option.value }),
-                    )
+                    void run(() => change({ priority: option.value }))
                   }
                 />
               ))}
@@ -958,9 +932,7 @@ export function TaskActions({
         className="task-actions-organize-editor"
         onSubmit={(event) => {
           event.preventDefault();
-          void run(() =>
-            change({ [field]: organizeDraft[field] }),
-          );
+          void run(() => change({ [field]: organizeDraft[field] }));
         }}
       >
         <MultiValueField

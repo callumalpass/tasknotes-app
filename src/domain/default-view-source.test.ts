@@ -60,6 +60,7 @@ describe("TaskNotes starter views", () => {
       'note["Start day"]',
       'note["Due day"]',
       'note["Project links"]',
+      'note["tags"]',
     ]);
     expect(today.views[0].sort[0]).toEqual({
       property: 'note["Rank key"]',

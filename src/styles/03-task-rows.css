@@ -219,6 +219,23 @@
   background: var(--accent-soft, var(--paper-sunken));
 }
 
+.task-actions-menu .task-date-clear {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-clear:hover {
+  color: var(--danger);
+}
+
 .task-actions-menu {
   position: fixed;
   z-index: 40;
@@ -611,7 +628,7 @@
 }
 
 /* A raised priority tints the ring, so rank reads without leaving the
-   checkbox column. A coloured status below takes precedence. */
+   checkbox column. */
 .completion-control.has-priority span {
   border-width: 2px;
   border-color: var(--priority-color);
@@ -623,23 +640,30 @@
   border-color: oklch(from var(--priority-color) max(l, 0.68) c h);
 }
 
-/* A coloured, non-default status draws the ring itself, slightly heavier, and
-   names the status in the control's label and tooltip. Its lightness is
-   clamped so a pale or dark stored colour keeps 3:1 against the paper. */
-.completion-control.has-status span {
-  border-width: 2px;
-  border-color: var(--status-color);
-  border-color: oklch(from var(--status-color) min(l, 0.58) c h);
+/* A coloured, non-default status sets a dot inside the ring, and names the
+   status in the control's label and tooltip. Its lightness is clamped so a
+   pale or dark stored colour keeps 3:1 against the paper. */
+.completion-control.has-status span::before {
+  position: absolute;
+  inset: 4.5px;
+  border-radius: 50%;
+  background: var(--status-color);
+  background: oklch(from var(--status-color) min(l, 0.58) c h);
+  content: "";
 }
 
-:root[data-theme="dark"] .completion-control.has-status span {
-  border-color: oklch(from var(--status-color) max(l, 0.7) c h);
+:root[data-theme="dark"] .completion-control.has-status span::before {
+  background: oklch(from var(--status-color) max(l, 0.7) c h);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .completion-control.has-status span {
-    border-color: oklch(from var(--status-color) max(l, 0.7) c h);
+  :root:not([data-theme]) .completion-control.has-status span::before {
+    background: oklch(from var(--status-color) max(l, 0.7) c h);
   }
+}
+
+.completion-control.has-status[aria-pressed="true"] span::before {
+  display: none;
 }
 
 .completion-control[aria-busy="true"] {
@@ -924,10 +948,6 @@
 
 /* Wide lists read like a table: the project settles at the far edge. */
 @media (min-width: 840px) {
-  .task-row:not(.kanban-card *) .task-row-property.is-project {
-    margin-left: auto;
-    justify-content: flex-end;
-  }
 }
 
 .task-property-editor-scrim {

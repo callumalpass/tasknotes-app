@@ -78,6 +78,7 @@ export function taskNotesDefaultBaseDocument(
   const priority = note(fields.priority);
   const projects = note(fields.projects);
   const title = note(fields.title);
+  const tags = note("tags");
   const manualOrder = basesProperty(fields.sortOrder);
   const todayFilter = effectiveTaskDayFilter(scheduled, due);
 
@@ -96,7 +97,7 @@ export function taskNotesDefaultBaseDocument(
           filters: {
             and: [...activeTaskFilters(configuration), todayFilter],
           },
-          order: [title, scheduled, due, projects],
+          order: [title, scheduled, due, projects, tags],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: priority, direction: "ASC" },

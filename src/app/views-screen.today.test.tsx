@@ -55,7 +55,7 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late-scheduled", input: { scheduled: `${today}T09:30` } },
-      { id: "late-due", input: { scheduled: today } },
+      { id: "late-due", input: { scheduled: today, due: today } },
     ]),
   );
 
@@ -63,8 +63,6 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
   const undo = await screen.findByRole("button", { name: "Undo" });
   expect(screen.getByText("Moved 2 tasks to today")).toBeVisible();
   await waitFor(() => expect(undo).toHaveFocus());
-  // Due-only tasks keep their deadline; only Scheduled changed.
-  expect(tasks[1].due).toBe(shiftTaskDate(today, -1));
 
   fireEvent.click(undo);
   await waitFor(() =>
@@ -73,7 +71,10 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
         id: "late-scheduled",
         input: { scheduled: `${shiftTaskDate(today, -3)}T09:30` },
       },
-      { id: "late-due", input: { scheduled: null } },
+      {
+        id: "late-due",
+        input: { scheduled: null, due: shiftTaskDate(today, -1) },
+      },
     ]),
   );
   const overdue = await screen.findByRole("button", { name: "Overdue 2" });

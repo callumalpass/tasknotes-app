@@ -318,7 +318,7 @@ test("a completed row lingers checked, folds away, and Undo restores it", async 
   await expect(notice).toHaveCount(0);
 });
 
-test("dates inside Overdue read as ordinary metadata", async ({ page }) => {
+test("dates inside Overdue read as late", async ({ page }) => {
   await page.goto("?demo=12");
   const dangerColour = await page.evaluate(() => {
     const probe = document.createElement("span");
@@ -339,7 +339,7 @@ test("dates inside Overdue read as ordinary metadata", async ({ page }) => {
         ),
       ),
     );
-  expect(colours).not.toContain(dangerColour);
+  expect(colours).toContain(dangerColour);
 });
 
 test("desktop sidebar destinations reorder by keyboard and drag", async ({

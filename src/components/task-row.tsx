@@ -40,10 +40,15 @@ import { useRepository } from "../app/repository-context";
 import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
+import { canEditProperty } from "./task-property-kind";
 import { useExitingValue } from "./overlays/use-presence";
 import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
+import { requestProjectJump } from "../app/project-jump";
+import { rescheduleInput } from "../domain/task-date-actions";
+import { projectLabel } from "../domain/project-shortcuts";
+import { raisedPriorityColorOf } from "../domain/task-configuration";
 import { rememberUndo } from "../app/undo-history";
 import {
   COMPLETION_FOLD_MS,
@@ -129,7 +134,7 @@ export function TaskRow({
   const statusColor = distinctStatus ? status?.color : undefined;
   const raisedPriorityColor = displayedTask.completed
     ? undefined
-    : raisedColor(task, configuration);
+    : raisedPriorityColorOf(task.priority, configuration);
   const [seenCompleted, setSeenCompleted] = useState(displayedTask.completed);
   if (seenCompleted !== displayedTask.completed) {
     setSeenCompleted(displayedTask.completed);
@@ -141,6 +146,16 @@ export function TaskRow({
     anchor: TaskPropertyEditorAnchor;
   } | null>(null);
   const shownEditor = useExitingValue(editing);
+  function openDetail(detail: TaskRowDetail, trigger: HTMLButtonElement) {
+    if (isProjectDetail(detail, configuration)) {
+      requestProjectJump(projectLabel(task.projects[0] ?? detail.value));
+    } else if (canEditProperty(detail.key, configuration)) {
+      editorTrigger.current = trigger;
+      setEditing({ detail, anchor: editorAnchor(trigger) });
+    } else {
+      onOpen(task, occurrence?.date);
+    }
+  }
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const allDetails = withRaisedPriority(
     details ?? defaultTaskDetails(displayedTask, metadata, configuration),
@@ -177,11 +192,17 @@ export function TaskRow({
     },
     schedule: async (scheduled) => {
       try {
-        const earlier = task.scheduled ?? null;
-        await updateTask(task.id, { scheduled });
+        const earlier = {
+          scheduled: task.scheduled ?? null,
+          due: task.due ?? null,
+        };
+        await updateTask(task.id, {
+          ...rescheduleInput(task, taskDatePart(scheduled)),
+          scheduled,
+        });
         rememberUndo({
           label: task.title,
-          run: () => updateTask(task.id, { scheduled: earlier }),
+          run: () => updateTask(task.id, earlier),
         });
         actionFeedback();
       } catch (reason) {
@@ -268,7 +289,7 @@ export function TaskRow({
       }}
     >
       <button
-        className={`completion-control${statusColor ? " has-status" : raisedPriorityColor ? " has-priority" : ""}`}
+        className={`completion-control${statusColor ? " has-status" : ""}${raisedPriorityColor ? " has-priority" : ""}`}
         type="button"
         aria-label={`${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
         aria-pressed={displayedTask.completed}
@@ -276,14 +297,14 @@ export function TaskRow({
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
         style={
-          // The stored colour draws the ring; the label names the status.
-          statusColor
-            ? ({ "--status-color": statusColor } as React.CSSProperties)
-            : raisedPriorityColor
-              ? ({
-                  "--priority-color": raisedPriorityColor,
-                } as React.CSSProperties)
-              : undefined
+          // Priority draws the ring and status the dot inside it; the label
+          // names the status.
+          {
+            ...(statusColor ? { "--status-color": statusColor } : {}),
+            ...(raisedPriorityColor
+              ? { "--priority-color": raisedPriorityColor }
+              : {}),
+          } as React.CSSProperties
         }
         onClick={() => void complete()}
       >
@@ -336,13 +357,7 @@ export function TaskRow({
                   }
                   aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
-                  onClick={(event) => {
-                    editorTrigger.current = event.currentTarget;
-                    setEditing({
-                      detail,
-                      anchor: editorAnchor(event.currentTarget),
-                    });
-                  }}
+                  onClick={(event) => openDetail(detail, event.currentTarget)}
                 >
                   <span>{detail.label}</span>
                   <strong>
@@ -371,13 +386,7 @@ export function TaskRow({
                 key={detail.key}
                 title={`${detail.label}: ${detail.value}`}
                 type="button"
-                onClick={(event) => {
-                  editorTrigger.current = event.currentTarget;
-                  setEditing({
-                    detail,
-                    anchor: editorAnchor(event.currentTarget),
-                  });
-                }}
+                onClick={(event) => openDetail(detail, event.currentTarget)}
               >
                 <PropertyGlyph detail={detail} />
                 {isDueDetail(detail, configuration)
@@ -648,6 +657,14 @@ function withRaisedPriority(
   ];
 }
 
+function isProjectDetail(
+  detail: TaskRowDetail,
+  { fieldMapping }: RowConfiguration,
+): boolean {
+  const key = propertyField(detail);
+  return key === fieldMapping.projects || key === "projects";
+}
+
 function isDueDetail(
   detail: TaskRowDetail,
   { fieldMapping }: RowConfiguration,
@@ -667,22 +684,6 @@ function isLateSchedule(
     !task.completed &&
     Boolean(task.scheduled && isTaskDateOverdue(task.scheduled))
   );
-}
-
-/** The stored colour of a priority above the collection's default. */
-function raisedColor(
-  task: TaskSummary,
-  configuration: RowConfiguration,
-): string | undefined {
-  const priority = configuration.priorities.find(
-    (option) => option.value === task.priority,
-  );
-  const fallback = configuration.priorities.find(
-    (option) => option.value === configuration.defaults.priority,
-  );
-  return priority && priority.weight > (fallback?.weight ?? 0)
-    ? priority.color
-    : undefined;
 }
 
 function detailPriorityColor(

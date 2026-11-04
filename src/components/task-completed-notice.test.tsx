@@ -83,7 +83,7 @@ it("leaves on its own unless focus is inside it", () => {
     (document.activeElement as HTMLElement).blur();
   });
   act(() => {
-    vi.advanceTimersByTime(6_000);
+    vi.advanceTimersByTime(10_000);
   });
   expect(dismiss).toHaveBeenCalledOnce();
 });

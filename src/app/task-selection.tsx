@@ -1,4 +1,4 @@
-import { Trans } from "@lingui/react/macro";
+import { useLingui } from "@lingui/react/macro";
 import { CheckCheck } from "lucide-react";
 import {
   useContext,
@@ -66,12 +66,18 @@ export function TaskSelectionList({
 }
 
 export function SelectTasksOption() {
+  const { t } = useLingui();
   const store = useContext(SelectionContext);
   if (!store) return null;
   return (
-    <button type="button" onClick={() => store.enter()}>
+    <button
+      aria-label={t`Select tasks`}
+      className="view-header-action"
+      title={t`Select tasks`}
+      type="button"
+      onClick={() => store.enter()}
+    >
       <CheckCheck aria-hidden="true" size={18} />
-      <Trans>Select tasks</Trans>
     </button>
   );
 }

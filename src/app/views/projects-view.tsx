@@ -3,13 +3,15 @@ import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { countLabel } from "../../i18n/default-labels";
 import { ChevronRight, Plus } from "lucide-react";
-import { useContext, useId, useState } from "react";
+import { useContext, useEffect, useEffectEvent, useId, useState } from "react";
 import {
   sectionCollapsed,
   saveSectionCollapsed,
 } from "../../application/section-preferences";
 
 import { TaskRow } from "../../components/task-row";
+import { TaskNotesSelect } from "../../components/tasknotes-controls";
+import { onProjectJump, takeProjectJump } from "../project-jump";
 import {
   TaskCompletionHoldsContext,
   TaskDeparturesContext,
@@ -123,6 +125,27 @@ export function ProjectsView({
         left.label.localeCompare(right.label) ||
         (left.path ?? "").localeCompare(right.path ?? ""),
     );
+  const jumpTo = (label: string | null) => {
+    const index = ordered.findIndex((project) => project.label === label);
+    const project = ordered[index];
+    if (!project) return;
+    collapse(project.key, false);
+    // The jump picker returns focus to itself after onChange, so wait a frame.
+    requestAnimationFrame(() => {
+      const heading = document.getElementById(`${id}-${index}`);
+      heading?.querySelector("button")?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ block: "start" });
+    });
+  };
+  const takeJump = useEffectEvent(() => jumpTo(takeProjectJump()));
+  useEffect(() => {
+    const frame = requestAnimationFrame(takeJump);
+    const stop = onProjectJump(takeJump);
+    return () => {
+      cancelAnimationFrame(frame);
+      stop();
+    };
+  }, []);
   if (!ordered.length)
     return (
       <div className="plain-empty">
@@ -145,29 +168,17 @@ export function ProjectsView({
       <div className="projects-view">
         <label className="project-index">
           <span>{countLabel(ordered.length, "project")}</span>
-          <select
-            aria-label={t({ message: "Jump to project" })}
+          <TaskNotesSelect
+            ariaLabel={t({ message: "Jump to project" })}
+            options={ordered.map((project) => ({
+              value: project.label,
+              label: `${project.label} (${project.count})`,
+              description: project.path,
+            }))}
+            placeholder={t({ message: "Jump to project" })}
             value=""
-            onChange={(event) => {
-              const index = Number(event.target.value);
-              const project = ordered[index];
-              if (!project) return;
-              collapse(project.key, false);
-              const heading = document.getElementById(`${id}-${index}`);
-              heading?.querySelector("button")?.focus({ preventScroll: true });
-              heading?.scrollIntoView({ block: "start" });
-            }}
-          >
-            <option value="" disabled>
-              <Trans>Jump to project</Trans>
-            </option>
-            {ordered.map((project, index) => (
-              <option key={project.key} value={index}>
-                {project.label}
-                {project.path ? ` — ${project.path}` : ""} ({project.count})
-              </option>
-            ))}
-          </select>
+            onChange={jumpTo}
+          />
         </label>
         {ordered.map((project, index) => {
           const isCollapsed =

@@ -1,3 +1,4 @@
+import { projectShortcuts } from "../domain/project-shortcuts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -1183,6 +1184,12 @@ export class MdbaseTaskRepository implements TaskRepository {
 
   todayTaskCounts(today: string) {
     return this.taskIndexReady ? this.cache.todayCounts(today) : null;
+  }
+
+  projectShortcuts() {
+    return this.taskIndexReady
+      ? projectShortcuts([...this.cache.values()].map(({ task }) => task))
+      : [];
   }
 
   async stats(): Promise<TaskStats> {

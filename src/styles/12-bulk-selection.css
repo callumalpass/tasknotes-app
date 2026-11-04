@@ -180,3 +180,9 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
 }
+
+/* The bar sits at the foot of the screen, so its menus open upward. */
+.bulk-actions .tasknotes-popover {
+  top: auto;
+  bottom: calc(100% + 6px);
+}

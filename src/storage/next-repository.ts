@@ -1,3 +1,4 @@
+import { projectShortcuts } from "../domain/project-shortcuts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -2716,6 +2717,12 @@ export class NextTaskRepository implements TaskRepository {
 
   todayTaskCounts(today: string) {
     return this.indexReady ? this.cache.todayCounts(today) : null;
+  }
+
+  projectShortcuts() {
+    return this.indexReady
+      ? projectShortcuts([...this.cache.values()].map(({ task }) => task))
+      : [];
   }
 
   async stats() {
