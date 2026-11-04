@@ -629,7 +629,7 @@ function ManualTaskRows({
         configuration,
       ) !== null),
   );
-  const shownLanes = previewing
+  const previewLanes = previewing
     ? previewDrop<TaskListLane, TaskViewRow>(
         lanes,
         (row) => row.task.id,
@@ -637,6 +637,13 @@ function ManualTaskRows({
         drop,
       )
     : lanes;
+  // Empty day sections are drop destinations, so they only appear for a drag.
+  const shownLanes =
+    daySections && !dragging
+      ? previewLanes.filter(
+          (lane) => lane.rows.length || lane.key === "section:today",
+        )
+      : previewLanes;
   const laneOfTask = new Map(
     lanes.flatMap((lane) =>
       lane.rows.map((row) => [row.task.id, lane] as const),
@@ -696,7 +703,7 @@ function ManualTaskRows({
         {virtualized ? (
           <div className={manualOrder ? "manual-order-list" : undefined}>
             <VirtualTaskList
-              lanes={lanes}
+              lanes={shownLanes}
               grouped={grouped}
               daySections={daySections}
               preferenceScope={preferenceScope}

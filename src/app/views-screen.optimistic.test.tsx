@@ -1033,7 +1033,7 @@ it("moves a task between reusable day sections with the shared list move path", 
   });
   const press = { button: 0, isPrimary: true, pointerId: 9 };
   expect(screen.queryByText("Drop here")).toBeNull();
-  expect(screen.getAllByText("No tasks")).toHaveLength(2);
+  expect(screen.queryByText("No tasks")).toBeNull();
   fireEvent.pointerDown(handle, press);
   expect(screen.getAllByText("Drop here")).toHaveLength(2);
   fireEvent.pointerCancel(handle, press);
@@ -1058,11 +1058,9 @@ it("moves a task between reusable day sections with the shared list move path", 
       ).getByText("Overdue task"),
     ).toBeVisible(),
   );
-  expect(screen.getByText("Anytime")).toBeVisible();
-  expect(screen.getByText("Later")).toBeVisible();
-  expect(
-    within(screen.getByText("Later").closest("section")!).getByText("No tasks"),
-  ).toBeVisible();
+  // Destinations that stayed empty leave the page when the drag ends.
+  expect(screen.queryByText("Anytime")).toBeNull();
+  expect(screen.queryByText("Later")).toBeNull();
 });
 
 it("drags a list row from anywhere on the row with a mouse", async () => {

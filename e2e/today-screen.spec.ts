@@ -21,10 +21,10 @@ test("moves overdue work to today from the Overdue heading, with Undo", async ({
   await move.focus();
   await page.keyboard.press("Enter");
 
-  // Manual order keeps the emptied section as a drop destination.
-  await expect(
-    page.getByRole("button", { name: "Overdue 0", exact: true }),
-  ).toBeVisible();
+  // An emptied section leaves the page until a drag needs it as a destination.
+  await expect(page.getByRole("button", { name: /^Overdue \d+$/ })).toHaveCount(
+    0,
+  );
   await expect(move).toHaveCount(0);
   await expect(
     section(page, "Today").getByText("Confirm next week’s interviews"),
