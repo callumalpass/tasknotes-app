@@ -180,6 +180,17 @@ describe("ViewEditor", () => {
     ]);
   });
 
+  it("closes an untouched new view without asking", async () => {
+    const onClose = vi.fn();
+    renderEditor({ repository: repository({}), onClose });
+    await screen.findByLabelText("View name");
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Close view editor" }).at(-1)!,
+    );
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("guards unsaved changes but closes an untouched existing view directly", async () => {
     const onClose = vi.fn();
     const source = baseSource(

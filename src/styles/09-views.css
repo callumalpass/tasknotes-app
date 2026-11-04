@@ -1940,6 +1940,9 @@
   .app-shell:not(:has(.bottom-navigation)) .view-detail.is-kanban-view {
     height: 100dvh;
   }
+  .app-shell:not(:has(.bottom-navigation)) .page-surface:has(.is-kanban-view) {
+    padding-bottom: 0;
+  }
   .view-detail.is-kanban-view > .kanban-board {
     padding-bottom: calc(44px + 16px + 32px);
   }

@@ -97,10 +97,6 @@ test("opens the original held client without relay traffic and preserves navigat
     .getByRole("dialog", { name: "New view" })
     .getByRole("button", { name: "Close view editor" })
     .click();
-  await page
-    .getByRole("alertdialog", { name: "Discard changes?" })
-    .getByRole("button", { name: "Discard changes" })
-    .click();
   await expect(
     page.getByRole("button", { name: "Remove Search from navigation" }),
   ).toBeVisible();

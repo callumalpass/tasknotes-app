@@ -554,3 +554,18 @@ test("s opens status from a row and the palette offers it", async ({
   await page.keyboard.type("status");
   await expect(page.getByRole("option", { name: /Set status/ })).toBeVisible();
 });
+
+test("a board opened from Views fills the phone without a spare gutter", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "Phone layout.");
+  await page.goto(workBoard);
+  await expect(page.locator(".kanban-column").first()).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+      ),
+    )
+    .toBeLessThanOrEqual(0);
+});

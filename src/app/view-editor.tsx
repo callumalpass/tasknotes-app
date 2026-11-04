@@ -101,8 +101,9 @@ export function ViewEditor({
   );
   const preview =
     livePreview.kind === "live" ? livePreview : (currentPreview ?? livePreview);
-  const dirty =
-    draft !== null && (source === null || fingerprint !== initialFingerprint);
+  const changed = draft !== null && fingerprint !== initialFingerprint;
+  // A new view can be saved as it stands; only an edit is worth guarding.
+  const dirty = changed || (draft !== null && source === null);
 
   useEffect(() => {
     let active = true;
@@ -167,21 +168,21 @@ export function ViewEditor({
   }, [draft, view]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!changed) return;
     const beforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
     };
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [dirty]);
+  }, [changed]);
 
   const requestClose = useCallback(() => {
-    if (dirty) {
+    if (changed) {
       setConfirmation("discard");
       return;
     }
     onClose();
-  }, [dirty, onClose]);
+  }, [changed, onClose]);
 
   useOverlay({
     open: true,
