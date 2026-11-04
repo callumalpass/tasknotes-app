@@ -346,8 +346,10 @@ test("a task's circle selects rather than completes while selecting", async ({
 });
 
 test("a known project with spaces is typed by its plain name", async ({
+  isMobile,
   page,
 }) => {
+  test.skip(isMobile, "Phones capture from the Add task sheet.");
   await page.goto("?demo=60");
   await page
     .locator(".quick-capture input")

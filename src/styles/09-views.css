@@ -1743,10 +1743,11 @@
 }
 /* A quiet heading action: it reads as part of the heading, not a button. */
 .section-heading.has-action {
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 0 12px;
 }
 .section-heading.has-action > h2 {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 .section-heading-action {
