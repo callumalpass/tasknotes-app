@@ -22,16 +22,18 @@ type DateTarget = "scheduled" | "due";
 export function TaskDatePanel({
   busy,
   task,
+  initialTarget,
   onApply,
 }: {
   busy: boolean;
-  task: TaskSummary;
+  task: Pick<TaskSummary, "scheduled" | "due">;
+  initialTarget?: DateTarget;
   onApply(input: UpdateTaskInput): void;
 }) {
   const { t } = useLingui();
   const { configuration } = useRepository();
   const [target, setTarget] = useState<DateTarget>(
-    task.due && !task.scheduled ? "due" : "scheduled",
+    initialTarget ?? (task.due && !task.scheduled ? "due" : "scheduled"),
   );
   const [text, setText] = useState("");
   const [parsed, setParsed] = useState<{ text: string; date?: string }>();
@@ -63,6 +65,7 @@ export function TaskDatePanel({
   }, [configuration, target, text]);
 
   function apply(date: string) {
+    if (busy) return;
     const value = date.includes("T") ? date : setTaskDate(current, date);
     onApply(
       target === "scheduled"
@@ -123,11 +126,7 @@ export function TaskDatePanel({
               : t`The deadline`}
       </p>
       <div className="task-date-presets">
-        <button
-          disabled={busy}
-          type="button"
-          onClick={() => apply(today)}
-        >
+        <button disabled={busy} type="button" onClick={() => apply(today)}>
           <Trans>Today</Trans>
         </button>
         <button
@@ -147,7 +146,7 @@ export function TaskDatePanel({
       </div>
       <StandaloneCalendar
         key={target}
-        value={current?.slice(0, 10)}
+        value={taskDatePart(current)}
         onChoose={(date) => apply(date)}
       />
       {current ? (

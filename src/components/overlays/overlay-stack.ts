@@ -222,6 +222,7 @@ export function registerOverlay(
     }
     if (wasTop && layer.restore)
       queueMicrotask(() => {
+        if (layers.some((current) => current.root === layer.root)) return;
         const target = layer.returnFocus;
         if (target?.isConnected && available(target))
           target.focus({ preventScroll: true });
