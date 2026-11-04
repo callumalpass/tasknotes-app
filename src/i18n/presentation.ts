@@ -67,7 +67,7 @@ export function formatRelativeTaskDate(
   return `${label}${timeLabel}`;
 }
 
-function formatTaskTime(value: string): string {
+export function formatTaskTime(value: string): string {
   const [hours, minutes] = value.split(":").map(Number);
   return new Intl.DateTimeFormat(appLocale(), {
     hour: "numeric",

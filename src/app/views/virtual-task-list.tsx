@@ -10,6 +10,7 @@ import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
 import { TaskListSection } from "../../components/task-list-section";
 import { ViewTaskRow } from "./view-task-row";
+import { todayString } from "../../domain/task";
 import { TaskDeparturesContext } from "../../components/task-completion-motion";
 import { settledRowCount } from "../optimistic-view-reconciliation";
 import type { TaskSummary } from "../../domain/task";
@@ -106,6 +107,9 @@ export function VirtualTaskList({
             <ViewTaskRow
               row={entry.row}
               properties={properties}
+              sectionDay={
+                entry.lane.key === "section:today" ? todayString() : undefined
+              }
               titleProperty={titleProperty}
               onOpen={onOpen}
               onToggle={onToggle}

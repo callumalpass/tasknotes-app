@@ -1053,9 +1053,9 @@ it("moves a task between reusable day sections with the shared list move path", 
   );
   await waitFor(() =>
     expect(
-      within(screen.getByText("Today").closest("section")!).getByText(
-        "Overdue task",
-      ),
+      within(
+        screen.getByRole("button", { name: /^Today \d+$/ }).closest("section")!,
+      ).getByText("Overdue task"),
     ).toBeVisible(),
   );
   expect(screen.getByText("Anytime")).toBeVisible();

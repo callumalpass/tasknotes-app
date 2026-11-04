@@ -8,11 +8,14 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  CalendarDays,
+  CalendarOff,
   ChevronRight,
   Circle,
   Clipboard,
   Copy,
   FileText,
+  Flag,
   FolderTree,
   Link2,
   MoreHorizontal,
@@ -24,8 +27,11 @@ import {
   SkipForward,
   Square,
   Star,
+  Sun,
+  Sunrise,
   Tags,
   Trash2,
+  type LucideProps,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -41,6 +47,7 @@ import { shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
 import { taskRecordLink } from "../domain/task-links";
+import { shortcutSchedule } from "../app/keyboard-shortcuts";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
@@ -192,7 +199,7 @@ export function TaskActions({
           ? "[data-safe-action]"
           : isOrganizeEditor(panel)
             ? "[data-panel-back]"
-            : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)";
+            : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
     });
   }, [panel, position]);
@@ -212,6 +219,11 @@ export function TaskActions({
 
   function openFromPointer(x: number, y: number) {
     openMenu(x, y + 4);
+  }
+
+  function openDates() {
+    openFromTrigger();
+    setPanels(["actions", "dates"]);
   }
 
   function openMenu(x: number, y: number) {
@@ -313,6 +325,18 @@ export function TaskActions({
 
   return (
     <>
+      {!contextMenuRequest && context === "row" && !virtualOccurrence ? (
+        <button
+          aria-label={t`Change dates for ${task.title}`}
+          className="task-row-quick-date"
+          tabIndex={-1}
+          title={t({ message: "Dates" })}
+          type="button"
+          onClick={openDates}
+        >
+          <CalendarDays aria-hidden="true" size={16} strokeWidth={1.7} />
+        </button>
+      ) : null}
       {!contextMenuRequest ? (
         <button
           aria-controls={position ? menuId : undefined}
@@ -772,8 +796,64 @@ export function TaskActions({
 
   function TaskActionList({ series = false }: { series?: boolean }) {
     const { t } = useLingui();
+    const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
+      void run(() =>
+        updateTask(task.id, {
+          scheduled: shortcutSchedule(action, task.scheduled),
+        }),
+      );
+    };
     return (
       <>
+        {!series && !task.completed ? (
+          <div className="task-actions-quick">
+            <div className="task-actions-quick-row">
+              <QuickAction
+                disabled={busy}
+                icon={Sun}
+                label={t({ message: "Schedule today" })}
+                onClick={() => scheduleTo("today")}
+              />
+              <QuickAction
+                disabled={busy}
+                icon={Sunrise}
+                label={t({ message: "Schedule tomorrow" })}
+                onClick={() => scheduleTo("tomorrow")}
+              />
+              <QuickAction
+                disabled={busy}
+                icon={CalendarDays}
+                label={t({ message: "Schedule next week" })}
+                onClick={() => scheduleTo("next-week")}
+              />
+              <QuickAction
+                disabled={busy || !task.scheduled}
+                icon={CalendarOff}
+                label={t({ message: "Clear scheduled date" })}
+                onClick={() =>
+                  void run(() => updateTask(task.id, { scheduled: null }))
+                }
+              />
+            </div>
+            <div className="task-actions-quick-row">
+              {configuration.priorities.slice(0, 5).map((option) => (
+                <QuickAction
+                  checked={option.value === task.priority}
+                  color={option.color}
+                  disabled={busy}
+                  icon={Flag}
+                  key={option.value}
+                  label={t`Priority: ${option.label}`}
+                  onClick={() =>
+                    void run(() =>
+                      updateTask(task.id, { priority: option.value }),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
         <MenuAction
           disabled={busy}
           icon={task.completed ? Circle : Check}
@@ -932,12 +1012,30 @@ export function TaskActions({
       goBack();
       return;
     }
+    const quickRow =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement.closest(".task-actions-quick-row")
+        : null;
+    if (quickRow && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      const cells = [
+        ...quickRow.querySelectorAll<HTMLButtonElement>(
+          "button:not(:disabled)",
+        ),
+      ];
+      const current = cells.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      event.preventDefault();
+      cells[(current + step + cells.length) % cells.length]?.focus();
+      return;
+    }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     const items = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
         panel === "subtask" || panel === "delete"
           ? "button:not(:disabled)"
-          : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)",
+          : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *), .task-actions-quick-row > button:not(:disabled):first-child",
       ) ?? []),
     ];
     if (!items.length) return;
@@ -953,6 +1051,42 @@ export function TaskActions({
             : (current - 1 + items.length) % items.length;
     items[target]?.focus();
   }
+}
+
+function QuickAction({
+  checked,
+  color,
+  disabled = false,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  checked?: boolean;
+  color?: string;
+  disabled?: boolean;
+  icon: React.ComponentType<LucideProps>;
+  label: string;
+  onClick(): void;
+}) {
+  return (
+    <button
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      role={checked === undefined ? "menuitem" : "menuitemradio"}
+      title={label}
+      type="button"
+      onClick={onClick}
+    >
+      <Icon
+        aria-hidden="true"
+        fill={checked ? "currentColor" : "none"}
+        size={18}
+        strokeWidth={1.7}
+        style={color ? { color } : undefined}
+      />
+    </button>
+  );
 }
 
 function MenuAction({

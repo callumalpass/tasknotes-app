@@ -144,7 +144,7 @@ describe("TaskActions", () => {
       </RepositoryProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "high" }));
+    fireEvent.click(screen.getByRole("button", { name: "Priority: high" }));
     const editor = screen.getByRole("dialog", { name: "Edit Priority" });
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
@@ -169,7 +169,7 @@ describe("TaskActions", () => {
     task = await repository.update(task.id, { due: "2030-08-05" });
     renderRow();
 
-    fireEvent.click(screen.getByRole("button", { name: /Due .*Aug 5/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Due: .*Aug 5/ }));
     fireEvent.click(screen.getByRole("button", { name: "Due date" }));
     fireEvent.click(screen.getByRole("gridcell", { name: /August 6, 2030/ }));
 
@@ -258,6 +258,14 @@ describe("TaskActions", () => {
 
     expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
     expect(screen.getByRole("menuitem", { name: "Dates" })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "Home" });
+    expect(
+      screen.getByRole("menuitem", { name: "Schedule today" }),
+    ).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "ArrowRight" });
+    expect(
+      screen.getByRole("menuitem", { name: "Schedule tomorrow" }),
+    ).toHaveFocus();
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });

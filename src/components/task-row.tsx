@@ -1,7 +1,17 @@
 import { taskMeta } from "../i18n/presentation";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { Square } from "lucide-react";
+import {
+  AtSign,
+  CalendarDays,
+  Circle,
+  Flag,
+  Folder,
+  Hash,
+  Square,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "./use-mutation-state";
 import {
@@ -13,7 +23,8 @@ import {
   useState,
 } from "react";
 
-import { activeTimeEntry } from "../domain/task";
+import { activeTimeEntry, taskDatePart, taskTimePart } from "../domain/task";
+import { formatTaskTime } from "../i18n/presentation";
 import { relativeDateDetail } from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback, successFeedback } from "../native/feedback";
@@ -44,6 +55,8 @@ export function TaskRow({
   details,
   occurrence,
   supportingText,
+  ensurePriority = false,
+  sectionDay,
 }: {
   task: TaskSummary;
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
@@ -51,6 +64,10 @@ export function TaskRow({
   details?: TaskRowDetail[];
   occurrence?: TaskOccurrence;
   supportingText?: string;
+  /** Show a raised priority even when the view does not select the property. */
+  ensurePriority?: boolean;
+  /** The day the surrounding section names; a matching date is not repeated. */
+  sectionDay?: string;
 }) {
   const { t } = useLingui();
   const supportingId = useId();
@@ -112,8 +129,11 @@ export function TaskRow({
   } | null>(null);
   const shownEditor = useExitingValue(editing);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
-  const shownDetails = (
-    details ?? defaultTaskDetails(displayedTask, metadata, configuration)
+  const allDetails = withRaisedPriority(
+    details ?? defaultTaskDetails(displayedTask, metadata, configuration),
+    ensurePriority,
+    displayedTask,
+    configuration,
   )
     .filter((detail) => {
       const field = detail.key.replace(/^note\./, "");
@@ -128,6 +148,7 @@ export function TaskRow({
       return true;
     })
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
+  const shownDetails = sectionDetails(allDetails, sectionDay, configuration);
   const rowRef = useRef<HTMLDivElement>(null);
   useCompletionDeparture(
     rowRef,
@@ -273,9 +294,11 @@ export function TaskRow({
               {tracking ? <TrackingIndicator /> : null}
               {shownDetails.map((detail) => (
                 <button
-                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${detail.overdue ? " is-overdue" : ""}`}
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}`}
                   key={detail.key}
-                  title={detail.description}
+                  title={
+                    detail.description ?? `${detail.label}: ${detail.value}`
+                  }
                   aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
                   onClick={(event) => {
@@ -288,18 +311,7 @@ export function TaskRow({
                 >
                   <span>{detail.label}</span>
                   <strong>
-                    {detailPriorityColor(detail, configuration) ? (
-                      <span
-                        aria-hidden="true"
-                        className="value-color"
-                        style={{
-                          backgroundColor: detailPriorityColor(
-                            detail,
-                            configuration,
-                          ),
-                        }}
-                      />
-                    ) : null}
+                    <PropertyGlyph detail={detail} />
                     {detail.value}
                   </strong>
                 </button>
@@ -312,7 +324,9 @@ export function TaskRow({
             {shownDetails.map((detail) => (
               <button
                 className={detail.overdue ? "is-overdue" : undefined}
+                aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
+                title={`${detail.label}: ${detail.value}`}
                 type="button"
                 onClick={(event) => {
                   editorTrigger.current = event.currentTarget;
@@ -322,19 +336,7 @@ export function TaskRow({
                   });
                 }}
               >
-                {detailPriorityColor(detail, configuration) ? (
-                  <span
-                    aria-hidden="true"
-                    className="value-color"
-                    style={{
-                      backgroundColor: detailPriorityColor(
-                        detail,
-                        configuration,
-                      ),
-                    }}
-                  />
-                ) : null}
-                {isDateDetail(detail, configuration) ? `${detail.label} ` : ""}
+                <PropertyGlyph detail={detail} />
                 {detail.value}
               </button>
             ))}
@@ -499,6 +501,110 @@ export interface TaskRowDetail {
   overdue?: boolean;
 }
 
+/** Rows name known properties with a glyph; the label stays the accessible
+ * name and tooltip, and a priority's stored colour marks its flag. */
+function PropertyGlyph({ detail }: { detail: TaskRowDetail }) {
+  const { configuration } = useRepository();
+  const Icon = propertyIcon(detail, configuration);
+  if (!Icon) return null;
+  const color = detailPriorityColor(detail, configuration);
+  return (
+    <Icon
+      aria-hidden="true"
+      className="task-row-glyph"
+      fill={color ?? "none"}
+      size={13}
+      strokeWidth={1.8}
+      style={color ? { color } : undefined}
+    />
+  );
+}
+
+function propertyField(detail: TaskRowDetail): string {
+  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
+  return bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+}
+
+type RowConfiguration =
+  import("../domain/task-configuration").TaskCollectionConfiguration;
+
+function propertyIcon(
+  detail: TaskRowDetail,
+  { fieldMapping }: RowConfiguration,
+): LucideIcon | null {
+  const key = propertyField(detail);
+  if (key === fieldMapping.scheduled || key === "scheduled")
+    return CalendarDays;
+  if (key === fieldMapping.due || key === "due") return Target;
+  if (key === fieldMapping.priority || key === "priority") return Flag;
+  if (key === fieldMapping.status || key === "status") return Circle;
+  if (key === fieldMapping.projects || key === "projects") return Folder;
+  if (key === fieldMapping.contexts || key === "contexts") return AtSign;
+  if (key === "tags") return Hash;
+  return null;
+}
+
+/** A section named for a day already says when; only a time adds anything. */
+function sectionDetails(
+  details: TaskRowDetail[],
+  day: string | undefined,
+  configuration: RowConfiguration,
+): TaskRowDetail[] {
+  const isProject = (detail: TaskRowDetail) => {
+    const key = propertyField(detail);
+    return key === configuration.fieldMapping.projects || key === "projects";
+  };
+  // The project closes the line, so wide lists can align it at the far edge.
+  const ordered = [
+    ...details.filter((detail) => !isProject(detail)),
+    ...details.filter(isProject),
+  ];
+  if (!day) return ordered;
+  return ordered.flatMap((detail) => {
+    const key = propertyField(detail);
+    if (
+      (key !== configuration.fieldMapping.scheduled && key !== "scheduled") ||
+      typeof detail.rawValue !== "string" ||
+      taskDatePart(detail.rawValue) !== day
+    )
+      return [detail];
+    const time = taskTimePart(detail.rawValue);
+    return time ? [{ ...detail, value: formatTaskTime(time) }] : [];
+  });
+}
+
+function withRaisedPriority(
+  details: TaskRowDetail[],
+  ensure: boolean,
+  task: TaskSummary,
+  configuration: RowConfiguration,
+): TaskRowDetail[] {
+  if (
+    !ensure ||
+    details.some((detail) => {
+      const key = propertyField(detail);
+      return key === configuration.fieldMapping.priority || key === "priority";
+    })
+  )
+    return details;
+  const priority = configuration.priorities.find(
+    (option) => option.value === task.priority,
+  );
+  const fallback = configuration.priorities.find(
+    (option) => option.value === configuration.defaults.priority,
+  );
+  if (!priority || priority.weight <= (fallback?.weight ?? 0)) return details;
+  return [
+    ...details,
+    {
+      key: "priority",
+      label: t({ message: "Priority" }),
+      value: priority.label,
+      rawValue: priority.value,
+    },
+  ];
+}
+
 function detailPriorityColor(
   detail: TaskRowDetail,
   configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
@@ -511,20 +617,6 @@ function detailPriorityColor(
   return configuration.priorities.find(
     (option) => option.value === detail.rawValue,
   )?.color;
-}
-
-function isDateDetail(
-  detail: TaskRowDetail,
-  configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
-): boolean {
-  const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
-  const key = bracketed?.[1] ?? detail.key.replace(/^note\./, "");
-  return [
-    "scheduled",
-    "due",
-    configuration.fieldMapping.scheduled,
-    configuration.fieldMapping.due,
-  ].includes(key);
 }
 
 function isCompactDetail(

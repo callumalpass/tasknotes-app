@@ -667,6 +667,7 @@ function ManualTaskRows({
         <ViewTaskRow
           row={row}
           properties={properties}
+          sectionDay={lane.key === "section:today" ? todayString() : undefined}
           titleProperty={titleProperty}
           onOpen={onOpen}
           onToggle={onToggle}
