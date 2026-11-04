@@ -1,0 +1,138 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import { useEffect, useId, useRef, useState } from "react";
+import { todayString } from "../domain/task";
+import { nextWeekStart } from "../app/keyboard-shortcuts";
+import { setTaskDate, shiftTaskDate } from "../domain/task-date-actions";
+import { formatTaskDate } from "../domain/task";
+import { parseTaskCapture } from "../domain/task-capture";
+import { useRepository } from "../app/repository-context";
+import { StandaloneCalendar } from "./tasknotes-controls";
+
+import type { TaskSummary, UpdateTaskInput } from "../domain/task";
+
+type DateTarget = "scheduled" | "due";
+
+/** One place to set either date: typed, picked from a preset, or from the
+ * calendar. The target stays explicit, and a date-only choice keeps a time
+ * already on the task. */
+export function TaskDatePanel({
+  busy,
+  task,
+  onApply,
+}: {
+  busy: boolean;
+  task: TaskSummary;
+  onApply(input: UpdateTaskInput): void;
+}) {
+  const { t } = useLingui();
+  const { configuration } = useRepository();
+  const [target, setTarget] = useState<DateTarget>(
+    task.due && !task.scheduled ? "due" : "scheduled",
+  );
+  const [text, setText] = useState("");
+  const [parsed, setParsed] = useState<{ text: string; date?: string }>();
+  const hintId = useId();
+  const requested = useRef("");
+  const today = todayString();
+  const current = task[target];
+  const shownDate = parsed?.text === text ? parsed.date : undefined;
+  const unreadable = Boolean(text.trim() && parsed?.text === text && !shownDate);
+
+  useEffect(() => {
+    const value = text.trim();
+    requested.current = text;
+    if (!value) return;
+    void parseTaskCapture(value, configuration).then(
+      ({ input }) => {
+        if (requested.current === text)
+          setParsed({ text, date: input[target] ?? input.scheduled ?? input.due });
+      },
+      () => {
+        if (requested.current === text) setParsed({ text });
+      },
+    );
+  }, [configuration, target, text]);
+
+  function apply(date: string) {
+    const value = date.includes("T") ? date : setTaskDate(current, date);
+    onApply({ [target]: value });
+  }
+
+  return (
+    <div className="task-date-panel">
+      <div
+        aria-label={t`Date to change`}
+        className="task-date-target"
+        role="radiogroup"
+      >
+        {(["scheduled", "due"] as const).map((option) => (
+          <button
+            aria-checked={target === option}
+            key={option}
+            role="radio"
+            type="button"
+            onClick={() => setTarget(option)}
+          >
+            {option === "scheduled" ? t`Scheduled` : t`Due`}
+            {task[option] ? <small>{formatTaskDate(task[option])}</small> : null}
+          </button>
+        ))}
+      </div>
+      <input
+        aria-describedby={hintId}
+        aria-invalid={unreadable}
+        aria-label={t`Type a date`}
+        autoComplete="off"
+        className="task-date-input"
+        disabled={busy}
+        placeholder={t`Fri 3pm, next week, Dec 12`}
+        type="text"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || !shownDate) return;
+          event.preventDefault();
+          apply(shownDate);
+        }}
+      />
+      <p className={`task-date-hint${unreadable ? " is-error" : ""}`} id={hintId}>
+        {shownDate
+          ? t`Enter to set ${formatTaskDate(shownDate)}`
+          : unreadable
+            ? t`Couldn’t read that date`
+            : " "}
+      </p>
+      <div className="task-date-presets">
+        <button
+          disabled={busy}
+          role="menuitem"
+          type="button"
+          onClick={() => apply(today)}
+        >
+          <Trans>Today</Trans>
+        </button>
+        <button
+          disabled={busy}
+          role="menuitem"
+          type="button"
+          onClick={() => apply(shiftTaskDate(today, 1))}
+        >
+          <Trans>Tomorrow</Trans>
+        </button>
+        <button
+          disabled={busy}
+          role="menuitem"
+          type="button"
+          onClick={() => apply(nextWeekStart(today))}
+        >
+          <Trans>Next week</Trans>
+        </button>
+      </div>
+      <StandaloneCalendar
+        key={target}
+        value={current?.slice(0, 10)}
+        onChoose={(date) => apply(date)}
+      />
+    </div>
+  );
+}

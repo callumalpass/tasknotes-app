@@ -100,7 +100,8 @@ describe("TaskActions", () => {
 
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Due tomorrow" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Due" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Tomorrow" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({

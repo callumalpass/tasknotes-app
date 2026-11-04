@@ -131,7 +131,7 @@ it("shows the shortcut sheet with global and row keys", () => {
   const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
   expect(dialog).toHaveTextContent("Command palette");
   expect(dialog).toHaveTextContent("New task");
-  expect(dialog).toHaveTextContent("Undo a deleted task");
+  expect(dialog).toHaveTextContent("Undo last action");
   expect(dialog).toHaveTextContent("Schedule next week");
   expect(
     screen.getByRole("button", { name: "Close keyboard shortcuts" }),

@@ -2,7 +2,7 @@ import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { SelectTasksOption } from "./task-selection";
 import { t as translate, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
-import { useLingui, Trans } from "@lingui/react/macro";
+import { useLingui, Plural, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
   Check,
@@ -55,6 +55,7 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../i18n/view-presentation";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { rememberUndo } from "./undo-history";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
@@ -488,6 +489,15 @@ export function ViewsScreen({
     selected,
     visibleExecution,
   ]);
+  const overdueLane = useMemo(
+    () =>
+      todayScreen && presentedExecution
+        ? sectionTaskViewRows(presentedExecution.rows, "day", today).find(
+            ({ key }) => key === "overdue",
+          )
+        : undefined,
+    [presentedExecution, today, todayScreen],
+  );
   const todayProgress = useMemo(() => {
     if (
       !todayScreen ||
@@ -1043,12 +1053,17 @@ export function ViewsScreen({
         updates.map(({ id, input }) => ({ id, input })),
         "section:today",
       );
-      if (saved && selectedKeyRef.current === view.key) {
-        setRescheduled({
-          viewKey: view.key,
-          count: updates.length,
-          undo: updates.map(({ id, undo }) => ({ id, input: undo })),
+      if (saved) {
+        const undo = updates.map(({ id, undo }) => ({ id, input: undo }));
+        rememberUndo({
+          label: plural(updates.length, {
+            one: "# task",
+            other: "# tasks",
+          }),
+          run: () => updateTasks(undo),
         });
+        if (selectedKeyRef.current !== view.key) return;
+        setRescheduled({ viewKey: view.key, count: updates.length, undo });
         window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
       }
     } finally {
@@ -1258,6 +1273,33 @@ export function ViewsScreen({
                     {" "}
                     · {todayProgress.done} <Trans>of </Trans>
                     {todayProgress.total} <Trans>done</Trans>
+                  </span>
+                ) : null}
+                {overdueLane?.rows.length ? (
+                  <span className="today-overdue">
+                    {" · "}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        document
+                          .querySelector(".task-section.is-overdue")
+                          ?.scrollIntoView({ block: "start" })
+                      }
+                    >
+                      <Plural
+                        value={overdueLane.rows.length}
+                        one="# overdue"
+                        other="# overdue"
+                      />
+                    </button>
+                    <button
+                      className="today-overdue-move"
+                      type="button"
+                      disabled={reschedulePending}
+                      onClick={() => void moveOverdueToToday(overdueLane.rows)}
+                    >
+                      <Trans>Move all to today</Trans>
+                    </button>
                   </span>
                 ) : null}
               </p>

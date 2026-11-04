@@ -9,7 +9,7 @@ import {
 
 /** Actions a focused task row (or the command palette) can run on its task. */
 export type TaskShortcutAction =
-  "open" | "toggle" | "today" | "tomorrow" | "next-week";
+  "open" | "toggle" | "dates" | "today" | "tomorrow" | "next-week";
 
 export const TASK_SHORTCUT_EVENT = "tasknotes:task-shortcut";
 
@@ -17,6 +17,7 @@ export const TASK_SHORTCUT_EVENT = "tasknotes:task-shortcut";
 const rowKeys: Record<string, TaskShortcutAction> = {
   o: "open",
   x: "toggle",
+  d: "dates",
   t: "today",
   m: "tomorrow",
   w: "next-week",
@@ -248,7 +249,7 @@ export function keyboardShortcutGroups(): {
         },
         {
           keys: [shortcutLabel("Z")],
-          description: t({ message: "Undo a deleted task" }),
+          description: t({ message: "Undo last action" }),
         },
         { keys: ["?"], description: t({ message: "Keyboard shortcuts" }) },
       ],
@@ -270,6 +271,7 @@ export function keyboardShortcutGroups(): {
       shortcuts: [
         { keys: ["j", "Alt+↓"], description: t({ message: "Next task" }) },
         { keys: ["k", "Alt+↑"], description: t({ message: "Previous task" }) },
+        { keys: ["Esc"], description: t({ message: "Back to the list" }) },
       ],
     },
     {
@@ -289,6 +291,7 @@ export function keyboardShortcutGroups(): {
           description: t({ message: "Select all visible tasks" }),
         },
         { keys: ["Esc"], description: t({ message: "Clear task selection" }) },
+        { keys: ["d"], description: t({ message: "Change dates" }) },
         { keys: ["t"], description: t({ message: "Schedule today" }) },
         { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },
         { keys: ["w"], description: t({ message: "Schedule next week" }) },

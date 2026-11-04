@@ -99,6 +99,11 @@ msgstr "{0, plural, other {已添加 # 张图片。}}"
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, other {# 个未完成}}"
 
+#. placeholder {0}: overdueLane.rows.length
+#: src/app/views-screen.tsx
+msgid "{0, plural, one {# overdue} other {# overdue}}"
+msgstr "{0, plural, other {# 项逾期}}"
+
 #. placeholder {0}: failures.length
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
@@ -108,6 +113,13 @@ msgstr "{0, plural, other {有 # 个任务无法更新。请打开查看后再�
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task updated} other {# tasks updated}}"
 msgstr "{0, plural, other {已更新 # 个任务}}"
+
+#. placeholder {0}: result.receipts.length
+#. placeholder {0}: updates.length
+#: src/app/bulk-task-actions.tsx
+#: src/app/views-screen.tsx
+msgid "{0, plural, one {# task} other {# tasks}}"
+msgstr "{0, plural, other {# 个任务}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -1057,6 +1069,10 @@ msgstr "返回上一步操作"
 msgid "Back to Settings"
 msgstr "返回设置"
 
+#: src/app/keyboard-shortcuts.ts
+msgid "Back to the list"
+msgstr "返回列表"
+
 #: src/i18n/ui-copy.ts
 msgid "before"
 msgstr "之前"
@@ -1151,6 +1167,10 @@ msgstr "更改重复任务"
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "更换集合"
+
+#: src/app/keyboard-shortcuts.ts
+msgid "Change dates"
+msgstr "更改日期"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
@@ -1760,6 +1780,11 @@ msgstr "无法复制"
 msgid "Couldn't load your views."
 msgstr "无法加载你的视图。"
 
+#: src/components/task-date-panel.tsx
+msgid "Couldn’t read that date"
+msgstr "无法识别该日期"
+
+#: src/app/app-shell.tsx
 #: src/components/task-added-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "无法撤销。请重试。"
@@ -1861,6 +1886,10 @@ msgstr "日期"
 #: src/app/view-editor-form.tsx
 msgid "Date and agenda"
 msgstr "日期与议程"
+
+#: src/components/task-date-panel.tsx
+msgid "Date to change"
+msgstr "要更改的日期"
 
 #: src/components/task-actions.tsx
 msgid "Dates"
@@ -2130,6 +2159,7 @@ msgstr "截止日期"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
@@ -2140,11 +2170,12 @@ msgstr "截止日期"
 msgid "Due (not set)"
 msgstr "未设置截止日期"
 
+#. placeholder {0}: detail.value
 #. placeholder {0}: formatRelativeTaskDate(dates.due)
 #. placeholder {0}: formatTaskDate(settled.input.due)
-#. placeholder {0}: formatTaskDate(task.due, today)
 #: src/app/task-editor-draft.ts
 #: src/components/task-capture.tsx
+#: src/components/task-row.tsx
 #: src/i18n/presentation.ts
 msgid "Due {0}"
 msgstr "截止日期：{0}"
@@ -2160,14 +2191,6 @@ msgstr "截止日期"
 #: src/components/task-actions.tsx
 msgid "Due set"
 msgstr "已设置截止日期"
-
-#: src/components/task-actions.tsx
-msgid "Due today"
-msgstr "今天截止"
-
-#: src/components/task-actions.tsx
-msgid "Due tomorrow"
-msgstr "明天截止"
 
 #: src/app/views/view-catalog.tsx
 msgid "Duplicate"
@@ -2273,6 +2296,11 @@ msgstr "结束"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "请输入 CEL 表达式。"
+
+#. placeholder {0}: formatTaskDate(shownDate)
+#: src/components/task-date-panel.tsx
+msgid "Enter to set {0}"
+msgstr "按 Enter 设为 {0}"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
@@ -2465,6 +2493,10 @@ msgstr "第四个"
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
 msgstr "第四个"
+
+#: src/components/task-date-panel.tsx
+msgid "Fri 3pm, next week, Dec 12"
+msgstr "Fri 3pm, next week, Dec 12"
 
 #: src/i18n/ui-copy.ts
 msgid "from"
@@ -3310,6 +3342,7 @@ msgstr "下周"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/use-calendar-agenda.ts
+#: src/components/task-date-panel.tsx
 msgid "Next week"
 msgstr "下周"
 
@@ -4500,6 +4533,7 @@ msgstr "计划日期"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
@@ -5454,6 +5488,7 @@ msgstr "今天"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/task-calendar-view.tsx
+#: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
 #: src/i18n/calendar-locale.ts
@@ -5480,6 +5515,7 @@ msgid "tomorrow"
 msgstr "明天"
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/i18n/presentation.ts
 msgid "Tomorrow"
@@ -5519,6 +5555,10 @@ msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其
 msgid "Type"
 msgstr "类型"
 
+#: src/components/task-date-panel.tsx
+msgid "Type a date"
+msgstr "输入日期"
+
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "未分配"
@@ -5526,6 +5566,10 @@ msgstr "未分配"
 #: src/components/task-capture.tsx
 msgid "Understanding…"
 msgstr "正在理解…"
+
+#: src/app/app-shell.tsx
+msgid "Undid change to “{label}”"
+msgstr "已撤销对“{label}”的更改"
 
 #: src/app/app-shell.tsx
 #: src/app/bulk-task-actions.tsx
@@ -5537,8 +5581,8 @@ msgid "Undo"
 msgstr "撤销"
 
 #: src/app/keyboard-shortcuts.ts
-msgid "Undo a deleted task"
-msgstr "撤销删除任务"
+msgid "Undo last action"
+msgstr "撤销上一步操作"
 
 #: src/components/reminder-editor.tsx
 msgid "Unit"

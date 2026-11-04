@@ -425,8 +425,6 @@ export function TaskNotesDatePicker({
     dateRefs.current.get(dateValue(focusedDate))?.focus();
   }, [focusedDate, open, visibleMonth]);
 
-  const days = calendarDays(visibleMonth);
-
   function choose(date: Date) {
     onChange(dateValue(date));
     setOpen(false);
@@ -481,107 +479,20 @@ export function TaskNotesDatePicker({
             inert={!open}
             role="dialog"
           >
-            <div className="tasknotes-calendar-heading">
-              <button
-                aria-label={t({ message: "Previous month" })}
-                type="button"
-                onClick={() =>
-                  setVisibleMonth(
-                    new Date(
-                      visibleMonth.getFullYear(),
-                      visibleMonth.getMonth() - 1,
-                      1,
-                    ),
-                  )
-                }
-              >
-                <ChevronLeft aria-hidden="true" size={18} />
-              </button>
-              <strong>{monthLabel(visibleMonth)}</strong>
-              <button
-                aria-label={t({ message: "Next month" })}
-                type="button"
-                onClick={() =>
-                  setVisibleMonth(
-                    new Date(
-                      visibleMonth.getFullYear(),
-                      visibleMonth.getMonth() + 1,
-                      1,
-                    ),
-                  )
-                }
-              >
-                <ChevronRight aria-hidden="true" size={18} />
-              </button>
-            </div>
-            <div className="tasknotes-calendar-weekdays" aria-hidden="true">
-              {weekdayLabels().map((label, index) => (
-                <span key={`${label}-${index}`}>{label}</span>
-              ))}
-            </div>
-            <div className="tasknotes-calendar-grid" role="grid">
-              {Array.from({ length: 6 }, (_, week) => (
-                <div key={week} role="row">
-                  {days.slice(week * 7, week * 7 + 7).map((day) => {
-                    const key = dateValue(day);
-                    const inMonth =
-                      day.getMonth() === visibleMonth.getMonth() &&
-                      day.getFullYear() === visibleMonth.getFullYear();
-                    return (
-                      <button
-                        aria-label={longDate(day)}
-                        aria-selected={value === key}
-                        className={classes(
-                          !inMonth && "is-outside",
-                          sameDay(day, today) && "is-today",
-                        )}
-                        key={key}
-                        data-date={key}
-                        ref={(element) => {
-                          if (element) dateRefs.current.set(key, element);
-                          else dateRefs.current.delete(key);
-                        }}
-                        role="gridcell"
-                        tabIndex={sameDay(day, focusedDate) ? 0 : -1}
-                        type="button"
-                        onClick={() => choose(day)}
-                        onKeyDown={(event) => {
-                          const movement = {
-                            ArrowLeft: -1,
-                            ArrowRight: 1,
-                            ArrowUp: -7,
-                            ArrowDown: 7,
-                          }[event.key];
-                          if (movement !== undefined) {
-                            event.preventDefault();
-                            moveFocus(addDays(day, movement));
-                          } else if (event.key === "Home") {
-                            event.preventDefault();
-                            moveFocus(addDays(day, -day.getDay()));
-                          } else if (event.key === "End") {
-                            event.preventDefault();
-                            moveFocus(addDays(day, 6 - day.getDay()));
-                          } else if (event.key === "PageUp") {
-                            event.preventDefault();
-                            moveFocus(addMonths(day, -1));
-                          } else if (event.key === "PageDown") {
-                            event.preventDefault();
-                            moveFocus(addMonths(day, 1));
-                          } else if (event.key === "Escape") {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setOpen(false);
-                            triggerRef.current?.focus();
-                          }
-                        }}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+            <CalendarBody
+              dateRefs={dateRefs}
+              focusedDate={focusedDate}
+              today={today}
+              value={value}
+              visibleMonth={visibleMonth}
+              onChoose={choose}
+              onClose={() => {
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+              onMoveFocus={moveFocus}
+              onVisibleMonth={setVisibleMonth}
+            />
             <div className="tasknotes-picker-actions">
               <button
                 className="text-action"
@@ -605,6 +516,177 @@ export function TaskNotesDatePicker({
           </div>
         </>
       ) : null}
+    </div>
+  );
+}
+
+function CalendarBody({
+  dateRefs,
+  focusedDate,
+  today,
+  value,
+  visibleMonth,
+  onChoose,
+  onClose,
+  onMoveFocus,
+  onVisibleMonth,
+}: {
+  dateRefs: { current: Map<string, HTMLButtonElement> };
+  focusedDate: Date;
+  today: Date;
+  value?: string;
+  visibleMonth: Date;
+  onChoose(date: Date): void;
+  onClose(): void;
+  onMoveFocus(date: Date): void;
+  onVisibleMonth(date: Date): void;
+}) {
+  const { t } = useLingui();
+  const days = calendarDays(visibleMonth);
+  return (
+    <>
+    <div className="tasknotes-calendar-heading">
+      <button
+        aria-label={t({ message: "Previous month" })}
+        type="button"
+        onClick={() =>
+          onVisibleMonth(
+            new Date(
+              visibleMonth.getFullYear(),
+              visibleMonth.getMonth() - 1,
+              1,
+            ),
+          )
+        }
+      >
+        <ChevronLeft aria-hidden="true" size={18} />
+      </button>
+      <strong>{monthLabel(visibleMonth)}</strong>
+      <button
+        aria-label={t({ message: "Next month" })}
+        type="button"
+        onClick={() =>
+          onVisibleMonth(
+            new Date(
+              visibleMonth.getFullYear(),
+              visibleMonth.getMonth() + 1,
+              1,
+            ),
+          )
+        }
+      >
+        <ChevronRight aria-hidden="true" size={18} />
+      </button>
+    </div>
+    <div className="tasknotes-calendar-weekdays" aria-hidden="true">
+      {weekdayLabels().map((label, index) => (
+        <span key={`${label}-${index}`}>{label}</span>
+      ))}
+    </div>
+    <div className="tasknotes-calendar-grid" role="grid">
+      {Array.from({ length: 6 }, (_, week) => (
+        <div key={week} role="row">
+          {days.slice(week * 7, week * 7 + 7).map((day) => {
+            const key = dateValue(day);
+            const inMonth =
+              day.getMonth() === visibleMonth.getMonth() &&
+              day.getFullYear() === visibleMonth.getFullYear();
+            return (
+              <button
+                aria-label={longDate(day)}
+                aria-selected={value === key}
+                className={classes(
+                  !inMonth && "is-outside",
+                  sameDay(day, today) && "is-today",
+                )}
+                key={key}
+                data-date={key}
+                ref={(element) => {
+                  if (element) dateRefs.current.set(key, element);
+                  else dateRefs.current.delete(key);
+                }}
+                role="gridcell"
+                tabIndex={sameDay(day, focusedDate) ? 0 : -1}
+                type="button"
+                onClick={() => onChoose(day)}
+                onKeyDown={(event) => {
+                  // Arrows move through the grid here, not through a surrounding menu.
+                  if (event.key.startsWith("Arrow")) event.stopPropagation();
+                  const movement = {
+                    ArrowLeft: -1,
+                    ArrowRight: 1,
+                    ArrowUp: -7,
+                    ArrowDown: 7,
+                  }[event.key];
+                  if (movement !== undefined) {
+                    event.preventDefault();
+                    onMoveFocus(addDays(day, movement));
+                  } else if (event.key === "Home") {
+                    event.preventDefault();
+                    onMoveFocus(addDays(day, -day.getDay()));
+                  } else if (event.key === "End") {
+                    event.preventDefault();
+                    onMoveFocus(addDays(day, 6 - day.getDay()));
+                  } else if (event.key === "PageUp") {
+                    event.preventDefault();
+                    onMoveFocus(addMonths(day, -1));
+                  } else if (event.key === "PageDown") {
+                    event.preventDefault();
+                    onMoveFocus(addMonths(day, 1));
+                  } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onClose();
+                  }
+                }}
+              >
+                {day.getDate()}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+    </>
+  );
+}
+
+/** The calendar on its own, for a surface that is already open. */
+export function StandaloneCalendar({
+  value,
+  onChoose,
+}: {
+  value?: string;
+  onChoose(date: string): void;
+}) {
+  const selected = parseDateValue(value);
+  const today = startOfDay(new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    startOfMonth(selected ?? today),
+  );
+  const [focusedDate, setFocusedDate] = useState(() => selected ?? today);
+  const moved = useRef(false);
+  const dateRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (moved.current) dateRefs.current.get(dateValue(focusedDate))?.focus();
+  }, [focusedDate, visibleMonth]);
+  return (
+    <div className="tasknotes-inline-calendar">
+      <CalendarBody
+        dateRefs={dateRefs}
+        focusedDate={focusedDate}
+        today={today}
+        value={value}
+        visibleMonth={visibleMonth}
+        onChoose={(date) => onChoose(dateValue(date))}
+        onClose={() => undefined}
+        onMoveFocus={(date) => {
+          moved.current = true;
+          setFocusedDate(date);
+          setVisibleMonth(startOfMonth(date));
+        }}
+        onVisibleMonth={setVisibleMonth}
+      />
     </div>
   );
 }

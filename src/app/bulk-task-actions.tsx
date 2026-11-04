@@ -1,3 +1,4 @@
+import { plural } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Archive, Check, Trash2, X } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import { todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { nextWeekStart } from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
+import { rememberUndo } from "./undo-history";
 import type { TaskSelectionStore } from "./task-selection-store";
 import { linkDisplayLabel } from "../domain/completion";
 import type { FieldCompletion } from "../domain/completion";
@@ -177,6 +179,14 @@ export function BulkTaskActions({
         changedMessage,
         change.kind === "archive",
       );
+      if (result.receipts.length)
+        rememberUndo({
+          label: plural(result.receipts.length, {
+            one: "# task",
+            other: "# tasks",
+          }),
+          run: () => undoBulkEdits(result.receipts, port, changedMessage),
+        });
       if (currentNavigation.current !== origin) return;
       store.remove(result.receipts.map((receipt) => receipt.before.id));
       setFailures(result.failures);

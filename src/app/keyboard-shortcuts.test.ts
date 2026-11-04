@@ -49,7 +49,8 @@ describe("plain shortcut guards", () => {
     expect(taskRowShortcut(keydown("m"))).toBe("tomorrow");
     expect(taskRowShortcut(keydown("w"))).toBe("next-week");
     expect(taskRowShortcut(keydown("X", { shiftKey: true }))).toBeNull();
-    expect(taskRowShortcut(keydown("d"))).toBeNull();
+    expect(taskRowShortcut(keydown("d"))).toBe("dates");
+    expect(taskRowShortcut(keydown("y"))).toBeNull();
     expect(taskRowShortcut(keydown("Delete"))).toBeNull();
   });
 
@@ -197,7 +198,7 @@ it("lists the global and row shortcuts, including new task and undo", () => {
     expect.arrayContaining([
       "Command palette",
       "New task",
-      "Undo a deleted task",
+      "Undo last action",
       "Keyboard shortcuts",
       "Next task",
       "Complete or reopen",

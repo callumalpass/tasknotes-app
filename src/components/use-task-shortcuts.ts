@@ -43,6 +43,10 @@ export function useTaskShortcuts(
         open();
         return;
       }
+      if (action === "dates") {
+        row.querySelector<HTMLButtonElement>(".task-row-quick-date")?.click();
+        return;
+      }
       const restoreFocus = preserveRowFocus(row);
       try {
         if (action === "toggle") {

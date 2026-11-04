@@ -155,6 +155,19 @@ describe("TaskScreen", () => {
     expect(navigate).toHaveBeenCalledTimes(4);
   });
 
+  it("closes on Escape through the saving path, but not while typing", async () => {
+    const onBack = renderTask();
+    await editTitle();
+    const title = screen.getByLabelText("Task title", { exact: true });
+    fireEvent.keyDown(title, { key: "Escape" });
+    expect(onBack).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(onBack).toHaveBeenCalledOnce());
+    expect((await repository.get(task.id))?.title).toBe(
+      "Unsaved important draft",
+    );
+  });
+
   it("creates portable subtasks inline and updates their completion count", async () => {
     const child = await repository.create({
       title: "First child",

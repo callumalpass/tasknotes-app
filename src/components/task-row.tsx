@@ -26,7 +26,12 @@ import {
   useState,
 } from "react";
 
-import { activeTimeEntry, taskDatePart, taskTimePart } from "../domain/task";
+import {
+  activeTimeEntry,
+  isTaskDateOverdue,
+  taskDatePart,
+  taskTimePart,
+} from "../domain/task";
 import { formatTaskTime } from "../i18n/presentation";
 import { relativeDateDetail } from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
@@ -39,6 +44,7 @@ import { useExitingValue } from "./overlays/use-presence";
 import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
+import { rememberUndo } from "../app/undo-history";
 import {
   COMPLETION_FOLD_MS,
   COMPLETION_LINGER_MS,
@@ -121,6 +127,9 @@ export function TaskRow({
     displayedTask.status !== configuration.defaults.status &&
     displayedTask.status !== "none";
   const statusColor = distinctStatus ? status?.color : undefined;
+  const raisedPriorityColor = displayedTask.completed
+    ? undefined
+    : raisedColor(task, configuration);
   const [seenCompleted, setSeenCompleted] = useState(displayedTask.completed);
   if (seenCompleted !== displayedTask.completed) {
     setSeenCompleted(displayedTask.completed);
@@ -168,7 +177,12 @@ export function TaskRow({
     },
     schedule: async (scheduled) => {
       try {
+        const earlier = task.scheduled ?? null;
         await updateTask(task.id, { scheduled });
+        rememberUndo({
+          label: task.title,
+          run: () => updateTask(task.id, { scheduled: earlier }),
+        });
         actionFeedback();
       } catch (reason) {
         setLocalError(
@@ -254,7 +268,7 @@ export function TaskRow({
       }}
     >
       <button
-        className={`completion-control${statusColor ? " has-status" : ""}`}
+        className={`completion-control${statusColor ? " has-status" : raisedPriorityColor ? " has-priority" : ""}`}
         type="button"
         aria-label={`${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`}
         aria-pressed={displayedTask.completed}
@@ -265,7 +279,11 @@ export function TaskRow({
           // The stored colour draws the ring; the label names the status.
           statusColor
             ? ({ "--status-color": statusColor } as React.CSSProperties)
-            : undefined
+            : raisedPriorityColor
+              ? ({
+                  "--priority-color": raisedPriorityColor,
+                } as React.CSSProperties)
+              : undefined
         }
         onClick={() => void complete()}
       >
@@ -311,7 +329,7 @@ export function TaskRow({
               {tracking ? <TrackingIndicator /> : null}
               {shownDetails.map((detail) => (
                 <button
-                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}`}
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}${isLateSchedule(detail, displayedTask, configuration) ? " is-late" : ""}`}
                   key={detail.key}
                   title={
                     detail.description ?? `${detail.label}: ${detail.value}`
@@ -329,7 +347,9 @@ export function TaskRow({
                   <span>{detail.label}</span>
                   <strong>
                     <PropertyGlyph detail={detail} />
-                    {detail.value}
+                    {isDueDetail(detail, configuration)
+                      ? t`Due ${detail.value}`
+                      : detail.value}
                   </strong>
                 </button>
               ))}
@@ -340,7 +360,13 @@ export function TaskRow({
             {tracking ? <TrackingIndicator /> : null}
             {shownDetails.map((detail) => (
               <button
-                className={detail.overdue ? "is-overdue" : undefined}
+                className={
+                  detail.overdue
+                    ? "is-overdue"
+                    : isLateSchedule(detail, displayedTask, configuration)
+                      ? "is-late"
+                      : undefined
+                }
                 aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
                 title={`${detail.label}: ${detail.value}`}
@@ -354,7 +380,9 @@ export function TaskRow({
                 }}
               >
                 <PropertyGlyph detail={detail} />
-                {detail.value}
+                {isDueDetail(detail, configuration)
+                  ? t`Due ${detail.value}`
+                  : detail.value}
               </button>
             ))}
           </span>
@@ -618,6 +646,43 @@ function withRaisedPriority(
       rawValue: priority.value,
     },
   ];
+}
+
+function isDueDetail(
+  detail: TaskRowDetail,
+  { fieldMapping }: RowConfiguration,
+): boolean {
+  const key = propertyField(detail);
+  return key === fieldMapping.due || key === "due";
+}
+
+function isLateSchedule(
+  detail: TaskRowDetail,
+  task: TaskSummary,
+  { fieldMapping }: RowConfiguration,
+): boolean {
+  const key = propertyField(detail);
+  return (
+    (key === fieldMapping.scheduled || key === "scheduled") &&
+    !task.completed &&
+    Boolean(task.scheduled && isTaskDateOverdue(task.scheduled))
+  );
+}
+
+/** The stored colour of a priority above the collection's default. */
+function raisedColor(
+  task: TaskSummary,
+  configuration: RowConfiguration,
+): string | undefined {
+  const priority = configuration.priorities.find(
+    (option) => option.value === task.priority,
+  );
+  const fallback = configuration.priorities.find(
+    (option) => option.value === configuration.defaults.priority,
+  );
+  return priority && priority.weight > (fallback?.weight ?? 0)
+    ? priority.color
+    : undefined;
 }
 
 function detailPriorityColor(

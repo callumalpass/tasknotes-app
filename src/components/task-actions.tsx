@@ -33,6 +33,7 @@ import {
   Trash2,
   type LucideProps,
 } from "lucide-react";
+import { rememberUndo } from "../app/undo-history";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -42,7 +43,7 @@ import { useOverlay } from "./overlays/use-overlay";
 import { useExitingValue, usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget } from "../domain/completion";
-import { activeTimeEntry, todayString } from "../domain/task";
+import { activeTimeEntry } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
@@ -51,7 +52,8 @@ import { shortcutSchedule } from "../app/keyboard-shortcuts";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
 
-import type { TaskSummary } from "../domain/task";
+import type { TaskSummary, UpdateTaskInput } from "../domain/task";
+import { TaskDatePanel } from "./task-date-panel";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 interface MenuPosition {
@@ -199,7 +201,9 @@ export function TaskActions({
           ? "[data-safe-action]"
           : isOrganizeEditor(panel)
             ? "[data-panel-back]"
-            : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
+            : panel === "dates" && !matchMedia("(pointer: coarse)").matches
+              ? ".task-date-input"
+              : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
     });
   }, [panel, position]);
@@ -267,6 +271,21 @@ export function TaskActions({
     );
   }
 
+  /** Saves an edit and keeps the fields it replaced for the Undo shortcut. */
+  async function change(input: UpdateTaskInput) {
+    const earlier = Object.fromEntries(
+      Object.keys(input).map((field) => [
+        field,
+        (task as unknown as Record<string, unknown>)[field] ?? null,
+      ]),
+    ) as UpdateTaskInput;
+    await updateTask(task.id, input);
+    rememberUndo({
+      label: task.title,
+      run: () => updateTask(task.id, earlier),
+    });
+  }
+
   async function run(action: () => Promise<unknown>, after?: () => void) {
     if (busy) return;
     setBusy(true);
@@ -293,8 +312,6 @@ export function TaskActions({
     await onToggle(task, occurrenceDate);
   }
 
-  const today = todayString();
-  const tomorrow = shiftTaskDate(today, 1);
   const projectLink = taskRecordLink(task, configuration.linkWriteFormat);
   const rootRole =
     panel === "delete"
@@ -509,7 +526,7 @@ export function TaskActions({
                           radio
                           onClick={() =>
                             void run(() =>
-                              updateTask(task.id, { status: option.value }),
+                              change({ status: option.value }),
                             )
                           }
                         />
@@ -527,7 +544,7 @@ export function TaskActions({
                           radio
                           onClick={() =>
                             void run(() =>
-                              updateTask(task.id, { priority: option.value }),
+                              change({ priority: option.value }),
                             )
                           }
                         />
@@ -535,49 +552,19 @@ export function TaskActions({
                     : null}
                   {panel === "dates" ? (
                     <>
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Due today" })}
-                        onClick={() =>
-                          void run(() => updateTask(task.id, { due: today }))
-                        }
+                      <TaskDatePanel
+                        busy={busy}
+                        task={task}
+                        onApply={(input) => void run(() => change(input))}
                       />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Due tomorrow" })}
-                        onClick={() =>
-                          void run(() => updateTask(task.id, { due: tomorrow }))
-                        }
-                      />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Schedule today" })}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { scheduled: today }),
-                          )
-                        }
-                      />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Schedule tomorrow" })}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { scheduled: tomorrow }),
-                          )
-                        }
-                      />
+                      <MenuSeparator />
                       <MenuAction
                         disabled={busy || (!task.due && !task.scheduled)}
                         icon={ChevronRight}
                         label={t({ message: "Move dates one day later" })}
                         onClick={() =>
                           void run(() =>
-                            updateTask(task.id, {
+                            change({
                               ...(task.due
                                 ? { due: shiftTaskDate(task.due, 1) }
                                 : {}),
@@ -590,14 +577,13 @@ export function TaskActions({
                           )
                         }
                       />
-                      <MenuSeparator />
                       {task.due ? (
                         <MenuAction
                           disabled={busy}
                           icon={Trash2}
                           label={t({ message: "Clear due date" })}
                           onClick={() =>
-                            void run(() => updateTask(task.id, { due: null }))
+                            void run(() => change({ due: null }))
                           }
                         />
                       ) : null}
@@ -608,7 +594,7 @@ export function TaskActions({
                           label={t({ message: "Clear scheduled date" })}
                           onClick={() =>
                             void run(() =>
-                              updateTask(task.id, { scheduled: null }),
+                              change({ scheduled: null }),
                             )
                           }
                         />
@@ -798,7 +784,7 @@ export function TaskActions({
     const { t } = useLingui();
     const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
       void run(() =>
-        updateTask(task.id, {
+        change({
           scheduled: shortcutSchedule(action, task.scheduled),
         }),
       );
@@ -831,7 +817,7 @@ export function TaskActions({
                 icon={CalendarOff}
                 label={t({ message: "Clear scheduled date" })}
                 onClick={() =>
-                  void run(() => updateTask(task.id, { scheduled: null }))
+                  void run(() => change({ scheduled: null }))
                 }
               />
             </div>
@@ -846,7 +832,7 @@ export function TaskActions({
                   label={t`Priority: ${option.label}`}
                   onClick={() =>
                     void run(() =>
-                      updateTask(task.id, { priority: option.value }),
+                      change({ priority: option.value }),
                     )
                   }
                 />
@@ -973,7 +959,7 @@ export function TaskActions({
         onSubmit={(event) => {
           event.preventDefault();
           void run(() =>
-            updateTask(task.id, { [field]: organizeDraft[field] }),
+            change({ [field]: organizeDraft[field] }),
           );
         }}
       >

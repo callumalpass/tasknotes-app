@@ -38,6 +38,13 @@ import {
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
 import {
+  clearUndoHistory,
+  forgetUndo,
+  rememberUndo,
+  takeUndo,
+  type UndoEntry,
+} from "./undo-history";
+import {
   TaskCompletionReportContext,
   type TaskCompletion,
 } from "../components/task-completion-motion";
@@ -186,12 +193,29 @@ export function AppShell() {
   useEffect(() => {
     routeRef.current = route;
   });
+  const completionUndo = useRef<UndoEntry | undefined>(undefined);
+  const undoCompletion = useCallback(
+    async ({ task, occurrenceDate, advanced }: TaskCompletion) => {
+      await setTaskCompletion({
+        id: task.id,
+        occurrenceDate,
+        completed: false,
+      });
+      if (advanced) await updateTask(task.id, advanced);
+    },
+    [setTaskCompletion, updateTask],
+  );
   const reportCompleted = useCallback(
     (completion: TaskCompletion) => {
       setAddedNotice(undefined);
       setCompletedNotice({ completion, repository, route: routeRef.current });
+      completionUndo.current = {
+        label: completion.task.title,
+        run: () => undoCompletion(completion),
+      };
+      rememberUndo(completionUndo.current);
     },
-    [repository],
+    [repository, undoCompletion],
   );
   const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
   if (
@@ -583,6 +607,14 @@ export function AppShell() {
           (showBottomNavigation || showGlobalCaptureFab)
         }
       />
+      <UndoFeedback
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
+        paused={Boolean(pendingDeletion)}
+        repository={repository}
+      />
       <TaskCompletedNotice
         completion={completedNotice?.completion}
         aboveMobileControls={
@@ -590,13 +622,9 @@ export function AppShell() {
           (showBottomNavigation || showGlobalCaptureFab)
         }
         onDismiss={dismissCompleted}
-        onUndo={async ({ task, occurrenceDate, advanced }) => {
-          await setTaskCompletion({
-            id: task.id,
-            occurrenceDate,
-            completed: false,
-          });
-          if (advanced) await updateTask(task.id, advanced);
+        onUndo={async (completion) => {
+          await undoCompletion(completion);
+          if (completionUndo.current) forgetUndo(completionUndo.current);
         }}
       />
       <FeedbackNotice>
@@ -736,6 +764,63 @@ function EmptyViewsNotice({
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </section>
+  );
+}
+
+const UNDO_NOTICE_MS = 4000;
+
+/** Ctrl or Cmd+Z reverses the latest edit once its toast has gone. */
+function UndoFeedback({
+  aboveMobileControls,
+  paused,
+  repository,
+}: {
+  aboveMobileControls: boolean;
+  paused: boolean;
+  repository: unknown;
+}) {
+  const { t } = useLingui();
+  const [message, setMessage] = useState("");
+  useEffect(() => clearUndoHistory, [repository]);
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), UNDO_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+  useEffect(() => {
+    if (paused) return;
+    const undoShortcut = (event: KeyboardEvent) => {
+      if (
+        event.key.toLocaleLowerCase() !== "z" ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.shiftKey ||
+        event.defaultPrevented ||
+        isEditableTarget(event.target)
+      )
+        return;
+      const entry = takeUndo();
+      if (!entry) return;
+      event.preventDefault();
+      const { label } = entry;
+      void entry.run().then(
+        () => setMessage(t`Undid change to “${label}”`),
+        () => setMessage(t`Couldn’t undo. Try again.`),
+      );
+    };
+    window.addEventListener("keydown", undoShortcut);
+    return () => window.removeEventListener("keydown", undoShortcut);
+  }, [paused, t]);
+  if (!message) return null;
+  return (
+    <FeedbackNotice>
+      <div
+        className={`undo-toast${aboveMobileControls ? " is-above-mobile-controls" : ""}`}
+        role="status"
+      >
+        <span>{message}</span>
+      </div>
+    </FeedbackNotice>
   );
 }
 

@@ -1667,6 +1667,28 @@
   color: var(--ink-soft);
   font-size: var(--type-supporting);
 }
+.today-overdue {
+  white-space: nowrap;
+}
+.today-overdue button {
+  min-height: 28px;
+  padding: 0;
+  color: var(--danger);
+  font: inherit;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.today-overdue button:hover {
+  text-decoration: underline;
+}
+.today-overdue .today-overdue-move {
+  margin-left: 10px;
+  color: var(--ink-soft);
+  font-weight: 400;
+}
 .today-progress {
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;

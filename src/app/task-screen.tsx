@@ -21,7 +21,7 @@ import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
 import { TaskCoreProperties } from "./task-core-properties";
 import { TaskSubtasks } from "./task-subtasks";
-import { plainShortcutsSuspended } from "./keyboard-shortcuts";
+import { useTaskDetailKeys } from "./use-task-detail-keys";
 import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
@@ -744,37 +744,14 @@ function TaskEditor({
   const previousTask =
     currentIndex > 0 ? taskOrder[currentIndex - 1] : undefined;
   const nextTask = currentIndex >= 0 ? taskOrder[currentIndex + 1] : undefined;
-  const navigateAdjacent = useEffectEvent((direction: number) => {
+  const navigateAdjacent = (direction: number) => {
     const target = direction > 0 ? nextTask : previousTask;
     if (target && onNavigate) void leave(() => onNavigate(target));
+  };
+  useTaskDetailKeys({
+    onEscape: () => void leave(),
+    onNavigate: onNavigate ? navigateAdjacent : undefined,
   });
-  useEffect(() => {
-    const keydown = (event: KeyboardEvent) => {
-      // Ignore Alt solely for the alternate navigation keys. Every other
-      // suspension rule (typing, IME, overlays, modifiers) still applies.
-      const alternate =
-        event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown");
-      if (
-        event.shiftKey ||
-        event.repeat ||
-        plainShortcutsSuspended(event, alternate)
-      )
-        return;
-      const direction =
-        event.key === "j" || (alternate && event.key === "ArrowDown")
-          ? 1
-          : event.key === "k" || (alternate && event.key === "ArrowUp")
-            ? -1
-            : 0;
-      if (!direction || !onNavigate) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      navigateAdjacent(direction);
-    };
-    // Handle before the global task-list j/k handler.
-    window.addEventListener("keydown", keydown, true);
-    return () => window.removeEventListener("keydown", keydown, true);
-  }, [onNavigate]);
 
   async function toggleOccurrence() {
     const date = occurrenceDate ?? task.occurrenceDate;

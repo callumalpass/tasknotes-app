@@ -10,6 +10,17 @@
     background-color 180ms var(--ease-out);
 }
 
+/* A hairline keeps long lists scannable without boxing each task. */
+.saved-task-list > :not(:last-child) > .task-row::after,
+.saved-task-list > .task-row:not(:last-child)::after,
+.search-results .task-row:not(:last-child)::after,
+.project-group .task-row:not(:last-child)::after {
+  grid-column: 2 / -1;
+  height: 1px;
+  background: var(--line);
+  content: "";
+}
+
 /* Touch rows follow a horizontal swipe; the revealed side names the action. */
 @media (pointer: coarse) {
   .task-row:not(.kanban-card *) {
@@ -105,6 +116,104 @@
     justify-items: end;
     padding-right: 4px;
   }
+}
+
+.task-date-panel {
+  display: grid;
+  gap: 6px;
+  padding: 4px 2px 6px;
+}
+
+.task-date-target {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  background: var(--paper-sunken, var(--color-surface-sunken, transparent));
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.task-actions-menu .task-date-target button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: auto;
+  min-height: 40px;
+  padding: 3px 6px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-target button[aria-checked="true"] {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--paper-raised);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.task-date-target small {
+  color: var(--ink-muted);
+  font-size: var(--type-caption, 12px);
+  font-weight: 400;
+}
+
+.task-date-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
+.task-date-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.task-date-hint {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-caption, 12px);
+}
+
+.task-date-hint.is-error {
+  color: var(--danger);
+}
+
+.task-date-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.task-actions-menu .task-date-presets button {
+  display: block;
+  width: auto;
+  min-height: 36px;
+  padding: 0 4px;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-presets button:hover:not(:disabled),
+.task-actions-menu .task-date-presets button:focus-visible {
+  background: var(--accent-soft, var(--paper-sunken));
 }
 
 .task-actions-menu {
@@ -498,6 +607,19 @@
     background-color 160ms var(--ease-out);
 }
 
+/* A raised priority tints the ring, so rank reads without leaving the
+   checkbox column. A coloured status below takes precedence. */
+.completion-control.has-priority span {
+  border-width: 2px;
+  border-color: var(--priority-color);
+  border-color: oklch(from var(--priority-color) min(l, 0.58) c h);
+  background: color-mix(in srgb, var(--priority-color) 10%, transparent);
+}
+
+:root[data-theme="dark"] .completion-control.has-priority span {
+  border-color: oklch(from var(--priority-color) max(l, 0.68) c h);
+}
+
 /* A coloured, non-default status draws the ring itself, slightly heavier, and
    names the status in the control's label and tooltip. Its lightness is
    clamped so a pale or dark stored colour keeps 3:1 against the paper. */
@@ -661,21 +783,11 @@
   color: var(--danger);
 }
 
-/* Inside Overdue the heading already says so; the dates read as ordinary
-   metadata rather than a column of red. */
-.day-task-sections .task-section.is-overdue .task-row-meta .is-overdue,
-.day-task-sections
-  .task-section.is-overdue
-  .task-row-property.is-overdue
-  > span {
-  color: var(--ink-muted);
-}
-
-.day-task-sections
-  .task-section.is-overdue
-  .task-row-property.is-overdue
-  > strong {
-  color: inherit;
+/* A missed plan is not a missed deadline, but inside Overdue it is why the
+   task is there. */
+.task-section.is-overdue .task-row-meta .is-late,
+.task-section.is-overdue .task-row-property.is-late > strong {
+  color: var(--danger);
 }
 
 .task-row-tracking {
@@ -1064,4 +1176,11 @@
   padding: 0;
   color: var(--ink-muted);
   border-left: 0;
+}
+
+@media (pointer: fine) {
+  .task-date-panel .tasknotes-calendar-grid [role="gridcell"] {
+    max-width: 34px;
+    height: 34px;
+  }
 }
