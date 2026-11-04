@@ -113,6 +113,9 @@ it("counts open dated tasks and overdue deadlines, excluding Anytime and finishe
   ).toEqual({ total: 1, overdue: 1 });
   expect(
     todayTaskContribution(open({ scheduled: "2026-07-25" }), today),
+  ).toEqual({ total: 1, overdue: 1 });
+  expect(
+    todayTaskContribution(open({ scheduled: today, due: "2026-07-25" }), today),
   ).toEqual({ total: 1, overdue: 0 });
   for (const patch of [
     {},

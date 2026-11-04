@@ -1,5 +1,10 @@
 import { shiftTaskDate } from "./task-date-actions";
-import { taskDatePart, todayString, type TaskSummary } from "./task";
+import {
+  taskDatePart,
+  taskDayStanding,
+  todayString,
+  type TaskSummary,
+} from "./task";
 import {
   materializedOccurrenceKeys,
   projectUpcomingTasks,
@@ -67,11 +72,9 @@ export function todayTaskContribution(
 ): TodayTaskCounts {
   if (task.completed || task.archived || task.skipped)
     return { total: 0, overdue: 0 };
-  const date = taskDatePart(task.scheduled ?? task.due);
-  const due = taskDatePart(task.due);
-  const overdue = Boolean(due && due < today);
+  const standing = taskDayStanding(task, today);
   return {
-    total: Number(Boolean(date && date <= today) || overdue),
-    overdue: Number(overdue),
+    total: Number(standing === "overdue" || standing === "today"),
+    overdue: Number(standing === "overdue"),
   };
 }

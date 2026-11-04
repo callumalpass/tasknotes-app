@@ -344,6 +344,10 @@ function effectiveTaskDayFilter(
           },
         ],
       },
+      // A missed deadline stays in view behind a later Scheduled date.
+      {
+        and: [`${due}.isEmpty() == false`, `date(${due}).date() < today()`],
+      },
     ],
   };
 }

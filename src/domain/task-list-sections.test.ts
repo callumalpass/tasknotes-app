@@ -198,4 +198,33 @@ describe("todayCaptureDefaults", () => {
       due: "2026-07-30",
     });
   });
+
+  it("agrees with Upcoming about a missed deadline behind a later date", () => {
+    const today = "2026-07-26";
+    const sections = sectionTaskViewRows(
+      [
+        row("deferred", { scheduled: "2026-07-30", due: "2026-07-25" }),
+        row("answered", { scheduled: today, due: "2026-07-25" }),
+        row("slipped", { scheduled: "2026-07-25", due: "2026-07-30" }),
+      ],
+      "day",
+      today,
+    );
+    expect(
+      sections.map(({ key, rows }) => [
+        key,
+        rows.map(({ task }) => task.id),
+      ]),
+    ).toEqual([
+      ["today", ["answered"]],
+      ["overdue", ["deferred", "slipped"]],
+    ]);
+  });
+
+  it("clears a missed deadline when a task is dropped on Later", () => {
+    const task = row("late", { scheduled: "2026-07-20", due: "2026-07-25" });
+    expect(
+      taskListSectionMoveInput(task.task, "day", "later", "2026-07-26"),
+    ).toEqual({ scheduled: "2026-07-27", due: "2026-07-27" });
+  });
 });

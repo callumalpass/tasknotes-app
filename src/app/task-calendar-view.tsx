@@ -209,7 +209,9 @@ export function TaskCalendarView({
   }
   const items = useMemo(
     () =>
-      withPendingMoves(built.items, pendingMoves, execution).map(withRevision),
+      withPendingMoves(built.items, pendingMoves, execution)
+        .filter((item) => !repeatsToday(item))
+        .map(withRevision),
     [built, execution, pendingMoves],
   );
   const agendaRows = useCalendarAgenda({
@@ -485,15 +487,12 @@ export function TaskCalendarView({
   }
 
   // The Overdue section moves to today as the Today view's Overdue lane
-  // does: Scheduled becomes today and Due stays the deadline, so rows overdue
-  // only by Due stay listed. Rows already scheduled today have nothing to move.
+  // does: Scheduled becomes today and Due stays the deadline.
   const overdueRows = useMemo(() => {
-    const today = todayString();
     const rows = new Map<string, TaskViewRow>();
     for (const item of items) {
       const entry = item.data?.metadata.entry;
       if (!entry?.modelEntry.isOverdueOnToday) continue;
-      if (taskDatePart(entry.row.task.scheduled) === today) continue;
       rows.set(entry.row.task.id, entry.row);
     }
     return [...rows.values()];
@@ -896,6 +895,15 @@ function calendarView(mode: CalendarMode): ViewType {
 }
 
 /** Stamps what an item draws as its `rev`, leaving the task records out. */
+/** A task scheduled today already has its row; a missed Due date adds no other. */
+function repeatsToday(item: TaskCalendarItem): boolean {
+  const entry = item.data?.metadata.entry;
+  return (
+    !!entry?.modelEntry.isOverdueOnToday &&
+    taskDatePart(entry.row.task.scheduled) === todayString()
+  );
+}
+
 function withRevision(item: TaskCalendarItem): TaskCalendarItem {
   const data = { ...item.data! } as Partial<CalendarEventData>;
   delete data.metadata;

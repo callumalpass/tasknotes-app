@@ -321,6 +321,29 @@ export function combineTaskDateTime(
     : taskDatePart(date) || date;
 }
 
+/** Where an open task stands against one day. */
+export type TaskDayStanding = "overdue" | "today" | "later" | "anytime";
+
+/**
+ * The one reading of "overdue" that Today, Upcoming and the sidebar share. A
+ * past Scheduled or Due date makes a task overdue, except that scheduling it
+ * for today is the person's answer to that: it then belongs to today, though
+ * its row still shows the deadline it missed.
+ */
+export function taskDayStanding(
+  task: Pick<TaskSummary, "scheduled" | "due">,
+  today: string,
+): TaskDayStanding {
+  const scheduled = taskDatePart(task.scheduled);
+  const due = taskDatePart(task.due);
+  if (scheduled === today) return "today";
+  if ((scheduled && scheduled < today) || (due && due < today))
+    return "overdue";
+  const date = scheduled || due;
+  if (!date) return "anytime";
+  return date === today ? "today" : "later";
+}
+
 export function isTaskDateOverdue(value: string, now = new Date()): boolean {
   const date = dateFromStorage(value);
   if (!date) return false;

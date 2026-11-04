@@ -1,5 +1,5 @@
 import { setTaskDate, shiftTaskDate } from "./task-date-actions";
-import { taskDatePart, todayString } from "./task";
+import { taskDatePart, taskDayStanding, todayString } from "./task";
 
 import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
@@ -35,15 +35,7 @@ export function sectionTaskViewRows(
   ];
   const byKey = new Map(sections.map((section) => [section.key, section]));
   for (const row of rows) {
-    const date = taskDatePart(row.task.scheduled ?? row.task.due);
-    const key = !date
-      ? "anytime"
-      : date < today
-        ? "overdue"
-        : date === today
-          ? "today"
-          : "later";
-    byKey.get(key)?.rows.push(row);
+    byKey.get(taskDayStanding(row.task, today))?.rows.push(row);
   }
   return options.includeEmpty
     ? sections
@@ -69,8 +61,12 @@ export function taskListSectionMoveInput(
       ? today
       : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
   const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
-  const current = task[field];
-  return { [field]: setTaskDate(current, targetDate) };
+  const input = { [field]: setTaskDate(task[field], targetDate) };
+  // A missed deadline would keep the task overdue wherever it was dropped.
+  const due = taskDatePart(task.due);
+  return destination === "later" && due && due < today
+    ? { ...input, due: setTaskDate(task.due, targetDate) }
+    : input;
 }
 
 function isSectionKey(value: string): value is TaskListSectionKey {

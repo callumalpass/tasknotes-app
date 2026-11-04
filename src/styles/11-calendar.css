@@ -1564,6 +1564,7 @@
 
 .agenda-task-slot {
   min-width: 0;
+  font-size: var(--type-body);
 }
 
 .full-calendar-view.is-agenda .tnc-list-add {
