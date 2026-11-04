@@ -55,3 +55,32 @@ it("reschedules in one decision while preserving the existing time", async () =>
   );
   expect(close).toHaveBeenCalledOnce();
 });
+
+it("offers every configured priority directly and saves the choice", async () => {
+  updateTask.mockClear();
+  render(
+    <TaskPropertyEditor
+      task={{ id: "one", priority: "normal" } as Task}
+      detail={{
+        key: "priority",
+        label: "Priority",
+        value: "Normal",
+        rawValue: "normal",
+      }}
+      anchor={{ top: 0, right: 0, bottom: 0, left: 0, width: 40 }}
+      onClose={vi.fn()}
+    />,
+  );
+  const current = screen.getByRole("button", { name: "Normal" });
+  expect(current).toHaveAttribute("aria-pressed", "true");
+  expect(current).toHaveFocus();
+  fireEvent.keyDown(current, { key: "ArrowUp" });
+  expect(current.previousElementSibling).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "High" }));
+  await waitFor(() =>
+    expect(updateTask).toHaveBeenCalledWith(
+      "one",
+      expect.objectContaining({ priority: "high" }),
+    ),
+  );
+});

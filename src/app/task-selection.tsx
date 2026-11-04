@@ -84,6 +84,7 @@ export function SelectTasksOption() {
 
 function SelectionKeyboard({ store }: { store: TaskSelectionStore }) {
   useEffect(() => {
+    let revealing: { from: string; next: string } | null = null;
     const keydown = (event: KeyboardEvent) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (
@@ -134,13 +135,17 @@ function SelectionKeyboard({ store }: { store: TaskSelectionStore }) {
             : 0;
       if (!direction || !event.shiftKey) return;
       event.preventDefault();
+      // Focus lags behind while a row mounts, so a held key continues from
+      // the row still being revealed instead of repeating the same step.
+      const from = revealing?.from === id ? revealing.next : id;
       const ids = store.ids,
-        next = ids[ids.indexOf(id) + direction];
+        next = ids[ids.indexOf(from) + direction];
       if (!next) return;
-      store.range(next, id);
+      store.range(next, from);
       const title = region.querySelector<HTMLButtonElement>(
         `.task-row[data-task-id="${CSS.escape(next)}"] .task-row-title`,
       );
+      revealing = title ? null : { from: id, next };
       if (title) {
         title.focus({ preventScroll: true });
         window.requestAnimationFrame(() =>

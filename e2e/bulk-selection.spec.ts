@@ -353,7 +353,7 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       page.getByText(
         choice === "none"
           ? "Removed scheduled dates from 2 tasks"
-          : "Scheduled 2 tasks for 2026-11-12",
+          : "Scheduled 2 tasks for Thu, Nov 12",
         { exact: true },
       ),
     ).toBeVisible();

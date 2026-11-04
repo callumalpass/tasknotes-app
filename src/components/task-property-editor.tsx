@@ -3,13 +3,14 @@ import {
   type EditableProperty,
 } from "./task-property-kind";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import {
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
 
@@ -115,7 +116,10 @@ export function TaskPropertyEditor({
     rootRef: editorRef,
     modal: window.innerWidth <= 600,
     onDismiss: onClose,
-    initialFocus: () => closeRef.current,
+    initialFocus: () =>
+      editorRef.current?.querySelector<HTMLElement>(
+        ".task-property-options [aria-pressed='true']",
+      ) ?? closeRef.current,
   });
 
   async function save(next: unknown = value, closeAfter = true) {
@@ -315,23 +319,43 @@ function PropertyControl({
         ? configuration.statuses
         : configuration.priorities;
     return (
-      <TaskNotesSelectField
-        disabled={disabled}
-        label={
+      <div
+        aria-label={
           property.kind === "status"
             ? t({ message: "Status" })
             : t({ message: "Priority" })
         }
-        options={options.map((option) => ({
-          value: option.value,
-          label: option.label,
-        }))}
-        value={typeof value === "string" ? value : ""}
-        onChange={(next) => {
-          onChange(next);
-          onCommit(next);
-        }}
-      />
+        className="task-property-options"
+        role="group"
+        onKeyDown={moveOptionFocus}
+      >
+        {options.map((option) => (
+          <button
+            aria-pressed={option.value === value}
+            disabled={disabled}
+            key={option.value}
+            type="button"
+            onClick={() => {
+              onChange(option.value);
+              onCommit(option.value);
+            }}
+          >
+            <i
+              aria-hidden="true"
+              style={
+                {
+                  "--option-color":
+                    option.value === "none" ? undefined : option.color,
+                } as CSSProperties
+              }
+            />
+            <span>{option.label}</span>
+            {option.value === value ? (
+              <Check aria-hidden="true" size={16} />
+            ) : null}
+          </button>
+        ))}
+      </div>
     );
   }
   if (property.kind === "scheduled" || property.kind === "due")
@@ -454,6 +478,15 @@ function PropertyControl({
       />
     </label>
   );
+}
+
+function moveOptionFocus(event: KeyboardEvent<HTMLDivElement>) {
+  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+  if (!step) return;
+  event.preventDefault();
+  const options = [...event.currentTarget.querySelectorAll("button")];
+  const current = options.indexOf(document.activeElement as HTMLButtonElement);
+  options[(current + step + options.length) % options.length]?.focus();
 }
 
 function customInputValue(

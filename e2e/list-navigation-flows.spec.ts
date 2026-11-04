@@ -17,7 +17,12 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   await page.getByLabel("Date for overdue tasks").fill(value);
   await page.getByRole("button", { name: "Schedule all", exact: true }).click();
-  await expect(page.locator(".undo-toast")).toContainText(`to ${value}`);
+  const label = new Intl.DateTimeFormat("en", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+  await expect(page.locator(".undo-toast")).toContainText(`to ${label}`);
   await expect(page.locator(".undo-toast")).toContainText("deadline");
   await page
     .locator(".undo-toast")

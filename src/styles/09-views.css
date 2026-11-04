@@ -1680,8 +1680,8 @@
   }
 }
 .today-overdue button {
-  min-height: 28px;
-  padding: 0;
+  margin-block: -6px;
+  padding: 6px 0;
   color: var(--danger);
   font: inherit;
   font-weight: 600;

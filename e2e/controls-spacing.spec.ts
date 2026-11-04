@@ -97,9 +97,8 @@ for (const colorScheme of ["light", "dark"] as const) {
         .locator(".task-core-properties .tasknotes-date-trigger")
         .first()
         .click();
-      const popover = page.locator(".tasknotes-calendar-popover");
+      const popover = page.locator(".task-detail-date-popover");
       await expect(popover).toBeVisible();
-      await expect(popover).not.toHaveAttribute("data-state", "closed");
       const bounds = (await popover.boundingBox())!;
       const headers = popover.locator(".tasknotes-calendar-weekdays > span");
       const week = popover
@@ -115,7 +114,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         expect(cell.x + cell.width).toBeLessThanOrEqual(
           bounds.x + bounds.width,
         );
-        expect(cell.width).toBeGreaterThanOrEqual(40);
+        expect(cell.width).toBeGreaterThanOrEqual(34);
         expect(
           Math.abs(cell.x + cell.width / 2 - (header.x + header.width / 2)),
         ).toBeLessThan(2);

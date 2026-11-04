@@ -106,7 +106,8 @@ for (const colorScheme of ["light", "dark"] as const) {
     }) => {
       await page.goto(calendar);
       const phone = (page.viewportSize()?.width ?? 0) < 840;
-      // Phone months draw dots; wider months draw 24px bars.
+      // Phone months draw dots; wider months draw chips of up to two title
+      // lines and a detail line.
       const dot = page.locator(".tnc-dg-dots .tnc-item--indicator").first();
       if (phone) {
         await expect(dot).toBeVisible();
@@ -117,7 +118,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           .first();
         await expect(event).toBeVisible();
         await expect(event).toHaveCSS("min-height", "24px");
-        expect((await event.boundingBox())!.height).toBeLessThanOrEqual(28);
+        expect((await event.boundingBox())!.height).toBeLessThanOrEqual(60);
       }
       await page.getByLabel("Calendar layout", { exact: true }).click();
       await page.getByRole("button", { name: "Agenda", exact: true }).click();
