@@ -1343,10 +1343,6 @@ msgstr "カレンダーのモードと、イベントにするタスクの日付
 msgid "Choose the information shown beneath each task."
 msgstr "各タスクの下に表示する情報を選択します。"
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "ナビゲーションに表示する項目や順序を選び、保存済みビューを管理します。"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "タスクにする項目を選択"
@@ -3058,7 +3054,6 @@ msgid "Manage"
 msgstr "管理"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "ビューを管理"
 
@@ -3769,9 +3764,9 @@ msgstr "{0}を開く"
 msgid "Open a collection first"
 msgstr "まずコレクションを開いてください"
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "ビューを開くか、ナビゲーションに表示するかを選択します。"
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "保存したビューを開くか、ナビゲーションに表示する項目を選びます。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

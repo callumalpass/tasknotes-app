@@ -335,6 +335,34 @@ it("reaches every rank of a long priority list", async () => {
   expect(beyond.input.title).toBe("Call Rowan p8");
 });
 
+describe("status and priority words in a title", () => {
+  it.each([
+    ["Doing the dishes on Monday", "Doing the dishes", undefined],
+    ["Zebra doing check", "Zebra doing check", undefined],
+    ["Send high five to Rowan", "Send high five to Rowan", undefined],
+  ])("keeps %s as written", async (text, title, priority) => {
+    const { input } = await parseTaskCapture(text, configuration, "en-AU");
+    expect(input.title).toBe(title);
+    expect(input.status).toBeUndefined();
+    expect(input.priority).toBe(priority);
+  });
+
+  it("still reads marked values", async () => {
+    const { input } = await parseTaskCapture(
+      "Call Rowan !high *doing",
+      configuration,
+      "en-AU",
+    );
+    expect(input).toEqual(
+      expect.objectContaining({
+        title: "Call Rowan",
+        priority: "high",
+        status: "doing",
+      }),
+    );
+  });
+});
+
 describe("day parts in a title", () => {
   const next = new Date();
   next.setDate(next.getDate() + 1);

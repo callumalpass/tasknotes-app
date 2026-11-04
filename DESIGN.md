@@ -172,9 +172,9 @@ Today             Search       More
   list rows, and a property's label and value wrap together in narrow columns. Scheduled
   and Due read relative to today within a week ("Yesterday", "3 days ago",
   "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
-  time so overdue rows stay compact. A row carries one red date: a past due
-  date beside its visible label, or a missed scheduled date when no deadline
-  has passed. A
+  time so overdue rows stay compact. Only a past due date is overdue and takes
+  the danger color beside its visible label; a missed scheduled date is a plan,
+  not lateness, and stays muted. A
   coloured non-default status draws the completion ring in that color and names
   the status in the control's label and tooltip. On list rows, wrapped
   metadata keeps an even 24px rhythm, and a project, status, or priority value
@@ -230,8 +230,9 @@ Today             Search       More
   fixed head and foot with no scrollbar, fading into the foot when more follows;
   they reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
   it Home. Because the
-  sidebar already shows navigation order, desktop Manage views shows the ordered
-  list only while Reorder is active.
+  sidebar already shows navigation order, desktop Views shows the ordered
+  list only while Reorder is active. Views leads with search and saved views,
+  unpinned ones first, and shows a view's file path as a tooltip.
 - Mobile bottom navigation shows the first three configured destinations beside
   More. Tab labels scale with system text until the tab width is reached and
   never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
@@ -343,7 +344,10 @@ Today             Search       More
   a command palette (navigation, actions, the focused or open task, task
   search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
   shows a quiet Quick actions entry in the sidebar foot. Option lists keep the
-  active option in view, and typed letters jump within them.
+  active option in view, and typed letters jump within them. In capture, a
+  status or priority name counts only with its trigger, or beside the word
+  priority, so ordinary words stay in the title. Past five priorities, rows
+  draw priority as one ordered ramp from rank.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.

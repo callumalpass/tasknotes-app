@@ -89,7 +89,7 @@ test("opens the original held client without relay traffic and preserves navigat
   expect(outside).toEqual([]);
   await nav(page, "Views");
   await expect(
-    page.getByRole("heading", { name: "Manage views" }),
+    page.getByRole("heading", { name: "Views", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Create view", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();

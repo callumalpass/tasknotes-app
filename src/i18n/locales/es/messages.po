@@ -1343,10 +1343,6 @@ msgstr "Elige el modo de calendario y qué fechas de tarea se convierten en even
 msgid "Choose the information shown beneath each task."
 msgstr "Elige la información que aparece debajo de cada tarea."
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "Elige qué aparece en la navegación, cambia su orden y administra las vistas guardadas."
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "Elige qué se convierte en tarea"
@@ -3058,7 +3054,6 @@ msgid "Manage"
 msgstr "Administrar"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "Administrar vistas"
 
@@ -3769,9 +3764,9 @@ msgstr "Abrir {0}"
 msgid "Open a collection first"
 msgstr "Abre primero una colección"
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "Abre una vista o elige si aparece en la navegación."
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "Abre una vista guardada o elige qué aparece en la navegación."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

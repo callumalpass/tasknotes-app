@@ -1257,12 +1257,11 @@ export function ViewsScreen({
           <header className="screen-header compact-header views-catalog-header">
             <div>
               <h1 id="views-title">
-                <Trans>Manage views</Trans>
+                <Trans>Views</Trans>
               </h1>
               <p>
                 <Trans>
-                  Choose what appears in navigation, change its order, and
-                  manage saved views.
+                  Open a saved view, or choose what appears in navigation.
                 </Trans>
               </p>
             </div>

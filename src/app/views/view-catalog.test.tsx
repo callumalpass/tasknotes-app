@@ -68,7 +68,7 @@ it("uses view names for native source headings and keeps the portable path secon
     screen.queryByRole("heading", { name: "TaskNotes/Views/today.base" }),
   ).toBeNull();
   expect(
-    screen.getAllByText("TaskNotes/Views/today.base", { exact: true }).length,
+    screen.getAllByTitle("TaskNotes/Views/today.base").length,
   ).toBeGreaterThan(0);
 });
 

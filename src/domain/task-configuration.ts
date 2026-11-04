@@ -615,9 +615,29 @@ export function markedPriorityColorOf(
   const priority = configuration.priorities.find(
     (option) => option.value === value,
   );
-  return priority &&
-    priority.value !== configuration.defaults.priority &&
-    priority.value !== "none"
-    ? priority.color
-    : undefined;
+  if (
+    !priority ||
+    priority.value === configuration.defaults.priority ||
+    priority.value === "none"
+  )
+    return undefined;
+  return configuration.priorities.length > ORDERED_PRIORITY_THRESHOLD
+    ? rankedPriorityColor(priority, configuration.priorities)
+    : priority.color;
+}
+
+/** Past this many priorities, separate hues stop reading as an order. */
+const ORDERED_PRIORITY_THRESHOLD = 5;
+
+function rankedPriorityColor(
+  priority: { value: string; weight?: number },
+  priorities: readonly { value: string; weight?: number }[],
+): string {
+  const ranked = [...priorities]
+    .filter(({ value }) => value !== "none")
+    .sort((left, right) => (left.weight ?? 0) - (right.weight ?? 0));
+  const rank =
+    ranked.findIndex(({ value }) => value === priority.value) /
+    Math.max(1, ranked.length - 1);
+  return `color-mix(in oklch, var(--danger) ${Math.round(15 + rank * 85)}%, var(--ink-muted))`;
 }

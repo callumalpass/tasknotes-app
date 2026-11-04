@@ -1343,10 +1343,6 @@ msgstr "Выберите режим календаря и даты задач, �
 msgid "Choose the information shown beneath each task."
 msgstr "Выберите сведения, отображаемые под каждой задачей."
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "Выберите элементы навигации, измените их порядок и управляйте сохранёнными представлениями."
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "Выберите, что станет задачей"
@@ -3058,7 +3054,6 @@ msgid "Manage"
 msgstr "Управление"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "Управление представлениями"
 
@@ -3769,9 +3764,9 @@ msgstr "Открыть: {0}"
 msgid "Open a collection first"
 msgstr "Сначала откройте коллекцию"
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "Откройте представление или укажите, показывать ли его в навигации."
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "Откройте сохранённое представление или выберите, что показывать в навигации."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

@@ -447,8 +447,7 @@
 
 .view-document-heading h3,
 .view-document-heading p,
-.saved-view-source-heading h4,
-.saved-view-source-heading small {
+.saved-view-source-heading h4 {
   margin: 0;
 }
 
@@ -464,15 +463,6 @@
   font-size: var(--type-body);
 }
 
-.saved-view-source-heading small,
-.saved-view-path {
-  overflow: hidden;
-  color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .saved-view-document + .saved-view-document {
   margin-top: 0;
@@ -705,10 +695,6 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 2px;
-  }
-
-  .saved-view-source-heading small {
-    max-width: 100%;
   }
 }
 

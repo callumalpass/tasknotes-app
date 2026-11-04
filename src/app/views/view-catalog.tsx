@@ -125,41 +125,28 @@ export function ViewCatalog({
       )
       .map((view) => view.key),
   );
+  const allPinned = (document: TaskViewDocument) =>
+    document.views.every((view) => navigationViewKeys.includes(view.key));
   const visibleDocuments = documents
     .map((document) => ({
       ...document,
       views: document.views.filter((view) => visibleViewKeys.has(view.key)),
     }))
-    .filter((document) => document.views.length > 0);
+    .filter((document) => document.views.length > 0)
+    // The sidebar already reaches pinned views, so the rest lead here.
+    .toSorted(
+      (left, right) => Number(allPinned(left)) - Number(allPinned(right)),
+    );
   const visibleCount = visibleTools.length + visibleViewKeys.size;
 
   return (
     <div className="view-catalog">
-      <NavigationViewOrder
-        keys={navigationViewKeys}
-        specialViews={[
-          {
-            key: SCRATCHPAD_NAVIGATION_KEY,
-            name: t`Scratchpad`,
-            icon: FilePenLine,
-          },
-          { key: SEARCH_NAVIGATION_KEY, name: t`Search`, icon: SearchIcon },
-        ]}
-        views={views}
-        onMove={onMoveNavigation}
-      />
-
       <section className="all-views" aria-labelledby="all-views-title">
         <header className="all-views-heading">
           <div>
             <h2 id="all-views-title">
               <Trans>All views</Trans>
             </h2>
-            <p>
-              <Trans>
-                Open a view or choose whether it appears in navigation.
-              </Trans>
-            </p>
           </div>
           <span aria-label={t`${visibleCount} views shown`}>
             {countLabel(visibleCount, "view")}
@@ -233,7 +220,10 @@ export function ViewCatalog({
                     key={document.source.path}
                   >
                     {document.views.length > 1 ? (
-                      <header className="saved-view-source-heading">
+                      <header
+                        className="saved-view-source-heading"
+                        title={document.source.path}
+                      >
                         <h4>
                           {document.name === document.source.path
                             ? document.views
@@ -241,7 +231,6 @@ export function ViewCatalog({
                                 .join(" · ")
                             : document.name}
                         </h4>
-                        <small>{document.source.path}</small>
                       </header>
                     ) : null}
                     <div className="saved-view-list">
@@ -304,6 +293,20 @@ export function ViewCatalog({
           </div>
         )}
       </section>
+
+      <NavigationViewOrder
+        keys={navigationViewKeys}
+        specialViews={[
+          {
+            key: SCRATCHPAD_NAVIGATION_KEY,
+            name: t`Scratchpad`,
+            icon: FilePenLine,
+          },
+          { key: SEARCH_NAVIGATION_KEY, name: t`Search`, icon: SearchIcon },
+        ]}
+        views={views}
+        onMove={onMoveNavigation}
+      />
     </div>
   );
 }
@@ -363,13 +366,13 @@ function SavedViewRow({
     <div className="saved-view-row">
       <button
         className="saved-view-open"
+        title={view.source.path}
         type="button"
         onClick={() => onOpen(view)}
       >
         <ViewIcon view={view} />
         <span>
           <strong>{view.name}</strong>
-          <small className="saved-view-path">{view.source.path}</small>
         </span>
         <ChevronRight aria-hidden="true" size={18} />
       </button>

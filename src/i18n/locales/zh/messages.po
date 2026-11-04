@@ -1343,10 +1343,6 @@ msgstr "选择日历模式，以及哪些任务日期会显示为日历事件。
 msgid "Choose the information shown beneath each task."
 msgstr "选择每个任务下方显示的信息。"
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "选择导航中显示的内容、调整顺序并管理已保存的视图。"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "选择要转换为任务的内容"
@@ -3058,7 +3054,6 @@ msgid "Manage"
 msgstr "管理"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "管理视图"
 
@@ -3769,9 +3764,9 @@ msgstr "打开 {0}"
 msgid "Open a collection first"
 msgstr "请先打开一个集合"
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "打开视图，或选择是否在导航中显示。"
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "打开已保存的视图，或选择在导航中显示的内容。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

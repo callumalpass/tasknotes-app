@@ -703,7 +703,7 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await page.goto("views/?demo=24");
 
   await expect(
-    page.getByRole("heading", { name: "Manage views" }),
+    page.getByRole("heading", { name: "Views", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(

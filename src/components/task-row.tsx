@@ -384,7 +384,7 @@ export function TaskRow({
               {contextLeadsDetails ? context : null}
               {shownDetails.map((detail) => (
                 <button
-                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}${isLateSchedule(detail, displayedTask, configuration) ? " is-late" : ""}`}
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}`}
                   key={detail.key}
                   title={
                     detail.description ?? `${detail.label}: ${detail.value}`
@@ -409,13 +409,7 @@ export function TaskRow({
             {tracking ? <TrackingIndicator /> : null}
             {shownDetails.map((detail) => (
               <button
-                className={
-                  detail.overdue
-                    ? "is-overdue"
-                    : isLateSchedule(detail, displayedTask, configuration)
-                      ? "is-late"
-                      : undefined
-                }
+                className={detail.overdue ? "is-overdue" : undefined}
                 aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
                 // Row keys and the actions menu reach these without a Tab
@@ -767,21 +761,6 @@ function isDueDetail(
   return key === fieldMapping.due || key === "due";
 }
 
-function isLateSchedule(
-  detail: TaskRowDetail,
-  task: TaskSummary,
-  { fieldMapping }: RowConfiguration,
-): boolean {
-  const key = propertyField(detail);
-  return (
-    (key === fieldMapping.scheduled || key === "scheduled") &&
-    !task.completed &&
-    Boolean(task.scheduled && isTaskDateOverdue(task.scheduled)) &&
-    // One red date to a row: a missed deadline outranks a missed plan.
-    !(task.due && isTaskDateOverdue(task.due))
-  );
-}
-
 function detailPriorityColor(
   detail: TaskRowDetail,
   configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
@@ -791,9 +770,11 @@ function detailPriorityColor(
   const key = bracketed?.[1] ?? detail.key.replace(/^note\./, "");
   if (key !== configuration.fieldMapping.priority && key !== "priority")
     return undefined;
-  return configuration.priorities.find(
-    (option) => option.value === detail.rawValue,
-  )?.color;
+  return (
+    markedPriorityColorOf(detail.rawValue, configuration) ??
+    configuration.priorities.find((option) => option.value === detail.rawValue)
+      ?.color
+  );
 }
 
 function isCompactDetail(

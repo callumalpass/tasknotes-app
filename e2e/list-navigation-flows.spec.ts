@@ -533,12 +533,16 @@ test("a board's columns fit a laptop width before it scrolls", async ({
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("an overdue row carries one red date", async ({ page }) => {
-  const row = page
-    .locator(".task-row")
-    .filter({ hasText: "Prepare quarterly planning session" });
-  await expect(row.locator(".is-overdue")).toHaveCount(1);
-  await expect(row.locator(".is-late")).toHaveCount(0);
+test("only a missed deadline turns a row's date red", async ({ page }) => {
+  const rows = page.locator(".task-row");
+  await expect(
+    rows
+      .filter({ hasText: "Prepare quarterly planning session" })
+      .locator(".is-overdue"),
+  ).toHaveCount(1);
+  await expect(
+    rows.filter({ hasText: "Book the project room" }).locator(".is-overdue"),
+  ).toHaveCount(0);
 });
 
 test("s opens status from a row and the palette offers it", async ({

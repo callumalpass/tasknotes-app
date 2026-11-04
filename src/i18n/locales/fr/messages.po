@@ -1344,10 +1344,6 @@ msgstr "Choisissez le mode du calendrier et les dates de tâches qui deviennent 
 msgid "Choose the information shown beneath each task."
 msgstr "Choisissez les informations affichées sous chaque tâche."
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "Choisissez les éléments de navigation, changez leur ordre et gérez les vues enregistrées."
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "Choisir ce qui devient une tâche"
@@ -3059,7 +3055,6 @@ msgid "Manage"
 msgstr "Gérer"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "Gérer les vues"
 
@@ -3770,9 +3765,9 @@ msgstr "Ouvrir {0}"
 msgid "Open a collection first"
 msgstr "Ouvrez d’abord une collection"
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "Ouvrez une vue ou choisissez si elle apparaît dans la navigation."
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "Ouvrez une vue enregistrée ou choisissez ce qui apparaît dans la navigation."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

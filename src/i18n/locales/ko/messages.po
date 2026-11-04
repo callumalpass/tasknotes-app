@@ -1343,10 +1343,6 @@ msgstr "캘린더 모드와 이벤트로 표시할 작업 날짜를 선택하세
 msgid "Choose the information shown beneath each task."
 msgstr "각 작업 아래에 표시할 정보를 선택하세요."
 
-#: src/app/views-screen.tsx
-msgid "Choose what appears in navigation, change its order, and manage saved views."
-msgstr "탐색 메뉴에 표시할 항목과 순서를 선택하고 저장된 뷰를 관리하세요."
-
 #: src/app/scratchpad-screen.tsx
 msgid "Choose what becomes a task"
 msgstr "작업으로 만들 항목 선택"
@@ -3058,7 +3054,6 @@ msgid "Manage"
 msgstr "관리"
 
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 msgid "Manage views"
 msgstr "뷰 관리"
 
@@ -3769,9 +3764,9 @@ msgstr "{0} 열기"
 msgid "Open a collection first"
 msgstr "먼저 컬렉션을 여세요."
 
-#: src/app/views/view-catalog.tsx
-msgid "Open a view or choose whether it appears in navigation."
-msgstr "뷰를 열거나 탐색 메뉴에 표시할지 선택하세요."
+#: src/app/views-screen.tsx
+msgid "Open a saved view, or choose what appears in navigation."
+msgstr "저장된 보기를 열거나 탐색에 표시할 항목을 선택하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"

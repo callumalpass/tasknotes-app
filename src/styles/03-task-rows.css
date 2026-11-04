@@ -860,12 +860,6 @@
   color: var(--danger);
 }
 
-/* A missed plan reads the same in every list that shows it. */
-.task-row-meta .is-late,
-.task-row-property.is-late > strong {
-  color: var(--danger);
-}
-
 .task-row-tracking {
   display: inline-flex;
   flex: 0 0 auto;

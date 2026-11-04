@@ -44,7 +44,10 @@ export async function parseTaskCapture(
   knownProjects: readonly string[] = [],
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
-  const titleWords = dayPartsInTitle(text);
+  const titleWords = [
+    ...dayPartsInTitle(text),
+    ...choiceWordsInTitle(text, configuration),
+  ].sort((left, right) => left.start - right.start);
   const projectWords = knownProjectSpaces(
     text,
     knownProjects,
@@ -274,6 +277,48 @@ function dayPartsInTitle(text: string): { start: number; end: number }[] {
       start: match.index,
       end: match.index + match[0].length,
     }));
+}
+
+/**
+ * Finds status and priority names typed as ordinary words, such as "Open the
+ * shop". They set a value only with a trigger ("*open", "!high") or beside the
+ * word "priority"; otherwise they would vanish from the title.
+ */
+function choiceWordsInTitle(
+  text: string,
+  configuration: TaskCollectionConfiguration,
+): { start: number; end: number }[] {
+  const triggers = captureTriggers(configuration);
+  const triggerOf = (propertyId: string) =>
+    triggers.find((entry) => entry.propertyId === propertyId)?.trigger ?? "";
+  const escape = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const words = [
+    ...configuration.statuses.flatMap(({ label, value }) =>
+      [label, value].map((name) => ({ name, property: "status" })),
+    ),
+    ...configuration.priorities.flatMap(({ label, value }) =>
+      [label, value].map((name) => ({ name, property: "priority" })),
+    ),
+  ];
+  const found = new Map<number, number>();
+  for (const { name, property } of words) {
+    if (!name.trim()) continue;
+    const pattern = new RegExp(
+      `(?<![\\p{L}\\p{N}_${escape(triggerOf(property))}])${escape(name)}(?![\\p{L}\\p{N}_])`,
+      "giu",
+    );
+    for (const match of text.matchAll(pattern)) {
+      const end = match.index + match[0].length;
+      const explicit =
+        property === "priority" &&
+        (/^\s*priority\b/iu.test(text.slice(end)) ||
+          /\bpriority\s*:?\s*$/iu.test(text.slice(0, match.index)));
+      if (!explicit)
+        found.set(match.index, Math.max(found.get(match.index) ?? 0, end));
+    }
+  }
+  return [...found].map(([start, end]) => ({ start, end }));
 }
 
 function restoreTitleWords(
