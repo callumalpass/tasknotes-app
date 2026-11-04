@@ -225,8 +225,10 @@ Today             Search       More
   the plain list layout, are distinguished by name. The sidebar, phone tab
   bar, More menu, and Manage views use the same mapping.
 - The desktop sidebar leads with the collection switcher and a filled New
-  task action, lists navigation destinations, and groups Manage views and Settings at its foot. Destinations
-  reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
+  task action, lists navigation destinations, and keeps one row at its foot: labelled Views
+  beside icon-only Quick actions and Settings. Destinations scroll between the
+  fixed head and foot with no scrollbar, fading into the foot when more follows;
+  they reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
   it Home. Because the
   sidebar already shows navigation order, desktop Manage views shows the ordered
   list only while Reorder is active.
@@ -264,7 +266,9 @@ Today             Search       More
   appears once as a dismissible banner and remains under About. Settings has
   no capture control of its own.
 - Projects shows a project count beside a compact native "Jump to project"
-  picker rather than a full-width field.
+  picker rather than a full-width field. A sidebar project opens its own page,
+  with All projects as the way back. Parents of subtasks are not sidebar
+  projects.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The
@@ -338,7 +342,8 @@ Today             Search       More
   to typing, IME composition, modifiers, and any open overlay. Cmd/Ctrl+K opens
   a command palette (navigation, actions, the focused or open task, task
   search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
-  shows a quiet Commands ⌘K entry in the sidebar utilities.
+  shows a quiet Quick actions entry in the sidebar foot. Option lists keep the
+  active option in view, and typed letters jump within them.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
@@ -457,8 +462,8 @@ Today             Search       More
   pages and editors reflow at 320px with 200% root text; deliberate board and
   calendar scrolling stays local rather than widening the document.
 - Board columns holding the empty status or priority read "No status" or
-  "No priority". Desktop columns share the available width before the board
-  scrolls. Phones show one full-width column at a time with mandatory snapping;
+  "No priority". Desktop columns share the available width down to 216px
+  before the board scrolls. Phones show one full-width column at a time with mandatory snapping;
   a jump bar above the board names every column with its count and marks the
   visible one.
 - A kanban board consumes the remaining usable viewport. Its horizontal
