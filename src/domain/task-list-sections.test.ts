@@ -24,14 +24,14 @@ describe("sectionTaskViewRows", () => {
 
     expect(sectionTaskViewRows(rows, "day", "2026-07-26")).toEqual([
       {
-        key: "today",
-        label: "Today",
-        rows: [rows[1], rows[3]],
-      },
-      {
         key: "overdue",
         label: "Overdue",
         rows: [rows[2]],
+      },
+      {
+        key: "today",
+        label: "Today",
+        rows: [rows[1], rows[3]],
       },
       {
         key: "anytime",
@@ -57,8 +57,8 @@ describe("sectionTaskViewRows", () => {
         },
       ).map(({ key, rows }) => [key, rows.length]),
     ).toEqual([
-      ["today", 1],
       ["overdue", 0],
+      ["today", 1],
       ["anytime", 0],
       ["later", 0],
     ]);
@@ -213,8 +213,8 @@ describe("todayCaptureDefaults", () => {
     expect(
       sections.map(({ key, rows }) => [key, rows.map(({ task }) => task.id)]),
     ).toEqual([
-      ["today", ["answered"]],
       ["overdue", ["deferred", "slipped"]],
+      ["today", ["answered"]],
     ]);
   });
 
