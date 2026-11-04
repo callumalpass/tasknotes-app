@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render } from "../test/render";
+import { act, cleanup, fireEvent, render, within } from "../test/render";
 import { activateAppLocale } from "../i18n/app";
 import type { ItemArg } from "@tasknotes/calendar";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -219,6 +219,43 @@ describe("year layout", () => {
 });
 
 describe("shared agenda", () => {
+  it("opens grid day details only after a selection and offers an explicit close", () => {
+    const view = within(
+      renderCalendar(execution("2026-07-24"), vi.fn()).container,
+    );
+    expect(
+      view.queryByRole("complementary", { name: "Selected day" }),
+    ).toBeNull();
+    act(() =>
+      (calendar.props!.onDateClick as (info: unknown) => void)({
+        dateStr: "2026-07-24",
+        startStr: "2026-07-24",
+        allDay: true,
+        jsEvent: new MouseEvent("click"),
+      }),
+    );
+    expect(
+      view.getByRole("complementary", { name: "Selected day" }),
+    ).toBeVisible();
+    fireEvent.click(view.getByRole("button", { name: "Close day details" }));
+    expect(
+      view.queryByRole("complementary", { name: "Selected day" }),
+    ).toBeNull();
+  });
+
+  it("starts a newly chosen time grid at the working day, not the agenda scroll offset", () => {
+    const current = execution("2026-07-24");
+    current.view.presentation!.options.calendarView = "dayGridMonth";
+    const view = within(renderCalendar(current, vi.fn()).container);
+    const scrollToTime = vi.fn();
+    (calendar.props!.calendarRef as (instance: unknown) => void)({
+      scrollToTime,
+    });
+    fireEvent.click(view.getByLabelText("Calendar layout"));
+    fireEvent.click(view.getByRole("button", { name: "Week" }));
+    expect(scrollToTime).toHaveBeenCalledWith("08:00:00");
+    expect(calendar.props!.scrollTime).toBe("08:00:00");
+  });
   it("uses the agenda, overdue lead and date-aware capture on desktop without changing Base options", () => {
     const current = execution("2026-07-24");
     current.view.presentation!.options = {
@@ -319,6 +356,37 @@ describe("shared agenda", () => {
 });
 
 describe("calendar entry labels", () => {
+  it("names a timed entry's local day east of UTC", () => {
+    renderCalendar(execution("2026-07-24T22:00:00Z"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    vi.stubEnv("TZ", "Australia/Melbourne");
+    try {
+      (calendar.props!.itemDidMount as (arg: unknown) => void)({
+        item,
+        el,
+        variant: "timed",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(el.dataset.date).toBe("2026-07-25");
+    expect(el.getAttribute("aria-label")).toContain("Saturday, July 25");
+  });
+
+  it("puts the title before the time in grid cards", () => {
+    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    const fragment = (calendar.props!.itemContent as (arg: unknown) => Node)({
+      item,
+      el,
+      variant: "timed",
+      timeText: "9:30am – 10:30am",
+    });
+    el.append(fragment);
+    expect(el.textContent).toMatch(/^Calendar task9:30am/);
+  });
   it("names an all-day entry's own day west of UTC", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
     const item = items().find((entry) => entry.allDay)!;

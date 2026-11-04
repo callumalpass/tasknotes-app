@@ -1,0 +1,99 @@
+.task-detail-date-popover {
+  position: fixed;
+  z-index: 60;
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 10px;
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 12px 40px var(--color-shadow);
+}
+
+.task-detail-date-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline-start: 4px;
+}
+
+.task-detail-date-popover > header .icon-button {
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.task-detail-date-popover > header .icon-button:hover {
+  background: var(--accent-soft);
+}
+
+.task-detail-date-popover .task-date-target button {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.task-detail-date-popover .task-date-target button[aria-checked="true"] {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--paper-raised);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.task-detail-date-popover .task-date-target small {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--type-label);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-detail-date-popover .task-date-presets button,
+.task-detail-date-popover .task-date-clear {
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.task-detail-date-popover .task-date-clear {
+  border: 0;
+}
+
+.task-detail-date-popover .task-date-presets button:hover,
+.task-detail-date-popover .task-date-clear:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.task-detail-date-popover .tasknotes-calendar-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.task-detail-date-popover .tasknotes-calendar-grid [role="gridcell"] {
+  max-width: 100%;
+}

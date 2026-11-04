@@ -1,15 +1,8 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ListField } from "./task-editor-layout";
-import {
-  TaskNotesSelectField,
-  TaskNotesDateTimeField,
-} from "../components/tasknotes-controls";
-import {
-  combineTaskDateTime,
-  taskDatePart,
-  taskTimePart,
-} from "../domain/task";
+import { TaskNotesSelectField } from "../components/tasknotes-controls";
+import { TaskDetailDates } from "../components/task-detail-dates";
 import { linkDisplayLabel } from "../domain/completion";
 import type {
   FieldCompletion,
@@ -54,23 +47,7 @@ export function TaskCoreProperties({
           <Trans>Use the occurrence actions above to change this state.</Trans>
         </small>
       ) : null}
-      {(["scheduled", "due"] as const).map((key) => (
-        <TaskNotesDateTimeField
-          key={key}
-          label={
-            key === "scheduled"
-              ? t({ message: "Scheduled" })
-              : t({ message: "Due" })
-          }
-          value={draft[key]}
-          combineValue={combineTaskDateTime}
-          splitValue={(value) => ({
-            date: taskDatePart(value) || undefined,
-            time: taskTimePart(value) || undefined,
-          })}
-          onChange={(value) => onChange({ [key]: value })}
-        />
-      ))}
+      <TaskDetailDates draft={draft} onChange={onChange} />
       {seriesDates ? (
         <p className="field-help">
           <Trans>

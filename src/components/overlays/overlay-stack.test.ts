@@ -126,6 +126,27 @@ it("retires an imperative popup before another overlay and transfers return focu
   await Promise.resolve();
   expect(document.activeElement).toBe(trigger);
 });
+it("does not restore stale focus after a popup remounts", async () => {
+  const trigger = element("button");
+  const popup = element("div");
+  const input = element("input", popup);
+  const options = {
+    root: popup,
+    modal: false,
+    dismiss: vi.fn(),
+    returnFocus: trigger,
+    initialFocus: () => input,
+  };
+  const remove = registerOverlay(options);
+  remove();
+  const removeAgain = registerOverlay(options);
+  disposals.push(removeAgain);
+  await Promise.resolve();
+  expect(document.activeElement).toBe(input);
+  removeAgain();
+  await Promise.resolve();
+  expect(document.activeElement).toBe(trigger);
+});
 it("respects handled Escape and preserves an existing inert/scroll state", () => {
   document.body.style.overflow = "clip";
   const app = element("main");

@@ -110,7 +110,8 @@ export function useCalendarAgenda({
         const day = parseDay(value);
         if (day === null) continue;
         const count = (entries.get(value) ?? []).filter(
-          ({ modelEntry, row }) =>
+          ({ modelEntry, row, timeEntry }) =>
+            !timeEntry &&
             !modelEntry.isOverdueOnToday &&
             (api.opts.allDaySlot || !modelEntry.allDay) &&
             !plannedElsewhere(row.task, value),
@@ -175,7 +176,9 @@ export function useCalendarAgenda({
           if (title) title.after(badge);
           else heading.append(badge);
         }
-        const count = section.querySelectorAll(".tnc-item--list").length;
+        const count = section.querySelectorAll(
+          ".tnc-item--list:not(.is-time-entry)",
+        ).length;
         badge.textContent = String(count);
         badge.setAttribute("aria-label", countLabel(count, "task"));
       }

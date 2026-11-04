@@ -6,12 +6,14 @@ import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
 
 import { TaskCalendar } from "@tasknotes/calendar/react";
+import { formatDay } from "@tasknotes/calendar";
 import {
   Check,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
   Plus,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -28,13 +30,12 @@ import { plannedElsewhere, useCalendarAgenda } from "./use-calendar-agenda";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
-  calendarPriorityMarker,
   withPendingMoves,
-  withPriorityDetail,
   withoutSupersededMoves,
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
+import { calendarRowDetails } from "./calendar-row-details";
 import { ViewOptions } from "../components/view-options";
 import {
   calendarEntryKey,
@@ -54,9 +55,7 @@ import {
   type RecurringEditScopeRequest,
 } from "../components/recurring-edit-scope-dialog";
 import { formatOccurrenceDate } from "./task-editor-draft";
-import { occurrenceTask } from "../domain/task-occurrence";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
-import { viewPropertyDetails } from "../i18n/view-presentation";
 import { useRepository } from "./repository-context";
 import type {
   CalendarHourFormat,
@@ -135,6 +134,11 @@ export function TaskCalendarView({
   const [mode, setMode] = useState<CalendarMode>(() =>
     calendarMode(execution.view.presentation?.options.calendarView),
   );
+  const [inspectingDay, setInspectingDay] = useState(false);
+  useEffect(() => {
+    if (mode.startsWith("timeGrid"))
+      calendarRef.current?.scrollToTime("08:00:00");
+  }, [mode]);
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
   // One agenda on every screen: keep the calendar's date navigation, lazy
@@ -239,26 +243,20 @@ export function TaskCalendarView({
   const selectedEntries = (entries.get(selected) ?? []).filter(
     (entry) =>
       !entry.timeEntry &&
-      (entry.modelEntry.isOverdueOnToday ||
-        !plannedElsewhere(entry.row.task, selected)),
+      !entry.modelEntry.isOverdueOnToday &&
+      !plannedElsewhere(entry.row.task, selected),
   );
   const listMode = mode === "listWeek";
 
   // Rows name an elevated priority so the grid's coloured marks read the
   // same here; without view properties the row's defaults already do.
-  function inspectorDetails(entry: CalendarEntry) {
-    const details = viewPropertyDetails(entry.row, execution.view.properties, {
-      identityProperty: titleProperty,
-      occurrence: entry.occurrence,
-    });
-    if (!details) return undefined;
-    const displayed = entry.occurrence
-      ? occurrenceTask(entry.occurrence)
-      : entry.task;
-    return withPriorityDetail(
-      details,
-      calendarPriorityMarker(displayed, configuration),
+  function inspectorDetails(entry: CalendarEntry, day?: string) {
+    return calendarRowDetails(
+      entry,
+      execution,
+      titleProperty,
       configuration,
+      day,
     );
   }
 
@@ -437,6 +435,7 @@ export function TaskCalendarView({
   }
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    setInspectingDay(true);
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
     // Below twelve months the day's tasks would be out of sight, so a year
@@ -521,7 +520,10 @@ export function TaskCalendarView({
           aria-pressed={mode === value}
           key={value}
           type="button"
-          onClick={() => setMode(value)}
+          onClick={() => {
+            setInspectingDay(false);
+            setMode(value);
+          }}
         >
           {mode === value ? (
             <Check aria-hidden="true" size={18} />
@@ -537,7 +539,7 @@ export function TaskCalendarView({
   return (
     <div
       ref={rootRef}
-      className={`full-calendar-view${listMode ? " is-agenda" : ""}`}
+      className={`full-calendar-view${listMode ? " is-agenda" : ""}${inspectingDay ? " has-day-inspector" : ""}`}
     >
       <div className="full-calendar-workspace">
         {/* The layout switcher belongs to the calendar it changes, so it sits
@@ -686,9 +688,11 @@ export function TaskCalendarView({
               nowIndicator={preferences.nowIndicator}
               hour12={hour12(preferences.hourFormat)}
               slotDuration={preferences.slotDuration}
+              slotHeight={44}
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
-              eventMinHeight={28}
+              scrollTime="08:00:00"
+              eventMinHeight={96}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
@@ -765,7 +769,12 @@ export function TaskCalendarView({
                   }}
                 >
                   <TaskRow
-                    details={inspectorDetails(entry)}
+                    details={inspectorDetails(
+                      entry,
+                      entry.modelEntry.isOverdueOnToday
+                        ? undefined
+                        : formatDay(arg.day),
+                    )}
                     occurrence={entry.occurrence}
                     supportingText={
                       [kind, arg.timeText].filter(Boolean).join(" · ") ||
@@ -800,7 +809,7 @@ export function TaskCalendarView({
             </ul>
           ) : null}
         </div>
-        {!listMode ? (
+        {!listMode && inspectingDay ? (
           <aside
             className="full-calendar-inspector"
             aria-label={t`Selected day`}
@@ -808,6 +817,14 @@ export function TaskCalendarView({
             <header>
               <h2>{agendaLabel(selected)}</h2>
               <span>{countLabel(selectedEntries.length, "task")}</span>
+              <button
+                aria-label={t`Close day details`}
+                className="icon-button"
+                type="button"
+                onClick={() => setInspectingDay(false)}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
             </header>
             {selectedEntries.length ? (
               <div className="full-calendar-day-tasks">
@@ -965,9 +982,13 @@ function calendarEventContent(
   );
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
-  if (timeText && !listView) primary.append(node("time", undefined, timeText));
-  if (kind) primary.append(node("em", "full-calendar-event-kind", kind));
   primary.append(node("span", undefined, item.title));
+  if (!listView && (timeText || kind)) {
+    const secondary = node("span", "full-calendar-event-secondary");
+    if (timeText) secondary.append(node("time", undefined, timeText));
+    if (kind) secondary.append(node("em", "full-calendar-event-kind", kind));
+    content.append(secondary);
+  } else if (kind) primary.append(node("em", "full-calendar-event-kind", kind));
   if (details.length) {
     const properties = node("span", "full-calendar-event-properties");
     for (const detail of details) {
@@ -1031,8 +1052,7 @@ function hour12(preference: CalendarHourFormat): boolean | undefined {
 }
 
 function calendarDay(value: TaskCalendarItem["start"]): string {
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value))
-    return value.slice(0, 10);
+  if (typeof value === "string") return taskDatePart(value);
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : todayString(date);
 }

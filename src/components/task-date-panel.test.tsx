@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { fireEvent, render, screen, waitFor } from "../test/render";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RepositoryProvider } from "../app/repository-context";
 import { todayString } from "../domain/task";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
@@ -12,6 +12,7 @@ import type { TaskSummary } from "../domain/task";
 
 describe("TaskDatePanel", () => {
   let repository: MdbaseTaskRepository;
+  afterEach(() => vi.unstubAllEnvs());
 
   beforeEach(async () => {
     repository = createTestMdbaseRepository();
@@ -46,6 +47,14 @@ describe("TaskDatePanel", () => {
     expect(onApply).toHaveBeenCalledWith({
       scheduled: `${todayString()}T09:30`,
     });
+  });
+
+  it("selects the local day of a stored instant east of UTC", () => {
+    vi.stubEnv("TZ", "Australia/Melbourne");
+    renderPanel({ due: "2026-11-04T22:00:00Z" });
+    expect(
+      screen.getByRole("gridcell", { selected: true }),
+    ).toHaveAccessibleName(/November 5/);
   });
 
   it("applies a typed date to the chosen target on Enter", async () => {
