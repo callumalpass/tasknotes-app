@@ -40,11 +40,16 @@ export function hasCommandModifier(event: KeyboardEvent): boolean {
  * Plain-key shortcuts yield to typing, IME composition, other handlers, and
  * any open menu, sheet, or dialog, which owns the keyboard while it is open.
  */
-export function plainShortcutsSuspended(event: KeyboardEvent): boolean {
+export function plainShortcutsSuspended(
+  event: KeyboardEvent,
+  allowAlt = false,
+): boolean {
   return (
     event.defaultPrevented ||
     event.isComposing ||
-    hasCommandModifier(event) ||
+    event.metaKey ||
+    event.ctrlKey ||
+    (event.altKey && !allowAlt) ||
     isEditableTarget(event.target) ||
     hasOpenOverlay()
   );
@@ -243,6 +248,13 @@ export function keyboardShortcutGroups(): {
           description: t({ message: "Undo a deleted task" }),
         },
         { keys: ["?"], description: t({ message: "Keyboard shortcuts" }) },
+      ],
+    },
+    {
+      title: t({ message: "Task details" }),
+      shortcuts: [
+        { keys: ["j", "Alt+↓"], description: t({ message: "Next task" }) },
+        { keys: ["k", "Alt+↑"], description: t({ message: "Previous task" }) },
       ],
     },
     {
