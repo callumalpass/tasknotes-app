@@ -534,10 +534,8 @@ export function TaskCapture({
             ) : (
               <>
                 {settled && settled.input.title !== parsedText ? (
-                  <span className="capture-title-preview">
-                    <span className="visually-hidden">
-                      <Trans>Task: </Trans>
-                    </span>
+                  <span className="capture-title-preview visually-hidden">
+                    <Trans>Task: </Trans>
                     {settled.input.title}
                   </span>
                 ) : null}

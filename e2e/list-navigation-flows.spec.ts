@@ -446,3 +446,60 @@ test("a click on an Upcoming day heading stays where it is", async ({
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });
+
+test("long status and priority lists keep the keyboard's place in view", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Keyboard path.");
+  await page.locator(".task-row-title").first().click();
+  for (const name of ["Status", "Priority"]) {
+    const trigger = page.getByRole("combobox", { name, exact: true }).first();
+    await trigger.focus();
+    await trigger.press("Enter");
+    const list = page.locator(".tasknotes-select-popover[data-state='open']");
+    const options = list.getByRole("option");
+    await expect(options).toHaveCount(12);
+    const active = list.locator("button.is-active");
+    await expect(active).toBeInViewport({ ratio: 1 });
+
+    await trigger.press("End");
+    await expect(active).toHaveId(/-option-11$/);
+    await expect(active).toBeInViewport({ ratio: 1 });
+    await expect(options.last()).toHaveClass(/is-active/);
+    expect(
+      await list.locator(".tasknotes-option-list").evaluate((scroller) => {
+        const bounds = scroller.getBoundingClientRect();
+        const row = scroller.lastElementChild!.getBoundingClientRect();
+        return row.bottom <= bounds.bottom + 1;
+      }),
+    ).toBe(true);
+
+    await trigger.press("Home");
+    await expect(active).toHaveId(/-option-0$/);
+    expect(
+      await list
+        .locator(".tasknotes-option-list")
+        .evaluate((scroller) => scroller.scrollTop),
+    ).toBe(0);
+
+    for (let step = 0; step < 11; step += 1) await trigger.press("ArrowDown");
+    await expect(active).toHaveId(/-option-11$/);
+    await trigger.press("ArrowUp");
+    await expect(active).toHaveId(/-option-10$/);
+    await expect(active).toBeInViewport({ ratio: 1 });
+
+    await trigger.press("Escape");
+    await expect(list).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    await trigger.press("Enter");
+    await trigger.press("End");
+    await trigger.press("Enter");
+    await expect(list).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    await trigger.press("Enter");
+    await expect(active).toHaveId(/-option-11$/);
+    await expect(active).toBeInViewport({ ratio: 1 });
+    await trigger.press("Escape");
+  }
+});

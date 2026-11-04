@@ -13,6 +13,7 @@ import {
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -62,6 +63,8 @@ export function TaskNotesSelect({
     Math.max(selectedIndex, firstEnabledIndex(options)),
   );
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+
+  useActiveOptionInView(id, open, activeIndex);
 
   function openOptions() {
     setActiveIndex(
@@ -237,6 +240,8 @@ export function TaskNotesCombobox({
       : value;
   const [activeIndex, setActiveIndex] = useState(0);
 
+  useActiveOptionInView(id, open, activeIndex);
+
   function choose(index: number) {
     const option = filtered[index];
     if (!option || option.disabled) return;
@@ -319,6 +324,16 @@ export function TaskNotesCombobox({
       ) : null}
     </div>
   );
+}
+
+/** Long option lists scroll, so the keyboard's place must stay on screen. */
+function useActiveOptionInView(id: string, open: boolean, activeIndex: number) {
+  useLayoutEffect(() => {
+    if (!open) return;
+    document
+      .getElementById(`${id}-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, id, open]);
 }
 
 export function TaskNotesDateTimeField({

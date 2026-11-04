@@ -595,11 +595,6 @@
     var(--line-strong) 78%
   );
 }
-.capture-title-preview {
-  flex-basis: 100%;
-  color: var(--ink);
-  font-weight: 700;
-}
 .capture-token {
   display: inline-flex;
   align-items: center;
