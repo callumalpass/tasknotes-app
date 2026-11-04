@@ -18,7 +18,7 @@ import { ViewOptions } from "../components/view-options";
 import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
-import { basesProperty } from "../domain/default-view-source";
+import { basesProperty, starterViewKind } from "../domain/default-view-source";
 import { ProjectPropertyOffer } from "./views/project-property-offer";
 import { kanbanRowValue, valueKey } from "./views/kanban-columns";
 import { navigationViewScope } from "./navigation-views";
@@ -320,7 +320,7 @@ export function ViewsScreen({
   const plannerHref = usePlannerViewLink(repository, selected);
   const todayScreen =
     selected?.presentation?.options.sections === "day" &&
-    (selected.id === "today" || selected.name === "Today");
+    (starterViewKind(selected) === "today" || selected.name === "Today");
   const needsIdentityTasks =
     todayScreen ||
     selected?.presentation?.type === "tasknotes.calendar" ||
@@ -517,7 +517,8 @@ export function ViewsScreen({
     return () => window.clearTimeout(timeout);
   }, [rescheduled]);
   const upcomingView = views?.find(
-    (view) => view.id === "upcoming" && view.key !== selected?.key,
+    (view) =>
+      starterViewKind(view) === "upcoming" && view.key !== selected?.key,
   );
   useEffect(() => {
     presentedRef.current = presentedExecution;

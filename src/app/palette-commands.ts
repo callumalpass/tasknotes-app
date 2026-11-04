@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { starterViewKind } from "../domain/default-view-source";
 import type { PaletteCommand } from "./command-palette-model";
 import {
   requestTaskShortcut,
@@ -199,12 +200,14 @@ export function taskCommands(
 
 /** Built-in identities only: custom names and navigation order stay user-owned. */
 export function viewNavigationShortcut(view: TaskView): string | undefined {
-  return (
-    {
-      today: "g t",
-      upcoming: "g u",
-      calendar: "g c",
-      projects: "g p",
-    } as Record<string, string>
-  )[view.id];
+  const kind = starterViewKind(view);
+  return kind
+    ? {
+        today: "g t",
+        upcoming: "g u",
+        calendar: "g c",
+        projects: "g p",
+        archive: undefined,
+      }[kind]
+    : undefined;
 }

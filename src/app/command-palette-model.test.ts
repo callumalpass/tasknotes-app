@@ -90,7 +90,11 @@ describe("navigationCommands", () => {
     { key: "today", name: "Today" },
     { key: "board", name: "Work board" },
     { key: "archive", name: "Archive" },
-  ] as TaskView[];
+  ].map((view) => ({
+    ...view,
+    id: "0",
+    source: { path: `Views/${view.key}.base` },
+  })) as TaskView[];
 
   it("covers navigation views, utility screens, and actions once each", () => {
     const navigate = vi.fn();

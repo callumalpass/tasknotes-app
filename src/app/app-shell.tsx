@@ -72,6 +72,7 @@ import {
   readSidebarCollapsed,
   saveSidebarCollapsed,
 } from "./sidebar-preferences";
+import { starterViewKind } from "../domain/default-view-source";
 import { viewNavigationShortcut } from "./palette-commands";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
@@ -1071,7 +1072,7 @@ export function Navigation({
     if (view)
       navigationEntries.push({
         shortcut: viewNavigationShortcut(view),
-        today: view.id === "today",
+        today: starterViewKind(view) === "today",
         key: `view:${view.key}`,
         navigationKey: key,
         label: view.name,

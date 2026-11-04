@@ -297,7 +297,7 @@ it("preserves cached navigation and original preferences when a discovery READ f
   expect(
     within(screen.getByRole("complementary", { name: "Primary" })).getByRole(
       "button",
-      { name: "Today" },
+      { name: /^Today/ },
     ),
   ).toBeVisible();
   expect(localStorage.getItem("tasknotes:navigation-views:v4")).toBe(
@@ -410,7 +410,7 @@ it.each([
       name: "Primary",
     });
     expect(
-      await within(navigation).findByRole("button", { name: "Today" }),
+      await within(navigation).findByRole("button", { name: /^Today/ }),
     ).toBeVisible();
     expect(await screen.findByRole("heading", { name: "Today" })).toBeVisible();
     expect(await screen.findByText("Existing Today task")).toBeVisible();

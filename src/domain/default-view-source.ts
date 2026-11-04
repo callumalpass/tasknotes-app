@@ -5,7 +5,7 @@ import {
 import { parse, stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { TaskViewDocument } from "./view";
+import type { TaskView, TaskViewDocument } from "./view";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
 export const TASKNOTES_VIEW_SOURCE_FOLDER = "TaskNotes/Views";
@@ -271,6 +271,34 @@ export function isTaskNotesDefaultViewDocument(
     filename === `${TASKNOTES_DEFAULT_VIEW_SOURCE_NAME}.md` ||
     document.id === TASKNOTES_DEFAULT_VIEW_SOURCE_NAME
   );
+}
+
+export type StarterViewKind =
+  "today" | "upcoming" | "calendar" | "projects" | "archive";
+
+/**
+ * Which starter view this is, if any. Base views are identified by their
+ * ordinal, not a name, so a starter Base is recognized by its source and name.
+ */
+export function starterViewKind(
+  view: Pick<
+    TaskView,
+    "id" | "name" | "documentId" | "documentName" | "source"
+  >,
+): StarterViewKind | null {
+  const isStarter = (value: string): value is StarterViewKind =>
+    TASKNOTES_DEFAULT_VIEW_NAMES.some((name) => name.toLowerCase() === value);
+  if (isStarter(view.id)) return view.id;
+  const name = view.name.toLowerCase();
+  return isStarter(name) &&
+    isTaskNotesDefaultViewDocument({
+      id: view.documentId,
+      name: view.documentName,
+      source: view.source,
+      views: [],
+    })
+    ? name
+    : null;
 }
 
 export function defaultNavigationViewKeys(

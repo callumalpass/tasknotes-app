@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { isTaskNotesDefaultViewDocument } from "../../domain/default-view-source";
+import { starterViewKind } from "../../domain/default-view-source";
 import type { TaskView } from "../../domain/view";
 
 /**
@@ -36,18 +36,8 @@ export function taskViewIcon(view: TaskView): LucideIcon {
     }
   }
   if (presentation?.options?.sections === "day") return Sun;
-  if (isStarterView(view)) {
-    if (view.name === "Projects") return FolderKanban;
-    if (view.name === "Archive") return Archive;
-  }
+  const starter = starterViewKind(view);
+  if (starter === "projects") return FolderKanban;
+  if (starter === "archive") return Archive;
   return List;
-}
-
-function isStarterView(view: TaskView): boolean {
-  return isTaskNotesDefaultViewDocument({
-    id: view.documentId,
-    name: view.documentName,
-    source: view.source,
-    views: [],
-  });
 }

@@ -6,6 +6,7 @@ import {
   defaultNavigationViewKeys,
   taskNotesDefaultBaseSources,
   newViewSourcePath,
+  starterViewKind,
   taskNotesViewSourcePath,
   viewSourceFormat,
   viewSourceRecord,
@@ -388,5 +389,28 @@ describe("saved-view records", () => {
     expect(() =>
       viewSourceRecord("TaskNotes/Views/list.base", "- not a mapping\n"),
     ).toThrow("A Base must be a YAML mapping.");
+  });
+});
+
+describe("starterViewKind", () => {
+  const view = {
+    id: "0",
+    name: "Today",
+    documentId: "record",
+    documentName: "today",
+    source: { path: "TaskNotes/Views/today.base" },
+  } as Parameters<typeof starterViewKind>[0];
+
+  it("recognizes a starter Base, whose view id is only its ordinal", () => {
+    expect(starterViewKind(view)).toBe("today");
+  });
+
+  it("leaves a person's own view of the same name alone", () => {
+    expect(
+      starterViewKind({
+        ...view,
+        source: { path: "Work/today.base" },
+      } as typeof view),
+    ).toBeNull();
   });
 });
