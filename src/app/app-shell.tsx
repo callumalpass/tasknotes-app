@@ -81,8 +81,6 @@ import { useNavigationViews } from "./use-navigation-views";
 import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
 import { CaptureFab } from "../components/capture-fab";
-import { ModelSetupScreen } from "./model-setup-screen";
-import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import { requestRecordWriteReview } from "../components/record-write-status-context";
 import {
   loadCalendarPreferences,
@@ -247,15 +245,6 @@ export function AppShell() {
     );
   }
   if (status === "error") {
-    if (error instanceof TaskNotesModelRequiredError && repository.modelSetup)
-      return (
-        <ModelSetupScreen
-          setup={repository.modelSetup}
-          onReady={refresh}
-          changeCollection={changeCollection}
-          reauthorizeCollection={reauthorizeCurrentCollection}
-        />
-      );
     return (
       <StorageErrorScreen
         changeCollection={changeCollection}

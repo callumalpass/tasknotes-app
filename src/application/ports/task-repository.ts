@@ -53,7 +53,6 @@ import type {
   UpdateTaskViewSourceInput,
 } from "../../domain/view";
 import type { CollectionFileStore } from "./collection-file-store";
-import type { TaskNotesModelSetup } from "./model-setup";
 
 /** Retain this object for one submission, including uncertain-outcome retries. */
 export interface TaskCreateIntent {
@@ -79,7 +78,6 @@ export interface RecordWriteRejection {
  */
 export interface TaskRepository {
   /** Explicit setup only when the original collection owns a durable recovery journal. */
-  readonly modelSetup?: TaskNotesModelSetup;
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
   /** Local capture and authority confirmation are separate; no document replica. */
