@@ -74,7 +74,7 @@ export function calendarItems(
           );
       items.push({
         ...calendarItem(neutral),
-        ...(tracked ? { color: "var(--success)" } : {}),
+        ...(tracked ? { color: "var(--success)", lane: "plan" as const } : {}),
         className: [
           "task-calendar-event",
           neutral.isCompleted ? "is-complete" : "",
