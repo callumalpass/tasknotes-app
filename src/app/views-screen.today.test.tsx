@@ -86,6 +86,36 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
   expect(screen.queryByText(/^Moved 2 tasks to today/)).toBeNull();
 });
 
+it("schedules overdue work for another day and names moved deadlines in its undoable summary", async () => {
+  const today = todayString();
+  const date = shiftTaskDate(today, 3);
+  const tasks = [
+    task("late", "Late task", {
+      scheduled: `${shiftTaskDate(today, -2)}T09:30`,
+      due: shiftTaskDate(today, -1),
+    }),
+  ];
+  const updateMany = vi.fn<TaskRepository["updateMany"]>(async (updates) =>
+    updates.map(({ id, input }) => apply(tasks, id, input)),
+  );
+  renderToday(repository(tasks, { updateMany }));
+  fireEvent.click(await screen.findByRole("button", { name: "Choose date" }));
+  fireEvent.change(screen.getByLabelText("Date for overdue tasks"), {
+    target: { value: date },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Schedule all" }));
+  await waitFor(() =>
+    expect(updateMany).toHaveBeenCalledWith([
+      { id: "late", input: { scheduled: `${date}T09:30`, due: date } },
+    ]),
+  );
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    `Moved 1 task to ${date}, 1 deadline moved too`,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(updateMany).toHaveBeenCalledTimes(2));
+});
+
 it("returns rows to Overdue when the batch is rejected", async () => {
   const today = todayString();
   const tasks = [task("late", "Late", { scheduled: shiftTaskDate(today, -2) })];

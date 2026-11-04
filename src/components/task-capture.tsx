@@ -404,6 +404,7 @@ export function TaskCapture({
             aria-controls={suggestions.length ? suggestionsId : undefined}
             aria-expanded={suggestions.length > 0}
             autoComplete="off"
+            spellCheck={false}
             enterKeyHint="done"
             placeholder={placeholder}
             value={text}

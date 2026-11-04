@@ -462,7 +462,7 @@ describe("original Worker model journal and held repository wiring", () => {
     const paths = ops.map((op) => ("path" in op ? op.path : undefined));
     for (const resource of publisher.manifest.resources)
       expect(paths.filter((path) => path === resource.target)).toHaveLength(1);
-    expect(ops.filter((op) => op.kind === "create")).toHaveLength(5);
+    expect(ops.filter((op) => op.kind === "create")).toHaveLength(6);
     expect(paths.filter((path) => path === "mdbase.lock.yaml")).toHaveLength(1);
     expect(submit.mock.calls[0]![1]).not.toHaveProperty("allowPartial");
     expect(f.worker.intent).toMatchObject({

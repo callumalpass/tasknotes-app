@@ -1,4 +1,3 @@
-import { plural } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Archive, Check, Trash2, X } from "lucide-react";
 import {
@@ -23,11 +22,13 @@ import { todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import {
   nextWeekStart,
+  preserveRowFocus,
   returnFocusToList,
   taskRowShortcut,
 } from "./keyboard-shortcuts";
 import { useRepository } from "./repository-context";
-import { rememberUndo } from "./undo-history";
+import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
+import { bulkTaskFeedback } from "./bulk-task-feedback";
 import type { TaskShortcutAction } from "./keyboard-shortcuts";
 import type { TaskSelectionStore } from "./task-selection-store";
 import { linkDisplayLabel } from "../domain/completion";
@@ -64,6 +65,8 @@ export function BulkTaskActions({
     count: number;
     receipts: BulkEditReceipt[];
     navigationKey: string;
+    message: string;
+    entry: UndoEntry;
   } | null>(null);
   const [failures, setFailures] = useState<BulkEditFailure[]>([]);
   const [undoing, setUndoing] = useState(false);
@@ -205,6 +208,11 @@ export function BulkTaskActions({
   const changedMessage = t`This task changed. Open it to review before trying again.`;
   async function run(change: BulkTaskChange) {
     if (store.busy || !eligible.length) return;
+    const focusedRow =
+      document.activeElement?.closest<HTMLElement>(".task-row");
+    const restoreFocus = focusedRow
+      ? preserveRowFocus(focusedRow)
+      : returnFocusToList;
     store.setBusy(true);
     setFailures([]);
     setNotice(null);
@@ -218,14 +226,40 @@ export function BulkTaskActions({
         changedMessage,
         change.kind === "archive",
       );
-      if (result.receipts.length)
-        rememberUndo({
-          label: plural(result.receipts.length, {
-            one: "# task",
-            other: "# tasks",
-          }),
-          run: () => undoBulkEdits(result.receipts, port, changedMessage),
-        });
+      const feedback = bulkTaskFeedback(
+        change,
+        result.receipts.length,
+        change.kind === "priority"
+          ? (configuration.priorities.find(
+              (priority) => priority.value === change.value,
+            )?.label ?? change.value)
+          : change.kind === "project"
+            ? linkDisplayLabel(change.value)
+            : "",
+      );
+      let undoReceipts = result.receipts;
+      const entry: UndoEntry = {
+        label: feedback.message,
+        undoNotice: feedback.undoNotice,
+        run: async () => {
+          const undone = await undoBulkEdits(
+            undoReceipts,
+            port,
+            changedMessage,
+          );
+          undoReceipts = undone.remaining;
+          setFailures(undone.failures);
+          setNotice((current) =>
+            current?.entry === entry
+              ? undone.remaining.length
+                ? { ...current, receipts: undone.remaining }
+                : null
+              : current,
+          );
+          if (undone.remaining.length) throw new Error(changedMessage);
+        },
+      };
+      if (result.receipts.length) rememberUndo(entry);
       if (currentNavigation.current !== origin) return;
       store.remove(result.receipts.map((receipt) => receipt.before.id));
       setFailures(result.failures);
@@ -234,13 +268,12 @@ export function BulkTaskActions({
           count: result.receipts.length,
           receipts: result.receipts,
           navigationKey: origin,
+          message: feedback.message,
+          entry,
         });
         window.requestAnimationFrame(() => {
           if (!keyed.current) undoRef.current?.focus();
-          else {
-            (document.activeElement as HTMLElement | null)?.blur();
-            returnFocusToList();
-          }
+          else restoreFocus();
           keyed.current = false;
         });
       }
@@ -277,20 +310,10 @@ export function BulkTaskActions({
     setUndoing(true);
     store.setBusy(true);
     try {
-      const result = await undoBulkEdits(
-        shownNotice.receipts,
-        port,
-        changedMessage,
-      );
-      if (currentNavigation.current !== shownNotice.navigationKey) return;
-      setFailures(result.failures);
-      for (const { task } of result.failures)
-        if (!store.isSelected(task.id)) store.toggle(task.id);
-      setNotice(
-        result.remaining.length
-          ? { ...shownNotice, receipts: result.remaining }
-          : null,
-      );
+      await shownNotice.entry.run();
+      forgetUndo(shownNotice.entry);
+    } catch {
+      return;
     } finally {
       setUndoing(false);
       store.setBusy(false);
@@ -357,7 +380,12 @@ export function BulkTaskActions({
           </div>
           {!hasSelection ? (
             <p className="bulk-selection-hint">
-              <Trans>Tap tasks to select them.</Trans>
+              <span className="bulk-coarse-hint">
+                <Trans>Tap tasks to select them.</Trans>
+              </span>
+              <span className="bulk-fine-hint">
+                <Trans>Click tasks to select them.</Trans>
+              </span>
             </p>
           ) : (
             <div className="bulk-action-controls">
@@ -515,13 +543,7 @@ export function BulkTaskActions({
                 setHeld(false);
             }}
           >
-            <span role="status">
-              <Plural
-                value={shownNotice.count}
-                one="# task updated"
-                other="# tasks updated"
-              />
-            </span>
+            <span role="status">{shownNotice.message}</span>
             <button
               type="button"
               ref={undoRef}

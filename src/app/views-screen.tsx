@@ -55,7 +55,9 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../i18n/view-presentation";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
-import { rememberUndo } from "./undo-history";
+import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
+import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
+import { countLabel } from "../i18n/default-labels";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
@@ -108,7 +110,7 @@ import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
 import { StarterViewsOffer } from "./views/starter-views-offer";
 import { useStableCallback, useStableView } from "./use-stable-identity";
-import { hasTaskNotesStarterViews } from "../application/ensure-default-view-source";
+import { hasAllTaskNotesStarterViews } from "../application/ensure-default-view-source";
 
 type ViewEditorRequest = {
   view?: TaskView;
@@ -248,10 +250,12 @@ export function ViewsScreen({
     viewKey: string;
     count: number;
     deadlines: number;
+    date: string;
     undo: { id: string; input: UpdateTaskInput }[];
   } | null>(null);
   const [reschedulePending, setReschedulePending] = useState(false);
   const rescheduleUndoRef = useRef<HTMLButtonElement | null>(null);
+  const rescheduleUndoEntry = useRef<UndoEntry | null>(null);
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
@@ -633,12 +637,13 @@ export function ViewsScreen({
     selected?.presentation?.type === "tasknotes.projects";
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.projects" ||
     selected?.presentation?.type === "tasknotes.planner"
       ? " is-task-list-view"
       : selected?.presentation?.type === "tasknotes.kanban"
         ? " is-kanban-view"
         : selected?.presentation?.type === "tasknotes.calendar"
-          ? " is-full-calendar-view"
+          ? ` is-full-calendar-view${selected.presentation.options?.calendarView === "listWeek" ? " is-agenda-default" : ""}`
           : selected?.presentation?.type === "tasknotes.mini-calendar"
             ? " is-mini-calendar-view"
             : "";
@@ -1040,10 +1045,13 @@ export function ViewsScreen({
     return true;
   }
 
-  async function moveOverdueToToday(rows: readonly TaskViewRow[]) {
+  async function moveOverdueToToday(
+    rows: readonly TaskViewRow[],
+    date = todayString(),
+  ) {
     if (!selected || reschedulePending) return;
     const view = selected;
-    const updates = scheduleRowsTodayUpdates(rows);
+    const updates = scheduleRowsTodayUpdates(rows, date, todayString());
     if (!updates.length) return;
     setReschedulePending(true);
     setRescheduled(null);
@@ -1052,22 +1060,38 @@ export function ViewsScreen({
     try {
       const saved = await moveRowsToSection(
         updates.map(({ id, input }) => ({ id, input })),
-        "section:today",
+        date === todayString()
+          ? "section:today"
+          : date > todayString()
+            ? "section:later"
+            : "section:overdue",
       );
       if (saved) {
         const undo = updates.map(({ id, undo }) => ({ id, input: undo }));
-        rememberUndo({
+        const entry: UndoEntry = {
           label: plural(updates.length, {
             one: "# task",
             other: "# tasks",
           }),
-          run: () => updateTasks(undo),
-        });
+          undoNotice: plural(updates.length, {
+            one: "Restored dates for # task",
+            other: "Restored dates for # tasks",
+          }),
+          run: async () => {
+            const restored = await moveRowsToSection(undo, "section:overdue");
+            if (!restored)
+              throw new Error(translate`Couldn’t undo. Try again.`);
+            setRescheduled(null);
+          },
+        };
+        rescheduleUndoEntry.current = entry;
+        rememberUndo(entry);
         if (selectedKeyRef.current !== view.key) return;
         setRescheduled({
           viewKey: view.key,
           count: updates.length,
           deadlines: updates.filter(({ input }) => "due" in input).length,
+          date,
           undo,
         });
         window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
@@ -1079,12 +1103,15 @@ export function ViewsScreen({
 
   async function undoReschedule() {
     if (!rescheduled || reschedulePending) return;
-    const { undo } = rescheduled;
-    setRescheduled(null);
+    const entry = rescheduleUndoEntry.current;
+    if (!entry) return;
     setReschedulePending(true);
     document.getElementById("main-content")?.focus({ preventScroll: true });
     try {
-      await moveRowsToSection(undo, "section:overdue");
+      await entry.run();
+      forgetUndo(entry);
+    } catch {
+      return;
     } finally {
       setReschedulePending(false);
     }
@@ -1208,7 +1235,7 @@ export function ViewsScreen({
               })}
             />
           ) : null}
-          {documents && !hasTaskNotesStarterViews(documents) ? (
+          {documents && !hasAllTaskNotesStarterViews(documents) ? (
             <StarterViewsOffer onAdded={onViewsChanged} />
           ) : null}
           {!documents || !views ? (
@@ -1274,13 +1301,14 @@ export function ViewsScreen({
                   month: "long",
                   day: "numeric",
                 }).format(new Date())}
-                {todayProgress ? (
-                  <span className="today-progress">
-                    {" "}
-                    · {todayProgress.done} <Trans>of </Trans>
-                    {todayProgress.total} <Trans>done</Trans>
-                  </span>
-                ) : null}
+                <span className="today-progress">
+                  {todayProgress ? (
+                    <>
+                      · {todayProgress.done} <Trans>of </Trans>
+                      {todayProgress.total} <Trans>done</Trans>
+                    </>
+                  ) : null}
+                </span>
                 {overdueLane?.rows.length ? (
                   <span className="today-overdue">
                     <span className="today-overdue-separator"> · </span>
@@ -1629,18 +1657,11 @@ export function ViewsScreen({
             onToggle={toggleTask}
             sectionAction={(lane) =>
               lane.key === "section:overdue" && lane.rows.length ? (
-                <button
-                  className="section-heading-action"
-                  type="button"
-                  aria-label={plural(lane.rows.length, {
-                    one: "Move all to today, # overdue task",
-                    other: "Move all to today, # overdue tasks",
-                  })}
-                  disabled={reschedulePending}
-                  onClick={() => void moveOverdueToToday(lane.rows)}
-                >
-                  <Trans>Move all to today</Trans>
-                </button>
+                <OverdueScheduleActions
+                  count={lane.rows.length}
+                  pending={reschedulePending}
+                  onSchedule={(date) => moveOverdueToToday(lane.rows, date)}
+                />
               ) : null
             }
             emptyState={
@@ -1755,14 +1776,19 @@ function addTaskPrompt(name: string) {
 function rescheduledSummary({
   count,
   deadlines,
+  date,
 }: {
   count: number;
   deadlines: number;
+  date: string;
 }): string {
-  const moved = plural(count, {
-    one: "Moved # task to today",
-    other: "Moved # tasks to today",
-  });
+  const moved =
+    date === todayString()
+      ? plural(count, {
+          one: "Moved # task to today",
+          other: "Moved # tasks to today",
+        })
+      : translate`Moved ${countLabel(count, "task")} to ${date}`;
   if (!deadlines) return moved;
   const also = plural(deadlines, {
     one: "# deadline moved too",

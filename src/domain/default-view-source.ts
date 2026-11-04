@@ -15,6 +15,7 @@ export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Calendar",
   "Projects",
   "Archive",
+  "Unplanned",
 ] as const;
 export const TASKNOTES_DEFAULT_VIEW_SOURCES = TASKNOTES_DEFAULT_VIEW_NAMES.map(
   (name) => ({
@@ -167,6 +168,22 @@ export function taskNotesDefaultBaseDocument(
           ],
           options: { create: false },
         },
+        {
+          type: "tasknotesTaskList",
+          name: "Unplanned",
+          filters: {
+            and: [
+              ...activeTaskFilters(configuration),
+              `${scheduled}.isEmpty()`,
+              `${due}.isEmpty()`,
+            ],
+          },
+          order: [title, priority, projects, tags],
+          sort: [
+            { property: manualOrder, direction: "DESC" },
+            { property: title, direction: "ASC" },
+          ],
+        },
       ],
     },
     { lineWidth: 0 },
@@ -205,6 +222,18 @@ export function taskNotesDefaultCanonicalDocument(
             type: "tasknotes.task-list",
             fallback: "mdbase.table",
             options: { sections: "day" },
+          },
+        },
+        {
+          id: "unplanned",
+          name: "Unplanned",
+          where: `(${sharedWhere}) && ${scheduled}.isEmpty() && ${due}.isEmpty()`,
+          select: [...selection, fields.projects],
+          order_by: [{ field: fields.sortOrder, direction: "desc" }],
+          presentation: {
+            type: "tasknotes.task-list",
+            fallback: "mdbase.table",
+            options: {},
           },
         },
         calendarCanonicalView(
@@ -275,7 +304,7 @@ export function isTaskNotesDefaultViewDocument(
 }
 
 export type StarterViewKind =
-  "today" | "upcoming" | "calendar" | "projects" | "archive";
+  "today" | "upcoming" | "calendar" | "projects" | "archive" | "unplanned";
 
 /**
  * Which starter view this is, if any. Base views are identified by their

@@ -106,6 +106,40 @@ it("undoes the captured task without navigating", async () => {
   expect(f.onOpen).not.toHaveBeenCalled();
 });
 
+it("keeps Open available for fifteen seconds, pausing while hovered or focused", async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  const open = screen.getByRole("button", { name: "Open" });
+  const toast = open.closest(".undo-toast")!;
+  await act(async () => vi.advanceTimersByTime(14_999));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  fireEvent.pointerEnter(toast);
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  await act(async () => open.focus());
+  fireEvent.pointerLeave(toast);
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  await act(async () => open.blur());
+  await act(async () => vi.advanceTimersByTime(15_000));
+  expect(f.onDismiss).toHaveBeenCalledOnce();
+});
+
+it("stays visible when focus leaves while the pointer remains over it", async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  const open = screen.getByRole("button", { name: "Open" });
+  const toast = open.closest(".undo-toast")!;
+  fireEvent.pointerEnter(toast);
+  await act(async () => open.focus());
+  await act(async () => open.blur());
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  fireEvent.pointerLeave(toast);
+  await act(async () => vi.advanceTimersByTime(15_000));
+  expect(f.onDismiss).toHaveBeenCalledOnce();
+});
+
 it("keeps a failed undo visible and permits retry", async () => {
   const f = fixture();
   f.onUndo.mockRejectedValueOnce(new Error("Journal unavailable"));

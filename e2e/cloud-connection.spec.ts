@@ -87,7 +87,7 @@ test("opens the original held client without relay traffic and preserves navigat
     expect.arrayContaining(["describe", "query", "bases-discovery"]),
   );
   expect(outside).toEqual([]);
-  await nav(page, "Manage views");
+  await nav(page, "Views");
   await expect(
     page.getByRole("heading", { name: "Manage views" }),
   ).toBeVisible();
@@ -161,7 +161,7 @@ test("opens the original held client without relay traffic and preserves navigat
   await expect(
     page.getByText("Task from the held client", { exact: true }),
   ).toBeVisible();
-  await nav(page, "Manage views");
+  await nav(page, "Views");
   await expect(
     page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();

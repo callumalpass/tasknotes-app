@@ -5,6 +5,7 @@ export interface UndoEntry {
   label: string;
   /** Shown with an Undo button when a change has no confirmation of its own. */
   notice?: string;
+  undoNotice?: string;
   run(): Promise<unknown>;
 }
 

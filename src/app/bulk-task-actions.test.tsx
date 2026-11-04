@@ -78,7 +78,7 @@ it("announces only accepted rows, names failures and keeps them selected", async
   );
   fireEvent.click(await screen.findByRole("option", { name: "Low" }));
   await waitFor(() => expect(store.busy).toBe(false));
-  expect(screen.getByText("1 task updated")).toBeVisible();
+  expect(screen.getByText("Set priority to Low for 1 task")).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "1 task could not be updated",
   );
@@ -173,9 +173,9 @@ it("clears the Undo receipt on navigation, including when returning to the same 
   const view = render(<BulkTaskActions store={store} navigationKey="today" />);
   fireEvent.click(screen.getByRole("button", { name: /^Complete$/ }));
   await waitFor(() =>
-    expect(screen.getByText("2 tasks updated")).toBeVisible(),
+    expect(screen.getByText("Completed 2 tasks")).toBeVisible(),
   );
   view.rerender(<BulkTaskActions store={store} navigationKey="search" />);
   view.rerender(<BulkTaskActions store={store} navigationKey="today" />);
-  expect(screen.queryByText("2 tasks updated")).not.toBeInTheDocument();
+  expect(screen.queryByText("Completed 2 tasks")).not.toBeInTheDocument();
 });

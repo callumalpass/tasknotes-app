@@ -59,10 +59,32 @@ it("keeps secondary view operations in a focused overflow menu", () => {
   ).toBeVisible();
 });
 
-function renderCatalog() {
+it("uses view names for native source headings and keeps the portable path secondary", () => {
+  renderCatalog(true);
+  expect(
+    screen.getByRole("heading", { name: "Today · Tomorrow" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "TaskNotes/Views/today.base" }),
+  ).toBeNull();
+  expect(
+    screen.getAllByText("TaskNotes/Views/today.base", { exact: true }).length,
+  ).toBeGreaterThan(0);
+});
+
+function renderCatalog(rawSourceName = false) {
   const today = view("today", "Today", false, "TaskNotes/Views/today.base");
   const work = view("work", "Work board", true, "Views/work.base");
   const documents: TaskViewDocument[] = [document(today), document(work)];
+  if (rawSourceName) {
+    documents[0].name = today.source.path;
+    documents[0].views.push({
+      ...today,
+      id: "tomorrow",
+      key: `${today.source.path}#tomorrow`,
+      name: "Tomorrow",
+    });
+  }
   const callbacks = {
     onOpenScratchpad: vi.fn(),
     onOpenSearch: vi.fn(),
@@ -77,7 +99,7 @@ function renderCatalog() {
     <ViewCatalog
       documents={documents}
       navigationViewKeys={[today.key, SEARCH_NAVIGATION_KEY]}
-      views={[today, work]}
+      views={documents.flatMap((entry) => entry.views)}
       {...callbacks}
     />,
   );

@@ -152,6 +152,9 @@ export interface TaskRepository {
   todayTaskCounts?(
     today: string,
   ): import("../../domain/today-summary").TodayTaskCounts | null;
+  navigationTaskCounts?(
+    today: string,
+  ): { unplanned: number; upcoming: number } | null;
   /** Session metadata only, like todayTaskCounts. Never starts a read. */
   projectShortcuts?(): import("../../domain/project-shortcuts").ProjectShortcut[];
   stats(): Promise<TaskStats>;

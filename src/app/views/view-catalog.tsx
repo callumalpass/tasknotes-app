@@ -266,7 +266,13 @@ export function ViewCatalog({
                   >
                     {document.views.length > 1 ? (
                       <header className="saved-view-source-heading">
-                        <h4>{document.name}</h4>
+                        <h4>
+                          {document.name === document.source.path
+                            ? document.views
+                                .map((view) => view.name)
+                                .join(" · ")
+                            : document.name}
+                        </h4>
                         <small>{document.source.path}</small>
                       </header>
                     ) : null}

@@ -30,7 +30,7 @@ const client = () =>
 // Actual pinned WASM/publisher-data tests; native discovery remains a protocol
 // stand-in. NOT native atomic execution, live grants, runtime pin or LAB proof.
 describe("actual resource Core planner with unchanged publisher inputs", () => {
-  it("assesses actual staged task configuration and exact five raw sources without creating UUIDs", async () => {
+  it("assesses actual staged task configuration and exact six raw sources without creating UUIDs", async () => {
     const uuid = vi.spyOn(crypto, "randomUUID");
     const held = client();
     const factory = vi.fn(taskNotesDefaultBaseSources);
@@ -54,6 +54,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
       "TaskNotes/Views/calendar.base",
       "TaskNotes/Views/projects.base",
       "TaskNotes/Views/archive.base",
+      "TaskNotes/Views/unplanned.base",
     ]);
     const generated = taskNotesDefaultBaseSources(factory.mock.calls[0]![0]);
     expect(assessment.sources).toEqual(
@@ -70,8 +71,8 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
       expect(source.document).toMatch(/^views:/m);
     }
     const captured = captureResourceSetupPlan(assessment);
-    expect(uuid).toHaveBeenCalledTimes(5);
-    expect(new Set(captured.sources.map((s) => s.id)).size).toBe(5);
+    expect(uuid).toHaveBeenCalledTimes(6);
+    expect(new Set(captured.sources.map((s) => s.id)).size).toBe(6);
     expect(
       captured.sources.map(({ path, document }) => ({ path, document })),
     ).toEqual(assessment.sources);
@@ -114,7 +115,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
       assessment.resourceOps.filter((op) => op.path === "mdbase.lock.yaml"),
     ).toHaveLength(1);
     const captured = captureResourceSetupPlan(assessment);
-    expect(uuid).toHaveBeenCalledTimes(5);
+    expect(uuid).toHaveBeenCalledTimes(6);
     await recheckPreparedResourceSetup({}, captured, signal());
     await expect(
       recheckPreparedResourceSetup(
@@ -123,7 +124,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
         signal(),
       ),
     ).rejects.toMatchObject({ code: "concurrent_modification" });
-    expect(uuid).toHaveBeenCalledTimes(5);
+    expect(uuid).toHaveBeenCalledTimes(6);
   });
   it("rechecks original resource guards/digest without regenerating any sources or UUIDs", async () => {
     const factory = vi.fn(taskNotesDefaultBaseSources);
@@ -185,7 +186,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
       signal(),
     );
     expect(held.listAppBasesViews).toHaveBeenCalledTimes(1);
-    expect(assessment.sources).toHaveLength(4);
+    expect(assessment.sources).toHaveLength(5);
     expect(
       assessment.sources.some((s) => s.path === "TaskNotes/Views/today.base"),
     ).toBe(false);
@@ -202,7 +203,7 @@ describe("actual resource Core planner with unchanged publisher inputs", () => {
     ).rejects.toMatchObject({ code: "collection_setup_conflict" });
     await expect(
       nativeResourceSetupAssessment(resources(), client(), () => [], signal()),
-    ).rejects.toThrow("exact five");
+    ).rejects.toThrow("exact TaskNotes starter sources");
   });
 });
 afterEach(() => vi.restoreAllMocks());

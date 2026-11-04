@@ -9,7 +9,7 @@ import type { TaskRepository } from "../application/ports/task-repository";
 import { RecordWriteNotice } from "./record-write-notice";
 import { useRecordWriteState } from "./use-record-write-state";
 
-const NOTICE_MS = 10000;
+const NOTICE_MS = 15000;
 
 export function TaskAddedNotice({
   task,
@@ -29,11 +29,16 @@ export function TaskAddedNotice({
   useI18n();
   const [undoing, setUndoing] = useState(false);
   const [undoFailed, setUndoFailed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const held = hovered || focused;
   const [shown, setShown] = useState(task);
   if (shown !== task) {
     setShown(task);
     setUndoing(false);
     setUndoFailed(false);
+    setHovered(false);
+    setFocused(false);
   }
   const state = useRecordWriteState(repository, {
     kind: "task",
@@ -41,10 +46,10 @@ export function TaskAddedNotice({
   });
   const settled = task && !undoing && !undoFailed && state !== "failed";
   useEffect(() => {
-    if (!settled) return;
+    if (!settled || held) return;
     const timeout = window.setTimeout(onDismiss, NOTICE_MS);
     return () => window.clearTimeout(timeout);
-  }, [settled, task, onDismiss]);
+  }, [settled, held, task, onDismiss]);
   const message = undoFailed
     ? t({ message: "Couldn’t undo. Try again." })
     : task
@@ -59,6 +64,13 @@ export function TaskAddedNotice({
       </span>
       {task ? (
         <div
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          onFocus={() => setFocused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget))
+              setFocused(false);
+          }}
           className={`undo-toast task-added-notice${aboveMobileControls ? " is-above-mobile-controls" : ""}`}
         >
           <span>{message}</span>

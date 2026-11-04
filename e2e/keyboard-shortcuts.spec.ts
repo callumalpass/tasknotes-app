@@ -17,18 +17,22 @@ test("j and k move between rows and row keys act on the focused task", async ({
   page,
 }) => {
   await page.goto("?demo=50");
-  const first = page.getByRole("button", {
-    name: "Send the research summary to Rowan",
-    exact: true,
-  });
+  const first = page.locator(".task-row-title").first();
   await expect(first).toBeVisible();
+  const firstLabel = await first.textContent();
   await page.locator("body").press("j");
   await expect(first).toBeFocused();
   await page.keyboard.press("j");
   const second = await focusedRowTitle(page).textContent();
-  expect(second).not.toBe("Send the research summary to Rowan");
+  expect(second).not.toBe(firstLabel);
   await page.keyboard.press("k");
   await expect(first).toBeFocused();
+
+  const scheduled = page.getByRole("button", {
+    name: "Send the research summary to Rowan",
+    exact: true,
+  });
+  await scheduled.focus();
 
   // Moving the task out of Today keeps focus in the list and announces it.
   await page.keyboard.press("m");
@@ -37,7 +41,7 @@ test("j and k move between rows and row keys act on the focused task", async ({
       "Scheduled Send the research summary to Rowan for tomorrow.",
     ),
   ).toBeAttached();
-  await expect(first).toBeHidden();
+  await expect(scheduled).toBeHidden();
   await expect(focusedRowTitle(page)).toHaveCount(1);
 
   const target = (await focusedRowTitle(page).textContent())!;
@@ -71,7 +75,12 @@ test("the command palette navigates, acts on the focused task, and finds tasks",
   isMobile,
 }) => {
   await openDemo(page);
-  await page.locator("body").press("j");
+  await page
+    .getByRole("button", {
+      name: "Send the research summary to Rowan",
+      exact: true,
+    })
+    .focus();
   await page.keyboard.press("ControlOrMeta+k");
   const dialog = page.getByRole("dialog", { name: "Command palette" });
   await expect(dialog).toBeVisible();
@@ -85,7 +94,7 @@ test("the command palette navigates, acts on the focused task, and finds tasks",
   await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
 
   if (!isMobile) {
-    await page.getByRole("button", { name: /^Commands/ }).click();
+    await page.getByRole("button", { name: /^Quick actions/ }).click();
     await expect(dialog).toBeVisible();
   } else await page.keyboard.press("ControlOrMeta+k");
   await search.fill("quarterly");
@@ -264,7 +273,10 @@ test("a single reschedule confirms itself with Undo", async ({ page }) => {
   await expect(page.getByRole("button", { name: title }).first()).toBeVisible();
 });
 
-test("priority and project keys open their pickers", async ({ page }) => {
+test("priority and project keys open their pickers", async ({
+  page,
+  isMobile,
+}) => {
   await page.goto("?demo=60");
   await expect(page.locator("button.task-row-title").first()).toBeVisible();
   await page.keyboard.press("j");
@@ -274,6 +286,7 @@ test("priority and project keys open their pickers", async ({ page }) => {
   await page.keyboard.press("Escape");
   await page.locator("button.task-row-title").first().focus();
   await page.keyboard.press("+");
+  if (isMobile) await page.locator(".multi-value-control input").click();
   await expect(page.locator(".multi-value-control input")).toBeFocused();
   await page.keyboard.type("Oper");
   await expect(
@@ -283,19 +296,24 @@ test("priority and project keys open their pickers", async ({ page }) => {
 
 test("plus moves the focused task to one project in a single step", async ({
   page,
+  isMobile,
 }) => {
   await page.goto("?demo=50");
   await expect(page.locator(".task-row-title").first()).toBeVisible();
   await page.keyboard.press("j");
   await page.keyboard.press("+");
   const search = page.getByRole("combobox", { name: "Project" });
+  if (isMobile) await search.click();
   await expect(search).toBeFocused();
   await search.pressSequentially("Oper");
   await expect(page.getByRole("option", { name: "Operations" })).toBeVisible();
+  await expect(search).toHaveAttribute("aria-activedescendant", /.+/);
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByText(/^Moved “.+” to Operations$/)).toBeVisible();
   await page.keyboard.press("+");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("menu")).toBeHidden();

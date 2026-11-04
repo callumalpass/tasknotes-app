@@ -483,7 +483,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
     expect(uuid).not.toHaveBeenCalled();
     expect(await f.journal.load(signal())).toBeNull();
   });
-  it("submits all original Core ops plus five explicit UUID/path/raw-document Creates in ONE mutation", async () => {
+  it("submits all original Core ops plus six explicit UUID/path/raw-document Creates in ONE mutation", async () => {
     const f = fixture();
     await f.setup.install();
     expect(f.mocked.submit).toHaveBeenCalledTimes(1);
@@ -501,8 +501,8 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
         document: s.document,
       })),
     ]);
-    expect(original.plan.sources).toHaveLength(5);
-    expect(f.mocked.readAppBasesViewSource).toHaveBeenCalledTimes(5);
+    expect(original.plan.sources).toHaveLength(6);
+    expect(f.mocked.readAppBasesViewSource).toHaveBeenCalledTimes(6);
     expect(f.verified).toHaveBeenCalledTimes(1);
   });
   it("recovers UNKNOWN only through the SAME original receipt, never rechecks/regenerates/remints/resubmits", async () => {
@@ -650,7 +650,7 @@ describe("original resource setup sequencing (protocol stand-ins)", () => {
         expect.any(AbortSignal),
       );
     }
-    expect(f.mocked.readAppBasesViewSource).toHaveBeenCalledTimes(5);
+    expect(f.mocked.readAppBasesViewSource).toHaveBeenCalledTimes(6);
     expect(confirm).toHaveBeenCalledOnce();
     expect(f.verified).toHaveBeenCalledOnce();
     expect(await f.journal.load(signal())).toEqual({

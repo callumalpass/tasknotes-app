@@ -1893,5 +1893,60 @@
 
 /* Lists read at a measure: titles and their details stay within one glance. */
 .views-screen.has-list-capture:not(.detail-inspector *) {
-  width: min(100%, 860px);
+  width: min(100%, var(--content-width));
+}
+
+.views-screen.view-detail.is-task-list-view,
+.views-screen.view-detail.is-agenda-default:not(
+    :has(.full-calendar-view:not(.is-agenda))
+  ),
+.views-screen.view-detail:has(.full-calendar-view.is-agenda) {
+  width: min(100%, var(--content-width));
+}
+.view-date {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.35em;
+}
+.today-progress {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  white-space: nowrap;
+}
+
+.overdue-schedule-actions,
+.overdue-pick-date {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.overdue-pick-date input {
+  min-height: 44px;
+  max-width: 100%;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+@media (max-width: 839px) {
+  .screen:has(.task-row) {
+    padding-bottom: calc(
+      var(--nav-height) + env(safe-area-inset-bottom) + 100px
+    );
+  }
+  .view-date .today-progress {
+    flex-basis: 100%;
+  }
+  .views-screen:has(.full-calendar-view.is-agenda) > .view-header {
+    margin-bottom: 8px;
+    min-height: 44px;
+  }
+  .views-screen:has(.full-calendar-view.is-agenda)
+    > .view-header
+    .view-summary {
+    display: none;
+  }
 }

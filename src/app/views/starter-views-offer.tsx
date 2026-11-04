@@ -14,7 +14,11 @@ export function StarterViewsOffer({ onAdded }: { onAdded(): Promise<void> }) {
           <Trans>Starter views</Trans>
         </h3>
         <p>
-          <Trans>Adds Today, Upcoming, Calendar, Projects, and Archive.</Trans>
+          <Trans>
+            Adds missing Today, Upcoming, Calendar, Projects, Archive, and
+            Unplanned views. Existing files and navigation choices stay
+            unchanged.
+          </Trans>
         </p>
         {error ? <p role="alert">{error}</p> : null}
       </div>
