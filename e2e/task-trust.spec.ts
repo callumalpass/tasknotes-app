@@ -94,3 +94,22 @@ test("Ctrl+A from blank page space selects the list", async ({ page }) => {
   await page.keyboard.press("Control+a");
   await expect(page.locator(".bulk-actions")).toContainText("selected");
 });
+
+test("Escape hands the keyboard back from Search and keeps a capture draft", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const capture = page.getByRole("combobox").first();
+  await capture.fill("Half a thought");
+  await capture.press("Escape");
+  await expect(capture).not.toBeFocused();
+  await expect(capture).toHaveValue("Half a thought");
+  await page.keyboard.press("/");
+  const search = page.getByRole("searchbox", { name: "Search tasks" });
+  await expect(search).toBeFocused();
+  await search.press("Escape");
+  await expect(search).not.toBeFocused();
+  await page.keyboard.press("g");
+  await page.keyboard.press("u");
+  await expect(page).toHaveURL(/upcoming/);
+});

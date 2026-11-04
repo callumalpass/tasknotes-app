@@ -1,6 +1,5 @@
 import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { TaskSelectionList, SelectTasksOption } from "./task-selection";
-import { ViewOptions } from "../components/view-options";
 import { useLingui } from "@lingui/react/macro";
 import { countLabel } from "../i18n/default-labels";
 import { Trans } from "@lingui/react/macro";
@@ -142,9 +141,7 @@ export function SearchScreen({
             <Trans>Across this collection</Trans>
           </p>
         </div>
-        <ViewOptions>
-          <SelectTasksOption />
-        </ViewOptions>
+        <SelectTasksOption />
       </header>
       <div className="search-field">
         <Search aria-hidden="true" size={19} strokeWidth={1.7} />
@@ -164,6 +161,11 @@ export function SearchScreen({
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.nativeEvent.isComposing)
               rememberSearch(query);
+            // Hands the keyboard back so shortcuts work again; the search stays.
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
             if (event.key === "ArrowDown") {
               const first = document.querySelector<HTMLElement>(
                 "#main-content .task-row-title",

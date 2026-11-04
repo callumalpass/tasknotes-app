@@ -345,8 +345,8 @@ export function TaskCapture({
   }
 
   function handleCaptureKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    // An empty field has nothing to cancel, so Escape returns to the list.
-    if (event.key === "Escape" && !text && !suggestions.length) {
+    // With no suggestions to dismiss, Escape returns to the list. A draft stays.
+    if (event.key === "Escape" && !suggestions.length) {
       event.currentTarget.blur();
       return;
     }
@@ -519,7 +519,9 @@ export function TaskCapture({
               onClick={() => chooseSuggestion(suggestion)}
             >
               <span>{linkDisplayLabel(suggestion.label)}</span>
-              {suggestion.detail ? <small>{suggestion.detail}</small> : null}
+              {suggestion.detail ? (
+                <small>{suggestionPlace(suggestion.detail)}</small>
+              ) : null}
             </button>
           ))}
         </div>
@@ -1014,6 +1016,11 @@ function useDelayedFlag(
     };
   }, [active, delay, restart]);
   return active && elapsed;
+}
+
+/** A note's folder tells same-named links apart without showing a file path. */
+function suggestionPlace(detail: string) {
+  return /\.md$/i.test(detail) ? detail.replace(/\/?[^/]*$/, "") : detail;
 }
 
 function suggestionMatches(

@@ -1771,7 +1771,7 @@
 .view-options {
   position: relative;
 }
-.search-header > .view-options {
+.search-header > .view-header-action {
   margin-left: auto;
 }
 
