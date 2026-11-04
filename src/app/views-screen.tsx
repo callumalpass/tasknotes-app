@@ -1,3 +1,4 @@
+import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { t as translate, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -142,7 +143,11 @@ export function ViewsScreen({
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
-  onOpenTask(task: TaskSummary, occurrenceDate?: string): void;
+  onOpenTask(
+    task: TaskSummary,
+    occurrenceDate?: string,
+    order?: readonly TaskNavigationTarget[],
+  ): void;
   onTaskAdded?(task: TaskSummary): void;
   onSearch(): void;
   onOpenView(view: TaskView): void;

@@ -356,11 +356,12 @@ test("task summaries use readable project labels and settings show the build ver
       exact: true,
     })
     .click();
-  const organize = page
-    .locator(".task-form-section > summary")
-    .filter({ hasText: "Organize" });
-  await expect(organize).toContainText("Product refresh");
-  await expect(organize).not.toContainText("[[");
+  const project = page.getByRole("button", {
+    name: "Edit Project",
+    exact: true,
+  });
+  await expect(project).toContainText("Product refresh");
+  await expect(project).not.toContainText("[[");
   await page.goto("more?demo=50");
   const { version } = JSON.parse(
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),

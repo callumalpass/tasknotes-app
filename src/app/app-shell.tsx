@@ -148,7 +148,7 @@ export function AppShell() {
     toggleNavigationView,
     moveNavigationView,
   } = useNavigationViews();
-  const { route, workspaceRoute, navigate, detailRef } =
+  const { route, workspaceRoute, navigate, detailRef, taskOrder } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [paletteRequest, setPaletteRequest] = useState(0);
@@ -435,7 +435,9 @@ export function AppShell() {
                 ? undefined
                 : () => navigate({ page: "home" }, true)
             }
-            onOpen={(task) => navigate({ page: "task", id: task.id })}
+            onOpen={(task, order) =>
+              navigate({ page: "task", id: task.id }, false, order)
+            }
           />
         ) : workspacePage === "scratchpad" ? (
           <ScratchpadScreen
@@ -471,8 +473,8 @@ export function AppShell() {
                 true,
               )
             }
-            onOpenTask={(task, occurrence) =>
-              navigate({ page: "task", id: task.id, occurrence })
+            onOpenTask={(task, occurrence, order) =>
+              navigate({ page: "task", id: task.id, occurrence }, false, order)
             }
             onSearch={() =>
               navigate(
@@ -515,6 +517,10 @@ export function AppShell() {
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
+            taskOrder={taskOrder}
+            onNavigate={(target, order) =>
+              navigate({ page: "task", ...target }, true, order)
+            }
             onBack={() => {
               if (window.history.state?.taskPanel) window.history.back();
               else navigate(workspaceRoute, true);

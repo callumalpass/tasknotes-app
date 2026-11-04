@@ -19,6 +19,10 @@ import {
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
+import { TaskCoreProperties } from "./task-core-properties";
+import { TaskSubtasks } from "./task-subtasks";
+import { plainShortcutsSuspended } from "./keyboard-shortcuts";
+import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { successFeedback } from "../native/feedback";
 import { LoadingRows } from "../components/loading";
 import { TaskAttachments } from "../components/task-attachments";
@@ -41,16 +45,7 @@ import { OperationErrorNotice } from "../components/operation-error-notice";
 import { RecurrenceField } from "../components/recurrence-field";
 import { AssigneeEditor } from "../components/assignee-editor";
 import { ReminderEditor } from "../components/reminder-editor";
-import {
-  TaskNotesDateTimeField,
-  TaskNotesSelectField,
-} from "../components/tasknotes-controls";
-import {
-  activeTimeEntry,
-  combineTaskDateTime,
-  taskDatePart,
-  taskTimePart,
-} from "../domain/task";
+import { activeTimeEntry } from "../domain/task";
 import { recordMatchesLink } from "../domain/completion";
 import {
   useRepository,
@@ -60,17 +55,15 @@ import {
 import { TimeTrackingField } from "./task-time-tracking";
 import { rememberOpenedTask } from "./search-history";
 import {
-  Choice,
-  Fieldset,
   ListField,
   TaskFormSection,
+  TaskPaneNavigation,
 } from "./task-editor-layout";
 import {
   isEmptyFieldValue,
   formatOccurrenceDate,
   organizeSummary,
   repeatSummary,
-  scheduleSummary,
   timeSummary,
   toDraft,
   type Draft,
@@ -97,18 +90,20 @@ type TaskEditorProps = {
   occurrenceDate?: string;
   onBack(): void;
   onMaterialized(task: Task): void;
+  taskOrder?: readonly TaskNavigationTarget[];
+  onNavigate?(
+    target: TaskNavigationTarget,
+    order?: readonly TaskNavigationTarget[],
+  ): void;
 };
 export function TaskScreen({
   id,
   occurrenceDate,
   onBack,
   onMaterialized,
-}: {
-  id: string;
-  occurrenceDate?: string;
-  onBack(): void;
-  onMaterialized(task: Task): void;
-}) {
+  taskOrder,
+  onNavigate,
+}: Omit<TaskEditorProps, "task"> & { id: string }) {
   const { t } = useLingui();
   const { task, loading, error } = useTask(id);
   const { repository } = useRepository();
@@ -154,6 +149,8 @@ export function TaskScreen({
           occurrenceDate={occurrenceDate}
           onBack={onBack}
           onMaterialized={onMaterialized}
+          taskOrder={taskOrder}
+          onNavigate={onNavigate}
           recoveryScope={recoveryScope}
         />
       )}
@@ -167,6 +164,8 @@ function TaskEditor({
   onBack,
   onMaterialized,
   recoveryScope,
+  taskOrder = [],
+  onNavigate,
 }: TaskEditorProps & { recoveryScope: string }) {
   const { t } = useLingui();
   const besideWork = useDetailsBesideWork();
@@ -187,9 +186,11 @@ function TaskEditor({
     mutations,
     completionKey(task.id, task.occurrenceDate ? undefined : occurrenceDate),
   );
-  const { relationships: repositoryRelationships } = useTaskRelationships(
-    task.id,
-  );
+  const {
+    relationships: repositoryRelationships,
+    loading: relationshipsLoading,
+    error: relationshipsError,
+  } = useTaskRelationships(task.id);
   const completeField = useCallback(
     (request: FieldCompletionRequest) => repository.completeField(request),
     [repository],
@@ -347,6 +348,14 @@ function TaskEditor({
   const resizeTitle = useCallback(() => {
     const field = titleRef.current;
     if (!field) return;
+    // Native content sizing also follows text scaling and late font changes.
+    if (
+      typeof CSS !== "undefined" &&
+      CSS.supports?.("field-sizing", "content")
+    ) {
+      field.style.height = "auto";
+      return;
+    }
     field.style.height = "auto";
     field.style.height = `${field.scrollHeight}px`;
   }, []);
@@ -683,28 +692,89 @@ function TaskEditor({
     }, [refused, reviewRejection, t]),
   );
 
-  async function leave() {
-    if (leaving) return;
+  const leavingRef = useRef(false);
+  async function leave(afterSave: () => void = onBack) {
+    if (leavingRef.current) return;
     if (rejection) {
       // Leaving would drop the refused draft; the choice stays in view.
       reviewRejection();
       return;
     }
-    if (!draft.title.trim()) {
+    if (!draftRef.current.title.trim()) {
+      setSaveError(t({ message: "Add a title before leaving this task." }));
       setSaveState("error");
+      titleRef.current?.focus();
       return;
     }
+    leavingRef.current = true;
     setLeaving(true);
     try {
-      if (dirtyRef.current)
+      // Typing during a slow save is still part of this editor's draft.
+      while (dirtyRef.current) {
+        if (!draftRef.current.title.trim()) {
+          setSaveError(t({ message: "Add a title before leaving this task." }));
+          setSaveState("error");
+          titleRef.current?.focus();
+          return;
+        }
+        if (
+          repository.writeState?.({ kind: "task", id: task.id }) === "failed"
+        ) {
+          reviewRejection();
+          return;
+        }
         await persist(draftRef.current, editVersion.current);
-      onBack();
+      }
+      if (repository.writeState?.({ kind: "task", id: task.id }) === "failed") {
+        reviewRejection();
+        return;
+      }
+      afterSave();
     } catch {
       // persist owns the visible save error; keep the editor open for retry.
     } finally {
+      leavingRef.current = false;
       if (mounted.current) setLeaving(false);
     }
   }
+
+  const currentIndex = taskOrder.findIndex(
+    (target) => target.id === task.id && target.occurrence === occurrenceDate,
+  );
+  const previousTask =
+    currentIndex > 0 ? taskOrder[currentIndex - 1] : undefined;
+  const nextTask = currentIndex >= 0 ? taskOrder[currentIndex + 1] : undefined;
+  const navigateAdjacent = useEffectEvent((direction: number) => {
+    const target = direction > 0 ? nextTask : previousTask;
+    if (target && onNavigate) void leave(() => onNavigate(target));
+  });
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      // Ignore Alt solely for the alternate navigation keys. Every other
+      // suspension rule (typing, IME, overlays, modifiers) still applies.
+      const alternate =
+        event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown");
+      if (
+        event.shiftKey ||
+        event.repeat ||
+        plainShortcutsSuspended(event, alternate)
+      )
+        return;
+      const direction =
+        event.key === "j" || (alternate && event.key === "ArrowDown")
+          ? 1
+          : event.key === "k" || (alternate && event.key === "ArrowUp")
+            ? -1
+            : 0;
+      if (!direction || !onNavigate) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      navigateAdjacent(direction);
+    };
+    // Handle before the global task-list j/k handler.
+    window.addEventListener("keydown", keydown, true);
+    return () => window.removeEventListener("keydown", keydown, true);
+  }, [onNavigate]);
 
   async function toggleOccurrence() {
     const date = occurrenceDate ?? task.occurrenceDate;
@@ -802,6 +872,19 @@ function TaskEditor({
             <ArrowLeft aria-hidden="true" size={21} strokeWidth={1.7} />
           )}
         </button>
+        <TaskPaneNavigation
+          busy={leaving}
+          onPrevious={
+            previousTask && onNavigate
+              ? () => void leave(() => onNavigate(previousTask))
+              : undefined
+          }
+          onNext={
+            nextTask && onNavigate
+              ? () => void leave(() => onNavigate(nextTask))
+              : undefined
+          }
+        />
         <button
           className={`save-state is-${rejection ? "error" : saveState}`}
           disabled={
@@ -1027,52 +1110,15 @@ function TaskEditor({
           </p>
         ) : null}
 
-        <TaskFormSection
-          title={translate({ message: "Schedule and status" })}
-          summary={scheduleSummary(task, draft, configuration, occurrenceDate)}
-        >
-          {occurrenceDate && draft.recurrence ? (
-            <p className="field-help">
-              <Trans>
-                These fields edit the series dates. The summary above shows this
-                occurrence.
-              </Trans>
-            </p>
-          ) : null}
-          <div className="field-grid timing-fields task-core-fields">
-            <div className="tasknotes-status-field">
-              <TaskNotesSelectField
-                ariaDescribedBy={
-                  task.occurrenceDate ? "occurrence-status-help" : undefined
-                }
-                disabled={Boolean(task.occurrenceDate)}
-                label={t({ message: "Status" })}
-                options={[...configuration.statuses].sort(
-                  (left, right) => left.order - right.order,
-                )}
-                value={draft.status}
-                onChange={(status) => change({ status })}
-              />
-              {task.occurrenceDate ? (
-                <small id="occurrence-status-help">
-                  <Trans>
-                    Use the occurrence actions above to change this state.
-                  </Trans>
-                </small>
-              ) : null}
-            </div>
-            <DateTimeField
-              label={t({ message: "Scheduled" })}
-              value={draft.scheduled}
-              onChange={(scheduled) => change({ scheduled })}
-            />
-            <DateTimeField
-              label={t({ message: "Due" })}
-              value={draft.due}
-              onChange={(due) => change({ due })}
-            />
-          </div>
-        </TaskFormSection>
+        <TaskCoreProperties
+          draft={draft}
+          configuration={configuration}
+          projectLabels={projectLabels}
+          occurrenceNote={Boolean(task.occurrenceDate)}
+          seriesDates={Boolean(occurrenceDate && draft.recurrence)}
+          completeField={completeField}
+          onChange={change}
+        />
 
         <section className="notes-field">
           <header className="notes-field-heading">
@@ -1137,6 +1183,25 @@ function TaskEditor({
           )}
         </section>
 
+        <TaskSubtasks
+          task={task}
+          subtasks={relationships.subtasks}
+          loading={relationshipsLoading}
+          error={relationshipsError}
+          beforeMutation={flushBeforeAttachmentMutation}
+          onOpen={
+            onNavigate
+              ? (child) =>
+                  void leave(() =>
+                    onNavigate(
+                      { id: child.id },
+                      relationships.subtasks.map((task) => ({ id: task.id })),
+                    ),
+                  )
+              : undefined
+          }
+        />
+
         {repository.files ? (
           <TaskAttachments
             beforeMutation={flushBeforeAttachmentMutation}
@@ -1148,36 +1213,10 @@ function TaskEditor({
         ) : null}
 
         <TaskFormSection
-          summary={organizeSummary(draft)}
+          summary={organizeSummary(draft, false)}
           title={t({ message: "Organize" })}
         >
-          <Fieldset legend={t({ message: "Priority" })}>
-            {configuration.priorities.map((priority) => (
-              <Choice
-                color={priority.color}
-                key={priority.value}
-                selected={draft.priority === priority.value}
-                onClick={() => change({ priority: priority.value })}
-              >
-                {priority.label}
-              </Choice>
-            ))}
-          </Fieldset>
           <div className="field-grid metadata-fields">
-            <ListField
-              field={configuration.fieldMapping.projects}
-              label={t({ message: "Projects" })}
-              placeholder={t({ message: "Website, Home" })}
-              values={draft.projects}
-              valueLabels={projectLabels}
-              completion={
-                configuration.fieldCompletions[
-                  configuration.fieldMapping.projects
-                ] ?? { kind: "records" }
-              }
-              completeField={completeField}
-              onChange={(projects) => change({ projects })}
-            />
             <ListField
               field={configuration.fieldMapping.contexts}
               label={t({ message: "Contexts" })}
@@ -1190,17 +1229,6 @@ function TaskEditor({
               }
               completeField={completeField}
               onChange={(contexts) => change({ contexts })}
-            />
-            <ListField
-              field="tags"
-              label={t({ message: "Tags" })}
-              placeholder={t({ message: "work, important" })}
-              values={draft.tags.filter((tag) => tag !== "task")}
-              completion={
-                configuration.fieldCompletions.tags ?? { kind: "values" }
-              }
-              completeField={completeField}
-              onChange={(tags) => change({ tags: ["task", ...tags] })}
             />
           </div>
           <AssigneeEditor
@@ -1222,7 +1250,7 @@ function TaskEditor({
             }
             onChange={(blockedBy) => change({ blockedBy })}
           />
-          <RelatedWork relationships={relationships} />
+          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
           {configuration.userFields.length ? (
             <section
               className="custom-fields"
@@ -1324,29 +1352,6 @@ function TaskEditor({
         />
       </div>
     </section>
-  );
-}
-
-function DateTimeField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value?: string;
-  onChange(value?: string): void;
-}) {
-  return (
-    <TaskNotesDateTimeField
-      combineValue={combineTaskDateTime}
-      label={label}
-      splitValue={(current) => ({
-        date: taskDatePart(current) || undefined,
-        time: taskTimePart(current) || undefined,
-      })}
-      value={value}
-      onChange={onChange}
-    />
   );
 }
 

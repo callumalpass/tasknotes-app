@@ -1,3 +1,4 @@
+import { sectionCollapsed } from "../../application/section-preferences";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
@@ -136,6 +137,23 @@ export function TaskListView({
     }
   }
   lanes = applyOptimisticListMoves(lanes, execution.rows, moves, manualOrder);
+  const openInOrder: ViewProps["onOpen"] = (task, occurrence) => {
+    const preferenceScope = sectionScope
+      ? JSON.stringify([sectionScope, execution.view.key])
+      : undefined;
+    const order = lanes
+      .filter(
+        (lane) =>
+          !grouped ||
+          !sectionCollapsed(
+            preferenceScope
+              ? `tasknotes:section:${preferenceScope}:${lane.key}`
+              : undefined,
+          ),
+      )
+      .flatMap((lane) => lane.rows.map((row) => ({ id: row.task.id })));
+    onOpen(task, occurrence, order);
+  };
   const clear =
     daySections &&
     daySectionsClear &&
@@ -162,7 +180,7 @@ export function TaskListView({
           daySections={daySections}
           properties={execution.view.properties}
           titleProperty={titleProperty}
-          onOpen={onOpen}
+          onOpen={openInOrder}
           onToggle={onToggle}
           sectionAction={sectionAction}
         />
@@ -185,7 +203,7 @@ export function TaskListView({
       orderPending={orderPending}
       properties={execution.view.properties}
       titleProperty={titleProperty}
-      onOpen={onOpen}
+      onOpen={openInOrder}
       onMove={onMove}
       onToggle={onToggle}
       sectionAction={sectionAction}
@@ -224,7 +242,7 @@ function ManualTaskRows({
   orderPending: boolean;
   properties: TaskViewProperty[];
   titleProperty: string;
-  onOpen(task: TaskSummary, occurrenceDate?: string): void;
+  onOpen: ViewProps["onOpen"];
   onMove(
     dragged: TaskViewRow,
     source: TaskListLane,

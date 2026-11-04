@@ -11,6 +11,8 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
 import { historyScope, readHistory } from "./search-history";
+import { taskRecordLink } from "../domain/task-links";
+import { registerOverlay } from "../components/overlays/overlay-stack";
 import { TaskScreen } from "./task-screen";
 
 import type { Task } from "../domain/task";
@@ -25,13 +27,19 @@ describe("TaskScreen", () => {
     task = await repository.create({ title: "Keep this draft" });
   });
 
-  function renderTask(onBack = vi.fn()) {
+  function renderTask(onBack = vi.fn(), onNavigate = vi.fn()) {
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
         repository={repository}
       >
-        <TaskScreen id={task.id} onBack={onBack} onMaterialized={vi.fn()} />
+        <TaskScreen
+          id={task.id}
+          onBack={onBack}
+          onMaterialized={vi.fn()}
+          onNavigate={onNavigate}
+          taskOrder={[{ id: "previous" }, { id: task.id }, { id: "next" }]}
+        />
       </RepositoryProvider>,
     );
     return onBack;
@@ -41,6 +49,134 @@ describe("TaskScreen", () => {
     const title = await screen.findByLabelText("Task title", { exact: true });
     fireEvent.change(title, { target: { value: "Unsaved important draft" } });
   }
+
+  it("shows primary properties without opening a section and saves tags through the draft", async () => {
+    const back = renderTask();
+    await screen.findByLabelText("Task title", { exact: true });
+    expect(screen.getByRole("combobox", { name: "Status" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Scheduled date" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Due date" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit Project" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Tags" }));
+    const tags = screen.getByRole("combobox", { name: "Tags" });
+    expect(tags).toHaveFocus();
+    fireEvent.change(tags, { target: { value: "research" } });
+    fireEvent.keyDown(tags, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() => expect(back).toHaveBeenCalled());
+    expect((await repository.get(task.id))?.tags).toContain("research");
+  });
+
+  it("saves pending notes before navigating to the next task", async () => {
+    const navigate = vi.fn();
+    renderTask(vi.fn(), navigate);
+    fireEvent.change(await screen.findByLabelText("Notes"), {
+      target: { value: "Before moving" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next task" }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ id: "next" }));
+    expect((await repository.get(task.id))?.body).toBe("Before moving");
+  });
+
+  it("includes edits typed during the navigation save before opening another task", async () => {
+    const navigate = vi.fn();
+    renderTask(vi.fn(), navigate);
+    const notes = await screen.findByLabelText("Notes");
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = repository.update.bind(repository);
+    const update = vi
+      .spyOn(repository, "update")
+      .mockImplementationOnce(async (...args) => {
+        await gate;
+        return original(...args);
+      });
+    fireEvent.change(notes, { target: { value: "First edit" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next task" }));
+    await waitFor(() => expect(update).toHaveBeenCalledOnce());
+    fireEvent.change(notes, { target: { value: "Typed while saving" } });
+    await act(async () => release());
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ id: "next" }));
+    expect((await repository.get(task.id))?.body).toBe("Typed while saving");
+  });
+
+  it("keeps the current task on failed navigation save and prevents empty-title navigation", async () => {
+    const navigate = vi.fn();
+    renderTask(vi.fn(), navigate);
+    await editTitle();
+    vi.spyOn(repository, "update").mockRejectedValueOnce(
+      new Error("Connector unavailable"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Next task" }));
+    await screen.findByRole("button", { name: /Save failed/ });
+    expect(navigate).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Task title", { exact: true }), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Previous task" }));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Task title", { exact: true })).toHaveFocus();
+  });
+
+  it("navigates by j/k and Alt arrows while yielding to typing, IME and overlays", async () => {
+    const navigate = vi.fn();
+    renderTask(vi.fn(), navigate);
+    const title = await screen.findByLabelText("Task title", { exact: true });
+    fireEvent.keyDown(title, { key: "j" });
+    fireEvent.keyDown(title, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(window, { key: "j", isComposing: true });
+    fireEvent.keyDown(window, { key: "j", ctrlKey: true });
+    const root = document.createElement("div");
+    document.body.append(root);
+    const unregister = registerOverlay({
+      root,
+      modal: false,
+      dismiss: vi.fn(),
+    });
+    fireEvent.keyDown(window, { key: "k" });
+    fireEvent.keyDown(window, { key: "ArrowUp", altKey: true });
+    expect(navigate).not.toHaveBeenCalled();
+    unregister();
+    root.remove();
+    for (const [key, altKey, id] of [
+      ["j", false, "next"],
+      ["k", false, "previous"],
+      ["ArrowDown", true, "next"],
+      ["ArrowUp", true, "previous"],
+    ] as const) {
+      fireEvent.keyDown(window, { key, altKey });
+      await waitFor(() => expect(navigate).toHaveBeenLastCalledWith({ id }));
+    }
+    expect(navigate).toHaveBeenCalledTimes(4);
+  });
+
+  it("creates portable subtasks inline and updates their completion count", async () => {
+    const child = await repository.create({
+      title: "First child",
+      projects: [taskRecordLink(task, "wikilink")],
+    });
+    renderTask();
+    expect(await screen.findByText("0 of 1")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Complete First child" }),
+    );
+    expect(await screen.findByText("1 of 1")).toBeVisible();
+    expect((await repository.get(child.id))?.completed).toBe(true);
+    fireEvent.change(screen.getByRole("textbox", { name: "Subtask title" }), {
+      target: { value: "Second child" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+    expect(await screen.findByText("1 of 2")).toBeVisible();
+    const relationships = await repository.relationships(task.id);
+    expect(relationships.subtasks.map((task) => task.title)).toEqual(
+      expect.arrayContaining(["First child", "Second child"]),
+    );
+  });
 
   it("remembers an opened task for Search", async () => {
     renderTask();
@@ -434,12 +570,19 @@ describe("TaskScreen with a refused native save", () => {
     const task = await f.repository.create({ title: "Shared task" });
     f.replica.confirmAll();
     const update = vi.spyOn(f.client, "update");
+    const navigate = vi.fn();
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
         repository={f.repository}
       >
-        <TaskScreen id={task.id} onBack={vi.fn()} onMaterialized={vi.fn()} />
+        <TaskScreen
+          id={task.id}
+          onBack={vi.fn()}
+          onMaterialized={vi.fn()}
+          onNavigate={navigate}
+          taskOrder={[{ id: task.id }, { id: "next" }]}
+        />
       </RepositoryProvider>,
     );
     fireEvent.change(await screen.findByLabelText("Notes"), {
@@ -458,11 +601,11 @@ describe("TaskScreen with a refused native save", () => {
       frontmatter: Object.fromEntries(record.frontmatter),
       body: "Edited elsewhere",
     });
-    return { update, recordId: record.id };
+    return { update, navigate, recordId: record.id };
   }
 
   it("keeps the draft and re-applies it on the latest revision only when asked", async () => {
-    const { update, recordId } = await rejectedNotesEdit();
+    const { update, navigate, recordId } = await rejectedNotesEdit();
     expect(
       await screen.findByText(
         "This task changed somewhere else, so your edit wasn't saved.",
@@ -472,6 +615,9 @@ describe("TaskScreen with a refused native save", () => {
     expect(
       screen.getByRole("button", { name: "Not saved. Review your edit." }),
     ).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Next task" }));
+    fireEvent.keyDown(window, { key: "j" });
+    expect(navigate).not.toHaveBeenCalled();
     // Further typing never silently overwrites the other app's change.
     fireEvent.change(screen.getByLabelText("Notes"), {
       target: { value: "My local notes, extended" },

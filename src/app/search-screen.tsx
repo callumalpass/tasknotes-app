@@ -1,3 +1,4 @@
+import type { TaskNavigationTarget } from "./use-workspace-navigation";
 import { useLingui } from "@lingui/react/macro";
 import { countLabel } from "../i18n/default-labels";
 import { Trans } from "@lingui/react/macro";
@@ -38,7 +39,7 @@ export function SearchScreen({
   onOpen,
 }: {
   onBack?: () => void;
-  onOpen(task: TaskSummary): void;
+  onOpen(task: TaskSummary, order?: readonly TaskNavigationTarget[]): void;
 }) {
   const { t } = useLingui();
   const [query, setQuery] = useState("");
@@ -96,7 +97,10 @@ export function SearchScreen({
   );
   const openResult = (task: TaskSummary) => {
     if (deferred.trim()) rememberSearch(deferred);
-    onOpen(task);
+    onOpen(
+      task,
+      tasks.map((task) => ({ id: task.id })),
+    );
   };
   const renderTask = (task: TaskSummary) => (
     <TaskRow

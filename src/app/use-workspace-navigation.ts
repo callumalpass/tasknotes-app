@@ -19,6 +19,7 @@ export type Route =
   | { page: "more"; section?: SettingsSection }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
+export type TaskNavigationTarget = { id: string; occurrence?: string };
 export type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 // Screens that cannot be left yet (an unsaveable or refused draft) veto
@@ -54,6 +55,9 @@ export function useWorkspaceNavigation(
     const initial = parseRoute();
     return initial.page === "task" ? { page: "home" } : initial;
   });
+  const [taskOrder, setTaskOrder] = useState<readonly TaskNavigationTarget[]>(
+    [],
+  );
   const taskReturn = useRef<{
     element: HTMLElement | null;
     scrollY: number;
@@ -67,9 +71,9 @@ export function useWorkspaceNavigation(
   useLayoutEffect(() => {
     const wasTask = previousPage.current === "task";
     previousPage.current = route.page;
-    if (route.page === "task" && !wasTask)
+    if (route.page === "task")
       detailRef.current?.focus({ preventScroll: true });
-    else if (wasTask && route.page !== "task" && taskReturn.current) {
+    else if (wasTask && taskReturn.current) {
       const target = taskReturn.current;
       taskReturn.current = null;
       if (target.workspaceUrl !== currentRouteUrl) return;
@@ -109,7 +113,33 @@ export function useWorkspaceNavigation(
   }, []);
 
   const navigate = useCallback(
-    (next: Route, replace = false) => {
+    (next: Route, replace = false, order?: readonly TaskNavigationTarget[]) => {
+      if (next.page === "task" && (route.page !== "task" || order)) {
+        // Presentations may supply their full order, including virtual rows.
+        // Search and other small lists use their rendered reading order.
+        const rows =
+          order ??
+          Array.from(
+            document.querySelectorAll<HTMLElement>(
+              "#main-content .task-row[data-task-id]",
+            ),
+          )
+            .filter((row) => !row.closest("[hidden], [inert], .is-departing"))
+            .map((row) => ({
+              id: row.dataset.taskId!,
+              occurrence: row.dataset.occurrence,
+            }));
+        const seen = new Set<string>();
+        setTaskOrder(
+          rows.filter((target) => {
+            const key = JSON.stringify([target.id, target.occurrence]);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          }),
+        );
+      }
+      if (next.page !== "task") setTaskOrder([]);
       const url = routeUrl(next);
       // Choosing another task swaps the open panel's entry, so Back closes the
       // panel instead of revisiting earlier selections. `taskPanel` marks an
@@ -173,7 +203,7 @@ export function useWorkspaceNavigation(
     };
   }, []);
 
-  return { route, workspaceRoute, navigate, detailRef };
+  return { route, workspaceRoute, navigate, detailRef, taskOrder };
 }
 
 function parseRoute(): Route {
