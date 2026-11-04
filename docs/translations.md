@@ -20,7 +20,7 @@ Settings → Language changes the interface and saves a successful explicit choi
 stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
-**Catalogue scope:** 1408 active application messages. All eight QA-fixed v2
+**Catalogue scope:** 1,408 active application messages. All eight QA-fixed v2
 branches, their 13-ID v3 deltas and final two-ID v4 deltas are merged, with no
 missing authored targets. `Collection access is unavailable.` (`8fU7nk`) is the
 generic non-Error fallback; real authority diagnostics remain unchanged.

@@ -134,7 +134,7 @@ export function ViewCatalog({
     }))
     .filter((document) => document.views.length > 0)
     // The sidebar already reaches pinned views, so the rest lead here.
-    .toSorted(
+    .sort(
       (left, right) => Number(allPinned(left)) - Number(allPinned(right)),
     );
   const visibleCount = visibleTools.length + visibleViewKeys.size;

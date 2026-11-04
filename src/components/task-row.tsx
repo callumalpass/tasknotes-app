@@ -27,7 +27,6 @@ import {
 
 import {
   activeTimeEntry,
-  isTaskDateOverdue,
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
