@@ -140,6 +140,11 @@ for (const theme of ["light", "dark"] as const) {
     await dialog.getByRole("button", { name: "Add", exact: true }).click();
     const notice = page.locator(".task-added-notice");
     await expect(notice).toBeVisible();
+    await notice.evaluate(async (element) => {
+      await Promise.all(
+        element.getAnimations().map((animation) => animation.finished),
+      );
+    });
     await expect(
       page.getByRole("status").filter({ hasText: `Task added: ${title}` }),
     ).toBeAttached();
