@@ -238,6 +238,7 @@ test("a saved collapse preference leaves phone bottom navigation unchanged", asy
 
 test("row keys act on the whole selection and keep the list place", async ({
   page,
+  isMobile,
 }) => {
   await page.goto("?demo=60");
   await expect(page.locator("button.task-row-title").first()).toBeVisible();
@@ -257,12 +258,28 @@ test("row keys act on the whole selection and keep the list place", async ({
     .getByRole("button", { name: "Keep due dates", exact: true })
     .click();
   const moved = page.locator(`[data-task-id="${first}"]`);
-  await expect(
-    moved.getByRole("button", { name: /^Scheduled: Tomorrow/ }),
-  ).toBeVisible();
-  await expect(
-    moved.getByRole("button", { name: /^Due: .*ago/ }),
-  ).toBeVisible();
+  if (isMobile) {
+    const metadata = moved.getByRole("button", {
+      name: "Task properties",
+      exact: true,
+    });
+    await expect(metadata).toHaveAccessibleDescription(
+      /Scheduled: Tomorrow.*Due: .*ago/,
+    );
+    await expect(metadata.locator('[data-property="scheduled"]')).toHaveText(
+      /^Tomorrow(?:,|$)/,
+    );
+    await expect(metadata.locator('[data-property="due"]')).toContainText(
+      "ago",
+    );
+  } else {
+    await expect(
+      moved.getByRole("button", { name: /^Scheduled: Tomorrow/ }),
+    ).toBeVisible();
+    await expect(
+      moved.getByRole("button", { name: /^Due: .*ago/ }),
+    ).toBeVisible();
+  }
   await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
   await expect(page.locator(".app-shell")).not.toHaveClass(/sidebar-collapsed/);
   await expect(rows.locator(".task-row-title:focus")).toHaveCount(1);
@@ -321,9 +338,11 @@ test("plus moves the focused task to one project in a single step", async ({
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByText(/^Moved “.+” to Operations$/)).toBeVisible();
   await page.keyboard.press("+");
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("dialog", { name: "Move to project" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("menu")).toBeHidden();
+  await expect(page.locator(".task-row-title:focus")).toHaveCount(1);
 });

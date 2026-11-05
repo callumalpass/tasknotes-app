@@ -109,7 +109,10 @@ test("the phone Add task button stays compact at rest and clears row metadata", 
   await expect(fab).toContainText("Add task");
   await expect(fab).toHaveAccessibleName("New task");
   expect((await fab.boundingBox())!.width).toBe(44);
-  const meta = await page.locator(".task-row-properties").first().boundingBox();
+  const meta = await page
+    .locator(".task-row-metadata-band")
+    .first()
+    .boundingBox();
   expect(meta!.x + meta!.width).toBeLessThan((await fab.boundingBox())!.x);
 
   await page.mouse.move(200, 400);

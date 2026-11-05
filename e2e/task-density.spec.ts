@@ -22,7 +22,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       const property = row
         .locator(isMobile ? ".task-row-metadata-band" : ".task-row-property")
         .first();
-      await expect(title).toHaveCSS("min-height", isMobile ? "28px" : "32px");
+      await expect(title).toHaveCSS("min-height", isMobile ? "44px" : "32px");
       await expect(property).toHaveCSS(
         "min-height",
         isMobile ? "44px" : "24px",
