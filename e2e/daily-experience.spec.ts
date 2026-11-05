@@ -50,11 +50,9 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
   );
   if (testInfo.project.name === "mobile") {
     await expect(
-      firstRow.locator(".task-row-touch-details [aria-label^='Scheduled:']"),
+      firstRow.getByRole("button", { name: /^Scheduled:/ }),
     ).toBeVisible();
-    await expect(
-      firstRow.locator(".task-row-touch-details [aria-label^='Due:']"),
-    ).toBeVisible();
+    await expect(firstRow.getByRole("button", { name: /^Due:/ })).toBeVisible();
     await expect(title).toHaveAccessibleDescription(/Scheduled:.*Due:/);
   } else {
     await expect(

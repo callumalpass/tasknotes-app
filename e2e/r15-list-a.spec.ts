@@ -41,13 +41,20 @@ for (const theme of ["light", "dark"] as const) {
         expect(
           (await rows.first().locator(".task-row-title").boundingBox())!.height,
         ).toBeGreaterThanOrEqual(44);
-        await expect(rows.first().locator(".task-row-touch-details")).toHaveCSS(
-          "line-height",
-          "24px",
-        );
         await expect(
-          rows.first().locator(".task-row-touch-details"),
+          rows.first().locator(".task-row-properties"),
+        ).toBeVisible();
+        await expect(
+          rows.first().getByRole("button", { name: /^Due:/ }),
         ).toContainText("Due");
+        for (const property of await rows
+          .first()
+          .locator(".task-row-property")
+          .all()) {
+          const bounds = (await property.boundingBox())!;
+          expect(bounds.height).toBeGreaterThanOrEqual(44);
+          expect(bounds.width).toBeGreaterThanOrEqual(44);
+        }
       } else {
         await page.getByRole("button", { name: "Collapse sidebar" }).click();
         const destinations = page.locator(".navigation-destinations");
@@ -210,10 +217,13 @@ for (const theme of ["light", "dark"] as const) {
           "min-height",
           "44px",
         );
-        await expect(card.locator(".task-row-touch-details")).toHaveCSS(
-          "line-height",
-          "24px",
-        );
+        await expect(card.locator(".task-row-properties")).toBeVisible();
+        const property = (await card
+          .locator(".task-row-property")
+          .first()
+          .boundingBox())!;
+        expect(property.height).toBeGreaterThanOrEqual(44);
+        expect(property.width).toBeGreaterThanOrEqual(44);
       } else {
         await expect(
           page.locator(".kanban-card .task-row-property > strong").first(),

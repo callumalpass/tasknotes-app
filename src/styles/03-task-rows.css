@@ -1265,6 +1265,11 @@
   min-height: 32px;
   padding-block: 4px;
 }
+@media (pointer: coarse) {
+  .task-row:not(.kanban-card *) .task-row-title {
+    min-height: 44px;
+  }
+}
 .task-row .task-row-property,
 .task-row .task-row-meta > button {
   min-height: 44px;

@@ -8,6 +8,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("task rows are compact and properties remain directly editable", async ({
       page,
+      isMobile,
     }) => {
       await page.goto("?demo=50");
       const row = page.locator(".task-row").filter({
@@ -19,7 +20,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(row).toBeVisible();
       const title = row.locator(".task-row-title");
       const property = row.locator(".task-row-property").first();
-      await expect(title).toHaveCSS("min-height", "32px");
+      await expect(title).toHaveCSS("min-height", isMobile ? "44px" : "32px");
       await expect(property).toHaveCSS("min-height", "44px");
       for (const control of await row
         .locator(".completion-control, .task-actions-trigger")

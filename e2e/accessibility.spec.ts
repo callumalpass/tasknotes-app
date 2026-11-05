@@ -43,6 +43,12 @@ test("unconfigured build restart screen has no serious accessibility violations"
 }) => {
   const requests = trackRequestFailures(page);
   await page.goto("./");
+  await expect(
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
+  ).toBeVisible();
   await page.evaluate(() => localStorage.clear());
   requests.beforeNavigation();
   await page.reload();
@@ -79,6 +85,12 @@ test("navigation exception retains new-document aborts and network failures", as
 }) => {
   const requests = trackRequestFailures(page);
   await page.goto("./");
+  await expect(
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
+  ).toBeVisible();
   requests.beforeNavigation();
   await page.reload();
   await expect(
