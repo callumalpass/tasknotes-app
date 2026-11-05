@@ -1396,7 +1396,10 @@ msgstr "Klicken Sie auf Aufgaben, um sie auszuwählen."
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
+#: src/components/choice-options.tsx
+#: src/components/command-palette.tsx
 #: src/components/task-actions.tsx
+#: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
 msgstr "Schließen"
@@ -4594,6 +4597,7 @@ msgid "Saving…"
 msgstr "Wird gespeichert…"
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-actions.tsx
 msgid "Schedule"
 msgstr "Planen"
 

@@ -1396,7 +1396,10 @@ msgstr "タスクをクリックして選択します。"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
+#: src/components/choice-options.tsx
+#: src/components/command-palette.tsx
 #: src/components/task-actions.tsx
+#: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
 msgstr "閉じる"
@@ -4594,6 +4597,7 @@ msgid "Saving…"
 msgstr "保存中…"
 
 #: src/app/bulk-task-actions.tsx
+#: src/components/task-actions.tsx
 msgid "Schedule"
 msgstr "予定"
 
