@@ -166,6 +166,11 @@ export function useCalendarAgenda({
       )) {
         const heading = section.querySelector<HTMLElement>(".tnc-list-day");
         if (!heading) continue;
+        if (heading.querySelector(".task-section")) {
+          heading.removeAttribute("role");
+          heading.removeAttribute("aria-level");
+          continue;
+        }
         heading.setAttribute("role", "heading");
         heading.setAttribute("aria-level", "2");
         let badge = heading.querySelector<HTMLElement>(".agenda-day-count");

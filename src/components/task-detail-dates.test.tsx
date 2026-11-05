@@ -45,9 +45,10 @@ describe("shared detail dates", () => {
     const onChange = renderDates();
     fireEvent.click(screen.getByRole("button", { name: "Due date" }));
     const dialog = screen.getByRole("dialog", { name: "Due date calendar" });
+    fireEvent.click(within(dialog).getByText("Date options"));
     expect(within(dialog).getByRole("radio", { name: /Due/ })).toBeChecked();
     await waitFor(() =>
-      expect(within(dialog).getByLabelText("Type a date")).toHaveFocus(),
+      expect(within(dialog).getByRole("button", { name: /^Today$/ })).toHaveFocus(),
     );
     fireEvent.click(within(dialog).getByRole("radio", { name: /Scheduled/ }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Tomorrow" }));

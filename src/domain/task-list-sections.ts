@@ -4,6 +4,7 @@ import {
   shiftTaskDate,
 } from "./task-date-actions";
 import { taskDatePart, taskDayStanding, todayString } from "./task";
+import { compareOverdueTasks } from "./overdue-order";
 
 import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
@@ -20,13 +21,13 @@ export interface TaskListSection {
 
 /**
  * Apply optional presentation hierarchy without changing provider query
- * semantics. Row order inside each section remains provider-owned.
+ * semantics. Overdue is chronological unless a saved sort owns the order.
  */
 export function sectionTaskViewRows(
   rows: readonly TaskViewRow[],
   mode: unknown,
   today = todayString(),
-  options: { includeEmpty?: boolean } = {},
+  options: { includeEmpty?: boolean; preserveOrder?: boolean } = {},
 ): TaskListSection[] {
   if (mode !== "day") return [];
   const sections: TaskListSection[] = [
@@ -38,6 +39,11 @@ export function sectionTaskViewRows(
   const byKey = new Map(sections.map((section) => [section.key, section]));
   for (const row of rows) {
     byKey.get(taskDayStanding(row.task, today))?.rows.push(row);
+  }
+  if (!options.preserveOrder) {
+    byKey
+      .get("overdue")
+      ?.rows.sort((left, right) => compareOverdueTasks(left.task, right.task));
   }
   return options.includeEmpty
     ? sections

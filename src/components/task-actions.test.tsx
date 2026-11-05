@@ -100,6 +100,7 @@ describe("TaskActions", () => {
 
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
+    fireEvent.click(screen.getByText("Date options"));
     fireEvent.click(screen.getByRole("radio", { name: "Due" }));
     fireEvent.click(screen.getByRole("button", { name: "Tomorrow" }));
 

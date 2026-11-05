@@ -1,0 +1,21 @@
+.choice-options > input {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.choice-options .tasknotes-option-list {
+  max-height: 308px;
+  overflow-y: auto;
+}
+.choice-options .tasknotes-option-list > button {
+  min-height: 44px;
+}
+.choice-options .is-active {
+  background: var(--paper-soft);
+}

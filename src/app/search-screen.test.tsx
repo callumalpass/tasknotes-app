@@ -60,6 +60,46 @@ it("shows an actionable error rather than pretending a failed search was empty",
   fireEvent.click(screen.getByRole("button", { name: "Retry search" }));
   expect(fixture.retry).toHaveBeenCalledOnce();
 });
+it("keeps matching result order through rescheduling and Undo refreshes", async () => {
+  const result = (id: string) => ({
+    task: { id, title: `Match ${id}` },
+    bodyMatches: [],
+  });
+  const first = result("first"),
+    second = result("second");
+  fixture.query.mockReturnValue({
+    tasks: [first, second],
+    retry: fixture.retry,
+  });
+  const { rerender } = render(<SearchScreen onOpen={vi.fn()} />);
+  fireEvent.change(screen.getByRole("searchbox"), {
+    target: { value: "Match" },
+  });
+  await screen.findByText("2 tasks");
+  fixture.query.mockReturnValue({
+    tasks: [second, first],
+    refreshing: true,
+    retry: fixture.retry,
+  });
+  rerender(<SearchScreen onOpen={vi.fn()} />);
+  expect(
+    screen
+      .getByText("Match first")
+      .compareDocumentPosition(screen.getByText("Match second")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fixture.query.mockReturnValue({
+    tasks: [first, second],
+    retry: fixture.retry,
+  });
+  rerender(<SearchScreen onOpen={vi.fn()} />);
+  expect(
+    screen
+      .getByText("Match first")
+      .compareDocumentPosition(screen.getByText("Match second")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
 it("labels stale results instead of silently presenting them as current", async () => {
   fixture.query.mockReturnValue({
     tasks: [{ task: { id: "one", title: "Match old" }, bodyMatches: [] }],

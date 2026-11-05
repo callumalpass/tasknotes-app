@@ -281,7 +281,7 @@ export function BulkTaskActions({
           entry,
         });
         window.requestAnimationFrame(() => {
-          if (!keyed.current) undoRef.current?.focus();
+          if (!keyed.current) undoRef.current?.focus({ preventScroll: true });
           else restoreFocus();
           keyed.current = false;
         });

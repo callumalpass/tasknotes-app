@@ -67,7 +67,31 @@ export function SearchScreen({
     limit: peopleBlocked ? 0 : limit + 1,
     ...(personPath ? { assignedTo: personPath } : {}),
   });
-  const tasks = results.slice(0, limit).map((result) => result.task);
+  const searchKey = JSON.stringify([deferred, personPath ?? null]);
+  const [resultOrder, setResultOrder] = useState<{
+    key: string;
+    ids: string[];
+  }>({ key: searchKey, ids: [] });
+  const previousIds = resultOrder.key === searchKey ? resultOrder.ids : [];
+  const known = new Set(previousIds);
+  const added = results
+    .map(({ task }) => task.id)
+    .filter((id) => !known.has(id));
+  if (resultOrder.key !== searchKey || added.length) {
+    setResultOrder({ key: searchKey, ids: [...previousIds, ...added] });
+  }
+  const ranks = new Map(
+    resultOrder.key === searchKey
+      ? resultOrder.ids.map((id, index) => [id, index])
+      : [],
+  );
+  const tasks = results
+    .slice(0, limit)
+    .map((result) => result.task)
+    .sort(
+      (left, right) =>
+        (ranks.get(left.id) ?? Infinity) - (ranks.get(right.id) ?? Infinity),
+    );
   const bodyMatches = new Map(
     results.map((result) => [result.task.id, result.bodyMatches]),
   );

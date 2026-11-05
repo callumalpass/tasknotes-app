@@ -12,6 +12,22 @@ import type { Task } from "./task";
 import type { TaskViewRow } from "./view";
 
 describe("sectionTaskViewRows", () => {
+  it("orders overdue by their oldest effective date unless an explicit order wins", () => {
+    const rows = [
+      row("newer", { scheduled: "2026-07-24" }),
+      row("oldest", { scheduled: "2026-07-25", due: "2026-07-10" }),
+      row("middle", { due: "2026-07-20" }),
+    ];
+    expect(
+      sectionTaskViewRows(rows, "day", "2026-07-26")[0]?.rows.map(
+        ({ task }) => task.id,
+      ),
+    ).toEqual(["oldest", "middle", "newer"]);
+    expect(
+      sectionTaskViewRows(rows, "day", "2026-07-26", { preserveOrder: true })[0]
+        ?.rows,
+    ).toEqual(rows);
+  });
   it("adds a presentation hierarchy while preserving row order", () => {
     const rows = [
       row("anytime-1"),

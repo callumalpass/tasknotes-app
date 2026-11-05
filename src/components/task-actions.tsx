@@ -56,6 +56,7 @@ import {
 } from "../app/keyboard-shortcuts";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
+import { ChoiceOptions } from "./choice-options";
 
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 import { TaskDatePanel } from "./task-date-panel";
@@ -215,7 +216,7 @@ export function TaskActions({
               ? ".multi-value-control input"
               : "[data-panel-back]"
             : panel === "dates" && finePointer
-              ? ".task-date-input"
+              ? ".task-date-presets button"
               : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       const menu = menuRef.current;
       const current =
@@ -224,7 +225,11 @@ export function TaskActions({
               "[role='menuitemradio'][aria-checked='true']:not(:disabled)",
             )
           : null;
-      (current ?? menu?.querySelector<HTMLButtonElement>(selector))?.focus();
+      (
+        menu?.querySelector<HTMLInputElement>(".choice-options input") ??
+        current ??
+        menu?.querySelector<HTMLButtonElement>(selector)
+      )?.focus();
     });
   }, [panel, position]);
 
@@ -592,7 +597,16 @@ export function TaskActions({
                     )
                   ) : null}
                   {panel === "series" ? <TaskActionList series /> : null}
-                  {panel === "status"
+                  {panel === "status" && configuration.statuses.length > 7 ? (
+                    <ChoiceOptions
+                      options={configuration.statuses}
+                      value={task.status}
+                      label={t`Status`}
+                      disabled={busy}
+                      role="menuitemradio"
+                      onChoose={(status) => void run(() => change({ status }))}
+                    />
+                  ) : panel === "status"
                     ? configuration.statuses.map((option) => (
                         <MenuAction
                           checked={option.value === task.status}
@@ -608,7 +622,16 @@ export function TaskActions({
                         />
                       ))
                     : null}
-                  {panel === "priority"
+                  {panel === "priority" && configuration.priorities.length > 7 ? (
+                    <ChoiceOptions
+                      options={configuration.priorities}
+                      value={task.priority}
+                      label={t`Priority`}
+                      disabled={busy}
+                      role="menuitemradio"
+                      onChoose={(priority) => void run(() => change({ priority }))}
+                    />
+                  ) : panel === "priority"
                     ? configuration.priorities.map((option) => (
                         <MenuAction
                           checked={option.value === task.priority}

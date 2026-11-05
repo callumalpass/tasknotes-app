@@ -2,6 +2,7 @@ import "@tasknotes/calendar/calendar.css";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
+import { TaskListSection } from "../components/task-list-section";
 import { missedDeadlineCount } from "../domain/task-list-sections";
 import { appLocale } from "../i18n/app";
 import { calendarText } from "../i18n/calendar-locale";
@@ -22,6 +23,7 @@ import { createPortal } from "react-dom";
 
 import {
   calendarItems,
+  calendarAgendaOrder,
   type CalendarEventData,
   type CalendarEventMetadata,
   type TaskCalendarItem,
@@ -577,14 +579,25 @@ export function TaskCalendarView({
         <div className="full-calendar-main">
           {agenda && leadSlot && onMoveOverdueToToday && overdueRows.length
             ? createPortal(
-                <OverdueScheduleActions
+                <TaskListSection
+                  label={t`Overdue`}
                   count={overdueRows.length}
-                  deadlines={missedDeadlineCount(overdueRows)}
-                  pending={Boolean(movingOverdue)}
-                  onSchedule={(date, keepDeadlines) =>
-                    onMoveOverdueToToday(overdueRows, date, keepDeadlines)
+                  laneKey="section:overdue"
+                  preferenceKey={`tasknotes:agenda-overdue:${execution.view.key}`}
+                  headingOnly
+                  action={
+                    <OverdueScheduleActions
+                      count={overdueRows.length}
+                      deadlines={missedDeadlineCount(overdueRows)}
+                      pending={Boolean(movingOverdue)}
+                      onSchedule={(date, keepDeadlines) =>
+                        onMoveOverdueToToday(overdueRows, date, keepDeadlines)
+                      }
+                    />
                   }
-                />,
+                >
+                  {null}
+                </TaskListSection>,
                 leadSlot,
               )
             : null}
@@ -678,6 +691,7 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
+              eventOrder={calendarAgendaOrder(execution)}
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>

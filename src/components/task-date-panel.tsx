@@ -11,6 +11,7 @@ import { formatTaskDate, taskDatePart } from "../domain/task";
 import { parseTaskCapture } from "../domain/task-capture";
 import { useRepository } from "../app/repository-context";
 import { StandaloneCalendar } from "./tasknotes-controls";
+import "./task-date-panel.css";
 
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 
@@ -43,6 +44,8 @@ export function TaskDatePanel({
   const hintId = useId();
   const requested = useRef("");
   const today = todayString();
+  const weekday = new Date(`${today}T12:00:00`).getDay();
+  const weekend = shiftTaskDate(today, (6 - weekday + 7) % 7 || 7);
   const current = task[target];
   const shownDate = parsed?.text === text ? parsed.date : undefined;
   const unreadable = Boolean(
@@ -79,57 +82,6 @@ export function TaskDatePanel({
 
   return (
     <div className="task-date-panel">
-      {planOnly ? null : (
-        <div
-          aria-label={t`Date to change`}
-          className="task-date-target"
-          role="radiogroup"
-        >
-          {(["scheduled", "due"] as const).map((option) => (
-            <button
-              aria-checked={target === option}
-              key={option}
-              role="radio"
-              type="button"
-              onClick={() => setTarget(option)}
-            >
-              {option === "scheduled" ? t`Scheduled` : t`Due`}
-              {task[option] ? (
-                <small>{formatTaskDate(task[option])}</small>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      )}
-      <input
-        aria-describedby={hintId}
-        aria-invalid={unreadable}
-        aria-label={t`Type a date`}
-        autoComplete="off"
-        className="task-date-input"
-        disabled={busy}
-        placeholder={t`Fri 3pm, next week, Dec 12`}
-        type="text"
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || !shownDate) return;
-          event.preventDefault();
-          apply(shownDate);
-        }}
-      />
-      <p
-        className={`task-date-hint${unreadable ? " is-error" : ""}`}
-        id={hintId}
-      >
-        {shownDate
-          ? t`Enter to set ${formatTaskDate(shownDate)}`
-          : unreadable
-            ? t`Couldn’t read that date`
-            : target === "scheduled"
-              ? t`When you plan to work on it`
-              : t`When it has to be done`}
-      </p>
       <div className="task-date-presets">
         <button disabled={busy} type="button" onClick={() => apply(today)}>
           <Trans>Today</Trans>
@@ -140,6 +92,9 @@ export function TaskDatePanel({
           onClick={() => apply(shiftTaskDate(today, 1))}
         >
           <Trans>Tomorrow</Trans>
+        </button>
+        <button disabled={busy} type="button" onClick={() => apply(weekend)}>
+          <Trans>This weekend</Trans>
         </button>
         <button
           disabled={busy}
@@ -154,16 +109,74 @@ export function TaskDatePanel({
         value={taskDatePart(current)}
         onChoose={(date) => apply(date)}
       />
-      {current ? (
-        <button
-          className="task-date-clear"
+      <details className="task-date-more">
+        <summary>
+          <Trans>Date options</Trans>
+        </summary>
+        {planOnly ? null : (
+          <div
+            aria-label={t`Date to change`}
+            className="task-date-target"
+            role="radiogroup"
+          >
+            {(["scheduled", "due"] as const).map((option) => (
+              <button
+                aria-checked={target === option}
+                key={option}
+                role="radio"
+                type="button"
+                onClick={() => setTarget(option)}
+              >
+                {option === "scheduled" ? t`Scheduled` : t`Due`}
+                {task[option] ? (
+                  <small>{formatTaskDate(task[option])}</small>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        )}
+        <input
+          aria-describedby={hintId}
+          aria-invalid={unreadable}
+          aria-label={t`Type a date`}
+          autoComplete="off"
+          className="task-date-input"
           disabled={busy}
-          type="button"
-          onClick={() => onApply({ [target]: null })}
+          placeholder={t`Fri 3pm, next week, Dec 12`}
+          type="text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || !shownDate) return;
+            event.preventDefault();
+            apply(shownDate);
+          }}
+        />
+        <p
+          className={`task-date-hint${unreadable ? " is-error" : ""}`}
+          id={hintId}
         >
-          {target === "scheduled" ? t`Clear scheduled date` : t`Clear due date`}
-        </button>
-      ) : null}
+          {shownDate
+            ? t`Enter to set ${formatTaskDate(shownDate)}`
+            : unreadable
+              ? t`Couldn’t read that date`
+              : target === "scheduled"
+                ? t`When you plan to work on it`
+                : t`When it has to be done`}
+        </p>
+        {current ? (
+          <button
+            className="task-date-clear"
+            disabled={busy}
+            type="button"
+            onClick={() => onApply({ [target]: null })}
+          >
+            {target === "scheduled"
+              ? t`Clear scheduled date`
+              : t`Clear due date`}
+          </button>
+        ) : null}
+      </details>
     </div>
   );
 }

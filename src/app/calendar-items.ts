@@ -1,4 +1,6 @@
 import type { CalendarItem } from "@tasknotes/calendar";
+import { parseOrder, type ItemOrder } from "@tasknotes/calendar";
+import { compareOverdueTasks } from "../domain/overdue-order";
 import { calendarItem, type CalendarEntry } from "../domain/calendar-events";
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -39,6 +41,33 @@ export interface CalendarEventData extends CalendarEventPresentation {
 }
 
 export type TaskCalendarItem = CalendarItem<CalendarEventData>;
+
+export function calendarAgendaOrder(
+  execution: TaskViewExecution,
+): ItemOrder<CalendarEventData> {
+  const fallback = parseOrder<CalendarEventData>(
+    "start,-duration,allDay,title",
+  );
+  const order = new Map(
+    execution.rows.map((row, index) => [row.task.id, index]),
+  );
+  return (left, right) => {
+    const leftEntry = left.item.data?.metadata.entry;
+    const rightEntry = right.item.data?.metadata.entry;
+    if (
+      leftEntry?.modelEntry.isOverdueOnToday &&
+      rightEntry?.modelEntry.isOverdueOnToday
+    ) {
+      if (execution.view.sort?.length)
+        return (
+          (order.get(leftEntry.task.id) ?? 0) -
+          (order.get(rightEntry.task.id) ?? 0)
+        );
+      return compareOverdueTasks(leftEntry.task, rightEntry.task);
+    }
+    return fallback(left, right);
+  };
+}
 
 export function calendarItems(
   entries: Map<string, CalendarEntry[]>,

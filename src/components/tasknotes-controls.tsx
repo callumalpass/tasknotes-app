@@ -26,6 +26,7 @@ import {
 
 import { useOverlay } from "./overlays/use-overlay";
 import { usePresence } from "./overlays/use-presence";
+import { ChoiceOptions } from "./choice-options";
 import {
   calendarEventTimeFormat,
   loadCalendarPreferences,
@@ -189,43 +190,57 @@ export function TaskNotesSelect({
             data-state={open ? "open" : "closed"}
             inert={!open}
             id={`${id}-options`}
-            role="listbox"
+            role={options.length > 7 ? undefined : "listbox"}
           >
             {ariaLabel ? (
               <span className="tasknotes-popover-title">{ariaLabel}</span>
             ) : null}
-            <div className="tasknotes-option-list">
-              {options.map((option, index) => (
-                <button
-                  aria-selected={option.value === value}
-                  className={index === activeIndex ? "is-active" : undefined}
-                  disabled={option.disabled}
-                  id={`${id}-option-${index}`}
-                  key={option.value}
-                  role="option"
-                  type="button"
-                  onClick={() => choose(index)}
-                  onMouseEnter={() => setActiveIndex(index)}
-                >
-                  {option.color ? (
-                    <i
-                      aria-hidden="true"
-                      className="value-color"
-                      style={{ backgroundColor: option.color }}
-                    />
-                  ) : null}
-                  <span>
-                    <strong>{option.label}</strong>
-                    {option.description ? (
-                      <small>{option.description}</small>
+            {options.length > 7 ? (
+              <ChoiceOptions
+                options={options}
+                disabled={disabled}
+                value={value}
+                label={ariaLabel}
+                onChoose={(next) => {
+                  onChange(next);
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+              />
+            ) : (
+              <div className="tasknotes-option-list">
+                {options.map((option, index) => (
+                  <button
+                    aria-selected={option.value === value}
+                    className={index === activeIndex ? "is-active" : undefined}
+                    disabled={option.disabled}
+                    id={`${id}-option-${index}`}
+                    key={option.value}
+                    role="option"
+                    type="button"
+                    onClick={() => choose(index)}
+                    onMouseEnter={() => setActiveIndex(index)}
+                  >
+                    {option.color ? (
+                      <i
+                        aria-hidden="true"
+                        className="value-color"
+                        style={{ backgroundColor: option.color }}
+                      />
                     ) : null}
-                  </span>
-                  {option.value === value ? (
-                    <Check aria-hidden="true" size={16} strokeWidth={1.8} />
-                  ) : null}
-                </button>
-              ))}
-            </div>
+                    <span>
+                      <strong>{option.label}</strong>
+                      {option.description ? (
+                        <small>{option.description}</small>
+                      ) : null}
+                    </span>
+                    {option.value === value ? (
+                      <Check aria-hidden="true" size={16} strokeWidth={1.8} />
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </>
       ) : null}

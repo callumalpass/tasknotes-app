@@ -1,0 +1,14 @@
+.task-add-property {
+  display: none;
+}
+@media (max-width: 839px) {
+  .task-core-properties:not(.show-empty-properties) .is-empty {
+    display: none;
+  }
+  .task-core-properties .task-add-property {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-self: start;
+  }
+}

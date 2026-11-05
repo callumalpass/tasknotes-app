@@ -43,6 +43,7 @@ import {
 import { summarizeToday } from "../domain/today-summary";
 import { TodayClear, TodayFirstRun } from "./today-clear";
 import { CaptureFab } from "../components/capture-fab";
+import "./daily-behavior.css";
 import {
   appendManualOrderRank,
   disableManualOrderSort,
@@ -1334,7 +1335,7 @@ export function ViewsScreen({
   return (
     <CompletionMotion holds={holds} departing={departing}>
       <section
-        className={`screen views-screen view-detail${
+        className={`screen views-screen view-detail${todayScreen || (selected && starterViewKind(selected) === "inbox") ? " has-parent-context" : ""}${
           captureDefaults &&
           selected?.presentation?.type === "tasknotes.task-list"
             ? " has-list-capture"

@@ -1,5 +1,6 @@
 import { useTaskSelecting, useTaskSelection } from "../app/use-task-selection";
 import { taskMeta } from "../i18n/presentation";
+import { linkDisplayLabel } from "../domain/completion";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
@@ -371,6 +372,14 @@ export function TaskRow({
           </span>
         </button>
         {context && !contextLeadsDetails ? context : null}
+        {task.projects?.length && !shownDetails.some((detail) =>
+          [configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)),
+        ) ? (
+          <small className="task-row-parent">
+            <Folder aria-hidden="true" size={13} />
+            {task.projects.map(linkDisplayLabel).join(", ")}
+          </small>
+        ) : null}
         {details ? (
           tracking || shownDetails.length ? (
             <span className="task-row-properties">

@@ -42,6 +42,29 @@ it("supports keyboard selection and skips disabled options", () => {
   expect(change).toHaveBeenCalledWith("high");
 });
 
+it("filters long shared capture-chip choices without changing short picker behaviour", () => {
+  const change = vi.fn();
+  render(
+    <TaskNotesSelect
+      ariaLabel="Capture priority"
+      options={Array.from({ length: 12 }, (_, index) => ({
+        value: `custom-${index}`,
+        label: `Custom priority ${index}`,
+      }))}
+      value="custom-0"
+      onChange={change}
+    />,
+  );
+  fireEvent.click(screen.getByRole("combobox", { name: "Capture priority" }));
+  const filter = screen.getByRole("combobox", {
+    name: "Filter Capture priority",
+  });
+  fireEvent.change(filter, { target: { value: "priority 11" } });
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  fireEvent.keyDown(filter, { key: "Enter" });
+  expect(change).toHaveBeenCalledWith("custom-11");
+});
+
 it("filters native property suggestions while preserving free-form values", () => {
   function Example() {
     const [value, setValue] = useState("");

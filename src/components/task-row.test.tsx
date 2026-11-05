@@ -36,6 +36,11 @@ const task = {
   priority: "normal",
   timeEntries: [],
 } as unknown as Task;
+it("keeps a parent label available when project properties are omitted", () => {
+  const { container } = render(<TaskRow task={{ ...task, projects: ["[[Tasks/Parent.md|Parent task]]"] }} onOpen={vi.fn()} onToggle={vi.fn()} details={[]} />);
+  expect(container.querySelector(".task-row-parent")).toHaveTextContent("Parent task");
+  expect(container.querySelector(".task-row-parent")).not.toHaveTextContent("Tasks/Parent.md");
+});
 it("guards repeated completion and offers retry after rejection", async () => {
   let reject!: (reason: Error) => void;
   const toggle = vi.fn(

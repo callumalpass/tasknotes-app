@@ -91,6 +91,10 @@ import {
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
 import { OutlineTextarea } from "../components/outline-textarea";
+import {
+  outlineSelection,
+  setOutlineSelection,
+} from "../components/outline-selection";
 import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
 import { initialScratchpadMode } from "./scratchpad-preferences";
 
@@ -1984,11 +1988,13 @@ function ScratchpadDocumentEditor({
     );
     input?.focus();
     const position = request.cursor ?? input?.value.length ?? 0;
-    input?.setSelectionRange(
-      position,
-      request.selectionEnd ?? position,
-      request.selectionDirection,
-    );
+    if (input)
+      setOutlineSelection(
+        input,
+        position,
+        request.selectionEnd ?? position,
+        request.selectionDirection,
+      );
   }, [nodes, reviewOpen]);
 
   const activeNode = nodes.find((node) => node.id === activeId);
@@ -2205,7 +2211,7 @@ function ScratchpadDocumentEditor({
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      const position = event.currentTarget.selectionStart ?? node.text.length;
+      const position = outlineSelection(event.currentTarget) ?? node.text.length;
       const before = node.text.slice(0, position);
       const after = node.text.slice(position);
       const created = createScratchNode(
@@ -2939,23 +2945,25 @@ function ScratchpadDocumentEditor({
                           : t({ message: "Add context…" })
                       }
                       value={node.text}
-                      onChange={(event) => {
-                        const input = event.currentTarget;
-                        const raw = input.value;
+                      onValueChange={(
+                        raw,
+                        selectionStart,
+                        selectionEnd,
+                        selectionDirection,
+                      ) => {
                         const normalize = (value: string) =>
                           value.replace(/[\r\n]+/g, " ");
                         const text = normalize(raw);
                         const position = normalize(
-                          raw.slice(0, input.selectionStart),
+                          raw.slice(0, selectionStart),
                         ).length;
                         if (text !== raw) {
                           focusAfterRender.current = {
                             id: node.id,
                             cursor: position,
-                            selectionEnd: normalize(
-                              raw.slice(0, input.selectionEnd),
-                            ).length,
-                            selectionDirection: input.selectionDirection,
+                            selectionEnd: normalize(raw.slice(0, selectionEnd))
+                              .length,
+                            selectionDirection,
                           };
                         }
                         changeNode(node.id, { text });
@@ -2964,20 +2972,20 @@ function ScratchpadDocumentEditor({
                       onFocus={(event) => {
                         setActiveId(node.id);
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         );
                       }}
                       onClick={(event) =>
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         )
                       }
                       onKeyDown={(event) => handleKeyDown(event, node)}
                       onSelect={(event) =>
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         )
                       }

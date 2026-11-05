@@ -51,6 +51,11 @@ export function MultiValueField({
   const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
     {},
   );
+  useEffect(() => {
+    document
+      .getElementById(`${id}-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, id, options]);
 
   const labelFor = (value: string) =>
     selectedLabels[value] ?? valueLabels?.get(value) ?? valueLabel(value);

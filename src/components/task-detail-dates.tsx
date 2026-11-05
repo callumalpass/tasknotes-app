@@ -34,7 +34,7 @@ export function TaskDetailDates({
         const date = taskDatePart(draft[field]);
         return (
           <div
-            className="form-field date-time-field tasknotes-control-field"
+            className={`form-field date-time-field tasknotes-control-field${date ? "" : " is-empty"}`}
             key={field}
           >
             <span>{label}</span>
@@ -155,7 +155,9 @@ export function TaskDatePopover({
     returnFocusRef: trigger,
     onDismiss: onClose,
     initialFocus: () =>
-      root.current?.querySelector<HTMLInputElement>("input") ?? null,
+      root.current?.querySelector<HTMLButtonElement>(
+        ".task-date-presets button",
+      ) ?? null,
   });
   return createPortal(
     <>

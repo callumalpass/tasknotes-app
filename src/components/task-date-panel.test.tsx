@@ -38,6 +38,7 @@ describe("TaskDatePanel", () => {
 
   it("targets the scheduled date unless only a due date exists", () => {
     renderPanel({ due: "2026-11-20" });
+    fireEvent.click(screen.getByText("Date options"));
     expect(screen.getByRole("radio", { name: /Due/ })).toBeChecked();
   });
 
@@ -59,6 +60,7 @@ describe("TaskDatePanel", () => {
 
   it("applies a typed date to the chosen target on Enter", async () => {
     const onApply = renderPanel({});
+    fireEvent.click(screen.getByText("Date options"));
     fireEvent.click(screen.getByRole("radio", { name: /Due/ }));
     const input = screen.getByLabelText("Type a date");
     fireEvent.change(input, { target: { value: "tomorrow" } });
@@ -71,6 +73,7 @@ describe("TaskDatePanel", () => {
 
   it("says when a typed date can't be read", async () => {
     const onApply = renderPanel({});
+    fireEvent.click(screen.getByText("Date options"));
     const input = screen.getByLabelText("Type a date");
     fireEvent.change(input, { target: { value: "bananas" } });
     await waitFor(() =>

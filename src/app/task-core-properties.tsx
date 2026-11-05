@@ -10,6 +10,7 @@ import type {
 } from "../domain/completion";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { Draft } from "./task-editor-draft";
+import "./task-core-properties.css";
 
 export function TaskCoreProperties({
   draft,
@@ -29,9 +30,15 @@ export function TaskCoreProperties({
   onChange(patch: Partial<Draft>): void;
 }) {
   const { t } = useLingui();
+  const [showEmpty, setShowEmpty] = useState(false);
+  const hasEmpty =
+    !draft.scheduled ||
+    !draft.due ||
+    !draft.projects.length ||
+    !draft.tags.some((tag) => tag !== "task");
   return (
     <section
-      className="task-core-properties"
+      className={`task-core-properties${showEmpty ? " show-empty-properties" : ""}`}
       aria-label={t({ message: "Task properties" })}
     >
       <TaskNotesSelectField
@@ -82,6 +89,20 @@ export function TaskCoreProperties({
         completeField={completeField}
         onChange={(tags) => onChange({ tags: ["task", ...tags] })}
       />
+      {hasEmpty ? (
+        <button
+          className="task-add-property text-action"
+          aria-expanded={showEmpty}
+          type="button"
+          onClick={() => setShowEmpty(!showEmpty)}
+        >
+          {showEmpty ? (
+            <Trans>Hide empty properties</Trans>
+          ) : (
+            <Trans>Add property</Trans>
+          )}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -97,7 +118,10 @@ function InlineList(
     if (editing) root.current?.querySelector("input")?.focus();
   }, [editing]);
   return (
-    <div className="task-inline-property" ref={root}>
+    <div
+      className={`task-inline-property${props.values.length ? "" : " is-empty"}`}
+      ref={root}
+    >
       <span>{props.label}</span>
       {editing ? (
         <div className="task-inline-property-editor">

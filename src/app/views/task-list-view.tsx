@@ -117,7 +117,10 @@ export function TaskListView({
       execution.rows,
       sectionMode,
       todayString(),
-      { includeEmpty: Boolean(manualOrder) || moves.size > 0 },
+      {
+        includeEmpty: Boolean(manualOrder) || moves.size > 0,
+        preserveOrder: Boolean(manualOrder || execution.view.sort?.length),
+      },
     );
     if (sections.length) {
       grouped = true;
