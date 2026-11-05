@@ -2516,6 +2516,7 @@ msgid "Filter…"
 msgstr "Filtrar…"
 
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Find a project"
 msgstr "Buscar un proyecto"
 
@@ -4091,6 +4092,8 @@ msgstr "proyectos"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
+#: src/components/task-row.tsx
 #: src/i18n/default-labels.ts
 msgid "Projects"
 msgstr "Proyectos"
