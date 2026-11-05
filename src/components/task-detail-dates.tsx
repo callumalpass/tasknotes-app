@@ -121,7 +121,16 @@ export function TaskDatePopover({
       const top = viewport?.offsetTop ?? 0;
       const width = viewport?.width ?? window.innerWidth;
       const height = viewport?.height ?? window.innerHeight;
+      if (window.matchMedia?.("(max-width: 839px)").matches) {
+        panel.style.width = `${width}px`;
+        panel.style.maxHeight = `${Math.min(height * 0.86, 620)}px`;
+        panel.style.left = `${left}px`;
+        panel.style.top = "auto";
+        panel.style.bottom = `${Math.max(0, window.innerHeight - top - height)}px`;
+        return;
+      }
       const bounds = anchor.getBoundingClientRect();
+      panel.style.bottom = "auto";
       panel.style.width = `${Math.min(340, width - 24)}px`;
       panel.style.maxHeight = `${height - 24}px`;
       panel.style.left = `${Math.max(left + 12, Math.min(bounds.left, left + width - panel.offsetWidth - 12))}px`;
@@ -149,31 +158,41 @@ export function TaskDatePopover({
       root.current?.querySelector<HTMLInputElement>("input") ?? null,
   });
   return createPortal(
-    <div
-      className="task-detail-date-popover"
-      aria-label={title ?? t`${label} date calendar`}
-      ref={root}
-      role="dialog"
-    >
-      <header>
-        <strong>{title ?? <Trans>Dates</Trans>}</strong>
-        <button
-          aria-label={t`Close dates`}
-          className="icon-button"
-          type="button"
-          onClick={onClose}
-        >
-          <X aria-hidden="true" size={18} />
-        </button>
-      </header>
-      <TaskDatePanel
-        busy={false}
-        initialTarget={target}
-        planOnly={planOnly}
-        task={draft}
-        onApply={onApply}
+    <>
+      <button
+        aria-label={t`Close dates`}
+        className="tasknotes-popover-scrim task-detail-date-scrim"
+        data-state="open"
+        tabIndex={-1}
+        type="button"
+        onClick={onClose}
       />
-    </div>,
+      <div
+        className="task-detail-date-popover"
+        aria-label={title ?? t`${label} date calendar`}
+        ref={root}
+        role="dialog"
+      >
+        <header>
+          <strong>{title ?? <Trans>Dates</Trans>}</strong>
+          <button
+            aria-label={t`Close dates`}
+            className="icon-button"
+            type="button"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" size={18} />
+          </button>
+        </header>
+        <TaskDatePanel
+          busy={false}
+          initialTarget={target}
+          planOnly={planOnly}
+          task={draft}
+          onApply={onApply}
+        />
+      </div>
+    </>,
     document.body,
   );
 }

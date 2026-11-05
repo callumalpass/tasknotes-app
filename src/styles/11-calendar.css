@@ -160,7 +160,7 @@
   --tnc-radius: var(--radius-control);
   --tnc-font-size: var(--type-supporting);
   --tnc-small: var(--type-label);
-  --tnc-bar-h: 56px;
+  --tnc-bar-h: 44px;
   --tnc-col-min: 120px;
   /* More is a 44px target; the calendar sizes rows to fit it. */
   --tnc-more-h: 44px;
@@ -185,9 +185,13 @@
   text-transform: uppercase;
 }
 
-.full-calendar-view .tnc--height-auto .tnc-tg-scroll {
+.full-calendar-view .tnc--height-auto :is(.tnc-tg-scroll, .tnc-year-scroll) {
   max-height: max(360px, calc(100dvh - 260px));
   overflow: auto;
+}
+
+.full-calendar-view .tnc--height-auto.tnc--has-strip .tnc-tg-top {
+  top: 0;
 }
 
 .full-calendar-view .tnc-dg-dow {
@@ -239,11 +243,16 @@
 }
 
 .full-calendar-view .tnc-item {
-  font-size: var(--type-supporting);
+  font-size: 14px;
+  line-height: 18px;
 }
 
 .full-calendar-view .tnc-item.is-completed {
   opacity: 1;
+}
+
+.full-calendar-view .tnc-item.tnc-preview-hidden {
+  visibility: hidden;
 }
 
 .full-calendar-view .tnc-item--dot,
@@ -269,9 +278,9 @@
   align-content: center;
   min-width: 0;
   min-height: 24px;
-  gap: 2px;
+  gap: 0;
   color: var(--ink-soft);
-  line-height: 1.45;
+  line-height: 18px;
 }
 
 .full-calendar-event-primary {
@@ -317,7 +326,7 @@
   flex: 0 0 auto;
   color: var(--ink-muted);
   font-size: var(--type-label);
-  line-height: 1.25;
+  line-height: 18px;
 }
 
 .full-calendar-event-secondary > time {
@@ -364,7 +373,7 @@
 }
 
 .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .full-calendar-event-content.is-recurring
@@ -436,7 +445,7 @@
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary > span {
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .full-calendar-view .tnc-item.is-time-entry {
@@ -560,6 +569,11 @@
    */
   .full-calendar-view .tnc--month {
     --tnc-day-min-h: 72px;
+  }
+
+  .full-calendar-view .tnc-dg-dots {
+    justify-content: flex-start;
+    align-content: flex-start;
   }
 
   /* Only an elevated priority colours a dot. */
@@ -1240,8 +1254,38 @@
   }
 
   .tasknotes-calendar-popover {
-    padding-right: max(var(--page-inset), calc((100vw - 320px) / 2));
-    padding-left: max(var(--page-inset), calc((100vw - 320px) / 2));
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    padding-inline: clamp(6px, calc((100vw - 308px) / 2), var(--page-inset));
+    overflow: hidden;
+  }
+
+  .tasknotes-calendar-popover .tasknotes-calendar-content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .tasknotes-calendar-sheet-heading {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tasknotes-calendar-sheet-heading button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
   }
 
   .tasknotes-calendar-grid [role="gridcell"].is-today::after {
@@ -1438,16 +1482,27 @@
 }
 @media (max-width: 839px) {
   .full-calendar-commandbar {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
   }
   .full-calendar-commandbar > h2 {
-    flex: 1 1 9ch;
+    grid-column: 1 / -1;
+    grid-row: 1;
     min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow-x: auto;
   }
   .full-calendar-navigation {
-    flex-wrap: wrap;
+    grid-column: 1;
+    grid-row: 2;
+    gap: 8px;
     min-width: 0;
+  }
+  .full-calendar-commandbar > .view-options {
+    grid-column: 2;
+    grid-row: 2;
   }
   .full-calendar-modes {
     flex: 1 1 100%;

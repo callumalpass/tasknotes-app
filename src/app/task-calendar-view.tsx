@@ -28,6 +28,8 @@ import {
 } from "./calendar-items";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
+import { useCalendarPosition } from "./use-calendar-position";
+import { useCalendarPreviews } from "./use-calendar-previews";
 import { plannedElsewhere, useCalendarAgenda } from "./use-calendar-agenda";
 import {
   calendarEntryKind,
@@ -164,6 +166,13 @@ export function TaskCalendarView({
     if (view) setTitle(view.title);
   }, [locale]);
   const [range, setRange] = useState(() => initialRange(selected, mode));
+  useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
+  useCalendarPreviews(rootRef, (day) => {
+    inspectDate(day);
+    requestAnimationFrame(() =>
+      inspectorRef.current?.focus({ preventScroll: true }),
+    );
+  });
   const [mutationError, setMutationError] = useState("");
   const [contextAction, setContextAction] = useState<{
     id: number;
@@ -441,7 +450,7 @@ export function TaskCalendarView({
     );
   }
 
-  function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+  function inspectDate(dateStr: string, startStr?: string) {
     setInspectingDay(true);
     // Below the side-by-side width the day's tasks open under the grid.
     if (!window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches)
@@ -450,6 +459,10 @@ export function TaskCalendarView({
       );
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
+  }
+
+  function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    inspectDate(dateStr, startStr);
     // Below twelve months the day's tasks would be out of sight, so a year
     // day opens its month, as phone calendars do.
     if (
@@ -705,11 +718,12 @@ export function TaskCalendarView({
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"
-              eventMinHeight={96}
+              eventMinHeight={44}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
-              dayMaxEvents={phoneMonth ? true : 3}
+              dayMaxEvents={phoneMonth ? 3 : 2}
+              dayMaxEventRows={phoneMonth ? 0 : 3}
               text={calendarText()}
               dayClassNames={({ dateStr }) =>
                 dateStr === selected ? ["is-selected-day"] : []
@@ -827,6 +841,7 @@ export function TaskCalendarView({
         {!listMode && inspectingDay ? (
           <aside
             ref={inspectorRef}
+            tabIndex={-1}
             className="full-calendar-inspector"
             aria-label={t`Selected day`}
           >

@@ -38,6 +38,15 @@ afterEach(async () => {
 });
 
 describe("calendar drops", () => {
+  it("bounds calendar previews and keeps event targets compact", () => {
+    renderCalendar(execution("2026-07-24"), vi.fn());
+    expect(calendar.props).toMatchObject({
+      eventMinHeight: 44,
+      dayMaxEvents: 2,
+      dayMaxEventRows: 3,
+    });
+  });
+
   it("keeps a dropped task at its new date while the write is pending", async () => {
     const write = deferred();
     const onUpdate = vi.fn(() => write.promise);

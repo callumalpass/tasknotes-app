@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  X,
 } from "lucide-react";
 import {
   useEffect,
@@ -25,6 +26,10 @@ import {
 
 import { useOverlay } from "./overlays/use-overlay";
 import { usePresence } from "./overlays/use-presence";
+import {
+  calendarEventTimeFormat,
+  loadCalendarPreferences,
+} from "../app/calendar-preferences";
 
 export interface TaskNotesOption {
   value: string;
@@ -536,20 +541,35 @@ export function TaskNotesDatePicker({
             inert={!open}
             role="dialog"
           >
-            <CalendarBody
-              dateRefs={dateRefs}
-              focusedDate={focusedDate}
-              today={today}
-              value={value}
-              visibleMonth={visibleMonth}
-              onChoose={choose}
-              onClose={() => {
-                setOpen(false);
-                triggerRef.current?.focus();
-              }}
-              onMoveFocus={moveFocus}
-              onVisibleMonth={setVisibleMonth}
-            />
+            <div className="tasknotes-calendar-sheet-heading">
+              <strong>{accessibleName}</strong>
+              <button
+                aria-label={t`Close ${accessibleName} calendar`}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+            <div className="tasknotes-calendar-content">
+              <CalendarBody
+                dateRefs={dateRefs}
+                focusedDate={focusedDate}
+                today={today}
+                value={value}
+                visibleMonth={visibleMonth}
+                onChoose={choose}
+                onClose={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+                onMoveFocus={moveFocus}
+                onVisibleMonth={setVisibleMonth}
+              />
+            </div>
             <div className="tasknotes-picker-actions">
               <button
                 className="text-action"
@@ -770,6 +790,12 @@ export function TaskNotesTimePicker({
   const [minute, setMinute] = useState(parsed?.minute ?? now.getMinutes());
   const hourRefs = useRef(new Map<number, HTMLButtonElement>());
   const minuteRefs = useRef(new Map<number, HTMLButtonElement>());
+  const timeFormat = pickerTimeFormat();
+  const hourLabel = (selectedHour: number) =>
+    new Intl.DateTimeFormat(appLocale(), {
+      hour: "numeric",
+      hourCycle: timeFormat.hourCycle,
+    }).format(new Date(2000, 0, 1, selectedHour));
 
   function openTimePicker() {
     const next = parseTimeValue(value);
@@ -844,6 +870,7 @@ export function TaskNotesTimePicker({
                 max={23}
                 refs={hourRefs}
                 value={hour}
+                formatValue={hourLabel}
                 onChange={(next) => updateSelection(next, minute)}
               />
               <TimeColumn
@@ -901,12 +928,14 @@ function TimeColumn({
   max,
   refs,
   onChange,
+  formatValue,
 }: {
   label: string;
   value: number;
   max: number;
   refs: RefObject<Map<number, HTMLButtonElement>>;
   onChange(value: number): void;
+  formatValue?(value: number): string;
 }) {
   return (
     <div>
@@ -934,7 +963,7 @@ function TimeColumn({
               refs.current?.get(next)?.focus();
             }}
           >
-            {String(index).padStart(2, "0")}
+            {formatValue ? formatValue(index) : String(index).padStart(2, "0")}
           </button>
         ))}
       </div>
@@ -1049,10 +1078,21 @@ function timeValue(hour: number, minute: number): string {
 }
 
 function timeLabel(hour: number, minute: number): string {
-  return new Intl.DateTimeFormat(appLocale(), {
+  return new Intl.DateTimeFormat(appLocale(), pickerTimeFormat()).format(
+    new Date(2000, 0, 1, hour, minute),
+  );
+}
+
+function pickerTimeFormat(): Intl.DateTimeFormatOptions {
+  const hour12 = new Intl.DateTimeFormat(
+    appLocale(),
+    calendarEventTimeFormat(loadCalendarPreferences().hourFormat),
+  ).resolvedOptions().hour12;
+  return {
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(2000, 0, 1, hour, minute));
+    hourCycle: hour12 ? "h12" : "h23",
+  };
 }
 
 function calendarDays(month: Date): Date[] {

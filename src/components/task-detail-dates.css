@@ -97,3 +97,47 @@
 .task-detail-date-popover .tasknotes-calendar-grid [role="gridcell"] {
   max-width: 100%;
 }
+
+.task-detail-date-scrim {
+  display: none;
+}
+
+@media (max-width: 839px) {
+  .task-detail-date-scrim {
+    display: block;
+    z-index: 59;
+  }
+
+  .task-detail-date-popover {
+    display: flex;
+    flex-direction: column;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px var(--page-inset) calc(10px + env(safe-area-inset-bottom));
+    padding-inline: clamp(6px, calc((100vw - 308px) / 2), var(--page-inset));
+    overflow: hidden;
+    border-width: 1px 0 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+  }
+
+  .task-detail-date-popover > header {
+    flex: none;
+    min-height: 44px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .task-detail-date-popover > .task-date-panel {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .task-detail-date-popover .tasknotes-calendar-grid [role="gridcell"] {
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+  }
+}

@@ -510,6 +510,10 @@
   padding: 9px;
 }
 
+.tasknotes-calendar-sheet-heading {
+  display: none;
+}
+
 .tasknotes-calendar-heading,
 .tasknotes-time-heading {
   display: flex;
@@ -667,6 +671,7 @@
 
 .tasknotes-time-columns > div {
   min-width: 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .tasknotes-time-columns > div > span {
@@ -678,10 +683,15 @@
 
 .tasknotes-time-list {
   height: 210px;
+  padding-block: 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  mask-image: linear-gradient(
+    transparent,
+    black 16px,
+    black calc(100% - 16px),
+    transparent
+  );
 }
 
 .tasknotes-time-list > button {

@@ -14,6 +14,10 @@ import {
   taskDatePart,
   taskTimePart,
 } from "../domain/task";
+import {
+  defaultCalendarPreferences,
+  saveCalendarPreferences,
+} from "../app/calendar-preferences";
 
 it("supports keyboard selection and skips disabled options", () => {
   const change = vi.fn();
@@ -113,7 +117,7 @@ it("keeps exact minutes in the TaskNotes time picker", () => {
   fireEvent.click(
     within(within(dialog).getByRole("listbox", { name: "Hour" })).getByRole(
       "option",
-      { name: "09" },
+      { name: "9 AM" },
     ),
   );
   fireEvent.click(
@@ -127,6 +131,88 @@ it("keeps exact minutes in the TaskNotes time picker", () => {
 
   expect(change).toHaveBeenLastCalledWith("09:07");
   expect(document.querySelector('input[type="time"]')).not.toBeInTheDocument();
+});
+
+it.each(["12", "24"] as const)(
+  "uses the %s-hour setting in the time heading and wheel",
+  (hourFormat) => {
+    const change = vi.fn();
+    saveCalendarPreferences({ ...defaultCalendarPreferences(), hourFormat });
+    try {
+      render(
+        <TaskNotesTimePicker
+          ariaLabel="Scheduled time"
+          value="14:29"
+          onChange={change}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Scheduled time" }));
+      const dialog = screen.getByRole("dialog", { name: "Scheduled time" });
+      expect(
+        within(dialog).getByText(hourFormat === "12" ? "2:29 PM" : "14:29"),
+      ).toBeInTheDocument();
+      const hours = within(dialog).getByRole("listbox", { name: "Hour" });
+      const selected = within(hours).getByRole("option", { selected: true });
+      expect(selected).toHaveTextContent(hourFormat === "12" ? "2 PM" : "14");
+      fireEvent.keyDown(selected, { key: "ArrowDown" });
+      expect(change).not.toHaveBeenCalled();
+      fireEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+      expect(change).toHaveBeenCalledWith("15:29");
+    } finally {
+      window.localStorage.removeItem("tasknotes:calendar-preferences:v1");
+    }
+  },
+);
+
+it("keeps midnight in the 0–23 hour system", () => {
+  saveCalendarPreferences({
+    ...defaultCalendarPreferences(),
+    hourFormat: "24",
+  });
+  try {
+    render(
+      <TaskNotesTimePicker
+        ariaLabel="Scheduled time"
+        value="00:29"
+        onChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Scheduled time" }));
+    const dialog = screen.getByRole("dialog", { name: "Scheduled time" });
+    expect(within(dialog).getByText("00:29")).toBeInTheDocument();
+    expect(
+      within(within(dialog).getByRole("listbox", { name: "Hour" })).getByRole(
+        "option",
+        { selected: true },
+      ),
+    ).toHaveTextContent("00");
+  } finally {
+    window.localStorage.removeItem("tasknotes:calendar-preferences:v1");
+  }
+});
+
+it("closes the date sheet from its named header control and returns focus", () => {
+  const change = vi.fn();
+  render(
+    <TaskNotesDatePicker
+      ariaLabel="Scheduled date"
+      value="2026-07-24"
+      onChange={change}
+    />,
+  );
+  const trigger = screen.getByRole("button", { name: "Scheduled date" });
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole("dialog", {
+    name: "Scheduled date calendar",
+  });
+  fireEvent.click(
+    within(dialog).getByRole("button", {
+      name: "Close Scheduled date calendar",
+    }),
+  );
+  expect(change).not.toHaveBeenCalled();
+  expect(trigger).toHaveFocus();
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
 });
 
 it("lets task fields adapt zoned storage values to local date and time", () => {
