@@ -1949,6 +1949,12 @@
     font-size: var(--type-body);
   }
 }
+.view-heading-select {
+  font-size: var(--type-page);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
 .view-heading-select .tasknotes-control-trigger {
   width: auto;
   max-width: 100%;
