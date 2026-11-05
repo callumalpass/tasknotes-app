@@ -1394,27 +1394,27 @@ export function ViewsScreen({
             </button>
           ) : null}
           <div>
-            <h1>
-              {selected && views ? (
-                <TaskNotesSelect
-                  ariaLabel={t`Saved view`}
-                  className="view-heading-select"
-                  value={selected.key}
-                  options={views.map((view) => ({
-                    value: view.key,
-                    label: view.name,
-                  }))}
-                  onChange={(key) => {
-                    const view = views.find(
-                      (candidate) => candidate.key === key,
-                    );
-                    if (view) onOpenView(view);
-                  }}
-                />
-              ) : (
-                (selected?.name ?? translate({ message: "Saved view" }))
-              )}
+            {/* The switcher shows the title, so the heading keeps its plain name. */}
+            <h1 className={selected && views ? "visually-hidden" : undefined}>
+              {selected?.name ?? translate({ message: "Saved view" })}
             </h1>
+            {selected && views ? (
+              <TaskNotesSelect
+                ariaLabel={t`Saved view`}
+                className="view-heading-select"
+                value={selected.key}
+                options={views.map((view) => ({
+                  value: view.key,
+                  label: view.name,
+                }))}
+                onChange={(key) => {
+                  const view = views.find(
+                    (candidate) => candidate.key === key,
+                  );
+                  if (view) onOpenView(view);
+                }}
+              />
+            ) : null}
             {selected ? (
               <RecordWriteNotice
                 repository={repository}
