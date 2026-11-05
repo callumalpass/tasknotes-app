@@ -3382,8 +3382,14 @@ function ScratchpadDocumentEditor({
                 {reviewProcessing
                   ? t({ message: "Creating…" })
                   : failedReviewCount
-                    ? t`Retry ${selectedReviewCount} task notes`
-                    : t`Create ${selectedReviewCount} task notes`}
+                    ? plural(selectedReviewCount, {
+                        one: "Retry # task note",
+                        other: "Retry # task notes",
+                      })
+                    : plural(selectedReviewCount, {
+                        one: "Create # task note",
+                        other: "Create # task notes",
+                      })}
               </button>
             </div>
           </section>

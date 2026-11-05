@@ -104,11 +104,6 @@ msgstr "{0, plural, other {画像を#件追加しました。}}"
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, other {未完了#件}}"
 
-#. placeholder {0}: overdueLane.rows.length
-#: src/app/views-screen.tsx
-msgid "{0, plural, one {# overdue} other {# overdue}}"
-msgstr "{0, plural, other {期限超過 # 件}}"
-
 #. placeholder {0}: failures.length
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
@@ -523,6 +518,18 @@ msgstr "{name}（人物レコードではありません）"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "別のビューが追加されるまで、{name}をナビゲーションに残す必要があります"
 
+#: src/app/views-screen.tsx
+msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
+msgstr "{overdueCount, plural, other {# 件期限超過}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
+msgstr "{selectedReviewCount, plural, other {タスクノートを # 件作成}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
+msgstr "{selectedReviewCount, plural, other {タスクノート # 件を再試行}}"
+
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -664,6 +671,7 @@ msgstr "有効"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
+#: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
 msgstr "追加"
@@ -1799,10 +1807,6 @@ msgstr "元に戻せませんでした。もう一度お試しください。"
 msgid "Count the interval from when you finish the task."
 msgstr "タスクを完了した時点から間隔を数えます。"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Create {selectedReviewCount} task notes"
-msgstr "タスクノートを{selectedReviewCount}件作成"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2201,6 +2205,10 @@ msgstr "期限 {0}"
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
 msgstr "期限と予定"
+
+#: src/app/view-sort-choices.tsx
+msgid "Due date"
+msgstr "期限日"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
@@ -3207,7 +3215,6 @@ msgstr "ドラッグ用ハンドルを有効にするには、手動順序を最
 msgid "Move selected tasks to project"
 msgstr "選択したタスクをプロジェクトに移動"
 
-#: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -3935,6 +3942,7 @@ msgstr "メイン"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
+#: src/app/view-sort-choices.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3970,6 +3978,7 @@ msgstr "プライベートコレクションの復元"
 msgid "Private collections need your desktop online."
 msgstr "プライベートコレクションを利用するには、パソコンをオンラインにしてください。"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
@@ -4386,10 +4395,6 @@ msgstr "再開中…"
 msgid "Retry"
 msgstr "再試行"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Retry {selectedReviewCount} task notes"
-msgstr "タスクノート{selectedReviewCount}件の作成を再試行"
-
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
 msgstr "ビューの管理を再度開くか、コレクションを更新して再試行してください。"
@@ -4636,6 +4641,10 @@ msgstr "予定 {0}"
 #: src/app/bulk-task-feedback.ts
 msgid "Scheduled {tasks} for {0}"
 msgstr "{0} に予定しました: {tasks}"
+
+#: src/app/view-sort-choices.tsx
+msgid "Scheduled date"
+msgstr "予定日"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4931,6 +4940,10 @@ msgstr "一部のノート変更は保存されていません。このページ
 
 #: src/app/view-editor-form.tsx
 msgid "Sort"
+msgstr "並べ替え"
+
+#: src/app/views-screen.tsx
+msgid "Sort by"
 msgstr "並べ替え"
 
 #. placeholder {0}: index + 1
@@ -5541,6 +5554,7 @@ msgid "Timing"
 msgstr "タイミング"
 
 #: src/app/view-editor-fields.ts
+#: src/app/view-sort-choices.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "タイトル"

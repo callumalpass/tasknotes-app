@@ -90,6 +90,11 @@ export function BulkTaskActions({
   );
   const excluded = selected.length - eligible.length;
   const hasSelection = selected.length > 0;
+  const sharedPriority = eligible.every(
+    (task) => task.priority === eligible[0]?.priority,
+  )
+    ? (eligible[0]?.priority ?? "")
+    : "";
   const shownNotice = notice?.navigationKey === navigationKey ? notice : null;
   const currentNavigation = useRef(navigationKey);
   useEffect(() => {
@@ -432,9 +437,10 @@ export function BulkTaskActions({
                 options={configuration.priorities.map((priority) => ({
                   value: priority.value,
                   label: priority.label,
+                  color: priority.color,
                 }))}
                 placeholder={t`Priority`}
-                value=""
+                value={sharedPriority}
                 onChange={(value) => void run({ kind: "priority", value })}
               />
               <TaskNotesSelect
@@ -447,7 +453,7 @@ export function BulkTaskActions({
                     label: project.label,
                   })),
                 ]}
-                placeholder={t`Move to project`}
+                placeholder={t`Project`}
                 value=""
                 onChange={(value) =>
                   void run({

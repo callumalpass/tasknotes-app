@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import { useRepository } from "./repository-context";
 import { taskRecordLink } from "../domain/task-links";
+import { parseTaskCapture } from "../domain/task-capture";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "../components/use-mutation-state";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
@@ -75,8 +76,13 @@ export function TaskSubtasks({
             await beforeMutation();
             // The same intent is retained on failure, as in the task actions menu.
             intent.current ??= { id: crypto.randomUUID() };
+            // Dates and priorities read as they do in the main capture bar.
+            const { input: parsed } = await parseTaskCapture(
+              title.trim(),
+              configuration,
+            );
             await createTask(
-              { title: title.trim(), projects: [link] },
+              { ...parsed, projects: [...(parsed.projects ?? []), link] },
               intent.current,
             );
             intent.current = null;
@@ -101,13 +107,11 @@ export function TaskSubtasks({
           disabled={busy || !link}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <button
-          className="text-action"
-          type="submit"
-          disabled={busy || !title.trim() || !link}
-        >
-          <Trans>Add subtask</Trans>
-        </button>
+        {title.trim() ? (
+          <button className="text-action" type="submit" disabled={busy || !link}>
+            <Trans>Add subtask</Trans>
+          </button>
+        ) : null}
       </form>
       {failure ? (
         <p className="inline-error" role="alert">

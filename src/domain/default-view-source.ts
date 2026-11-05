@@ -81,7 +81,7 @@ export function taskNotesDefaultBaseDocument(
   const title = note(fields.title);
   const tags = note("tags");
   const manualOrder = basesProperty(fields.sortOrder);
-  const todayFilter = effectiveTaskDayFilter(scheduled, due);
+  const todayFilter = todayTaskFilter(scheduled, due);
 
   return stringify(
     {
@@ -197,7 +197,7 @@ export function taskNotesDefaultCanonicalDocument(
   const scheduled = note(fields.scheduled);
   const due = note(fields.due);
   const sharedWhere = activeTaskFilters(configuration).join(" && ");
-  const todayWhere = canonicalFilter(effectiveTaskDayFilter(scheduled, due));
+  const todayWhere = canonicalFilter(todayTaskFilter(scheduled, due));
   const selection = [fields.title, fields.scheduled, fields.due];
 
   return serializeMarkdownDocument(
@@ -381,7 +381,8 @@ function calendarCanonicalView(
   };
 }
 
-function effectiveTaskDayFilter(
+/** Today is what is due now. Tasks with no date live in Inbox. */
+function todayTaskFilter(
   scheduled: string,
   due: string,
 ): Record<string, unknown> {
@@ -390,21 +391,11 @@ function effectiveTaskDayFilter(
       {
         and: [
           `${scheduled}.isEmpty() == false`,
-          // `.date()` drops the time, so 09:00 today still counts as today.
           `date(${scheduled}).date() <= today()`,
         ],
       },
       {
-        and: [
-          `${scheduled}.isEmpty()`,
-          {
-            or: [`${due}.isEmpty()`, `date(${due}).date() <= today()`],
-          },
-        ],
-      },
-      // A missed deadline stays in view behind a later Scheduled date.
-      {
-        and: [`${due}.isEmpty() == false`, `date(${due}).date() < today()`],
+        and: [`${due}.isEmpty() == false`, `date(${due}).date() <= today()`],
       },
     ],
   };

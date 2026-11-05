@@ -104,11 +104,6 @@ msgstr "{0, plural, one {# image was added.} other {# images were added.}}"
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, one {# open} other {# open}}"
 
-#. placeholder {0}: overdueLane.rows.length
-#: src/app/views-screen.tsx
-msgid "{0, plural, one {# overdue} other {# overdue}}"
-msgstr "{0, plural, one {# overdue} other {# overdue}}"
-
 #. placeholder {0}: failures.length
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
@@ -523,6 +518,18 @@ msgstr "{name} (not a person record)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} must remain in navigation until another view is added"
 
+#: src/app/views-screen.tsx
+msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
+msgstr "{overdueCount, plural, one {# overdue} other {# overdue}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
+
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -664,6 +671,7 @@ msgstr "Active"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
+#: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
 msgstr "Add"
@@ -1799,10 +1807,6 @@ msgstr "Couldn’t undo. Try again."
 msgid "Count the interval from when you finish the task."
 msgstr "Count the interval from when you finish the task."
 
-#: src/app/scratchpad-screen.tsx
-msgid "Create {selectedReviewCount} task notes"
-msgstr "Create {selectedReviewCount} task notes"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2201,6 +2205,10 @@ msgstr "Due {0}"
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
 msgstr "Due and scheduled"
+
+#: src/app/view-sort-choices.tsx
+msgid "Due date"
+msgstr "Due date"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
@@ -3207,7 +3215,6 @@ msgstr "Move Manual order to the first position to enable drag handles."
 msgid "Move selected tasks to project"
 msgstr "Move selected tasks to project"
 
-#: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -3935,6 +3942,7 @@ msgstr "Primary"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
+#: src/app/view-sort-choices.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3970,6 +3978,7 @@ msgstr "Private collection recovery"
 msgid "Private collections need your desktop online."
 msgstr "Private collections need your desktop online."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
@@ -4386,10 +4395,6 @@ msgstr "Resuming…"
 msgid "Retry"
 msgstr "Retry"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Retry {selectedReviewCount} task notes"
-msgstr "Retry {selectedReviewCount} task notes"
-
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
 msgstr "Retry by reopening Manage views or refreshing the collection."
@@ -4636,6 +4641,10 @@ msgstr "Scheduled {0}"
 #: src/app/bulk-task-feedback.ts
 msgid "Scheduled {tasks} for {0}"
 msgstr "Scheduled {tasks} for {0}"
+
+#: src/app/view-sort-choices.tsx
+msgid "Scheduled date"
+msgstr "Scheduled date"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4932,6 +4941,10 @@ msgstr "Some note changes are not saved. Keep this page open and try again."
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "Sort"
+
+#: src/app/views-screen.tsx
+msgid "Sort by"
+msgstr "Sort by"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
@@ -5541,6 +5554,7 @@ msgid "Timing"
 msgstr "Timing"
 
 #: src/app/view-editor-fields.ts
+#: src/app/view-sort-choices.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "Title"

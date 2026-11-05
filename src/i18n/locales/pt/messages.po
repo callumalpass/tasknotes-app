@@ -104,11 +104,6 @@ msgstr "{0, plural, one {# imagem foi adicionada.} other {# imagens foram adicio
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, one {# aberta} other {# abertas}}"
 
-#. placeholder {0}: overdueLane.rows.length
-#: src/app/views-screen.tsx
-msgid "{0, plural, one {# overdue} other {# overdue}}"
-msgstr "{0, plural, one {# atrasada} many {# atrasadas} other {# atrasadas}}"
-
 #. placeholder {0}: failures.length
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
@@ -523,6 +518,18 @@ msgstr "{name} (não é um registro de pessoa)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} precisa permanecer na navegação até que outra visualização seja adicionada"
 
+#: src/app/views-screen.tsx
+msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
+msgstr "{overdueCount, plural, one {# atrasada} many {# atrasadas} other {# atrasadas}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Criar # nota de tarefa} many {Criar # notas de tarefa} other {Criar # notas de tarefa}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Tentar novamente # nota de tarefa} many {Tentar novamente # notas de tarefa} other {Tentar novamente # notas de tarefa}}"
+
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -664,6 +671,7 @@ msgstr "Ativo"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
+#: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
 msgstr "Adicionar"
@@ -1799,10 +1807,6 @@ msgstr "Não foi possível desfazer. Tente novamente."
 msgid "Count the interval from when you finish the task."
 msgstr "Conte o intervalo a partir do momento em que você concluir a tarefa."
 
-#: src/app/scratchpad-screen.tsx
-msgid "Create {selectedReviewCount} task notes"
-msgstr "Criar {selectedReviewCount} notas de tarefa"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2201,6 +2205,10 @@ msgstr "Vencimento em {0}"
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
 msgstr "Vencimento e agendamento"
+
+#: src/app/view-sort-choices.tsx
+msgid "Due date"
+msgstr "Data de vencimento"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
@@ -3207,7 +3215,6 @@ msgstr "Mova Ordem manual para a primeira posição para ativar as alças de arr
 msgid "Move selected tasks to project"
 msgstr "Mover tarefas selecionadas para um projeto"
 
-#: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -3935,6 +3942,7 @@ msgstr "Principal"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
+#: src/app/view-sort-choices.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3970,6 +3978,7 @@ msgstr "Recuperação de coleção privada"
 msgid "Private collections need your desktop online."
 msgstr "Coleções privadas precisam que seu computador esteja online."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
@@ -4386,10 +4395,6 @@ msgstr "Retomando…"
 msgid "Retry"
 msgstr "Tentar novamente"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Retry {selectedReviewCount} task notes"
-msgstr "Tentar novamente {selectedReviewCount} notas de tarefa"
-
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
 msgstr "Tente novamente reabrindo Gerenciar visualizações ou atualizando a coleção."
@@ -4636,6 +4641,10 @@ msgstr "Agendado para {0}"
 #: src/app/bulk-task-feedback.ts
 msgid "Scheduled {tasks} for {0}"
 msgstr "Agendado para {0}: {tasks}"
+
+#: src/app/view-sort-choices.tsx
+msgid "Scheduled date"
+msgstr "Data agendada"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4932,6 +4941,10 @@ msgstr "Algumas alterações na nota não foram salvas. Mantenha esta página ab
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "Ordenar"
+
+#: src/app/views-screen.tsx
+msgid "Sort by"
+msgstr "Ordenar por"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
@@ -5541,6 +5554,7 @@ msgid "Timing"
 msgstr "Duração"
 
 #: src/app/view-editor-fields.ts
+#: src/app/view-sort-choices.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "Título"

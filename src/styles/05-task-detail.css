@@ -18,7 +18,7 @@
   overflow: hidden;
   font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.015em;
   line-height: 1.15;
   background: transparent;
   border: 0;
@@ -2150,7 +2150,14 @@
   font-size: var(--type-supporting);
 }
 .task-screen .notes-field textarea {
-  min-height: 180px;
+  min-height: 120px;
+}
+/* Notes grow with what is written, so a short note leaves Subtasks in reach. */
+@supports (field-sizing: content) {
+  .task-screen .notes-field textarea {
+    field-sizing: content;
+    resize: none;
+  }
 }
 
 .task-subtasks {

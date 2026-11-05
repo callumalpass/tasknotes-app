@@ -129,6 +129,7 @@ export function GlobalTaskCapture({
           session={session}
           defaults={defaults}
           retainFocusAfterCreate={keepAdding}
+          externalSubmit
           configuration={configuration}
           createTask={createTask}
           completeField={completeField}
@@ -171,6 +172,20 @@ export function GlobalTaskCapture({
               }}
             >
               <Trans>Discard draft</Trans>
+            </button>
+          ) : null}
+          {snapshot.text.trim() ? (
+            <button
+              type="button"
+              className="primary-action capture-add"
+              disabled={snapshot.status === "submitting"}
+              onClick={() =>
+                dialogRef.current
+                  ?.querySelector<HTMLFormElement>("form")
+                  ?.requestSubmit()
+              }
+            >
+              <Trans>Add</Trans>
             </button>
           ) : null}
           <button

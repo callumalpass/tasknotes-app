@@ -77,6 +77,7 @@ export function TaskCapture({
   }),
   showGuide = false,
   retainFocusAfterCreate = false,
+  externalSubmit = false,
   focusRequest,
   onCreated,
   onOpenCreated,
@@ -90,6 +91,7 @@ export function TaskCapture({
   placeholder?: string;
   showGuide?: boolean;
   retainFocusAfterCreate?: boolean;
+  externalSubmit?: boolean;
   focusRequest?: number;
   onCreated?(task: TaskSummary): Promise<TaskCaptureFollowUp | void>;
   onOpenCreated?(task: TaskSummary): void;
@@ -472,7 +474,7 @@ export function TaskCapture({
             onSelect={syncMirror}
           />
         </span>
-        {text.trim() ? (
+        {text.trim() && !externalSubmit ? (
           <button
             className="capture-submit"
             aria-label={

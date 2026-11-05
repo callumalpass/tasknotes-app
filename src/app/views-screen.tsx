@@ -33,7 +33,7 @@ import { OperationErrorNotice } from "../components/operation-error-notice";
 import { ViewExecutionErrorNotice } from "../components/view-execution-error-notice";
 import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
-import { todayString } from "../domain/task";
+import { isTaskPastDue, taskDayStanding, todayString } from "../domain/task";
 import {
   missedDeadlineCount,
   scheduleRowsTodayUpdates,
@@ -47,6 +47,7 @@ import {
   appendManualOrderRank,
   disableManualOrderSort,
   enableManualOrderSort,
+  leadSortWith,
   manualOrderConfiguration,
   planManualOrder,
   type ManualOrderPlacement,
@@ -62,6 +63,7 @@ import { propertyLabel } from "../i18n/view-presentation";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
 import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
+import { ViewSortChoices } from "./view-sort-choices";
 import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
 import { countLabel } from "../i18n/default-labels";
 import { formatTaskDate } from "../i18n/presentation";
@@ -501,13 +503,15 @@ export function ViewsScreen({
     selected,
     visibleExecution,
   ]);
-  const overdueLane = useMemo(
+  const overdueCount = useMemo(
     () =>
       todayScreen && presentedExecution
-        ? sectionTaskViewRows(presentedExecution.rows, "day", today).find(
-            ({ key }) => key === "overdue",
-          )
-        : undefined,
+        ? presentedExecution.rows.filter(
+            ({ task }) =>
+              taskDayStanding(task, today) === "overdue" ||
+              isTaskPastDue(task, today),
+          ).length
+        : 0,
     [presentedExecution, today, todayScreen],
   );
   const todayProgress = useMemo(() => {
@@ -655,7 +659,8 @@ export function ViewsScreen({
             ? " is-mini-calendar-view"
             : "";
 
-  async function setManualOrderSort(enabled: boolean) {
+  /** Manual order on or off, or the field to lead the view's sort with. */
+  async function setManualOrderSort(choice: boolean | string) {
     if (!selected || !selected.source.writable || manualOrderSortPending)
       return false;
     const view = selected;
@@ -669,9 +674,18 @@ export function ViewsScreen({
         draft.dialect === "obsidian-bases"
           ? basesProperty(sortOrderField)
           : sortOrderField;
-      const sort = enabled
-        ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)
-        : disableManualOrderSort(draft.sort, sortOrderField);
+      const sort =
+        typeof choice === "string"
+          ? leadSortWith(
+              draft.sort,
+              draft.dialect === "obsidian-bases"
+                ? basesProperty(choice)
+                : choice,
+              sortOrderField,
+            )
+          : choice
+            ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)
+            : disableManualOrderSort(draft.sort, sortOrderField);
       await repository.updateViewSource({
         path: source.path,
         ifRevision: source.revision,
@@ -1362,19 +1376,19 @@ export function ViewsScreen({
                     </>
                   ) : null}
                 </span>
-                {overdueLane?.rows.length ? (
+                {overdueCount ? (
                   <span className="today-overdue">
                     <span className="today-overdue-separator"> · </span>
                     <button
                       type="button"
                       onClick={() =>
                         document
-                          .querySelector(".task-section.is-overdue")
+                          .querySelector(".task-section")
                           ?.scrollIntoView({ block: "start" })
                       }
                     >
                       <Plural
-                        value={overdueLane.rows.length}
+                        value={overdueCount}
                         one="# overdue"
                         other="# overdue"
                       />
@@ -1413,6 +1427,11 @@ export function ViewsScreen({
               {selectionAvailable ? <SelectTasksOption /> : null}
               {selected?.source.writable ? (
                 <ViewOptions>
+                  {selectionAvailable ? (
+                    <p className="view-options-heading">
+                      <Trans>Sort by</Trans>
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     aria-pressed={Boolean(manualOrder)}
@@ -1430,6 +1449,18 @@ export function ViewsScreen({
                     )}{" "}
                     <Trans>Manual order</Trans>
                   </button>
+                  {selectionAvailable ? (
+                    <ViewSortChoices
+                      configuration={configuration}
+                      disabled={
+                        manualOrderSortPending !== null ||
+                        manualOrderPendingForSelected ||
+                        currentExecutionRefreshing
+                      }
+                      sort={currentSort}
+                      onChoose={(field) => void setManualOrderSort(field)}
+                    />
+                  ) : null}
                   <ArrangeTasksOption
                     available={Boolean(manualOrder)}
                     arrangingViewKey={arrangingViewKey}

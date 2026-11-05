@@ -30,6 +30,7 @@ export interface TaskNotesOption {
   value: string;
   label: string;
   description?: string;
+  color?: string;
   disabled?: boolean;
 }
 
@@ -201,6 +202,13 @@ export function TaskNotesSelect({
                   onClick={() => choose(index)}
                   onMouseEnter={() => setActiveIndex(index)}
                 >
+                  {option.color ? (
+                    <i
+                      aria-hidden="true"
+                      className="value-color"
+                      style={{ backgroundColor: option.color }}
+                    />
+                  ) : null}
                   <span>
                     <strong>{option.label}</strong>
                     {option.description ? (

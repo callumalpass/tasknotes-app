@@ -285,7 +285,7 @@
 
 .kanban-board {
   display: flex;
-  gap: var(--space-xl);
+  gap: 10px;
   padding-bottom: 18px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -298,7 +298,10 @@
 
 .kanban-column {
   flex: 0 0 min(82vw, 310px);
+  padding: 0 6px 6px;
   scroll-snap-align: start;
+  background: var(--paper-soft);
+  border-radius: var(--radius-sheet);
   transition: background-color 140ms var(--ease-out);
 }
 
@@ -373,7 +376,7 @@
   align-items: baseline;
   justify-content: space-between;
   min-height: 42px;
-  border-bottom: 1px solid var(--line-strong);
+  padding-inline: 8px 2px;
 }
 
 .kanban-column > header h2 {
@@ -419,10 +422,26 @@
 .kanban-card {
   position: relative;
   min-width: 0;
-  border-bottom: 1px solid var(--line);
+  margin-top: 6px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
   transition:
     opacity 140ms var(--ease-out),
-    background-color 140ms var(--ease-out);
+    background-color 140ms var(--ease-out),
+    border-color 140ms var(--ease-out),
+    box-shadow 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card.is-movable {
+    cursor: grab;
+  }
+
+  .kanban-card:hover {
+    border-color: var(--line-strong);
+    box-shadow: 0 2px 8px var(--color-shadow);
+  }
 }
 
 .kanban-card.is-drop-before::before,
@@ -501,10 +520,6 @@
     position: relative;
     grid-template-columns: 36px minmax(0, 1fr);
     padding-right: 8px;
-  }
-
-  .kanban-card .task-row-title-text {
-    padding-right: 24px;
   }
 
   .kanban-card .task-actions-trigger {

@@ -1217,10 +1217,11 @@ function fallbackTasksForView(view: TaskView, tasks: Task[]): Task[] {
   if (view.id === "work-board") return tasks.filter((task) => !task.archived);
   if (view.id === "today") {
     const today = todayString();
-    return active.filter((task) => {
-      const value = task.scheduled ?? task.due;
-      return !value || value.slice(0, 10) <= today;
-    });
+    return active.filter((task) =>
+      [task.scheduled, task.due].some(
+        (value) => value && value.slice(0, 10) <= today,
+      ),
+    );
   }
   return active;
 }

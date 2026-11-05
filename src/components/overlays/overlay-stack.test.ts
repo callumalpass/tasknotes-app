@@ -164,3 +164,21 @@ it("respects handled Escape and preserves an existing inert/scroll state", () =>
   expect(app.inert).toBe(true);
   expect(document.body.style.overflow).toBe("clip");
 });
+it("keeps a disclosure summary in a modal's Tab order", () => {
+  const dialog = element("div");
+  const first = element("button", dialog);
+  const disclosure = element("details", dialog);
+  const summary = element("summary", disclosure);
+  const remove = registerOverlay({
+    root: dialog,
+    modal: true,
+    initialFocus: () => first,
+    dismiss: () => remove(),
+  });
+  disposals.push(remove);
+  summary.focus();
+  key("Tab");
+  expect(document.activeElement).toBe(first);
+  key("Tab", true);
+  expect(document.activeElement).toBe(summary);
+});

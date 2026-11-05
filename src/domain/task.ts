@@ -344,6 +344,15 @@ export function taskDayStanding(
   return date === today ? "today" : "later";
 }
 
+/** A due date that has passed, even when the task is planned for today. */
+export function isTaskPastDue(
+  task: Pick<TaskSummary, "due">,
+  today: string,
+): boolean {
+  const due = taskDatePart(task.due);
+  return Boolean(due && due < today);
+}
+
 export function isTaskDateOverdue(value: string, now = new Date()): boolean {
   const date = dateFromStorage(value);
   if (!date) return false;

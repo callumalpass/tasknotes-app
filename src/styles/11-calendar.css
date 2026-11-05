@@ -1556,7 +1556,7 @@
 
 .full-calendar-view.is-agenda .tnc-strip-head {
   flex-wrap: wrap;
-  padding: 0 0 var(--space-sm);
+  padding: 0;
 }
 
 /* One line of controls leaves the phone's height to the tasks. */
@@ -1603,7 +1603,14 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip-today {
+  color: var(--accent);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-control);
+}
+
+.full-calendar-view.is-agenda .tnc-strip-nav {
+  font-size: 1.25rem;
 }
 
 .full-calendar-view.is-agenda .tnc-strip-dows,
@@ -1618,8 +1625,8 @@
 
 .full-calendar-view.is-agenda .tnc-strip-day {
   gap: 2px;
-  min-height: 92px;
-  padding: var(--space-sm) var(--space-xs);
+  min-height: 80px;
+  padding: var(--space-xs);
   color: var(--ink-soft);
   border: 1px solid transparent;
   border-radius: var(--radius-control);
@@ -1627,16 +1634,10 @@
 
 .full-calendar-view.is-agenda .tnc-strip-day.is-focus {
   background: var(--paper-soft);
-  border-color: var(--line-strong);
 }
 
 .full-calendar-view.is-agenda .tnc-strip-day.is-today {
   color: var(--accent);
-}
-
-.full-calendar-view.is-agenda .tnc-strip-day.is-today .agenda-strip-weekday {
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .full-calendar-view.is-agenda .tnc-strip-num {

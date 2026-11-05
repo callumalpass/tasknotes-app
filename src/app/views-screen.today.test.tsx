@@ -172,8 +172,6 @@ it("says Today is clear and points to what comes next", async () => {
   expect(next.parentElement).toHaveTextContent(
     "Next: Plan the offsite · Tomorrow",
   );
-  // Anytime work stays listed beneath the clear line.
-  expect(screen.getByText("Read the field guide")).toBeVisible();
   fireEvent.click(next);
   expect(onOpenTask).toHaveBeenCalledWith(later, undefined);
   fireEvent.click(screen.getByRole("button", { name: "See Upcoming" }));

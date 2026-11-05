@@ -370,7 +370,8 @@ Today             Search       More
   direct spatial arrangement.
 - Grouped lists have accessible collapsible sections, expanded by default.
   Day sections lead with Today, followed by Overdue, Anytime, and Later, so a
-  long overdue backlog never pushes today's work below the fold.
+  long overdue backlog never pushes today's work below the fold. Today itself
+  lists dated work only; undated tasks wait in the Inbox.
   Explicit collapse choices are local preferences scoped to collection, view,
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large

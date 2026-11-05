@@ -99,7 +99,7 @@ function task(id: string, patch: Partial<TaskSummary> = {}): TaskSummary {
   } as TaskSummary;
 }
 
-it("counts open dated tasks and overdue deadlines, excluding Anytime and finished work", () => {
+it("counts open dated tasks and overdue deadlines, excluding undated and finished work", () => {
   const open = (patch: Partial<TaskSummary>) =>
     task("a", { completed: false, ...patch });
   expect(
@@ -116,7 +116,7 @@ it("counts open dated tasks and overdue deadlines, excluding Anytime and finishe
   ).toEqual({ total: 1, overdue: 1 });
   expect(
     todayTaskContribution(open({ scheduled: today, due: "2026-07-25" }), today),
-  ).toEqual({ total: 1, overdue: 0 });
+  ).toEqual({ total: 1, overdue: 1 });
   for (const patch of [
     {},
     { scheduled: "2026-07-27" },

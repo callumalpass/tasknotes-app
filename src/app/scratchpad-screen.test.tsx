@@ -652,7 +652,7 @@ describe("ScratchpadScreen", () => {
     );
     expect(dialog).toHaveTextContent("1 of 2 selected");
     fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task notes" }),
+      screen.getByRole("button", { name: "Create 1 task note" }),
     );
 
     await screen.findByText("Created 1 task note");
@@ -801,11 +801,11 @@ describe("ScratchpadScreen", () => {
       "Temporary write failure",
     );
     expect(
-      screen.getByRole("button", { name: "Retry 1 task notes" }),
+      screen.getByRole("button", { name: "Retry 1 task note" }),
     ).toBeEnabled();
     expect(await repository.list({ status: "all" })).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task notes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task note" }));
     await screen.findByText("Created 2 task notes");
     expect(await repository.list({ status: "all" })).toHaveLength(2);
     expect(attempts).toBe(3);
@@ -1195,7 +1195,7 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(input, { target: { value: "Plan launch" } });
     fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task notes" }),
+      screen.getByRole("button", { name: "Create 1 task note" }),
     );
 
     await act(async () => vi.advanceTimersByTimeAsync(320));

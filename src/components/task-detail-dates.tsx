@@ -57,14 +57,15 @@ export function TaskDetailDates({
                   {date ? formatTaskDate(date) : t`No date`}
                 </span>
               </button>
-              <TaskNotesTimePicker
-                ariaLabel={t`${label} time`}
-                disabled={!date}
-                value={taskTimePart(draft[field]) || undefined}
-                onChange={(time) =>
-                  onChange({ [field]: combineTaskDateTime(date, time) })
-                }
-              />
+              {date ? (
+                <TaskNotesTimePicker
+                  ariaLabel={t`${label} time`}
+                  value={taskTimePart(draft[field]) || undefined}
+                  onChange={(time) =>
+                    onChange({ [field]: combineTaskDateTime(date, time) })
+                  }
+                />
+              ) : null}
             </div>
           </div>
         );

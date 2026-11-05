@@ -41,7 +41,7 @@ function focusable(roots: HTMLElement[]) {
     ...new Set(
       roots.flatMap((root) => [
         ...root.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), [href], [tabindex]',
+          'button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), summary, [href], [tabindex]',
         ),
       ]),
     ),

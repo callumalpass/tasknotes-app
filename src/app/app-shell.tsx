@@ -375,11 +375,7 @@ export function AppShell() {
       workspacePage === "view" ||
       Boolean(workspacePage === "views" && workspaceViewKey));
   const showBottomNavigation =
-    route.page !== "task" &&
-    !(workspace.page === "home" && viewsLoading) &&
-    (workspacePage !== "views" ||
-      !workspaceViewKey ||
-      workspaceIsNavigationView);
+    route.page !== "task" && !(workspace.page === "home" && viewsLoading);
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`

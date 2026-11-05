@@ -104,11 +104,6 @@ msgstr "{0, plural, one {Добавлено # изображение.} few {До
 msgid "{0, plural, one {# open} other {# open}}"
 msgstr "{0, plural, one {# незавершённая} few {# незавершённых} many {# незавершённых} other {# незавершённых}}"
 
-#. placeholder {0}: overdueLane.rows.length
-#: src/app/views-screen.tsx
-msgid "{0, plural, one {# overdue} other {# overdue}}"
-msgstr "{0, plural, one {# просрочена} few {# просрочены} many {# просрочено} other {# просрочено}}"
-
 #. placeholder {0}: failures.length
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
@@ -523,6 +518,18 @@ msgstr "{name} (не является записью участника)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} должно оставаться в навигации, пока не будет добавлено другое представление"
 
+#: src/app/views-screen.tsx
+msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
+msgstr "{overdueCount, plural, one {# просрочена} few {# просрочены} many {# просрочено} other {# просрочено}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Создать # заметку задачи} few {Создать # заметки задач} many {Создать # заметок задач} other {Создать # заметок задач}}"
+
+#: src/app/scratchpad-screen.tsx
+msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
+msgstr "{selectedReviewCount, plural, one {Повторить # заметку задачи} few {Повторить # заметки задач} many {Повторить # заметок задач} other {Повторить # заметок задач}}"
+
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -664,6 +671,7 @@ msgstr "Активные"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
+#: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
 msgid "Add"
 msgstr "Добавить"
@@ -1799,10 +1807,6 @@ msgstr "Не удалось отменить. Повторите попытку.
 msgid "Count the interval from when you finish the task."
 msgstr "Отсчитывать интервал с момента выполнения задачи."
 
-#: src/app/scratchpad-screen.tsx
-msgid "Create {selectedReviewCount} task notes"
-msgstr "Создать заметки для задач: {selectedReviewCount}"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2201,6 +2205,10 @@ msgstr "Срок: {0}"
 #: src/components/task-actions.tsx
 msgid "Due and scheduled"
 msgstr "Срок и запланированная дата"
+
+#: src/app/view-sort-choices.tsx
+msgid "Due date"
+msgstr "Срок"
 
 #: src/app/view-editor-form.tsx
 msgid "Due dates"
@@ -3207,7 +3215,6 @@ msgstr "Переместите «Ручной порядок» на первое
 msgid "Move selected tasks to project"
 msgstr "Переместить выбранные задачи в проект"
 
-#: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -3935,6 +3942,7 @@ msgstr "Основное"
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
+#: src/app/view-sort-choices.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3970,6 +3978,7 @@ msgstr "Восстановление доступа к закрытой колл
 msgid "Private collections need your desktop online."
 msgstr "Чтобы пользоваться закрытыми коллекциями, компьютер должен быть подключён к сети."
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
 #: src/app/task-core-properties.tsx
 #: src/components/task-actions.tsx
@@ -4386,10 +4395,6 @@ msgstr "Возобновление…"
 msgid "Retry"
 msgstr "Повторить попытку"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Retry {selectedReviewCount} task notes"
-msgstr "Повторить попытку для заметок о задачах: {selectedReviewCount}"
-
 #: src/app/views-screen.tsx
 msgid "Retry by reopening Manage views or refreshing the collection."
 msgstr "Повторите попытку, снова открыв раздел «Управление представлениями» или обновив коллекцию."
@@ -4636,6 +4641,10 @@ msgstr "Запланировано: {0}"
 #: src/app/bulk-task-feedback.ts
 msgid "Scheduled {tasks} for {0}"
 msgstr "Запланировано на {0}: {tasks}"
+
+#: src/app/view-sort-choices.tsx
+msgid "Scheduled date"
+msgstr "Запланированная дата"
 
 #: src/app/view-editor-form.tsx
 msgid "Scheduled dates"
@@ -4932,6 +4941,10 @@ msgstr "Некоторые изменения заметки не сохране
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "Сортировка"
+
+#: src/app/views-screen.tsx
+msgid "Sort by"
+msgstr "Сортировать по"
 
 #. placeholder {0}: index + 1
 #: src/app/view-editor-form.tsx
@@ -5541,6 +5554,7 @@ msgid "Timing"
 msgstr "Время выполнения"
 
 #: src/app/view-editor-fields.ts
+#: src/app/view-sort-choices.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "Название"

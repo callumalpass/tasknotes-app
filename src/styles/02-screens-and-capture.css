@@ -19,7 +19,7 @@
   margin: 1px 0 0;
   font-size: var(--type-page);
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 1.08;
 }
 
@@ -27,7 +27,7 @@
 .scratchpad-header h2,
 .view-header h1 {
   font-size: var(--type-page);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
 }
 
 .compact-header {
@@ -740,11 +740,17 @@
 }
 
 /* Capture owns its floating surface on desktop and its keyboard-aware sheet. */
+/* The footer stays reachable while details scroll, so it holds the Add action. */
 .capture-footer {
+  position: sticky;
+  z-index: 1;
+  bottom: calc(-1 * var(--space-sm));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0 var(--space-md);
+  padding-bottom: var(--space-sm);
+  background: var(--paper-raised);
 }
 .capture-footer .capture-discard {
   min-height: 44px;

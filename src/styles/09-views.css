@@ -51,7 +51,7 @@
 .view-header h1 {
   margin: 0;
   font-size: var(--type-page);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 1.08;
 }
 
@@ -1820,6 +1820,23 @@
 }
 .view-options-panel > button:hover {
   background: var(--paper-soft);
+}
+
+.view-options-heading {
+  margin: 0;
+  padding: 6px 12px 2px;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.view-options-panel .layout-option-space {
+  flex: none;
+  width: 18px;
+}
+
+.view-sort-direction {
+  margin-left: auto;
+  color: var(--ink-soft);
 } /* Intrinsic sizing must not turn larger text into page-wide overflow. */
 .screen,
 .screen > *,
