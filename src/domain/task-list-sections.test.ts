@@ -92,13 +92,13 @@ describe("sectionTaskViewRows", () => {
     ).toEqual({ scheduled: "2026-07-26T09:30" });
     expect(
       taskListSectionMoveInput(due, "day", "overdue", "2026-07-26"),
-    ).toEqual({ scheduled: "2026-07-25" });
+    ).toEqual({ due: "2026-07-25T17:00" });
     expect(taskListSectionMoveInput(due, "day", "later", "2026-07-26")).toEqual(
-      { scheduled: "2026-07-27" },
+      { due: "2026-07-27T17:00" },
     );
     expect(
       taskListSectionMoveInput(scheduled, "day", "anytime", "2026-07-26"),
-    ).toEqual({ scheduled: null });
+    ).toEqual({ scheduled: null, due: null });
   });
 
   it("uses the active local wall time when changing an instant's day", () => {
@@ -234,10 +234,10 @@ describe("todayCaptureDefaults", () => {
     ]);
   });
 
-  it("preserves a missed deadline when a task is dropped on Later", () => {
+  it("clears a missed deadline when a task is dropped on Later", () => {
     const task = row("late", { scheduled: "2026-07-20", due: "2026-07-25" });
     expect(
       taskListSectionMoveInput(task.task, "day", "later", "2026-07-26"),
-    ).toEqual({ scheduled: "2026-07-27" });
+    ).toEqual({ scheduled: "2026-07-27", due: "2026-07-27" });
   });
 });

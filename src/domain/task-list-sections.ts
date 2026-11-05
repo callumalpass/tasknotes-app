@@ -62,13 +62,19 @@ export function taskListSectionMoveInput(
   today = todayString(),
 ): UpdateTaskInput | null {
   if (mode !== "day" || !isSectionKey(destination)) return null;
-  if (destination === "anytime") return { scheduled: null };
+  if (destination === "anytime") return { scheduled: null, due: null };
 
   const targetDate =
     destination === "today"
       ? today
       : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
-  return { scheduled: setTaskDate(task.scheduled, targetDate) };
+  const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
+  const input = { [field]: setTaskDate(task[field], targetDate) };
+  // A missed deadline would keep the task overdue wherever it was dropped.
+  const due = taskDatePart(task.due);
+  return destination !== "overdue" && due && due < today
+    ? { ...input, due: setTaskDate(task.due, targetDate) }
+    : input;
 }
 
 /** How many rows would have a missed deadline moved along with their plan. */
