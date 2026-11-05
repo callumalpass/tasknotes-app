@@ -363,9 +363,11 @@ export function TaskRow({
         ) : null}
         {command.warning ? <p role="status">{command.warning}</p> : null}
         <div className="task-row-reading">
-          <span className="task-row-touch-heading" aria-hidden="true">
-            {task.title}
-          </span>
+          <span
+            className="task-row-touch-heading"
+            aria-hidden="true"
+            data-title={task.title}
+          />
           <button
             className="task-row-title"
             aria-label={task.title}

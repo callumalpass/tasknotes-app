@@ -1300,6 +1300,9 @@
     overflow-wrap: anywhere;
     visibility: hidden;
   }
+  .task-row-touch-heading::before {
+    content: attr(data-title);
+  }
   .task-row .task-row-touch-details:not(:empty) {
     display: flex;
     flex-wrap: wrap;
