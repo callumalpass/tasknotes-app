@@ -324,6 +324,11 @@ test("acknowledges local capture before confirmation and prefetches actual recor
       name: "Task actions for Delete through the held client",
     })
     .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Task actions for Delete through the held client",
+    }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect
     .poll(() =>
       page.evaluate(

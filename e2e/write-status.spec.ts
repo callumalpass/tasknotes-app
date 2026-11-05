@@ -40,6 +40,11 @@ test("rapid autosaves and acknowledgement do not move the editor or toolbar", as
   page,
 }) => {
   await open(page, "edit");
+  await page.clock.resume();
+  await expect(page.locator(".markdown-preview")).toHaveText(
+    "A short note for checking the editor layout.",
+  );
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
   const title = page.getByLabel("Task title", { exact: true });
   const targets = [
     title,

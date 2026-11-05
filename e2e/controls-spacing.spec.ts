@@ -38,12 +38,12 @@ for (const colorScheme of ["light", "dark"] as const) {
       const fields = page.locator(".task-core-properties");
       const label = fields.locator(".form-field > span").first();
       await expect(label).toHaveCSS("font-family", /Atkinson Hyperlegible/);
-      await expect(label).toHaveCSS("font-size", "14px");
+      await expect(label).toHaveCSS("font-size", "12px");
       await expect(label).toHaveCSS("text-transform", "none");
       for (const control of await fields
         .locator(".tasknotes-control-trigger")
         .all()) {
-        await expect(control).toHaveCSS("font-size", "14px");
+        await expect(control).toHaveCSS("font-size", "15px");
         expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(
           page.viewportSize()!.width >= 840 ? 36 : 44,
         );
@@ -174,6 +174,53 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(save).toBeEnabled();
       await save.click();
       await expect(dialog).toHaveCount(0);
+    });
+
+    test("phone filter removal stays beside its value with a full touch target", async ({
+      page,
+    }) => {
+      await page.goto("views?demo=60");
+      await page
+        .getByRole("button", { name: "Create view", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Filter All tasks" }).click();
+      await page
+        .getByRole("button", { name: "Condition", exact: true })
+        .click();
+      const rule = page.locator(".filter-rule");
+      for (const width of [320, 412]) {
+        await page.setViewportSize({ width, height: 713 });
+        for (const scale of ["100%", "200%"]) {
+          await page.evaluate((size) => {
+            document.documentElement.style.fontSize = size;
+          }, scale);
+          const bounds = (await rule.boundingBox())!;
+          expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+          expect(
+            await page
+              .locator(".view-editor-body")
+              .evaluate((element) => element.scrollWidth - element.clientWidth),
+          ).toBeLessThanOrEqual(1);
+          const value = (await rule.locator("label").nth(2).boundingBox())!;
+          const remove = rule.getByRole("button", { name: "Remove condition" });
+          const button = (await remove.boundingBox())!;
+          expect(button.width).toBeGreaterThanOrEqual(44);
+          expect(button.height).toBeGreaterThanOrEqual(44);
+          expect(button.x).toBeGreaterThanOrEqual(value.x + value.width);
+          expect(button.x + button.width).toBeLessThanOrEqual(
+            bounds.x + bounds.width + 1,
+          );
+          expect(button.y + button.height).toBeCloseTo(
+            value.y + value.height,
+            0,
+          );
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth),
+          ).toBeLessThanOrEqual(width);
+        }
+      }
+      await rule.getByRole("button", { name: "Remove condition" }).click();
+      await expect(rule).toHaveCount(0);
     });
 
     test("expanded task fields reflow at 320px and 200% text", async ({

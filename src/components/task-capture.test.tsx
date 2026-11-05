@@ -40,6 +40,34 @@ it("shows every shorthand kind only while an empty capture is focused", () => {
   expect(screen.queryByText(/!priority/)).toBeNull();
 });
 
+it("keeps empty capture guidance in place until an outside pointer action finishes", () => {
+  const activate = vi.fn(() =>
+    expect(screen.getByText(/!priority/)).toBeVisible(),
+  );
+  render(
+    <>
+      <TaskCapture
+        configuration={defaultTaskCollectionConfiguration()}
+        createTask={vi.fn()}
+      />
+      <button onClick={activate}>Outside action</button>
+    </>,
+  );
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  const outside = screen.getByRole("button", { name: "Outside action" });
+  fireEvent.focus(input);
+  fireEvent.pointerDown(outside);
+  fireEvent.blur(input, { relatedTarget: outside });
+  expect(screen.getByText(/!priority/)).toBeVisible();
+  fireEvent.pointerUp(outside);
+  fireEvent.click(outside);
+  expect(activate).toHaveBeenCalledOnce();
+  expect(screen.queryByText(/!priority/)).toBeNull();
+  fireEvent.focus(input);
+  fireEvent.blur(input, { relatedTarget: outside });
+  expect(screen.queryByText(/!priority/)).toBeNull();
+});
+
 it("applies view defaults and keeps a created task recoverable when the view excludes it", async () => {
   const create = vi.fn(async (input: CreateTaskInput) => task(input));
   const open = vi.fn();

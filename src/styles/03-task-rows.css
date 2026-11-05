@@ -902,6 +902,7 @@
   align-items: center;
   min-width: 44px;
   min-height: 44px;
+  max-width: 100%;
   gap: 4px;
   padding: 2px 0;
   color: inherit;
@@ -1315,23 +1316,6 @@
   vertical-align: -2px;
 }
 
-@media (max-width: 839px) {
-  .task-row:not(.kanban-card *) .task-row-properties {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
-  }
-
-  .task-row:not(.kanban-card *) .task-row-property {
-    flex: 0 0 auto;
-    max-width: none;
-    flex-wrap: nowrap;
-  }
-
-  .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
-    white-space: nowrap;
-  }
-}
 .undo-toast.task-completed-notice {
   display: flex;
 }

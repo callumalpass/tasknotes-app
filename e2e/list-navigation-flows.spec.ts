@@ -122,7 +122,10 @@ test("shortcut sheet uses its width and fits desktop without scrolling", async (
       (element) => element.scrollHeight <= element.clientHeight + 1,
     ),
   ).toBe(true);
-  const primary = await sheet.locator(".task-shortcuts-primary").boundingBox();
+  const primary = await sheet
+    .locator(".keyboard-shortcuts-column")
+    .first()
+    .boundingBox();
   const bounds = await sheet.boundingBox();
   expect(primary!.x - bounds!.x).toBeLessThan(40);
 });
@@ -253,6 +256,23 @@ test("long project and priority labels keep their metadata lanes", async ({
     if (!isMobile) {
       expect(row.projectRight).toBeCloseTo(row.boundsRight, 0);
       expect(row.detailsRight).toBeLessThanOrEqual(row.projectLeft);
+    }
+  }
+  if (isMobile) {
+    for (const value of await page.locator(".task-row-property strong").all()) {
+      expect(
+        await value.evaluate((element) => ({
+          clippedWidth: element.scrollWidth - element.clientWidth,
+          clippedHeight: element.scrollHeight - element.clientHeight,
+        })),
+      ).toEqual({ clippedWidth: 0, clippedHeight: 0 });
+    }
+    for (const lane of await page.locator(".task-row-properties").all()) {
+      expect(
+        await lane.evaluate(
+          (element) => element.scrollWidth - element.clientWidth,
+        ),
+      ).toBeLessThanOrEqual(1);
     }
   }
   expect(

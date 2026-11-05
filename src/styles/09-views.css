@@ -1137,6 +1137,8 @@
 .expression-builder,
 .filter-children {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 12px;
 }
 
@@ -1145,12 +1147,14 @@
 .filter-add-actions,
 .add-view-property {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
 .expression-mode {
   width: max-content;
+  max-width: 100%;
   gap: 0;
   border-bottom: 1px solid var(--line);
 }
@@ -1200,6 +1204,7 @@
 }
 
 .filter-group {
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   padding-left: 12px;
   border-left: 1px solid var(--line-strong);
@@ -1212,7 +1217,7 @@
 
 .filter-group-heading > .tasknotes-select {
   width: auto;
-  min-width: 13rem;
+  min-width: min(13rem, 100%);
 }
 
 .filter-group-heading .tasknotes-control-trigger {

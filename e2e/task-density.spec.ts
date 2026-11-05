@@ -20,7 +20,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       const title = row.locator(".task-row-title");
       const property = row.locator(".task-row-property").first();
       await expect(title).toHaveCSS("min-height", "32px");
-      await expect(property).toHaveCSS("min-height", "24px");
+      await expect(property).toHaveCSS("min-height", "44px");
       for (const control of await row
         .locator(".completion-control, .task-actions-trigger")
         .all()) {
@@ -82,9 +82,16 @@ for (const colorScheme of ["light", "dark"] as const) {
       const title = (await row.locator(".task-row-title").boundingBox())!;
       for (const control of await row.locator(".task-row-property").all()) {
         const box = (await control.boundingBox())!;
-        expect(box.height).toBeGreaterThanOrEqual(24);
+        expect(box.height).toBeGreaterThanOrEqual(44);
         expect(box.y).toBeGreaterThanOrEqual(title.y + title.height);
         expect(box.x + box.width).toBeLessThanOrEqual(320);
+        const value = control.locator("strong");
+        expect(
+          await value.evaluate((element) => ({
+            clippedWidth: element.scrollWidth - element.clientWidth,
+            clippedHeight: element.scrollHeight - element.clientHeight,
+          })),
+        ).toEqual({ clippedWidth: 0, clippedHeight: 0 });
       }
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),

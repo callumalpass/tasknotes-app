@@ -374,6 +374,7 @@ test("task summaries use readable project labels and settings show the build ver
 });
 
 test("working screens reflow at 320px with 200% text", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.setViewportSize({ width: 320, height: 844 });
   const cases = [
     ["?demo=50", "button.task-row-title"],

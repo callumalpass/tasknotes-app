@@ -142,6 +142,35 @@ export function TaskCapture({
   const [editingField, setEditingField] = useState<string | null>(null);
   const editTrigger = useRef<HTMLButtonElement | null>(null);
   const [focused, setFocused] = useState(false);
+  const pointerActive = useRef(false);
+  const deferredBlur = useRef(false);
+  useEffect(() => {
+    let frame = 0;
+    const begin = () => {
+      cancelAnimationFrame(frame);
+      pointerActive.current = true;
+    };
+    const finish = () => {
+      pointerActive.current = false;
+      if (!deferredBlur.current) return;
+      deferredBlur.current = false;
+      setFocused(false);
+    };
+    const release = () => {
+      frame = requestAnimationFrame(finish);
+    };
+    document.addEventListener("pointerdown", begin, true);
+    document.addEventListener("pointerup", release);
+    document.addEventListener("pointercancel", finish);
+    document.addEventListener("click", finish);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("pointerdown", begin, true);
+      document.removeEventListener("pointerup", release);
+      document.removeEventListener("pointercancel", finish);
+      document.removeEventListener("click", finish);
+    };
+  }, []);
   const [detailSections, setDetailSections] = useState<
     Record<CaptureDetailSection, boolean>
   >({ timing: true, organize: false, repeat: false, notes: false });
@@ -511,9 +540,13 @@ export function TaskCapture({
             }
             onFocus={() => {
               preloadTaskCapture();
+              deferredBlur.current = false;
               setFocused(true);
             }}
-            onBlur={() => setFocused(false)}
+            onBlur={() => {
+              if (pointerActive.current) deferredBlur.current = true;
+              else setFocused(false);
+            }}
             onKeyDown={handleCaptureKeyDown}
             onKeyUp={(event) => {
               setCursor(event.currentTarget.selectionStart ?? text.length);
