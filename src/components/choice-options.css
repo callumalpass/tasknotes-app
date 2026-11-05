@@ -11,7 +11,9 @@
 }
 .choice-options .tasknotes-option-list {
   max-height: 308px;
+  padding-block: 1px;
   overflow-y: auto;
+  scroll-padding-block: 1px;
 }
 .choice-options .tasknotes-option-list > button {
   min-height: 44px;

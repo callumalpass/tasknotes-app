@@ -1170,6 +1170,7 @@ html.scratchpad-route .page-surface {
   grid-column: 4 / -1;
   flex-wrap: wrap;
   gap: 3px 14px;
+  margin-left: 8px;
   padding: 4px 0 8px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;

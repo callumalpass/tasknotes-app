@@ -27,7 +27,14 @@ export function ChoiceOptions({
   const defaultLabel = t`options`;
   const filterLabel = label ?? defaultLabel;
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(() => {
+    const selected = options.findIndex(
+      (option) => option.value === value && !option.disabled,
+    );
+    return selected >= 0
+      ? selected
+      : options.findIndex((option) => !option.disabled);
+  });
   const filtered = options.filter((option) =>
     option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
   );
@@ -53,7 +60,15 @@ export function ChoiceOptions({
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
-          setActive(0);
+          setActive(
+            options
+              .filter((option) =>
+                option.label
+                  .toLocaleLowerCase()
+                  .includes(event.target.value.trim().toLocaleLowerCase()),
+              )
+              .findIndex((option) => !option.disabled),
+          );
         }}
         onKeyDown={(event) => {
           const enabled = filtered.flatMap((option, index) =>

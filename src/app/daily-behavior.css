@@ -26,7 +26,7 @@
   display: none;
 }
 @media (max-width: 839px) {
-  .app-shell:has(.global-capture-fab) .page-surface {
+  .app-shell:has(.global-capture-fab) .page-surface:not(:has(.is-kanban-view)) {
     padding-bottom: calc(
       var(--nav-height) + env(safe-area-inset-bottom) + 88px
     );

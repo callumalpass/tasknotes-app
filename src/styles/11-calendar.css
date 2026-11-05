@@ -445,7 +445,19 @@
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary > span {
-  -webkit-line-clamp: 2;
+  display: block;
+  white-space: nowrap;
+}
+
+.full-calendar-view .tnc-item--timed .full-calendar-event-secondary {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.full-calendar-view .tnc-item--timed .full-calendar-event-secondary > time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .full-calendar-view .tnc-item.is-time-entry {
@@ -1719,8 +1731,11 @@
   border-top: 0;
 }
 
-.full-calendar-view.is-agenda .tnc-list-section {
+.full-calendar-view.is-agenda .tnc-list--agenda .tnc-list-section {
   padding-top: var(--space-md);
+  scroll-margin-top: calc(
+    var(--tnc-sticky-top, 0px) + var(--tnc-strip-h, 0px) + 1px
+  );
 }
 
 .full-calendar-view.is-agenda .tnc-list-day {

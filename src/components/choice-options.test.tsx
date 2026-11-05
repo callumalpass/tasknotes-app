@@ -3,6 +3,33 @@ import { afterEach, expect, it, vi } from "vitest";
 import { ChoiceOptions } from "./choice-options";
 
 afterEach(cleanup);
+
+it("starts on the selected value and skips a disabled first match after filtering", () => {
+  const choose = vi.fn();
+  render(
+    <ChoiceOptions
+      label="Priority"
+      value="current"
+      options={[
+        { value: "disabled", label: "Custom disabled", disabled: true },
+        { value: "enabled", label: "Custom enabled" },
+        { value: "current", label: "Current priority" },
+      ]}
+      onChoose={choose}
+    />,
+  );
+  const filter = screen.getByRole("combobox", { name: "Filter Priority" });
+  expect(filter).toHaveAttribute(
+    "aria-activedescendant",
+    screen.getByRole("option", { selected: true }).id,
+  );
+  fireEvent.keyDown(filter, { key: "Enter" });
+  expect(choose).toHaveBeenLastCalledWith("current");
+  fireEvent.change(filter, { target: { value: "Custom" } });
+  fireEvent.keyDown(filter, { key: "Enter" });
+  expect(choose).toHaveBeenLastCalledWith("enabled");
+});
+
 it("filters arbitrary options immediately and chooses the active enabled match", () => {
   const choose = vi.fn();
   render(
