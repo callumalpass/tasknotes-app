@@ -361,7 +361,7 @@ test("a known project with spaces is typed by its plain name", async ({
   test.skip(isMobile, "Phones capture from the Add task sheet.");
   await page.goto("?demo=60");
   await page
-    .locator(".quick-capture input")
+    .locator(".quick-capture textarea")
     .first()
     .fill("Call dentist +Product refresh");
   await expect(

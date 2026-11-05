@@ -133,7 +133,7 @@ it("acknowledges a task immediately while a remote create is pending", async () 
     />,
   );
 
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   fireEvent.change(input, { target: { value: "Slow relay task" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
@@ -312,7 +312,7 @@ it("offers contract-aware inline suggestions with keyboard selection", async () 
     />,
   );
 
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   fireEvent.change(input, {
     target: { value: "Call plumber @ho", selectionStart: 16 },
   });

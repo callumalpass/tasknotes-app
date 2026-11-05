@@ -30,6 +30,21 @@ const commands = (): PaletteCommand[] => [
   },
 ];
 
+it("provides a visible close button beside the search", () => {
+  const close = vi.fn();
+  render(
+    <CommandPalette
+      open
+      commands={commands()}
+      query=""
+      onQueryChange={vi.fn()}
+      onClose={close}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(close).toHaveBeenCalledOnce();
+});
+
 function Palette({
   items,
   onClose = vi.fn(),

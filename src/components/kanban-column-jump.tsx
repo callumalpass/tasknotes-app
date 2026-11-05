@@ -1,10 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
-/**
- * Phone boards show one full-width column at a time. This bar names every
- * column, marks the visible one, and scrolls to a chosen column.
- */
 export function KanbanColumnJump({
   boardRef,
   columns,
@@ -13,66 +15,108 @@ export function KanbanColumnJump({
   columns: { key: string; label: string; count: number }[];
 }) {
   const { t } = useLingui();
-  const [activeKey, setActiveKey] = useState(columns[0]?.key);
+  const first = columns.find((column) => column.count > 0)?.key;
+  const selected = useRef(first ?? columns[0]?.key);
+  const initialized = useRef(false);
+  const strip = useRef<HTMLElement>(null);
+  const [activeKey, setActiveKey] = useState(first ?? columns[0]?.key);
+  const keys = JSON.stringify(columns.map(({ key }) => key));
   useEffect(() => {
     const board = boardRef.current;
-    if (!board || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const key = (visible?.target as HTMLElement | undefined)?.dataset
-          .kanbanColumnKey;
-        if (key) setActiveKey(key);
-      },
-      { root: board, threshold: [0.5, 0.75] },
-    );
-    const columnElements = board.querySelectorAll<HTMLElement>(
-      "[data-kanban-column-key]",
-    );
-    columnElements.forEach((column) => observer.observe(column));
-    // A resize reflows the columns without a useful intersection change.
+    if (!board) return;
+    const elements = [
+      ...board.querySelectorAll<HTMLElement>("[data-kanban-column-key]"),
+    ];
+    let width = board.clientWidth;
+    let frame = 0;
+    const reveal = () => {
+      const target = elements.find(
+        (element) => element.dataset.kanbanColumnKey === selected.current,
+      );
+      if (target)
+        board.scrollTo?.({
+          left:
+            board.scrollLeft +
+            target.getBoundingClientRect().left -
+            board.getBoundingClientRect().left,
+          behavior: "instant",
+        });
+    };
+    if (!initialized.current && first) {
+      selected.current = first;
+      initialized.current = true;
+      setActiveKey(first);
+      reveal();
+    }
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (width !== board.clientWidth) return;
+        const left = board.getBoundingClientRect().left;
+        const nearest = elements.reduce<HTMLElement | undefined>(
+          (current, element) =>
+            !current ||
+            Math.abs(element.getBoundingClientRect().left - left) <
+              Math.abs(current.getBoundingClientRect().left - left)
+              ? element
+              : current,
+          undefined,
+        );
+        if (nearest?.dataset.kanbanColumnKey) {
+          selected.current = nearest.dataset.kanbanColumnKey;
+          setActiveKey(selected.current);
+        }
+      });
+    };
     const resize =
       typeof ResizeObserver === "undefined"
         ? null
         : new ResizeObserver(() => {
-            const left = board.getBoundingClientRect().left;
-            const nearest = [...columnElements].sort(
-              (a, b) =>
-                Math.abs(a.getBoundingClientRect().left - left) -
-                Math.abs(b.getBoundingClientRect().left - left),
-            )[0];
-            if (nearest?.dataset.kanbanColumnKey)
-              setActiveKey(nearest.dataset.kanbanColumnKey);
+            revealJump(strip.current);
+            if (width === board.clientWidth) return;
+            width = board.clientWidth;
+            reveal();
           });
     resize?.observe(board);
+    if (strip.current) resize?.observe(strip.current);
+    board.addEventListener("scroll", onScroll);
     return () => {
-      observer.disconnect();
       resize?.disconnect();
+      board.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
     };
-  }, [boardRef, columns]);
-
+  }, [boardRef, keys, first]);
+  useLayoutEffect(() => {
+    revealJump(strip.current);
+  }, [activeKey]);
   if (columns.length < 2) return null;
   return (
     <nav
       aria-label={t({ message: "Board columns" })}
       className="kanban-column-jump"
+      ref={strip}
     >
       {columns.map((column) => (
         <button
           aria-current={column.key === activeKey ? "true" : undefined}
+          data-kanban-jump-key={column.key}
           key={column.key}
           type="button"
           onClick={() => {
-            const target = boardRef.current?.querySelector<HTMLElement>(
+            initialized.current = true;
+            selected.current = column.key;
+            const board = boardRef.current;
+            const target = board?.querySelector<HTMLElement>(
               `[data-kanban-column-key="${CSS.escape(column.key)}"]`,
             );
-            target?.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
-              inline: "start",
-            });
+            if (board && target)
+              board.scrollTo?.({
+                left:
+                  board.scrollLeft +
+                  target.getBoundingClientRect().left -
+                  board.getBoundingClientRect().left,
+                behavior: "instant",
+              });
             setActiveKey(column.key);
           }}
         >
@@ -82,4 +126,19 @@ export function KanbanColumnJump({
       ))}
     </nav>
   );
+}
+
+function revealJump(strip: HTMLElement | null) {
+  const button = strip?.querySelector<HTMLElement>("[aria-current='true']");
+  if (!strip || !button) return;
+  const bounds = strip.getBoundingClientRect();
+  const target = button.getBoundingClientRect();
+  const offset =
+    target.left < bounds.left
+      ? target.left - bounds.left
+      : target.right > bounds.right
+        ? target.right - bounds.right
+        : 0;
+  if (offset)
+    strip.scrollTo?.({ left: strip.scrollLeft + offset, behavior: "instant" });
 }

@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -134,6 +134,14 @@ export function CommandPalette({
               }
             }}
           />
+          <button
+            aria-label={translate({ message: "Close" })}
+            className="command-palette-close icon-action"
+            type="button"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" size={20} />
+          </button>
         </div>
         <div
           aria-label={translate({ message: "Results" })}

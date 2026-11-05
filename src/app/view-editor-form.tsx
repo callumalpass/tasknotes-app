@@ -598,9 +598,7 @@ function ViewIdentitySection({
   onChange(draft: EditableViewDraft): void;
 }) {
   const { t } = useLingui();
-  const [layoutOpen, setLayoutOpen] = useState(
-    () => !window.matchMedia?.("(max-width: 839px)").matches,
-  );
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const layoutLabel =
     layouts.find((layout) => layout.value === draft.renderer)?.label ??
     draft.renderer;
@@ -625,12 +623,13 @@ function ViewIdentitySection({
           onChange={(event) => onChange({ ...draft, name: event.target.value })}
         />
       </label>
-      <details
-        className="view-layout-disclosure"
-        open={layoutOpen}
-        onToggle={(event) => setLayoutOpen(event.currentTarget.open)}
-      >
-        <summary>
+      <details className="view-layout-disclosure" open={layoutOpen}>
+        <summary
+          onClick={(event) => {
+            event.preventDefault();
+            setLayoutOpen((open) => !open);
+          }}
+        >
           <Trans>
             Layout: {layoutLabel}
             {draft.renderer === "tasknotes.planner"
@@ -656,7 +655,10 @@ function ViewIdentitySection({
                   name="view-layout"
                   type="radio"
                   value={value}
-                  onChange={() => onChange(changeRenderer(draft, value))}
+                  onChange={() => {
+                    onChange(changeRenderer(draft, value));
+                    setLayoutOpen(false);
+                  }}
                 />
               </label>
             ))}

@@ -70,7 +70,12 @@ describe("ViewEditor", () => {
       screen.getByRole("combobox", { name: "Sort property 1" }),
     ).toHaveValue("Priority");
 
+    const layout = dialog.querySelector(".view-layout-disclosure")!;
+    expect(layout).not.toHaveAttribute("open");
+    fireEvent.click(layout.querySelector("summary")!);
+    expect(layout).toHaveAttribute("open");
     fireEvent.click(screen.getByRole("radio", { name: "Board" }));
+    expect(layout).not.toHaveAttribute("open");
     expect(screen.getByRole("combobox", { name: "Board column" })).toHaveValue(
       "Status",
     );

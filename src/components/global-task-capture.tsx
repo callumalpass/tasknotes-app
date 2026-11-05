@@ -100,8 +100,8 @@ export function GlobalTaskCapture({
     modal: true,
     onDismiss: onClose,
     initialFocus: () =>
-      dialogRef.current?.querySelector<HTMLInputElement>(
-        ".quick-capture input",
+      dialogRef.current?.querySelector<HTMLTextAreaElement>(
+        ".quick-capture textarea",
       ) ?? null,
   });
   const present = usePresence(open, scrimRef);
@@ -130,6 +130,7 @@ export function GlobalTaskCapture({
           defaults={defaults}
           retainFocusAfterCreate={keepAdding}
           externalSubmit
+          showGuide
           configuration={configuration}
           createTask={createTask}
           completeField={completeField}
@@ -167,7 +168,9 @@ export function GlobalTaskCapture({
               onClick={() => {
                 session.discard();
                 dialogRef.current
-                  ?.querySelector<HTMLInputElement>(".quick-capture input")
+                  ?.querySelector<HTMLTextAreaElement>(
+                    ".quick-capture textarea",
+                  )
                   ?.focus();
               }}
             >

@@ -4,6 +4,25 @@ import { ChoiceOptions } from "./choice-options";
 
 afterEach(cleanup);
 
+it("names a short picker and offers a visible close action before its search", () => {
+  const close = vi.fn();
+  const { container } = render(
+    <ChoiceOptions
+      label="Theme"
+      value="light"
+      options={[{ value: "light", label: "Light" }]}
+      onChoose={vi.fn()}
+      onClose={close}
+    />,
+  );
+  expect(container.querySelector(".choice-options-header")).toHaveTextContent(
+    "Theme",
+  );
+  expect(screen.getByRole("combobox", { name: "Filter Theme" })).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(close).toHaveBeenCalledOnce();
+});
+
 it("starts on the selected value and skips a disabled first match after filtering", () => {
   const choose = vi.fn();
   render(

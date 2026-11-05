@@ -31,7 +31,7 @@ async function captureWith(suggestions: FieldCompletion[]) {
       completeField={complete}
     />,
   );
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   const text = "Review launch +Work";
   await act(async () => {
     fireEvent.change(input, {
@@ -58,13 +58,9 @@ describe("quick-add project Enter (real capture parser)", () => {
     },
   ])("$name", async ({ suggestions, projects }) => {
     const { input, create } = await captureWith(suggestions);
-    // jsdom does not perform Enter's native form submission; first prove that
-    // the handler leaves Enter unconsumed, then dispatch that default action.
     expect(fireEvent.keyDown(input, { key: "Enter", code: "Enter" })).toBe(
-      true,
+      false,
     );
-    expect(input).toHaveValue("Review launch +Work");
-    fireEvent.submit(input.closest("form")!);
     await waitFor(() => expect(create).toHaveBeenCalledOnce());
     expect(create.mock.calls[0]![0]).toEqual(
       expect.objectContaining({ title: "Review launch", projects }),
@@ -78,6 +74,31 @@ describe("quick-add project Enter (real capture parser)", () => {
     expect(input).toHaveValue("Review launch +[[How collections work]] ");
     expect(create).not.toHaveBeenCalled();
   });
+});
+
+it("edits only the project field, focuses it, and returns to its chip on Escape", async () => {
+  const complete = vi.fn(async () => [work]);
+  const create = vi.fn();
+  const { container } = render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+      completeField={complete}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Review launch +Work" },
+  });
+  const chip = await screen.findByRole("button", { name: "Edit +Work" });
+  fireEvent.click(chip);
+  const project = screen.getByRole("combobox", { name: "Projects" });
+  expect(project).toHaveFocus();
+  expect(container.querySelector(".capture-details")).toBeNull();
+  expect(screen.queryByRole("combobox", { name: "Status" })).toBeNull();
+  fireEvent.keyDown(project, { key: "Escape" });
+  fireEvent.keyDown(project, { key: "Escape" });
+  expect(chip).toHaveFocus();
+  expect(create).not.toHaveBeenCalled();
 });
 
 it("highlights ranked shorthand with an editable, removable priority chip and swatch", async () => {
@@ -98,7 +119,9 @@ it("highlights ranked shorthand with an editable, removable priority chip and sw
   expect(chip.querySelector(".value-color")).toHaveStyle({
     backgroundColor: highest.color,
   });
-  expect(container.querySelector("mark")).toHaveTextContent(`!${highest.value}`);
+  expect(container.querySelector("mark")).toHaveTextContent(
+    `!${highest.value}`,
+  );
   fireEvent.click(chip);
   expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
   fireEvent.click(

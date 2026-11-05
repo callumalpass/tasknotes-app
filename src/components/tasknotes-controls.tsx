@@ -63,7 +63,40 @@ export function TaskNotesSelect({
   const { t } = useLingui();
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const position = () => {
+      const popover = popoverRef.current;
+      const trigger = triggerRef.current;
+      const list = popover?.querySelector<HTMLElement>(
+        ".tasknotes-option-list",
+      );
+      if (!popover || !trigger || !list) return;
+      popover.style.removeProperty("top");
+      popover.style.removeProperty("bottom");
+      list.style.removeProperty("max-height");
+      if (window.innerWidth < 840) return;
+      const bounds = trigger.getBoundingClientRect();
+      const below = window.innerHeight - bounds.bottom - 14;
+      const above = bounds.top - 14;
+      const flipped = below < popover.offsetHeight && above > below;
+      const available = flipped ? above : below;
+      if (flipped) {
+        popover.style.top = "auto";
+        popover.style.bottom = "calc(100% + 6px)";
+      }
+      const chrome = popover.offsetHeight - list.offsetHeight;
+      list.style.maxHeight = `${Math.max(44, Math.min(308, available - chrome))}px`;
+      list
+        .querySelector<HTMLElement>(".is-active")
+        ?.scrollIntoView?.({ block: "nearest" });
+    };
+    position();
+    window.addEventListener("resize", position);
+    return () => window.removeEventListener("resize", position);
+  }, [open, present]);
   const selectedIndex = options.findIndex((option) => option.value === value);
   const [activeIndex, setActiveIndex] = useState(
     Math.max(selectedIndex, firstEnabledIndex(options)),
@@ -183,19 +216,21 @@ export function TaskNotesSelect({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             className="tasknotes-popover tasknotes-select-popover"
+            ref={popoverRef}
             data-state={open ? "open" : "closed"}
             inert={!open}
             id={`${id}-options`}
           >
-            {ariaLabel ? (
-              <span className="tasknotes-popover-title">{ariaLabel}</span>
-            ) : null}
             <ChoiceOptions
               options={options}
               disabled={disabled}
               value={value}
               label={ariaLabel}
               labelledBy={ariaLabelledBy}
+              onClose={() => {
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
               onChoose={(next) => {
                 onChange(next);
                 setOpen(false);
@@ -226,6 +261,7 @@ export function TaskNotesSelectField({
       <span id={`${id}-label`}>{label}</span>
       <TaskNotesSelect
         {...select}
+        ariaLabel={label}
         ariaLabelledBy={`${id}-label`}
         className="tasknotes-field-control"
       />

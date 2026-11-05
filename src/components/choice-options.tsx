@@ -1,5 +1,5 @@
 import { useLingui, Trans } from "@lingui/react/macro";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { TaskNotesOption } from "./tasknotes-controls";
 import "./choice-options.css";
@@ -12,6 +12,7 @@ export function ChoiceOptions({
   role = "option",
   labelledBy,
   onChoose,
+  onClose,
 }: {
   options: readonly TaskNotesOption[];
   value: string;
@@ -20,6 +21,7 @@ export function ChoiceOptions({
   role?: "option" | "menuitemradio";
   labelledBy?: string;
   onChoose(value: string): void;
+  onClose?(): void;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -48,6 +50,19 @@ export function ChoiceOptions({
   }, [active, query]);
   return (
     <div className="choice-options" ref={root}>
+      {onClose ? (
+        <header className="choice-options-header">
+          <strong>{label ?? defaultLabel}</strong>
+          <button
+            aria-label={t`Close`}
+            className="icon-action"
+            type="button"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" size={20} />
+          </button>
+        </header>
+      ) : null}
       <input
         aria-label={t`Filter ${filterLabel}`}
         aria-controls={`${id}-list`}

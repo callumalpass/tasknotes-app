@@ -439,6 +439,31 @@ export function KanbanView({
     clientY: number,
   ): typeof overDropRef.current {
     const board = boardRef.current;
+    const jump = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-kanban-jump-key]");
+    if (jump?.dataset.kanbanJumpKey && draggingRef.current) {
+      const strip = jump.parentElement;
+      if (strip) {
+        const bounds = strip.getBoundingClientRect();
+        strip.scrollLeft += edgeScrollDistance(
+          clientX,
+          bounds.left,
+          bounds.right,
+          44,
+          12,
+        );
+      }
+      const columnKey = jump.dataset.kanbanJumpKey;
+      const target = board?.querySelector<HTMLElement>(
+        `[data-kanban-column-key="${CSS.escape(columnKey)}"]`,
+      );
+      if (board && target)
+        board.scrollLeft +=
+          target.getBoundingClientRect().left -
+          board.getBoundingClientRect().left;
+      return { columnKey, placement: "after" };
+    }
     const bounds = board?.getBoundingClientRect();
     if (
       bounds &&
@@ -714,6 +739,7 @@ export function KanbanView({
         </p>
       ) : null}
       <KanbanColumnJump
+        key={execution.view.key}
         boardRef={boardRef}
         columns={orderedColumns.map((column) => ({
           key: valueKey(column.value),

@@ -4,7 +4,6 @@ import { uiCopy } from "../../i18n/ui-copy";
 import { countLabel } from "../../i18n/default-labels";
 import {
   Check,
-  ChevronRight,
   FilePenLine,
   MoreHorizontal,
   Pencil,
@@ -320,7 +319,6 @@ function ToolRow({
           <strong>{tool.name}</strong>
           <small>{tool.description}</small>
         </span>
-        <ChevronRight aria-hidden="true" size={18} />
       </button>
       <NavigationMembershipButton
         disabled={isOnlyNavigationEntry}
@@ -363,7 +361,6 @@ function SavedViewRow({
         <span>
           <strong>{view.name}</strong>
         </span>
-        <ChevronRight aria-hidden="true" size={18} />
       </button>
       <ViewActions
         view={view}

@@ -298,7 +298,7 @@
 
 .kanban-column {
   flex: 0 0 min(82vw, 310px);
-  padding: 0 6px 6px;
+  padding: 0 4px 6px;
   scroll-snap-align: start;
   background: var(--paper-soft);
   border-radius: var(--radius-sheet);
@@ -391,7 +391,7 @@
 /* Desktop columns share the available width before the board scrolls. */
 @media (min-width: 840px) {
   .kanban-column {
-    flex: 1 0 288px;
+    flex: 1 0 216px;
     max-width: 360px;
   }
 }
@@ -432,8 +432,8 @@
 .kanban-column-add {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   color: var(--ink-muted);
   background: transparent;
@@ -547,18 +547,18 @@
 @media (hover: hover) and (pointer: fine) {
   .kanban-card .task-row {
     position: relative;
-    grid-template-columns: 36px minmax(0, 1fr);
-    padding-right: 8px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding-inline: 0;
   }
 
   .kanban-card .task-actions-trigger {
     position: absolute;
     top: 4px;
     right: 0;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
 }
 
@@ -567,7 +567,7 @@
 }
 
 .kanban-card .task-row-content {
-  padding-left: 0;
+  padding: 0;
   cursor: pointer;
   -webkit-user-drag: none;
 }

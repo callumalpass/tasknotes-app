@@ -203,8 +203,7 @@
 }
 
 .view-header > .back-action {
-  grid-column: 1 / -1;
-  flex-basis: 100%;
+  flex: 0 0 auto;
 }
 
 .view-header > div {

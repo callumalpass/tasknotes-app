@@ -854,6 +854,9 @@ export function TaskActions({
       <>
         {!series && !task.completed ? (
           <div className="task-actions-quick">
+            <p className="task-actions-quick-label">
+              <Trans>Schedule</Trans>
+            </p>
             <div className="task-actions-quick-row">
               <QuickAction
                 disabled={busy}
@@ -880,6 +883,11 @@ export function TaskActions({
                 onClick={() => void run(() => change({ scheduled: null }))}
               />
             </div>
+            {quickPriorities.length ? (
+              <p className="task-actions-quick-label">
+                <Trans>Priority</Trans>
+              </p>
+            ) : null}
             <div className="task-actions-quick-row">
               {quickPriorities.map((option) => (
                 <QuickAction
@@ -1190,6 +1198,7 @@ function QuickAction({
         strokeWidth={1.7}
         style={color ? { color } : undefined}
       />
+      <span className="quick-action-tooltip">{label}</span>
     </button>
   );
 }

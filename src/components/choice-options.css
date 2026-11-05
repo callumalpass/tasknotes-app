@@ -9,6 +9,52 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
 }
+.choice-options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: var(--type-supporting);
+}
+.choice-options-header > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.choice-options-header > button {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+@media (max-width: 839px) {
+  .tasknotes-select-popover:has(.choice-options) {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px 12px 0 0;
+  }
+  .tasknotes-select-popover > .choice-options {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .tasknotes-select-popover .choice-options > :not(.tasknotes-option-list) {
+    flex: 0 0 auto;
+  }
+  .tasknotes-select-popover .choice-options > .tasknotes-option-list {
+    min-height: 0;
+    flex: 0 1 auto;
+  }
+}
 .choice-options .tasknotes-option-list {
   max-height: 308px;
   padding-block: 1px;

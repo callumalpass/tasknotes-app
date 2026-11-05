@@ -88,7 +88,8 @@
   line-height: 1;
 }
 
-.quick-capture input {
+.quick-capture input,
+.quick-capture textarea {
   flex: 1;
   min-width: 0;
   min-height: 52px;
@@ -115,31 +116,40 @@
   margin-inline-end: 12px;
 }
 
-.quick-capture .capture-field input {
+.quick-capture .capture-field textarea {
   position: relative;
   z-index: 1;
   color: transparent;
   caret-color: var(--ink);
+  min-height: 44px;
+  max-height: 89px;
+  padding-block: 10px;
+  line-height: 23px;
+  resize: none;
+  overflow-wrap: anywhere;
+  scrollbar-width: none;
 }
 
-.quick-capture .capture-field input::selection {
+.quick-capture .capture-field textarea::selection {
   color: transparent;
   background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .capture-highlights {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
+  inset: 10px 0;
+  display: block;
   overflow: hidden;
   pointer-events: none;
   font-size: var(--type-control);
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 23px;
   color: var(--ink);
 }
 
 .capture-highlights > span {
+  display: block;
   will-change: transform;
 }
 
@@ -174,7 +184,7 @@
   }
 }
 
-.quick-capture input::placeholder,
+.quick-capture textarea::placeholder,
 .notes-field textarea::placeholder {
   color: var(--ink-muted);
   opacity: 1;
@@ -562,6 +572,23 @@
   padding-bottom: 12px;
   overflow: auto;
 }
+.view-detail.is-kanban-view > .view-header {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.view-detail.is-kanban-view > .capture-composer {
+  margin-bottom: 8px;
+}
+.capture-targeted-edit {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-block: 8px;
+}
+.capture-targeted-edit > :first-child {
+  flex: 1;
+  min-width: 0;
+}
 
 .task-groups {
   padding-top: 12px;
@@ -593,7 +620,7 @@
 .task-section.is-overdue .task-section-toggle > span:not(.task-section-count) {
   color: var(--overdue-heading, var(--danger));
 }
-.capture-composer .quick-capture input:focus-visible {
+.capture-composer .quick-capture textarea:focus-visible {
   outline: 0 !important;
 }
 .capture-composer .quick-capture:focus-within {

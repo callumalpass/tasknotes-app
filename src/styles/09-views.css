@@ -483,7 +483,7 @@
 
 .saved-view-open {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   min-height: 63px;
@@ -501,10 +501,6 @@
 
 .saved-view-open > svg:first-child {
   color: var(--accent);
-}
-
-.saved-view-open > svg:last-child {
-  color: var(--ink-muted);
 }
 
 .saved-view-open span {
@@ -607,7 +603,7 @@
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-size: var(--type-label);
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -945,7 +941,7 @@
 }
 
 .view-layout-disclosure[open] {
-  padding-bottom: 24px;
+  padding-bottom: 12px;
 }
 
 .view-kind-field,
@@ -968,8 +964,8 @@
   grid-template-columns: 24px minmax(0, 1fr) 22px;
   gap: 8px;
   align-items: center;
-  min-height: 66px;
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 6px 10px;
   color: var(--ink-soft);
   background: transparent;
   cursor: pointer;
@@ -1508,7 +1504,12 @@
 }
 
 .view-editor-footer .save-view-action {
-  min-height: 42px;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  border-radius: 6px;
 }
 
 .save-view-action:disabled {
