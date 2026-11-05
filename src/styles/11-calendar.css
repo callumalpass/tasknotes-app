@@ -602,6 +602,10 @@
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   align-content: start;
 }
 
@@ -613,14 +617,20 @@
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary {
   flex-wrap: nowrap;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary > span {
   display: block;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 16px;
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-secondary {
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow: hidden;
 }
@@ -791,11 +801,59 @@
 }
 
 @media (max-width: 839px) {
-  .full-calendar-view
-    :is(.tnc-dg-dow, .tnc-dh-dow, .tnc-more, .tnc-dg-dots-more) {
+  .full-calendar-view :is(.tnc-dg-dow, .tnc-dh-dow) {
     font-size: 11px;
     line-height: 16px;
   }
+  .full-calendar-view :is(.tnc-more, .tnc-dg-dots-more) {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  .full-calendar-view:not(.is-agenda) .tnc-strip:not(.is-expanded) {
+    --tnc-strip-cell: 32px;
+    padding-block: 0;
+  }
+  .full-calendar-view:not(.is-agenda) .tnc-strip-head {
+    height: 44px;
+    padding-block: 0;
+  }
+  .full-calendar-view:not(.is-agenda) .tnc-strip-dows {
+    display: none;
+  }
+  .full-calendar-view:not(.is-agenda)
+    .tnc-strip:not(.is-expanded)
+    .tnc-strip-handle {
+    display: none;
+  }
+  .full-calendar-view:not(.is-agenda) .tnc-strip-day {
+    min-height: 44px;
+    padding-block: 0;
+  }
+  .full-calendar-view[data-calendar-mode="timeGridDay"] .tnc-tg-head {
+    display: none;
+  }
+}
+
+.full-calendar-view .tnc-collision-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+.calendar-collision-trigger {
+  position: absolute;
+  inset-inline: 2px;
+  z-index: 4;
+  min-height: 44px;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--paper-raised);
+  font: inherit;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 @media (min-width: 840px) {

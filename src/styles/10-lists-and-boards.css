@@ -1,4 +1,7 @@
 /* Manual ordering, Projects, and kanban boards. */
+.kanban-column-jump[hidden] {
+  display: none;
+}
 
 .manual-order-row {
   position: relative;
@@ -391,7 +394,7 @@
 /* Desktop columns share the available width before the board scrolls. */
 @media (min-width: 840px) {
   .kanban-column {
-    flex: 1 0 216px;
+    flex: 1 0 232px;
     max-width: 360px;
   }
 }
@@ -564,13 +567,23 @@
 
 .kanban-card .task-row-property > strong {
   white-space: normal;
-  line-height: 24px;
+  line-height: 20px;
 }
 
 .kanban-card .task-row-content {
+  width: calc(100% + 32px);
+  margin-left: -32px;
   padding: 6px 0;
   cursor: pointer;
   -webkit-user-drag: none;
+}
+
+.kanban-card .task-row-reading {
+  margin-left: 32px;
+}
+
+.kanban-card .task-row-title {
+  padding-block: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {

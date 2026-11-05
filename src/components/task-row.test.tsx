@@ -37,6 +37,22 @@ vi.mock("./task-property-editor", () => ({
   TaskPropertyEditor: () => <div role="dialog">Edit property</div>,
 }));
 afterEach(cleanup);
+it("keeps priority ink supporting while preserving the collection colour on its flag", () => {
+  render(
+    <TaskRow
+      task={{ ...task, priority: "high" }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  const priority = screen.getByRole("button", { name: "Priority: High" });
+  expect(priority.style.color).toBe("");
+  expect(priority.querySelector("svg")).toHaveStyle({
+    color: defaultTaskCollectionConfiguration().priorities.find(
+      (option) => option.value === "high",
+    )!.color,
+  });
+});
 it.each([
   ["status", "Status", "In progress", "in-progress"],
   ["priority", "Priority", "High", "high"],
@@ -128,16 +144,36 @@ it("keeps a parent label available when project properties are omitted", () => {
       details={[]}
     />,
   );
-  expect(container.querySelector(".task-row-parent")).toHaveTextContent(
-    "Parent task",
-  );
-  expect(container.querySelector(".task-row-parent")).not.toHaveTextContent(
-    "Tasks/Parent.md",
-  );
+  expect(
+    container.querySelector(".task-row-properties .is-project"),
+  ).toHaveTextContent("Parent task");
+  expect(
+    container.querySelector(".task-row-properties .is-project"),
+  ).not.toHaveTextContent("Tasks/Parent.md");
   fireEvent.click(
     screen.getByRole("button", { name: "Projects: Parent task" }),
   );
   expect(screen.getByRole("dialog")).toBeVisible();
+});
+it("omits a contextual project but keeps additional memberships in the shared cluster", () => {
+  const { container } = render(
+    <TaskRow
+      task={{
+        ...task,
+        projects: ["[[Projects/Original]]", "[[Projects/Other]]"],
+      }}
+      contextProperties={{ 'note["projects"]': "[[Projects/Original]]" }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  expect(container.querySelector(".task-row-meta")).toHaveTextContent("Other");
+  expect(container.querySelector(".task-row-meta")).not.toHaveTextContent(
+    "Original",
+  );
+  expect(
+    screen.getByRole("button", { name: "Task properties" }),
+  ).toHaveAccessibleDescription(expect.stringContaining("Projects: Other"));
 });
 it("guards repeated completion and offers retry after rejection", async () => {
   let reject!: (reason: Error) => void;

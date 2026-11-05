@@ -16,12 +16,14 @@ import { TaskDeparturesContext } from "../../components/task-completion-motion";
 import { settledRowCount } from "../optimistic-view-reconciliation";
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
+import type { TaskListLane } from "../optimistic-view-reconciliation";
 
 type Lane = {
   key: string;
   label?: string;
   className?: string;
   rows: TaskViewRow[];
+  mutation?: TaskListLane["mutation"];
 };
 type Entry = {
   key: string;
@@ -117,6 +119,11 @@ export function VirtualTaskList({
               <ViewTaskRow
                 row={entry.row}
                 properties={properties}
+                contextProperties={
+                  entry.lane.mutation?.type === "group"
+                    ? entry.lane.mutation.values
+                    : undefined
+                }
                 sectionDay={
                   entry.lane.key === "section:today" ? todayString() : undefined
                 }

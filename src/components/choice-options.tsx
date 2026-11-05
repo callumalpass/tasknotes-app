@@ -139,7 +139,7 @@ export function ChoiceOptions({
             key={option.value}
             role={role}
             type="button"
-            onMouseEnter={() => setActive(index)}
+            onMouseMove={() => setActive(index)}
             onClick={() => onChoose(option.value)}
           >
             <i

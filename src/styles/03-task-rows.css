@@ -861,19 +861,19 @@
 .task-row-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs) 10px;
+  gap: 0 8px;
   color: var(--ink-muted);
   font-family: inherit;
-  font-size: var(--type-supporting);
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .task-row-meta > button {
   display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 24px;
+  min-height: 24px;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 0;
   color: inherit;
   font: inherit;
@@ -905,20 +905,20 @@
 .task-row-properties {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 12px;
-  color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.35;
+  gap: 0 8px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .task-row-property {
   display: inline-flex;
   align-items: center;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 24px;
+  min-height: 24px;
   max-width: 100%;
   gap: 4px;
-  padding: 2px 0;
+  padding: 0;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -944,7 +944,7 @@
   color: var(--ink-muted);
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
   font-size: inherit;
-  line-height: 24px;
+  line-height: 20px;
 }
 
 .task-row-property > span:first-child {
@@ -965,11 +965,11 @@
   min-width: 0;
   overflow-wrap: anywhere;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 20px;
 }
 
 .task-row-property.is-date > strong {
-  font-weight: 600;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1265,16 +1265,6 @@
   min-height: 32px;
   padding-block: 4px;
 }
-@media (pointer: coarse) {
-  .task-row:not(.kanban-card *) .task-row-title {
-    min-height: 44px;
-  }
-}
-.task-row .task-row-property,
-.task-row .task-row-meta > button {
-  min-height: 44px;
-  padding-block: 0;
-}
 .task-section-count {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
@@ -1295,7 +1285,7 @@
    names a state, so it stays whole and starts a new line when it has to. */
 .task-row:not(.kanban-card *) .task-row-properties {
   row-gap: 0;
-  column-gap: 12px;
+  column-gap: 8px;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
   flex: 0 1 max-content;
@@ -1316,6 +1306,60 @@
 .task-row:not(.kanban-card *) .task-row-property.is-compact .task-row-glyph {
   margin-right: 4px;
   vertical-align: -2px;
+}
+
+.task-row-metadata-band {
+  display: none;
+  width: 100%;
+  min-height: 44px;
+  align-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+.task-row-metadata-band > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-row-metadata-band > .is-overdue {
+  color: var(--danger);
+}
+.task-properties-sheet {
+  position: relative;
+  width: min(100%, 540px);
+  max-height: min(85dvh, 760px);
+  overflow-y: auto;
+}
+.task-properties-sheet > header p {
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+.task-sheet-property {
+  margin-block: 16px;
+}
+@media (pointer: coarse) {
+  .task-row .task-row-inline-metadata {
+    display: none;
+  }
+  .task-row-metadata-band {
+    display: flex;
+  }
+  .task-row:not(.kanban-card *) .task-row-title {
+    min-height: 28px;
+    padding-block: 2px;
+  }
 }
 
 .undo-toast.task-completed-notice {

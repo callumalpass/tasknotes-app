@@ -30,7 +30,8 @@ import {
   TaskNotesSelectField,
 } from "./tasknotes-controls";
 
-import type { UpdateTaskInput, TaskSummary } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
+import { propertyValue, updateFor } from "./task-property-input";
 import type {
   TaskCollectionConfiguration,
   TaskUserMappedField,
@@ -272,7 +273,10 @@ export function TaskPropertyEditor({
             <Trans>Clear value</Trans>
           </button>
         ) : null}
-        {property?.kind === "recurrence" || property?.kind === "projects" ? (
+        {property &&
+        ["recurrence", "projects", "tags", "contexts"].includes(
+          property.kind,
+        ) ? (
           <footer>
             <span />
             <button
@@ -280,14 +284,17 @@ export function TaskPropertyEditor({
               disabled={saving}
               type="button"
               onClick={() => {
-                const pendingProject =
-                  property.kind === "projects"
-                    ? editorRef.current
-                        ?.querySelector<HTMLInputElement>(
-                          ".multi-value-field input",
-                        )
-                        ?.value.trim()
-                    : "";
+                const pendingProject = [
+                  "projects",
+                  "tags",
+                  "contexts",
+                ].includes(property.kind)
+                  ? editorRef.current
+                      ?.querySelector<HTMLInputElement>(
+                        ".multi-value-field input",
+                      )
+                      ?.value.trim()
+                  : "";
                 const projects = Array.isArray(value) ? value : [];
                 const next =
                   pendingProject &&
@@ -322,7 +329,7 @@ export function TaskPropertyEditor({
   );
 }
 
-function PropertyControl({
+export function PropertyControl({
   configuration,
   property,
   scheduled,
@@ -334,6 +341,7 @@ function PropertyControl({
   onCommit,
   onPersist,
   onAnchorChange,
+  compactChoices = false,
 }: {
   configuration: TaskCollectionConfiguration;
   property: EditableProperty;
@@ -346,20 +354,37 @@ function PropertyControl({
   onCommit(value: unknown): void;
   onPersist(value: unknown): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
+  compactChoices?: boolean;
 }) {
   const { t } = useLingui();
   const { repository } = useRepository();
-  if (property.kind === "projects")
+  if (
+    property.kind === "projects" ||
+    property.kind === "tags" ||
+    property.kind === "contexts"
+  )
     return (
       <MultiValueField
-        label={t({ message: "Projects" })}
-        field={configuration.fieldMapping.projects}
-        placeholder={t({ message: "Find a project" })}
+        label={
+          property.kind === "projects"
+            ? t`Projects`
+            : property.kind === "tags"
+              ? t`Tags`
+              : t`Contexts`
+        }
+        field={
+          property.kind === "tags"
+            ? "tags"
+            : configuration.fieldMapping[property.kind]
+        }
+        placeholder={property.kind === "projects" ? t`Find a project` : t`Add`}
         values={Array.isArray(value) ? value : []}
         completion={
           configuration.fieldCompletions[
-            configuration.fieldMapping.projects
-          ] ?? { kind: "records" }
+            property.kind === "tags"
+              ? "tags"
+              : configuration.fieldMapping[property.kind]
+          ] ?? { kind: property.kind === "projects" ? "records" : "values" }
         }
         completeField={(request) => repository.completeField(request)}
         onChange={onChange}
@@ -370,6 +395,16 @@ function PropertyControl({
       property.kind === "status"
         ? configuration.statuses
         : configuration.priorities;
+    if (compactChoices)
+      return (
+        <TaskNotesSelectField
+          label={property.kind === "status" ? t`Status` : t`Priority`}
+          options={options}
+          value={typeof value === "string" ? value : ""}
+          disabled={disabled}
+          onChange={onCommit}
+        />
+      );
     return (
       <ChoiceOptions
         label={
@@ -461,7 +496,10 @@ function PropertyControl({
         disabled={disabled}
         label={label}
         value={typeof value === "string" ? value : undefined}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onPersist(next);
+        }}
       />
     );
   if (field.type === "boolean")
@@ -522,55 +560,14 @@ function customInputValue(
   return value;
 }
 
-function propertyValue(
-  task: TaskSummary,
-  property: EditableProperty | null,
-): unknown {
-  if (!property) return undefined;
-  return property.kind === "custom"
-    ? task.customProperties[property.key]
-    : task[property.kind];
-}
-
-function updateFor(
-  task: TaskSummary,
-  property: EditableProperty,
-  value: unknown,
-  anchor?: "scheduled" | "completion",
-): UpdateTaskInput {
-  if (property.kind === "custom") {
-    const customProperties = { ...task.customProperties };
-    if (
-      value === undefined ||
-      value === "" ||
-      (Array.isArray(value) && !value.length)
-    )
-      delete customProperties[property.key];
-    else customProperties[property.key] = value;
-    return { customProperties };
-  }
-  if (property.kind === "projects")
-    return { projects: Array.isArray(value) ? value : [] };
-  if (
-    property.kind === "scheduled" ||
-    property.kind === "due" ||
-    property.kind === "recurrence"
-  )
-    return {
-      [property.kind]: typeof value === "string" && value ? value : null,
-      ...(property.kind === "recurrence" && anchor
-        ? { recurrenceAnchor: anchor }
-        : {}),
-    };
-  return { [property.kind]: String(value) };
-}
-
 function canClear(property: EditableProperty): boolean {
   return (
     property.kind === "scheduled" ||
     property.kind === "due" ||
     property.kind === "recurrence" ||
     property.kind === "projects" ||
+    property.kind === "tags" ||
+    property.kind === "contexts" ||
     (property.kind === "custom" && !property.field.required)
   );
 }

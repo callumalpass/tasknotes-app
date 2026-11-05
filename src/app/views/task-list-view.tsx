@@ -718,6 +718,9 @@ function ManualTaskRows({
           row={row}
           properties={properties}
           sectionDay={lane.key === "section:today" ? todayString() : undefined}
+          contextProperties={
+            lane.mutation?.type === "group" ? lane.mutation.values : undefined
+          }
           titleProperty={titleProperty}
           onOpen={onOpen}
           onToggle={onToggle}

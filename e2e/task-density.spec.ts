@@ -6,7 +6,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   test.describe(colorScheme, () => {
     test.use({ colorScheme });
 
-    test("task rows are compact and properties remain directly editable", async ({
+    test("task rows are compact and every property remains editable", async ({
       page,
       isMobile,
     }) => {
@@ -19,9 +19,14 @@ for (const colorScheme of ["light", "dark"] as const) {
       });
       await expect(row).toBeVisible();
       const title = row.locator(".task-row-title");
-      const property = row.locator(".task-row-property").first();
-      await expect(title).toHaveCSS("min-height", isMobile ? "44px" : "32px");
-      await expect(property).toHaveCSS("min-height", "44px");
+      const property = row
+        .locator(isMobile ? ".task-row-metadata-band" : ".task-row-property")
+        .first();
+      await expect(title).toHaveCSS("min-height", isMobile ? "28px" : "32px");
+      await expect(property).toHaveCSS(
+        "min-height",
+        isMobile ? "44px" : "24px",
+      );
       for (const control of await row
         .locator(".completion-control, .task-actions-trigger")
         .all()) {
@@ -37,7 +42,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       const height = (await row.boundingBox())!.height;
       expect(height).toBeGreaterThanOrEqual(48);
       const propertiesHeight = (await row
-        .locator(".task-row-properties")
+        .locator(isMobile ? ".task-row-metadata-band" : ".task-row-properties")
         .boundingBox())!.height;
       expect(height - titleBox.height - propertiesHeight).toBeLessThanOrEqual(
         4,
@@ -46,6 +51,28 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(property).toBeFocused();
+      if (isMobile) {
+        await property.press("Enter");
+        const sheet = page.getByRole("dialog", {
+          name: "Task properties",
+          exact: true,
+        });
+        for (const name of ["Status", "Priority", "Projects"])
+          await expect(
+            sheet.getByRole("combobox", { name, exact: true }),
+          ).toBeVisible();
+        await sheet
+          .getByRole("combobox", { name: "Priority", exact: true })
+          .click();
+        await page.keyboard.press("ArrowDown");
+        await page.keyboard.press("Enter");
+        await expect(
+          sheet.getByRole("button", { name: "Due date", exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(property).toBeFocused();
+        return;
+      }
       for (const label of ["Status", "Priority", "Due", "Projects"]) {
         const trigger = page
           .getByRole("button", { name: new RegExp(`^${label}:`) })
@@ -64,6 +91,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("mobile rows grow for wrapped titles and enlarged text without overlapping actions", async ({
       page,
+      isMobile,
     }) => {
       await page.setViewportSize({ width: 320, height: 844 });
       await page.goto("?demo=50");
@@ -95,12 +123,14 @@ for (const colorScheme of ["light", "dark"] as const) {
         ),
       ).toBeLessThanOrEqual(1);
       const title = (await row.locator(".task-row-title").boundingBox())!;
-      for (const control of await row.locator(".task-row-property").all()) {
+      for (const control of await row
+        .locator(isMobile ? ".task-row-metadata-band" : ".task-row-property")
+        .all()) {
         const box = (await control.boundingBox())!;
-        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(isMobile ? 44 : 24);
         expect(box.y).toBeGreaterThanOrEqual(title.y + title.height);
         expect(box.x + box.width).toBeLessThanOrEqual(320);
-        const value = control.locator("strong");
+        const value = isMobile ? control : control.locator("strong");
         expect(
           await value.evaluate((element) => ({
             clippedWidth: element.scrollWidth - element.clientWidth,

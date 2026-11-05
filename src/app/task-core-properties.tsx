@@ -30,29 +30,11 @@ export function TaskCoreProperties({
   onChange(patch: Partial<Draft>): void;
 }) {
   const { t } = useLingui();
-  const [showEmpty, setShowEmpty] = useState(false);
-  const hasEmpty =
-    !draft.scheduled ||
-    !draft.due ||
-    !draft.projects.length ||
-    !draft.tags.some((tag) => tag !== "task");
   return (
     <section
-      className={`task-core-properties${showEmpty ? " show-empty-properties" : ""}`}
+      className="task-core-properties"
       aria-label={t({ message: "Task properties" })}
     >
-      <a
-        className="task-notes-jump text-action"
-        href="#task-notes-title"
-        onClick={(event) => {
-          event.preventDefault();
-          const heading = document.getElementById("task-notes-title");
-          heading?.scrollIntoView({ block: "start" });
-          heading?.focus({ preventScroll: true });
-        }}
-      >
-        <Trans>Notes</Trans>
-      </a>
       <TaskNotesSelectField
         label={t({ message: "Status" })}
         disabled={occurrenceNote}
@@ -101,20 +83,6 @@ export function TaskCoreProperties({
         completeField={completeField}
         onChange={(tags) => onChange({ tags: ["task", ...tags] })}
       />
-      {hasEmpty ? (
-        <button
-          className="task-add-property text-action"
-          aria-expanded={showEmpty}
-          type="button"
-          onClick={() => setShowEmpty(!showEmpty)}
-        >
-          {showEmpty ? (
-            <Trans>Hide empty properties</Trans>
-          ) : (
-            <Trans>Add property</Trans>
-          )}
-        </button>
-      ) : null}
     </section>
   );
 }

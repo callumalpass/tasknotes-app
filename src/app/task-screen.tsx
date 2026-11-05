@@ -20,7 +20,7 @@ import {
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
-import { TaskCoreProperties } from "./task-core-properties";
+import { TaskDetailProperties } from "./task-detail-properties";
 import { TaskSubtasks } from "./task-subtasks";
 import { useTaskDetailKeys } from "./use-task-detail-keys";
 import { markedPriorityColorOf } from "../domain/task-configuration";
@@ -66,7 +66,6 @@ import {
   TaskPaneNavigation,
 } from "./task-editor-layout";
 import {
-  isEmptyFieldValue,
   formatOccurrenceDate,
   organizeSummary,
   repeatSummary,
@@ -84,7 +83,6 @@ import {
 
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
-import { CustomField } from "./task-custom-field";
 
 const MarkdownPreview = lazy(async () => ({
   default: (await import("../components/markdown-preview")).MarkdownPreview,
@@ -578,13 +576,6 @@ function TaskEditor({
   useEffect(() => {
     restoreRefusedEdit();
   }, [repository, task.id]);
-
-  function changeCustomProperty(key: string, value: unknown) {
-    const customProperties = { ...draft.customProperties };
-    if (isEmptyFieldValue(value)) delete customProperties[key];
-    else customProperties[key] = value;
-    change({ customProperties });
-  }
 
   function requireChoice(): void {
     if (!awaitingChoiceRef.current) return;
@@ -1115,7 +1106,9 @@ function TaskEditor({
           </p>
         ) : null}
 
-        <TaskCoreProperties
+        <TaskDetailProperties
+          task={task}
+          occurrenceDate={occurrenceDate}
           draft={draft}
           configuration={configuration}
           projectLabels={projectLabels}
@@ -1256,28 +1249,6 @@ function TaskEditor({
             onChange={(blockedBy) => change({ blockedBy })}
           />
           <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
-          {configuration.userFields.length ? (
-            <section
-              className="custom-fields"
-              aria-labelledby="custom-fields-title"
-            >
-              <h2 id="custom-fields-title">
-                <Trans>Properties</Trans>
-              </h2>
-              <div className="field-grid metadata-fields">
-                {configuration.userFields.map((field) => (
-                  <CustomField
-                    completion={configuration.fieldCompletions[field.key]}
-                    completeField={completeField}
-                    field={field}
-                    key={field.key}
-                    value={draft.customProperties[field.key]}
-                    onChange={(value) => changeCustomProperty(field.key, value)}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
         </TaskFormSection>
 
         <TaskFormSection

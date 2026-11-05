@@ -263,6 +263,7 @@ export function ProjectsView({
                       <TaskRow
                         key={task.id}
                         task={task}
+                        contextProperties={{ projects: project.value }}
                         onOpen={onOpen}
                         onToggle={onToggle}
                       />

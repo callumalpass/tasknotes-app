@@ -1,5 +1,8 @@
 import { expect, it, vi } from "vitest";
-import { boundCalendarPreviews } from "./use-calendar-previews";
+import {
+  boundCalendarPreviews,
+  boundCalendarCollisions,
+} from "./use-calendar-previews";
 
 it.each(["all-day", "month"])(
   "bounds exactly three %s events to two rows plus day details",
@@ -34,3 +37,27 @@ it.each(["all-day", "month"])(
     expect(inspect).toHaveBeenCalledWith("2026-11-05");
   },
 );
+
+it("replaces overlapping fragments with a keyboard-operable day expansion", () => {
+  const root = document.createElement("div");
+  root.innerHTML = `<div class="tnc-col" data-date="2026-11-07"><div class="tnc-col-plan">${[0, 1, 2].map((index) => `<div class="tnc-item--timed" style="top: ${index === 2 ? 200 : 100}px" aria-label="Task ${index}"></div>`).join("")}</div></div>`;
+  root
+    .querySelectorAll<HTMLElement>(".tnc-item--timed")
+    .forEach((element, index) => {
+      vi.spyOn(element, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(index * 40, index === 2 ? 200 : 100, 40, 60),
+      );
+    });
+  const inspect = vi.fn();
+  boundCalendarCollisions(root, inspect, (count) => `${count} tasks`);
+  expect(root.querySelectorAll(".tnc-collision-hidden[inert]")).toHaveLength(2);
+  const trigger = root.querySelector<HTMLButtonElement>(
+    ".calendar-collision-trigger",
+  )!;
+  expect(trigger).toHaveTextContent("2 tasks");
+  expect(trigger.type).toBe("button");
+  boundCalendarCollisions(root, inspect, (count) => `${count} tasks`);
+  expect(root.querySelector(".calendar-collision-trigger")).toBe(trigger);
+  trigger.click();
+  expect(inspect).toHaveBeenCalledWith("2026-11-07");
+});

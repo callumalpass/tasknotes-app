@@ -226,20 +226,34 @@ test("long project and priority labels keep their metadata lanes", async ({
   page,
   isMobile,
 }) => {
-  await page.locator(".task-row .is-project strong").evaluateAll((elements) => {
-    for (const element of elements)
-      element.textContent =
-        "A very long project name for the cross-functional international delivery programme";
-  });
   await page
-    .locator('.task-row-property[aria-label^="Priority:"] strong')
+    .locator(
+      isMobile
+        ? ".task-row-metadata-band > .is-project"
+        : ".task-row .is-project strong",
+    )
+    .evaluateAll((elements) => {
+      for (const element of elements)
+        element.textContent =
+          "A very long project name for the cross-functional international delivery programme";
+    });
+  await page
+    .locator(
+      isMobile
+        ? '.task-row-metadata-band > [data-property="priority"]'
+        : '.task-row-property[aria-label^="Priority:"] strong',
+    )
     .evaluateAll((elements) => {
       for (const element of elements)
         element.textContent =
           "Custom priority needing a deliberately very long label";
     });
   const metadata = await page
-    .locator(".task-row-properties:has(.is-project)")
+    .locator(
+      isMobile
+        ? ".task-row-metadata-band:has(.is-project)"
+        : ".task-row-properties:has(.is-project)",
+    )
     .evaluateAll((elements) =>
       elements.map((element) => {
         const project = element
@@ -269,7 +283,9 @@ test("long project and priority labels keep their metadata lanes", async ({
     expect(row.overlaps).toBe(false);
   }
   if (isMobile) {
-    for (const value of await page.locator(".task-row-property strong").all()) {
+    for (const value of await page
+      .locator(".task-row-metadata-band > span")
+      .all()) {
       expect(
         await value.evaluate((element) => ({
           clippedWidth: element.scrollWidth - element.clientWidth,
@@ -277,7 +293,7 @@ test("long project and priority labels keep their metadata lanes", async ({
         })),
       ).toEqual({ clippedWidth: 0, clippedHeight: 0 });
     }
-    for (const lane of await page.locator(".task-row-properties").all()) {
+    for (const lane of await page.locator(".task-row-metadata-band").all()) {
       expect(
         await lane.evaluate(
           (element) => element.scrollWidth - element.clientWidth,
@@ -488,6 +504,7 @@ test("long status and priority lists keep the keyboard's place in view", async (
 }, testInfo) => {
   test.skip(testInfo.project.name === "mobile", "Keyboard path.");
   await page.locator(".task-row-title").first().click();
+  await page.locator(".task-properties-disclosure > summary").click();
   for (const name of ["Status", "Priority"]) {
     const trigger = page.getByRole("combobox", { name, exact: true }).first();
     await trigger.focus();
@@ -551,6 +568,7 @@ test("typing filters a long option list and keeps its active match visible", asy
 }, testInfo) => {
   test.skip(testInfo.project.name === "mobile", "Keyboard path.");
   await page.locator(".task-row-title").first().click();
+  await page.locator(".task-properties-disclosure > summary").click();
   const trigger = page
     .getByRole("combobox", { name: "Status", exact: true })
     .first();
@@ -585,10 +603,12 @@ test("only a missed deadline turns a row's date red", async ({ page }) => {
   await expect(
     rows
       .filter({ hasText: "Prepare quarterly planning session" })
-      .locator(".is-overdue"),
+      .locator(".is-overdue:visible"),
   ).toHaveCount(1);
   await expect(
-    rows.filter({ hasText: "Book the project room" }).locator(".is-overdue"),
+    rows
+      .filter({ hasText: "Book the project room" })
+      .locator(".is-overdue:visible"),
   ).toHaveCount(0);
 });
 

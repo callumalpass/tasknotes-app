@@ -1,10 +1,33 @@
-.task-add-property {
-  display: none;
-}
-.task-notes-jump {
-  display: inline-flex;
+.task-properties-disclosure > summary {
+  display: flex;
   min-height: 44px;
   align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.task-properties-disclosure > summary::before {
+  content: "›";
+  font-size: 20px;
+  transform: rotate(0deg);
+}
+.task-properties-disclosure[open] > summary::before {
+  transform: rotate(90deg);
+}
+.task-properties-disclosure > summary strong,
+.task-properties-disclosure > summary small {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+}
+.task-properties-disclosure .form-field > span,
+.task-properties-disclosure .task-inline-property > span {
+  font-size: 14px;
+}
+.task-form > .task-properties-disclosure + .notes-field {
+  padding-top: 4px;
 }
 .task-inline-property-editor {
   display: flex;
@@ -32,15 +55,4 @@
 .task-inline-property-editor > button {
   flex: none;
   min-height: 44px;
-}
-@media (max-width: 839px) {
-  .task-core-properties:not(.show-empty-properties) .is-empty {
-    display: none;
-  }
-  .task-core-properties .task-add-property {
-    display: inline-flex;
-    min-height: 44px;
-    align-items: center;
-    justify-self: start;
-  }
 }

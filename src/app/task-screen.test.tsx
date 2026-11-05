@@ -58,9 +58,16 @@ describe("TaskScreen", () => {
     fireEvent.change(title, { target: { value: "Unsaved important draft" } });
   }
 
-  it("shows primary properties without opening a section and saves tags through the draft", async () => {
+  it("brings notes forward and reveals every primary property in one action", async () => {
     const back = renderTask();
     await screen.findByLabelText("Task title", { exact: true });
+    expect(screen.getByLabelText("Notes")).toBeVisible();
+    expect(
+      document.querySelector(".task-properties-disclosure"),
+    ).not.toHaveAttribute("open");
+    fireEvent.click(
+      screen.getByText("Task properties", { selector: "strong" }),
+    );
     expect(screen.getByRole("combobox", { name: "Status" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
     expect(

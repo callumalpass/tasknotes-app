@@ -40,21 +40,30 @@ for (const theme of ["light", "dark"] as const) {
         ).toHaveAccessibleName("Prepare quarterly planning session");
         expect(
           (await rows.first().locator(".task-row-title").boundingBox())!.height,
-        ).toBeGreaterThanOrEqual(44);
+        ).toBeGreaterThanOrEqual(24);
         await expect(
-          rows.first().locator(".task-row-properties"),
+          rows.first().locator(".task-row-metadata-band"),
         ).toBeVisible();
         await expect(
-          rows.first().getByRole("button", { name: /^Due:/ }),
+          rows.first().locator(".task-row-metadata-band"),
         ).toContainText("Due");
-        for (const property of await rows
-          .first()
-          .locator(".task-row-property")
-          .all()) {
-          const bounds = (await property.boundingBox())!;
-          expect(bounds.height).toBeGreaterThanOrEqual(44);
-          expect(bounds.width).toBeGreaterThanOrEqual(44);
-        }
+        const band = rows.first().locator(".task-row-metadata-band");
+        expect((await band.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        await band.click();
+        const sheet = page.getByRole("dialog", {
+          name: "Task properties",
+          exact: true,
+        });
+        await expect(
+          sheet.getByRole("combobox", { name: "Status", exact: true }),
+        ).toBeVisible();
+        await expect(
+          sheet.getByRole("combobox", { name: "Priority", exact: true }),
+        ).toBeVisible();
+        await expect(
+          sheet.getByRole("button", { name: "Scheduled date", exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
       } else {
         await page.getByRole("button", { name: "Collapse sidebar" }).click();
         const destinations = page.locator(".navigation-destinations");
@@ -161,7 +170,9 @@ for (const theme of ["light", "dark"] as const) {
         await expect(
           page.locator(".full-calendar-visible-days"),
         ).not.toBeEmpty();
-      const timed = page.locator(".tnc-item--timed").first();
+      const timed = page
+        .locator(".tnc-item--timed:not(.tnc-collision-hidden)")
+        .first();
       await expect(timed).toBeAttached();
       await timed.focus();
       await expect(page.getByRole("tooltip")).toHaveText(
@@ -217,9 +228,9 @@ for (const theme of ["light", "dark"] as const) {
           "min-height",
           "44px",
         );
-        await expect(card.locator(".task-row-properties")).toBeVisible();
+        await expect(card.locator(".task-row-metadata-band")).toBeVisible();
         const property = (await card
-          .locator(".task-row-property")
+          .locator(".task-row-metadata-band")
           .first()
           .boundingBox())!;
         expect(property.height).toBeGreaterThanOrEqual(44);
@@ -230,7 +241,7 @@ for (const theme of ["light", "dark"] as const) {
         ).toHaveCSS("white-space", "normal");
         await expect(
           page.locator(".kanban-card .task-row-property > strong").first(),
-        ).toHaveCSS("line-height", "24px");
+        ).toHaveCSS("line-height", "20px");
       }
       await page.evaluate(async () => {
         await Promise.all(

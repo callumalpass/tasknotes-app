@@ -204,6 +204,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.setViewportSize({ width: isMobile ? 412 : 1280, height: 713 });
       await page.goto("?demo=60&many-options");
       await page.locator(".task-row-title").first().click();
+      await page.locator(".task-properties-disclosure > summary").click();
       await page
         .getByRole("combobox", { name: "Status", exact: true })
         .first()

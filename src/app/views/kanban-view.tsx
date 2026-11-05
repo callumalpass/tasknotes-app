@@ -865,7 +865,8 @@ export function KanbanView({
                         row={row}
                         properties={execution.view.properties}
                         titleProperty={fieldMapping.title}
-                        omittedProperties={[property]}
+                        ensurePriority={false}
+                        contextProperties={{ [property]: column.value }}
                         onOpen={onOpen}
                         onToggle={onToggle}
                       />

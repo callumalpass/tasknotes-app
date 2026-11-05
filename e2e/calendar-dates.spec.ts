@@ -39,6 +39,7 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
     name: "Task details",
     exact: true,
   });
+  await detail.locator(".task-properties-disclosure > summary").click();
   for (const field of ["Scheduled", "Due"]) {
     const trigger = detail.getByRole("button", {
       name: `${field} date`,

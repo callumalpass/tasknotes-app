@@ -4,6 +4,29 @@ import { ChoiceOptions } from "./choice-options";
 
 afterEach(cleanup);
 
+it("preserves keyboard navigation when scrolling moves an option under a stationary pointer", () => {
+  render(
+    <ChoiceOptions
+      label="Priority"
+      value="first"
+      options={[
+        { value: "first", label: "First" },
+        { value: "middle", label: "Middle" },
+        { value: "last", label: "Last" },
+      ]}
+      onChoose={vi.fn()}
+    />,
+  );
+  const filter = screen.getByRole("combobox", { name: "Filter Priority" });
+  const middle = screen.getByRole("option", { name: "Middle" });
+  const last = screen.getByRole("option", { name: "Last" });
+  fireEvent.keyDown(filter, { key: "End" });
+  fireEvent.mouseEnter(middle);
+  expect(filter).toHaveAttribute("aria-activedescendant", last.id);
+  fireEvent.mouseMove(middle);
+  expect(filter).toHaveAttribute("aria-activedescendant", middle.id);
+});
+
 it("keeps the long-picker viewport when filtering to one or zero results", () => {
   const options = Array.from({ length: 12 }, (_, index) => ({
     value: `${index}`,

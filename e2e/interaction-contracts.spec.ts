@@ -7,7 +7,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("?demo=50");
   const dates = page.locator(
-    ".task-row-property, .task-row .task-actions-trigger",
+    ".task-row-property:visible, .task-row-metadata-band:visible, .task-row .task-actions-trigger",
   );
   await expect(dates.first()).toBeVisible();
   expect(
@@ -15,7 +15,7 @@ test("calendar and Scratchpad controls satisfy semantic and target-size contract
       nodes.every((node) => {
         const box = node.getBoundingClientRect();
         const minimumHeight = node.matches(".task-row-property") ? 24 : 44;
-        return box.height >= minimumHeight && box.width >= 44;
+        return box.height >= minimumHeight && box.width >= minimumHeight;
       }),
     ),
   ).toBe(true);
@@ -182,28 +182,37 @@ test("nested Escape preserves capture and dismissing preserves its draft", async
 
 test("mobile property editing is truly modal and restores its trigger", async ({
   page,
+  isMobile,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("?demo=50");
   const trigger = page
-    .locator(".task-row")
-    .getByRole("button", { name: /^Scheduled:/ })
+    .locator(
+      isMobile
+        ? ".task-row-metadata-band"
+        : '.task-row-property[aria-label^="Scheduled:"]',
+    )
     .first();
   await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Edit Scheduled" });
+  const dialog = page.getByRole("dialog", {
+    name: isMobile ? "Task properties" : "Edit Scheduled",
+    exact: true,
+  });
   await expect(dialog).toBeVisible();
   expect(
     await page.locator("#root").evaluate((root) => (root as HTMLElement).inert),
   ).toBe(true);
-  await dialog.getByRole("button", { name: "Clear value" }).focus();
+  const last = dialog.getByRole("button", {
+    name: isMobile ? "Done" : "Clear value",
+    exact: true,
+  });
+  await last.focus();
   await page.keyboard.press("Tab");
   await expect(
     dialog.getByRole("button", { name: "Close property editor" }),
   ).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(
-    dialog.getByRole("button", { name: "Clear value" }),
-  ).toBeFocused();
+  await expect(last).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();

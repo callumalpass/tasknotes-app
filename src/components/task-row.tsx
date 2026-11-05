@@ -1,6 +1,6 @@
 import { useTaskSelecting, useTaskSelection } from "../app/use-task-selection";
 import { taskMeta } from "../i18n/presentation";
-import { linkDisplayLabel } from "../domain/completion";
+import { linkDisplayLabel, linkTarget } from "../domain/completion";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Circle,
   Folder,
+  Flag,
   Hash,
   Square,
   Target,
@@ -35,6 +36,7 @@ import { useRepository } from "../app/repository-context";
 import { RecordWriteNotice } from "./record-write-notice";
 import { TaskActions } from "./task-actions";
 import { TaskPropertyEditor } from "./task-property-editor";
+import { TaskPropertiesSheet } from "./task-properties-sheet";
 import { canEditProperty } from "./task-property-kind";
 import { useExitingValue } from "./overlays/use-presence";
 import { useSwipeActions } from "./use-swipe-actions";
@@ -66,6 +68,8 @@ export function TaskRow({
   supportingInline = false,
   ensurePriority = true,
   sectionDay,
+  contextProperties = {},
+  omittedProperties = [],
 }: {
   task: TaskSummary;
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
@@ -78,6 +82,8 @@ export function TaskRow({
   ensurePriority?: boolean;
   /** The day the surrounding section names; a matching date is not repeated. */
   sectionDay?: string;
+  contextProperties?: Record<string, unknown>;
+  omittedProperties?: string[];
 }) {
   const { t } = useLingui();
   const supportingId = useId();
@@ -137,6 +143,8 @@ export function TaskRow({
     if (!displayedTask.completed) setJustCompleted(false);
   }
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const propertiesTrigger = useRef<HTMLButtonElement>(null);
   const [editing, setEditing] = useState<{
     detail: TaskRowDetail;
     anchor: TaskPropertyEditorAnchor;
@@ -176,8 +184,63 @@ export function TaskRow({
     })
     .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
+  if (
+    task.projects?.length &&
+    !allDetails.some((detail) =>
+      [configuration.fieldMapping.projects, "projects"].includes(
+        propertyField(detail),
+      ),
+    )
+  )
+    allDetails.push({
+      key: "projects",
+      label: t`Projects`,
+      value: task.projects.map(linkDisplayLabel).join(", "),
+      rawValue: task.projects,
+    });
+  const contextualDetails = allDetails.flatMap((detail) => {
+    const canonicalField = (key: string) => {
+      const field = propertyField({ ...detail, key });
+      return (
+        Object.entries(configuration.fieldMapping).find(
+          ([, mapped]) => mapped === field,
+        )?.[0] ?? field
+      );
+    };
+    const field = canonicalField(detail.key);
+    if (omittedProperties.some((key) => canonicalField(key) === field))
+      return [];
+    const context = Object.entries(contextProperties).find(
+      ([key]) => canonicalField(key) === field,
+    )?.[1];
+    if (context === undefined) return [detail];
+    const matches = (value: unknown) =>
+      [context]
+        .flat()
+        .some((entry) =>
+          typeof value === "string" && typeof entry === "string"
+            ? linkTarget(value).toLocaleLowerCase() ===
+              linkTarget(entry).toLocaleLowerCase()
+            : value === entry,
+        );
+    if (Array.isArray(detail.rawValue)) {
+      const values = detail.rawValue.filter((value) => !matches(value));
+      return values.length
+        ? [
+            {
+              ...detail,
+              rawValue: values,
+              value: values
+                .map((value) => linkDisplayLabel(String(value)))
+                .join(", "),
+            },
+          ]
+        : [];
+    }
+    return matches(detail.rawValue) ? [] : [detail];
+  });
   const shownDetails = sectionDetails(
-    allDetails,
+    contextualDetails,
     sectionDay,
     configuration,
   ).sort(
@@ -379,35 +442,36 @@ export function TaskRow({
           </button>
         </div>
         {context && !contextLeadsDetails ? context : null}
-        {task.projects?.length &&
-        !shownDetails.some((detail) =>
-          [configuration.fieldMapping.projects, "projects"].includes(
-            propertyField(detail),
-          ),
-        ) ? (
+        {tracking || shownDetails.length ? (
           <button
-            className="task-row-parent task-row-property is-compact is-project"
+            className="task-row-metadata-band"
             type="button"
-            aria-label={`${t({ message: "Projects" })}: ${task.projects.map(linkDisplayLabel).join(", ")}`}
-            onClick={(event) =>
-              openDetail(
-                {
-                  key: "projects",
-                  label: t({ message: "Projects" }),
-                  value: task.projects.map(linkDisplayLabel).join(", "),
-                  rawValue: task.projects,
-                },
-                event.currentTarget,
-              )
-            }
+            ref={propertiesTrigger}
+            aria-label={t`Task properties`}
+            aria-description={shownDetails
+              .map((detail) => `${detail.label}: ${detail.value}`)
+              .join(", ")}
+            aria-haspopup="dialog"
+            onClick={() => setPropertiesOpen(true)}
           >
-            <Folder aria-hidden="true" size={13} />
-            {task.projects.map(linkDisplayLabel).join(", ")}
+            {tracking ? <TrackingIndicator /> : null}
+            {shownDetails.map((detail) => (
+              <span
+                key={detail.key}
+                data-property={propertyField(detail)}
+                className={`${detail.overdue ? "is-overdue" : ""}${[configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)) ? " is-project" : ""}`}
+              >
+                <PropertyGlyph detail={detail} />
+                {isDueDetail(detail, configuration)
+                  ? t`Due ${detail.value}`
+                  : detail.value}
+              </span>
+            ))}
           </button>
         ) : null}
         {details ? (
           tracking || shownDetails.length ? (
-            <span className="task-row-properties">
+            <span className="task-row-properties task-row-inline-metadata">
               {tracking ? <TrackingIndicator /> : null}
               {contextLeadsDetails ? context : null}
               {shownDetails.map((detail) => (
@@ -433,7 +497,7 @@ export function TaskRow({
             </span>
           ) : null
         ) : tracking || shownDetails.length ? (
-          <span className="task-row-meta">
+          <span className="task-row-meta task-row-inline-metadata">
             {tracking ? <TrackingIndicator /> : null}
             {shownDetails.map((detail) => (
               <button
@@ -466,6 +530,15 @@ export function TaskRow({
         onOpen={onOpen}
         onToggle={onToggle}
       />
+      {propertiesOpen ? (
+        <TaskPropertiesSheet
+          task={task}
+          onClose={() => {
+            setPropertiesOpen(false);
+            requestAnimationFrame(() => propertiesTrigger.current?.focus());
+          }}
+        />
+      ) : null}
       {shownEditor.value ? (
         <TaskPropertyEditor
           anchor={shownEditor.value.anchor}
@@ -627,7 +700,7 @@ function PropertyGlyph({ detail }: { detail: TaskRowDetail }) {
     "aria-hidden": true,
     className: "task-row-glyph",
     fill: color ?? "none",
-    size: 13,
+    size: 14,
     strokeWidth: 1.8,
     style: color ? { color } : undefined,
   });
@@ -680,6 +753,7 @@ function propertyIcon(
     return CalendarDays;
   if (key === fieldMapping.due || key === "due") return Target;
   if (key === fieldMapping.status || key === "status") return Circle;
+  if (key === fieldMapping.priority || key === "priority") return Flag;
   if (key === fieldMapping.projects || key === "projects") return Folder;
   if (key === fieldMapping.contexts || key === "contexts") return AtSign;
   if (key === "tags") return Hash;

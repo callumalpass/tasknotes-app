@@ -166,6 +166,15 @@ export function TaskCalendarView({
     top: number;
   } | null>(null);
   const inspectingDrag = useRef(false);
+  const selectedTouchDay = useRef(false);
+  const stripGestureStart = useRef<string | undefined>(undefined);
+  function revealStripStart() {
+    requestAnimationFrame(() => {
+      rootRef.current
+        ?.querySelector<HTMLButtonElement>(".tnc-strip-day")
+        ?.click();
+    });
+  }
   useEffect(() => {
     const release = () => {
       inspectingDrag.current = false;
@@ -499,6 +508,8 @@ export function TaskCalendarView({
   }
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    if (allDay && "pointerType" in jsEvent && jsEvent.pointerType === "touch")
+      selectedTouchDay.current = true;
     if (agenda) {
       onSelect(dateStr, startStr);
       if (
@@ -627,10 +638,37 @@ export function TaskCalendarView({
       onPointerOver={(event) => inspectEvent(event.target)}
       onFocusCapture={(event) => inspectEvent(event.target)}
       onPointerDownCapture={(event) => {
+        selectedTouchDay.current = false;
+        stripGestureStart.current = (event.target as Element).closest(
+          ".tnc-strip",
+        )
+          ? rootRef.current?.querySelector<HTMLElement>(".tnc-strip-day")
+              ?.dataset.date
+          : undefined;
         if ((event.target as Element).closest(".tnc-item--timed")) {
           inspectingDrag.current = true;
           inspectEvent(event.target);
         }
+      }}
+      onClickCapture={(event) => {
+        if (!selectedTouchDay.current || event.detail === 0) return;
+        selectedTouchDay.current = false;
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        if (agenda && (event.target as Element).closest(".tnc-strip-nav"))
+          revealStripStart();
+      }}
+      onPointerUp={() => {
+        if (
+          agenda &&
+          stripGestureStart.current &&
+          stripGestureStart.current !==
+            rootRef.current?.querySelector<HTMLElement>(".tnc-strip-day")
+              ?.dataset.date
+        )
+          revealStripStart();
       }}
       onPointerOut={(event) => {
         if (
@@ -647,6 +685,22 @@ export function TaskCalendarView({
       onKeyDownCapture={(event) => {
         if (event.key === "Escape") setInspection(null);
       }}
+      onKeyDown={(event) => {
+        if (
+          agenda &&
+          event.key.startsWith("Arrow") &&
+          (event.target as Element).closest(".tnc-strip-day")
+        )
+          requestAnimationFrame(() => {
+            const focused = document.activeElement;
+            if (
+              focused instanceof HTMLButtonElement &&
+              focused.matches(".tnc-strip-day")
+            )
+              focused.click();
+          });
+      }}
+      data-calendar-mode={mode}
       className={`full-calendar-view${listMode ? " is-agenda" : ""}${inspectingDay ? " has-day-inspector" : ""}`}
     >
       <div className="full-calendar-workspace">

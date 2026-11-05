@@ -20,6 +20,7 @@ export function KanbanColumnJump({
   const initialized = useRef(false);
   const strip = useRef<HTMLElement>(null);
   const [activeKey, setActiveKey] = useState(first ?? columns[0]?.key);
+  const [overflowing, setOverflowing] = useState(false);
   const keys = JSON.stringify(columns.map(({ key }) => key));
   useEffect(() => {
     const board = boardRef.current;
@@ -28,6 +29,9 @@ export function KanbanColumnJump({
       ...board.querySelectorAll<HTMLElement>("[data-kanban-column-key]"),
     ];
     let width = board.clientWidth;
+    const measure = () =>
+      setOverflowing(board.scrollWidth > board.clientWidth + 1);
+    measure();
     let frame = 0;
     const reveal = () => {
       const target = elements.find(
@@ -72,6 +76,7 @@ export function KanbanColumnJump({
       typeof ResizeObserver === "undefined"
         ? null
         : new ResizeObserver(() => {
+            measure();
             revealJump(strip.current);
             if (width === board.clientWidth) return;
             width = board.clientWidth;
@@ -95,6 +100,7 @@ export function KanbanColumnJump({
       aria-label={t({ message: "Board columns" })}
       className="kanban-column-jump"
       ref={strip}
+      hidden={!overflowing}
     >
       {columns.map((column) => (
         <button

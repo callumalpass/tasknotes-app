@@ -6,9 +6,11 @@ import { KanbanColumnJump } from "./kanban-column-jump";
 function Board({
   columns,
   scrollTo,
+  overflowing = true,
 }: {
   columns: { key: string; label: string; count: number }[];
   scrollTo?: HTMLDivElement["scrollTo"];
+  overflowing?: boolean;
 }) {
   const boardRef = useRef<HTMLDivElement>(null);
   return (
@@ -18,6 +20,16 @@ function Board({
         ref={(element) => {
           boardRef.current = element;
           if (element && scrollTo) element.scrollTo = scrollTo;
+          if (element) {
+            Object.defineProperty(element, "clientWidth", {
+              configurable: true,
+              value: 700,
+            });
+            Object.defineProperty(element, "scrollWidth", {
+              configurable: true,
+              value: overflowing ? 1000 : 700,
+            });
+          }
         }}
       >
         {columns.map(({ key }) => (
@@ -55,4 +67,23 @@ it("initially reveals the first populated column without removing empty columns"
     />,
   );
   expect(empty).toHaveAttribute("aria-current", "true");
+});
+
+it("hides the jump strip when all configured columns fit", () => {
+  const { container } = render(
+    <Board
+      overflowing={false}
+      columns={Array.from({ length: 12 }, (_, index) => ({
+        key: String(index),
+        label: `Status ${index}`,
+        count: 1,
+      }))}
+    />,
+  );
+  expect(container.querySelector(".kanban-column-jump")).toHaveAttribute(
+    "hidden",
+  );
+  expect(
+    screen.queryByRole("navigation", { name: "Board columns" }),
+  ).not.toBeInTheDocument();
 });

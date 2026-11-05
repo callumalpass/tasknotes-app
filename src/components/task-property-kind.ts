@@ -6,7 +6,14 @@ import type {
 export type EditableProperty =
   | {
       kind:
-        "status" | "priority" | "scheduled" | "due" | "recurrence" | "projects";
+        | "status"
+        | "priority"
+        | "scheduled"
+        | "due"
+        | "recurrence"
+        | "projects"
+        | "tags"
+        | "contexts";
       key: string;
     }
   | { kind: "custom"; key: string; field: TaskUserMappedField };
@@ -25,10 +32,13 @@ export function editableProperty(
       "due",
       "recurrence",
       "projects",
+      "tags",
+      "contexts",
     ] as const
   ).find(
     (kind) =>
-      normalized === kind || normalized === configuration.fieldMapping[kind],
+      normalized === kind ||
+      (kind !== "tags" && normalized === configuration.fieldMapping[kind]),
   );
   if (semantic) return { kind: semantic, key: normalized };
   const field = configuration.userFields.find(
