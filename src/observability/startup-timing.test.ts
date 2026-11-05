@@ -84,7 +84,7 @@ it("never masks success, rejection or an original abort when timing APIs fail", 
   });
   const reason = Error("original abort");
   await expect(
-    timedStartup(repository, "setup_assessment", async () => {
+    timedStartup(repository, "first_query", async () => {
       throw reason;
     }),
   ).rejects.toBe(reason);

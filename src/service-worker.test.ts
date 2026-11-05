@@ -65,7 +65,13 @@ it("retains push delivery and wake messages without a competing shell-cache impl
   );
   expect(f.client.postMessage).toHaveBeenCalledWith({
     type: "tasknotes:mdbase-notification",
-    notification,
+    notification: {
+      version: 1,
+      signalId: "test-signal",
+      criterionId: "test-criterion",
+      cursor: "test-cursor",
+      presentation: { title: "Test reminder" },
+    },
     opened: false,
   });
   await f.dispatch("push", { data: { json: () => ({ type: "invalid" }) } });
@@ -83,7 +89,13 @@ it("focuses the existing app on notification click without navigating or reloadi
   expect(f.clients.openWindow).not.toHaveBeenCalled();
   expect(f.client.postMessage).toHaveBeenCalledWith({
     type: "tasknotes:mdbase-notification",
-    notification,
+    notification: {
+      version: 1,
+      signalId: "test-signal",
+      criterionId: "test-criterion",
+      cursor: "test-cursor",
+      presentation: null,
+    },
     opened: true,
   });
 });

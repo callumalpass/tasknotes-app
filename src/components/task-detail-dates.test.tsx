@@ -5,15 +5,15 @@ import { RepositoryProvider } from "../app/repository-context";
 import { todayString } from "../domain/task";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { TaskDetailDates } from "./task-detail-dates";
-import type { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import type { NextTaskRepository } from "../storage/next-repository";
 
 describe("shared detail dates", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
   afterEach(() => vi.unstubAllGlobals());
   beforeEach(async () => {
-    repository = createTestMdbaseRepository();
+    ({ repository } = await nextTaskFixture());
     await repository.initialize();
     vi.stubGlobal(
       "ResizeObserver",

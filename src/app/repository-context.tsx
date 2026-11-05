@@ -26,7 +26,6 @@ import {
   type CompletionCommand,
 } from "../application/task-mutations";
 import { QueryResource } from "../application/query-resource";
-import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import { TaskCommandService } from "../application/task-commands";
 import {
   AcceptedTaskEffects,
@@ -356,18 +355,6 @@ export function RepositoryProvider({
       )
         .then(async () => {
           if (!current()) return;
-          // Readable task metadata is not evidence that the original source
-          // setup finished. Inspection cannot install, resume or mint IDs.
-          const setupView = await timedStartup(
-            repository,
-            "setup_assessment",
-            async () => repository.modelSetup?.inspect(),
-          );
-          if (!current()) return;
-          if (setupView && setupView.state !== "ready")
-            throw new TaskNotesModelRequiredError(
-              "TaskNotes model and starter-view setup is unfinished.",
-            );
           const nextConfiguration = await repository.taskConfiguration();
           if (!current()) return;
           configurationRef.current = nextConfiguration;

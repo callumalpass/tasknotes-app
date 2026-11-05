@@ -4,18 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RepositoryProvider } from "../app/repository-context";
 import { todayString } from "../domain/task";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { TaskDatePanel } from "./task-date-panel";
 
-import type { MdbaseTaskRepository } from "../storage/mdbase-repository";
+import type { NextTaskRepository } from "../storage/next-repository";
 import type { TaskSummary } from "../domain/task";
 
 describe("TaskDatePanel", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
   afterEach(() => vi.unstubAllEnvs());
 
   beforeEach(async () => {
-    repository = createTestMdbaseRepository();
+    ({ repository } = await nextTaskFixture());
     await repository.initialize();
   });
 

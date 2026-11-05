@@ -1,5 +1,4 @@
 import { MdbaseError, type wire } from "@mdbase-dev/sdk";
-import { linksTo } from "@mdbase-dev/connect";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
@@ -65,7 +64,8 @@ async function filterFixture() {
   for await (const page of f.client.pages({ types: ["task"] }))
     records.push(...page.records);
   const selected = records.find((r) => r.path === assigned.path)!;
-  const where = linksTo("owners", "people/Alex.md", { multiple: true });
+  const where =
+    '"owners" in record && record["owners"] != null && record["owners"].exists(link, link != null && link.asFile() != null && link.asFile().file.path == "people/Alex.md")';
   return { f, assigned, other, selected, where };
 }
 

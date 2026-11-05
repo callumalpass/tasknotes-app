@@ -5,17 +5,17 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../test/mdbase-fixture";
+import type { NextTaskRepository } from "../storage/next-repository";
+import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { GlobalTaskCapture } from "./global-task-capture";
 
 describe("GlobalTaskCapture", () => {
-  let repository: MdbaseTaskRepository;
+  let repository: NextTaskRepository;
 
   beforeEach(async () => {
     localStorage.clear();
-    repository = createTestMdbaseRepository();
+    ({ repository } = await nextTaskFixture());
     await repository.initialize();
   });
 
@@ -77,7 +77,7 @@ function Harness({
 }
 
 it("Escape closes only autocomplete first, then keeps the draft when closing capture", async () => {
-  const repository = createTestMdbaseRepository();
+  const { repository } = await nextTaskFixture();
   await repository.initialize();
   render(
     <RepositoryProvider
@@ -105,7 +105,7 @@ it("Escape closes only autocomplete first, then keeps the draft when closing cap
 });
 
 it("Shift+Enter opens details without adding a task", async () => {
-  const repository = createTestMdbaseRepository();
+  const { repository } = await nextTaskFixture();
   await repository.initialize();
   const create = vi.spyOn(repository, "create");
   render(

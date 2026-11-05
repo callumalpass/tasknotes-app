@@ -86,7 +86,10 @@ test("legacy private-account LAB SDK original custody remains intact", async () 
     pkg.dependencies["@mdbase-dev/connect-protocol"],
     `file:vendor/${manifest.protocol.artifact}`,
   );
-  assert.equal(pkg.pnpm.overrides["@mdbase-dev/connect-protocol"], undefined);
+  assert.equal(
+    pkg.pnpm?.overrides?.["@mdbase-dev/connect-protocol"],
+    undefined,
+  );
   const protocolBytes = await readFile(
     new URL(`vendor/${manifest.protocol.artifact}`, root),
   );
@@ -128,7 +131,7 @@ test("production dependency replaces STAGING while its original custody remains 
   assert.equal(facts.archive, "sdk-dev-eaa4e697-staging.tgz");
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
-    "file:vendor/sdk-4443fd15-production-beta149.tgz",
+    "file:vendor/sdk-091d912b-production-beta154.tgz",
   );
   assert.equal(
     facts.dependencies[0].file,

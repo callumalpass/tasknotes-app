@@ -6,8 +6,7 @@ import { mapTaskToFrontmatter } from "@tasknotes/model/mapping";
 import { applyFrontmatterPatch } from "@tasknotes/model/operations";
 import { AppCalendarEntryIndex } from "../domain/calendar-events";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
-import { MdbaseTaskRepository } from "../storage/mdbase-repository";
-import { mdbaseFixture, taskRecord } from "../test/mdbase-fixture";
+import { nextTaskFixture, seedRecord } from "../test/next-task-fixture";
 import { calendarItems } from "./calendar-items";
 import type { Task } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
@@ -47,9 +46,10 @@ describe("shared calendar contract through app mapping and exact repository pers
   for (const fixture of calendarFixtures) {
     it(fixture.name, async () => {
       // The repository's real type mapping differs from the fixture's plugin mapping.
-      const empty = new MdbaseTaskRepository(mdbaseFixture([]).connect);
+      const { repository: empty, close } = await nextTaskFixture();
       await empty.initialize();
       const configuration = await empty.taskConfiguration();
+      close();
       for (const info of fixture.input.tasks) {
         if (
           !configuration.statuses.some((status) => status.value === info.status)
@@ -67,29 +67,30 @@ describe("shared calendar contract through app mapping and exact repository pers
       }
       const model = new TaskNotesTaskModel(configuration);
       const records = fixture.input.tasks.map((info) => {
-        const record = taskRecord(info.id || info.path, info.title, "r1");
-        record.path = info.path;
-        record.frontmatter = {
-          ...mapTaskToFrontmatter(
-            configuration.fieldMapping,
-            info,
-            configuration.defaults.taskTag,
-            false,
-            [],
-          ),
-          id: info.id || info.path,
-          [configuration.fieldMapping.dateCreated]: fixture.input.now,
-          [configuration.fieldMapping.dateModified]: fixture.input.now,
-          ...(configuration.statuses.some(
-            (status) => status.value === info.status && status.isCompleted,
-          ) && !info.recurrence
-            ? {
-                [configuration.fieldMapping.completedDate]:
-                  fixture.input.now.slice(0, 10),
-              }
-            : {}),
+        return {
+          path: info.path,
+          body: "",
+          frontmatter: {
+            ...mapTaskToFrontmatter(
+              configuration.fieldMapping,
+              info,
+              configuration.defaults.taskTag,
+              false,
+              [],
+            ),
+            id: info.id || info.path,
+            [configuration.fieldMapping.dateCreated]: fixture.input.now,
+            [configuration.fieldMapping.dateModified]: fixture.input.now,
+            ...(configuration.statuses.some(
+              (status) => status.value === info.status && status.isCompleted,
+            ) && !info.recurrence
+              ? {
+                  [configuration.fieldMapping.completedDate]:
+                    fixture.input.now.slice(0, 10),
+                }
+              : {}),
+          } as Record<string, unknown>,
         };
-        return record;
       });
       const tasks = records.map((record) => model.read(record));
       const view = execution(tasks);
@@ -125,9 +126,10 @@ describe("shared calendar contract through app mapping and exact repository pers
       }
       for (const edit of fixture.edits) {
         // Independent gestures against the same original snapshot.
-        const fresh = new MdbaseTaskRepository(
-          mdbaseFixture(structuredClone(records)).connect,
-        );
+        const freshFixture = await nextTaskFixture();
+        for (const record of records)
+          seedRecord(freshFixture.replica, { ...record, types: ["task"] });
+        const fresh = freshFixture.repository;
         await fresh.initialize();
         const item = items.find((candidate) => candidate.id === edit.entryId)!;
         const neutral = item.data!.metadata.entry.modelEntry;
@@ -195,6 +197,7 @@ describe("shared calendar contract through app mapping and exact repository pers
         expect(after.revision).toBe(before.revision + 1);
         expect(after.body).toBe(before.body);
         expect((await fresh.list({ status: "all" })).length).toBe(tasks.length);
+        freshFixture.close();
       }
     });
   }

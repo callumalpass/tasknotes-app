@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { isMdbaseError } from "@mdbase-dev/sdk";
 import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 import {
   TaskDeletionNotStartedError,
@@ -353,16 +354,9 @@ export class TaskCommandService {
 }
 
 function durableRequestId(reason: unknown): string | null {
-  if (!reason || typeof reason !== "object") return null;
-  const carrier = reason as {
-    details?: unknown;
-    problem?: { details?: unknown };
-  };
-  const details = carrier.details ?? carrier.problem?.details;
-  if (!details || typeof details !== "object" || !("request_id" in details))
-    return null;
-  const requestId = details.request_id;
-  return typeof requestId === "string" && requestId ? requestId : null;
+  return isMdbaseError(reason, "outcome_unknown")
+    ? (reason.mutationId ?? null)
+    : null;
 }
 
 function collectionIdentity(info: CollectionInfo): string {

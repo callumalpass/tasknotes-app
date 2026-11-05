@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { MdbaseTaskRepository } from "../../storage/mdbase-repository";
-import { createTestMdbaseRepository } from "../../test/mdbase-fixture";
-import { MemoryCollectionFileStore } from "../../test/memory-collection-files";
+import { nextTaskFixture } from "../../test/next-task-fixture";
 import { AttachmentService } from "./attachment-service";
 
 import type { TaskRepository } from "../ports/task-repository";
@@ -282,13 +280,8 @@ describe("AttachmentService", () => {
   });
 });
 
-async function fixture(): Promise<{
-  repository: MdbaseTaskRepository;
-  files: MemoryCollectionFileStore;
-}> {
-  const repository = createTestMdbaseRepository();
-  const files = new MemoryCollectionFileStore();
-  Object.defineProperty(repository, "files", { value: files });
+async function fixture() {
+  const { repository } = await nextTaskFixture();
   await repository.initialize();
-  return { repository, files };
+  return { repository, files: repository.files };
 }

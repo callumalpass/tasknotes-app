@@ -1,17 +1,14 @@
 import type { Notification } from "@capacitor-firebase/messaging";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import {
-  MdbaseConnectError,
-  parseMdbaseNativeNotificationData,
-  type MdbaseCapabilityState,
-  type MdbaseConnectionInfo,
-  type MdbaseNotificationRegistration,
-  type MdbaseNativeNotificationRegistration,
-  type MdbaseNativeNotificationData,
-} from "@mdbase-dev/connect";
+  parseMdbaseNativeNotification,
+  isMdbaseError,
+  problemCodeOf,
+  type MdbaseApplicationConnection,
+  type MdbaseNotification,
+} from "@mdbase-dev/sdk";
 
-import { cloudSession } from "../cloud/connect";
-import { requireConnectOutcome } from "../cloud/outcome";
+import { taskNotesMdbase } from "../cloud/tasknotes-application";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 import {
   androidPushMessaging,
@@ -23,10 +20,6 @@ import { webPushMessaging, type WebPushMessaging } from "./web-push-messaging";
 const ENABLED_KEY = "tasknotes:mdbase-notifications:v1";
 const CHANNEL_ID = "mdbase-updates";
 const PERMISSION_CHECK_TIMEOUT_MS = 10_000;
-// Scheduling is required; delivery registration remains an explicit opt-in
-// through the notification APIs, not an application-readiness prerequisite.
-const TIMER_CAPABILITY = "background.schedule" as const;
-
 export type MdbaseNotificationState =
   | "checking"
   | "unavailable"
@@ -44,25 +37,12 @@ export interface MdbaseNotificationStatus {
 }
 
 export interface MdbaseNotificationWake {
-  notification: MdbaseNativeNotificationData;
+  notification: MdbaseNotification;
   opened: boolean;
 }
 
 interface NotificationConnect {
-  connection(): MdbaseConnectionInfo | null;
-  capabilityState(
-    capability: typeof TIMER_CAPABILITY,
-  ): MdbaseCapabilityState | null;
-  registerNotifications(options: {
-    serviceWorker: ServiceWorkerRegistration;
-  }): Promise<MdbaseNotificationRegistration>;
-  unregisterNotifications(
-    serviceWorker?: ServiceWorkerRegistration,
-  ): Promise<void>;
-  registerNativeNotifications(options: {
-    token: string;
-  }): Promise<MdbaseNativeNotificationRegistration>;
-  unregisterNativeNotifications(): Promise<void>;
+  connection(): Pick<MdbaseApplicationConnection, "id" | "timers"> | null;
 }
 
 export interface MdbaseNotificationManagerOptions {
@@ -83,7 +63,7 @@ export class MdbaseNotificationManager {
     if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn };
-    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
+    if (!connection.timers)
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn };
@@ -100,7 +80,7 @@ export class MdbaseNotificationManager {
     if (!runtime) return { state: "unavailable", optedIn: false };
     const connection = this.options.connect.connection();
     if (!connection) return { state: "not_connected", optedIn: false };
-    if (this.options.connect.capabilityState(TIMER_CAPABILITY) !== "available")
+    if (!connection.timers)
       return { state: "reauthorization_required", optedIn: false };
     if (runtime === "native" && !this.options.isConfigured())
       return { state: "not_configured", optedIn: false };
@@ -117,16 +97,17 @@ export class MdbaseNotificationManager {
     try {
       await this.registerCurrentInstallation(runtime);
     } catch (error) {
+      const code =
+        isMdbaseError(error) && error.reason
+          ? problemCodeOf(error.reason)
+          : null;
       if (
-        error instanceof MdbaseConnectError &&
-        error.code === "notification_reauthorization_required"
+        code === "notifications_consent_required" ||
+        code === "timer_channel_reapproval_required"
       ) {
         return { state: "reauthorization_required", optedIn: false };
       }
-      if (
-        error instanceof MdbaseConnectError &&
-        error.code === "managed_fcm_not_declared"
-      ) {
+      if (code === "notifications_unsupported") {
         return { state: "not_configured", optedIn: false };
       }
       throw error;
@@ -139,11 +120,13 @@ export class MdbaseNotificationManager {
     const runtime = this.runtime();
     if (!runtime) return { state: "unavailable", optedIn: false };
     if (runtime === "native") {
-      await this.options.connect.unregisterNativeNotifications();
+      await this.timers().unregisterFcm({ signal: this.deadline() });
       await this.options.messaging.deleteToken();
     } else {
       const serviceWorker = await this.options.webPush.serviceWorker();
-      await this.options.connect.unregisterNotifications(serviceWorker);
+      await this.timers().unregisterWebPush(serviceWorker, {
+        signal: this.deadline(),
+      });
     }
     this.options.storage.removeItem(ENABLED_KEY);
     return this.status();
@@ -184,7 +167,8 @@ export class MdbaseNotificationManager {
         this.options.messaging.addListener("tokenReceived", ({ token }) => {
           if (!this.enabled() || !token) return;
           void this.options.connect
-            .registerNativeNotifications({ token })
+            .connection()
+            ?.timers?.registerFcm({ token, signal: this.deadline() })
             .catch(() => undefined);
         }),
       );
@@ -220,6 +204,17 @@ export class MdbaseNotificationManager {
       for (const handle of handles) void handle.remove().catch(() => undefined);
       handles.length = 0;
     };
+  }
+
+  private timers() {
+    const timers = this.options.connect.connection()?.timers;
+    if (!timers)
+      throw new Error("TaskNotes is not connected to reminder delivery.");
+    return timers;
+  }
+
+  private deadline(): AbortSignal {
+    return AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.backgroundMs);
   }
 
   private enabled(): boolean {
@@ -260,7 +255,10 @@ export class MdbaseNotificationManager {
   ): Promise<void> {
     if (runtime === "web") {
       const serviceWorker = await this.options.webPush.serviceWorker();
-      await this.options.connect.registerNotifications({ serviceWorker });
+      await this.timers().registerWebPush({
+        serviceWorker,
+        signal: this.deadline(),
+      });
       return;
     }
     await this.options.messaging
@@ -274,15 +272,15 @@ export class MdbaseNotificationManager {
     const { token } = await this.options.messaging.getToken();
     if (!token.trim())
       throw new Error("Firebase did not return a notification token.");
-    await this.options.connect.registerNativeNotifications({ token });
+    await this.timers().registerFcm({ token, signal: this.deadline() });
   }
 }
 
 export function mdbaseNotificationData(
   notification: Pick<NativeNotification, "data">,
-): MdbaseNativeNotificationData | null {
+): MdbaseNotification | null {
   try {
-    return parseMdbaseNativeNotificationData(notification.data);
+    return parseMdbaseNativeNotification(notification.data);
   } catch {
     return null;
   }
@@ -298,8 +296,15 @@ export function mdbaseWebPushWake(
     typeof message.opened !== "boolean"
   )
     return null;
-  const notification = mdbaseNotificationData({ data: message.notification });
-  return notification ? { notification, opened: message.opened } : null;
+  const notification = message.notification as MdbaseNotification | undefined;
+  if (
+    notification?.version !== 1 ||
+    typeof notification.signalId !== "string" ||
+    typeof notification.criterionId !== "string" ||
+    typeof notification.cursor !== "string"
+  )
+    return null;
+  return { notification, opened: message.opened };
 }
 
 class LazyFirebaseMessaging implements NativeMessaging {
@@ -377,50 +382,9 @@ function firebaseMessaging() {
 
 export const mdbaseNotifications = new MdbaseNotificationManager({
   connect: {
-    connection: () => currentConnection()?.info() ?? null,
-    capabilityState: (capability) => {
-      const snapshot = cloudSession.getSnapshot();
-      return "capabilities" in snapshot
-        ? (snapshot.capabilities.values[capability]?.state ?? null)
-        : null;
-    },
-    registerNotifications: async (options) => {
-      const connection = currentConnection();
-      if (!connection) throw new Error("TaskNotes is not connected.");
-      return requireConnectOutcome(
-        await connection.registerNotifications({
-          ...options,
-          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-        }),
-      );
-    },
-    unregisterNotifications: async (serviceWorker) => {
-      const connection = currentConnection();
-      if (connection)
-        requireConnectOutcome(
-          await connection.unregisterNotifications(serviceWorker, {
-            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-          }),
-        );
-    },
-    registerNativeNotifications: async (options) => {
-      const connection = currentConnection();
-      if (!connection) throw new Error("TaskNotes is not connected.");
-      return requireConnectOutcome(
-        await connection.registerNativeNotifications({
-          ...options,
-          timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-        }),
-      );
-    },
-    unregisterNativeNotifications: async () => {
-      const connection = currentConnection();
-      if (connection)
-        requireConnectOutcome(
-          await connection.unregisterNativeNotifications({
-            timeoutMs: TASKNOTES_REQUEST_BUDGETS.backgroundMs,
-          }),
-        );
+    connection: () => {
+      const phase = taskNotesMdbase().getSnapshot().phase;
+      return phase.kind === "ready" ? phase.connection : null;
     },
   },
   messaging:
@@ -435,8 +399,3 @@ export const mdbaseNotifications = new MdbaseNotificationManager({
       ? Capacitor.isPluginAvailable("PushNotifications")
       : Capacitor.isPluginAvailable("FirebaseMessaging"),
 });
-
-function currentConnection() {
-  const snapshot = cloudSession.getSnapshot();
-  return snapshot.status === "ready" ? cloudSession.connection() : null;
-}

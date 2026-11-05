@@ -523,10 +523,6 @@ msgstr "{name} (не является записью участника)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} должно оставаться в навигации, пока не будет добавлено другое представление"
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "Открыто: {open} · всего: {total}"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1185,10 +1181,6 @@ msgstr "Подтверждение отмены"
 msgid "Cancelled moving {title}."
 msgstr "Перемещение задачи «{title}» отменено."
 
-#: src/app/model-setup-screen.tsx
-msgid "Catching up"
-msgstr "Синхронизация изменений"
-
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "Выражение CEL"
@@ -1197,7 +1189,6 @@ msgstr "Выражение CEL"
 msgid "Change a recurring task"
 msgstr "Изменение повторяющейся задачи"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "Сменить коллекцию"
@@ -1256,10 +1247,6 @@ msgstr "изменений требуют проверки"
 msgid "Check account status"
 msgstr "Проверить состояние учётной записи"
 
-#: src/app/model-setup-screen.tsx
-msgid "Check setup"
-msgstr "Проверить настройку"
-
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
 msgstr "Проверить завершение строгого режима"
@@ -1276,21 +1263,9 @@ msgstr "Проверка"
 msgid "Checking account recovery…"
 msgstr "Проверка восстановления учётной записи…"
 
-#: src/app/model-setup-screen.tsx
-msgid "Checking collection access…"
-msgstr "Проверка доступа к коллекции…"
-
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
 msgstr "Проверка настроек коллекции…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking TaskNotes setup…"
-msgstr "Проверка настройки TaskNotes…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking whether setup finished…"
-msgstr "Проверка завершения настройки…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
@@ -1319,10 +1294,6 @@ msgstr "Выберите свойство"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Выберите значение"
-
-#: src/app/model-setup-screen.tsx
-msgid "Choose another collection"
-msgstr "Выбрать другую коллекцию"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1495,16 +1466,6 @@ msgstr "Свернуть боковую панель (M)"
 msgid "Collection"
 msgstr "Коллекция"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "Коллекция"
-
-#: src/app/model-setup-screen.tsx
-msgid "Collection access is unavailable."
-msgstr "Доступ к коллекции недоступен."
-
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
@@ -1531,7 +1492,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "Настройки коллекции"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "Коллекция недоступна"
@@ -1693,12 +1653,10 @@ msgstr "Проверяем, сохранена ли «"
 msgid "Conflicting changes"
 msgstr "Конфликтующие изменения"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "Подключено"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "Подключение"
@@ -1706,11 +1664,6 @@ msgstr "Подключение"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Подключение…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "Подключение"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2640,11 +2593,6 @@ msgstr "Сгруппированные столбцы"
 msgid "Heading"
 msgstr "Заголовок"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "Здравствуйте, {name}. Ознакомьтесь с <0>документацией</0>."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "Справка"
@@ -2674,7 +2622,6 @@ msgstr "Час"
 msgid "Hours"
 msgstr "Часы"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "Как хранятся задачи"
@@ -2762,10 +2709,6 @@ msgstr "Установить TaskNotes"
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
 msgstr "Установите TaskNotes, чтобы открывать приложение с главного экрана."
-
-#: src/app/model-setup-screen.tsx
-msgid "Installing TaskNotes setup…"
-msgstr "Установка TaskNotes…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
@@ -2926,10 +2869,6 @@ msgstr "Последний день"
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "При последнем обновлении проверено записей: {0}; время — {1} мс."
-
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "При последнем обновлении {scanned, plural, one {проверена # запись} few {проверены # записи} many {проверено # записей} other {проверено # записи}} за {elapsed} мс."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
@@ -3118,7 +3057,6 @@ msgstr "Режим соответствия"
 msgid "Matched in {0}"
 msgstr "Совпадение в разделе «{0}»"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "Коллекция mdbase"
@@ -3135,7 +3073,6 @@ msgstr "mdbase подтвердил, что целевые коллекции п
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase доставляет напоминания, даже когда TaskNotes закрыт. Уведомления не содержат текст задач."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase — основной источник данных. Для внесения изменений требуется подключение."
@@ -3800,14 +3737,6 @@ msgstr "Открыть задачу"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "Откройте меню «Поделиться» в браузере и выберите «На экран „Домой“»."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "Открытие"
-
-#: src/app/model-setup-screen.tsx
-msgid "Opening collection"
-msgstr "Открытие коллекции"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
 msgstr "Открытие текущей заметки…"
@@ -4187,12 +4116,10 @@ msgstr "Повторение и шаблон"
 msgid "Recurrence rule"
 msgstr "Правило повторения"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "Обновить сейчас"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "Обновление"
@@ -4450,10 +4377,6 @@ msgstr "Результаты"
 msgid "Resume as current"
 msgstr "Сделать текущей"
 
-#: src/app/model-setup-screen.tsx
-msgid "Resume original setup"
-msgstr "Продолжить исходную настройку"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
 msgstr "Возобновление…"
@@ -4518,10 +4441,6 @@ msgstr "Повторно используемые значения группи�
 #: src/app/app-shell.tsx
 msgid "Review access"
 msgstr "Проверить разрешение"
-
-#: src/app/model-setup-screen.tsx
-msgid "Review collection permission"
-msgstr "Проверить разрешение для коллекции"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4892,10 +4811,6 @@ msgstr "Задать статус"
 msgid "Set up recovery"
 msgstr "Настроить восстановление"
 
-#: src/app/model-setup-screen.tsx
-msgid "Set up TaskNotes"
-msgstr "Настроить TaskNotes"
-
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
 msgstr "Укажите, что делать при добавлении задачи из этого представления."
@@ -4913,10 +4828,6 @@ msgstr "Разделы настроек"
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
 msgstr "Требуется проверить настройку"
-
-#: src/app/model-setup-screen.tsx
-msgid "Setup outcome unknown. "
-msgstr "Результат настройки не подтверждён. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -5281,10 +5192,6 @@ msgstr "Необходимо перезапустить TaskNotes."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "Чтобы открыть эту коллекцию, снова разрешите TaskNotes доступ в mdbase."
 
-#: src/app/model-setup-screen.tsx
-msgid "TaskNotes setup is unavailable."
-msgstr "Настройка TaskNotes недоступна."
-
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "Инструмент TaskNotes"
@@ -5510,10 +5417,6 @@ msgstr "На этой доске задачи сгруппированы по в
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "В этой коллекции не задан статус выполненной задачи."
-
-#: src/app/model-setup-screen.tsx
-msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr "Перед открытием задач и представлений необходимо настроить TaskNotes для этой коллекции. Настройка устанавливает опубликованные модели и добавляет представления «Сегодня», «Предстоящие», «Календарь», «Проекты» и «Архив». Источники существующих представлений останутся без изменений; после прерывания продолжится применение только исходных изменений настройки."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
@@ -5922,14 +5825,6 @@ msgstr "Представления, сохранённые в коллекции
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
 msgstr "Визуальное редактирование недоступно, поскольку в правиле используется {0}."
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for access"
-msgstr "Ожидание доступа"
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for setup confirmation…"
-msgstr "Ожидание подтверждения настройки…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"

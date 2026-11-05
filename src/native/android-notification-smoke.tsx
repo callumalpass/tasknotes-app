@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import type { MdbaseConnectionInfo } from "@mdbase-dev/connect";
 
 import {
   MdbaseNotificationManager,
@@ -17,7 +16,7 @@ export function AndroidNotificationSmoke() {
   useEffect(
     () =>
       manager.listen(({ notification }) => {
-        if (notification.criterion_id !== "task.reminder") return;
+        if (notification.criterionId !== "task.reminder") return;
         localStorage.setItem(WAKE_KEY, JSON.stringify(notification));
         setStatus("Foreground reminder received");
       }),
@@ -58,16 +57,16 @@ export function AndroidNotificationSmoke() {
 function createManager(): MdbaseNotificationManager {
   const options = {
     connect: {
-      connection: () =>
-        ({ collectionId: "android-smoke" }) as MdbaseConnectionInfo,
-      capabilityState: () => "available",
-      registerNotifications: async () => ({}),
-      unregisterNotifications: async () => undefined,
-      registerNativeNotifications: async ({ token }: { token: string }) => {
-        localStorage.setItem(TOKEN_KEY, token);
-        return {};
-      },
-      unregisterNativeNotifications: async () => undefined,
+      connection: () => ({
+        id: "android-smoke",
+        timers: {
+          registerFcm: async ({ token }: { token: string }) => {
+            localStorage.setItem(TOKEN_KEY, token);
+            return {};
+          },
+          unregisterFcm: async () => undefined,
+        },
+      }),
     },
     messaging: androidPushMessaging,
     webPush: {

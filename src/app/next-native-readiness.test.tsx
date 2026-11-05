@@ -11,10 +11,6 @@ import type {
   AppBasesDescriptor,
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
-import type {
-  ModelSetupJournal,
-  ModelSetupView,
-} from "../application/ports/model-setup";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { NextTaskRepository } from "../storage/next-repository";
@@ -23,33 +19,13 @@ import { CollectionGateContext } from "./collection-context";
 import { AppShell } from "./app-shell";
 import { taskNotesViewSourcePath } from "../domain/default-view-source";
 
-// Real SDK task READs/CRUD and actual app shell; catalog, Bases and semantic
-// setup replies are declared stand-ins. No native/LAB/authority qualification.
-const m = vi.hoisted(() => ({
-  inspect: vi.fn<() => Promise<ModelSetupView>>(),
-  install: vi.fn(),
-  resume: vi.fn(),
-}));
-vi.mock("../storage/next-model-setup", async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  NativeModelSetup: class {
-    inspect() {
-      return m.inspect();
-    }
-    install() {
-      return m.install();
-    }
-    resume() {
-      return m.resume();
-    }
-  },
-}));
+// Real SDK task READs/CRUD and actual app shell; catalog and Bases replies are
+// declared stand-ins. No native/LAB/authority qualification.
 const closes: (() => void)[] = [];
 beforeEach(() => {
   localStorage.clear();
   window.history.replaceState(null, "", "/");
   vi.clearAllMocks();
-  m.inspect.mockResolvedValue({ state: "ready" });
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: false,
     media: query,
@@ -66,40 +42,10 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
-async function fixture(creator = false) {
+async function fixture() {
   const f = await nextTaskFixture();
   closes.push(f.close);
-  const noWrite = vi.fn(async (): Promise<never> => {
-    throw Error("No setup mutation expected");
-  });
-  const journal: ModelSetupJournal = {
-    scope: {
-      account: f.accountId,
-      installation: crypto.randomUUID(),
-      collection: f.client.hello.collection,
-    },
-    load: vi.fn(async () => null),
-    prepare: noWrite,
-    recordAttempt: noWrite,
-    recordConfirmed: noWrite,
-    recordVerified: noWrite,
-  };
-  const assess = vi.fn(async () => {});
-  const verified = vi.fn(async () => {});
-  const repository = new NextTaskRepository(
-    f.client,
-    "Original configured collection",
-    f.accountId,
-    {
-      clientOwnership: "borrowed",
-      modelSetupJournal: journal,
-      requiresTaskNotesModelSetup: creator,
-      onModelSetupVerified: verified,
-      onModelSetupAssessment: assess,
-    },
-  );
-  closes.push(() => repository.dispose());
-  return { ...f, repository, journal, assess, verified, noWrite };
+  return f;
 }
 
 function renderShell(repository: NextTaskRepository) {
@@ -427,17 +373,6 @@ it.each([
       code: null,
       reason: null,
     });
-    expect(f.assess).toHaveBeenCalledWith("ready", expect.any(AbortSignal));
-    expect(
-      screen.queryByRole("button", { name: "Set up TaskNotes" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Finish opening TaskNotes"),
-    ).not.toBeInTheDocument();
-    expect(m.install).not.toHaveBeenCalled();
-    expect(m.resume).not.toHaveBeenCalled();
-    expect(f.verified).not.toHaveBeenCalled();
-    expect(f.noWrite).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
     const initialReads = discovery.mock.calls.length;
     await act(async () => {
@@ -460,82 +395,3 @@ it.each([
     mounted.unmount();
   },
 );
-
-it("keeps a genuinely unconfigured collection on its setup screen without automatically installing", async () => {
-  const f = await fixture();
-  f.catalog.types = [];
-  f.catalog.contracts = [];
-  vi.spyOn(f.client, "describe").mockResolvedValue(f.catalog);
-  m.inspect.mockResolvedValue({ state: "required" });
-  const mounted = render(
-    <CollectionGateContext.Provider
-      value={{
-        collectionUi: null,
-        changeCollection: vi.fn(),
-        reauthorizeCurrentCollection: vi.fn(),
-      }}
-    >
-      <RepositoryProvider
-        repository={f.repository}
-        mutationJournal={new MemoryMutationJournal()}
-        reminderAuthority="none"
-      >
-        <AppShell />
-      </RepositoryProvider>
-    </CollectionGateContext.Provider>,
-  );
-  expect(
-    await screen.findByRole("button", { name: "Set up TaskNotes" }),
-  ).toBeVisible();
-  await waitFor(() =>
-    expect(f.assess).toHaveBeenCalledWith(
-      "setup_required",
-      expect.any(AbortSignal),
-    ),
-  );
-  expect(
-    screen.queryByRole("complementary", { name: "Primary" }),
-  ).not.toBeInTheDocument();
-  expect(m.install).not.toHaveBeenCalled();
-  expect(m.resume).not.toHaveBeenCalled();
-  expect(f.verified).not.toHaveBeenCalled();
-  expect(f.noWrite).not.toHaveBeenCalled();
-  mounted.unmount();
-});
-
-it.each<ModelSetupView>([
-  { state: "blocked", message: "Original read unavailable" },
-  { state: "outcome_unknown", message: "Preserve original operation" },
-  { state: "permission_required", message: "Permission unavailable" },
-])("does not publish ready from a $state inspection", async (view) => {
-  const f = await fixture();
-  m.inspect.mockResolvedValue(view);
-  await expect(f.repository.modelSetup!.inspect()).resolves.toEqual(view);
-  expect(f.assess).not.toHaveBeenCalled();
-});
-
-it("does not bypass the original creator gate even when the current inspection reads ready", async () => {
-  const f = await fixture(true);
-  await expect(f.repository.modelSetup!.inspect()).rejects.toThrow(
-    "Complete this original collection",
-  );
-  expect(f.assess).not.toHaveBeenCalled();
-  expect(f.verified).not.toHaveBeenCalled();
-});
-
-it("refuses a readiness result delivered after the original repository was disposed", async () => {
-  const f = await fixture();
-  let finish!: (view: ModelSetupView) => void;
-  m.inspect.mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        finish = resolve;
-      }),
-  );
-  const pending = f.repository.modelSetup!.inspect();
-  await waitFor(() => expect(finish).toBeTypeOf("function"));
-  f.repository.dispose();
-  finish({ state: "ready" });
-  await expect(pending).rejects.toThrow();
-  expect(f.assess).not.toHaveBeenCalled();
-});

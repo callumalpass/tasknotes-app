@@ -213,8 +213,8 @@ values contain no account, collection, request, source or error details.
 `native_open` spans SDK public `opening` through the original app adapter's
 completion, including leases, ledger reads, bootstrap, SQL and verified log READ;
 `bootstrap`, `sql_open` and `verified_read` are nested, not additive. SDK device
-open before `opening` is outside this span. UI `repository_init`, first
-`setup_assessment`, `first_query` and `first_render` are separate intervals;
+open before `opening` is outside this span. UI `repository_init`, `first_query`
+and `first_render` are separate intervals;
 `first_render` is result-to-React-commit, not browser paint. Cached/stale results
 never complete query/render diagnostics. Timing failures do not change an
 operation's success, rejection, abort or readiness. These are measurement

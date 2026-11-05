@@ -30,6 +30,24 @@ snapshot with `pnpm contracts:sync`.
 Update the corresponding `file:` references and run `pnpm install`. Replace
 each snapshot with an exact registry version once that release is published.
 
+## Connect consumer inputs
+
+The application and its tests use only `@mdbase-dev/sdk`; there is no legacy
+`@mdbase-dev/connect` client, query patch, sync override or connection fallback.
+The SDK original remains `sdk-eaa4e697-production-beta141.tgz`, and
+`@mdbase-dev/obsidian-runtime/app-storage` retains its original below. The
+unchanged protocol original is still needed by the manifest builder/validator
+and native publisher intake; it is also bundled inside the SDK.
+
+Shared UI and i18n are exact npm `0.1.0-beta.148` pins, with registry integrity
+checked in the lockfile. Dev/testing Connect packages are unnecessary:
+application tests and benchmarks use the SDK's own testing entry.
+
+The existing SDK setup journals still recognize their original task-pack
+scope, and delayed-deletion journals retain their original
+`authorityRequestId`. Neither journal needs the deleted legacy client;
+new uncertain writes carry the SDK's `mutationId`.
+
 ## Interim browser pack helpers
 
 `mdbase-browser-0.5.0-rc.1-c2c08afc9.tgz` is the unchanged browser package built

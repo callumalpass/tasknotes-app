@@ -59,10 +59,6 @@ export default defineConfig(({ mode }) => ({
           chunk.name === "service-worker"
             ? "service-worker.js"
             : "assets/[name]-[hash].js",
-        manualChunks: (id) =>
-          id.includes("/node_modules/@mdbase-dev/connect")
-            ? "mdbase-connect"
-            : undefined,
       },
     },
   },
@@ -93,7 +89,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
     environment: "jsdom",
-    exclude: ["e2e/**", "node_modules/**"],
+    exclude: ["**/.claude/**", "**/e2e/**", "**/node_modules/**"],
     globals: true,
     maxWorkers: 4,
     setupFiles: "./src/test/setup.ts",

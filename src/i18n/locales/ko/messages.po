@@ -523,10 +523,6 @@ msgstr "{name} (사람 레코드가 아님)"
 msgid "{name} must remain in navigation until another view is added"
 msgstr "다른 뷰를 추가할 때까지 {name}을(를) 탐색 메뉴에 유지해야 합니다."
 
-#: src/app/collection-settings.tsx
-msgid "{open} open · {total} total"
-msgstr "열림 {open}개 · 전체 {total}개"
-
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
 msgid "{selectedReviewCount} of {0} selected"
@@ -1185,10 +1181,6 @@ msgstr "취소 확인"
 msgid "Cancelled moving {title}."
 msgstr "{title} 이동을 취소했습니다."
 
-#: src/app/model-setup-screen.tsx
-msgid "Catching up"
-msgstr "동기화 중"
-
 #: src/components/expression-builder.tsx
 msgid "CEL expression"
 msgstr "CEL 표현식"
@@ -1197,7 +1189,6 @@ msgstr "CEL 표현식"
 msgid "Change a recurring task"
 msgstr "반복 작업 변경"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Change collection"
 msgstr "컬렉션 변경"
@@ -1256,10 +1247,6 @@ msgstr "변경 사항 검토 필요"
 msgid "Check account status"
 msgstr "계정 상태 확인"
 
-#: src/app/model-setup-screen.tsx
-msgid "Check setup"
-msgstr "설정 확인"
-
 #: src/components/private-account-settings.tsx
 msgid "Check strict completion"
 msgstr "엄격 모드 완료 상태 확인"
@@ -1276,21 +1263,9 @@ msgstr "확인 중"
 msgid "Checking account recovery…"
 msgstr "계정 복구 확인 중…"
 
-#: src/app/model-setup-screen.tsx
-msgid "Checking collection access…"
-msgstr "컬렉션 접근 권한 확인 중…"
-
 #: src/components/task-model-settings.tsx
 msgid "Checking collection settings…"
 msgstr "컬렉션 설정 확인 중…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking TaskNotes setup…"
-msgstr "TaskNotes 설정 확인 중…"
-
-#: src/app/model-setup-screen.tsx
-msgid "Checking whether setup finished…"
-msgstr "설정이 완료되었는지 확인 중…"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Child"
@@ -1319,10 +1294,6 @@ msgstr "속성 선택"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "값 선택"
-
-#: src/app/model-setup-screen.tsx
-msgid "Choose another collection"
-msgstr "다른 컬렉션 선택"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1495,16 +1466,6 @@ msgstr "사이드바 접기 (M)"
 msgid "Collection"
 msgstr "컬렉션"
 
-#. The selected mdbase collection, not a group of interface controls.
-#: src/app/collection-settings.tsx
-msgctxt "settings section title"
-msgid "Collection"
-msgstr "컬렉션"
-
-#: src/app/model-setup-screen.tsx
-msgid "Collection access is unavailable."
-msgstr "컬렉션에 접근할 수 없습니다."
-
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
 msgid "Collection behavior"
@@ -1531,7 +1492,6 @@ msgctxt "settings access source label"
 msgid "Collection settings"
 msgstr "컬렉션 설정"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Collection unavailable"
 msgstr "컬렉션을 사용할 수 없음"
@@ -1693,12 +1653,10 @@ msgstr "확인 중: “"
 msgid "Conflicting changes"
 msgstr "충돌하는 변경 사항"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connected"
 msgstr "연결됨"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Connecting"
 msgstr "연결 중"
@@ -1706,11 +1664,6 @@ msgstr "연결 중"
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "연결 중…"
-
-#: src/app/collection-settings.tsx
-msgctxt "mdbase authority status"
-msgid "Connection"
-msgstr "연결"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -2640,11 +2593,6 @@ msgstr "그룹화된 열"
 msgid "Heading"
 msgstr "제목"
 
-#: src/i18n/pilot-fixture.tsx
-msgctxt "translation pilot rich-text example"
-msgid "Hello {name}. Read <0>the documentation</0>."
-msgstr "안녕하세요, {name}님. <0>문서</0>를 읽어보세요."
-
 #: src/app/more-screen.tsx
 msgid "Help"
 msgstr "도움말"
@@ -2674,7 +2622,6 @@ msgstr "시간"
 msgid "Hours"
 msgstr "시간"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "How tasks are stored"
 msgstr "작업 저장 방식"
@@ -2762,10 +2709,6 @@ msgstr "TaskNotes 설치"
 #: src/app/more-screen.tsx
 msgid "Install TaskNotes to open it from your home screen."
 msgstr "홈 화면에서 열 수 있도록 TaskNotes를 설치하세요."
-
-#: src/app/model-setup-screen.tsx
-msgid "Installing TaskNotes setup…"
-msgstr "TaskNotes 설정 설치 중…"
 
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
@@ -2926,10 +2869,6 @@ msgstr "마지막 날"
 #: src/app/more-screen.tsx
 msgid "Last refresh checked {0} records in {1} ms."
 msgstr "마지막 새로고침에서 {1}ms 동안 레코드 {0}개를 확인했습니다."
-
-#: src/app/collection-settings.tsx
-msgid "Last refresh checked {scanned, plural, one {# record} other {# records}} in {elapsed} ms."
-msgstr "마지막 새로고침에서 {elapsed}ms 동안 레코드 {scanned, plural, other {#개}}를 확인했습니다."
 
 #: src/components/app-update-notice.tsx
 #: src/i18n/default-labels.ts
@@ -3118,7 +3057,6 @@ msgstr "일치 방식"
 msgid "Matched in {0}"
 msgstr "{0}에서 일치"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 컬렉션"
@@ -3135,7 +3073,6 @@ msgstr "mdbase에서 복구 대상에 엄격 모드가 적용되었음을 확인
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "TaskNotes가 닫혀 있어도 mdbase가 리마인더를 전달합니다. 알림에는 작업 내용이 포함되지 않습니다."
 
-#: src/app/collection-settings.tsx
 #: src/app/storage-trust.ts
 msgid "mdbase is the source of truth. Changes require a connection."
 msgstr "mdbase가 권한 원본입니다. 변경하려면 연결이 필요합니다."
@@ -3800,14 +3737,6 @@ msgstr "작업 열기"
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
 msgstr "브라우저의 공유 메뉴를 열고 홈 화면에 추가를 선택하세요."
 
-#: src/app/collection-settings.tsx
-msgid "Opening"
-msgstr "여는 중"
-
-#: src/app/model-setup-screen.tsx
-msgid "Opening collection"
-msgstr "컬렉션 여는 중"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Opening current note…"
 msgstr "현재 노트 여는 중…"
@@ -4187,12 +4116,10 @@ msgstr "반복 및 템플릿"
 msgid "Recurrence rule"
 msgstr "반복 규칙"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refresh now"
 msgstr "지금 새로고침"
 
-#: src/app/collection-settings.tsx
 #: src/app/more-screen.tsx
 msgid "Refreshing"
 msgstr "새로고침 중"
@@ -4450,10 +4377,6 @@ msgstr "검색 결과"
 msgid "Resume as current"
 msgstr "현재 항목으로 이어서 사용"
 
-#: src/app/model-setup-screen.tsx
-msgid "Resume original setup"
-msgstr "원래 설정 이어서 진행"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Resuming…"
 msgstr "이어서 여는 중…"
@@ -4518,10 +4441,6 @@ msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 #: src/app/app-shell.tsx
 msgid "Review access"
 msgstr "접근 권한 검토"
-
-#: src/app/model-setup-screen.tsx
-msgid "Review collection permission"
-msgstr "컬렉션 권한 검토"
 
 #: src/app/more-screen.tsx
 msgid "Review notification access"
@@ -4892,10 +4811,6 @@ msgstr "상태 설정"
 msgid "Set up recovery"
 msgstr "복구 설정"
 
-#: src/app/model-setup-screen.tsx
-msgid "Set up TaskNotes"
-msgstr "TaskNotes 설정"
-
 #: src/app/view-editor-form.tsx
 msgid "Set what happens when a task is added from this view."
 msgstr "이 뷰에서 작업을 추가할 때 수행할 동작을 설정하세요."
@@ -4913,10 +4828,6 @@ msgstr "설정 섹션"
 #: src/app/notification-label.ts
 msgid "Setup needs attention"
 msgstr "설정을 확인해야 합니다."
-
-#: src/app/model-setup-screen.tsx
-msgid "Setup outcome unknown. "
-msgstr "설정 결과를 알 수 없습니다. "
 
 #. placeholder {0}: people.directory.current.paths.join(", ")
 #: src/app/search-screen.tsx
@@ -5281,10 +5192,6 @@ msgstr "TaskNotes를 다시 시작해야 합니다."
 msgid "TaskNotes needs your approval in mdbase again before it can open this collection."
 msgstr "이 컬렉션을 열려면 mdbase에서 TaskNotes를 다시 승인해야 합니다."
 
-#: src/app/model-setup-screen.tsx
-msgid "TaskNotes setup is unavailable."
-msgstr "TaskNotes 설정을 사용할 수 없습니다."
-
 #: src/app/views/view-catalog.tsx
 msgid "TaskNotes tool"
 msgstr "TaskNotes 도구"
@@ -5510,10 +5417,6 @@ msgstr "이 보드는 계산된 속성으로 그룹화되어 카드 간 열 이�
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "이 컬렉션에는 완료된 작업 상태가 정의되어 있지 않습니다."
-
-#: src/app/model-setup-screen.tsx
-msgid "This collection needs its TaskNotes setup before tasks and views can open. New setup installs the published models and adds Today, Upcoming, Calendar, Projects and Archive. Existing view sources stay unchanged; interrupted setup resumes only its original changes."
-msgstr "작업과 뷰를 열기 전에 이 컬렉션에 TaskNotes 설정이 필요합니다. 새 설정은 게시된 모델을 설치하고 오늘, 예정, 캘린더, 프로젝트 및 보관 뷰를 추가합니다. 기존 뷰 원본은 변경되지 않으며, 중단된 설정은 원래 변경 사항만 이어서 적용합니다."
 
 #: src/app/more-screen.tsx
 msgid "This device only"
@@ -5922,14 +5825,6 @@ msgstr "컬렉션에 저장된 뷰"
 #: src/components/recurrence-field.tsx
 msgid "Visual editing is unavailable because this rule uses {0}."
 msgstr "이 규칙은 {0}을(를) 사용하므로 시각적 편집을 사용할 수 없습니다."
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for access"
-msgstr "접근 권한 대기 중"
-
-#: src/app/model-setup-screen.tsx
-msgid "Waiting for setup confirmation…"
-msgstr "설정 확인 대기 중…"
 
 #: src/app/connection-notice.ts
 msgid "Waiting for your computer"
