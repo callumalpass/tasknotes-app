@@ -157,7 +157,7 @@ describe("task commands", () => {
     );
     const commands = taskCommands(element);
     expect(commands.map((item) => item.label)).toEqual([
-      "Open “Write brief”",
+      "Open task",
       "Complete “Write brief”",
       "Set priority",
       "Set status",
@@ -184,7 +184,7 @@ describe("task commands", () => {
       (item) => item.label,
     );
     expect(labels[0]).toBe("Reopen “Done”");
-    expect(labels).not.toContain("Open “Done”");
+    expect(labels).not.toContain("Open task");
     expect(taskCommands(null)).toEqual([]);
   });
 

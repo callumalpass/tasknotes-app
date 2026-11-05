@@ -571,10 +571,16 @@
 }
 
 .command-palette-label {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.command-palette-heading-detail {
+  color: var(--ink-soft);
+  font-weight: 400;
 }
 
 .command-palette-detail {

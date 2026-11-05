@@ -152,7 +152,8 @@ export function taskCommands(
   if (row.dataset.taskId !== openTaskId)
     commands.push({
       id: "task:open",
-      label: t`Open “${title}”`,
+      label: t`Open task`,
+      detail: title,
       section: "task",
       keywords: ["details", "edit"],
       shortcut: "o",

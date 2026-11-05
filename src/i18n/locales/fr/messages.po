@@ -3707,8 +3707,8 @@ msgid "Open"
 msgstr "Ouvertes"
 
 #: src/app/palette-commands.ts
-msgid "Open “{title}”"
-msgstr "Ouvrir « {title} »"
+#~ msgid "Open “{title}”"
+#~ msgstr "Ouvrir « {title} »"
 
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
@@ -3736,6 +3736,7 @@ msgid "Open in Planner"
 msgstr "Ouvrir dans Planner"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"

@@ -65,6 +65,10 @@ type CaptureDetailSection = "timing" | "organize" | "repeat" | "notes";
 
 const FOLLOW_UP_MS = 12000;
 
+/* A longer title scrolls out of the field behind its parsed tokens, so it is
+   read back beneath them. */
+const CAPTURE_TITLE_PREVIEW_LENGTH = 32;
+
 export function TaskCapture({
   configuration,
   createTask,
@@ -539,7 +543,13 @@ export function TaskCapture({
             ) : (
               <>
                 {settled && settled.input.title !== parsedText ? (
-                  <span className="capture-title-preview visually-hidden">
+                  <span
+                    className={
+                      settled.input.title.length > CAPTURE_TITLE_PREVIEW_LENGTH
+                        ? "capture-title-preview"
+                        : "capture-title-preview visually-hidden"
+                    }
+                  >
                     <Trans>Task: </Trans>
                     {settled.input.title}
                   </span>

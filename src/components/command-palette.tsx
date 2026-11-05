@@ -145,6 +145,12 @@ export function CommandPalette({
           {groups.map((group, groupIndex) => {
             const end = groups[groupIndex + 1]?.start ?? options.length;
             const headingId = `${optionId}-group-${group.section}`;
+            // Task commands share one subject, so it is named once.
+            const subject =
+              group.section === "task"
+                ? options.slice(group.start, end).find((item) => item.detail)
+                    ?.detail
+                : undefined;
             return (
               <div aria-labelledby={headingId} key={group.section} role="group">
                 <p
@@ -153,6 +159,12 @@ export function CommandPalette({
                   role="presentation"
                 >
                   {paletteSectionLabels[group.section]}
+                  {subject ? (
+                    <span className="command-palette-heading-detail">
+                      {" · "}
+                      {subject}
+                    </span>
+                  ) : null}
                 </p>
                 {options.slice(group.start, end).map((command, offset) => {
                   const index = group.start + offset;
@@ -173,7 +185,7 @@ export function CommandPalette({
                       <span className="command-palette-label">
                         {command.label}
                       </span>
-                      {command.detail ? (
+                      {command.detail && !subject ? (
                         <small className="command-palette-detail">
                           {command.detail}
                         </small>

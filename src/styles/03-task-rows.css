@@ -10,17 +10,6 @@
     background-color 180ms var(--ease-out);
 }
 
-/* A hairline keeps long lists scannable without boxing each task. */
-.saved-task-list > :not(:last-child) > .task-row::after,
-.saved-task-list > .task-row:not(:last-child)::after,
-.search-results .task-row:not(:last-child)::after,
-.project-group .task-row:not(:last-child)::after {
-  grid-column: 2 / -1;
-  height: 1px;
-  background: var(--line);
-  content: "";
-}
-
 /* Touch rows follow a horizontal swipe; the revealed side names the action. */
 @media (pointer: coarse) {
   .task-row:not(.kanban-card *) {
@@ -428,6 +417,7 @@
 }
 
 .task-actions-items button > span {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -690,25 +680,21 @@
   background: oklch(from var(--priority-color) max(l, 0.68) c h);
 }
 
-/* A coloured, non-default status sets a dot inside the ring, and names the
-   status in the control's label and tooltip. Its lightness is clamped so a
-   pale or dark stored colour keeps 3:1 against the paper. */
-.completion-control.has-status span::before {
-  position: absolute;
-  inset: 4.5px;
-  border-radius: 50%;
-  background: var(--status-color);
-  background: oklch(from var(--status-color) min(l, 0.58) c h);
-  content: "";
+/* A coloured, non-default status colours the ring, and names the status in
+   the control's label and tooltip. Its lightness is clamped so a pale or dark
+   stored colour keeps 3:1 against the paper. */
+.completion-control.has-status span {
+  border-color: var(--status-color);
+  border-color: oklch(from var(--status-color) min(l, 0.58) c h);
 }
 
-:root[data-theme="dark"] .completion-control.has-status span::before {
-  background: oklch(from var(--status-color) max(l, 0.7) c h);
+:root[data-theme="dark"] .completion-control.has-status span {
+  border-color: oklch(from var(--status-color) max(l, 0.7) c h);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .completion-control.has-status span::before {
-    background: oklch(from var(--status-color) max(l, 0.7) c h);
+  :root:not([data-theme]) .completion-control.has-status span {
+    border-color: oklch(from var(--status-color) max(l, 0.7) c h);
   }
 }
 
@@ -1314,4 +1300,10 @@
     max-width: 34px;
     height: 34px;
   }
+}
+
+/* The capture bar already closes the header, so the list adds no second rule. */
+.has-list-capture .saved-task-list,
+.saved-task-list .saved-task-list {
+  border-top: 0;
 }

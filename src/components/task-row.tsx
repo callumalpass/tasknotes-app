@@ -184,12 +184,7 @@ export function TaskRow({
     .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
   const shownDetails = sectionDetails(allDetails, sectionDay, configuration);
-  // A status the row names carries its colour there; the circle stays clear.
-  const statusNamed = shownDetails.some(
-    (detail) => propertyIcon(detail, configuration) === Circle,
-  );
-  const statusColor =
-    distinctStatus && !statusNamed ? status?.color : undefined;
+  const statusColor = distinctStatus ? status?.color : undefined;
   const context = supportingText ? (
     <small id={supportingId} className="task-row-context">
       {supportingText}
@@ -330,8 +325,8 @@ export function TaskRow({
         disabled={pending}
         title={distinctStatus ? status?.label : undefined}
         style={
-          // Priority draws the tick beside the circle and status the dot
-          // inside it; the row's label names both.
+          // Priority draws the tick beside the circle and status colours the
+          // circle; the row's label names both.
           {
             ...(statusColor ? { "--status-color": statusColor } : {}),
             ...(raisedPriorityColor

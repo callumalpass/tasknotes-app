@@ -752,6 +752,11 @@ function TaskEditor({
   const ringColor = task.completed
     ? undefined
     : markedPriorityColorOf(draft.priority, configuration);
+  const statusColor =
+    task.completed || draft.status === configuration.defaults.status
+      ? undefined
+      : configuration.statuses.find((item) => item.value === draft.status)
+          ?.color;
   useTaskDetailKeys({
     onEscape: () => void leave(),
     onNavigate: onNavigate ? navigateAdjacent : undefined,
@@ -1033,11 +1038,12 @@ function TaskEditor({
           {!occurrenceDate && !task.occurrenceDate ? (
             <button
               type="button"
-              className={`completion-control${ringColor ? " has-priority" : ""}`}
+              className={`completion-control${ringColor ? " has-priority" : ""}${statusColor ? " has-status" : ""}`}
               style={
-                ringColor
-                  ? ({ "--priority-color": ringColor } as React.CSSProperties)
-                  : undefined
+                {
+                  ...(ringColor ? { "--priority-color": ringColor } : {}),
+                  ...(statusColor ? { "--status-color": statusColor } : {}),
+                } as React.CSSProperties
               }
               aria-label={
                 task.completed

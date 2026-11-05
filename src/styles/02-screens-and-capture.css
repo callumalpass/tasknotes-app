@@ -301,30 +301,38 @@
   white-space: nowrap;
 }
 
+/* Chips and Add details wrap as one group. */
 .capture-interpretation {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
   min-height: 43px;
   padding: 8px 0;
   color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  line-height: 1.35;
   border-bottom: 1px solid var(--line);
 }
 
 .capture-interpretation > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: var(--type-supporting);
-  line-height: 1.35;
+  display: contents;
 }
 
 .capture-interpretation > .text-action {
   flex: 0 0 auto;
+  margin-block: -8px;
+  font-size: var(--type-supporting);
   white-space: nowrap;
+}
+
+.capture-title-preview {
+  display: -webkit-box;
+  flex: 1 0 100%;
+  overflow: hidden;
+  color: var(--ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .capture-parsing,
@@ -714,8 +722,8 @@
   gap: 8px;
   min-height: 44px;
   margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--type-label);
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
 }
 .capture-keep-adding input {
   accent-color: var(--accent);
@@ -755,8 +763,8 @@
 .capture-footer .capture-discard {
   min-height: 44px;
   margin-inline-start: auto;
-  color: var(--ink-muted);
-  font-size: var(--type-label);
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
   font-weight: 400;
 }
 .capture-footer .capture-discard:hover {
