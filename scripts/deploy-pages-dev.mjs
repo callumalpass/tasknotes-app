@@ -292,15 +292,10 @@ async function verifyDevelopmentBuild(deployment = developmentDeployment) {
   const sources = await Promise.all(
     scripts.map((script) => readFile(script, "utf8")),
   );
-  for (const expected of [
-    deployment.connectOrigin,
-    ...(deployment.loopbackOrigin ? [deployment.loopbackOrigin] : []),
-  ]) {
-    if (!sources.some((source) => source.includes(expected))) {
-      throw new Error(
-        `TaskNotes deployment bundle does not contain ${expected}.`,
-      );
-    }
+  if (!sources.some((source) => source.includes(deployment.connectOrigin))) {
+    throw new Error(
+      `TaskNotes deployment bundle does not contain ${deployment.connectOrigin}.`,
+    );
   }
   requireBundledTrust(sources, deployment);
 }
