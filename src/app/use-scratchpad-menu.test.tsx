@@ -34,17 +34,33 @@ it("dismisses on Escape and returns focus to the trigger", async () => {
   );
 });
 
-it.each(["resize", "scroll"])(
-  "retires an invalidated anchor on %s",
-  (event) => {
-    render(<MenuFixture />);
-    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
-    act(() => {
-      window.dispatchEvent(new Event(event));
-    });
-    expect(screen.queryByRole("menu")).toBeNull();
-  },
-);
+it("retires an invalidated anchor on resize", () => {
+  render(<MenuFixture />);
+  fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+  act(() => {
+    window.dispatchEvent(new Event("resize"));
+  });
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+it("ignores queued scroll events until scrolling actually moves its anchor", () => {
+  render(<MenuFixture />);
+  const trigger = screen.getByRole("button", { name: "Actions" });
+  let top = 0;
+  vi.spyOn(trigger, "getBoundingClientRect").mockImplementation(
+    () => new DOMRect(0, top, 44, 44),
+  );
+  fireEvent.click(trigger);
+  act(() => {
+    window.dispatchEvent(new Event("scroll"));
+  });
+  expect(screen.getByRole("menuitem")).toHaveFocus();
+  top = 20;
+  act(() => {
+    window.dispatchEvent(new Event("scroll"));
+  });
+  expect(screen.queryByRole("menu")).toBeNull();
+});
 
 it("dismisses on outside interaction and when another overlay opens", () => {
   render(<MenuFixture />);

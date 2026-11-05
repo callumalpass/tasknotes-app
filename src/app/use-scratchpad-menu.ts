@@ -25,22 +25,27 @@ export function useScratchpadMenu(
       initialFocus: () => menu.querySelector<HTMLButtonElement>("button"),
       returnFocus: trigger,
     });
+    const bounds = trigger.getBoundingClientRect();
+    const anchorMoved = () => {
+      const current = trigger.getBoundingClientRect();
+      return (
+        current.top !== bounds.top ||
+        current.left !== bounds.left ||
+        current.width !== bounds.width
+      );
+    };
     const scroll = (event: Event) => {
-      if (!(event.target instanceof Node) || !menu.contains(event.target))
+      if (
+        (!(event.target instanceof Node) || !menu.contains(event.target)) &&
+        anchorMoved()
+      )
         close();
     };
-    const bounds = trigger.getBoundingClientRect();
     const observer =
       typeof ResizeObserver === "undefined"
         ? undefined
         : new ResizeObserver(() => {
-            const current = trigger.getBoundingClientRect();
-            if (
-              current.top !== bounds.top ||
-              current.left !== bounds.left ||
-              current.width !== bounds.width
-            )
-              close();
+            if (anchorMoved()) close();
           });
     observer?.observe(trigger.closest(".scratchpad-history-scroll") ?? trigger);
     window.addEventListener("resize", close);
