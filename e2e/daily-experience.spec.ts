@@ -49,10 +49,15 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' task-row ')][1]",
   );
   if (testInfo.project.name === "mobile") {
-    await expect(
-      firstRow.getByRole("button", { name: /^Scheduled:/ }),
-    ).toBeVisible();
-    await expect(firstRow.getByRole("button", { name: /^Due:/ })).toBeVisible();
+    const metadata = firstRow.getByRole("button", {
+      name: "Task properties",
+      exact: true,
+    });
+    await expect(metadata).toBeVisible();
+    await expect(metadata).toHaveAccessibleDescription(/Scheduled:.*Due:/);
+    expect((await metadata.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(metadata.locator('[data-property="scheduled"]')).toBeVisible();
+    await expect(metadata.locator('[data-property="due"]')).toBeVisible();
     await expect(title).toHaveAccessibleDescription(/Scheduled:.*Due:/);
   } else {
     await expect(
@@ -156,9 +161,10 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
   await expect(
     detail.getByRole("textbox", { name: "Notes", exact: true }),
   ).toBeVisible();
-  await expect(
-    detail.getByRole("region", { name: "Task properties" }),
-  ).toBeVisible();
+  const properties = detail.getByRole("region", { name: "Task properties" });
+  await expect(properties).not.toBeVisible();
+  await detail.locator(".task-properties-disclosure > summary").click();
+  await expect(properties).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("task-detail.png"),
     fullPage: true,

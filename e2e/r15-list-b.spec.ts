@@ -13,6 +13,7 @@ for (const theme of ["light", "dark"] as const) {
       await page.locator(".task-row-title").first().click();
       const pane = page.locator(".task-screen");
       const notes = pane.locator(".notes-field-heading");
+      await pane.locator(".task-properties-disclosure > summary").click();
       await pane
         .getByRole("button", { name: "Edit Project", exact: true })
         .scrollIntoViewIfNeeded();
@@ -38,8 +39,20 @@ for (const theme of ["light", "dark"] as const) {
         animations: "disabled",
       });
       await pane.getByRole("button", { name: "Done", exact: true }).click();
-      await pane.getByRole("link", { name: "Notes", exact: true }).click();
-      await expect(pane.locator("#task-notes-title")).toBeFocused();
+      const propertiesSummary = pane.locator(
+        ".task-properties-disclosure > summary",
+      );
+      await propertiesSummary.focus();
+      await propertiesSummary.press("Enter");
+      await page.keyboard.press("Tab");
+      const write = pane.getByRole("button", { name: "Write", exact: true });
+      await expect(write).toBeFocused();
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await expect(
+        pane.getByRole("textbox", { name: "Notes", exact: true }),
+      ).toBeFocused();
       await expect(pane.locator("#task-notes-title")).toHaveCSS(
         "font-weight",
         "600",

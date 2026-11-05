@@ -43,6 +43,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto("?demo=60&many-options");
       const title = page.locator(".task-row-title").first();
       await title.click();
+      await page.locator(".task-properties-disclosure > summary").click();
       const status = page
         .getByRole("combobox", { name: "Status", exact: true })
         .first();

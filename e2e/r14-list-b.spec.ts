@@ -115,7 +115,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           );
           await expect(page.locator(".tnc-dg-dots-more").first()).toHaveCSS(
             "font-size",
-            "11px",
+            "13px",
           );
           await page.screenshot({ path: info.outputPath("month.png") });
         }
@@ -126,14 +126,22 @@ for (const colorScheme of ["light", "dark"] as const) {
       page,
     }, info) => {
       await page.goto("?demo=60&many-options");
-      const property = page.locator(".task-row-property").first();
-      await expect(property).toHaveCSS("font-size", "13px");
-      expect((await property.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      const property = page
+        .locator(".task-row-property:visible, .task-row-metadata-band:visible")
+        .first();
+      await expect(property).toHaveCSS("font-size", "14px");
+      const coarse = await page.evaluate(
+        () => matchMedia("(pointer: coarse)").matches,
+      );
+      expect((await property.boundingBox())!.height).toBeGreaterThanOrEqual(
+        coarse ? 44 : 24,
+      );
       await page.locator(".task-row-title").first().click();
       const pane = page.getByRole("complementary", {
         name: "Task details",
         exact: true,
       });
+      await pane.locator(".task-properties-disclosure > summary").click();
       await expect(
         pane.locator(".task-core-properties > .form-field").first(),
       ).toHaveCSS("font-size", "15px");

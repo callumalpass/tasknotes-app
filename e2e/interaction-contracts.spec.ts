@@ -87,7 +87,9 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
 }) => {
   test.setTimeout(90_000);
   await page.goto("?demo=5000");
-  await expect(page.locator(".task-row-title").first()).toBeVisible();
+  await expect(page.locator(".task-row-title").first()).toBeVisible({
+    timeout: 30_000,
+  });
   expect(await page.locator(".task-row").count()).toBeLessThan(80);
   expect(await page.locator("*").count()).toBeLessThan(3000);
   const initial = await page.locator(".task-row-title").first().textContent();

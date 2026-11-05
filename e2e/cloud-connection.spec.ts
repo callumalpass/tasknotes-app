@@ -211,6 +211,17 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
   }
   await page.getByRole("button", { name: "Create task notes" }).click();
   const review = page.getByRole("dialog", { name: "Create task notes" });
+  await expect(review).toContainText("1 of 3 selected");
+  await expect(
+    review.getByRole("checkbox", { name: "Child task" }),
+  ).toBeChecked();
+  await expect(
+    review.getByRole("checkbox", { name: "Parent task" }),
+  ).not.toBeChecked();
+  await expect(
+    review.getByRole("checkbox", { name: "Independent task" }),
+  ).not.toBeChecked();
+  await review.getByRole("button", { name: "Select all", exact: true }).click();
   await expect(review).toContainText("3 of 3 selected");
   await page.getByRole("checkbox", { name: "Child task" }).uncheck();
   await expect(review).toContainText("2 of 3 selected");
@@ -223,6 +234,10 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
     .click();
   await expect(review).toContainText("2 of 3 selected");
   await page.getByRole("button", { name: "Keep writing" }).click();
+  await expect(review).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Create task notes", exact: true }),
+  ).toBeFocused();
   await expect(
     page.getByRole("button", { name: "New note", exact: true }),
   ).toBeVisible();
@@ -520,6 +535,7 @@ test("edits a contract-defined task without collapsing custom status or fields t
   await page
     .getByText("Respect the collection contract", { exact: true })
     .click();
+  await page.locator(".task-properties-disclosure > summary").click();
   await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
     "data-value",
     "doing",
@@ -587,6 +603,7 @@ test("edits the captured migrated numeric property through the held client", asy
   await page
     .getByRole("button", { name: captured.frontmatter.summary, exact: true })
     .click();
+  await page.locator(".task-properties-disclosure > summary").click();
   await page
     .locator("details.task-form-section > summary")
     .filter({ hasText: /^Organize/ })

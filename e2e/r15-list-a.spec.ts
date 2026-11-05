@@ -197,12 +197,14 @@ for (const theme of ["light", "dark"] as const) {
       const input = editor.locator("textarea").first();
       const left = (await editor.boundingBox())!.x;
       expect((await input.boundingBox())!.x - left).toBe(44);
-      await expect(
-        page.getByRole("textbox", { name: "Note title", exact: true }).last(),
-      ).toHaveCSS("font-size", "20px");
-      await expect(
-        page.getByRole("textbox", { name: "Note title", exact: true }).last(),
-      ).toHaveCSS("font-weight", "600");
+      const noteTitle = page
+        .getByRole("textbox", { name: "Note title", exact: true })
+        .last();
+      await expect(noteTitle).toHaveCSS("font-size", "16px");
+      await expect(noteTitle).toHaveCSS("font-weight", "400");
+      await noteTitle.fill("Planning notes");
+      await expect(noteTitle).toHaveCSS("font-size", "20px");
+      await expect(noteTitle).toHaveCSS("font-weight", "600");
       await page.screenshot({ path: info.outputPath("scratchpad.png") });
 
       await page.goto(`views?demo=60${extra}`);

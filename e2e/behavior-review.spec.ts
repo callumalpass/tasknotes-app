@@ -44,7 +44,7 @@ test("quick dates keep uncommon controls behind disclosure", async ({
   await expect(panel.getByLabel("Type a date")).toBeVisible();
 });
 
-test("phone detail keeps set properties and reveals empty properties on demand", async ({
+test("detail summarizes properties before notes and reveals fields on demand", async ({
   page,
   isMobile,
 }, testInfo) => {
@@ -56,10 +56,9 @@ test("phone detail keeps set properties and reveals empty properties on demand",
   await expect(
     page.getByRole("textbox", { name: "Notes", exact: true }),
   ).toBeVisible();
-  const phone = isMobile;
   const due = page.getByRole("button", { name: "Due date", exact: true });
-  if (phone) {
-    await expect(due).not.toBeVisible();
+  await expect(due).not.toBeVisible();
+  if (isMobile) {
     const notes = await page
       .getByRole("heading", { name: "Notes", exact: true })
       .boundingBox();
@@ -67,11 +66,12 @@ test("phone detail keeps set properties and reveals empty properties on demand",
     await page.screenshot({
       path: `/tmp/tasknotes-behavior/${testInfo.project.name}-detail.png`,
     });
-    await page
-      .getByRole("button", { name: "Add property", exact: true })
-      .click();
   }
+  await page.locator(".task-properties-disclosure > summary").click();
   await expect(due).toBeVisible();
+  expect((await due.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await page.locator(".task-properties-disclosure > summary").click();
+  await expect(due).not.toBeVisible();
 });
 
 test("Upcoming title scrolls away while its compact week strip remains", async ({
