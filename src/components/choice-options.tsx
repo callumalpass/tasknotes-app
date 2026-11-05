@@ -10,6 +10,7 @@ export function ChoiceOptions({
   label,
   disabled = false,
   role = "option",
+  labelledBy,
   onChoose,
 }: {
   options: readonly TaskNotesOption[];
@@ -17,11 +18,14 @@ export function ChoiceOptions({
   label?: string;
   disabled?: boolean;
   role?: "option" | "menuitemradio";
+  labelledBy?: string;
   onChoose(value: string): void;
 }) {
   const { t } = useLingui();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
+  const defaultLabel = t`options`;
+  const filterLabel = label ?? defaultLabel;
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const filtered = options.filter((option) =>
@@ -38,7 +42,7 @@ export function ChoiceOptions({
   return (
     <div className="choice-options" ref={root}>
       <input
-        aria-label={t`Filter ${label ?? t`options`}`}
+        aria-label={t`Filter ${filterLabel}`}
         aria-controls={`${id}-list`}
         aria-activedescendant={filtered[active] ? `${id}-${active}` : undefined}
         autoComplete="off"
@@ -85,7 +89,8 @@ export function ChoiceOptions({
         className="tasknotes-option-list"
         id={`${id}-list`}
         role={role === "option" ? "listbox" : "menu"}
-        aria-label={label}
+        aria-label={labelledBy ? undefined : label}
+        aria-labelledby={labelledBy}
       >
         {filtered.map((option, index) => (
           <button

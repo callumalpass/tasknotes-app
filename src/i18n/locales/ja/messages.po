@@ -803,6 +803,10 @@ msgstr "ノートを追加"
 msgid "Add projection"
 msgstr "プロジェクションを追加"
 
+#: src/app/task-core-properties.tsx
+msgid "Add property"
+msgstr "プロパティを追加"
+
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
 msgstr "リマインダーを追加"
@@ -1902,6 +1906,10 @@ msgid "Date for overdue tasks"
 msgstr "期限超過のタスクの日付"
 
 #: src/components/task-date-panel.tsx
+msgid "Date options"
+msgstr "日付オプション"
+
+#: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "変更する日付"
 
@@ -2276,6 +2284,10 @@ msgstr "パターンを編集"
 msgid "Edit property"
 msgstr "プロパティを編集"
 
+#: src/components/outline-textarea.tsx
+msgid "Edit reference Markdown"
+msgstr "参照の Markdown を編集"
+
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "繰り返しタスクを編集"
@@ -2411,6 +2423,10 @@ msgstr "ファイルパス"
 msgid "Filter"
 msgstr "フィルター"
 
+#: src/components/choice-options.tsx
+msgid "Filter {filterLabel}"
+msgstr "絞り込み: {filterLabel}"
+
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
 msgstr "フィルター条件"
@@ -2438,6 +2454,10 @@ msgstr "フィルター値"
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
 msgstr "ビューを絞り込む"
+
+#: src/components/choice-options.tsx
+msgid "Filter…"
+msgstr "絞り込み…"
 
 #: src/components/task-actions.tsx
 msgid "Find a project"
@@ -2608,6 +2628,10 @@ msgstr "ヘルプ"
 #: src/components/task-capture.tsx
 msgid "Hide details"
 msgstr "詳細を非表示"
+
+#: src/app/task-core-properties.tsx
+msgid "Hide empty properties"
+msgstr "空のプロパティを非表示"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
@@ -3453,6 +3477,10 @@ msgstr "数式はありません"
 msgid "No grouping"
 msgstr "グループ化なし"
 
+#: src/components/choice-options.tsx
+msgid "No matches"
+msgstr "一致なし"
+
 #: src/components/command-palette.tsx
 msgid "No matching commands."
 msgstr "一致するコマンドはありません。"
@@ -3705,10 +3733,6 @@ msgctxt "board column: open tasks"
 msgid "Open"
 msgstr "未完了"
 
-#: src/app/palette-commands.ts
-#~ msgid "Open “{title}”"
-#~ msgstr "「{title}」を開く"
-
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
@@ -3717,10 +3741,6 @@ msgstr "{0}を開く"
 #: src/app/notification-label.ts
 msgid "Open a collection first"
 msgstr "まずコレクションを開いてください"
-
-#: src/app/views-screen.tsx
-msgid "Open a saved view, or choose what appears in navigation."
-msgstr "保存したビューを開くか、ナビゲーションに表示する項目を選びます。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
@@ -3781,6 +3801,7 @@ msgstr "任意"
 msgid "Optional notification text"
 msgstr "任意の通知テキスト"
 
+#: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
 msgid "options"
 msgstr "オプション"
@@ -4543,10 +4564,6 @@ msgstr "このデバイスに保存済み。同期を待っています"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "保存済みビュー"
-
-#: src/app/views/view-catalog.tsx
-msgid "Saved views"
 msgstr "保存済みビュー"
 
 #: src/components/task-model-settings.tsx
@@ -5522,6 +5539,10 @@ msgstr "このビューを読み込めませんでした。"
 msgid "This view uses an unavailable sort."
 msgstr "このビューでは利用できない並べ替えが使われています。"
 
+#: src/components/task-date-panel.tsx
+msgid "This weekend"
+msgstr "今週末"
+
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
@@ -5831,10 +5852,6 @@ msgstr "ビュー"
 #: src/app/app-shell.tsx
 msgid "Views availability"
 msgstr "ビューの状態"
-
-#: src/app/views/view-catalog.tsx
-msgid "Views stored in your collection"
-msgstr "コレクションに保存されたビュー"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx

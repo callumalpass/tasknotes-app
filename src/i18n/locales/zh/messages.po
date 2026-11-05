@@ -803,6 +803,10 @@ msgstr "添加备注"
 msgid "Add projection"
 msgstr "添加投影"
 
+#: src/app/task-core-properties.tsx
+msgid "Add property"
+msgstr "添加属性"
+
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
 msgstr "添加提醒"
@@ -1902,6 +1906,10 @@ msgid "Date for overdue tasks"
 msgstr "逾期任务的日期"
 
 #: src/components/task-date-panel.tsx
+msgid "Date options"
+msgstr "日期选项"
+
+#: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "要更改的日期"
 
@@ -2276,6 +2284,10 @@ msgstr "编辑重复模式"
 msgid "Edit property"
 msgstr "编辑属性"
 
+#: src/components/outline-textarea.tsx
+msgid "Edit reference Markdown"
+msgstr "编辑引用 Markdown"
+
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "编辑重复任务"
@@ -2411,6 +2423,10 @@ msgstr "文件路径"
 msgid "Filter"
 msgstr "筛选"
 
+#: src/components/choice-options.tsx
+msgid "Filter {filterLabel}"
+msgstr "筛选:{filterLabel}"
+
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
 msgstr "筛选条件"
@@ -2438,6 +2454,10 @@ msgstr "筛选值"
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
 msgstr "筛选视图"
+
+#: src/components/choice-options.tsx
+msgid "Filter…"
+msgstr "筛选…"
 
 #: src/components/task-actions.tsx
 msgid "Find a project"
@@ -2608,6 +2628,10 @@ msgstr "帮助"
 #: src/components/task-capture.tsx
 msgid "Hide details"
 msgstr "隐藏详情"
+
+#: src/app/task-core-properties.tsx
+msgid "Hide empty properties"
+msgstr "隐藏空属性"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
@@ -3453,6 +3477,10 @@ msgstr "没有公式"
 msgid "No grouping"
 msgstr "无分组"
 
+#: src/components/choice-options.tsx
+msgid "No matches"
+msgstr "无匹配项"
+
 #: src/components/command-palette.tsx
 msgid "No matching commands."
 msgstr "没有匹配的命令。"
@@ -3705,10 +3733,6 @@ msgctxt "board column: open tasks"
 msgid "Open"
 msgstr "未完成"
 
-#: src/app/palette-commands.ts
-#~ msgid "Open “{title}”"
-#~ msgstr "打开“{title}”"
-
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
@@ -3717,10 +3741,6 @@ msgstr "打开 {0}"
 #: src/app/notification-label.ts
 msgid "Open a collection first"
 msgstr "请先打开一个集合"
-
-#: src/app/views-screen.tsx
-msgid "Open a saved view, or choose what appears in navigation."
-msgstr "打开已保存的视图，或选择在导航中显示的内容。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
@@ -3781,6 +3801,7 @@ msgstr "可选"
 msgid "Optional notification text"
 msgstr "可选通知文本"
 
+#: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
 msgid "options"
 msgstr "选项"
@@ -4543,10 +4564,6 @@ msgstr "已保存在此设备，等待同步"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "已保存的视图"
-
-#: src/app/views/view-catalog.tsx
-msgid "Saved views"
 msgstr "已保存的视图"
 
 #: src/components/task-model-settings.tsx
@@ -5522,6 +5539,10 @@ msgstr "无法加载此视图。"
 msgid "This view uses an unavailable sort."
 msgstr "此视图使用了不可用的排序方式。"
 
+#: src/components/task-date-panel.tsx
+msgid "This weekend"
+msgstr "本周末"
+
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
@@ -5831,10 +5852,6 @@ msgstr "视图"
 #: src/app/app-shell.tsx
 msgid "Views availability"
 msgstr "视图可用性"
-
-#: src/app/views/view-catalog.tsx
-msgid "Views stored in your collection"
-msgstr "存储在集合中的视图"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx

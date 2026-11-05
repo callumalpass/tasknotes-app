@@ -201,6 +201,7 @@ export function TaskNotesSelect({
                 disabled={disabled}
                 value={value}
                 label={ariaLabel}
+                labelledBy={ariaLabelledBy}
                 onChoose={(next) => {
                   onChange(next);
                   setOpen(false);

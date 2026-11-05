@@ -803,6 +803,10 @@ msgstr "Add notes"
 msgid "Add projection"
 msgstr "Add projection"
 
+#: src/app/task-core-properties.tsx
+msgid "Add property"
+msgstr "Add property"
+
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
 msgstr "Add reminder"
@@ -1902,6 +1906,10 @@ msgid "Date for overdue tasks"
 msgstr "Date for overdue tasks"
 
 #: src/components/task-date-panel.tsx
+msgid "Date options"
+msgstr "Date options"
+
+#: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "Date to change"
 
@@ -2276,6 +2284,10 @@ msgstr "Edit pattern"
 msgid "Edit property"
 msgstr "Edit property"
 
+#: src/components/outline-textarea.tsx
+msgid "Edit reference Markdown"
+msgstr "Edit reference Markdown"
+
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "Edit repeating task"
@@ -2411,6 +2423,10 @@ msgstr "File path"
 msgid "Filter"
 msgstr "Filter"
 
+#: src/components/choice-options.tsx
+msgid "Filter {filterLabel}"
+msgstr "Filter {filterLabel}"
+
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
 msgstr "Filter condition"
@@ -2438,6 +2454,10 @@ msgstr "Filter value"
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
 msgstr "Filter views"
+
+#: src/components/choice-options.tsx
+msgid "Filter…"
+msgstr "Filter…"
 
 #: src/components/task-actions.tsx
 msgid "Find a project"
@@ -2608,6 +2628,10 @@ msgstr "Help"
 #: src/components/task-capture.tsx
 msgid "Hide details"
 msgstr "Hide details"
+
+#: src/app/task-core-properties.tsx
+msgid "Hide empty properties"
+msgstr "Hide empty properties"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
@@ -3453,6 +3477,10 @@ msgstr "No formulas"
 msgid "No grouping"
 msgstr "No grouping"
 
+#: src/components/choice-options.tsx
+msgid "No matches"
+msgstr "No matches"
+
 #: src/components/command-palette.tsx
 msgid "No matching commands."
 msgstr "No matching commands."
@@ -3705,10 +3733,6 @@ msgctxt "board column: open tasks"
 msgid "Open"
 msgstr "Open"
 
-#: src/app/palette-commands.ts
-#~ msgid "Open “{title}”"
-#~ msgstr "Open “{title}”"
-
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
@@ -3717,10 +3741,6 @@ msgstr "Open {0}"
 #: src/app/notification-label.ts
 msgid "Open a collection first"
 msgstr "Open a collection first"
-
-#: src/app/views-screen.tsx
-msgid "Open a saved view, or choose what appears in navigation."
-msgstr "Open a saved view, or choose what appears in navigation."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
@@ -3781,6 +3801,7 @@ msgstr "Optional"
 msgid "Optional notification text"
 msgstr "Optional notification text"
 
+#: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
 msgid "options"
 msgstr "options"
@@ -4544,10 +4565,6 @@ msgstr "Saved on this device; waiting for sync"
 #: src/app/views-screen.tsx
 msgid "Saved view"
 msgstr "Saved view"
-
-#: src/app/views/view-catalog.tsx
-msgid "Saved views"
-msgstr "Saved views"
 
 #: src/components/task-model-settings.tsx
 msgid "Saved with the collection and used by every app that opens it."
@@ -5522,6 +5539,10 @@ msgstr "This view couldn’t load."
 msgid "This view uses an unavailable sort."
 msgstr "This view uses an unavailable sort."
 
+#: src/components/task-date-panel.tsx
+msgid "This weekend"
+msgstr "This weekend"
+
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
@@ -5831,10 +5852,6 @@ msgstr "Views"
 #: src/app/app-shell.tsx
 msgid "Views availability"
 msgstr "Views availability"
-
-#: src/app/views/view-catalog.tsx
-msgid "Views stored in your collection"
-msgstr "Views stored in your collection"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx

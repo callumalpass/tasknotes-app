@@ -803,6 +803,10 @@ msgstr "노트 추가"
 msgid "Add projection"
 msgstr "투영 추가"
 
+#: src/app/task-core-properties.tsx
+msgid "Add property"
+msgstr "속성 추가"
+
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
 msgstr "리마인더 추가"
@@ -1902,6 +1906,10 @@ msgid "Date for overdue tasks"
 msgstr "기한 지난 작업의 날짜"
 
 #: src/components/task-date-panel.tsx
+msgid "Date options"
+msgstr "날짜 옵션"
+
+#: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "변경할 날짜"
 
@@ -2276,6 +2284,10 @@ msgstr "패턴 편집"
 msgid "Edit property"
 msgstr "속성 편집"
 
+#: src/components/outline-textarea.tsx
+msgid "Edit reference Markdown"
+msgstr "참조 Markdown 편집"
+
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "반복 작업 편집"
@@ -2411,6 +2423,10 @@ msgstr "파일 경로"
 msgid "Filter"
 msgstr "필터"
 
+#: src/components/choice-options.tsx
+msgid "Filter {filterLabel}"
+msgstr "필터: {filterLabel}"
+
 #: src/components/expression-builder.tsx
 msgid "Filter condition"
 msgstr "필터 조건"
@@ -2438,6 +2454,10 @@ msgstr "필터 값"
 #: src/app/views/view-catalog.tsx
 msgid "Filter views"
 msgstr "뷰 필터링"
+
+#: src/components/choice-options.tsx
+msgid "Filter…"
+msgstr "필터…"
 
 #: src/components/task-actions.tsx
 msgid "Find a project"
@@ -2608,6 +2628,10 @@ msgstr "도움말"
 #: src/components/task-capture.tsx
 msgid "Hide details"
 msgstr "세부정보 숨기기"
+
+#: src/app/task-core-properties.tsx
+msgid "Hide empty properties"
+msgstr "빈 속성 숨기기"
 
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
@@ -3453,6 +3477,10 @@ msgstr "수식 없음"
 msgid "No grouping"
 msgstr "그룹화 안 함"
 
+#: src/components/choice-options.tsx
+msgid "No matches"
+msgstr "일치 항목 없음"
+
 #: src/components/command-palette.tsx
 msgid "No matching commands."
 msgstr "일치하는 명령이 없습니다."
@@ -3705,10 +3733,6 @@ msgctxt "board column: open tasks"
 msgid "Open"
 msgstr "미완료"
 
-#: src/app/palette-commands.ts
-#~ msgid "Open “{title}”"
-#~ msgstr "“{title}” 열기"
-
 #. placeholder {0}: displayName(item.path ?? item.reference)
 #: src/components/task-attachments.tsx
 msgid "Open {0}"
@@ -3717,10 +3741,6 @@ msgstr "{0} 열기"
 #: src/app/notification-label.ts
 msgid "Open a collection first"
 msgstr "먼저 컬렉션을 여세요."
-
-#: src/app/views-screen.tsx
-msgid "Open a saved view, or choose what appears in navigation."
-msgstr "저장된 보기를 열거나 탐색에 표시할 항목을 선택하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Open first"
@@ -3781,6 +3801,7 @@ msgstr "선택 사항"
 msgid "Optional notification text"
 msgstr "선택적 알림 문구"
 
+#: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
 msgid "options"
 msgstr "옵션"
@@ -4543,10 +4564,6 @@ msgstr "이 기기에 저장됨; 동기화 대기 중"
 
 #: src/app/views-screen.tsx
 msgid "Saved view"
-msgstr "저장된 뷰"
-
-#: src/app/views/view-catalog.tsx
-msgid "Saved views"
 msgstr "저장된 뷰"
 
 #: src/components/task-model-settings.tsx
@@ -5522,6 +5539,10 @@ msgstr "이 뷰를 불러오지 못했습니다."
 msgid "This view uses an unavailable sort."
 msgstr "이 뷰는 사용할 수 없는 정렬 기준을 사용합니다."
 
+#: src/components/task-date-panel.tsx
+msgid "This weekend"
+msgstr "이번 주말"
+
 #: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
@@ -5831,10 +5852,6 @@ msgstr "뷰"
 #: src/app/app-shell.tsx
 msgid "Views availability"
 msgstr "뷰 사용 가능 여부"
-
-#: src/app/views/view-catalog.tsx
-msgid "Views stored in your collection"
-msgstr "컬렉션에 저장된 뷰"
 
 #. placeholder {0}: parsed.unsupported.join(", ")
 #: src/components/recurrence-field.tsx
