@@ -14,12 +14,25 @@ export function useCalendarPosition(
     const root = rootRef.current;
     const layout = `${mode}|${phone}`;
     const changedLayout = previousLayout.current !== layout;
+    const resetOuter = changedLayout && previousLayout.current !== "";
     previousLayout.current = layout;
+    if (root && resetOuter) resetOuterScroll(root);
+    if (root) delete root.dataset.moreDays;
     if (!root || (mode !== "multiMonthYear" && !mode.startsWith("timeGrid")))
       return;
     const key = `${mode}|${phone}|${rangeStart}`;
     let scroller: HTMLElement | null = null;
+    let extentObserver: ResizeObserver | undefined;
+    const revealExtent = () => {
+      if (scroller)
+        root.dataset.moreDays = String(
+          mode.startsWith("timeGrid") &&
+            scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft >
+              2,
+        );
+    };
     const remember = () => {
+      revealExtent();
       if (scroller && root.contains(scroller))
         positions.current.set(key, {
           top: scroller.scrollTop,
@@ -63,11 +76,26 @@ export function useCalendarPosition(
         remember();
       }
       scroller.addEventListener("scroll", remember, { passive: true });
+      revealExtent();
+      if (typeof ResizeObserver !== "undefined") {
+        extentObserver = new ResizeObserver(revealExtent);
+        extentObserver.observe(scroller);
+      }
+      window.addEventListener("resize", revealExtent);
     });
     return () => {
       cancelAnimationFrame(frame);
       remember();
       scroller?.removeEventListener("scroll", remember);
+      extentObserver?.disconnect();
+      window.removeEventListener("resize", revealExtent);
     };
   }, [mode, phone, rangeStart, rootRef, selected]);
+}
+
+function resetOuterScroll(root: HTMLElement) {
+  for (let parent = root.parentElement; parent; parent = parent.parentElement)
+    parent.scrollTop = 0;
+  const page = root.ownerDocument.scrollingElement;
+  if (page) page.scrollTop = 0;
 }

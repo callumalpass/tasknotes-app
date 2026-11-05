@@ -36,6 +36,46 @@ const task = {
   priority: "normal",
   timeEntries: [],
 } as unknown as Task;
+it("puts actionable dates before status and organisational metadata without losing values", () => {
+  const { container } = render(
+    <TaskRow
+      task={task}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+      details={[
+        {
+          key: "tags",
+          label: "Tags",
+          value: "research, follow-up",
+          rawValue: ["research", "follow-up"],
+        },
+        {
+          key: "status",
+          label: "Status",
+          value: "A long custom workflow status",
+          rawValue: "custom",
+        },
+        {
+          key: "due",
+          label: "Due",
+          value: "Aug 14",
+          rawValue: task.due,
+          overdue: true,
+        },
+      ]}
+    />,
+  );
+  const properties = [...container.querySelectorAll(".task-row-property")];
+  expect(
+    properties.map((property) => property.getAttribute("aria-label")),
+  ).toEqual([
+    expect.stringMatching(/^Due:/),
+    "Status: A long custom workflow status",
+    "Tags: research, follow-up",
+  ]);
+  expect(properties[0]).toHaveClass("is-date", "is-overdue");
+  expect(properties[2]).toHaveClass("is-organisation");
+});
 it("keeps a parent label available when project properties are omitted", () => {
   const { container } = render(<TaskRow task={{ ...task, projects: ["[[Tasks/Parent.md|Parent task]]"] }} onOpen={vi.fn()} onToggle={vi.fn()} details={[]} />);
   expect(container.querySelector(".task-row-parent")).toHaveTextContent("Parent task");

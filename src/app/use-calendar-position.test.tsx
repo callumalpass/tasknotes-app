@@ -126,3 +126,43 @@ it("does not overwrite a saved position with a detached calendar's zero offset",
   view.rerender({ mode: "multiMonthYear" });
   expect(replacement.scrollTop).toBe(100);
 });
+
+it("resets only outer scrolling on layout changes while retaining the selected day", () => {
+  const root = fixture(
+    '<div class="tnc-tg-scroll"><div class="tnc-gutter-head"></div><div class="tnc-dh" data-date="2026-11-06"></div></div>',
+  );
+  const outer = document.createElement("main");
+  outer.append(root.current);
+  outer.scrollTop = 1742;
+  const scroller = root.current.firstElementChild as HTMLElement;
+  bounds(scroller, 0, 100, 372, 400);
+  bounds(root.current.querySelector(".tnc-gutter-head")!, 0, 100, 44, 40);
+  bounds(root.current.querySelector(".tnc-dh")!, 844, 100, 160, 40);
+  const view = renderHook(
+    ({ mode }) => useCalendarPosition(root, mode, true, "2026-11-06", 0),
+    { initialProps: { mode: "listWeek" } },
+  );
+  expect(outer.scrollTop).toBe(1742);
+  view.rerender({ mode: "timeGridWeek" });
+  expect(outer.scrollTop).toBe(0);
+  expect(scroller.scrollLeft).toBe(800);
+  outer.scrollTop = 100;
+  view.rerender({ mode: "timeGridWeek" });
+  expect(outer.scrollTop).toBe(100);
+});
+
+it("shows the trailing cue only while additional day columns remain", async () => {
+  const root = fixture('<div class="tnc-tg-scroll"></div>');
+  const scroller = root.current.firstElementChild as HTMLElement;
+  Object.defineProperties(scroller, {
+    scrollWidth: { value: 1164 },
+    clientWidth: { value: 372 },
+  });
+  renderHook(() =>
+    useCalendarPosition(root, "timeGridWeek", true, "2026-11-05", 0),
+  );
+  expect(root.current.dataset.moreDays).toBe("true");
+  scroller.scrollLeft = 792;
+  await act(() => scroller.dispatchEvent(new Event("scroll")));
+  expect(root.current.dataset.moreDays).toBe("false");
+});

@@ -705,6 +705,9 @@
   background: transparent;
   border: 0;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 .tasknotes-time-list > button:hover {
@@ -714,6 +717,28 @@
 .tasknotes-time-list > button[aria-selected="true"] {
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions {
+  gap: 8px;
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button {
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: 12px;
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button:first-child {
+  margin-inline-end: auto;
+  color: var(--ink-muted);
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button:last-child {
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-radius: var(--radius-control);
+  font-weight: 600;
 }
 
 .view-editor-control-field {
@@ -2055,7 +2080,7 @@
 }
 
 .task-core-properties {
-  padding: 28px 0 16px;
+  padding: 24px 0 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -2066,7 +2091,7 @@
   align-items: start;
   gap: 8px;
   min-height: 44px;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .task-core-properties > .form-field > span,
@@ -2148,13 +2173,14 @@
 .task-screen .title-field {
   border-bottom: 0;
   field-sizing: content;
+  padding-bottom: 2px;
 }
 .task-screen .notes-field {
-  padding-top: 16px;
+  padding-block: 16px;
 }
 .task-screen .notes-field-heading {
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 .task-screen .notes-field-heading > div {
   border: 0;
@@ -2163,7 +2189,11 @@
   font-size: var(--type-supporting);
 }
 .task-screen .notes-field textarea {
-  min-height: 120px;
+  min-height: 64px;
+}
+
+.task-screen .markdown-preview-empty {
+  min-height: 64px;
 }
 /* Notes grow with what is written, so a short note leaves Subtasks in reach. */
 @supports (field-sizing: content) {

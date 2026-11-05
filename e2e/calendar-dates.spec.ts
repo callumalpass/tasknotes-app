@@ -249,6 +249,7 @@ test.describe("local calendar days", () => {
     ).toHaveCount(0);
     await page.locator(`.tnc-tg-head .tnc-dh[data-date="${day}"]`).click();
     const inspector = page.getByRole("complementary", { name: "Selected day" });
+    await expect(inspector).toBeFocused();
     await expect(inspector).toContainText(`${before + 2} tasks`);
     await expect(
       inspector.getByRole("button", {

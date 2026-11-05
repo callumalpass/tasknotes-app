@@ -45,20 +45,41 @@
   margin-bottom: var(--space-lg);
 }
 
+.views-screen:has(.full-calendar-view.is-agenda) {
+  width: min(100%, var(--content-width));
+}
+
 .full-calendar-commandbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-md) var(--space-lg);
+  gap: var(--space-xs) var(--space-sm);
   margin-bottom: var(--space-lg);
+  background: var(--paper);
+}
+
+.full-calendar-view .tnc--has-strip {
+  --tnc-sticky-top: 44px;
 }
 
 .full-calendar-commandbar > h2 {
-  grid-row: 1;
-  grid-column: 2;
+  grid-row: 2;
+  grid-column: 1 / -1;
   margin: 0;
   font-size: var(--type-control);
-  text-align: right;
+  text-align: start;
+}
+
+.full-calendar-view .tnc-strip-head :is(.tnc-strip-nav, .tnc-strip-today, .tnc-strip-slot) {
+  display: none;
+}
+
+.full-calendar-commandbar > .view-options {
+  grid-row: 1;
+  grid-column: 2;
 }
 
 .full-calendar-navigation,
@@ -125,6 +146,7 @@
 }
 
 .full-calendar-surface {
+  position: relative;
   overflow: hidden;
 }
 
@@ -413,6 +435,17 @@
 }
 
 @media (max-width: 839px) {
+  .full-calendar-view[data-more-days="true"] .full-calendar-surface::after {
+    content: "";
+    position: absolute;
+    inset: 44px 0 0 auto;
+    width: 16px;
+    background: linear-gradient(to left, var(--paper), transparent);
+    border-inline-end: 2px solid var(--line-strong);
+    pointer-events: none;
+    z-index: 5;
+  }
+
   .full-calendar-view .tnc-year-grid {
     grid-template-columns: minmax(308px, 1fr);
   }
@@ -663,6 +696,13 @@
   min-width: 44px;
   color: var(--ink-soft);
   font-size: var(--type-label);
+}
+
+@media (max-width: 839px) {
+  .full-calendar-view :is(.tnc-dg-dow, .tnc-dh-dow, .tnc-more, .tnc-dg-dots-more) {
+    font-size: 11px;
+    line-height: 16px;
+  }
 }
 
 @media (min-width: 840px) {
@@ -1559,7 +1599,7 @@
   }
   .full-calendar-commandbar > h2 {
     grid-column: 1 / -1;
-    grid-row: 1;
+    grid-row: 2;
     min-width: 0;
     text-align: left;
     white-space: nowrap;
@@ -1567,13 +1607,16 @@
   }
   .full-calendar-navigation {
     grid-column: 1;
-    grid-row: 2;
-    gap: 8px;
+    grid-row: 1;
+    gap: 0;
     min-width: 0;
   }
   .full-calendar-commandbar > .view-options {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
+  }
+  .full-calendar-navigation .full-calendar-create {
+    display: none;
   }
   .full-calendar-modes {
     flex: 1 1 100%;
@@ -1797,10 +1840,6 @@
 .agenda-strip-count {
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
-}
-
-.full-calendar-view.is-agenda .tnc-strip-today[hidden] {
-  display: block;
 }
 
 .full-calendar-view.is-agenda .tnc-list-body {

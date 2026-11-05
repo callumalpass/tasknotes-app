@@ -180,7 +180,14 @@ export function TaskRow({
     })
     .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
-  const shownDetails = sectionDetails(allDetails, sectionDay, configuration);
+  const shownDetails = sectionDetails(
+    allDetails,
+    sectionDay,
+    configuration,
+  ).sort(
+    (first, second) =>
+      detailRank(first, configuration) - detailRank(second, configuration),
+  );
   const statusColor = distinctStatus ? status?.color : undefined;
   const context = supportingText ? (
     <small id={supportingId} className="task-row-context">
@@ -386,7 +393,7 @@ export function TaskRow({
               {contextLeadsDetails ? context : null}
               {shownDetails.map((detail) => (
                 <button
-                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detail.overdue ? " is-overdue" : ""}`}
+                  className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detailRank(detail, configuration) === 0 ? " is-date" : ""}${detailRank(detail, configuration) === 2 ? " is-organisation" : ""}${detail.overdue ? " is-overdue" : ""}`}
                   key={detail.key}
                   title={
                     detail.description ?? `${detail.label}: ${detail.value}`
@@ -619,6 +626,27 @@ function detailStatusColor(
 function propertyField(detail: TaskRowDetail): string {
   const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
   return bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+}
+
+function detailRank(detail: TaskRowDetail, { fieldMapping }: RowConfiguration) {
+  const field = propertyField(detail);
+  if (
+    [fieldMapping.scheduled, fieldMapping.due, "scheduled", "due"].includes(
+      field,
+    )
+  )
+    return 0;
+  if (
+    [
+      fieldMapping.projects,
+      fieldMapping.contexts,
+      "projects",
+      "contexts",
+      "tags",
+    ].includes(field)
+  )
+    return 2;
+  return 1;
 }
 
 type RowConfiguration =

@@ -463,6 +463,38 @@ describe("ScratchpadScreen", () => {
     expect(title).toHaveValue("My title");
   });
 
+  it("releases bottom pinning when image capture is explicitly opened", async () => {
+    let notifyResize = () => {};
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private callback: () => void) {}
+        observe(element: Element) {
+          if (element.classList.contains("scratchpad-history-scroll"))
+            notifyResize = this.callback;
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    const scroller = document.querySelector<HTMLElement>(
+      ".scratchpad-history-scroll",
+    )!;
+    Object.defineProperty(scroller, "scrollHeight", { value: 1200 });
+    act(() => notifyResize());
+    expect(scroller.scrollTop).toBe(1200);
+    fireEvent.click(screen.getByRole("button", { name: "Add image" }));
+    scroller.scrollTop = 300;
+    act(() => notifyResize());
+    expect(scroller.scrollTop).toBe(300);
+  });
+
   it("opens an accessible image capture panel and retains it after an invalid drop", async () => {
     renderScratchpad();
     await screen.findByRole(
@@ -668,6 +700,8 @@ describe("ScratchpadScreen", () => {
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
       title: "Readable title property",
+      scheduled: "2026-11-06",
+      priority: "high",
     });
     const scratchpad = await repository.getActiveScratchpad();
     const exactBody = `- [[${renamed.path.replace(/\.md$/i, "")}]]\n`;
@@ -685,6 +719,9 @@ describe("ScratchpadScreen", () => {
       await screen.findByRole("button", { name: "Readable title property" }),
     ).toBeVisible();
     expect(screen.queryByText("Filename title")).not.toBeInTheDocument();
+    const metadata = document.querySelector(".scratchpad-linked-metadata")!;
+    expect(metadata).toHaveTextContent(/Nov|Tomorrow/);
+    expect(metadata).toHaveTextContent(/high/i);
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
   });
 

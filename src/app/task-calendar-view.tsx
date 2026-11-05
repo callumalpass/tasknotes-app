@@ -158,7 +158,6 @@ export function TaskCalendarView({
   const stripped =
     agenda ||
     (phone && (mode === "timeGridThreeDay" || mode === "timeGridDay"));
-  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
   const [leadSlot, setLeadSlot] = useState<HTMLElement | null>(null);
   const [title, setTitle] = useState("");
   // The external calendar updates its title on a language change without
@@ -171,9 +170,6 @@ export function TaskCalendarView({
   useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
   useCalendarPreviews(rootRef, (day) => {
     inspectDate(day);
-    requestAnimationFrame(() =>
-      inspectorRef.current?.focus({ preventScroll: true }),
-    );
   });
   const [mutationError, setMutationError] = useState("");
   const [contextAction, setContextAction] = useState<{
@@ -454,11 +450,12 @@ export function TaskCalendarView({
 
   function inspectDate(dateStr: string, startStr?: string) {
     setInspectingDay(true);
-    // Below the side-by-side width the day's tasks open under the grid.
-    if (!window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches)
-      requestAnimationFrame(() =>
-        inspectorRef.current?.scrollIntoView?.({ block: "nearest" }),
-      );
+    requestAnimationFrame(() => {
+      inspectorRef.current?.focus({ preventScroll: true });
+      // Below the side-by-side width the day's tasks open under the grid.
+      if (!window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches)
+        inspectorRef.current?.scrollIntoView?.({ block: "nearest" });
+    });
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
   }
@@ -482,7 +479,11 @@ export function TaskCalendarView({
 
   function createFromSelection(info: SelectArg) {
     // Agenda days have their own Add task; a click on a heading only reads it.
-    if (agenda) {
+    if (
+      agenda ||
+      (info.jsEvent?.target instanceof Element &&
+        info.jsEvent.target.closest(".tnc-dh"))
+    ) {
       calendarRef.current?.unselect();
       return;
     }
@@ -601,10 +602,7 @@ export function TaskCalendarView({
                 leadSlot,
               )
             : null}
-          {stripped && stripSlot
-            ? createPortal(layoutSwitcher, stripSlot)
-            : null}
-          <div className="full-calendar-commandbar" hidden={stripped}>
+          <div className="full-calendar-commandbar">
             <div className="full-calendar-navigation">
               <button
                 aria-label={t`Previous period`}
@@ -635,8 +633,10 @@ export function TaskCalendarView({
                 <ChevronRight aria-hidden="true" size={19} />
               </button>
             </div>
-            <h2 aria-live="polite">{title}</h2>
-            {stripped ? null : layoutSwitcher}
+            <h2 aria-live="polite" hidden={stripped}>
+              {title}
+            </h2>
+            {layoutSwitcher}
           </div>
           {historyRequest ? (
             <ClearRecurringHistoryDialog
@@ -706,10 +706,6 @@ export function TaskCalendarView({
                 onSelect(dateStr);
                 onCreate(dateStr);
               }}
-              stripSlotDidMount={({ el }) => setStripSlot(el)}
-              stripSlotWillUnmount={({ el }) =>
-                setStripSlot((current) => (current === el ? null : current))
-              }
               toolbar={false}
               height="auto"
               navLinks={false}

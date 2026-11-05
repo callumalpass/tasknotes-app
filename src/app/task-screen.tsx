@@ -1141,7 +1141,7 @@ function TaskEditor({
               placeholder={t({
                 message: "Add thoughts, links, or supporting details…",
               })}
-              rows={8}
+              rows={3}
               value={draft.body}
               onChange={(event) => change({ body: event.target.value })}
             />

@@ -864,7 +864,7 @@
   flex-wrap: wrap;
   gap: 5px 14px;
   color: var(--ink-soft);
-  font-size: var(--type-mono-detail);
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -922,6 +922,15 @@
   overflow-wrap: anywhere;
   font-weight: 400;
   line-height: 1.35;
+}
+
+.task-row-property.is-date > strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.task-row-property.is-organisation {
+  color: var(--ink-muted);
 }
 
 .task-row-glyph {
@@ -1231,7 +1240,7 @@
 }
 .task-row .task-row-property,
 .task-row .task-row-meta > button {
-  min-height: 24px;
+  min-height: 44px;
   padding-block: 2px;
 }
 .task-section-count {
@@ -1275,6 +1284,24 @@
 .task-row:not(.kanban-card *) .task-row-property.is-compact .task-row-glyph {
   margin-right: 4px;
   vertical-align: -2px;
+}
+
+@media (max-width: 839px) {
+  .task-row:not(.kanban-card *) .task-row-properties {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .task-row:not(.kanban-card *) .task-row-property {
+    flex: 0 0 auto;
+    max-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
+    white-space: nowrap;
+  }
 }
 .undo-toast.task-completed-notice {
   display: flex;

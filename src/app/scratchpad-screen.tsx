@@ -2,6 +2,7 @@ import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { nestedItemCount } from "../i18n/default-labels";
 import { appLocale } from "../i18n/app";
+import { formatTaskDate } from "../i18n/presentation";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
@@ -181,6 +182,7 @@ export function ScratchpadScreen({
   const deletionUndoRef = useRef<HTMLButtonElement | null>(null);
   const flushers = useRef(new Map<string, () => Promise<unknown>>());
   const imageActionRef = useRef<HTMLButtonElement | null>(null);
+  const imageCaptureRef = useRef<HTMLElement | null>(null);
   const screenRef = useRef<HTMLElement | null>(null);
   const historyRef = useRef<HTMLDivElement | null>(null);
   const currentCardRef = useRef<HTMLElement | null>(null);
@@ -672,13 +674,19 @@ export function ScratchpadScreen({
 
   useEffect(() => {
     if (!imageCaptureOpen) return;
+    const frame = requestAnimationFrame(() =>
+      imageCaptureRef.current?.scrollIntoView?.({ block: "center" }),
+    );
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setImageCaptureOpen(false);
       imageActionRef.current?.focus();
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
   }, [imageCaptureOpen]);
 
   useEffect(() => {
@@ -1108,7 +1116,13 @@ export function ScratchpadScreen({
                 ref={imageActionRef}
                 title={t({ message: "Add image" })}
                 type="button"
-                onClick={() => setImageCaptureOpen((open) => !open)}
+                onClick={() => {
+                  if (!imageCaptureOpen) {
+                    stickToBottom.current = false;
+                    revealBottom.current = false;
+                  }
+                  setImageCaptureOpen((open) => !open);
+                }}
               >
                 <ImagePlus aria-hidden="true" size={18} />
                 <span>
@@ -1141,6 +1155,7 @@ export function ScratchpadScreen({
               aria-labelledby="scratchpad-image-capture-title"
               className="scratchpad-image-capture"
               id="scratchpad-image-capture"
+              ref={imageCaptureRef}
             >
               <header>
                 <div>
@@ -1422,9 +1437,11 @@ function ScratchImageCard({
       />
       {!collapsed ? (
         <div
-          className="scratch-image-frame"
+          className={`scratch-image-frame${state === "missing" || state === "error" ? " is-unavailable" : ""}`}
           style={
-            image.width && image.height
+            (state === "loading" || state === "ready") &&
+            image.width &&
+            image.height
               ? { aspectRatio: `${image.width} / ${image.height}` }
               : undefined
           }
@@ -2927,11 +2944,30 @@ function ScratchpadDocumentEditor({
                   )}
                   {node.kind === "task" ? (
                     <button
+                      aria-label={node.text}
                       className="scratchpad-task-link"
                       type="button"
                       onClick={() => void openLinkedNode(node)}
                     >
                       {node.text}
+                      {linkedTask ? (
+                        <span className="scratchpad-linked-metadata">
+                          {linkedTask.scheduled || linkedTask.due ? (
+                            <span>
+                              {formatTaskDate(
+                                linkedTask.scheduled || linkedTask.due!,
+                              )}
+                            </span>
+                          ) : null}
+                          {linkedTask.priority ? (
+                            <span>
+                              {configuration.priorities.find(
+                                ({ value }) => value === linkedTask.priority,
+                              )?.label ?? linkedTask.priority}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </button>
                   ) : (
                     <OutlineTextarea

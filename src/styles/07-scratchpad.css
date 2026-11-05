@@ -446,6 +446,26 @@ html.scratchpad-route .page-surface {
   color: var(--ink-muted);
 }
 
+.scratch-image-frame.is-unavailable,
+.scratch-image-frame.is-unavailable .scratch-image-placeholder {
+  min-height: 88px;
+  max-height: none;
+}
+
+.scratch-image-frame.is-unavailable .scratch-image-placeholder {
+  padding: 8px;
+}
+
+.scratchpad-linked-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
 .scratch-image-card footer {
   display: flex;
   min-height: 48px;
