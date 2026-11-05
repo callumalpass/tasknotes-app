@@ -1243,8 +1243,8 @@
 }
 
 /* Overdue names itself once, in its label; the count stays ordinary. */
-.day-task-sections .task-section.is-overdue .task-section-toggle > svg,
-.day-task-sections .task-section.is-overdue .task-section-count {
+.task-section.is-overdue .task-section-toggle > svg,
+.task-section.is-overdue .task-section-count {
   color: var(--ink-muted);
 }
 
@@ -1257,20 +1257,20 @@
   column-gap: 12px;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
-  flex: 0 1 auto;
+  flex: 0 1 max-content;
   flex-wrap: nowrap;
   min-width: min(2.75rem, 100%);
-  max-width: max-content;
+  max-width: 100%;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-project {
-  flex: 1 1 7rem;
-  min-width: min(7rem, 100%);
+  flex: 0 1 max-content;
+  min-width: min(2.75rem, 100%);
+  max-width: 100%;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact .task-row-glyph {
   margin-right: 4px;

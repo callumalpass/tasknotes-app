@@ -26,11 +26,7 @@ import {
   useState,
 } from "react";
 
-import {
-  activeTimeEntry,
-  taskDatePart,
-  taskTimePart,
-} from "../domain/task";
+import { activeTimeEntry, taskDatePart, taskTimePart } from "../domain/task";
 import { formatTaskTime } from "../i18n/presentation";
 import { relativeDateDetail } from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
@@ -49,7 +45,7 @@ import { requestProjectJump } from "../app/project-jump";
 import { rescheduleInput } from "../domain/task-date-actions";
 import { projectLabel } from "../domain/project-shortcuts";
 import { markedPriorityColorOf } from "../domain/task-configuration";
-import { rememberUndo } from "../app/undo-history";
+import { rememberTaskEdit } from "../app/task-edit-undo";
 import {
   COMPLETION_FOLD_MS,
   COMPLETION_LINGER_MS,
@@ -213,19 +209,19 @@ export function TaskRow({
     yieldToSelection: selection.holdsTasks,
     schedule: async (scheduled, when) => {
       try {
-        const earlier = {
-          scheduled: task.scheduled ?? null,
-          due: task.due ?? null,
-        };
         const input = rescheduleInput(task, taskDatePart(scheduled));
-        await updateTask(task.id, { ...input, scheduled });
+        const change = { ...input, scheduled };
+        const saved = await updateTask(task.id, change);
         const title = task.title;
-        rememberUndo({
-          label: title,
+        rememberTaskEdit({
+          before: task,
+          saved,
+          input: change,
           notice: input.due
             ? t`Moved “${title}” and its due date to ${when}`
             : t`Moved “${title}” to ${when}`,
-          run: () => updateTask(task.id, earlier),
+          getSummary: (id) => repository.getSummary(id),
+          updateTask,
         });
         actionFeedback();
       } catch (reason) {
@@ -372,8 +368,11 @@ export function TaskRow({
           </span>
         </button>
         {context && !contextLeadsDetails ? context : null}
-        {task.projects?.length && !shownDetails.some((detail) =>
-          [configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)),
+        {task.projects?.length &&
+        !shownDetails.some((detail) =>
+          [configuration.fieldMapping.projects, "projects"].includes(
+            propertyField(detail),
+          ),
         ) ? (
           <small className="task-row-parent">
             <Folder aria-hidden="true" size={13} />

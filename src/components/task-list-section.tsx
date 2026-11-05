@@ -62,7 +62,10 @@ export function TaskListSection({
     </button>
   );
   return (
-    <section className={`task-section ${className}`} data-list-lane={laneKey}>
+    <section
+      className={`task-section${laneKey === "section:overdue" ? " is-overdue" : ""} ${className}`}
+      data-list-lane={laneKey}
+    >
       {action ? (
         <div className="section-heading has-action">
           <h2>{toggle}</h2>

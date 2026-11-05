@@ -2055,7 +2055,7 @@
 }
 
 .task-core-properties {
-  padding: 12px 0 16px;
+  padding: 28px 0 16px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -2065,8 +2065,8 @@
   grid-template-columns: minmax(5.5rem, 0.32fr) minmax(0, 1fr);
   align-items: start;
   gap: 8px;
-  min-height: 36px;
-  font-size: var(--type-supporting);
+  min-height: 44px;
+  font-size: 14px;
 }
 
 .task-core-properties > .form-field > span,
@@ -2074,11 +2074,12 @@
   margin: 0;
   padding: 9px 0;
   color: var(--ink-muted);
+  font-size: 12px;
 }
 
 .task-core-properties .tasknotes-control-trigger,
 .task-property-value {
-  min-height: 36px;
+  min-height: 44px;
   padding: 7px 8px;
   border: 0;
   border-radius: var(--radius-control);

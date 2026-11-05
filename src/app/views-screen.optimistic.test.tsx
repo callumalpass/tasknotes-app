@@ -16,6 +16,7 @@ import { todayString } from "../domain/task";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
+import { clearUndoHistory, takeUndo, onUndoNotice } from "./undo-history";
 
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
@@ -1217,6 +1218,63 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   expect(pages).toBe(2);
   expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
+
+it.each([false, true])(
+  "journals manual ranks and guards Undo against later edits (%s)",
+  async (changed) => {
+    clearUndoHistory();
+    const view = manualListView("undo-order");
+    const tasks: Task[] = [
+      { ...listTask("alpha", "Alpha"), sortOrder: "tnzzzzzzzzzz" },
+      { ...listTask("bravo", "Bravo"), sortOrder: "tnmmmmmmmmmm" },
+    ];
+    const ranks = new Map(tasks.map((task) => [task.id, task.sortOrder]));
+    const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+      const index = tasks.findIndex((task) => task.id === id);
+      tasks[index] = {
+        ...tasks[index],
+        sortOrder: input.sortOrder ?? undefined,
+        revision: Number(tasks[index].revision) + 1,
+      };
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return tasks.find((task) => task.id === id)!;
+    });
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      groups: [],
+      totalCount: tasks.length,
+      hasMore: false,
+    }));
+    repository.getSummary = async (id) =>
+      tasks.find((task) => task.id === id) ?? null;
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
+    renderListView(repository, view);
+    fireEvent.keyDown(
+      await screen.findByRole("button", { name: /Reorder Alpha/ }),
+      { key: "ArrowDown" },
+    );
+    await waitFor(() => expect(notice).toHaveBeenCalledOnce());
+    expect(notice.mock.calls[0][0].notice).toBe("Reordered “Alpha”");
+    const undo = takeUndo()!;
+    const writes = update.mock.calls.length;
+    if (changed) {
+      for (const task of tasks) task.revision = Number(task.revision) + 1;
+      await expect(undo.run()).rejects.toThrow("This task changed");
+      expect(update).toHaveBeenCalledTimes(writes);
+    } else {
+      await act(async () => {
+        await undo.run();
+      });
+      for (const task of tasks) expect(task.sortOrder).toBe(ranks.get(task.id));
+    }
+    unsubscribe();
+    clearUndoHistory();
+  },
+);
 
 it("keeps an accepted manual reorder when only its post-write refresh fails", async () => {
   const view = manualListView("accepted-reorder");

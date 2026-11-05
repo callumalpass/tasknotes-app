@@ -1,22 +1,20 @@
-import {
-  editableProperty,
-  type EditableProperty,
-} from "./task-property-kind";
+import { editableProperty, type EditableProperty } from "./task-property-kind";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
 
 import { useOverlay } from "./overlays/use-overlay";
 import { usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
+import { rememberTaskEdit } from "../app/task-edit-undo";
+import { ChoiceOptions } from "./choice-options";
 import {
   combineTaskDateTime,
   taskDatePart,
@@ -57,7 +55,7 @@ export function TaskPropertyEditor({
   onExited?(): void;
 }) {
   const { t } = useLingui();
-  const { configuration, updateTask } = useRepository();
+  const { configuration, repository, updateTask } = useRepository();
   const property = useMemo(
     () => editableProperty(detail.key, configuration),
     [configuration, detail.key],
@@ -117,9 +115,8 @@ export function TaskPropertyEditor({
     modal: window.innerWidth <= 600,
     onDismiss: onClose,
     initialFocus: () =>
-      editorRef.current?.querySelector<HTMLElement>(
-        ".task-property-options [aria-pressed='true']",
-      ) ?? closeRef.current,
+      editorRef.current?.querySelector<HTMLElement>(".choice-options input") ??
+      closeRef.current,
   });
 
   async function save(next: unknown = value, closeAfter = true) {
@@ -127,7 +124,17 @@ export function TaskPropertyEditor({
     setSaving(true);
     setError(null);
     try {
-      await updateTask(task.id, updateFor(task, property, next, anchor));
+      const input = updateFor(task, property, next, anchor);
+      const saved = await updateTask(task.id, input);
+      const title = task.title;
+      rememberTaskEdit({
+        before: task,
+        saved,
+        input,
+        notice: t`Updated “${title}”`,
+        getSummary: (id) => repository.getSummary(id),
+        updateTask,
+      });
       if (closeAfter) onClose();
       else setSaving(false);
     } catch (reason) {
@@ -319,43 +326,20 @@ function PropertyControl({
         ? configuration.statuses
         : configuration.priorities;
     return (
-      <div
-        aria-label={
+      <ChoiceOptions
+        label={
           property.kind === "status"
             ? t({ message: "Status" })
             : t({ message: "Priority" })
         }
-        className="task-property-options"
-        role="group"
-        onKeyDown={moveOptionFocus}
-      >
-        {options.map((option) => (
-          <button
-            aria-pressed={option.value === value}
-            disabled={disabled}
-            key={option.value}
-            type="button"
-            onClick={() => {
-              onChange(option.value);
-              onCommit(option.value);
-            }}
-          >
-            <i
-              aria-hidden="true"
-              style={
-                {
-                  "--option-color":
-                    option.value === "none" ? undefined : option.color,
-                } as CSSProperties
-              }
-            />
-            <span>{option.label}</span>
-            {option.value === value ? (
-              <Check aria-hidden="true" size={16} />
-            ) : null}
-          </button>
-        ))}
-      </div>
+        options={options}
+        value={typeof value === "string" ? value : ""}
+        disabled={disabled}
+        onChoose={(next) => {
+          onChange(next);
+          onCommit(next);
+        }}
+      />
     );
   }
   if (property.kind === "scheduled" || property.kind === "due")
@@ -478,15 +462,6 @@ function PropertyControl({
       />
     </label>
   );
-}
-
-function moveOptionFocus(event: KeyboardEvent<HTMLDivElement>) {
-  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-  if (!step) return;
-  event.preventDefault();
-  const options = [...event.currentTarget.querySelectorAll("button")];
-  const current = options.indexOf(document.activeElement as HTMLButtonElement);
-  options[(current + step + options.length) % options.length]?.focus();
 }
 
 function customInputValue(

@@ -4,7 +4,6 @@ import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -153,9 +152,6 @@ export function TaskNotesSelect({
   return (
     <div className={classes("tasknotes-select", className)} ref={rootRef}>
       <button
-        aria-activedescendant={
-          open && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined
-        }
         aria-controls={`${id}-options`}
         aria-describedby={ariaDescribedBy}
         aria-expanded={open}
@@ -190,58 +186,22 @@ export function TaskNotesSelect({
             data-state={open ? "open" : "closed"}
             inert={!open}
             id={`${id}-options`}
-            role={options.length > 7 ? undefined : "listbox"}
           >
             {ariaLabel ? (
               <span className="tasknotes-popover-title">{ariaLabel}</span>
             ) : null}
-            {options.length > 7 ? (
-              <ChoiceOptions
-                options={options}
-                disabled={disabled}
-                value={value}
-                label={ariaLabel}
-                labelledBy={ariaLabelledBy}
-                onChoose={(next) => {
-                  onChange(next);
-                  setOpen(false);
-                  triggerRef.current?.focus();
-                }}
-              />
-            ) : (
-              <div className="tasknotes-option-list">
-                {options.map((option, index) => (
-                  <button
-                    aria-selected={option.value === value}
-                    className={index === activeIndex ? "is-active" : undefined}
-                    disabled={option.disabled}
-                    id={`${id}-option-${index}`}
-                    key={option.value}
-                    role="option"
-                    type="button"
-                    onClick={() => choose(index)}
-                    onMouseEnter={() => setActiveIndex(index)}
-                  >
-                    {option.color ? (
-                      <i
-                        aria-hidden="true"
-                        className="value-color"
-                        style={{ backgroundColor: option.color }}
-                      />
-                    ) : null}
-                    <span>
-                      <strong>{option.label}</strong>
-                      {option.description ? (
-                        <small>{option.description}</small>
-                      ) : null}
-                    </span>
-                    {option.value === value ? (
-                      <Check aria-hidden="true" size={16} strokeWidth={1.8} />
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            )}
+            <ChoiceOptions
+              options={options}
+              disabled={disabled}
+              value={value}
+              label={ariaLabel}
+              labelledBy={ariaLabelledBy}
+              onChoose={(next) => {
+                onChange(next);
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+            />
           </div>
         </>
       ) : null}

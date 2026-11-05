@@ -23,6 +23,23 @@ vi.mock("../domain/task-capture", async (importOriginal) => {
   };
 });
 
+it("shows every shorthand kind only while an empty capture is focused", () => {
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+    />,
+  );
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  expect(screen.queryByText(/!priority/)).toBeNull();
+  fireEvent.focus(input);
+  expect(screen.getByText(/!priority/)).toHaveTextContent(
+    "#tag, @context, +project, !priority, *status",
+  );
+  fireEvent.change(input, { target: { value: "A draft" } });
+  expect(screen.queryByText(/!priority/)).toBeNull();
+});
+
 it("applies view defaults and keeps a created task recoverable when the view excludes it", async () => {
   const create = vi.fn(async (input: CreateTaskInput) => task(input));
   const open = vi.fn();

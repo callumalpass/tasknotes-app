@@ -306,7 +306,36 @@
 }
 
 .kanban-column-jump {
-  display: none;
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.kanban-column-jump button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.kanban-column-jump button[aria-current="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+.kanban-column-jump small {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
 }
 
 /*
@@ -343,7 +372,7 @@
     white-space: nowrap;
     background: transparent;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: 6px;
     cursor: pointer;
   }
 
@@ -362,7 +391,7 @@
 /* Desktop columns share the available width before the board scrolls. */
 @media (min-width: 840px) {
   .kanban-column {
-    flex: 1 0 216px;
+    flex: 1 0 288px;
     max-width: 360px;
   }
 }

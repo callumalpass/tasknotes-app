@@ -321,7 +321,7 @@
 
 .capture-interpretation > .text-action {
   flex: 0 0 auto;
-  margin-block: -8px;
+  margin-block: 0;
   font-size: var(--type-supporting);
   white-space: nowrap;
 }
@@ -590,8 +590,8 @@
   font: inherit;
 }
 
-.day-task-sections .task-section.is-overdue .section-heading {
-  color: var(--danger);
+.task-section.is-overdue .task-section-toggle > span:not(.task-section-count) {
+  color: var(--overdue-heading, var(--danger));
 }
 .capture-composer .quick-capture input:focus-visible {
   outline: 0 !important;
@@ -790,9 +790,9 @@
   background: var(--paper-soft);
 }
 .capture-interpretation > .text-action {
-  min-height: 32px;
+  min-height: 44px;
   color: var(--ink-muted);
-  font-size: var(--type-label);
+  font-size: 14px;
   font-weight: 400;
 }
 .capture-interpretation > .text-action:hover {

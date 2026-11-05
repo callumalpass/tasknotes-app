@@ -121,7 +121,7 @@ describe("ScratchpadScreen", () => {
       });
   }
 
-  it("reserves disclosure space only for branches while keeping leaf actions independent", async () => {
+  it("reserves the same disclosure track for branches and leaves without adding a leaf control", async () => {
     await reopenWith((replica) => {
       seedRecord(replica, scratchpadRecord("- [ ] Parent\n  - [ ] Child\n"));
     });
@@ -137,7 +137,10 @@ describe("ScratchpadScreen", () => {
       within(branch).getByRole("button", { name: /Collapse Parent/ }),
     ).toHaveAttribute("aria-expanded", "true");
     expect(leaf).not.toHaveClass("has-children");
-    expect(leaf.querySelector(".scratchpad-collapse-spacer")).toBeNull();
+    expect(leaf.querySelector(".scratchpad-disclosure-space")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
     expect(leaf.querySelector(".scratchpad-collapse")).toBeNull();
     expect(
       within(leaf).getByRole("button", { name: "Mark complete Child" }),
@@ -636,6 +639,29 @@ describe("ScratchpadScreen", () => {
       "true",
     );
     expect(source).toHaveTextContent("Newer Markdown edit");
+  });
+
+  it("bridges Write mode to task conversion without losing Markdown edits", async () => {
+    renderScratchpad();
+    const draft = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(draft, { target: { value: "Portable draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
+    await screen.findByRole("textbox", { name: "Scratchpad Markdown" });
+    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create task notes",
+    });
+    expect(
+      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
+    ).toBeChecked();
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("resolves a linked task title without rewriting its exact link", async () => {

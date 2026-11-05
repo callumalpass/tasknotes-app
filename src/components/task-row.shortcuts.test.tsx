@@ -23,7 +23,13 @@ vi.mock("./task-property-editor", () => ({ TaskPropertyEditor: () => null }));
 const announcements: string[] = [];
 let unsubscribe = () => {};
 beforeEach(() => {
-  updateTask.mockReset().mockResolvedValue(undefined);
+  updateTask
+    .mockReset()
+    .mockImplementation(async (_id, input) => ({
+      ...task,
+      ...input,
+      revision: 2,
+    }));
   announcements.length = 0;
   unsubscribe = subscribeShortcutAnnouncements((message) =>
     announcements.push(message),

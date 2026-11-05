@@ -143,6 +143,7 @@ export function TaskCapture({
     return () => window.clearTimeout(timer);
   }, [followUpShown]);
   const [expanded, setExpanded] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [detailSections, setDetailSections] = useState<
     Record<CaptureDetailSection, boolean>
   >({ timing: true, organize: false, repeat: false, notes: false });
@@ -468,7 +469,11 @@ export function TaskCapture({
             onClick={(event) =>
               setCursor(event.currentTarget.selectionStart ?? text.length)
             }
-            onFocus={preloadTaskCapture}
+            onFocus={() => {
+              preloadTaskCapture();
+              setFocused(true);
+            }}
+            onBlur={() => setFocused(false)}
             onKeyDown={handleCaptureKeyDown}
             onKeyUp={(event) => {
               setCursor(event.currentTarget.selectionStart ?? text.length);
@@ -497,10 +502,10 @@ export function TaskCapture({
         ) : null}
       </div>
 
-      {showGuide && !text.trim() ? (
+      {(showGuide || focused) && !text.trim() ? (
         <p className="capture-guide">
           <Trans>
-            Add dates and tags naturally — try “Call Sam tomorrow 9am #work”.
+            Try tomorrow 9am, #tag, @context, +project, !priority, *status.
           </Trans>
         </p>
       ) : null}

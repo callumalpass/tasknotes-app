@@ -36,7 +36,7 @@ it("keeps secondary view operations in a focused overflow menu", () => {
     }),
   );
 
-  const menu = within(allViews).getByRole("menu", {
+  const menu = screen.getByRole("menu", {
     name: "Actions for Work board",
   });
   expect(within(menu).getByRole("menuitem", { name: "Edit" })).toHaveFocus();
@@ -47,7 +47,7 @@ it("keeps secondary view operations in a focused overflow menu", () => {
   expect(duplicate).toHaveFocus();
   fireEvent.keyDown(duplicate, { key: "Tab" });
   expect(
-    within(allViews).queryByRole("menu", { name: "Actions for Work board" }),
+    screen.queryByRole("menu", { name: "Actions for Work board" }),
   ).toBeNull();
 
   fireEvent.click(
@@ -55,9 +55,7 @@ it("keeps secondary view operations in a focused overflow menu", () => {
       name: "More actions for Work board",
     }),
   );
-  fireEvent.click(
-    within(allViews).getByRole("menuitem", { name: "Duplicate" }),
-  );
+  fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
   expect(callbacks.onDuplicate).toHaveBeenCalledWith(
     expect.objectContaining({ name: "Work board" }),
   );
@@ -67,7 +65,7 @@ it("keeps secondary view operations in a focused overflow menu", () => {
       name: "More actions for Today",
     }),
   );
-  const readOnlyMenu = within(allViews).getByRole("menu", {
+  const readOnlyMenu = screen.getByRole("menu", {
     name: "Actions for Today",
   });
   expect(
@@ -79,6 +77,26 @@ it("keeps secondary view operations in a focused overflow menu", () => {
   expect(
     within(readOnlyMenu).getByRole("menuitem", { name: "Duplicate" }),
   ).toBeVisible();
+});
+
+it("keeps its portalled actions beside the trigger after navigation motion and scrolling", () => {
+  renderCatalog();
+  const trigger = screen.getByRole("button", {
+    name: "More actions for Work board",
+  });
+  const rect = vi.spyOn(trigger, "getBoundingClientRect");
+  rect.mockReturnValue({ bottom: 200, right: 800 } as DOMRect);
+  fireEvent.click(trigger);
+  const menu = screen.getByRole("menu", { name: "Actions for Work board" });
+  expect(menu.style.top).toBe("204px");
+  expect(menu.style.right).toBe(`${window.innerWidth - 800}px`);
+  rect.mockReturnValue({ bottom: 300, right: 700 } as DOMRect);
+  fireEvent.animationEnd(window.document.body);
+  expect(menu.style.top).toBe("304px");
+  expect(menu.style.right).toBe(`${window.innerWidth - 700}px`);
+  rect.mockReturnValue({ bottom: 100, right: 700 } as DOMRect);
+  fireEvent.scroll(window);
+  expect(menu.style.top).toBe("104px");
 });
 
 it("uses view names for native source headings and keeps the portable path secondary", () => {

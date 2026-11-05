@@ -16,7 +16,22 @@
   scroll-padding-block: 1px;
 }
 .choice-options .tasknotes-option-list > button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  gap: 12px;
   min-height: 44px;
+  text-align: start;
+}
+.choice-options .tasknotes-option-list > button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.choice-options .value-color,
+.choice-options .tasknotes-option-list > button > svg {
+  justify-self: center;
+}
+.choice-check-empty {
+  visibility: hidden;
 }
 .choice-options .is-active {
   background: var(--paper-soft);

@@ -34,7 +34,7 @@ import {
   Trash2,
   type LucideProps,
 } from "lucide-react";
-import { rememberUndo } from "../app/undo-history";
+import { rememberTaskEdit } from "../app/task-edit-undo";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -318,18 +318,15 @@ export function TaskActions({
 
   /** Saves an edit and keeps the fields it replaced for the Undo shortcut. */
   async function change(input: UpdateTaskInput, notice?: string) {
-    const earlier = Object.fromEntries(
-      Object.keys(input).map((field) => [
-        field,
-        (task as unknown as Record<string, unknown>)[field] ?? null,
-      ]),
-    ) as UpdateTaskInput;
-    await updateTask(task.id, input);
+    const saved = await updateTask(task.id, input);
     const title = task.title;
-    rememberUndo({
-      label: title,
+    rememberTaskEdit({
+      before: task,
+      saved,
+      input,
       notice: notice ?? fieldNotice(input) ?? t`Updated “${title}”`,
-      run: () => updateTask(task.id, earlier),
+      getSummary: (id) => repository.getSummary(id),
+      updateTask,
     });
   }
 
@@ -597,7 +594,7 @@ export function TaskActions({
                     )
                   ) : null}
                   {panel === "series" ? <TaskActionList series /> : null}
-                  {panel === "status" && configuration.statuses.length > 7 ? (
+                  {panel === "status" ? (
                     <ChoiceOptions
                       options={configuration.statuses}
                       value={task.status}
@@ -606,47 +603,19 @@ export function TaskActions({
                       role="menuitemradio"
                       onChoose={(status) => void run(() => change({ status }))}
                     />
-                  ) : panel === "status"
-                    ? configuration.statuses.map((option) => (
-                        <MenuAction
-                          checked={option.value === task.status}
-                          disabled={busy}
-                          icon={option.value === task.status ? Check : Circle}
-                          key={option.value}
-                          label={option.label}
-                          iconColor={option.color}
-                          radio
-                          onClick={() =>
-                            void run(() => change({ status: option.value }))
-                          }
-                        />
-                      ))
-                    : null}
-                  {panel === "priority" && configuration.priorities.length > 7 ? (
+                  ) : null}
+                  {panel === "priority" ? (
                     <ChoiceOptions
                       options={configuration.priorities}
                       value={task.priority}
                       label={t`Priority`}
                       disabled={busy}
                       role="menuitemradio"
-                      onChoose={(priority) => void run(() => change({ priority }))}
+                      onChoose={(priority) =>
+                        void run(() => change({ priority }))
+                      }
                     />
-                  ) : panel === "priority"
-                    ? configuration.priorities.map((option) => (
-                        <MenuAction
-                          checked={option.value === task.priority}
-                          disabled={busy}
-                          icon={option.value === task.priority ? Check : Circle}
-                          iconColor={option.color}
-                          key={option.value}
-                          label={option.label}
-                          radio
-                          onClick={() =>
-                            void run(() => change({ priority: option.value }))
-                          }
-                        />
-                      ))
-                    : null}
+                  ) : null}
                   {panel === "dates" ? (
                     <>
                       <TaskDatePanel

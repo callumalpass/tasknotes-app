@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
+import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
@@ -751,7 +752,7 @@ export function ViewsScreen({
     const operation = manualOrderMutationQueue.current.then(async () => {
       let accepted = false;
       try {
-        await updateTasks([
+        const updates = [
           ...plan.writes
             .filter(({ taskId }) => taskId !== dragged.task.id)
             .map(({ taskId, sortOrder }) => ({
@@ -765,8 +766,51 @@ export function ViewsScreen({
               ...(draggedWrite ? { sortOrder: draggedWrite.sortOrder } : {}),
             },
           },
-        ]);
+        ];
+        const before = new Map(
+          [...rows, dragged].map(({ task }) => [task.id, { ...task }]),
+        );
+        const saved = await updateTasks(updates);
         accepted = true;
+        if (!Object.keys(additionalInput).length) {
+          const title = dragged.task.title;
+          const receipts = saved.flatMap((task) => {
+            const original = before.get(task.id);
+            return original ? [{ before: original, saved: { ...task } }] : [];
+          });
+          rememberUndo({
+            label: title,
+            notice: t`Reordered “${title}”`,
+            run: async () => {
+              await manualOrderMutationQueue.current;
+              const current = await Promise.all(
+                receipts.map(({ saved }) => repository.getSummary(saved.id)),
+              );
+              if (
+                current.some(
+                  (task, index) =>
+                    !task || task.revision !== receipts[index].saved.revision,
+                )
+              )
+                throw new Error(
+                  t`This task changed. Review it before trying again.`,
+                );
+              await updateTasks(
+                receipts.map(({ before }) => ({
+                  id: before.id,
+                  input: { sortOrder: before.sortOrder ?? null },
+                })),
+              );
+              setManualRanks((ranks) => {
+                const next = new Map(ranks);
+                for (const { saved } of receipts) next.delete(saved.id);
+                return next;
+              });
+              const refreshed = await repository.executeView(view);
+              if (selectedKeyRef.current === view.key) setExecution(refreshed);
+            },
+          });
+        }
         const refreshed = await repository.executeView(view);
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);
@@ -1350,7 +1394,27 @@ export function ViewsScreen({
             </button>
           ) : null}
           <div>
-            <h1>{selected?.name ?? translate({ message: "Saved view" })}</h1>
+            <h1>
+              {selected && views ? (
+                <TaskNotesSelect
+                  ariaLabel={t`Saved view`}
+                  className="view-heading-select"
+                  value={selected.key}
+                  options={views.map((view) => ({
+                    value: view.key,
+                    label: view.name,
+                  }))}
+                  onChange={(key) => {
+                    const view = views.find(
+                      (candidate) => candidate.key === key,
+                    );
+                    if (view) onOpenView(view);
+                  }}
+                />
+              ) : (
+                (selected?.name ?? translate({ message: "Saved view" }))
+              )}
+            </h1>
             {selected ? (
               <RecordWriteNotice
                 repository={repository}

@@ -806,16 +806,12 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row {
-  --scratch-disclosure-track: 0px;
+  --scratch-disclosure-track: 44px;
   position: relative;
   margin-left: min(calc(var(--scratch-depth) * var(--scratch-indent)), 42%);
   transition:
     margin 150ms ease,
     opacity 150ms ease;
-}
-
-.scratchpad-row.has-children {
-  --scratch-disclosure-track: 24px;
 }
 
 .scratchpad-row::before {
@@ -915,7 +911,7 @@ html.scratchpad-route .page-surface {
   background: transparent;
   border: 0;
   grid-column: 1;
-  margin-left: -20px;
+  margin-left: 0;
 }
 
 .scratchpad-row-main > .scratchpad-drag-handle {
@@ -1211,7 +1207,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-menu button {
   display: flex;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   align-items: center;
   gap: 9px;
   padding: 7px 9px;
@@ -1251,8 +1247,16 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-suggestions button.is-selected,
 .scratchpad-suggestions button:hover,
-.scratchpad-row-menu button:hover {
+.scratchpad-row-menu button:hover:not(:disabled) {
   background: var(--accent-soft);
+}
+
+.scratchpad-row-menu button:disabled,
+.scratchpad-mobile-depth-actions button:disabled {
+  color: var(--ink-muted);
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
 }
 
 .scratchpad-suggestions small {

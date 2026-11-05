@@ -31,6 +31,7 @@
   --ink: var(--color-text);
   --ink-soft: var(--color-text-soft);
   --ink-muted: var(--color-text-muted);
+  --overdue-heading: var(--danger);
   --line: var(--color-border);
   --line-strong: var(--color-border-strong);
   --accent: var(--color-accent);

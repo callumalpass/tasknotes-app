@@ -25,6 +25,7 @@ export function KeyboardShortcutsSheet({
     initialFocus: () => closeRef.current,
   });
   if (!open) return null;
+  const groups = keyboardShortcutGroups().reverse();
   return createPortal(
     <div className="command-palette-scrim">
       <section
@@ -48,37 +49,39 @@ export function KeyboardShortcutsSheet({
             <X aria-hidden="true" size={20} />
           </button>
         </header>
-        {keyboardShortcutGroups()
-          .reverse()
-          .map((group, index) => (
-            <section
-              key={group.title}
-              aria-label={group.title}
-              className={index === 0 ? "task-shortcuts-primary" : undefined}
-            >
-              <h3>{group.title}</h3>
-              <dl>
-                {group.shortcuts.map((shortcut) => (
-                  <div key={shortcut.description}>
-                    <dt>{shortcut.description}</dt>
-                    <dd>
-                      {shortcut.keys.map((key, index) => (
-                        <span key={key}>
-                          {index ? (
-                            <span className="shortcut-or">
-                              {" "}
-                              <Trans>or</Trans>{" "}
-                            </span>
-                          ) : null}
-                          <kbd>{key}</kbd>
-                        </span>
+        <div className="keyboard-shortcuts-columns">
+          {[[groups[0]], [groups[1], groups[3]], [groups[2]]].map(
+            (column, index) => (
+              <div className="keyboard-shortcuts-column" key={index}>
+                {column.map((group) => (
+                  <section key={group.title} aria-label={group.title}>
+                    <h3>{group.title}</h3>
+                    <dl>
+                      {group.shortcuts.map((shortcut) => (
+                        <div key={shortcut.description}>
+                          <dt>{shortcut.description}</dt>
+                          <dd>
+                            {shortcut.keys.map((key, index) => (
+                              <span key={key}>
+                                {index ? (
+                                  <span className="shortcut-or">
+                                    {" "}
+                                    <Trans>or</Trans>{" "}
+                                  </span>
+                                ) : null}
+                                <kbd>{key}</kbd>
+                              </span>
+                            ))}
+                          </dd>
+                        </div>
                       ))}
-                    </dd>
-                  </div>
+                    </dl>
+                  </section>
                 ))}
-              </dl>
-            </section>
-          ))}
+              </div>
+            ),
+          )}
+        </div>
         <p className="keyboard-shortcuts-note">
           <Trans>
             Task keys act on the focused row, or on every selected task. Date

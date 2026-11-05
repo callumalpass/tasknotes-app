@@ -400,7 +400,7 @@
   color: var(--ink-muted);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -554,7 +554,7 @@
 }
 
 .saved-view-menu {
-  position: absolute;
+  position: fixed;
   z-index: 24;
   top: calc(100% - 2px);
   right: 0;
@@ -589,6 +589,9 @@
 
 .saved-view-menu button.is-danger {
   color: var(--danger);
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .saved-view-membership {
@@ -601,11 +604,11 @@
   padding: 0 10px;
   color: var(--ink-muted);
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .membership-label-short {
@@ -613,9 +616,8 @@
 }
 
 .saved-view-membership[aria-pressed="true"] {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  color: var(--ink-muted);
+  background: transparent;
 }
 
 .saved-view-membership:disabled {
@@ -668,25 +670,6 @@
 
   .saved-view-membership .membership-label-short {
     display: inline;
-  }
-
-  .saved-view-menu {
-    position: fixed;
-    top: auto;
-    right: var(--space-md);
-    bottom: calc(
-      var(--mobile-bottom-nav-height, var(--nav-height)) + var(--space-md)
-    );
-    left: var(--space-md);
-    min-width: 0;
-    padding: var(--space-sm);
-    border-radius: var(--radius-panel);
-    box-shadow: 0 16px 44px var(--color-shadow);
-  }
-
-  .saved-view-menu button {
-    min-height: 52px;
-    font-size: var(--type-body);
   }
 
   .saved-view-source-heading {
@@ -1920,15 +1903,67 @@
   white-space: nowrap;
 }
 
-.overdue-schedule-actions,
-.overdue-deadline-choice {
+.overdue-schedule-actions {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 12px;
 }
-.overdue-deadline-choice > span {
+.overdue-deadline-choice {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.overdue-deadline-choice > span:first-child {
   color: var(--ink-soft);
+}
+.overdue-deadline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.overdue-deadline-actions > button {
+  padding-inline-start: 0;
+}
+.overdue-deadline-actions > button::before {
+  content: none;
+}
+.saved-view-menu-scrim {
+  z-index: 100;
+}
+@media (max-width: 600px) {
+  .saved-view-menu-scrim .saved-view-menu {
+    position: fixed;
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0;
+    left: 0;
+    min-width: 0;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 16px 44px var(--color-shadow);
+  }
+
+  .saved-view-menu button {
+    min-height: 52px;
+    font-size: var(--type-body);
+  }
+}
+.view-heading-select .tasknotes-control-trigger {
+  width: auto;
+  max-width: 100%;
+  padding: 0;
+  gap: 10px;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+}
+.view-heading-select .tasknotes-popover {
+  min-width: min(320px, calc(100vw - 32px));
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 @media (max-width: 839px) {
   .screen:has(.task-row) {

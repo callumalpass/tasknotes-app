@@ -2211,7 +2211,8 @@ function ScratchpadDocumentEditor({
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      const position = outlineSelection(event.currentTarget) ?? node.text.length;
+      const position =
+        outlineSelection(event.currentTarget) ?? node.text.length;
       const before = node.text.slice(0, position);
       const after = node.text.slice(position);
       const created = createScratchNode(
@@ -2758,19 +2759,21 @@ function ScratchpadDocumentEditor({
                 : t({ message: "Resume as current" })}
             </button>
           ) : null}
-          {editorMode === "outline" ? (
-            <button
-              aria-label={t({ message: "Create task notes" })}
-              className="text-action scratchpad-review-action"
-              disabled={!drafts}
-              type="button"
-              ref={reviewTriggerRef}
-              onClick={openReview}
-            >
-              <ListChecks aria-hidden="true" size={17} />{" "}
-              <Trans>Create task notes</Trans>
-            </button>
-          ) : null}
+          <button
+            aria-label={t({ message: "Create task notes" })}
+            className="text-action scratchpad-review-action"
+            disabled={editorMode === "outline" && !drafts}
+            type="button"
+            ref={reviewTriggerRef}
+            onClick={async () => {
+              if (editorMode === "markdown") await changeEditorMode("outline");
+              if (editorModeRef.current !== "outline") return;
+              openReview();
+            }}
+          >
+            <ListChecks aria-hidden="true" size={17} />{" "}
+            <Trans>Create task notes</Trans>
+          </button>
         </div>
       </header>
       {error ? (
@@ -2844,7 +2847,12 @@ function ScratchpadDocumentEditor({
                         <ChevronDown aria-hidden="true" size={17} />
                       )}
                     </button>
-                  ) : null}
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="scratchpad-disclosure-space"
+                    />
+                  )}
                   <button
                     aria-label={t`Move ${node.text || uiCopy("empty item")}`}
                     className="scratchpad-drag-handle"

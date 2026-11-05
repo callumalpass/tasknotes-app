@@ -60,23 +60,25 @@ export function OverdueScheduleActions({
             other="# due dates have passed"
           />
         </span>
-        <button
-          className={buttonClassName}
-          disabled={pending}
-          ref={firstAnswer}
-          type="button"
-          onClick={() => answer(false)}
-        >
-          <Trans>Move due dates too</Trans>
-        </button>
-        <button
-          className={buttonClassName}
-          disabled={pending}
-          type="button"
-          onClick={() => answer(true)}
-        >
-          <Trans>Keep due dates</Trans>
-        </button>
+        <span className="overdue-deadline-actions">
+          <button
+            className={buttonClassName}
+            disabled={pending}
+            ref={firstAnswer}
+            type="button"
+            onClick={() => answer(false)}
+          >
+            <Trans>Move due dates too</Trans>
+          </button>
+          <button
+            className={buttonClassName}
+            disabled={pending}
+            type="button"
+            onClick={() => answer(true)}
+          >
+            <Trans>Keep due dates</Trans>
+          </button>
+        </span>
       </span>
     );
   return (

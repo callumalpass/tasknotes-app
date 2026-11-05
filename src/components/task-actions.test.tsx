@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "../test/render";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
@@ -11,6 +11,7 @@ import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 import { TaskActions } from "./task-actions";
+import { clearUndoHistory, onUndoNotice, takeUndo } from "../app/undo-history";
 
 import type { Task } from "../domain/task";
 
@@ -135,6 +136,9 @@ describe("TaskActions", () => {
   });
 
   it("edits a displayed property without opening the task", async () => {
+    clearUndoHistory();
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
     task = await repository.update(task.id, { priority: "high" });
     const onOpen = vi.fn();
     render(
@@ -151,9 +155,11 @@ describe("TaskActions", () => {
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "High" })).toHaveFocus(),
+      expect(
+        screen.getByRole("combobox", { name: "Filter Priority" }),
+      ).toHaveFocus(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Low" }));
+    fireEvent.click(screen.getByRole("option", { name: "Low" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({ priority: "low" }),
@@ -162,6 +168,13 @@ describe("TaskActions", () => {
       screen.queryByRole("dialog", { name: "Edit Priority" }),
     ).not.toBeInTheDocument();
     expect(onOpen).not.toHaveBeenCalled();
+    expect(notice).toHaveBeenCalledOnce();
+    await act(async () => {
+      await takeUndo()!.run();
+    });
+    expect(await repository.get(task.id)).toMatchObject({ priority: "high" });
+    unsubscribe();
+    clearUndoHistory();
   });
 
   it("persists date choices without an apply step", async () => {

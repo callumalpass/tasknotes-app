@@ -124,20 +124,22 @@ export function ChoiceOptions({
             onMouseEnter={() => setActive(index)}
             onClick={() => onChoose(option.value)}
           >
-            {option.color ? (
-              <i
-                aria-hidden="true"
-                className="value-color"
-                style={{ backgroundColor: option.color }}
-              />
-            ) : null}
+            <i
+              aria-hidden="true"
+              className="value-color"
+              style={{ backgroundColor: option.color ?? "transparent" }}
+            />
             <span>
               <strong>{option.label}</strong>
               {option.description ? <small>{option.description}</small> : null}
             </span>
-            {option.value === value ? (
-              <Check aria-hidden="true" size={16} />
-            ) : null}
+            <Check
+              aria-hidden="true"
+              className={
+                option.value === value ? undefined : "choice-check-empty"
+              }
+              size={16}
+            />
           </button>
         ))}
         {!filtered.length ? (
