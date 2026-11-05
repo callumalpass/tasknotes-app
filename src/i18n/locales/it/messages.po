@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "Aggiungi contesto…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Aggiungi date e tag in modo naturale: prova «Chiama Sam domani alle 9 #lavoro»."
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "Aggiungi dettagli"
 
@@ -4322,6 +4318,10 @@ msgstr "Riordina"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "Riordina {0}. Trascina oppure usa le frecce su e giù."
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "“{title}” riordinata"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "L'attività è stata modificata altrove, quindi la modifica non è stata
 msgid "This task changed. Open it to review before trying again."
 msgstr "Questa attività è cambiata. Aprila per controllarla prima di riprovare."
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "Questa attività è cambiata. Controllala prima di riprovare."
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "Questa attività non è più disponibile."
@@ -5667,6 +5672,10 @@ msgstr "Prova con meno parole o con un'altra grafia."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Prova a caricare di nuovo la vista. Se il problema persiste, modifica le impostazioni o scegli un'altra vista."
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "Prova domani 9:00, #tag, @contesto, +progetto, !priorità, *stato."
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "Prova domani alle 9, +progetto, #tag, !priorità"
@@ -5770,6 +5779,7 @@ msgstr "Istanze ricorrenti future"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "“{title}” aggiornata"
 

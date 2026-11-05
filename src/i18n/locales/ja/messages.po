@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "コンテキストを追加…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "「明日午前9時にサムに電話 #work」のように、日付やタグを自然に追加できます。"
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "詳細を追加"
 
@@ -4322,6 +4318,10 @@ msgstr "並べ替え"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "{0}を並べ替え。ドラッグするか、上下の矢印キーを使います。"
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "「{title}」を並べ替えました"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "このタスクは別の場所で変更されたため、編集内容は
 msgid "This task changed. Open it to review before trying again."
 msgstr "このタスクは変更されました。開いて確認してから、もう一度お試しください。"
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "このタスクは変更されました。確認してからもう一度お試しください。"
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "このタスクは利用できなくなりました。"
@@ -5667,6 +5672,10 @@ msgstr "語数を減らすか、別の表記をお試しください。"
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "もう一度ビューを読み込んでください。問題が続く場合は、設定を編集するか別のビューを選択してください。"
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "例: 明日 9時、#タグ、@コンテキスト、+プロジェクト、!優先度、*ステータス。"
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "明日 9時、+プロジェクト、#タグ、!優先度 と入力"
@@ -5770,6 +5779,7 @@ msgstr "今後の繰り返しタスク"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "「{title}」を更新しました"
 

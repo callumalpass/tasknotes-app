@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "添加上下文…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "用自然语言添加日期和标签 — 试试“Call Sam tomorrow 9am #work”。"
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "添加详情"
 
@@ -4322,6 +4318,10 @@ msgstr "重新排序"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "重新排序 {0}。拖动，或使用上下方向键。"
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "已重新排序“{title}”"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "此任务已在其他位置更改，因此你的编辑未能保存。"
 msgid "This task changed. Open it to review before trying again."
 msgstr "此任务已更改。请打开查看后再试。"
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "此任务已更改。请先查看再重试。"
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "此任务已不可用。"
@@ -5667,6 +5672,10 @@ msgstr "减少搜索词或尝试其他拼写。"
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其设置或选择其他视图。"
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "试试 明天上午9点、#标签、@情境、+项目、!优先级、*状态。"
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "试试 明天上午9点、+项目、#标签、!优先级"
@@ -5770,6 +5779,7 @@ msgstr "即将发生的重复项"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "已更新“{title}”"
 

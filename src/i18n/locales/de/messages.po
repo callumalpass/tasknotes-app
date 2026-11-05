@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "Kontext hinzufügen…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Fügen Sie Datumsangaben und Tags ganz natürlich hinzu – zum Beispiel „Sam morgen um 9 Uhr anrufen #work“."
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "Details hinzufügen"
 
@@ -4322,6 +4318,10 @@ msgstr "Neu anordnen"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "{0} neu anordnen. Ziehen Sie das Element oder verwenden Sie die Pfeiltasten nach oben und unten."
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "„{title}“ neu angeordnet"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "Diese Aufgabe wurde an anderer Stelle geändert; Ihre Änderung wurde de
 msgid "This task changed. Open it to review before trying again."
 msgstr "Diese Aufgabe wurde geändert. Öffnen Sie sie zur Prüfung, bevor Sie es erneut versuchen."
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "Diese Aufgabe wurde geändert. Prüfe sie, bevor du es erneut versuchst."
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "Diese Aufgabe ist nicht mehr verfügbar."
@@ -5667,6 +5672,10 @@ msgstr "Versuchen Sie es mit weniger Wörtern oder einer anderen Schreibweise."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Laden Sie die Ansicht erneut. Wenn das Problem weiterhin auftritt, bearbeiten Sie ihre Einstellungen oder wählen Sie eine andere Ansicht."
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "Versuche morgen 9 Uhr, #Tag, @Kontext, +Projekt, !Priorität, *Status."
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "Versuche morgen 9 Uhr, +Projekt, #Tag, !Priorität"
@@ -5770,6 +5779,7 @@ msgstr "Kommende wiederkehrende Vorkommen"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "„{title}“ aktualisiert"
 

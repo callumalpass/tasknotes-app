@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "Добавить контекст…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "Добавляйте даты и теги обычным текстом — например: «Позвонить Сэму завтра в 9:00 #работа»."
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "Добавить подробности"
 
@@ -4322,6 +4318,10 @@ msgstr "Изменить порядок"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "Изменить порядок: {0}. Перетащите или используйте клавиши со стрелками вверх и вниз."
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "Задача «{title}» перемещена"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "Задача изменилась в другом месте, поэто
 msgid "This task changed. Open it to review before trying again."
 msgstr "Эта задача изменилась. Откройте её и проверьте, прежде чем повторить попытку."
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "Эта задача изменилась. Проверьте её, прежде чем повторить попытку."
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "Эта задача больше недоступна."
@@ -5667,6 +5672,10 @@ msgstr "Используйте меньше слов или попробуйте
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "Попробуйте загрузить представление ещё раз. Если проблема не исчезнет, измените его настройки или выберите другое представление."
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "Например: завтра 9:00, #тег, @контекст, +проект, !приоритет, *статус."
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "Например: завтра 9:00, +проект, #тег, !приоритет"
@@ -5770,6 +5779,7 @@ msgstr "Предстоящие повторения"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "«{title}» обновлена"
 

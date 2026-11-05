@@ -780,10 +780,6 @@ msgid "Add context…"
 msgstr "컨텍스트 추가…"
 
 #: src/components/task-capture.tsx
-msgid "Add dates and tags naturally — try “Call Sam tomorrow 9am #work”."
-msgstr "날짜와 태그를 자연스럽게 추가하세요. “내일 오전 9시에 샘에게 전화 #업무”를 입력해 보세요."
-
-#: src/components/task-capture.tsx
 msgid "Add details"
 msgstr "세부정보 추가"
 
@@ -4322,6 +4318,10 @@ msgstr "순서 변경"
 msgid "Reorder {0}. Drag, or use up and down arrow keys."
 msgstr "{0} 순서 변경. 드래그하거나 위쪽 및 아래쪽 화살표 키를 사용하세요."
 
+#: src/app/views-screen.tsx
+msgid "Reordered “{title}”"
+msgstr "“{title}” 순서 변경됨"
+
 #. placeholder {0}: row.task.title
 #: src/app/views/kanban-view.tsx
 msgid "Reordered {0}."
@@ -5509,6 +5509,11 @@ msgstr "다른 곳에서 이 작업이 변경되어 편집 내용이 저장되�
 msgid "This task changed. Open it to review before trying again."
 msgstr "이 작업이 변경되었습니다. 열어서 검토한 후 다시 시도하세요."
 
+#: src/app/task-edit-undo.ts
+#: src/app/views-screen.tsx
+msgid "This task changed. Review it before trying again."
+msgstr "이 작업이 변경되었습니다. 확인한 후 다시 시도하세요."
+
 #: src/app/task-screen.tsx
 msgid "This task is no longer available."
 msgstr "이 작업은 더 이상 사용할 수 없습니다."
@@ -5667,6 +5672,10 @@ msgstr "검색어를 줄이거나 다른 철자를 시도하세요."
 msgid "Try loading the view again. If the problem continues, edit its settings or choose another view."
 msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집하거나 다른 뷰를 선택하세요."
 
+#: src/components/task-capture.tsx
+msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
+msgstr "예: 내일 오전 9시, #태그, @컨텍스트, +프로젝트, !우선순위, *상태."
+
 #: src/components/global-task-capture.tsx
 msgid "Try tomorrow 9am, +project, #tag, !priority"
 msgstr "내일 오전 9시, +프로젝트, #태그, !우선순위처럼 입력"
@@ -5770,6 +5779,7 @@ msgstr "예정된 반복 항목"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "“{title}”을(를) 업데이트했습니다"
 
