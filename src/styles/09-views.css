@@ -347,7 +347,7 @@
 
 .view-catalog-controls {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   margin-bottom: var(--space-xl);
 }
 
@@ -432,8 +432,7 @@
   color: var(--ink-muted);
 }
 
-.view-document + .view-document,
-.saved-views-section {
+.view-document + .view-document {
   margin-top: var(--space-xxl);
 }
 
@@ -462,7 +461,6 @@
 .saved-view-source-heading h4 {
   font-size: var(--type-body);
 }
-
 
 .saved-view-document + .saved-view-document {
   margin-top: 0;
@@ -875,8 +873,8 @@
 
 .view-identity {
   display: grid;
-  gap: 24px;
-  padding: 28px 0 34px;
+  gap: 16px;
+  padding: 24px 0 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -960,14 +958,11 @@
 }
 
 .view-editor-body .view-name-field input {
-  min-height: 50px;
-  padding: 0;
-  font-size: 1.42rem;
-  font-weight: 700;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  font-size: var(--type-control);
+}
+
+.view-layout-disclosure[open] {
+  padding-bottom: 24px;
 }
 
 .view-kind-field,
@@ -1047,14 +1042,14 @@
   border-top: 1px solid var(--line);
 }
 
-.view-editor-section-heading {
+.view-editor .view-editor-section-heading {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 80px;
-  padding: 18px 0;
+  min-height: 64px;
+  padding: 8px 0;
   color: inherit;
   text-align: left;
   background: transparent;
@@ -1065,6 +1060,10 @@
 
 .view-editor-section-heading > div {
   min-width: 0;
+}
+
+.view-editor .view-editor-section-heading:not(:has(p)) {
+  min-height: 44px;
 }
 
 .view-editor-section-heading > svg {
@@ -1093,7 +1092,7 @@
 
 .view-editor-section-heading p {
   max-width: 52ch;
-  margin-top: 5px;
+  margin-top: 4px;
   overflow: hidden;
   color: var(--ink-muted);
   font-size: var(--type-supporting);
@@ -1104,20 +1103,20 @@
 
 .view-editor-section-content {
   display: grid;
-  gap: 24px;
-  padding: 4px 0 36px;
+  gap: 16px;
+  padding: 0 0 24px;
 }
 
 .view-editor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 160px;
-  gap: 12px;
+  gap: 16px;
 }
 
 .view-editor-subsection {
   display: grid;
   gap: 16px;
-  padding-top: 26px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 

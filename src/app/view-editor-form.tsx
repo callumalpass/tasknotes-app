@@ -1084,7 +1084,7 @@ function EditorSection({
       >
         <div>
           <h2 id={`${id}-title`}>{title}</h2>
-          <p>{summary}</p>
+          {summary ? <p>{summary}</p> : null}
         </div>
         <ChevronDown aria-hidden="true" size={18} strokeWidth={1.7} />
       </button>

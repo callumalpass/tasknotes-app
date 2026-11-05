@@ -1273,11 +1273,6 @@ export function ViewsScreen({
               <h1 id="views-title">
                 <Trans>Views</Trans>
               </h1>
-              <p>
-                <Trans>
-                  Open a saved view, or choose what appears in navigation.
-                </Trans>
-              </p>
             </div>
             <div className="views-header-actions">
               <button

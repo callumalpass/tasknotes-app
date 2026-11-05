@@ -121,6 +121,41 @@ describe("ScratchpadScreen", () => {
       });
   }
 
+  it("reserves disclosure space only for branches while keeping leaf actions independent", async () => {
+    await reopenWith((replica) => {
+      seedRecord(replica, scratchpadRecord("- [ ] Parent\n  - [ ] Child\n"));
+    });
+    renderScratchpad();
+    const parent = await screen.findByRole("textbox", {
+      name: "Draft task: Parent",
+    });
+    const child = screen.getByRole("textbox", { name: "Draft task: Child" });
+    const branch = parent.closest<HTMLElement>(".scratchpad-row")!;
+    const leaf = child.closest<HTMLElement>(".scratchpad-row")!;
+    expect(branch).toHaveClass("has-children");
+    expect(
+      within(branch).getByRole("button", { name: /Collapse Parent/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(leaf).not.toHaveClass("has-children");
+    expect(leaf.querySelector(".scratchpad-collapse-spacer")).toBeNull();
+    expect(leaf.querySelector(".scratchpad-collapse")).toBeNull();
+    expect(
+      within(leaf).getByRole("button", { name: "Mark complete Child" }),
+    ).toBeVisible();
+    fireEvent.click(
+      within(branch).getByRole("button", { name: /Collapse Parent/ }),
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Draft task: Child" }),
+    ).toBeNull();
+    fireEvent.click(
+      within(branch).getByRole("button", { name: /Expand Parent/ }),
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Draft task: Child" }),
+    ).toBeVisible();
+  });
+
   it("distinguishes native note pending metadata from authority Saved (component port stand-in)", async () => {
     const current = await repository.getActiveScratchpad();
     const writeState = vi.fn(() => "pending" as const);
@@ -651,9 +686,7 @@ describe("ScratchpadScreen", () => {
       screen.getByRole("checkbox", { name: "Write announcement" }),
     );
     expect(dialog).toHaveTextContent("1 of 2 selected");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task note" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create 1 task note" }));
 
     await screen.findByText("Created 1 task note");
     expect(await repository.list({ status: "all" })).toEqual([
@@ -1194,9 +1227,7 @@ describe("ScratchpadScreen", () => {
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: "Plan launch" } });
     fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task note" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create 1 task note" }));
 
     await act(async () => vi.advanceTimersByTimeAsync(320));
     const savesBeforeRelease = saveScratchpad.mock.calls.length;

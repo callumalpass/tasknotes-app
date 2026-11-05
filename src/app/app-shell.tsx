@@ -4,7 +4,6 @@ import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
 import {
-  Folder,
   ClockAlert,
   PanelLeftClose,
   PanelLeftOpen,
@@ -801,6 +800,13 @@ function EmptyViewsNotice({
 function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
   const { t } = useLingui();
   const focused = useFocusedProject();
+  const tooltipId = useId();
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    text: string;
+    left: number;
+    top: number;
+  } | null>(null);
   if (!projects.length) return null;
   return (
     <div
@@ -808,20 +814,67 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
       className="navigation-project-section"
       role="group"
     >
-      {projects.map(({ label, count }) => (
-        <button
-          aria-current={focused === label ? "page" : undefined}
-          className={focused === label ? "is-active" : undefined}
-          key={label}
-          title={label}
-          type="button"
-          onClick={() => requestProjectJump(label)}
-        >
-          <Folder aria-hidden="true" size={15} strokeWidth={1.7} />
-          <span>{label}</span>
-          <small>{count}</small>
-        </button>
-      ))}
+      {projects.map(({ label, count }) => {
+        const accessibleLabel = t`${label}, ${countLabel(count, "task")}`;
+        const words = label.trim().split(/\s+/u);
+        const monogram = (
+          words.length > 1
+            ? words
+                .slice(0, 2)
+                .map((word) => Array.from(word)[0])
+                .join("")
+            : Array.from(label.trim()).slice(0, 2).join("")
+        ).toLocaleUpperCase();
+        const showTooltip = (button: HTMLButtonElement) => {
+          const bounds = button.getBoundingClientRect();
+          setTooltip({
+            label,
+            text: accessibleLabel,
+            left: bounds.right + 8,
+            top: bounds.top + bounds.height / 2,
+          });
+        };
+        return (
+          <button
+            aria-label={accessibleLabel}
+            aria-describedby={tooltip?.label === label ? tooltipId : undefined}
+            aria-current={focused === label ? "page" : undefined}
+            className={focused === label ? "is-active" : undefined}
+            key={label}
+            type="button"
+            onFocus={(event) => showTooltip(event.currentTarget)}
+            onBlur={() => setTooltip(null)}
+            onMouseEnter={(event) => showTooltip(event.currentTarget)}
+            onMouseLeave={(event) => {
+              if (document.activeElement !== event.currentTarget)
+                setTooltip(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setTooltip(null);
+            }}
+            onClick={() => requestProjectJump(label)}
+          >
+            <strong aria-hidden="true" className="project-monogram">
+              {monogram}
+            </strong>
+            <span>{label}</span>
+            <small aria-hidden="true">{count}</small>
+          </button>
+        );
+      })}
+      {tooltip
+        ? createPortal(
+            <div
+              className="project-shortcut-tooltip"
+              id={tooltipId}
+              role="tooltip"
+              style={{ left: tooltip.left, top: tooltip.top }}
+            >
+              {tooltip.text}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

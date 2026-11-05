@@ -806,11 +806,16 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row {
+  --scratch-disclosure-track: 0px;
   position: relative;
   margin-left: min(calc(var(--scratch-depth) * var(--scratch-indent)), 42%);
   transition:
     margin 150ms ease,
     opacity 150ms ease;
+}
+
+.scratchpad-row.has-children {
+  --scratch-disclosure-track: 24px;
 }
 
 .scratchpad-row::before {
@@ -827,7 +832,9 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns:
+    var(--scratch-disclosure-track) 44px 44px minmax(0, 1fr)
+    44px 44px;
   min-height: 48px;
   align-items: start;
   /* Rows are told apart by their leading control, not by rules. */
@@ -896,8 +903,7 @@ html.scratchpad-route .page-surface {
   color: var(--ink-soft);
 }
 
-.scratchpad-collapse,
-.scratchpad-collapse-spacer {
+.scratchpad-collapse {
   display: inline-flex;
   width: 44px;
   min-width: 44px;
@@ -908,6 +914,28 @@ html.scratchpad-route .page-surface {
   color: var(--ink-muted);
   background: transparent;
   border: 0;
+  grid-column: 1;
+  margin-left: -20px;
+}
+
+.scratchpad-row-main > .scratchpad-drag-handle {
+  grid-column: 2;
+}
+
+.scratchpad-row-main > .scratchpad-kind-controls,
+.scratchpad-row-main > .scratchpad-kind-label {
+  grid-column: 3;
+}
+
+.scratchpad-row-main > .outline-text-shell,
+.scratchpad-row-main > .scratchpad-task-link {
+  grid-column: 4;
+  margin-left: 8px;
+  width: calc(100% - 8px);
+}
+
+.scratchpad-row-main > .scratchpad-convert-line {
+  grid-column: 5;
 }
 
 .scratchpad-drag-handle {
@@ -1032,7 +1060,7 @@ html.scratchpad-route .page-surface {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 8px 7px 7px 3px;
+  padding: 8px 7px 7px 0;
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -1068,7 +1096,7 @@ html.scratchpad-route .page-surface {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  padding: 8px 7px 7px 3px;
+  padding: 8px 7px 7px 0;
   color: var(--ink);
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1131,7 +1159,9 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns:
+    var(--scratch-disclosure-track) 44px 44px minmax(0, 1fr)
+    44px 44px;
 }
 
 .scratchpad-nlp-preview > div {
@@ -1275,19 +1305,6 @@ html.scratchpad-route .page-surface {
 }
 
 @media (min-width: 561px) {
-  .scratchpad-collapse,
-  .scratchpad-collapse-spacer,
-  .scratchpad-drag-handle {
-    width: 28px;
-    min-width: 28px;
-  }
-
-  .scratchpad-convert-line,
-  .scratchpad-row-menu-trigger {
-    width: 36px;
-    min-width: 36px;
-  }
-
   .scratchpad-row-menu-trigger {
     opacity: 0;
     transition: opacity 140ms var(--ease-out);
@@ -1513,7 +1530,7 @@ html.scratchpad-route .page-surface {
 
 @media (max-width: 560px) {
   .scratchpad-screen {
-    --scratch-indent: 17px;
+    --scratch-indent: 16px;
     height: min(
       calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom)),
       var(--scratch-visual-viewport-bottom, 100dvh)
@@ -1589,7 +1606,19 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+    grid-template-columns:
+      var(--scratch-disclosure-track) 44px minmax(0, 1fr)
+      44px;
+  }
+
+  .scratchpad-row-main > .scratchpad-kind-controls,
+  .scratchpad-row-main > .scratchpad-kind-label {
+    grid-column: 2;
+  }
+
+  .scratchpad-row-main > .outline-text-shell,
+  .scratchpad-row-main > .scratchpad-task-link {
+    grid-column: 3;
   }
 
   .scratchpad-kind-controls {
@@ -1629,12 +1658,6 @@ html.scratchpad-route .page-surface {
     justify-content: center;
   }
 
-  .scratchpad-collapse,
-  .scratchpad-collapse-spacer {
-    width: 44px;
-    min-width: 44px;
-  }
-
   .scratchpad-mobile-depth-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1661,14 +1684,16 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-nlp-preview {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+    grid-template-columns:
+      var(--scratch-disclosure-track) 44px minmax(0, 1fr)
+      44px;
   }
   .scratchpad-nlp-preview > div {
     grid-column: 3 / -1;
   }
 
   .scratchpad-add-actions {
-    padding-left: 88px;
+    padding-left: 52px;
   }
 
   .scratchpad-dialog-backdrop {

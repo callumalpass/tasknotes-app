@@ -199,20 +199,7 @@ export function ViewCatalog({
         ) : (
           <div className="view-document-list">
             {visibleDocuments.length ? (
-              <section
-                className="saved-views-section"
-                aria-labelledby="saved-views-title"
-              >
-                <header className="view-document-heading saved-views-heading">
-                  <div>
-                    <h3 id="saved-views-title">
-                      <Trans>Saved views</Trans>
-                    </h3>
-                    <p>
-                      <Trans>Views stored in your collection</Trans>
-                    </p>
-                  </div>
-                </header>
+              <div className="saved-views-section">
                 {visibleDocuments.map((document) => (
                   <section
                     aria-label={document.name}
@@ -257,7 +244,7 @@ export function ViewCatalog({
                     </div>
                   </section>
                 ))}
-              </section>
+              </div>
             ) : null}
             {visibleTools.length ? (
               <section

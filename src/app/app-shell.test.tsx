@@ -289,3 +289,39 @@ it("names Today counts, reserves unknown badges, and preserves custom navigation
   fireEvent.click(badge);
   expect(onNavigate).toHaveBeenCalledWith({ page: "views", key: today.key });
 });
+
+it("keeps project identity and task counts accessible in the rail with focus tooltips", () => {
+  render(
+    <Navigation
+      active="views"
+      mode="desktop"
+      navigationKeys={[]}
+      views={[]}
+      projects={[
+        { label: "Product refresh", count: 10 },
+        { label: "Field research", count: 1 },
+      ]}
+      onNavigate={vi.fn()}
+    />,
+  );
+  const project = screen.getByRole("button", {
+    name: "Product refresh, 10 tasks",
+  });
+  expect(project.querySelector(".project-monogram")).toHaveTextContent("PR");
+  expect(
+    screen
+      .getByRole("button", { name: "Field research, 1 task" })
+      .querySelector(".project-monogram"),
+  ).toHaveTextContent("FR");
+  fireEvent.focus(project);
+  expect(screen.getByRole("tooltip")).toHaveTextContent(
+    "Product refresh, 10 tasks",
+  );
+  expect(project).toHaveAccessibleDescription("Product refresh, 10 tasks");
+  fireEvent.keyDown(project, { key: "Escape" });
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.mouseEnter(project);
+  expect(screen.getByRole("tooltip")).toBeVisible();
+  fireEvent.blur(project);
+  expect(screen.queryByRole("tooltip")).toBeNull();
+});

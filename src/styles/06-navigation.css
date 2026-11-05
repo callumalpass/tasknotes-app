@@ -1012,6 +1012,21 @@
   display: none;
 }
 
+.project-shortcut-tooltip {
+  position: fixed;
+  z-index: 50;
+  max-width: min(280px, 50vw);
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: var(--type-supporting);
+  overflow-wrap: anywhere;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 @media (min-width: 840px) {
   .navigation-project-section {
     display: flex;
@@ -1028,7 +1043,7 @@
     justify-content: flex-start;
     gap: 10px;
     width: 100%;
-    min-height: 36px;
+    min-height: 44px;
     padding: 0 10px;
     color: var(--ink-soft);
     font: inherit;
@@ -1061,6 +1076,23 @@
     flex: none;
     color: var(--ink-soft);
     font-variant-numeric: tabular-nums;
+  }
+
+  .navigation-project-section .project-monogram {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    place-items: center;
+    font-size: var(--type-label);
+    font-weight: 700;
+    background: var(--paper-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+  }
+
+  .sidebar-collapsed .navigation-project-section small {
+    display: none;
   }
 }
 

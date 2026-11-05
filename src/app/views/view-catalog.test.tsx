@@ -5,6 +5,28 @@ import type { TaskView, TaskViewDocument } from "../../domain/view";
 import { SEARCH_NAVIGATION_KEY } from "../navigation-views";
 import { ViewCatalog } from "./view-catalog";
 
+it("leads directly from one counted heading and filters into saved views", () => {
+  renderCatalog();
+  const catalog = screen.getByRole("region", { name: "All views" });
+  expect(within(catalog).getByLabelText("4 views shown")).toBeVisible();
+  expect(
+    within(catalog).queryByRole("heading", { name: "Saved views" }),
+  ).toBeNull();
+  expect(
+    within(catalog).queryByText("Views stored in your collection"),
+  ).toBeNull();
+  fireEvent.change(
+    within(catalog).getByRole("searchbox", { name: "Search views" }),
+    {
+      target: { value: "Work board" },
+    },
+  );
+  expect(within(catalog).getByLabelText("1 views shown")).toBeVisible();
+  expect(
+    within(catalog).getByRole("button", { name: "Work board" }),
+  ).toBeVisible();
+});
+
 it("keeps secondary view operations in a focused overflow menu", () => {
   const callbacks = renderCatalog();
   const allViews = screen.getByRole("region", { name: "All views" });

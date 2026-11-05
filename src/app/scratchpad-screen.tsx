@@ -2806,7 +2806,7 @@ function ScratchpadDocumentEditor({
               activeId === node.id && suggestions.length > 0;
             return (
               <div
-                className={`scratchpad-row kind-${node.kind}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
+                className={`scratchpad-row kind-${node.kind}${descendantCount ? " has-children" : ""}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
                 data-scratch-row={node.id}
                 key={node.id}
                 role="treeitem"
@@ -2838,9 +2838,7 @@ function ScratchpadDocumentEditor({
                         <ChevronDown aria-hidden="true" size={17} />
                       )}
                     </button>
-                  ) : (
-                    <span className="scratchpad-collapse-spacer" />
-                  )}
+                  ) : null}
                   <button
                     aria-label={t`Move ${node.text || uiCopy("empty item")}`}
                     className="scratchpad-drag-handle"

@@ -694,25 +694,55 @@
   }
 }
 
-.theme-picker {
-  width: 8rem;
+.device-settings .setting-row,
+.device-settings .calendar-preferences .form-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 224px);
+  align-items: center;
+  gap: 4px 16px;
+  padding-block: 8px;
+  border-bottom: 0;
 }
 
-.language-setting-row {
-  display: flex;
-  flex-wrap: wrap;
-  padding-block: var(--space-xs);
-}
-
-.language-picker {
-  flex: 0 1 14rem;
-  min-inline-size: 0;
-  max-inline-size: 100%;
-}
-
-.language-setting-row > span {
-  flex: 1 1 9rem;
+.device-settings .setting-row > span,
+.device-settings .calendar-preferences .form-field > span {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--type-body);
   overflow-wrap: anywhere;
+}
+
+.device-settings .setting-row > :last-child {
+  width: 100%;
+  min-width: 0;
+}
+
+.device-settings .calendar-preferences .task-model-settings-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0 0 16px;
+}
+
+.device-settings .tasknotes-select .tasknotes-control-trigger,
+.device-settings .language-picker {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-field);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+}
+
+@media (max-width: 560px) {
+  .device-settings .setting-row,
+  .device-settings .calendar-preferences .form-field {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 0;
+    margin-bottom: 16px;
+  }
 }
 
 .setting-explanation {

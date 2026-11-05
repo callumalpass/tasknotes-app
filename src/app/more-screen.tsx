@@ -701,7 +701,7 @@ function DeviceSettings({
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
   return (
-    <>
+    <div className="device-settings">
       <p className="section-copy">
         <Trans>
           These choices apply as soon as you make them and don’t change the
@@ -740,7 +740,7 @@ function DeviceSettings({
           onChange={onCalendarPreferencesChange}
         />
       </div>
-    </>
+    </div>
   );
 }
 
