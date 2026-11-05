@@ -1,4 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
+import { useLingui, Trans } from "@lingui/react/macro";
 import { Ellipsis } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
@@ -7,10 +7,12 @@ export function ViewOptions({
   children,
   label,
   icon,
+  onManageViews,
 }: {
   children: ReactNode;
   label?: string;
   icon?: ReactNode;
+  onManageViews?(): void;
 }) {
   const { t } = useLingui();
   const name = label ?? t({ message: "View options" });
@@ -48,6 +50,11 @@ export function ViewOptions({
         }}
       >
         {children}
+        {onManageViews ? (
+          <button type="button" onClick={onManageViews}>
+            <Trans>Manage views</Trans>
+          </button>
+        ) : null}
       </div>
     </details>
   );

@@ -4,6 +4,29 @@ import { ChoiceOptions } from "./choice-options";
 
 afterEach(cleanup);
 
+it("keeps the long-picker viewport when filtering to one or zero results", () => {
+  const options = Array.from({ length: 12 }, (_, index) => ({
+    value: `${index}`,
+    label: index === 11 ? "Someday" : `Option ${index}`,
+  }));
+  const { container } = render(
+    <ChoiceOptions
+      options={options}
+      value=""
+      label="Status"
+      onChoose={vi.fn()}
+    />,
+  );
+  const filter = screen.getByRole("combobox", { name: "Filter Status" });
+  expect(container.querySelector(".choice-options")).toHaveClass("is-long");
+  fireEvent.change(filter, { target: { value: "Someday" } });
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  expect(container.querySelector(".choice-options")).toHaveClass("is-long");
+  fireEvent.change(filter, { target: { value: "No match" } });
+  expect(screen.queryAllByRole("option")).toHaveLength(0);
+  expect(container.querySelector(".choice-options")).toHaveClass("is-long");
+});
+
 it("names a short picker and offers a visible close action before its search", () => {
   const close = vi.fn();
   const { container } = render(

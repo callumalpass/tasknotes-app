@@ -139,6 +139,7 @@ export function ViewsScreen({
   navigationViewKeys,
   operational = false,
   onBack,
+  onManageViews = onBack,
   onOpenTask,
   onTaskAdded,
   onSearch,
@@ -158,6 +159,7 @@ export function ViewsScreen({
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
+  onManageViews?(): void;
   onOpenTask(
     task: TaskSummary,
     occurrenceDate?: string,
@@ -1504,7 +1506,7 @@ export function ViewsScreen({
               ) : null}
               {selectionAvailable ? <SelectTasksOption /> : null}
               {selected?.source.writable ? (
-                <ViewOptions>
+                <ViewOptions onManageViews={onManageViews}>
                   {selectionAvailable ? (
                     <p className="view-options-heading">
                       <Trans>Sort by</Trans>

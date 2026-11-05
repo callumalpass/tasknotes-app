@@ -933,13 +933,12 @@
 .view-editor-body input[type="text"] {
   width: 100%;
   min-height: var(--control-min-size);
-  padding: var(--space-sm) 0;
+  padding: var(--space-sm) 12px;
   color: var(--ink);
   font-size: var(--type-field);
   background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
 }
 
 .view-editor-body textarea {

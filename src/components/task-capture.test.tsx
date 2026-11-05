@@ -23,6 +23,35 @@ vi.mock("../domain/task-capture", async (importOriginal) => {
   };
 });
 
+it("opens Notes directly without revealing unrelated capture sections", async () => {
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    target: { value: "Draft with context" },
+  });
+  const notes = await screen.findByRole("button", {
+    name: "Notes",
+  });
+  fireEvent.click(notes);
+  expect(await screen.findByRole("textbox", { name: "Notes" })).toHaveFocus();
+  expect(
+    screen.queryByRole("spinbutton", { name: "Estimate (minutes)" }),
+  ).toBeNull();
+  expect(screen.queryByRole("button", { name: "Scheduled date" })).toBeNull();
+  fireEvent.change(screen.getByRole("textbox", { name: "Notes" }), {
+    target: { value: "One sentence of context." },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  fireEvent.click(notes);
+  expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue(
+    "One sentence of context.",
+  );
+});
+
 it("shows every shorthand kind only while an empty capture is focused", () => {
   render(
     <TaskCapture

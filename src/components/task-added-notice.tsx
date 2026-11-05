@@ -73,56 +73,69 @@ export function TaskAddedNotice({
           }}
           className={`undo-toast task-added-notice${aboveMobileControls ? " is-above-mobile-controls" : ""}`}
         >
-          <span>{message}</span>
+          <span>
+            {!undoFailed && state !== "failed" ? (
+              <span aria-hidden="true">
+                <Trans>
+                  Task added:{" "}
+                  <span className="task-added-title">{task.title}</span>
+                </Trans>
+              </span>
+            ) : (
+              message
+            )}
+          </span>
           {repository ? (
             <RecordWriteNotice
               repository={repository}
               target={{ kind: "task", id: task.id }}
             />
           ) : null}
-          {onUndo && state === undefined ? (
-            <button
-              type="button"
-              disabled={undoing}
-              onClick={async () => {
-                setUndoing(true);
-                setUndoFailed(false);
-                try {
-                  await onUndo(task);
+          <div className="task-added-actions">
+            {onUndo && state === undefined ? (
+              <button
+                type="button"
+                disabled={undoing}
+                onClick={async () => {
+                  setUndoing(true);
+                  setUndoFailed(false);
+                  try {
+                    await onUndo(task);
+                    onDismiss();
+                  } catch {
+                    setUndoFailed(true);
+                  } finally {
+                    setUndoing(false);
+                  }
+                }}
+              >
+                <Trans>Undo</Trans>
+              </button>
+            ) : null}
+            {state !== "failed" ? (
+              <button
+                type="button"
+                onClick={() => {
                   onDismiss();
-                } catch {
-                  setUndoFailed(true);
-                } finally {
-                  setUndoing(false);
-                }
-              }}
-            >
-              <Trans>Undo</Trans>
-            </button>
-          ) : null}
-          {state !== "failed" ? (
+                  onOpen(task);
+                }}
+              >
+                <Trans>Open</Trans>
+              </button>
+            ) : null}
             <button
               type="button"
+              aria-label={t({ message: "Dismiss task added confirmation" })}
               onClick={() => {
                 onDismiss();
-                onOpen(task);
+                document
+                  .getElementById("main-content")
+                  ?.focus({ preventScroll: true });
               }}
             >
-              <Trans>Open</Trans>
+              <X aria-hidden="true" size={18} />
             </button>
-          ) : null}
-          <button
-            type="button"
-            aria-label={t({ message: "Dismiss task added confirmation" })}
-            onClick={() => {
-              onDismiss();
-              document
-                .getElementById("main-content")
-                ?.focus({ preventScroll: true });
-            }}
-          >
-            <X aria-hidden="true" size={18} />
-          </button>
+          </div>
         </div>
       ) : null}
     </FeedbackNotice>

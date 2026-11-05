@@ -302,9 +302,20 @@
 }
 
 .date-time-field > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 6.2rem;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.date-time-field > div > .tasknotes-date-picker {
+  flex: 1 1 124px;
+  min-inline-size: min(124px, 100%);
+}
+
+.date-time-field > div > .tasknotes-time-picker {
+  flex: 0 0 124px;
+  min-inline-size: min(124px, 100%);
+  max-inline-size: 100%;
 }
 
 .form-field input {
@@ -369,6 +380,10 @@
 .tasknotes-control-trigger:disabled {
   cursor: default;
   opacity: 0.42;
+}
+
+.date-time-field .tasknotes-control-trigger:disabled {
+  opacity: 1;
 }
 
 .tasknotes-control-trigger:focus-visible {

@@ -61,6 +61,10 @@
   overflow-y: auto;
   scroll-padding-block: 1px;
 }
+.choice-options.is-long .tasknotes-option-list {
+  block-size: 308px;
+  max-block-size: min(308px, calc(82dvh - 116px));
+}
 .choice-options .tasknotes-option-list > button {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) 20px;

@@ -47,6 +47,7 @@ import {
 } from "react";
 
 import { useOverlay } from "../components/overlays/use-overlay";
+import { useScratchpadMenu } from "./use-scratchpad-menu";
 import {
   activeCaptureToken,
   applyCaptureSuggestion,
@@ -1255,20 +1256,9 @@ function ScratchNoteActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const outside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !menuRef.current?.contains(event.target) &&
-        !menuTriggerRef.current?.contains(event.target)
-      )
-        setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    return () => document.removeEventListener("pointerdown", outside);
-  }, [menuOpen]);
+  useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
+    setMenuOpen(false),
+  );
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -1355,20 +1345,9 @@ function ScratchImageCard({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const outside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !menuRef.current?.contains(event.target) &&
-        !menuTriggerRef.current?.contains(event.target)
-      )
-        setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    return () => document.removeEventListener("pointerdown", outside);
-  }, [menuOpen]);
+  useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
+    setMenuOpen(false),
+  );
 
   useEffect(() => {
     const store = repository.files;
@@ -1626,6 +1605,10 @@ function ScratchpadDocumentEditor({
   const sourceEditVersion = useRef(0);
   const titleRef = useRef(initialDocument.title ?? "");
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
+  const rowMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useScratchpadMenu(menuId, rowMenuRef, rowMenuTriggerRef, () =>
+    setMenuId(undefined),
+  );
   const editorModeRef = useRef<"outline" | "markdown">(editorMode);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
   const savesInFlight = useRef(0);
@@ -2456,7 +2439,8 @@ function ScratchpadDocumentEditor({
       .filter((node) => node.kind === "draft" && node.text.trim())
       .map(({ id, text, depth }) => ({ id, text, depth }));
     setReviewItems(items);
-    setSelectedReviewIds(new Set(items.map((item) => item.id)));
+    const current = items.find((item) => item.id === activeId);
+    setSelectedReviewIds(new Set(current ? [current.id] : []));
     setReviewResults({});
     setReviewOpen(true);
   }
@@ -2693,6 +2677,7 @@ function ScratchpadDocumentEditor({
       <div className="scratchpad-title-row">
         <input
           aria-label={t({ message: "Note title" })}
+          className={title ? undefined : "is-empty"}
           maxLength={160}
           placeholder={t({ message: "Add title" })}
           type="text"
@@ -3072,11 +3057,12 @@ function ScratchpadDocumentEditor({
                       aria-label={t`Actions for ${node.text || uiCopy("empty item")}`}
                       className="scratchpad-row-menu-trigger"
                       type="button"
-                      onClick={() =>
+                      onClick={(event) => {
+                        rowMenuTriggerRef.current = event.currentTarget;
                         setMenuId((current) =>
                           current === node.id ? undefined : node.id,
-                        )
-                      }
+                        );
+                      }}
                     >
                       <MoreHorizontal aria-hidden="true" size={18} />
                     </button>

@@ -696,6 +696,12 @@ describe("ScratchpadScreen", () => {
     });
     expect(
       within(dialog).getByRole("checkbox", { name: "Portable draft" }),
+    ).not.toBeChecked();
+    fireEvent.click(
+      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
+    );
+    expect(
+      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
     ).toBeChecked();
     expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
       "aria-pressed",
@@ -751,10 +757,14 @@ describe("ScratchpadScreen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
     const dialog = screen.getByRole("dialog", { name: "Create task notes" });
-    expect(dialog).toHaveTextContent("2 of 2 selected");
+    expect(dialog).toHaveTextContent("1 of 2 selected");
+    expect(
+      screen.getByRole("checkbox", { name: "Write announcement" }),
+    ).toBeChecked();
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Write announcement" }),
     );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Plan launch" }));
     expect(dialog).toHaveTextContent("1 of 2 selected");
     fireEvent.click(screen.getByRole("button", { name: "Create 1 task note" }));
 
@@ -802,6 +812,12 @@ describe("ScratchpadScreen", () => {
       target: { value: "Keep the tone straightforward" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
+    expect(
+      screen.getByRole("dialog", { name: "Create task notes" }),
+    ).toHaveTextContent("0 of 2 selected");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Select all" }),
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Create 2 task notes" }),
     );
@@ -896,6 +912,9 @@ describe("ScratchpadScreen", () => {
     });
     fireEvent.change(second, { target: { value: "Second task" } });
     fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Select all" }),
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Create 2 task notes" }),
     );

@@ -9,6 +9,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useContext,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -30,6 +31,10 @@ import { TaskAttachments } from "../components/task-attachments";
 import { completionKey } from "../application/task-mutations";
 import { useMutationState } from "../components/use-mutation-state";
 import { taskCompletion } from "../domain/task-completion";
+import {
+  completionRecord,
+  TaskCompletionReportContext,
+} from "../components/task-completion-motion";
 import { TaskActions } from "../components/task-actions";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { TaskRecordFile } from "../components/task-record-file";
@@ -187,6 +192,15 @@ function TaskEditor({
     mutations,
     completionKey(task.id, task.occurrenceDate ? undefined : occurrenceDate),
   );
+  const reportCompletion = useContext(TaskCompletionReportContext);
+  async function toggleCompletion() {
+    const completed = !taskCompletion(task);
+    const saved = await setTaskCompletion({ id: task.id, completed });
+    reportCompletion({
+      ...completionRecord(task, undefined, saved),
+      completed,
+    });
+  }
   const {
     relationships: repositoryRelationships,
     loading: relationshipsLoading,
@@ -768,10 +782,16 @@ function TaskEditor({
     setOccurrenceAction(true);
     setOccurrenceError(null);
     try {
-      await setTaskCompletion({
+      const completed = !taskCompletion(task, date);
+      const targetDate = task.occurrenceDate ? undefined : date;
+      const saved = await setTaskCompletion({
         id: task.id,
-        occurrenceDate: task.occurrenceDate ? undefined : date,
-        completed: !taskCompletion(task, date),
+        occurrenceDate: targetDate,
+        completed,
+      });
+      reportCompletion({
+        ...completionRecord(task, targetDate, saved),
+        completed,
       });
     } catch (reason) {
       if (mounted.current)
@@ -921,11 +941,7 @@ function TaskEditor({
           onDeleted={onBack}
           onToggle={async () => {
             if (occurrenceDate || task.occurrenceDate) await toggleOccurrence();
-            else
-              await setTaskCompletion({
-                id: task.id,
-                completed: !taskCompletion(task),
-              });
+            else await toggleCompletion();
           }}
         />
       </header>
@@ -1058,10 +1074,7 @@ function TaskEditor({
                 setCompletionError(null);
                 try {
                   await flushBeforeAttachmentMutation();
-                  await setTaskCompletion({
-                    id: task.id,
-                    completed: !taskCompletion(task),
-                  });
+                  await toggleCompletion();
                   successFeedback();
                 } catch (reason) {
                   setCompletionError(

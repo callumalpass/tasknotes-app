@@ -698,6 +698,21 @@ export function TaskCapture({
           <button
             className="text-action"
             type="button"
+            aria-expanded={editingField === "notes"}
+            onClick={(event) => {
+              editTrigger.current = event.currentTarget;
+              focusDetails.current = true;
+              setExpanded(false);
+              setEditingField((current) =>
+                current === "notes" ? null : "notes",
+              );
+            }}
+          >
+            <Trans>Notes</Trans>
+          </button>
+          <button
+            className="text-action"
+            type="button"
             aria-expanded={expanded}
             title={t({ message: "Shift+Enter for details" })}
             onClick={() => {
@@ -827,6 +842,21 @@ function CaptureTargetField({
   onChange(patch: Partial<CreateTaskInput>): void;
 }) {
   const { t } = useLingui();
+  if (field === "notes")
+    return (
+      <label className="notes-field capture-notes">
+        <span>
+          <Trans>Notes</Trans>
+        </span>
+        <textarea
+          aria-label={t({ message: "Notes" })}
+          placeholder={t({ message: "Add notes" })}
+          rows={3}
+          value={input.body ?? ""}
+          onChange={(event) => onChange({ body: event.target.value })}
+        />
+      </label>
+    );
   if (field === "status" || field === "priority")
     return (
       <TaskNotesSelectField

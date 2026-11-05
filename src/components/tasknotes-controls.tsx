@@ -49,6 +49,7 @@ export function TaskNotesSelect({
   disabled = false,
   placeholder = translate({ message: "Choose" }),
   className,
+  triggerLabel,
 }: {
   value: string;
   options: readonly TaskNotesOption[];
@@ -59,6 +60,7 @@ export function TaskNotesSelect({
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  triggerLabel?: string;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -201,7 +203,7 @@ export function TaskNotesSelect({
         onKeyDown={keyDown}
       >
         <span className={selected ? undefined : "is-placeholder"}>
-          {selected?.label ?? placeholder}
+          {triggerLabel ?? selected?.label ?? placeholder}
         </span>
         <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </button>

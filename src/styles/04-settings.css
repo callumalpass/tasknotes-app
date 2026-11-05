@@ -114,12 +114,9 @@
 .browse-fields h2 {
   margin: 0 0 10px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .browse-fields section > div {
@@ -167,12 +164,9 @@
 .search-history h2 {
   margin: 0;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .search-history header button {

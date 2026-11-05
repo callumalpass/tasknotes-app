@@ -49,7 +49,10 @@ export function ChoiceOptions({
       ?.scrollIntoView?.({ block: "nearest" });
   }, [active, query]);
   return (
-    <div className="choice-options" ref={root}>
+    <div
+      className={`choice-options${options.length > 6 ? " is-long" : ""}`}
+      ref={root}
+    >
       {onClose ? (
         <header className="choice-options-header">
           <strong>{label ?? defaultLabel}</strong>

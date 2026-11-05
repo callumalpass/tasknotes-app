@@ -494,6 +494,7 @@ export function BulkTaskActions({
               />
               <TaskNotesSelect
                 ariaLabel={t`Priority for selected tasks`}
+                triggerLabel={t`Priority`}
                 disabled={disabled}
                 options={configuration.priorities.map((priority) => ({
                   value: priority.value,

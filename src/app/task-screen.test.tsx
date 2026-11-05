@@ -10,6 +10,7 @@ import { historyScope, readHistory } from "./search-history";
 import { taskRecordLink } from "../domain/task-links";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 import { TaskScreen } from "./task-screen";
+import { TaskCompletionReportContext } from "../components/task-completion-motion";
 
 import type { Task } from "../domain/task";
 
@@ -28,19 +29,25 @@ describe("TaskScreen", () => {
 
   afterEach(() => repository.dispose());
 
-  function renderTask(onBack = vi.fn(), onNavigate = vi.fn()) {
+  function renderTask(
+    onBack = vi.fn(),
+    onNavigate = vi.fn(),
+    report = vi.fn(),
+  ) {
     render(
       <RepositoryProvider
         mutationJournal={new MemoryMutationJournal()}
         repository={repository}
       >
-        <TaskScreen
-          id={task.id}
-          onBack={onBack}
-          onMaterialized={vi.fn()}
-          onNavigate={onNavigate}
-          taskOrder={[{ id: "previous" }, { id: task.id }, { id: "next" }]}
-        />
+        <TaskCompletionReportContext.Provider value={report}>
+          <TaskScreen
+            id={task.id}
+            onBack={onBack}
+            onMaterialized={vi.fn()}
+            onNavigate={onNavigate}
+            taskOrder={[{ id: "previous" }, { id: task.id }, { id: "next" }]}
+          />
+        </TaskCompletionReportContext.Provider>
       </RepositoryProvider>,
     );
     return onBack;
@@ -266,7 +273,8 @@ describe("TaskScreen", () => {
   });
 
   it("completes from the title after preserving pending notes", async () => {
-    renderTask();
+    const report = vi.fn();
+    renderTask(vi.fn(), vi.fn(), report);
     fireEvent.change(await screen.findByLabelText("Notes"), {
       target: { value: "Keep the reasoning behind this task." },
     });
@@ -275,6 +283,20 @@ describe("TaskScreen", () => {
     const saved = await repository.get(task.id);
     expect(saved?.completed).toBe(true);
     expect(saved?.body).toContain("Keep the reasoning behind this task.");
+    expect(report).toHaveBeenCalledWith(
+      expect.objectContaining({
+        task: expect.objectContaining({ id: task.id, completed: false }),
+        completed: true,
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Reopen task" }));
+    await screen.findByRole("button", { name: "Complete task" });
+    expect(report).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        task: expect.objectContaining({ id: task.id, completed: true }),
+        completed: false,
+      }),
+    );
   });
 
   it("does not complete if the pending draft cannot be saved", async () => {

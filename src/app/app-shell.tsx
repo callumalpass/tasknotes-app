@@ -218,12 +218,12 @@ export function AppShell() {
   );
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
   const undoCompletion = useCallback(
-    async ({ task, occurrenceDate, advanced }: TaskCompletion) => {
+    async ({ task, occurrenceDate, advanced, completed }: TaskCompletion) => {
       const origin = routeRef.current;
       const reopened = await setTaskCompletion({
         id: task.id,
         occurrenceDate,
-        completed: false,
+        completed: completed === false,
       });
       const { status } = task;
       if (advanced || reopened.status !== status)
@@ -242,7 +242,10 @@ export function AppShell() {
       setCompletedNotice({ completion, repository, route: routeRef.current });
       completionUndo.current = {
         label: completion.task.title,
-        undoNotice: translate`Reopened “${completion.task.title}”`,
+        undoNotice:
+          completion.completed === false
+            ? translate`Completed “${completion.task.title}”`
+            : translate`Reopened “${completion.task.title}”`,
         run: () => undoCompletion(completion),
       };
       rememberUndo(completionUndo.current);
@@ -514,6 +517,7 @@ export function AppShell() {
           <HomeViewLoading />
         ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
+            onManageViews={() => navigate({ page: "views" })}
             onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}

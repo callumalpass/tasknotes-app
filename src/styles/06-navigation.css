@@ -116,6 +116,8 @@
     bottom: 0;
     left: 0 !important;
     width: 100%;
+    max-width: none;
+    inset-inline: 0 !important;
     max-height: min(82dvh, 620px);
     padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
     border-right: 0;
@@ -132,6 +134,7 @@
 
   .task-actions-menu.is-organize-editor {
     width: 100%;
+    max-width: none;
     overflow-y: auto;
   }
 
