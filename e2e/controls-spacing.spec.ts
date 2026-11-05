@@ -35,6 +35,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
+      await page.locator(".task-properties-disclosure > summary").click();
       const fields = page.locator(".task-core-properties");
       const label = fields.locator(".form-field > span").first();
       await expect(label).toHaveCSS("font-family", /Atkinson Hyperlegible/);
@@ -60,8 +61,39 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("date property controls retain targets and keyboard focus", async ({
       page,
+      isMobile,
     }) => {
       await page.goto("?demo=50");
+      if (isMobile) {
+        const band = page.locator(".task-row-metadata-band").first();
+        await band.click();
+        const sheet = page.getByRole("dialog", {
+          name: "Task properties",
+          exact: true,
+        });
+        const trigger = sheet.getByRole("button", {
+          name: "Scheduled date",
+          exact: true,
+        });
+        await trigger.click();
+        const popover = page.getByRole("dialog", {
+          name: "Scheduled date calendar",
+          exact: true,
+        });
+        await expect(popover).toBeVisible();
+        for (const control of await popover.getByRole("button").all()) {
+          expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(
+            44,
+          );
+        }
+        await page.keyboard.press("Escape");
+        await expect(popover).toHaveCount(0);
+        await expect(trigger).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(sheet).toHaveCount(0);
+        await expect(band).toBeFocused();
+        return;
+      }
       const trigger = page
         .locator(".task-row")
         .getByRole("button", { name: /^Scheduled:/ })
@@ -93,6 +125,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         })
         .click();
+      await page.locator(".task-properties-disclosure > summary").click();
       await page
         .locator(".task-core-properties .tasknotes-date-trigger")
         .first()
@@ -123,7 +156,8 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("view fields stay subordinate to the name and property Save uses the shared action", async ({
       page,
-    }) => {
+      isMobile,
+    }, testInfo) => {
       // The demo series repeats Mon/Wed/Fri. Keep it in Today regardless of
       // the real weekday so the saved Recurrence field has a nonempty value.
       await page.clock.setFixedTime(new Date("2026-10-19T12:00:00Z"));
@@ -165,6 +199,47 @@ for (const colorScheme of ["light", "dark"] as const) {
           exact: true,
         }),
       });
+      if (isMobile) {
+        await repeatingRow.locator(".task-row-metadata-band").click();
+        const sheet = page.getByRole("dialog", {
+          name: "Task properties",
+          exact: true,
+        });
+        await expect(sheet).toBeInViewport({ ratio: 1 });
+        const repeat = sheet.getByRole("combobox", {
+          name: "Repeat",
+          exact: true,
+        });
+        await expect(repeat).toHaveAttribute("data-value", "weekly");
+        await repeat.scrollIntoViewIfNeeded();
+        await expect(repeat).toBeInViewport({ ratio: 1 });
+        await page.screenshot({
+          path: testInfo.outputPath("property-sheet-lower-fields.png"),
+          animations: "disabled",
+        });
+        await repeat.click();
+        await page.getByRole("option", { name: "Daily", exact: true }).click();
+        await expect(repeat).toHaveAttribute("data-value", "daily");
+        const done = sheet
+          .getByRole("button", { name: "Done", exact: true })
+          .last();
+        expect((await done.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        await expect(done).toHaveCSS("border-radius", "6px");
+        await expect(done).not.toHaveCSS(
+          "background-color",
+          "rgba(0, 0, 0, 0)",
+        );
+        await done.click();
+        await expect(sheet).toHaveCount(0);
+        await repeatingRow.locator(".task-row-metadata-band").click();
+        await expect(repeat).toHaveAttribute("data-value", "daily");
+        await page.keyboard.press("Escape");
+        await page.getByRole("button", { name: "Undo", exact: true }).click();
+        await expect(page.locator(".undo-toast")).toContainText("Undid change");
+        await repeatingRow.locator(".task-row-metadata-band").click();
+        await expect(repeat).toHaveAttribute("data-value", "weekly");
+        return;
+      }
       await repeatingRow.getByRole("button", { name: /^Recurrence:/ }).click();
       const dialog = page.getByRole("dialog", { name: "Edit Recurrence" });
       const save = dialog.getByRole("button", { name: "Save", exact: true });
@@ -237,6 +312,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.addStyleTag({
         content: ":root { font-size: 200% !important; }",
       });
+      await page.locator(".task-properties-disclosure > summary").click();
       await expect
         .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
         .toBeLessThanOrEqual(320);

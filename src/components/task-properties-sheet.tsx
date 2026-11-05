@@ -43,7 +43,10 @@ export function TaskPropertiesSheet({
         all.findIndex((other) => other.key === property.key) === index,
     );
   return createPortal(
-    <div className="task-property-editor-scrim" role="presentation">
+    <div
+      className="task-property-editor-scrim task-properties-sheet-scrim"
+      role="presentation"
+    >
       <section
         className="task-property-editor task-properties-sheet"
         role="dialog"
@@ -98,9 +101,15 @@ function SheetProperty({
 }) {
   const { t } = useLingui();
   const { configuration, repository, updateTask } = useRepository();
-  const [value, setValue] = useState(() => propertyValue(task, property));
+  const persistedValue = propertyValue(task, property);
+  const [previousValue, setPreviousValue] = useState(persistedValue);
+  const [value, setValue] = useState(persistedValue);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  if (!Object.is(previousValue, persistedValue)) {
+    setPreviousValue(persistedValue);
+    setValue(persistedValue);
+  }
   async function save(next: unknown, anchor = task.recurrenceAnchor) {
     const previous = pendingRef.current;
     let release = () => {};

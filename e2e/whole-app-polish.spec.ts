@@ -98,7 +98,18 @@ test("compact task titles remain independently tappable without overlapping meta
   });
   await expect(title).toBeVisible();
   const box = await title.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(32);
+  const coarse = await page.evaluate(
+    () => matchMedia("(pointer: coarse)").matches,
+  );
+  expect(box!.height).toBeGreaterThanOrEqual(coarse ? 44 : 32);
+  if (coarse) {
+    const row = title.locator(
+      "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' task-row ')][1]",
+    );
+    const metadata = await row.locator(".task-row-metadata-band").boundingBox();
+    expect(metadata!.y).toBeGreaterThanOrEqual(box!.y + box!.height);
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(100);
+  }
   await title.click({ position: { x: box!.width / 2, y: box!.height - 2 } });
   await expect(
     page.getByRole("textbox", { name: "Task title", exact: true }),
@@ -377,9 +388,10 @@ test("task summaries use readable project labels and settings show the build ver
     name: "Edit Project",
     exact: true,
   });
+  await page.locator(".task-properties-disclosure > summary").click();
   await expect(project).toContainText("Product refresh");
   await expect(project).not.toContainText("[[");
-  await page.goto("more?demo=50");
+  await page.goto("more/about?demo=50");
   const { version } = JSON.parse(
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),
   ) as { version: string };

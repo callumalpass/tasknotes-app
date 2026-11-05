@@ -1336,8 +1336,13 @@
 .task-row-metadata-band > .is-overdue {
   color: var(--danger);
 }
+.task-properties-sheet-scrim {
+  display: grid;
+  place-items: center;
+}
 .task-properties-sheet {
   position: relative;
+  inset: auto;
   width: min(100%, 540px);
   max-height: min(85dvh, 760px);
   overflow-y: auto;
@@ -1349,6 +1354,11 @@
 .task-sheet-property {
   margin-block: 16px;
 }
+@media (max-width: 600px) {
+  .task-properties-sheet-scrim {
+    align-items: end;
+  }
+}
 @media (pointer: coarse) {
   .task-row .task-row-inline-metadata {
     display: none;
@@ -1357,7 +1367,7 @@
     display: flex;
   }
   .task-row:not(.kanban-card *) .task-row-title {
-    min-height: 28px;
+    min-height: 44px;
     padding-block: 2px;
   }
 }

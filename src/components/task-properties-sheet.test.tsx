@@ -92,3 +92,37 @@ it("serializes custom-field saves against the latest task without dropping eithe
     customProperties: { energy: 5, effort: 8, other: "keep" },
   });
 });
+
+it("refreshes persisted values after Undo without resetting unrelated field drafts", () => {
+  const task = {
+    id: "three",
+    title: "Write brief",
+    revision: 1,
+    status: "open",
+    priority: "normal",
+    recurrence: "FREQ=DAILY",
+    projects: [],
+    customProperties: { energy: 3 },
+  } as unknown as TaskSummary;
+  const onClose = vi.fn();
+  const { rerender } = render(
+    <TaskPropertiesSheet task={task} onClose={onClose} />,
+  );
+  expect(screen.getByRole("combobox", { name: "Repeat" })).toHaveAttribute(
+    "data-value",
+    "daily",
+  );
+  const custom = screen.getByRole("spinbutton", { name: "Energy" });
+  fireEvent.change(custom, { target: { value: "5" } });
+  rerender(
+    <TaskPropertiesSheet
+      task={{ ...task, revision: 2, recurrence: "FREQ=WEEKLY;BYDAY=MO,WE,FR" }}
+      onClose={onClose}
+    />,
+  );
+  expect(screen.getByRole("combobox", { name: "Repeat" })).toHaveAttribute(
+    "data-value",
+    "weekly",
+  );
+  expect(custom).toHaveValue(5);
+});
