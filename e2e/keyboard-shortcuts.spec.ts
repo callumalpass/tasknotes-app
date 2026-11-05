@@ -253,7 +253,16 @@ test("row keys act on the whole selection and keep the list place", async ({
     "2 selected",
   );
   await page.keyboard.press("m");
-  await expect(page.locator(`[data-task-id="${first}"]`)).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Keep due dates", exact: true })
+    .click();
+  const moved = page.locator(`[data-task-id="${first}"]`);
+  await expect(
+    moved.getByRole("button", { name: /^Scheduled: Tomorrow/ }),
+  ).toBeVisible();
+  await expect(
+    moved.getByRole("button", { name: /^Due: .*ago/ }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
   await expect(page.locator(".app-shell")).not.toHaveClass(/sidebar-collapsed/);
   await expect(rows.locator(".task-row-title:focus")).toHaveCount(1);

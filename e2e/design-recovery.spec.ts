@@ -10,6 +10,12 @@ for (const colorScheme of ["light", "dark"] as const) {
     }, testInfo) => {
       const width = isMobile ? 412 : 1280;
       await page.setViewportSize({ width, height: 713 });
+      await page.addInitScript(() =>
+        localStorage.setItem(
+          "tasknotes:calendar-preferences:v1",
+          JSON.stringify({ slotMinTime: "00:00:00", slotMaxTime: "24:00:00" }),
+        ),
+      );
       await page.goto(
         `views/${encodeURIComponent("TaskNotes/Views/work-board.base#work-board")}?demo=60`,
       );

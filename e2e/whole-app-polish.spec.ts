@@ -121,13 +121,28 @@ test("phone Scratchpad reserves writing width and keeps conversion in the row me
   );
   for (const selector of [
     ".scratchpad-collapse",
-    ".scratchpad-draft-completion",
     ".scratchpad-row-menu-trigger",
   ]) {
     const box = await row.locator(selector).boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(44);
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
+  await expect(row.locator(".scratchpad-draft-completion")).toBeHidden();
+  const childCompletion = page
+    .locator(".scratchpad-row")
+    .filter({
+      has: page.getByRole("textbox", {
+        name: "Draft task: Pull the last three examples",
+        exact: true,
+      }),
+    })
+    .locator(".scratchpad-draft-completion");
+  expect((await childCompletion.boundingBox())!.width).toBeGreaterThanOrEqual(
+    44,
+  );
+  expect((await childCompletion.boundingBox())!.height).toBeGreaterThanOrEqual(
+    44,
+  );
   await row
     .getByRole("button", {
       name: "Actions for Ask Rowan about the research notes",

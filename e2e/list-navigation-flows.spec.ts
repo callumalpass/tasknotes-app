@@ -150,19 +150,26 @@ test("sidebar footer stays pinned and project navigation leaves no rail offset",
   ).toBe(0);
 });
 
-test("desktop project metadata shares a fixed right anchor", async ({
+test("desktop project metadata stays in the shared inline metadata flow", async ({
   page,
   isMobile,
 }) => {
   test.skip(isMobile, "Phones retain wrapping metadata");
   await page.setViewportSize({ width: 1280, height: 800 });
-  const edges = await page
+  const properties = await page
     .locator(".task-row .is-project")
     .evaluateAll((elements) =>
-      elements.map((element) => element.getBoundingClientRect().right),
+      elements.map((element) => ({
+        right: element.getBoundingClientRect().right,
+        boundary: element.parentElement!.getBoundingClientRect().right,
+        clipped: element.scrollWidth - element.clientWidth,
+      })),
     );
-  expect(edges.length).toBeGreaterThan(2);
-  expect(Math.max(...edges) - Math.min(...edges)).toBeLessThan(2);
+  expect(properties.length).toBeGreaterThan(2);
+  for (const property of properties) {
+    expect(property.right).toBeLessThanOrEqual(property.boundary + 1);
+    expect(property.clipped).toBeLessThanOrEqual(1);
+  }
   const capture = page.getByRole("combobox", { name: "New task title" });
   await expect(capture).toHaveAttribute("spellcheck", "false");
 });
@@ -246,17 +253,20 @@ test("long project and priority labels keep their metadata lanes", async ({
           projectRight: project.right,
           projectLeft: project.left,
           boundsRight: bounds.right,
-          detailsRight: Math.max(0, ...details.map((detail) => detail.right)),
+          overlaps: details.some(
+            (detail) =>
+              detail.left < project.right &&
+              detail.right > project.left &&
+              detail.top < project.bottom &&
+              detail.bottom > project.top,
+          ),
         };
       }),
     );
   expect(metadata.length).toBeGreaterThan(2);
   for (const row of metadata) {
     expect(row.projectRight).toBeLessThanOrEqual(row.boundsRight + 1);
-    if (!isMobile) {
-      expect(row.projectRight).toBeCloseTo(row.boundsRight, 0);
-      expect(row.detailsRight).toBeLessThanOrEqual(row.projectLeft);
-    }
+    expect(row.overlaps).toBe(false);
   }
   if (isMobile) {
     for (const value of await page.locator(".task-row-property strong").all()) {

@@ -23,13 +23,21 @@ for (const colorScheme of ["light", "dark"] as const) {
         0,
       );
       await page.screenshot({ path: info.outputPath("agenda.png") });
-      const chosen = page.locator(".tnc-strip-day").nth(5);
+      const chosen = page.locator('.tnc-strip-day[aria-current="date"]');
       const date = await chosen.getAttribute("data-date");
       await chosen.click();
-      await expect
-        .poll(() => page.evaluate(() => scrollY))
-        .toBeGreaterThan(200);
-      await commands.getByLabel("Calendar layout", { exact: true }).click();
+      await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+      const day = page.locator(`.tnc-list-day[data-date="${date}"]`);
+      await expect(day).toBeVisible();
+      const stripBounds = (await page.locator(".tnc-strip").boundingBox())!;
+      const dayBounds = (await day.boundingBox())!;
+      expect(dayBounds.y).toBeGreaterThanOrEqual(
+        stripBounds.y + stripBounds.height - 1,
+      );
+      expect(dayBounds.y).toBeLessThanOrEqual(
+        stripBounds.y + stripBounds.height + 16,
+      );
+      await page.getByLabel("Calendar layout", { exact: true }).click();
       await page.getByRole("button", { name: "Week", exact: true }).click();
       await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
       const selected = page.locator(`.tnc-dh[data-date="${date}"]`);
@@ -60,21 +68,25 @@ for (const colorScheme of ["light", "dark"] as const) {
       }
       await page.screenshot({ path: info.outputPath("week.png") });
       for (const layout of ["Month", "3 days", "Day", "Agenda", "Year"]) {
-        await commands.getByLabel("Calendar layout", { exact: true }).click();
+        await page.getByLabel("Calendar layout", { exact: true }).click();
         await page.getByRole("button", { name: layout, exact: true }).click();
-        const previous = (await commands
-          .getByRole("button", { name: "Previous period" })
-          .boundingBox())!;
-        const switcher = (await commands
+        const stripped = layout === "Agenda";
+        const controls = stripped ? page.locator(".tnc-strip") : commands;
+        const previous = (await (
+          stripped
+            ? controls.locator(".tnc-strip-prev")
+            : controls.getByRole("button", { name: "Previous period" })
+        ).boundingBox())!;
+        const switcher = (await controls
           .getByLabel("Calendar layout", { exact: true })
           .boundingBox())!;
         expect(previous.height).toBeGreaterThanOrEqual(44);
         expect(switcher.height).toBeGreaterThanOrEqual(44);
         await expect
           .poll(() =>
-            commands.evaluate((element) => {
+            controls.evaluate((element) => {
               const navigation = element
-                .querySelector(".full-calendar-navigation")!
+                .querySelector(".full-calendar-navigation, .tnc-strip-prev")!
                 .getBoundingClientRect();
               const layout = element
                 .querySelector(".view-options > summary")!
@@ -125,11 +137,24 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(
         pane.locator(".task-core-properties > .form-field").first(),
       ).toHaveCSS("font-size", "15px");
-      await expect(pane.getByText("Rendering…", { exact: true })).toHaveCount(0);
+      await expect(pane.getByText("Rendering…", { exact: true })).toHaveCount(
+        0,
+      );
       await page.screenshot({ path: info.outputPath("detail.png") });
       await pane.getByRole("combobox", { name: "Status", exact: true }).click();
       await expect(page.getByRole("option")).toHaveCount(12);
-      await page.keyboard.press("End");
+      const filter = page.getByRole("combobox", { name: "Filter Status" });
+      await expect(filter).toBeFocused();
+      await expect(
+        page.locator('[role="option"][aria-selected="true"]'),
+      ).toBeInViewport();
+      const lastLabel = (await page
+        .getByRole("option")
+        .last()
+        .textContent())!.trim();
+      await filter.fill(lastLabel);
+      await expect(page.getByRole("option")).toHaveCount(1);
+      await filter.press("ArrowDown");
       await expect(page.getByRole("option").last()).toBeInViewport();
       await page.keyboard.press("Escape");
       await pane
@@ -175,7 +200,9 @@ for (const colorScheme of ["light", "dark"] as const) {
         panel.getByText("Upload images", { exact: true }),
       ).toBeInViewport();
       await page.screenshot({ path: info.outputPath("scratchpad.png") });
-      await unavailable.screenshot({ path: info.outputPath("unavailable.png") });
+      await unavailable.screenshot({
+        path: info.outputPath("unavailable.png"),
+      });
       await page.goto("more/device?demo=60&many-options");
       const language = page.getByLabel("App language", { exact: true });
       await expect(language).toHaveCSS("appearance", "none");

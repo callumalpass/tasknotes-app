@@ -45,6 +45,20 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(property).toBeFocused();
+      for (const label of ["Status", "Priority", "Due", "Projects"]) {
+        const trigger = page
+          .getByRole("button", { name: new RegExp(`^${label}:`) })
+          .first();
+        await trigger.click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        if (label === "Projects") {
+          await expect(
+            page.getByRole("combobox", { name: "Projects", exact: true }),
+          ).toBeFocused();
+        }
+        await page.keyboard.press("Escape");
+        await expect(trigger).toBeFocused();
+      }
     });
 
     test("mobile rows grow for wrapped titles and enlarged text without overlapping actions", async ({
@@ -129,7 +143,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           .locator(".tnc-dg .tnc-item .full-calendar-event-content")
           .first();
         await expect(event).toBeVisible();
-        await expect(event).toHaveCSS("min-height", "24px");
+        await expect(event).toHaveCSS("min-height", "28px");
         expect((await event.boundingBox())!.height).toBeLessThanOrEqual(60);
       }
       await page.getByLabel("Calendar layout", { exact: true }).click();

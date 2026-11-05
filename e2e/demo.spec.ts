@@ -339,24 +339,15 @@ test("continues on a fresh line after converting the final outline draft", async
   });
   const input = current.locator("[data-scratch-input]").last();
   await input.fill("Continue after conversion");
-  if ((page.viewportSize()?.width ?? 1000) <= 560) {
-    await current
-      .getByRole("button", {
-        name: "Actions for Continue after conversion",
-        exact: true,
-      })
-      .click();
-    await current
-      .getByRole("menuitem", { name: "Create task", exact: true })
-      .click();
-  } else {
-    await current
-      .getByRole("button", {
-        name: "Create task for Continue after conversion",
-        exact: true,
-      })
-      .click();
-  }
+  await current
+    .getByRole("button", {
+      name: "Actions for Continue after conversion",
+      exact: true,
+    })
+    .click();
+  await current
+    .getByRole("menuitem", { name: "Create task", exact: true })
+    .click();
   await expect(
     current.getByRole("button", {
       name: "Continue after conversion",
@@ -785,7 +776,7 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await page.mouse.up();
   await expect(page.getByText(/Scratchpad moved before Today/)).toBeAttached();
   await page.getByRole("button", { name: "Done" }).click();
-  await allViews.getByRole("button", { name: /^All / }).click();
+  await allViews.getByRole("button", { name: /^All(?: \d+)?$/ }).click();
   await allViews
     .getByRole("button", { name: /^Scratchpad/ })
     .first()
