@@ -884,11 +884,11 @@ export function TaskActions({
               />
             </div>
             {quickPriorities.length ? (
-              <p className="task-actions-quick-label">
+              <p className="task-actions-quick-label task-actions-quick-priority">
                 <Trans>Priority</Trans>
               </p>
             ) : null}
-            <div className="task-actions-quick-row">
+            <div className="task-actions-quick-row task-actions-quick-priority">
               {quickPriorities.map((option) => (
                 <QuickAction
                   checked={option.value === task.priority}

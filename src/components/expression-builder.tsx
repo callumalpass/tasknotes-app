@@ -1,6 +1,10 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { t } from "@lingui/core/macro";
-import { compileFilter } from "obsidian-bases-expression";
+import {
+  compileFilter,
+  parseExpression,
+  type Expression,
+} from "obsidian-bases-expression";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
@@ -146,12 +150,16 @@ export function ExpressionBuilder({
         </button>
       </div>
       {state.mode === "raw" && dialect === "obsidian-bases" && !visualDraft ? (
-        <p className="expression-mode-note">
-          <Trans>
-            This filter uses advanced syntax. Edit it here to preserve it
-            exactly.
-          </Trans>
-        </p>
+        <div className="expression-mode-note">
+          <p>{explainFilter(encoded, fields)}</p>
+          <p>
+            <Trans>
+              The builder cannot represent every condition in this filter. Use
+              Advanced to preserve its expressions; changing other view settings
+              keeps the filter intact.
+            </Trans>
+          </p>
+        </div>
       ) : null}
       {state.mode === "visual" ? (
         <FilterGroupEditor
@@ -385,6 +393,126 @@ function initialState(value: unknown, dialect: ViewDialect): BuilderState {
     root: decoded ?? emptyGroup(),
     raw: value === undefined ? "" : filterSource(value),
   };
+}
+
+function explainFilter(value: unknown, fields: ExpressionField[]): string {
+  if (typeof value === "string") {
+    const parsed = parseExpression(value);
+    return parsed.ast &&
+      !parsed.diagnostics.some((diagnostic) => diagnostic.severity === "error")
+      ? explainExpression(parsed.ast, value, fields)
+      : t`Advanced condition: ${value}`;
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 1) {
+      const [operator, children] = entries[0];
+      const descriptions = (
+        Array.isArray(children) ? children : [children]
+      ).map((child) => explainFilter(child, fields));
+      if (operator === "and") return t`All of: ${descriptions.join("; ")}`;
+      if (operator === "or") return t`Any of: ${descriptions.join("; ")}`;
+      if (operator === "not") return t`Not: ${descriptions.join("; ")}`;
+    }
+  }
+  const source = filterSource(value);
+  return t`Advanced condition: ${source}`;
+}
+
+function explainExpression(
+  expression: Expression,
+  source: string,
+  fields: ExpressionField[],
+): string {
+  const describe = (child: Expression) =>
+    explainExpression(child, source, fields);
+  if (expression.type === "Literal") return String(expression.value);
+  if (expression.type === "Identifier")
+    return (
+      fields.find((field) => field.key === expression.name)?.label ??
+      expression.name
+    );
+  if (
+    expression.type === "Member" &&
+    expression.object.type === "Identifier" &&
+    expression.object.name === "note"
+  ) {
+    const property =
+      typeof expression.property === "string"
+        ? expression.property
+        : expression.property.type === "Literal"
+          ? String(expression.property.value)
+          : undefined;
+    if (property)
+      return (
+        fields.find(
+          (field) =>
+            field.key ===
+              source.slice(expression.span.start, expression.span.end) ||
+            field.key === property,
+        )?.label ?? property
+      );
+  }
+  if (expression.type === "Binary") {
+    const left = describe(expression.left),
+      right = describe(expression.right);
+    switch (expression.operator) {
+      case "&&":
+        return t`(${left}) and (${right})`;
+      case "||":
+        return t`(${left}) or (${right})`;
+      case "==":
+        return t`${left} is ${right}`;
+      case "!=":
+        return t`${left} is not ${right}`;
+      case "<":
+        return t`${left} is before ${right}`;
+      case ">":
+        return t`${left} is after ${right}`;
+      case "<=":
+        return t`${left} is on or before ${right}`;
+      case ">=":
+        return t`${left} is on or after ${right}`;
+    }
+  }
+  if (expression.type === "Unary" && expression.operator === "!") {
+    const condition = describe(expression.argument);
+    return t`Not (${condition})`;
+  }
+  if (expression.type === "Call") {
+    if (
+      expression.callee.type === "Identifier" &&
+      expression.callee.name === "today" &&
+      !expression.args.length
+    )
+      return t`today`;
+    if (
+      expression.callee.type === "Member" &&
+      typeof expression.callee.property === "string"
+    ) {
+      const field = describe(expression.callee.object);
+      if (expression.callee.property === "isEmpty" && !expression.args.length)
+        return t`${field} is empty`;
+      if (
+        expression.callee.property === "contains" &&
+        expression.args.length === 1
+      ) {
+        const value = describe(expression.args[0]);
+        return t`${field} contains ${value}`;
+      }
+      if (
+        expression.callee.property === "hasTag" &&
+        expression.callee.object.type === "Identifier" &&
+        expression.callee.object.name === "file" &&
+        expression.args.length === 1
+      ) {
+        const tag = describe(expression.args[0]);
+        return t`Has tag ${tag}`;
+      }
+    }
+  }
+  const condition = source.slice(expression.span.start, expression.span.end);
+  return t`Advanced condition: ${condition}`;
 }
 
 function decodeFilter(value: unknown): FilterGroup | null {

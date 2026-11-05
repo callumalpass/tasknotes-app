@@ -44,9 +44,10 @@ describe("ExpressionBuilder", () => {
 
     expect(screen.getByRole("button", { name: "Builder" })).toBeDisabled();
     expect(
-      screen.getByText(
-        "This filter uses advanced syntax. Edit it here to preserve it exactly.",
-      ),
+      screen.getByText(/The builder cannot represent every condition/),
+    ).toBeVisible();
+    expect(
+      screen.getByText("(Status is open) and (Has tag work)"),
     ).toBeVisible();
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -70,5 +71,42 @@ describe("ExpressionBuilder", () => {
       screen.getByRole("combobox", { name: "Filter value" }),
     ).toHaveTextContent("Choose…");
     expect(onChange).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("explains unsupported logical groups without rewriting their source", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilder
+        dialect="obsidian-bases"
+        fields={fields}
+        value={{ or: ['file.hasTag("work")', 'status == "open"'] }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Builder" })).toBeDisabled();
+    expect(
+      screen.getByText("Any of: Has tag work; Status is open"),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("retains unfamiliar expressions verbatim instead of inventing meaning", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilder
+        dialect="obsidian-bases"
+        fields={fields}
+        value={'file.name.startsWith("Plan")'}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Builder" })).toBeDisabled();
+    expect(
+      screen.getByText('Advanced condition: file.name.startsWith("Plan")'),
+    ).toBeVisible();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

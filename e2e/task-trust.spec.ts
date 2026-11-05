@@ -18,7 +18,7 @@ test("Undo of a completion puts the status back", async ({ page }) => {
   await expect(row).toContainText("In progress");
 });
 
-test("bulk Pick date takes typing and names the due dates it moved", async ({
+test("bulk Pick date takes typing and asks before moving due dates", async ({
   page,
 }) => {
   await page.goto("?demo=60");
@@ -41,6 +41,10 @@ test("bulk Pick date takes typing and names the due dates it moved", async ({
   await expect(field).toHaveValue("nov 30");
   await expect(page.locator(".task-date-hint")).toContainText("Nov 30");
   await page.keyboard.press("Enter");
+  await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Move due dates too", exact: true })
+    .click();
   await expect(
     page.getByText(/Scheduled 1 task for .* and moved 1 missed due date/),
   ).toBeVisible();

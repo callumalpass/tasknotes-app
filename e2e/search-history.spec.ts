@@ -12,7 +12,10 @@ test("Search offers recent searches and recently opened tasks", async ({
   await expect(page.getByText("Recently opened")).toHaveCount(0);
 
   await search.fill("planning");
-  const result = page.getByText("Prepare quarterly planning session");
+  const result = page.getByRole("button", {
+    name: "Prepare quarterly planning session",
+    exact: true,
+  });
   await expect(result).toBeVisible();
   await result.click();
   await expect(

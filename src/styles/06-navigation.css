@@ -349,12 +349,9 @@
 }
 
 .undo-toast > span {
-  display: -webkit-box;
-  overflow: hidden;
+  min-width: 0;
   overflow-wrap: anywhere;
   line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 @keyframes deletion-feedback-enter {

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { FeedbackNotice } from "../components/workspace-feedback";
+import { OverdueDeadlineChoice } from "../components/overdue-schedule-actions";
 import {
   applyBulkEdits,
   undoBulkEdits,
@@ -75,6 +76,10 @@ export function BulkTaskActions({
   const [undoing, setUndoing] = useState(false);
   const [held, setHeld] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [scheduleChoice, setScheduleChoice] = useState<Extract<
+    BulkTaskChange,
+    { kind: "schedule" }
+  > | null>(null);
   const [projects, setProjects] = useState<FieldCompletion[]>([]);
   const [projectError, setProjectError] = useState("");
   const actionBar = useRef<HTMLElement>(null);
@@ -98,9 +103,13 @@ export function BulkTaskActions({
   const shownNotice = notice?.navigationKey === navigationKey ? notice : null;
   const currentNavigation = useRef(navigationKey);
   useEffect(() => {
+    setScheduleChoice(null);
+  }, [selectionVersion]);
+  useEffect(() => {
     currentNavigation.current = navigationKey;
     setFailures([]);
     setPicking(false);
+    setScheduleChoice(null);
     setNotice(null);
   }, [navigationKey]);
   useEffect(() => {
@@ -216,6 +225,20 @@ export function BulkTaskActions({
   const changedMessage = t`This task changed. Open it to review before trying again.`;
   async function run(change: BulkTaskChange) {
     if (store.busy || !eligible.length) return;
+    if (
+      change.kind === "schedule" &&
+      change.date &&
+      change.date >= todayString() &&
+      change.moveDeadlines === undefined &&
+      eligible.some(
+        (task) => task.due && taskDatePart(task.due) < todayString(),
+      )
+    ) {
+      setPicking(false);
+      setScheduleChoice(change);
+      return;
+    }
+    setScheduleChoice(null);
     const focusedRow =
       document.activeElement?.closest<HTMLElement>(".task-row");
     const restoreFocus = focusedRow
@@ -387,6 +410,29 @@ export function BulkTaskActions({
               <Trans>Clear</Trans>
             </button>
           </div>
+          {scheduleChoice ? (
+            <OverdueDeadlineChoice
+              deadlines={
+                eligible.filter(
+                  (task) => task.due && taskDatePart(task.due) < todayString(),
+                ).length
+              }
+              pending={store.busy}
+              onCancel={() => {
+                setScheduleChoice(null);
+                requestAnimationFrame(() =>
+                  actionBar.current
+                    ?.querySelector<HTMLButtonElement>(
+                      ".tasknotes-select-trigger",
+                    )
+                    ?.focus(),
+                );
+              }}
+              onAnswer={(keepDeadlines) =>
+                void run({ ...scheduleChoice, moveDeadlines: !keepDeadlines })
+              }
+            />
+          ) : null}
           {!hasSelection ? (
             <p className="bulk-selection-hint">
               <span className="bulk-coarse-hint">

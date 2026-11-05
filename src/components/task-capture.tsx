@@ -71,9 +71,7 @@ export function TaskCapture({
   completeField,
   defaults,
   placeholder = translate({
-    message: "Add a task — tomorrow 9am, #tag, +project",
-    comment:
-      "Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.",
+    message: "What needs doing?",
   }),
   showGuide = false,
   retainFocusAfterCreate = false,
@@ -1203,7 +1201,7 @@ function highlightSegments(
 
 /** Link markup recedes so a project reads by its name while typing. */
 function linkBrackets(phrase: string) {
-  return phrase.split(/(\[\[|\]\])/u).map((part, index) =>
+  return phrase.split(/([^\s]*\[\[|\]\])/u).map((part, index) =>
     index % 2 ? (
       <span className="capture-link-bracket" key={index}>
         {part}

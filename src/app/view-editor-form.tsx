@@ -636,6 +636,7 @@ function ViewIdentitySection({
               ? t({ message: " (external app)" })
               : ""}
           </Trans>
+          <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
         </summary>
         <fieldset className="view-kind-field">
           <legend className="visually-hidden">
@@ -1088,7 +1089,7 @@ function EditorSection({
           <h2 id={`${id}-title`}>{title}</h2>
           {summary ? <p>{summary}</p> : null}
         </div>
-        <ChevronDown aria-hidden="true" size={18} strokeWidth={1.7} />
+        <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </button>
       {open ? (
         <div className="view-editor-section-content" id={`${id}-content`}>

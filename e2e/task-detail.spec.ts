@@ -5,7 +5,7 @@ test("detail properties are directly editable and adjacent navigation saves note
 }) => {
   await page.goto("?demo=60");
   await expect(page.locator(".task-row-title").first()).toBeVisible();
-  const titles = await page.locator(".task-row-title").allTextContents();
+  const titles = await page.locator(".task-row-title-text").allTextContents();
   const first = titles[0].trim();
   const next = titles[1].trim();
   await page.getByRole("button", { name: first, exact: true }).click();
@@ -125,7 +125,7 @@ for (const source of ["today", "search"] as const)
         .fill("demo task");
     await expect(page.locator(".task-row-title").first()).toBeVisible();
     const initialTitles = (
-      await page.locator(".task-row-title").allTextContents()
+      await page.locator(".task-row-title-text").allTextContents()
     ).map((title) => title.trim());
     expect(initialTitles.length).toBeLessThan(100);
     await page

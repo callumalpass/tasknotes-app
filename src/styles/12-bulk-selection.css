@@ -123,6 +123,10 @@ body:has(.bulk-actions) :is(.view-context-capture, .global-capture-fab) {
   border-radius: var(--radius-control);
   font-size: var(--type-supporting);
 }
+.bulk-actions > .overdue-deadline-choice {
+  grid-column: 1 / -1;
+  order: 3;
+}
 .bulk-failures p {
   margin: 0;
 }

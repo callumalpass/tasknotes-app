@@ -180,11 +180,22 @@ export function SearchScreen({
           autoCorrect="off"
           placeholder={t({ message: "Tasks, tags, projects" })}
           type="search"
+          aria-describedby={
+            tasks.length && searching ? "search-navigation-hint" : undefined
+          }
           value={query}
           onChange={(event) => chooseQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.nativeEvent.isComposing)
+            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
               rememberSearch(query);
+              const first = document.querySelector<HTMLElement>(
+                ".search-results .task-row-title",
+              );
+              if (first) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
             // Hands the keyboard back so shortcuts work again; the search stays.
             if (event.key === "Escape") {
               event.preventDefault();
@@ -305,6 +316,16 @@ export function SearchScreen({
             {refreshing
               ? t({ message: "Refreshing results…" })
               : `${hasMore ? t`${tasks.length}+ tasks` : countLabel(tasks.length, "task")}${stale ? t({ message: " — previously loaded" }) : ""}`}
+          </p>
+          <p
+            className="search-navigation-hint"
+            id="search-navigation-hint"
+            role="status"
+          >
+            <Trans>
+              Enter or ↓ to focus the first result. j / k to move, Enter to
+              open.
+            </Trans>
           </p>
           <TaskSelectionList tasks={tasks}>
             <div className="task-list search-results">

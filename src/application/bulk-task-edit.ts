@@ -3,7 +3,7 @@ import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 
 export type BulkTaskChange =
   | { kind: "complete" }
-  | { kind: "schedule"; date: string | null }
+  | { kind: "schedule"; date: string | null; moveDeadlines?: boolean }
   | { kind: "priority"; value: string }
   | { kind: "project"; value: string }
   | { kind: "archive" };
@@ -76,8 +76,14 @@ export async function undoBulkEdits(
   return { failures, remaining };
 }
 
-function rescheduleChange(task: TaskSummary, date: string | null) {
-  const input = date ? rescheduleInput(task, date) : { scheduled: null };
+function rescheduleChange(
+  task: TaskSummary,
+  date: string | null,
+  moveDeadlines = false,
+) {
+  const input = date
+    ? rescheduleInput(task, date, undefined, moveDeadlines)
+    : { scheduled: null };
   return {
     input,
     undo: {
@@ -96,7 +102,7 @@ export function planTaskChange(task: TaskSummary, change: BulkTaskChange) {
       };
     case "schedule":
       return {
-        ...rescheduleChange(task, change.date),
+        ...rescheduleChange(task, change.date, change.moveDeadlines),
       };
     case "priority":
       return {

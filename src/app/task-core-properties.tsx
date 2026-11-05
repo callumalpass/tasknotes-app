@@ -41,6 +41,18 @@ export function TaskCoreProperties({
       className={`task-core-properties${showEmpty ? " show-empty-properties" : ""}`}
       aria-label={t({ message: "Task properties" })}
     >
+      <a
+        className="task-notes-jump text-action"
+        href="#task-notes-title"
+        onClick={(event) => {
+          event.preventDefault();
+          const heading = document.getElementById("task-notes-title");
+          heading?.scrollIntoView({ block: "start" });
+          heading?.focus({ preventScroll: true });
+        }}
+      >
+        <Trans>Notes</Trans>
+      </a>
       <TaskNotesSelectField
         label={t({ message: "Status" })}
         disabled={occurrenceNote}

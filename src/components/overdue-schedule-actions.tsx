@@ -27,11 +27,6 @@ export function OverdueScheduleActions({
   const [picking, setPicking] = useState(false);
   const [asking, setAsking] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const firstAnswer = useRef<HTMLButtonElement>(null);
-  // The button that opened this choice has just gone, taking focus with it.
-  useEffect(() => {
-    if (asking) firstAnswer.current?.focus();
-  }, [asking]);
   function choose(date: string) {
     if (deadlines) setAsking(date);
     else void onSchedule(date, false);
@@ -43,43 +38,16 @@ export function OverdueScheduleActions({
   }
   if (asking)
     return (
-      <span
-        aria-label={t`Due dates that have passed`}
-        className="overdue-deadline-choice"
-        role="group"
-        onKeyDown={(event) => {
-          if (event.key !== "Escape") return;
-          event.stopPropagation();
+      <OverdueDeadlineChoice
+        deadlines={deadlines}
+        pending={pending}
+        buttonClassName={buttonClassName}
+        onCancel={() => {
           setAsking(null);
+          requestAnimationFrame(() => trigger.current?.focus());
         }}
-      >
-        <span>
-          <Plural
-            value={deadlines}
-            one="# due date has passed"
-            other="# due dates have passed"
-          />
-        </span>
-        <span className="overdue-deadline-actions">
-          <button
-            className={buttonClassName}
-            disabled={pending}
-            ref={firstAnswer}
-            type="button"
-            onClick={() => answer(false)}
-          >
-            <Trans>Move due dates too</Trans>
-          </button>
-          <button
-            className={buttonClassName}
-            disabled={pending}
-            type="button"
-            onClick={() => answer(true)}
-          >
-            <Trans>Keep due dates</Trans>
-          </button>
-        </span>
-      </span>
+        onAnswer={answer}
+      />
     );
   return (
     <span className="overdue-schedule-actions">
@@ -120,6 +88,67 @@ export function OverdueScheduleActions({
           }}
         />
       ) : null}
+    </span>
+  );
+}
+
+export function OverdueDeadlineChoice({
+  deadlines,
+  pending,
+  buttonClassName = "text-action",
+  onCancel,
+  onAnswer,
+}: {
+  deadlines: number;
+  pending: boolean;
+  buttonClassName?: string;
+  onCancel(): void;
+  onAnswer(keepDeadlines: boolean): void;
+}) {
+  const { t } = useLingui();
+  const firstAnswer = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    firstAnswer.current?.focus();
+  }, []);
+  return (
+    <span
+      aria-label={t`Due dates that have passed`}
+      className="overdue-deadline-choice"
+      role="group"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          onCancel();
+        }
+      }}
+    >
+      <span>
+        <Plural
+          value={deadlines}
+          one="# due date has passed"
+          other="# due dates have passed"
+        />
+      </span>
+      <span className="overdue-deadline-actions">
+        <button
+          className={buttonClassName}
+          disabled={pending}
+          ref={firstAnswer}
+          type="button"
+          onClick={() => onAnswer(false)}
+        >
+          <Trans>Move due dates too</Trans>
+        </button>
+        <button
+          className={buttonClassName}
+          disabled={pending}
+          type="button"
+          onClick={() => onAnswer(true)}
+        >
+          <Trans>Keep due dates</Trans>
+        </button>
+      </span>
     </span>
   );
 }

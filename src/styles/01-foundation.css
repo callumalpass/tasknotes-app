@@ -155,6 +155,35 @@ select {
   color: inherit;
   font: inherit;
 }
+input[type="checkbox"]:not([role="switch"]) {
+  appearance: none;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  cursor: pointer;
+}
+input[type="checkbox"]:not([role="switch"]):checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+input[type="checkbox"]:not([role="switch"]):checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  margin: 2px 0 0 6px;
+  border: solid var(--color-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+label:has(> input[type="checkbox"]:not([role="switch"])) {
+  min-height: 44px;
+}
 
 button {
   -webkit-tap-highlight-color: transparent;

@@ -23,12 +23,23 @@ describe("shiftTaskDate", () => {
 });
 
 describe("rescheduleInput", () => {
-  it("moves a missed deadline with the plan, keeping times", () => {
+  it("preserves a missed deadline when scheduling, keeping the plan's time", () => {
     expect(
       rescheduleInput(
         { scheduled: "2026-07-20T09:30", due: "2026-07-22T17:00" },
         "2026-07-27",
         "2026-07-26",
+      ),
+    ).toEqual({ scheduled: "2026-07-27T09:30" });
+  });
+
+  it("moves a missed deadline only after an explicit decision", () => {
+    expect(
+      rescheduleInput(
+        { scheduled: "2026-07-20T09:30", due: "2026-07-22T17:00" },
+        "2026-07-27",
+        "2026-07-26",
+        true,
       ),
     ).toEqual({ scheduled: "2026-07-27T09:30", due: "2026-07-27T17:00" });
   });

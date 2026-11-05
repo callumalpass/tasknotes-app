@@ -44,7 +44,7 @@ test("modifier clicks select and range; plain clicks and completion retain their
     .click({ modifiers: ["ControlOrMeta"] });
   const title = (await rows(page)
     .first()
-    .locator(".task-row-title")
+    .locator(".task-row-title-text")
     .textContent())!;
   await rows(page).first().locator(".task-row-title").click();
   await expect(
@@ -85,10 +85,15 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
   page,
 }) => {
   await openDemo(page);
-  const titles = await rows(page).locator(".task-row-title").allTextContents();
+  const titles = await rows(page)
+    .locator(".task-row-title-text")
+    .allTextContents();
   await selectTwo(page);
   await page.getByRole("combobox", { name: "Schedule selected tasks" }).click();
   await page.getByRole("option", { name: "Tomorrow" }).click();
+  await page
+    .getByRole("button", { name: "Move due dates too", exact: true })
+    .click();
   await expect(page.getByText(/^Scheduled 2 tasks for /)).toBeVisible();
   for (const title of [titles[0], titles[2]])
     await expect(
@@ -329,7 +334,7 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
   await openDemo(page);
   for (const choice of ["none", "pick"]) {
     const titles = await rows(page)
-      .locator(".task-row-title")
+      .locator(".task-row-title-text")
       .allTextContents();
     await selectTwo(page);
     await page
@@ -346,6 +351,9 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
       await expect(page.locator(".task-date-hint")).toContainText("Nov 12");
       await page.getByLabel("Type a date").press("Enter");
+      await page
+        .getByRole("button", { name: "Move due dates too", exact: true })
+        .click();
     }
     await expect(
       page.getByText(

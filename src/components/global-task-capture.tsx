@@ -125,6 +125,14 @@ export function GlobalTaskCapture({
         <h2 className="visually-hidden" id={titleId}>
           <Trans>New task</Trans>
         </h2>
+        <button
+          aria-label={t({ message: "Close new task" })}
+          className="icon-action capture-close"
+          type="button"
+          onClick={onClose}
+        >
+          <X aria-hidden="true" size={18} />
+        </button>
         <TaskCapture
           session={session}
           defaults={defaults}
@@ -135,7 +143,7 @@ export function GlobalTaskCapture({
           createTask={createTask}
           completeField={completeField}
           focusRequest={open ? 1 : undefined}
-          placeholder={t`Try tomorrow 9am, +project, #tag, !priority`}
+          placeholder={t`What needs doing?`}
           onCreated={onCreated}
           onAccepted={(task, version) => {
             if (!keepAddingRef.current && session.canCloseAccepted(version)) {
@@ -160,45 +168,39 @@ export function GlobalTaskCapture({
             />
             <Trans>Keep adding tasks</Trans>
           </label>
-          {snapshot.text.trim() ? (
-            <button
-              type="button"
-              className="text-action capture-discard"
-              disabled={snapshot.status === "submitting"}
-              onClick={() => {
-                session.discard();
-                dialogRef.current
-                  ?.querySelector<HTMLTextAreaElement>(
-                    ".quick-capture textarea",
-                  )
-                  ?.focus();
-              }}
-            >
-              <Trans>Discard draft</Trans>
-            </button>
-          ) : null}
-          {snapshot.text.trim() ? (
-            <button
-              type="button"
-              className="primary-action capture-add"
-              disabled={snapshot.status === "submitting"}
-              onClick={() =>
-                dialogRef.current
-                  ?.querySelector<HTMLFormElement>("form")
-                  ?.requestSubmit()
-              }
-            >
-              <Trans>Add</Trans>
-            </button>
-          ) : null}
-          <button
-            aria-label={t({ message: "Close new task" })}
-            className="icon-action capture-close"
-            type="button"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" size={18} />
-          </button>
+          <div className="capture-footer-actions">
+            {snapshot.text.trim() ? (
+              <button
+                type="button"
+                className="text-action capture-discard"
+                disabled={snapshot.status === "submitting"}
+                onClick={() => {
+                  session.discard();
+                  dialogRef.current
+                    ?.querySelector<HTMLTextAreaElement>(
+                      ".quick-capture textarea",
+                    )
+                    ?.focus();
+                }}
+              >
+                <Trans>Discard draft</Trans>
+              </button>
+            ) : null}
+            {snapshot.text.trim() ? (
+              <button
+                type="button"
+                className="primary-action capture-add"
+                disabled={snapshot.status === "submitting"}
+                onClick={() =>
+                  dialogRef.current
+                    ?.querySelector<HTMLFormElement>("form")
+                    ?.requestSubmit()
+                }
+              >
+                <Trans>Add</Trans>
+              </button>
+            ) : null}
+          </div>
         </footer>
       </section>
     </div>,

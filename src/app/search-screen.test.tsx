@@ -9,7 +9,9 @@ vi.mock("./repository-context", () => ({
 }));
 vi.mock("./use-people", () => ({ usePeople: () => ({ supported: false }) }));
 vi.mock("../components/task-row", () => ({
-  TaskRow: ({ task }: { task: { title: string } }) => <div>{task.title}</div>,
+  TaskRow: ({ task }: { task: { title: string } }) => (
+    <button className="task-row-title">{task.title}</button>
+  ),
 }));
 afterEach(async () => {
   cleanup();
@@ -22,6 +24,20 @@ function search() {
     target: { value: "Match" },
   });
 }
+it("hands Enter to the first result and exposes the navigation hint", async () => {
+  fixture.query.mockReturnValue({
+    tasks: [{ task: { id: "first", title: "Match first" }, bodyMatches: [] }],
+    retry: fixture.retry,
+  });
+  search();
+  const input = screen.getByRole("searchbox");
+  await screen.findByText("1 task");
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(screen.getByRole("button", { name: "Match first" })).toHaveFocus();
+  expect(input).toHaveAccessibleDescription(
+    "Enter or ↓ to focus the first result. j / k to move, Enter to open.",
+  );
+});
 it("keeps browse groups expanded when the display language changes", async () => {
   fixture.query.mockReturnValue({
     tasks: Array.from({ length: 6 }, (_, index) => ({

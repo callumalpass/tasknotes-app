@@ -92,8 +92,15 @@
   margin: 18px 0 0;
   color: var(--ink-muted);
   font-family: var(--font-mono);
-  font-size: var(--type-mono-micro);
+  font-size: 12px;
+  line-height: 16px;
   text-transform: uppercase;
+}
+.search-navigation-hint {
+  margin: 8px 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .browse-fields {
@@ -108,9 +115,10 @@
   margin: 0 0 10px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 500;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -160,9 +168,10 @@
   margin: 0;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 500;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

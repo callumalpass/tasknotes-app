@@ -1,12 +1,12 @@
-.choice-options > input {
+.choice-options > input[role="combobox"] {
   width: 100%;
   min-height: 44px;
   margin-bottom: 6px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   color: var(--ink);
   font: inherit;
   background: var(--paper);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
 }
 .choice-options-header {

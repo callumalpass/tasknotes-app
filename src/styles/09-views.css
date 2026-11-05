@@ -791,6 +791,27 @@
   cursor: pointer;
   overflow-wrap: anywhere;
 }
+.view-draft-preview > summary,
+.view-layout-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+.view-draft-preview > summary::-webkit-details-marker,
+.view-layout-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.view-draft-preview > summary > svg,
+.view-layout-disclosure > summary > svg {
+  flex: none;
+  margin-inline-start: auto;
+  transform: rotate(-90deg);
+}
+.view-draft-preview[open] > summary > svg,
+.view-layout-disclosure[open] > summary > svg {
+  transform: none;
+}
 .view-draft-preview > summary > span {
   margin-left: 8px;
   color: var(--ink-muted);
@@ -1048,11 +1069,12 @@
 .view-editor-section-heading > svg {
   flex: 0 0 auto;
   color: var(--ink-muted);
+  transform: rotate(-90deg);
   transition: transform 150ms ease;
 }
 
 .view-editor-section.is-open > .view-editor-section-heading > svg {
-  transform: rotate(180deg);
+  transform: none;
 }
 
 .view-editor-section-heading:focus-visible {

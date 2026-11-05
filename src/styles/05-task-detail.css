@@ -338,14 +338,13 @@
   width: 100%;
   min-width: 0;
   min-height: var(--control-min-size);
-  padding: var(--space-sm) 0;
+  padding: 8px 12px;
   font-size: var(--type-field);
   color: var(--ink);
   text-align: left;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
   cursor: pointer;
 }
 
@@ -374,6 +373,14 @@
 
 .tasknotes-control-trigger:focus-visible {
   border-bottom-color: var(--line-strong);
+}
+.tasknotes-combobox > input,
+.task-actions-filter input {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
 }
 
 .tasknotes-popover-scrim {
@@ -1395,9 +1402,9 @@
 
 .notes-field-heading h2 {
   margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--type-body);
-  font-weight: 400;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .notes-field-heading > div {
@@ -2214,7 +2221,8 @@
 }
 .task-subtasks h2 {
   margin: 0;
-  font-size: var(--type-body);
+  color: var(--ink);
+  font-size: 16px;
   font-weight: 600;
 }
 .task-subtasks > header > span {

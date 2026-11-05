@@ -70,6 +70,28 @@ const setup = () => {
   store.all();
   return { store, tasks };
 };
+it.each([true, false])(
+  "asks before scheduling missed deadlines and respects keep=%s",
+  async (keepDeadlines) => {
+    const { store, tasks } = setup();
+    tasks[0].due = "2000-01-01T17:00";
+    render(<BulkTaskActions store={store} navigationKey="today" />);
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Schedule selected tasks" }),
+    );
+    fireEvent.click(await screen.findByRole("option", { name: "Tomorrow" }));
+    expect(fixture.updateTask).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: keepDeadlines ? "Keep due dates" : "Move due dates too",
+      }),
+    );
+    await waitFor(() => expect(fixture.updateTask).toHaveBeenCalled());
+    const input = fixture.updateTask.mock.calls[0][1];
+    if (keepDeadlines) expect(input).not.toHaveProperty("due");
+    else expect(input.due).toMatch(/T17:00/);
+  },
+);
 it("announces only accepted rows, names failures and keeps them selected", async () => {
   const { store } = setup();
   render(<BulkTaskActions store={store} navigationKey="today" />);

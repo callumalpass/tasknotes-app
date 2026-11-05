@@ -1114,7 +1114,7 @@ function TaskEditor({
 
         <section className="notes-field">
           <header className="notes-field-heading">
-            <h2 id="task-notes-title">
+            <h2 id="task-notes-title" tabIndex={-1}>
               <Trans>Notes</Trans>
             </h2>
             <div aria-label={t({ message: "Editor mode" })} role="group">

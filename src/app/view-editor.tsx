@@ -1,7 +1,7 @@
 import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { registerReloadParticipant } from "../pwa/reload";
 import {
   lazy,
@@ -397,6 +397,7 @@ function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
       <summary>
         <Trans>Preview </Trans>
         <span aria-live="polite">{previewLabel(preview)}</span>
+        <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </summary>
       {preview.tasks.length ? (
         <ol aria-label={t({ message: "Preview tasks" })}>
