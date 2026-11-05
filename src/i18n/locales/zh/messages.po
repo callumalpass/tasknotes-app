@@ -80,6 +80,14 @@ msgstr "“{title}”仍在集合中。"
 msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 msgstr "“{title}”会重复。仅更改此重复项会为 {date} 创建重复项笔记。"
 
+#: src/components/expression-builder.tsx
+msgid "({left}) and ({right})"
+msgstr "({left}) 且 ({right})"
+
+#: src/components/expression-builder.tsx
+msgid "({left}) or ({right})"
+msgstr "({left}) 或 ({right})"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（有未保存的更改）"
@@ -425,6 +433,14 @@ msgstr "预计 {estimate} 分钟"
 msgid "{excluded, plural, one {# repeating task won’t change. Open it to choose an occurrence or the series.} other {# repeating tasks won’t change. Open each one to choose an occurrence or the series.}}"
 msgstr "{excluded, plural, other {# 个重复任务不会更改。请打开任务，选择单次或整个系列。}}"
 
+#: src/components/expression-builder.tsx
+msgid "{field} contains {value}"
+msgstr "{field} 包含 {value}"
+
+#: src/components/expression-builder.tsx
+msgid "{field} is empty"
+msgstr "{field} 为空"
+
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
 msgstr "{hours} 小时 {minutes} 分钟"
@@ -502,6 +518,30 @@ msgstr "{label}，{0}"
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}，{0}，{1} 项逾期"
 
+#: src/components/expression-builder.tsx
+msgid "{left} is {right}"
+msgstr "{left} 为 {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is after {right}"
+msgstr "{left} 晚于 {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is before {right}"
+msgstr "{left} 早于 {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is not {right}"
+msgstr "{left} 不为 {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or after {right}"
+msgstr "{left} 不早于 {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or before {right}"
+msgstr "{left} 不晚于 {right}"
+
 #: src/app/bulk-task-feedback.ts
 msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
 msgstr "{movedDueDates, plural, other {已将 {tasks} 安排到 {date}，并移动了 # 个已过的截止日期}}"
@@ -570,10 +610,6 @@ msgstr "有 {total} 项更改等待你选择处理。"
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
 msgstr "{value, selectordinal, other {第 #}}"
-
-#: src/app/views/view-catalog.tsx
-msgid "{visibleCount} views shown"
-msgstr "已显示 {visibleCount} 个视图"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
@@ -746,11 +782,6 @@ msgstr "添加子任务…"
 msgid "Add a tag"
 msgstr "添加标签"
 
-#. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
-#: src/components/task-capture.tsx
-msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "添加任务 — tomorrow 9am, #tag, +project"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
 msgstr "请先添加任务标题。"
@@ -898,6 +929,18 @@ msgstr "之后推进"
 msgid "Advanced"
 msgstr "高级"
 
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {condition}"
+msgstr "高级条件：{condition}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {source}"
+msgstr "高级条件：{source}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {value}"
+msgstr "高级条件：{value}"
+
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
 msgstr "高级时长"
@@ -953,6 +996,11 @@ msgstr "全天"
 msgid "All matching tasks loaded"
 msgstr "已加载所有匹配的任务"
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "All of: {0}"
+msgstr "全部：{0}"
+
 #: src/app/views/projects-view.tsx
 msgid "All projects"
 msgstr "所有项目"
@@ -980,6 +1028,11 @@ msgstr "数量"
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
 msgstr "符合任一条件"
+
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Any of: {0}"
+msgstr "任一：{0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
@@ -2338,6 +2391,10 @@ msgstr "结束"
 msgid "Enter a CEL expression."
 msgstr "请输入 CEL 表达式。"
 
+#: src/app/search-screen.tsx
+msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
+msgstr "按 Enter 或 ↓ 聚焦第一个结果。按 j / k 移动，按 Enter 打开。"
+
 #. placeholder {0}: formatTaskDate(shownDate)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
@@ -2615,6 +2672,10 @@ msgstr "按 {0} 分组"
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
 msgstr "分组列"
+
+#: src/components/expression-builder.tsx
+msgid "Has tag {tag}"
+msgstr "有标签 {tag}"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
@@ -3580,6 +3641,10 @@ msgstr "不可以。TaskNotes 直接读取和写入权威 mdbase 集合。托管
 msgid "None"
 msgstr "无"
 
+#: src/components/expression-builder.tsx
+msgid "Not ({condition})"
+msgstr "非 ({condition})"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "不可用"
@@ -3605,6 +3670,11 @@ msgstr "未保存 · 检查"
 msgid "Not saved. Review your edit."
 msgstr "未保存。请检查你的编辑。"
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Not: {0}"
+msgstr "非：{0}"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
 msgstr "笔记"
@@ -3625,6 +3695,7 @@ msgstr "笔记标题"
 msgid "notes"
 msgstr "笔记"
 
+#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -5302,6 +5373,10 @@ msgstr "无法完成账户恢复操作。请检查连接和账户状态后重试
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "操作已完成，但无法刷新账户状态。请再次检查状态。"
 
+#: src/components/expression-builder.tsx
+msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."
+msgstr "构建器无法表示此筛选器中的所有条件。请使用“高级”以保留其表达式；更改其他视图设置不会影响筛选器。"
+
 #: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "无法保存日历更改。 "
@@ -5470,10 +5545,6 @@ msgid "This edits the repeating task, including future occurrences."
 msgstr "编辑重复任务会同时更改未来的重复项。"
 
 #: src/components/expression-builder.tsx
-msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
-msgstr "此筛选器使用高级语法。请在此处编辑以原样保留语法。"
-
-#: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "此筛选器使用构建器无法安全编辑的语法。"
 
@@ -5607,6 +5678,7 @@ msgid "to"
 msgstr "到"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/components/expression-builder.tsx
 msgid "today"
 msgstr "今天"
 
@@ -5679,10 +5751,6 @@ msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
 msgstr "试试 明天上午9点、#标签、@情境、+项目、!优先级、*状态。"
-
-#: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag, !priority"
-msgstr "试试 明天上午9点、+项目、#标签、!优先级"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5921,6 +5989,8 @@ msgid "What is mdbase?"
 msgstr "mdbase 是什么？"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/global-task-capture.tsx
+#: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "有什么待办事项？"
 

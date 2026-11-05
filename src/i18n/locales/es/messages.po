@@ -80,6 +80,14 @@ msgstr "«{title}» sigue en la colección."
 msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 msgstr "«{title}» se repite. Cambiar solo esta repetición crea una nota de repetición para el {date}."
 
+#: src/components/expression-builder.tsx
+msgid "({left}) and ({right})"
+msgstr "({left}) y ({right})"
+
+#: src/components/expression-builder.tsx
+msgid "({left}) or ({right})"
+msgstr "({left}) o ({right})"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(cambios sin guardar)"
@@ -425,6 +433,14 @@ msgstr "Estimación de {estimate} min"
 msgid "{excluded, plural, one {# repeating task won’t change. Open it to choose an occurrence or the series.} other {# repeating tasks won’t change. Open each one to choose an occurrence or the series.}}"
 msgstr "{excluded, plural, one {# tarea recurrente no cambiará. Ábrela para elegir una repetición o la serie.} many {# tareas recurrentes no cambiarán. Abre cada una para elegir una repetición o la serie.} other {# tareas recurrentes no cambiarán. Abre cada una para elegir una repetición o la serie.}}"
 
+#: src/components/expression-builder.tsx
+msgid "{field} contains {value}"
+msgstr "{field} contiene {value}"
+
+#: src/components/expression-builder.tsx
+msgid "{field} is empty"
+msgstr "{field} está vacío"
+
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
 msgstr "{hours} h {minutes} min"
@@ -502,6 +518,30 @@ msgstr "{label}, {0}"
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, {1} atrasadas"
 
+#: src/components/expression-builder.tsx
+msgid "{left} is {right}"
+msgstr "{left} es {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is after {right}"
+msgstr "{left} es posterior a {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is before {right}"
+msgstr "{left} es anterior a {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is not {right}"
+msgstr "{left} no es {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or after {right}"
+msgstr "{left} es {right} o posterior"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or before {right}"
+msgstr "{left} es {right} o anterior"
+
 #: src/app/bulk-task-feedback.ts
 msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
 msgstr "{movedDueDates, plural, one {{tasks} programadas para {date}, # fecha de vencimiento pasada movida} many {{tasks} programadas para {date}, # fechas de vencimiento pasadas movidas} other {{tasks} programadas para {date}, # fechas de vencimiento pasadas movidas}}"
@@ -570,10 +610,6 @@ msgstr "Hay {total} cambios pendientes de decisión."
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
 msgstr "{value, selectordinal, other {#.º}}"
-
-#: src/app/views/view-catalog.tsx
-msgid "{visibleCount} views shown"
-msgstr "Se muestran {visibleCount} vistas"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
@@ -746,11 +782,6 @@ msgstr "Añadir una subtarea…"
 msgid "Add a tag"
 msgstr "Añadir una etiqueta"
 
-#. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
-#: src/components/task-capture.tsx
-msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "Añadir una tarea — mañana a las 9, #etiqueta, +proyecto"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
 msgstr "Añade primero un título a la tarea."
@@ -898,6 +929,18 @@ msgstr "Avanzar después de"
 msgid "Advanced"
 msgstr "Avanzado"
 
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {condition}"
+msgstr "Condición avanzada: {condition}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {source}"
+msgstr "Condición avanzada: {source}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {value}"
+msgstr "Condición avanzada: {value}"
+
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
 msgstr "Duración avanzada"
@@ -953,6 +996,11 @@ msgstr "Todo el día"
 msgid "All matching tasks loaded"
 msgstr "Se cargaron todas las tareas coincidentes"
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "All of: {0}"
+msgstr "Todas: {0}"
+
 #: src/app/views/projects-view.tsx
 msgid "All projects"
 msgstr "Todos los proyectos"
@@ -980,6 +1028,11 @@ msgstr "Cantidad"
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
 msgstr "Coincide cualquier condición"
+
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Any of: {0}"
+msgstr "Cualquiera: {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
@@ -2338,6 +2391,10 @@ msgstr "Termina"
 msgid "Enter a CEL expression."
 msgstr "Introduce una expresión CEL."
 
+#: src/app/search-screen.tsx
+msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
+msgstr "Intro o ↓ para ir al primer resultado. j / k para moverte, Intro para abrir."
+
 #. placeholder {0}: formatTaskDate(shownDate)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
@@ -2615,6 +2672,10 @@ msgstr "Agrupado por {0}"
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
 msgstr "Columnas agrupadas"
+
+#: src/components/expression-builder.tsx
+msgid "Has tag {tag}"
+msgstr "Tiene la etiqueta {tag}"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
@@ -3580,6 +3641,10 @@ msgstr "No. TaskNotes lee y escribe directamente en la colección mdbase autorit
 msgid "None"
 msgstr "Ninguno"
 
+#: src/components/expression-builder.tsx
+msgid "Not ({condition})"
+msgstr "No ({condition})"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "No disponible"
@@ -3605,6 +3670,11 @@ msgstr "Sin guardar · Revisar"
 msgid "Not saved. Review your edit."
 msgstr "No se guardó. Revisa tu edición."
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Not: {0}"
+msgstr "No: {0}"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
 msgstr "Nota"
@@ -3625,6 +3695,7 @@ msgstr "Título de la nota"
 msgid "notes"
 msgstr "notas"
 
+#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -5302,6 +5373,10 @@ msgstr "No se pudo completar la acción de recuperación de la cuenta. Comprueba
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "La acción se completó, pero no se pudo actualizar el estado de la cuenta. Vuelve a comprobarlo."
 
+#: src/components/expression-builder.tsx
+msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."
+msgstr "El generador no puede representar todas las condiciones de este filtro. Usa Avanzado para conservar sus expresiones; cambiar otros ajustes de la vista mantiene el filtro intacto."
+
 #: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "No se pudo guardar el cambio del calendario. "
@@ -5470,10 +5545,6 @@ msgid "This edits the repeating task, including future occurrences."
 msgstr "Esto edita la tarea recurrente, incluidas las repeticiones futuras."
 
 #: src/components/expression-builder.tsx
-msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
-msgstr "Este filtro usa sintaxis avanzada. Edítalo aquí para conservarlo exactamente."
-
-#: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "Este filtro usa una sintaxis que el editor no puede modificar de forma segura."
 
@@ -5607,6 +5678,7 @@ msgid "to"
 msgstr "a"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/components/expression-builder.tsx
 msgid "today"
 msgstr "hoy"
 
@@ -5679,10 +5751,6 @@ msgstr "Intenta cargar la vista de nuevo. Si el problema continúa, edita su con
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
 msgstr "Prueba mañana 9am, #etiqueta, @contexto, +proyecto, !prioridad, *estado."
-
-#: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag, !priority"
-msgstr "Prueba mañana 9am, +proyecto, #etiqueta, !prioridad"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5921,6 +5989,8 @@ msgid "What is mdbase?"
 msgstr "¿Qué es mdbase?"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/global-task-capture.tsx
+#: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "¿Qué hay que hacer?"
 

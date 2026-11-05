@@ -80,6 +80,14 @@ msgstr "“{title}”은(는) 아직 컬렉션에 있습니다."
 msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 msgstr "\"{title}\"은(는) 반복됩니다. 이 반복 항목만 변경하면 {date} 반복 항목 노트가 만들어집니다."
 
+#: src/components/expression-builder.tsx
+msgid "({left}) and ({right})"
+msgstr "({left}) 그리고 ({right})"
+
+#: src/components/expression-builder.tsx
+msgid "({left}) or ({right})"
+msgstr "({left}) 또는 ({right})"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(저장되지 않은 변경 사항)"
@@ -425,6 +433,14 @@ msgstr "예상 시간 {estimate}분"
 msgid "{excluded, plural, one {# repeating task won’t change. Open it to choose an occurrence or the series.} other {# repeating tasks won’t change. Open each one to choose an occurrence or the series.}}"
 msgstr "{excluded, plural, other {반복 작업 #개는 변경되지 않습니다. 작업을 열어 이번 회차 또는 전체 반복을 선택하세요.}}"
 
+#: src/components/expression-builder.tsx
+msgid "{field} contains {value}"
+msgstr "{field}에 {value} 포함"
+
+#: src/components/expression-builder.tsx
+msgid "{field} is empty"
+msgstr "{field}이(가) 비어 있음"
+
 #: src/app/task-time-tracking.tsx
 msgid "{hours}h {minutes}m"
 msgstr "{hours}시간 {minutes}분"
@@ -502,6 +518,30 @@ msgstr "{label}, {0}"
 msgid "{label}, {0}, {1} overdue"
 msgstr "{label}, {0}, 기한 초과 {1}개"
 
+#: src/components/expression-builder.tsx
+msgid "{left} is {right}"
+msgstr "{left}이(가) {right}"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is after {right}"
+msgstr "{left}이(가) {right} 이후"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is before {right}"
+msgstr "{left}이(가) {right} 이전"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is not {right}"
+msgstr "{left}이(가) {right}이(가) 아님"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or after {right}"
+msgstr "{left}이(가) {right} 또는 그 이후"
+
+#: src/components/expression-builder.tsx
+msgid "{left} is on or before {right}"
+msgstr "{left}이(가) {right} 또는 그 이전"
+
 #: src/app/bulk-task-feedback.ts
 msgid "{movedDueDates, plural, one {Scheduled {tasks} for {date} and moved # missed due date} other {Scheduled {tasks} for {date} and moved # missed due dates}}"
 msgstr "{movedDueDates, plural, other {{tasks}을(를) {date}(으)로 예약하고 지난 마감일 #개를 옮겼습니다}}"
@@ -570,10 +610,6 @@ msgstr "편집 {total}개가 선택을 기다리고 있습니다."
 #: src/i18n/presentation.ts
 msgid "{value, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
 msgstr "{value, selectordinal, other {#번째}}"
-
-#: src/app/views/view-catalog.tsx
-msgid "{visibleCount} views shown"
-msgstr "뷰 {visibleCount}개 표시"
 
 #. placeholder {0}: count - 3
 #: src/app/views/mini-calendar-view.tsx
@@ -746,11 +782,6 @@ msgstr "하위 작업 추가…"
 msgid "Add a tag"
 msgstr "태그 추가"
 
-#. Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, #tag, +project). Catalogue extraction does not change the input grammar.
-#: src/components/task-capture.tsx
-msgid "Add a task — tomorrow 9am, #tag, +project"
-msgstr "작업 추가 — 내일 오전 9시, #태그, +프로젝트"
-
 #: src/app/scratchpad-screen.tsx
 msgid "Add a task title first."
 msgstr "먼저 작업 제목을 추가하세요."
@@ -898,6 +929,18 @@ msgstr "다음으로 진행하는 기준"
 msgid "Advanced"
 msgstr "고급"
 
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {condition}"
+msgstr "고급 조건: {condition}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {source}"
+msgstr "고급 조건: {source}"
+
+#: src/components/expression-builder.tsx
+msgid "Advanced condition: {value}"
+msgstr "고급 조건: {value}"
+
 #: src/components/duration-field.tsx
 msgid "Advanced duration"
 msgstr "고급 기간"
@@ -953,6 +996,11 @@ msgstr "종일"
 msgid "All matching tasks loaded"
 msgstr "일치하는 작업을 모두 불러왔습니다"
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "All of: {0}"
+msgstr "모두: {0}"
+
 #: src/app/views/projects-view.tsx
 msgid "All projects"
 msgstr "모든 프로젝트"
@@ -980,6 +1028,11 @@ msgstr "수량"
 #: src/components/expression-builder.tsx
 msgid "Any condition matches"
 msgstr "조건 중 하나라도 일치"
+
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Any of: {0}"
+msgstr "하나 이상: {0}"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Any time"
@@ -2338,6 +2391,10 @@ msgstr "종료"
 msgid "Enter a CEL expression."
 msgstr "CEL 표현식을 입력하세요."
 
+#: src/app/search-screen.tsx
+msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
+msgstr "Enter 또는 ↓로 첫 결과로 이동합니다. j / k로 이동하고 Enter로 엽니다."
+
 #. placeholder {0}: formatTaskDate(shownDate)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
@@ -2615,6 +2672,10 @@ msgstr "{0} 기준으로 그룹화됨"
 #: src/app/view-editor-form.tsx
 msgid "Grouped columns"
 msgstr "그룹화된 열"
+
+#: src/components/expression-builder.tsx
+msgid "Has tag {tag}"
+msgstr "태그 {tag} 있음"
 
 #: src/components/markdown-source-editor.tsx
 msgid "Heading"
@@ -3580,6 +3641,10 @@ msgstr "아니요. TaskNotes는 권한 원본인 mdbase 컬렉션을 직접 읽�
 msgid "None"
 msgstr "없음"
 
+#: src/components/expression-builder.tsx
+msgid "Not ({condition})"
+msgstr "({condition}) 아님"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "사용할 수 없음"
@@ -3605,6 +3670,11 @@ msgstr "저장되지 않음 · 검토"
 msgid "Not saved. Review your edit."
 msgstr "저장되지 않았습니다. 편집 내용을 검토하세요."
 
+#. placeholder {0}: descriptions.join("; ")
+#: src/components/expression-builder.tsx
+msgid "Not: {0}"
+msgstr "아님: {0}"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Note"
 msgstr "노트"
@@ -3625,6 +3695,7 @@ msgstr "노트 제목"
 msgid "notes"
 msgstr "노트"
 
+#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -5302,6 +5373,10 @@ msgstr "계정 복구 작업을 완료하지 못했습니다. 다시 시도하�
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "작업이 완료되었지만 계정 상태를 새로고침하지 못했습니다. 상태를 다시 확인하세요."
 
+#: src/components/expression-builder.tsx
+msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."
+msgstr "빌더로는 이 필터의 모든 조건을 표현할 수 없습니다. 표현식을 유지하려면 고급을 사용하세요. 다른 보기 설정을 변경해도 필터는 그대로 유지됩니다."
+
 #: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
 msgstr "캘린더 변경 사항을 저장하지 못했습니다. "
@@ -5470,10 +5545,6 @@ msgid "This edits the repeating task, including future occurrences."
 msgstr "향후 반복 항목을 포함해 반복 작업을 편집합니다."
 
 #: src/components/expression-builder.tsx
-msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
-msgstr "이 필터는 고급 구문을 사용합니다. 구문을 그대로 유지하려면 여기서 편집하세요."
-
-#: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "이 필터는 빌더에서 안전하게 편집할 수 없는 구문을 사용합니다."
 
@@ -5607,6 +5678,7 @@ msgid "to"
 msgstr "까지"
 
 #: src/app/keyboard-shortcuts.ts
+#: src/components/expression-builder.tsx
 msgid "today"
 msgstr "오늘"
 
@@ -5679,10 +5751,6 @@ msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집�
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
 msgstr "예: 내일 오전 9시, #태그, @컨텍스트, +프로젝트, !우선순위, *상태."
-
-#: src/components/global-task-capture.tsx
-msgid "Try tomorrow 9am, +project, #tag, !priority"
-msgstr "내일 오전 9시, +프로젝트, #태그, !우선순위처럼 입력"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
@@ -5921,6 +5989,8 @@ msgid "What is mdbase?"
 msgstr "mdbase란 무엇인가요?"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/global-task-capture.tsx
+#: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "무엇을 해야 하나요?"
 
