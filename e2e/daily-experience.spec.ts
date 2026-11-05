@@ -46,14 +46,24 @@ test("daily list, capture and detail remain clear and keyboard accessible", asyn
     await expect(page.locator(".manual-order-handle").first()).toBeHidden();
   }
   const firstRow = title.locator(
-    "xpath=ancestor::div[contains(@class, 'task-row')][1]",
+    "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' task-row ')][1]",
   );
-  await expect(
-    firstRow.getByRole("button", { name: /^Scheduled:/ }),
-  ).not.toHaveClass(/is-compact/);
-  await expect(firstRow.getByRole("button", { name: /^Due:/ })).not.toHaveClass(
-    /is-compact/,
-  );
+  if (testInfo.project.name === "mobile") {
+    await expect(
+      firstRow.locator(".task-row-touch-details [aria-label^='Scheduled:']"),
+    ).toBeVisible();
+    await expect(
+      firstRow.locator(".task-row-touch-details [aria-label^='Due:']"),
+    ).toBeVisible();
+    await expect(title).toHaveAccessibleDescription(/Scheduled:.*Due:/);
+  } else {
+    await expect(
+      firstRow.getByRole("button", { name: /^Scheduled:/ }),
+    ).not.toHaveClass(/is-compact/);
+    await expect(
+      firstRow.getByRole("button", { name: /^Due:/ }),
+    ).not.toHaveClass(/is-compact/);
+  }
   const overdue = page.getByRole("button", { name: /^Overdue \d+$/ });
   await overdue.click();
   await expect(title).not.toBeVisible();
@@ -246,7 +256,9 @@ test("touch rows complete on a right swipe and open actions on a left swipe", as
   const swipe = async (title: string, distance: number) => {
     const row = page
       .getByRole("button", { name: title, exact: true })
-      .locator("xpath=ancestor::div[contains(@class, 'task-row')][1]");
+      .locator(
+        "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' task-row ')][1]",
+      );
     const box = (await row.boundingBox())!;
     const y = box.y + box.height / 2;
     const x = box.x + box.width / 2;

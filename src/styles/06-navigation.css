@@ -916,7 +916,7 @@
   }
 
   .sidebar-collapsed .navigation-rail {
-    padding: var(--space-lg) var(--space-sm);
+    padding: 16px var(--space-sm) 0;
     overflow-x: hidden;
   }
 
@@ -1097,9 +1097,8 @@
     min-height: 0;
     padding-bottom: 16px;
     overflow-y: auto;
-    scrollbar-width: none;
-    /* Rows fade into the foot, which says there is more without a bar. */
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+    scrollbar-width: thin;
+    scroll-padding-block: 8px 16px;
   }
   .navigation-destinations > * {
     flex-shrink: 0;
@@ -1108,6 +1107,7 @@
     margin-bottom: 12px;
   }
   .navigation-rail .navigation-utility {
+    flex: 0 0 auto;
     padding-block: 8px 16px;
   }
 }

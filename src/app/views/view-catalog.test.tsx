@@ -8,7 +8,12 @@ import { ViewCatalog } from "./view-catalog";
 it("leads directly from one counted heading and filters into saved views", () => {
   renderCatalog();
   const catalog = screen.getByRole("region", { name: "All views" });
-  expect(within(catalog).getByLabelText("4 views shown")).toBeVisible();
+  expect(
+    within(catalog).getByRole("button", { name: "All 4" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(
+    within(catalog).queryByRole("heading", { name: "All views" }),
+  ).toBeNull();
   expect(
     within(catalog).queryByRole("heading", { name: "Saved views" }),
   ).toBeNull();
@@ -21,7 +26,7 @@ it("leads directly from one counted heading and filters into saved views", () =>
       target: { value: "Work board" },
     },
   );
-  expect(within(catalog).getByLabelText("1 views shown")).toBeVisible();
+  expect(within(catalog).getByRole("button", { name: "All 1" })).toBeVisible();
   expect(
     within(catalog).getByRole("button", { name: "Work board" }),
   ).toBeVisible();

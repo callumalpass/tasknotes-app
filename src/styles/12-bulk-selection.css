@@ -4,7 +4,9 @@
 }
 .task-row.is-selected {
   position: relative;
+  padding-block: 1px;
   background: var(--accent-soft);
+  background-clip: content-box;
   border-radius: var(--radius-control);
 }
 .task-row.is-selected .completion-control > span {

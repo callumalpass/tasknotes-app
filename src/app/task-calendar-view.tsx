@@ -159,6 +159,38 @@ export function TaskCalendarView({
     agenda ||
     (phone && (mode === "timeGridThreeDay" || mode === "timeGridDay"));
   const [leadSlot, setLeadSlot] = useState<HTMLElement | null>(null);
+  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
+  const [inspection, setInspection] = useState<{
+    label: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  const inspectingDrag = useRef(false);
+  useEffect(() => {
+    const release = () => {
+      inspectingDrag.current = false;
+      setInspection(null);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    return () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+  }, []);
+  function inspectEvent(target: EventTarget | null) {
+    const event = (target as Element | null)?.closest?.<HTMLElement>(
+      ".tnc-item--timed",
+    );
+    const label = event?.getAttribute("aria-label");
+    if (!event || !label) return;
+    const bounds = event.getBoundingClientRect();
+    setInspection({
+      label,
+      left: Math.max(12, Math.min(bounds.left, window.innerWidth - 332)),
+      top: Math.max(12, Math.min(bounds.bottom + 8, window.innerHeight - 104)),
+    });
+  }
   const [title, setTitle] = useState("");
   // The external calendar updates its title on a language change without
   // emitting onRangeChange when the visible dates stay the same.
@@ -167,7 +199,13 @@ export function TaskCalendarView({
     if (view) setTitle(view.title);
   }, [locale]);
   const [range, setRange] = useState(() => initialRange(selected, mode));
-  useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
+  const visibleDays = useCalendarPosition(
+    rootRef,
+    mode,
+    phone,
+    selected,
+    range.start.getTime(),
+  );
   useCalendarPreviews(rootRef, (day) => {
     inspectDate(day);
   });
@@ -572,6 +610,29 @@ export function TaskCalendarView({
   return (
     <div
       ref={rootRef}
+      onPointerOver={(event) => inspectEvent(event.target)}
+      onFocusCapture={(event) => inspectEvent(event.target)}
+      onPointerDownCapture={(event) => {
+        if ((event.target as Element).closest(".tnc-item--timed")) {
+          inspectingDrag.current = true;
+          inspectEvent(event.target);
+        }
+      }}
+      onPointerOut={(event) => {
+        if (
+          !inspectingDrag.current &&
+          !(event.relatedTarget as Element | null)?.closest?.(
+            ".tnc-item--timed",
+          )
+        )
+          setInspection(null);
+      }}
+      onBlurCapture={() => {
+        if (!inspectingDrag.current) setInspection(null);
+      }}
+      onKeyDownCapture={(event) => {
+        if (event.key === "Escape") setInspection(null);
+      }}
       className={`full-calendar-view${listMode ? " is-agenda" : ""}${inspectingDay ? " has-day-inspector" : ""}`}
     >
       <div className="full-calendar-workspace">
@@ -602,42 +663,62 @@ export function TaskCalendarView({
                 leadSlot,
               )
             : null}
-          <div className="full-calendar-commandbar">
-            <div className="full-calendar-navigation">
-              <button
-                aria-label={t`Previous period`}
-                type="button"
-                onClick={() => calendarRef.current?.prev()}
-              >
-                <ChevronLeft aria-hidden="true" size={19} />
-              </button>
-              <button
-                className="full-calendar-create"
-                type="button"
-                onClick={() => onCreate(selected, selectedCreateValue)}
-              >
-                <Plus aria-hidden="true" size={16} />
-                <Trans>Add task</Trans>
-              </button>
-              <button
-                type="button"
-                onClick={() => calendarRef.current?.goToday()}
-              >
-                <Trans>Today</Trans>
-              </button>
-              <button
-                aria-label={t`Next period`}
-                type="button"
-                onClick={() => calendarRef.current?.next()}
-              >
-                <ChevronRight aria-hidden="true" size={19} />
-              </button>
+          {!agenda ? (
+            <div className="full-calendar-commandbar">
+              <div className="full-calendar-navigation">
+                <button
+                  aria-label={t`Previous period`}
+                  type="button"
+                  onClick={() => calendarRef.current?.prev()}
+                >
+                  <ChevronLeft aria-hidden="true" size={19} />
+                </button>
+                <button
+                  className="full-calendar-create"
+                  type="button"
+                  onClick={() => onCreate(selected, selectedCreateValue)}
+                >
+                  <Plus aria-hidden="true" size={16} />
+                  <Trans>Add task</Trans>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => calendarRef.current?.goToday()}
+                >
+                  <Trans>Today</Trans>
+                </button>
+                <button
+                  aria-label={t`Next period`}
+                  type="button"
+                  onClick={() => calendarRef.current?.next()}
+                >
+                  <ChevronRight aria-hidden="true" size={19} />
+                </button>
+              </div>
+              <h2 aria-live="polite" hidden={stripped}>
+                {title}
+              </h2>
+              {layoutSwitcher}
             </div>
-            <h2 aria-live="polite" hidden={stripped}>
-              {title}
-            </h2>
-            {layoutSwitcher}
-          </div>
+          ) : null}
+          {agenda && stripSlot ? createPortal(layoutSwitcher, stripSlot) : null}
+          {phone && mode === "timeGridWeek" ? (
+            <p className="full-calendar-visible-days" aria-live="polite">
+              {visibleDays}
+            </p>
+          ) : null}
+          {inspection
+            ? createPortal(
+                <div
+                  className="calendar-event-inspection"
+                  role="tooltip"
+                  style={{ left: inspection.left, top: inspection.top }}
+                >
+                  {inspection.label}
+                </div>,
+                document.body,
+              )
+            : null}
           {historyRequest ? (
             <ClearRecurringHistoryDialog
               request={historyRequest}
@@ -693,6 +774,10 @@ export function TaskCalendarView({
               listAgenda={agenda}
               eventOrder={calendarAgendaOrder(execution)}
               dateStrip={stripped}
+              stripSlotDidMount={({ el }) => setStripSlot(el)}
+              stripSlotWillUnmount={({ el }) =>
+                setStripSlot((current) => (current === el ? null : current))
+              }
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>
                 !!item.data?.metadata.entry.modelEntry.isOverdueOnToday
@@ -1030,13 +1115,23 @@ function calendarEventContent(
   );
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
-  primary.append(node("span", undefined, item.title));
-  if (!listView && (timeText || kind)) {
+  const monthEntry = variant === "bar";
+  primary.append(
+    node(
+      "span",
+      undefined,
+      monthEntry
+        ? [timeText, kind, item.title].filter(Boolean).join(" · ")
+        : item.title,
+    ),
+  );
+  if (!listView && !monthEntry && (timeText || kind)) {
     const secondary = node("span", "full-calendar-event-secondary");
     if (timeText) secondary.append(node("time", undefined, timeText));
     if (kind) secondary.append(node("em", "full-calendar-event-kind", kind));
     content.append(secondary);
-  } else if (kind) primary.append(node("em", "full-calendar-event-kind", kind));
+  } else if (kind && listView)
+    primary.append(node("em", "full-calendar-event-kind", kind));
   if (details.length) {
     const properties = node("span", "full-calendar-event-properties");
     for (const detail of details) {
@@ -1084,7 +1179,7 @@ function describeEvent(
     "aria-label",
     `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
-  if (marker) el.title = marker.label;
+  el.title = el.getAttribute("aria-label") ?? item.title;
 }
 
 function localizedEntryKind(kind: string | undefined): string | undefined {

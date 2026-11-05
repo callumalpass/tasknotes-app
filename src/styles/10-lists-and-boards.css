@@ -563,11 +563,12 @@
 }
 
 .kanban-card .task-row-property > strong {
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 24px;
 }
 
 .kanban-card .task-row-content {
-  padding: 0;
+  padding: 6px 0;
   cursor: pointer;
   -webkit-user-drag: none;
 }

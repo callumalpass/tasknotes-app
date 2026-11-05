@@ -3173,6 +3173,21 @@ function ScratchpadDocumentEditor({
                     role="menu"
                     aria-label={t`Actions for ${node.text || uiCopy("item")}`}
                   >
+                    {node.kind === "draft" ? (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => {
+                          changeNode(node.id, { completed: !node.completed });
+                          setMenuId(undefined);
+                        }}
+                      >
+                        <SquareCheckBig aria-hidden="true" size={17} />
+                        {node.completed
+                          ? t({ message: "Mark incomplete" })
+                          : t({ message: "Mark complete" })}
+                      </button>
+                    ) : null}
                     {node.kind === "draft" && node.text.trim() ? (
                       <button
                         role="menuitem"

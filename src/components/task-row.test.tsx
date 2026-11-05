@@ -77,9 +77,20 @@ it("puts actionable dates before status and organisational metadata without losi
   expect(properties[2]).toHaveClass("is-organisation");
 });
 it("keeps a parent label available when project properties are omitted", () => {
-  const { container } = render(<TaskRow task={{ ...task, projects: ["[[Tasks/Parent.md|Parent task]]"] }} onOpen={vi.fn()} onToggle={vi.fn()} details={[]} />);
-  expect(container.querySelector(".task-row-parent")).toHaveTextContent("Parent task");
-  expect(container.querySelector(".task-row-parent")).not.toHaveTextContent("Tasks/Parent.md");
+  const { container } = render(
+    <TaskRow
+      task={{ ...task, projects: ["[[Tasks/Parent.md|Parent task]]"] }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+      details={[]}
+    />,
+  );
+  expect(container.querySelector(".task-row-parent")).toHaveTextContent(
+    "Parent task",
+  );
+  expect(container.querySelector(".task-row-parent")).not.toHaveTextContent(
+    "Tasks/Parent.md",
+  );
 });
 it("guards repeated completion and offers retry after rejection", async () => {
   let reject!: (reason: Error) => void;
@@ -116,7 +127,7 @@ it("opens from blank row space and supporting text, focusing the title", () => {
     container.querySelector(".task-row")!,
     container.querySelector(".task-row-content")!,
     container.querySelector(".task-row-meta")!,
-    screen.getByText("Matched in notes"),
+    container.querySelector(".task-row-context")!,
   ]) {
     fireEvent.click(target);
     expect(title).toHaveFocus();
@@ -128,7 +139,7 @@ it("keeps title and independent controls from also opening via the row", () => {
   const open = vi.fn();
   const toggle = vi.fn();
   render(<TaskRow task={task} onOpen={open} onToggle={toggle} />);
-  fireEvent.click(screen.getByText(task.title));
+  fireEvent.click(screen.getByRole("button", { name: task.title }));
   expect(open).toHaveBeenCalledOnce();
   open.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Complete Write brief" }));

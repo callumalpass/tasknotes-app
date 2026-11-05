@@ -407,6 +407,35 @@ describe("calendar entry labels", () => {
     el.append(fragment);
     expect(el.textContent).toMatch(/^Calendar task9:30am/);
   });
+  it("keeps month entry times and titles together for two-line wrapping", () => {
+    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    el.append(
+      (calendar.props!.itemContent as (arg: unknown) => Node)({
+        item,
+        el,
+        variant: "bar",
+        timeText: "9:30am",
+      }),
+    );
+    expect(el.querySelector(".full-calendar-event-primary")).toHaveTextContent(
+      "9:30am · Calendar task",
+    );
+    expect(el.querySelector(".full-calendar-event-secondary")).toBeNull();
+  });
+  it("provides the full event identity for hover and focused inspection", () => {
+    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    (calendar.props!.itemDidMount as (arg: unknown) => void)({
+      item,
+      el,
+      variant: "timed",
+    });
+    expect(el.title).toContain(item.title);
+    expect(el.title).toBe(el.getAttribute("aria-label"));
+  });
   it("names an all-day entry's own day west of UTC", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
     const item = items().find((entry) => entry.allDay)!;

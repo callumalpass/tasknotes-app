@@ -27,7 +27,10 @@ test("calendar names elevated priority and keeps entries accessible", async ({
   const marked = page
     .locator(".tnc-item:has(.full-calendar-event-content.has-marker)")
     .first();
-  await expect(marked).toHaveAttribute("title", "High priority");
+  await expect(marked).toHaveAttribute(
+    "title",
+    (await marked.getAttribute("aria-label"))!,
+  );
   await expect(marked).toHaveAttribute("aria-label", /high priority$/);
   const unmarked = page
     .locator(".tnc-dg .tnc-item .full-calendar-event-content:not(.has-marker)")
@@ -108,7 +111,7 @@ test("the agenda keeps its strip in view and moves overdue work to today", async
 }) => {
   await page.goto(view("upcoming"));
   const strip = page.locator(".tnc-strip");
-  const commands = page.locator(".full-calendar-commandbar");
+  const commands = page.locator(".tnc-strip-head");
   await expect(commands.getByLabel("Calendar layout")).toBeVisible();
   await expect(commands).toBeVisible();
   await page
@@ -124,7 +127,9 @@ test("the agenda keeps its strip in view and moves overdue work to today", async
   // Today returns to the top, where overdue work waits above today.
   await commands.getByRole("button", { name: "Today", exact: true }).click();
   const overdue = page.locator(".tnc-list-lead");
-  await expect(overdue.getByText("2 days ago").first()).toBeVisible();
+  await expect(
+    overdue.getByText("2 days ago").filter({ visible: true }).first(),
+  ).toBeVisible();
   // As in the Today view, Scheduled moves to today and Due stays the
   // deadline, so only work overdue by Due stays listed here.
   const items = overdue.locator(".tnc-item");
@@ -197,10 +202,10 @@ test("Upcoming has named, counted week days, respects the first day preference a
   const stripBox = (await strip.boundingBox())!;
   const headerBox = (await header.boundingBox())!;
   expect(headerBox.y).toBeGreaterThanOrEqual(stripBox.y + stripBox.height - 1);
-  await page.getByRole("button", { name: "Next period", exact: true }).click();
+  await page.getByRole("button", { name: "Next week", exact: true }).click();
   expect(await days.first().getAttribute("data-date")).not.toBe(first);
   await page
-    .getByRole("button", { name: "Previous period", exact: true })
+    .getByRole("button", { name: "Previous week", exact: true })
     .click();
   await expect(days.first()).toHaveAttribute("data-date", first!);
   const accessibility = await new AxeBuilder({ page })
@@ -234,7 +239,7 @@ test("an empty agenda day stays compact and creates a task on that day", async (
   await page.goto(view("upcoming"));
   const strip = page.locator(".tnc-strip");
   for (let week = 0; week < 4; week++)
-    await page.getByRole("button", { name: "Next period", exact: true }).click();
+    await page.getByRole("button", { name: "Next week", exact: true }).click();
   const day = strip
     .locator(".tnc-strip-day")
     .filter({ has: page.locator(".agenda-strip-count", { hasText: /^0$/ }) })

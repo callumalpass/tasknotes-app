@@ -425,7 +425,7 @@
 }
 
 .full-calendar-view .tnc-year-grid {
-  grid-template-columns: repeat(auto-fill, minmax(308px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }
 
 .full-calendar-view .tnc-ym-title {
@@ -455,6 +455,96 @@
 
 .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
   min-height: 44px;
+}
+
+@media (min-width: 840px) and (pointer: fine) {
+  .full-calendar-view .tnc {
+    --tnc-bar-h: 32px;
+    --tnc-more-h: 28px;
+    --tnc-dg-top-h: 26px;
+    --tnc-day-min-h: 100px;
+  }
+  .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
+    min-height: 32px;
+  }
+  .full-calendar-view .tnc-dg .full-calendar-event-content {
+    min-height: 28px;
+    line-height: 14px;
+  }
+  .full-calendar-view .tnc-dg .full-calendar-event-primary > span,
+  .full-calendar-view .tnc-dg .full-calendar-event-secondary {
+    line-height: 14px;
+  }
+  .full-calendar-view .tnc-dg .full-calendar-event-primary > span {
+    -webkit-line-clamp: 2;
+  }
+  .full-calendar-view .tnc-ym-day {
+    min-height: 26px;
+    height: 26px;
+    aspect-ratio: auto;
+  }
+  .full-calendar-view .tnc-ym-title {
+    min-height: 32px;
+  }
+}
+
+.full-calendar-view .tnc-ym {
+  scroll-margin-top: 52px;
+}
+
+.full-calendar-view .tnc-slot-label {
+  transform: none;
+  padding-top: 2px;
+}
+
+@media (max-width: 839px) {
+  .full-calendar-view .tnc-dh {
+    padding-block: 8px;
+    background: var(--paper-soft);
+    border-bottom: 2px solid var(--line-strong);
+  }
+  .full-calendar-view .tnc-dh-dow {
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .full-calendar-view .tnc-dh.is-today {
+    border-bottom-color: var(--accent);
+  }
+}
+
+.full-calendar-view .tnc-item--timed {
+  border-inline-start: 3px solid var(--event-tone, var(--accent));
+  box-shadow: 0 0 0 1px var(--paper);
+}
+
+.calendar-event-inspection {
+  position: fixed;
+  z-index: 60;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: var(--type-supporting);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 4px 16px var(--color-shadow);
+  pointer-events: none;
+}
+
+.full-calendar-visible-days {
+  position: sticky;
+  top: 44px;
+  z-index: 11;
+  min-height: 24px;
+  margin: 0;
+  padding-block: 4px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  font-weight: 600;
+  background: var(--paper);
 }
 
 .full-calendar-event-content.is-recurring
@@ -1737,6 +1827,32 @@
   padding: 0;
 }
 
+.full-calendar-view.is-agenda
+  .tnc-strip-head
+  :is(.tnc-strip-nav, .tnc-strip-today, .tnc-strip-slot) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-head {
+  gap: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-title {
+  min-width: 0;
+  padding-inline: 0 6px;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-slot .view-options > summary > span {
+  display: none;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-slot .view-options > summary {
+  width: 44px;
+  padding-inline: 0;
+}
+
 /* One line of controls leaves the phone's height to the tasks. */
 @media (max-width: 839px) and (min-width: 360px) {
   .full-calendar-view.is-agenda .tnc-strip-head {
@@ -1764,9 +1880,6 @@
     padding-inline: 4px;
   }
 
-  .full-calendar-view.is-agenda .tnc-strip-slot summary svg {
-    display: none;
-  }
 }
 
 .full-calendar-view.is-agenda .tnc-strip-slot {
@@ -1803,8 +1916,8 @@
 
 .full-calendar-view.is-agenda .tnc-strip-day {
   gap: 2px;
-  min-height: 80px;
-  padding: var(--space-xs);
+  min-height: 68px;
+  padding: 2px;
   color: var(--ink-soft);
   border: 1px solid transparent;
   border-radius: var(--radius-control);
@@ -1820,13 +1933,15 @@
 
 .full-calendar-view.is-agenda .tnc-strip-num {
   width: 32px;
+  height: 28px;
+  aspect-ratio: auto;
   font-size: var(--type-section);
 }
 
 .agenda-strip-weekday,
 .agenda-strip-count {
   font-size: var(--type-label);
-  line-height: 1.4;
+  line-height: 16px;
 }
 
 .agenda-strip-count.is-zero {
@@ -1931,9 +2046,20 @@
   display: grid;
 }
 
+.full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-grid {
+  max-height: 176px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-day {
+  min-height: 44px;
+  padding-block: 2px;
+}
+
 @media (max-width: 839px) {
   .full-calendar-view.is-agenda .tnc-strip-day {
-    min-height: 82px;
+    min-height: 68px;
     padding-inline: 0;
   }
 
@@ -1942,7 +2068,7 @@
   }
 
   .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-day {
-    min-height: 58px;
-    padding-block: var(--space-xs);
+    min-height: 44px;
+    padding-block: 2px;
   }
 }

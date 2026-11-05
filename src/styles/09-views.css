@@ -145,8 +145,7 @@
   line-height: 1.45;
 }
 
-.navigation-view-order,
-.all-views {
+.navigation-view-order {
   border-top: 1px solid var(--line-strong);
 }
 
@@ -347,8 +346,8 @@
 
 .view-catalog-controls {
   display: grid;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-xl);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .view-search-field {
@@ -474,7 +473,7 @@
   width: 100%;
   min-height: 64px;
   padding: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
 }
 
 .saved-view-row.is-tool-row .saved-view-membership {

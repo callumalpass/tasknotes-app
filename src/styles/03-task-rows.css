@@ -832,7 +832,7 @@
   outline: 0;
 }
 
-.task-row:has(> .task-row-content > .task-row-title:focus-visible) {
+.task-row:has(.task-row-title:focus-visible) {
   background: var(--accent-soft);
   box-shadow: inset 2px 0 var(--accent);
 }
@@ -905,7 +905,7 @@
 .task-row-properties {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 14px;
+  gap: 0 12px;
   color: var(--ink-soft);
   font-size: 13px;
   line-height: 1.35;
@@ -915,7 +915,7 @@
   display: inline-flex;
   align-items: center;
   min-width: 44px;
-  min-height: 44px;
+  min-height: 24px;
   max-width: 100%;
   gap: 4px;
   padding: 2px 0;
@@ -944,7 +944,7 @@
   color: var(--ink-muted);
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
   font-size: inherit;
-  line-height: 1.35;
+  line-height: 24px;
 }
 
 .task-row-property > span:first-child {
@@ -1028,25 +1028,8 @@
   }
 }
 
-/* Wide lists read like a table: the project settles at the far edge. A list
-   narrowed by the detail pane keeps it inline instead. */
 .task-row:not(.kanban-card *) .task-row-content {
   container-type: inline-size;
-}
-@container (min-width: 600px) {
-  .task-row:not(.kanban-card *) .task-row-properties:has(.is-project) {
-    padding-right: min(30%, 14rem);
-    position: relative;
-    min-height: 24px;
-  }
-  .task-row:not(.kanban-card *) .task-row-property.is-project {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: min(30%, 14rem);
-    justify-content: flex-end;
-    text-align: right;
-  }
 }
 
 .task-property-editor-scrim {
@@ -1276,7 +1259,7 @@
    Wrapped content grows naturally rather than being forced into a fixed row. */
 .task-row:not(.kanban-card *) .task-row-content {
   justify-content: center;
-  padding-block: 1px;
+  padding-block: 6px;
 }
 .task-row:not(.kanban-card *) .task-row-title {
   min-height: 32px;
@@ -1284,8 +1267,71 @@
 }
 .task-row .task-row-property,
 .task-row .task-row-meta > button {
-  min-height: 44px;
-  padding-block: 2px;
+  min-height: 24px;
+  padding-block: 0;
+}
+.task-row-touch-details,
+.task-row-touch-heading {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .task-row:not(.kanban-card *) .task-row-content {
+    padding-block: 2px;
+  }
+  .task-row .task-row-title {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    min-height: 44px;
+    padding-block: 6px;
+  }
+  .task-row-reading {
+    position: relative;
+    min-height: 44px;
+    padding-block: 6px;
+  }
+  .task-row-touch-heading {
+    display: block;
+    font-size: var(--type-control);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    visibility: hidden;
+  }
+  .task-row .task-row-touch-details:not(:empty) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 12px;
+    margin-top: 6px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+  .task-row-touch-details .task-row-detail {
+    display: inline;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .task-row-touch-details .task-row-glyph {
+    margin-right: 4px;
+    vertical-align: -2px;
+  }
+  .task-row-touch-details .is-date {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .task-row-touch-details .is-overdue {
+    color: var(--danger);
+  }
+  .task-row .task-row-properties,
+  .task-row .task-row-meta,
+  .task-row-content > .task-row-context,
+  .task-row .task-row-parent {
+    display: none;
+  }
 }
 .task-section-count {
   margin-left: auto;

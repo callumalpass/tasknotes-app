@@ -362,18 +362,56 @@ export function TaskRow({
           </p>
         ) : null}
         {command.warning ? <p role="status">{command.warning}</p> : null}
-        <button
-          className="task-row-title"
-          aria-pressed={selection.selectable ? selection.selected : undefined}
-          aria-describedby={supportingText ? supportingId : undefined}
-          title={task.title}
-          type="button"
-          onClick={() => onOpen(task, occurrence?.date)}
-        >
-          <span className="task-row-title-text">
-            <span>{task.title}</span>
+        <div className="task-row-reading">
+          <span className="task-row-touch-heading" aria-hidden="true">
+            {task.title}
           </span>
-        </button>
+          <button
+            className="task-row-title"
+            aria-label={task.title}
+            aria-description={
+              shownDetails
+                .map((detail) => `${detail.label}: ${detail.value}`)
+                .join(", ") || undefined
+            }
+            aria-pressed={selection.selectable ? selection.selected : undefined}
+            aria-describedby={supportingText ? supportingId : undefined}
+            title={task.title}
+            type="button"
+            onClick={() => onOpen(task, occurrence?.date)}
+          >
+            <span className="task-row-title-text">
+              <span>{task.title}</span>
+            </span>
+          </button>
+          <span className="task-row-touch-details">
+            {tracking ? <TrackingIndicator /> : null}
+            {supportingText ? (
+              <span className="task-row-detail">{supportingText}</span>
+            ) : null}
+            {shownDetails.map((detail) => (
+              <span
+                className={`task-row-detail${detailRank(detail, configuration) === 0 ? " is-date" : ""}${detail.overdue ? " is-overdue" : ""}`}
+                key={detail.key}
+                aria-label={`${detail.label}: ${detail.value}`}
+              >
+                <PropertyGlyph detail={detail} />
+                {isDueDetail(detail, configuration)
+                  ? t`Due ${detail.value}`
+                  : detail.value}
+              </span>
+            ))}
+            {task.projects?.length &&
+            !shownDetails.some((detail) =>
+              isProjectDetail(detail, configuration),
+            ) ? (
+              <span className="task-row-detail">
+                <Folder aria-hidden="true" size={13} />
+                {task.projects.map(linkDisplayLabel).join(", ")}
+              </span>
+            ) : null}
+          </span>
+        </div>
         {context && !contextLeadsDetails ? context : null}
         {task.projects?.length &&
         !shownDetails.some((detail) =>

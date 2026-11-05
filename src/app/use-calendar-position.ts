@@ -1,4 +1,5 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { appLocale } from "../i18n/app";
 
 export function useCalendarPosition(
   rootRef: RefObject<HTMLElement | null>,
@@ -7,6 +8,7 @@ export function useCalendarPosition(
   selected: string,
   rangeStart: number,
 ) {
+  const [visibleDays, setVisibleDays] = useState("");
   const positions = useRef(new Map<string, { top: number; left: number }>());
   const previousLayout = useRef("");
 
@@ -24,12 +26,43 @@ export function useCalendarPosition(
     let scroller: HTMLElement | null = null;
     let extentObserver: ResizeObserver | undefined;
     const revealExtent = () => {
-      if (scroller)
+      if (scroller) {
         root.dataset.moreDays = String(
           mode.startsWith("timeGrid") &&
             scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft >
               2,
         );
+        if (phone && mode === "timeGridWeek") {
+          const bounds = scroller.getBoundingClientRect();
+          const inset =
+            root.querySelector(".tnc-gutter-head")?.getBoundingClientRect()
+              .width ?? 0;
+          const days = [
+            ...root.querySelectorAll<HTMLElement>(".tnc-dh[data-date]"),
+          ].filter((day) => {
+            const column = day.getBoundingClientRect();
+            return (
+              column.right > bounds.left + inset + 1 &&
+              column.left < bounds.right - 1
+            );
+          });
+          const first = days[0]?.dataset.date;
+          const last = days.at(-1)?.dataset.date;
+          if (first && last) {
+            const format = new Intl.DateTimeFormat(appLocale(), {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+            setVisibleDays(
+              format.formatRange(
+                new Date(`${first}T12:00:00`),
+                new Date(`${last}T12:00:00`),
+              ),
+            );
+          }
+        }
+      }
     };
     const remember = () => {
       revealExtent();
@@ -60,9 +93,15 @@ export function useCalendarPosition(
           const month = target?.closest(".tnc-ym");
           if (month) {
             const monthBounds = month.getBoundingClientRect();
+            scroller.style.paddingBottom = `${Math.max(12, scroller.clientHeight - monthBounds.height)}px`;
+            const toolbar = root.querySelector(".full-calendar-commandbar");
+            const top = Math.max(
+              bounds.top,
+              toolbar?.getBoundingClientRect().bottom ?? bounds.top,
+            );
             scroller.scrollTop +=
               monthBounds.top -
-              bounds.top -
+              top -
               (parseFloat(getComputedStyle(scroller).paddingTop) || 0);
           }
         } else if (target) {
@@ -91,6 +130,7 @@ export function useCalendarPosition(
       window.removeEventListener("resize", revealExtent);
     };
   }, [mode, phone, rangeStart, rootRef, selected]);
+  return visibleDays;
 }
 
 function resetOuterScroll(root: HTMLElement) {

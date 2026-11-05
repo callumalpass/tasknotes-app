@@ -1,7 +1,6 @@
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
-import { countLabel } from "../../i18n/default-labels";
 import {
   Check,
   FilePenLine,
@@ -142,18 +141,7 @@ export function ViewCatalog({
 
   return (
     <div className="view-catalog">
-      <section className="all-views" aria-labelledby="all-views-title">
-        <header className="all-views-heading">
-          <div>
-            <h2 id="all-views-title">
-              <Trans>All views</Trans>
-            </h2>
-          </div>
-          <span aria-label={t`${visibleCount} views shown`}>
-            {countLabel(visibleCount, "view")}
-          </span>
-        </header>
-
+      <section className="all-views" aria-label={t({ message: "All views" })}>
         <div className="view-catalog-controls">
           <label className="view-search-field">
             <Search aria-hidden="true" size={18} />
@@ -182,7 +170,13 @@ export function ViewCatalog({
                 type="button"
                 onClick={() => setFilter(key)}
               >
-                {label} <span>{counts[key]}</span>
+                {label}
+                {key === filter ? (
+                  <>
+                    {" "}
+                    <span>{counts[key]}</span>
+                  </>
+                ) : null}
               </button>
             ))}
           </div>

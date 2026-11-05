@@ -13,7 +13,7 @@ html.scratchpad-route .page-surface {
 
 /* Scratchpad: the Markdown outline is the surface, not a stack of cards. */
 .scratchpad-screen {
-  --scratch-indent: 24px;
+  --scratch-indent: 16px;
   --scratch-feed-width: 980px;
   position: relative;
   display: flex;
@@ -329,7 +329,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-title-row {
   display: flex;
   min-height: 46px;
-  align-items: center;
+  align-items: baseline;
   gap: 16px;
 }
 
@@ -339,8 +339,9 @@ html.scratchpad-route .page-surface {
   padding: 8px 0;
   color: var(--ink);
   font: inherit;
-  font-size: 1.03rem;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
   border: 0;
   outline: 0;
   background: transparent;
@@ -348,13 +349,14 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-title-row input::placeholder {
   color: var(--ink-muted);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .scratchpad-title-meta {
   display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: 9px;
 }
 
@@ -848,9 +850,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns:
-    var(--scratch-disclosure-track) 44px 44px minmax(0, 1fr)
-    44px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-height: 48px;
   align-items: start;
   /* Rows are told apart by their leading control, not by rules. */
@@ -935,23 +935,30 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row-main > .scratchpad-drag-handle {
-  grid-column: 2;
+  display: none;
 }
 
 .scratchpad-row-main > .scratchpad-kind-controls,
 .scratchpad-row-main > .scratchpad-kind-label {
-  grid-column: 3;
+  grid-column: 1;
+}
+
+.scratchpad-row.has-children > .scratchpad-row-main > .scratchpad-kind-controls,
+.scratchpad-row.has-children > .scratchpad-row-main > .scratchpad-kind-label,
+.scratchpad-disclosure-space {
+  display: none;
 }
 
 .scratchpad-row-main > .outline-text-shell,
 .scratchpad-row-main > .scratchpad-task-link {
-  grid-column: 4;
-  margin-left: 8px;
-  width: calc(100% - 8px);
+  grid-column: 2;
+  grid-row: 1;
+  margin-left: 0;
+  width: 100%;
 }
 
 .scratchpad-row-main > .scratchpad-convert-line {
-  grid-column: 5;
+  display: none;
 }
 
 .scratchpad-drag-handle {
@@ -1043,7 +1050,8 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-row-main > .task-actions-trigger,
 .scratchpad-row-main > .scratchpad-row-menu-trigger {
-  grid-column: 6;
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .scratchpad-row .task-actions-trigger > svg {
@@ -1170,23 +1178,44 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-mobile-depth-actions {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 44px;
+  padding: 5px 0 7px;
+}
+
+.scratchpad-mobile-depth-actions button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 7px;
+  color: var(--ink-soft);
+  font-size: var(--type-label);
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+.scratchpad-mobile-move {
+  touch-action: none;
+  cursor: grab;
 }
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns:
-    var(--scratch-disclosure-track) 44px 44px minmax(0, 1fr)
-    44px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
 }
 
 .scratchpad-nlp-preview > div {
   display: flex;
   min-width: 0;
-  grid-column: 4 / -1;
+  grid-column: 2;
   flex-wrap: wrap;
   gap: 3px 14px;
-  margin-left: 8px;
+  margin-left: 0;
   padding: 4px 0 8px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
@@ -1631,19 +1660,17 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-row-main {
-    grid-template-columns:
-      var(--scratch-disclosure-track) 44px minmax(0, 1fr)
-      44px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
 
   .scratchpad-row-main > .scratchpad-kind-controls,
   .scratchpad-row-main > .scratchpad-kind-label {
-    grid-column: 2;
+    grid-column: 1;
   }
 
   .scratchpad-row-main > .outline-text-shell,
   .scratchpad-row-main > .scratchpad-task-link {
-    grid-column: 3;
+    grid-column: 2;
   }
 
   .scratchpad-kind-controls {
@@ -1665,7 +1692,7 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-screen .scratchpad-row-menu-trigger,
   .scratchpad-row .task-actions-trigger {
-    grid-column: 4;
+    grid-column: 3;
     width: 44px;
     opacity: 1;
     pointer-events: auto;

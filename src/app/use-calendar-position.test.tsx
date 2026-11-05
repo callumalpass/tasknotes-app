@@ -166,3 +166,50 @@ it("shows the trailing cue only while additional day columns remain", async () =
   await act(() => scroller.dispatchEvent(new Event("scroll")));
   expect(root.current.dataset.moreDays).toBe("false");
 });
+
+it("keeps the selected month heading below an overlapping toolbar", () => {
+  const root = fixture(
+    '<div class="full-calendar-commandbar"></div><div class="tnc-year-scroll"><section class="tnc-ym"><button class="tnc-ym-day" data-date="2026-11-05"></button></section></div>',
+  );
+  const scroller = root.current.querySelector<HTMLElement>(".tnc-year-scroll")!;
+  bounds(scroller, 0, 80, 800, 400);
+  bounds(
+    root.current.querySelector(".full-calendar-commandbar")!,
+    0,
+    60,
+    800,
+    60,
+  );
+  bounds(root.current.querySelector(".tnc-ym")!, 0, 900, 240, 200);
+  Object.defineProperty(scroller, "clientHeight", { value: 400 });
+  renderHook(() =>
+    useCalendarPosition(root, "multiMonthYear", false, "2026-11-05", 0),
+  );
+  expect(scroller.scrollTop).toBe(780);
+  expect(scroller.style.paddingBottom).toBe("200px");
+});
+
+it("names the visible phone week columns and updates the cue after scrolling", async () => {
+  const root = fixture(
+    '<div class="tnc-tg-scroll"><div class="tnc-gutter-head"></div><div class="tnc-dh" data-date="2026-11-05"></div><div class="tnc-dh" data-date="2026-11-06"></div><div class="tnc-dh" data-date="2026-11-07"></div></div>',
+  );
+  const scroller = root.current.firstElementChild as HTMLElement;
+  bounds(scroller, 0, 80, 360, 400);
+  bounds(root.current.querySelector(".tnc-gutter-head")!, 0, 80, 44, 40);
+  const days = root.current.querySelectorAll(".tnc-dh");
+  bounds(days[0], 44, 80, 160, 40);
+  bounds(days[1], 204, 80, 160, 40);
+  bounds(days[2], 364, 80, 160, 40);
+  const view = renderHook(() =>
+    useCalendarPosition(root, "timeGridWeek", true, "2026-11-05", 0),
+  );
+  expect(view.result.current).toContain("Nov");
+  expect(view.result.current).toContain("5");
+  expect(view.result.current).toContain("6");
+  bounds(days[0], -116, 80, 160, 40);
+  bounds(days[1], 44, 80, 160, 40);
+  bounds(days[2], 204, 80, 160, 40);
+  await act(() => scroller.dispatchEvent(new Event("scroll")));
+  expect(view.result.current).not.toContain("5");
+  expect(view.result.current).toContain("7");
+});

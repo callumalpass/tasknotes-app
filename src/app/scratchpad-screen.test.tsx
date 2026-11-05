@@ -121,7 +121,7 @@ describe("ScratchpadScreen", () => {
       });
   }
 
-  it("reserves the same disclosure track for branches and leaves without adding a leaf control", async () => {
+  it("shares one leading lane between branch disclosure and leaf completion", async () => {
     await reopenWith((replica) => {
       seedRecord(replica, scratchpadRecord("- [ ] Parent\n  - [ ] Child\n"));
     });
@@ -145,6 +145,13 @@ describe("ScratchpadScreen", () => {
     expect(
       within(leaf).getByRole("button", { name: "Mark complete Child" }),
     ).toBeVisible();
+    fireEvent.click(
+      within(branch).getByRole("button", { name: "Actions for Parent" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mark complete" }));
+    expect(
+      within(branch).getByRole("button", { name: "Mark incomplete Parent" }),
+    ).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(
       within(branch).getByRole("button", { name: /Collapse Parent/ }),
     );
