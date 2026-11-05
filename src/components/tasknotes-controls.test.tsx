@@ -214,6 +214,45 @@ it("keeps midnight in the 0–23 hour system", () => {
   }
 });
 
+it("focuses the selected hour and consumes boundary navigation in each time list", async () => {
+  const change = vi.fn();
+  render(
+    <TaskNotesTimePicker
+      ariaLabel="Scheduled time"
+      value="16:00"
+      onChange={change}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Scheduled time" }));
+  const hours = screen.getByRole("listbox", { name: "Hour" });
+  const minutes = screen.getByRole("listbox", { name: "Minute" });
+  await vi.waitFor(() =>
+    expect(within(hours).getByRole("option", { selected: true })).toHaveFocus(),
+  );
+  for (const [list, last] of [
+    [hours, 23],
+    [minutes, 59],
+  ] as const) {
+    const options = within(list).getAllByRole("option");
+    const propagated = vi.fn();
+    document.body.addEventListener("keydown", propagated);
+    const end = new KeyboardEvent("keydown", {
+      key: "End",
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(options[0]!, end);
+    expect(end.defaultPrevented).toBe(true);
+    expect(options[last]).toHaveFocus();
+    expect(options[last]).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(options[last]!, { key: "Home" });
+    expect(options[0]).toHaveFocus();
+    expect(propagated).not.toHaveBeenCalled();
+    document.body.removeEventListener("keydown", propagated);
+  }
+  expect(change).not.toHaveBeenCalled();
+});
+
 it("closes the date sheet from its named header control and returns focus", () => {
   const change = vi.fn();
   render(

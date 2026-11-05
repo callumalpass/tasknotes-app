@@ -123,6 +123,7 @@ function fitCalendarPopup(popup: HTMLElement) {
     surface?.right ?? window.innerWidth - 12,
   );
   popup.style.maxWidth = `${Math.max(44, right - left)}px`;
+  popup.style.width = `${Math.min(320, Math.max(44, right - left))}px`;
   popup.style.maxHeight = `${Math.max(44, Math.min(height * 0.7, bottom - upper))}px`;
   const bounds = popup.getBoundingClientRect();
   const desiredTop = Math.max(

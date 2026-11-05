@@ -728,7 +728,7 @@ export function TaskCalendarView({
               nowIndicator={preferences.nowIndicator}
               hour12={hour12(preferences.hourFormat)}
               slotDuration={preferences.slotDuration}
-              slotHeight={44}
+              slotHeight={36}
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"
@@ -737,7 +737,9 @@ export function TaskCalendarView({
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
               dayMaxEvents={phoneMonth ? 3 : 2}
-              dayMaxEventRows={phoneMonth ? 0 : 3}
+              dayMaxEventRows={
+                phoneMonth ? 0 : mode.startsWith("timeGrid") ? 2 : 3
+              }
               text={calendarText()}
               dayClassNames={({ dateStr }) =>
                 dateStr === selected ? ["is-selected-day"] : []
@@ -864,7 +866,7 @@ export function TaskCalendarView({
               <span>{countLabel(selectedEntries.length, "task")}</span>
               <button
                 aria-label={t`Close day details`}
-                className="icon-button"
+                className="icon-action"
                 type="button"
                 onClick={() => setInspectingDay(false)}
               >

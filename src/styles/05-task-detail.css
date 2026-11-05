@@ -682,8 +682,10 @@
 }
 
 .tasknotes-time-list {
-  height: 210px;
-  padding-block: 16px;
+  --time-list-height: 210px;
+  position: relative;
+  height: var(--time-list-height);
+  padding-block: calc((var(--time-list-height) - 44px) / 2);
   overflow-y: auto;
   overscroll-behavior: contain;
   mask-image: linear-gradient(
@@ -696,7 +698,7 @@
 
 .tasknotes-time-list > button {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 9px;
   color: var(--ink-soft);
   text-align: center;

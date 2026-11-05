@@ -822,11 +822,13 @@ export function TaskNotesTimePicker({
 
   useEffect(() => {
     if (!open) return;
-    window.requestAnimationFrame(() => {
-      hourRefs.current.get(hour)?.scrollIntoView({ block: "center" });
-      minuteRefs.current.get(minute)?.scrollIntoView({ block: "center" });
+    const frame = window.requestAnimationFrame(() => {
+      [...hourRefs.current.values()]
+        .find((option) => option.getAttribute("aria-selected") === "true")
+        ?.focus({ preventScroll: true });
     });
-  }, [hour, minute, open]);
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   function updateSelection(nextHour: number, nextMinute: number) {
     setHour(nextHour);
@@ -953,6 +955,14 @@ function TimeColumn({
   onChange(value: number): void;
   formatValue?(value: number): string;
 }) {
+  useEffect(() => {
+    const option = refs.current.get(value);
+    const list = option?.parentElement;
+    if (option && list)
+      list.scrollTop =
+        option.offsetTop - (list.clientHeight - option.offsetHeight) / 2;
+  }, [refs, value]);
+
   return (
     <div>
       <span>{label}</span>
@@ -970,13 +980,19 @@ function TimeColumn({
             type="button"
             onClick={() => onChange(index)}
             onKeyDown={(event) => {
-              if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+              if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+                return;
               event.preventDefault();
+              event.stopPropagation();
               const next =
-                (index + (event.key === "ArrowDown" ? 1 : -1) + max + 1) %
-                (max + 1);
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? max
+                    : (index + (event.key === "ArrowDown" ? 1 : -1) + max + 1) %
+                      (max + 1);
               onChange(next);
-              refs.current?.get(next)?.focus();
+              refs.current?.get(next)?.focus({ preventScroll: true });
             }}
           >
             {formatValue ? formatValue(index) : String(index).padStart(2, "0")}

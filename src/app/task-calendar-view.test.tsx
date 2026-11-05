@@ -47,6 +47,17 @@ describe("calendar drops", () => {
     });
   });
 
+  it("reserves one all-day preview plus disclosure in timed layouts", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "timeGridWeek";
+    renderCalendar(original, vi.fn());
+    expect(calendar.props).toMatchObject({
+      eventMinHeight: 44,
+      slotHeight: 36,
+      dayMaxEventRows: 2,
+    });
+  });
+
   it("keeps a dropped task at its new date while the write is pending", async () => {
     const write = deferred();
     const onUpdate = vi.fn(() => write.promise);

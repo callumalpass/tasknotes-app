@@ -1904,10 +1904,7 @@
 }
 
 .views-screen.view-detail.is-task-list-view,
-.views-screen.view-detail.is-agenda-default:not(
-    :has(.full-calendar-view:not(.is-agenda))
-  ),
-.views-screen.view-detail:has(.full-calendar-view.is-agenda) {
+.views-screen.view-detail.is-agenda-default:not(:has(.full-calendar-view)) {
   width: min(100%, var(--content-width));
 }
 .view-date {

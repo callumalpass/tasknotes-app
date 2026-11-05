@@ -37,6 +37,14 @@
   min-width: 0;
 }
 
+.views-screen:has(.full-calendar-view) > .view-header {
+  margin-bottom: var(--space-lg);
+}
+
+.views-screen:has(.full-calendar-view) > .capture-composer {
+  margin-bottom: var(--space-lg);
+}
+
 .full-calendar-commandbar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -132,6 +140,11 @@
   justify-content: space-between;
   min-height: 38px;
   border-bottom: 1px solid var(--line-strong);
+}
+
+.full-calendar-inspector .icon-action {
+  flex: 0 0 44px;
+  border-radius: var(--radius-control);
 }
 
 .full-calendar-inspector h2 {
@@ -366,10 +379,43 @@
   display: -webkit-box;
   min-width: 0;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-height: 1.25;
+  -webkit-line-clamp: 1;
+  line-height: 18px;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.full-calendar-view :is(.tnc-dg, .tnc-tg) .full-calendar-event-secondary {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.full-calendar-view
+  :is(.tnc-dg, .tnc-tg)
+  .full-calendar-event-secondary
+  > time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.full-calendar-view .tnc-year-grid {
+  grid-template-columns: repeat(auto-fill, minmax(308px, 1fr));
+}
+
+.full-calendar-view .tnc-ym-title {
+  min-height: 44px;
+}
+
+.full-calendar-view .tnc-ym-day {
+  min-height: 44px;
+}
+
+@media (max-width: 839px) {
+  .full-calendar-view .tnc-year-grid {
+    grid-template-columns: minmax(308px, 1fr);
+  }
 }
 
 .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
@@ -786,7 +832,11 @@
     padding: 0;
   }
 
-  .sidebar-collapsed .navigation-rail .navigation-utility .navigation-views > span {
+  .sidebar-collapsed
+    .navigation-rail
+    .navigation-utility
+    .navigation-views
+    > span {
     display: none;
   }
 
@@ -1310,8 +1360,7 @@
   }
 
   .tasknotes-time-list {
-    height: min(36vh, 250px);
-    height: min(36dvh, 250px);
+    --time-list-height: min(36dvh, 250px);
   }
 
   .tasknotes-combobox-popover {
@@ -1461,6 +1510,7 @@
   min-height: 44px;
 }
 .full-calendar-view .tnc-popover {
+  width: min(320px, calc(100vw - 24px));
   max-height: 70dvh;
   overflow: auto;
   background: var(--paper-raised);
@@ -1479,7 +1529,8 @@
   box-shadow: none;
 }
 .full-calendar-view .tnc-popover-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
@@ -1491,6 +1542,14 @@
 .full-calendar-view .tnc-popover .full-calendar-event-content {
   min-height: 44px;
   font-size: var(--type-body);
+}
+
+.full-calendar-view .tnc-popover .full-calendar-event-primary > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 839px) {
   .full-calendar-commandbar {
@@ -1612,6 +1671,11 @@
 }
 
 /* Upcoming shares the calendar's scrolling/drag layer and the lists' rows. */
+.full-calendar-view.is-agenda .full-calendar-workspace {
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+}
+
 .full-calendar-view.is-agenda .tnc {
   border-top: 0;
 }
@@ -1716,6 +1780,18 @@
 .agenda-strip-count {
   font-size: var(--type-label);
   line-height: 1.4;
+}
+
+.agenda-strip-count.is-zero {
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.full-calendar-view.is-agenda .tnc-strip-day.is-other-month,
+.full-calendar-view.is-agenda
+  .tnc-strip-day.is-other-month
+  .agenda-strip-count {
+  color: var(--ink-faint);
 }
 
 .agenda-strip-count {

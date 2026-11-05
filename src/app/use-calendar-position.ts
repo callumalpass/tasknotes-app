@@ -8,9 +8,13 @@ export function useCalendarPosition(
   rangeStart: number,
 ) {
   const positions = useRef(new Map<string, { top: number; left: number }>());
+  const previousLayout = useRef("");
 
   useEffect(() => {
     const root = rootRef.current;
+    const layout = `${mode}|${phone}`;
+    const changedLayout = previousLayout.current !== layout;
+    previousLayout.current = layout;
     if (!root || (mode !== "multiMonthYear" && !mode.startsWith("timeGrid")))
       return;
     const key = `${mode}|${phone}|${rangeStart}`;
@@ -31,7 +35,8 @@ export function useCalendarPosition(
       if (restored) {
         scroller.scrollTop = restored.top;
         scroller.scrollLeft = restored.left;
-      } else {
+      }
+      if (!restored || changedLayout) {
         const target = root.querySelector<HTMLElement>(
           mode === "multiMonthYear"
             ? `.tnc-ym-day[data-date="${selected}"]`
@@ -42,19 +47,18 @@ export function useCalendarPosition(
           const month = target?.closest(".tnc-ym");
           if (month) {
             const monthBounds = month.getBoundingClientRect();
-            if (monthBounds.top < bounds.top)
-              scroller.scrollTop += monthBounds.top - bounds.top;
-            else if (monthBounds.bottom > bounds.bottom)
-              scroller.scrollTop += Math.min(
-                monthBounds.top - bounds.top,
-                monthBounds.bottom - bounds.bottom,
-              );
+            scroller.scrollTop +=
+              monthBounds.top -
+              bounds.top -
+              (parseFloat(getComputedStyle(scroller).paddingTop) || 0);
           }
-        } else if (phone && mode !== "timeGridDay" && target) {
+        } else if (target) {
           const gutter = root.querySelector(".tnc-gutter-head");
-          const inset = (gutter?.getBoundingClientRect().width ?? 0) + 24;
-          scroller.scrollLeft +=
-            target.getBoundingClientRect().left - bounds.left - inset;
+          const inset = gutter?.getBoundingClientRect().width ?? 0;
+          const column = target.getBoundingClientRect();
+          const left = bounds.left + inset;
+          if (column.left < left || column.right > bounds.right)
+            scroller.scrollLeft += column.left - left;
         }
         remember();
       }

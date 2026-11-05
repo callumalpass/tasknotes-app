@@ -147,6 +147,7 @@ export function useCalendarAgenda({
           cell.append(badge);
         }
         badge.textContent = String(count);
+        badge.classList.toggle("is-zero", count === 0);
       }
       const prev = host!.querySelector(".tnc-strip-prev");
       const next = host!.querySelector(".tnc-strip-next");
