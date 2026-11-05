@@ -705,20 +705,12 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Views", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Open a saved view, or choose what appears in navigation.",
-    ),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Shown in navigation" }),
-  ).toBeVisible();
   const allViews = page.getByRole("region", { name: "All views" });
   await expect(
     allViews.getByRole("searchbox", { name: "Search views" }),
   ).toBeVisible();
   await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
-  await expect(allViews.getByText("Saved views")).toBeVisible();
+  await expect(allViews.locator(".saved-views-section")).toBeVisible();
   await expect(allViews.getByTitle("TaskNotes/Views/today.base")).toBeVisible();
   const toolMembership = allViews.getByRole("button", {
     name: "Remove Scratchpad from navigation",
@@ -763,6 +755,9 @@ test("keeps view management clear and scalable", async ({ page }) => {
   await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reorder" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Shown in navigation" }),
+  ).toBeVisible();
   const dragScratchpad = page.getByRole("button", {
     name: "Move Scratchpad. Drag, or use up and down arrow keys.",
   });

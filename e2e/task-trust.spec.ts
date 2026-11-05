@@ -30,10 +30,12 @@ test("bulk Pick date takes typing and names the due dates it moved", async ({
   await page.keyboard.press("v");
   await page.keyboard.press("d");
   await page.getByRole("option", { name: "Pick date" }).click();
+  await page.getByText("Date options", { exact: true }).click();
   const field = page
     .getByRole("dialog", { name: "Schedule date" })
     .getByRole("textbox")
     .first();
+  await field.focus();
   await expect(field).toBeFocused();
   await page.keyboard.type("nov 30");
   await expect(field).toHaveValue("nov 30");

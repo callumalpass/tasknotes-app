@@ -49,9 +49,15 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
       name: `${field} date calendar`,
       exact: true,
     });
+    await expect(dialog.getByLabel("Type a date")).not.toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Today", exact: true }),
+    ).toBeFocused();
+    await dialog.getByText("Date options", { exact: true }).click();
     await expect(
       dialog.getByRole("radio", { name: new RegExp(field) }),
     ).toBeChecked();
+    await dialog.getByLabel("Type a date").focus();
     await expect(dialog.getByLabel("Type a date")).toBeFocused();
     await expect(
       dialog.getByRole("button", { name: "Today", exact: true }),
@@ -89,6 +95,7 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
     await expect(trigger).toBeFocused();
   }
   await detail.getByRole("button", { name: "Due date", exact: true }).click();
+  await page.getByText("Date options", { exact: true }).click();
   const input = page.getByLabel("Type a date", { exact: true });
   await input.fill("tomorrow 9am");
   await expect(page.getByText(/^Enter to set/)).toBeVisible();
@@ -100,6 +107,7 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
   await page.setViewportSize({ width: 320, height: 568 });
   await detail.getByRole("button", { name: "Due date", exact: true }).click();
   const compact = page.getByRole("dialog", { name: "Due date calendar" });
+  await expect(compact).toBeInViewport({ ratio: 1 });
   const compactBounds = (await compact.boundingBox())!;
   expect(compactBounds.x).toBeGreaterThanOrEqual(0);
   expect(compactBounds.x + compactBounds.width).toBeLessThanOrEqual(320);

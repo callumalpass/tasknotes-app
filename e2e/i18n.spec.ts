@@ -284,9 +284,9 @@ for (const locale of [
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
     });
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth),
-    ).toBeLessThanOrEqual(320);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(320);
     await expect(picker).toBeVisible();
     await page.screenshot({
       path: `test-results/i18n-settings-${locale}-${test.info().project.name}.png`,

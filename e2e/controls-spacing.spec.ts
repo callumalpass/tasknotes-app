@@ -133,13 +133,18 @@ for (const colorScheme of ["light", "dark"] as const) {
         .click();
       await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
       const name = page.getByRole("textbox", { name: "View name" });
-      expect(
-        await name.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
-      ).toBeGreaterThan(20);
+      await expect(name).toHaveCSS("min-height", "44px");
       await page.getByRole("button", { name: /Fields shown/ }).click();
       const property = page.getByRole("combobox", {
         name: "Property to display",
       });
+      expect(
+        await name.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+      ).toBeGreaterThanOrEqual(
+        await property.evaluate((el) =>
+          parseFloat(getComputedStyle(el).fontSize),
+        ),
+      );
       await property.fill("recurrence");
       await page.keyboard.press("Escape");
       await property

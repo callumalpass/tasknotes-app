@@ -22,13 +22,16 @@ test("long task-action pickers filter without losing keyboard selection", async 
 
 test("quick dates keep uncommon controls behind disclosure", async ({
   page,
+  isMobile,
 }, testInfo) => {
   await page.goto("/?demo=60");
-  await page
-    .locator(".task-row")
-    .first()
-    .getByRole("button", { name: /^Change dates for/ })
-    .click();
+  const row = page.locator(".task-row").first();
+  if (isMobile) {
+    await row.getByRole("button", { name: /^Task actions for/ }).click();
+    await page.getByRole("menuitem", { name: "Dates", exact: true }).click();
+  } else {
+    await row.getByRole("button", { name: /^Change dates for/ }).click();
+  }
   const panel = page.locator(".task-date-panel");
   await expect(
     panel.getByRole("button", { name: "This weekend", exact: true }),
@@ -43,6 +46,7 @@ test("quick dates keep uncommon controls behind disclosure", async ({
 
 test("phone detail keeps set properties and reveals empty properties on demand", async ({
   page,
+  isMobile,
 }, testInfo) => {
   await page.goto("/search?demo=60");
   await page
@@ -52,7 +56,7 @@ test("phone detail keeps set properties and reveals empty properties on demand",
   await expect(
     page.getByRole("textbox", { name: "Notes", exact: true }),
   ).toBeVisible();
-  const phone = testInfo.project.name.startsWith("phone");
+  const phone = isMobile;
   const due = page.getByRole("button", { name: "Due date", exact: true });
   if (phone) {
     await expect(due).not.toBeVisible();

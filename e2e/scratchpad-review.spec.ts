@@ -36,7 +36,7 @@ test("Scratchpad review owns focus and isolates the background", async ({
     }),
   ).toBe(true);
   const create = dialog.getByRole("button", {
-    name: /^Create \d+ task notes$/,
+    name: /^Create \d+ task notes?$/,
   });
   await create.focus();
   await page.keyboard.press("Tab");

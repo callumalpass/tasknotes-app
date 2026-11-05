@@ -17,6 +17,7 @@ test("overdue leads, accepts another date, and restores its dates with Undo", as
   const date = new Date();
   date.setDate(date.getDate() + 4);
   const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  await page.getByText("Date options", { exact: true }).click();
   await page.getByLabel("Type a date").fill(value);
   await expect(page.locator(".task-date-hint")).toContainText("Enter to set");
   await page.getByLabel("Type a date").press("Enter");
@@ -288,7 +289,13 @@ test("the phone board fills the screen", async ({ page }) => {
   await page.goto(workBoard);
   await expect(page.locator(".kanban-card").first()).toBeVisible();
   const board = (await page.locator(".kanban-board").boundingBox())!;
-  expect(board.y + board.height).toBeGreaterThan(660);
+  const navigation = (await page.locator(".bottom-navigation").boundingBox())!;
+  expect(Math.abs(board.y + board.height - navigation.y)).toBeLessThanOrEqual(
+    1,
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(
+    686,
+  );
 });
 
 test("project shortcuts stay reachable in a short window", async ({ page }) => {
@@ -302,7 +309,7 @@ test("project shortcuts stay reachable in a short window", async ({ page }) => {
   expect(manage.y + manage.height).toBeLessThanOrEqual(620);
 });
 
-test("the task menu starts on the current priority and jumps by letter", async ({
+test("the task menu starts on the current priority and filters by name", async ({
   page,
 }) => {
   await page.locator("body").press("j");
@@ -313,21 +320,20 @@ test("the task menu starts on the current priority and jumps by letter", async (
   const pressed = page.locator(
     ".task-actions-items [role='menuitemradio'][aria-checked='true']",
   );
-  if (await pressed.count()) await expect(pressed).toBeFocused();
-  const focused = page.locator(".task-actions-items :focus");
-  const other = await page
-    .locator(".task-actions-items [role='menuitemradio']")
-    .evaluateAll((items) =>
-      items
-        .map((item) => item.textContent!.trim())
-        .find(
-          (label) =>
-            label[0] !== document.activeElement!.textContent!.trim()[0],
-        )!,
-    );
-  await page.keyboard.press(other[0]!.toLowerCase());
-  await expect(focused).toHaveText(new RegExp(`^${other[0]}`));
-  await expect(focused).toHaveCSS("outline-style", "solid");
+  const filter = page.getByRole("combobox", { name: "Filter Priority" });
+  await expect(filter).toBeFocused();
+  await expect(pressed).toHaveClass(/is-active/);
+  await expect(filter).toHaveAttribute(
+    "aria-activedescendant",
+    await pressed.getAttribute("id"),
+  );
+  const other = page.getByRole("menuitemradio").last();
+  const label = (await other.innerText()).trim();
+  await filter.fill(label);
+  await expect(page.getByRole("menuitemradio")).toHaveCount(1);
+  await expect(page.getByRole("menuitemradio")).toHaveText(label);
+  await filter.press("Enter");
+  await expect(filter).toHaveCount(0);
 });
 
 test("a task's circle selects rather than completes while selecting", async ({
@@ -459,11 +465,17 @@ test("long status and priority lists keep the keyboard's place in view", async (
     const list = page.locator(".tasknotes-select-popover[data-state='open']");
     const options = list.getByRole("option");
     await expect(options).toHaveCount(12);
+    const filter = list.getByRole("combobox");
+    await expect(filter).toBeFocused();
     const active = list.locator("button.is-active");
     await expect(active).toBeInViewport({ ratio: 1 });
 
-    await trigger.press("End");
-    await expect(active).toHaveId(/-option-11$/);
+    await filter.press("End");
+    await expect(active).toHaveText((await options.last().innerText()).trim());
+    await expect(filter).toHaveAttribute(
+      "aria-activedescendant",
+      await options.last().getAttribute("id"),
+    );
     await expect(active).toBeInViewport({ ratio: 1 });
     await expect(options.last()).toHaveClass(/is-active/);
     expect(
@@ -474,37 +486,39 @@ test("long status and priority lists keep the keyboard's place in view", async (
       }),
     ).toBe(true);
 
-    await trigger.press("Home");
-    await expect(active).toHaveId(/-option-0$/);
+    await filter.press("Home");
+    await expect(options.first()).toHaveClass(/is-active/);
     expect(
       await list
         .locator(".tasknotes-option-list")
         .evaluate((scroller) => scroller.scrollTop),
     ).toBe(0);
 
-    for (let step = 0; step < 11; step += 1) await trigger.press("ArrowDown");
-    await expect(active).toHaveId(/-option-11$/);
-    await trigger.press("ArrowUp");
-    await expect(active).toHaveId(/-option-10$/);
+    for (let step = 0; step < 11; step += 1) await filter.press("ArrowDown");
+    await expect(options.last()).toHaveClass(/is-active/);
+    await filter.press("ArrowUp");
+    await expect(options.nth(10)).toHaveClass(/is-active/);
     await expect(active).toBeInViewport({ ratio: 1 });
 
-    await trigger.press("Escape");
+    await filter.press("Escape");
     await expect(list).toHaveCount(0);
     await expect(trigger).toBeFocused();
 
     await trigger.press("Enter");
-    await trigger.press("End");
-    await trigger.press("Enter");
+    await filter.press("End");
+    await filter.press("Enter");
     await expect(list).toHaveCount(0);
     await expect(trigger).toBeFocused();
     await trigger.press("Enter");
-    await expect(active).toHaveId(/-option-11$/);
+    await expect(options.last()).toHaveClass(/is-active/);
     await expect(active).toBeInViewport({ ratio: 1 });
-    await trigger.press("Escape");
+    await filter.press("Escape");
   }
 });
 
-test("letters jump within a long option list", async ({ page }, testInfo) => {
+test("typing filters a long option list and keeps its active match visible", async ({
+  page,
+}, testInfo) => {
   test.skip(testInfo.project.name === "mobile", "Keyboard path.");
   await page.locator(".task-row-title").first().click();
   const trigger = page
@@ -514,10 +528,13 @@ test("letters jump within a long option list", async ({ page }, testInfo) => {
   await trigger.press("Enter");
   const list = page.locator(".tasknotes-select-popover[data-state='open']");
   const label = (await list.getByRole("option").nth(9).innerText()).trim();
-  await page.keyboard.type(label.slice(0, 4));
-  await expect(list.locator("button.is-active")).toHaveId(/-option-9$/);
+  const filter = list.getByRole("combobox");
+  await expect(filter).toBeFocused();
+  await filter.fill(label);
+  await expect(list.getByRole("option")).toHaveCount(1);
+  await expect(list.locator("button.is-active")).toHaveText(label);
   await expect(list.locator("button.is-active")).toBeInViewport({ ratio: 1 });
-  await trigger.press("Escape");
+  await filter.press("Escape");
 });
 
 test("a board's columns fit a laptop width before it scrolls", async ({
@@ -552,7 +569,7 @@ test("s opens status from a row and the palette offers it", async ({
   await page.keyboard.press("j");
   await page.keyboard.press("s");
   await expect(page.getByRole("menuitemradio").first()).toBeVisible();
-  await expect(page.getByRole("menu")).toContainText("Triage");
+  await expect(page.locator(".task-actions-items")).toContainText("Triage");
   await page.keyboard.press("Escape");
   await page.keyboard.press("Control+k");
   await page.keyboard.type("status");

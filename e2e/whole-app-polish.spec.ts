@@ -40,7 +40,10 @@ test("priority labels are readable in search, projects, and expanded task proper
           exact: true,
         })
         .click();
-      await page.locator("details").evaluateAll((nodes) =>
+      await expect(
+        page.getByRole("complementary", { name: "Task details", exact: true }),
+      ).toBeVisible();
+      await page.locator(".detail-inspector details").evaluateAll((nodes) =>
         nodes.forEach((node) => {
           node.open = true;
         }),

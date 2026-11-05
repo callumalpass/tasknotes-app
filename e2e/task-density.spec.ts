@@ -35,7 +35,12 @@ for (const colorScheme of ["light", "dark"] as const) {
       );
       const height = (await row.boundingBox())!.height;
       expect(height).toBeGreaterThanOrEqual(48);
-      expect(height).toBeLessThanOrEqual(60);
+      const propertiesHeight = (await row
+        .locator(".task-row-properties")
+        .boundingBox())!.height;
+      expect(height - titleBox.height - propertiesHeight).toBeLessThanOrEqual(
+        4,
+      );
       await property.click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");

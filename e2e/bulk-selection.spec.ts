@@ -341,6 +341,7 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       })
       .click();
     if (choice === "pick") {
+      await page.getByText("Date options", { exact: true }).click();
       await page.getByLabel("Type a date").fill("2026-11-12");
       await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
       await expect(page.locator(".task-date-hint")).toContainText("Nov 12");

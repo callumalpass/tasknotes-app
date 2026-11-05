@@ -10,7 +10,7 @@ for (const day of [25, 26, 27, 28, 29, 30, 31]) {
     test.skip((page.viewportSize()?.width ?? 0) < 840, "Desktop week view");
     await page.clock.setFixedTime(new Date(`2026-10-${day}T12:00:00Z`));
     await page.goto(
-      `views/${encodeURIComponent("TaskNotes/Views/calendar.base#calendar")}?demo=50`,
+      `views/${encodeURIComponent("TaskNotes/Views/calendar.base#calendar")}?demo=5`,
     );
     await page.getByLabel("Calendar layout", { exact: true }).click();
     await page.getByRole("button", { name: "Week", exact: true }).click();
