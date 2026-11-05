@@ -709,6 +709,7 @@ msgstr "Active"
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 msgid "Add"
 msgstr "Add"
 
@@ -829,10 +830,6 @@ msgstr "Add notes"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "Add projection"
-
-#: src/app/task-core-properties.tsx
-msgid "Add property"
-msgstr "Add property"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -1498,6 +1495,7 @@ msgstr "Close keyboard shortcuts"
 msgid "Close new task"
 msgstr "Close new task"
 
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Close property editor"
@@ -1634,6 +1632,7 @@ msgid "Completed"
 msgstr "Completed"
 
 #. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "Completed “{0}”"
@@ -1747,6 +1746,7 @@ msgstr "contexts"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
 msgstr "Contexts"
@@ -1856,6 +1856,7 @@ msgstr "Couldn’t reopen “{0}”"
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "Couldn’t undo. Try again."
 
@@ -2202,6 +2203,7 @@ msgstr "done"
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
 msgstr "Done"
@@ -2690,10 +2692,6 @@ msgstr "Help"
 msgid "Hide details"
 msgstr "Hide details"
 
-#: src/app/task-core-properties.tsx
-msgid "Hide empty properties"
-msgstr "Hide empty properties"
-
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
 msgstr "Hide installation steps"
@@ -3099,6 +3097,7 @@ msgid "Manage"
 msgstr "Manage"
 
 #: src/app/palette-commands.ts
+#: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "Manage views"
 
@@ -3696,7 +3695,6 @@ msgstr "Note title"
 msgid "notes"
 msgstr "notes"
 
-#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -4098,10 +4096,6 @@ msgstr "projects"
 msgid "Projects"
 msgstr "Projects"
 
-#: src/app/task-screen.tsx
-msgid "Properties"
-msgstr "Properties"
-
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "Property"
@@ -4379,6 +4373,7 @@ msgstr "Reopen task"
 
 #. placeholder {0}: completion.task.title
 #: src/app/app-shell.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Reopened “{0}”"
 msgstr "Reopened “{0}”"
 
@@ -5184,6 +5179,7 @@ msgstr "tags"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
 msgstr "Tags"
@@ -5218,6 +5214,11 @@ msgstr "Task actions for {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Task added: {0}"
+
+#. placeholder {0}: task.title
+#: src/components/task-added-notice.tsx
+msgid "Task added: <0>{0}</0>"
+msgstr "Task added: <0>{0}</0>"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
@@ -5262,6 +5263,9 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "Task not found. It may have been deleted or moved."
 
 #: src/app/task-core-properties.tsx
+#: src/app/task-detail-properties.tsx
+#: src/components/task-properties-sheet.tsx
+#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "Task properties"
 
@@ -5854,6 +5858,7 @@ msgstr "Upcoming recurring instances"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "Updated “{title}”"

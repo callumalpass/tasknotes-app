@@ -709,6 +709,7 @@ msgstr "Activas"
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 msgid "Add"
 msgstr "Añadir"
 
@@ -829,10 +830,6 @@ msgstr "Añadir notas"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "Añadir proyección"
-
-#: src/app/task-core-properties.tsx
-msgid "Add property"
-msgstr "Añadir propiedad"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -1498,6 +1495,7 @@ msgstr "Cerrar atajos de teclado"
 msgid "Close new task"
 msgstr "Cerrar tarea nueva"
 
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "Cerrar editor de propiedades"
@@ -1634,6 +1632,7 @@ msgid "Completed"
 msgstr "Completadas"
 
 #. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "“{0}” completada"
@@ -1747,6 +1746,7 @@ msgstr "contextos"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
 msgstr "Contextos"
@@ -1856,6 +1856,7 @@ msgstr "No se pudo reabrir “{0}”"
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "No se pudo deshacer. Inténtalo de nuevo."
 
@@ -2202,6 +2203,7 @@ msgstr "completadas"
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
 msgstr "Listo"
@@ -2690,10 +2692,6 @@ msgstr "Ayuda"
 msgid "Hide details"
 msgstr "Ocultar detalles"
 
-#: src/app/task-core-properties.tsx
-msgid "Hide empty properties"
-msgstr "Ocultar propiedades vacías"
-
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
 msgstr "Ocultar pasos de instalación"
@@ -3099,6 +3097,7 @@ msgid "Manage"
 msgstr "Administrar"
 
 #: src/app/palette-commands.ts
+#: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "Administrar vistas"
 
@@ -3696,7 +3695,6 @@ msgstr "Título de la nota"
 msgid "notes"
 msgstr "notas"
 
-#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -4098,10 +4096,6 @@ msgstr "proyectos"
 msgid "Projects"
 msgstr "Proyectos"
 
-#: src/app/task-screen.tsx
-msgid "Properties"
-msgstr "Propiedades"
-
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "Propiedad"
@@ -4379,6 +4373,7 @@ msgstr "Volver a abrir tarea"
 
 #. placeholder {0}: completion.task.title
 #: src/app/app-shell.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Reopened “{0}”"
 msgstr "“{0}” reabierta"
 
@@ -5184,6 +5179,7 @@ msgstr "etiquetas"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
 msgstr "Etiquetas"
@@ -5218,6 +5214,11 @@ msgstr "Acciones de tarea para {0}"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "Tarea añadida: {0}"
+
+#. placeholder {0}: task.title
+#: src/components/task-added-notice.tsx
+msgid "Task added: <0>{0}</0>"
+msgstr "Tarea añadida: <0>{0}</0>"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
@@ -5262,6 +5263,9 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "No se encontró la tarea. Es posible que se haya eliminado o movido."
 
 #: src/app/task-core-properties.tsx
+#: src/app/task-detail-properties.tsx
+#: src/components/task-properties-sheet.tsx
+#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "Propiedades de la tarea"
 
@@ -5854,6 +5858,7 @@ msgstr "Próximas repeticiones"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "“{title}” actualizada"

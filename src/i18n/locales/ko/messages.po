@@ -709,6 +709,7 @@ msgstr "활성"
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 msgid "Add"
 msgstr "추가"
 
@@ -829,10 +830,6 @@ msgstr "노트 추가"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "투영 추가"
-
-#: src/app/task-core-properties.tsx
-msgid "Add property"
-msgstr "속성 추가"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -1498,6 +1495,7 @@ msgstr "키보드 단축키 닫기"
 msgid "Close new task"
 msgstr "새 작업 닫기"
 
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "속성 편집기 닫기"
@@ -1634,6 +1632,7 @@ msgid "Completed"
 msgstr "완료됨"
 
 #. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "“{0}” 완료됨"
@@ -1747,6 +1746,7 @@ msgstr "컨텍스트"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
 msgstr "컨텍스트"
@@ -1856,6 +1856,7 @@ msgstr "“{0}”을(를) 다시 열 수 없습니다"
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "실행 취소하지 못했습니다. 다시 시도하세요."
 
@@ -2202,6 +2203,7 @@ msgstr "완료"
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
 msgstr "완료"
@@ -2690,10 +2692,6 @@ msgstr "도움말"
 msgid "Hide details"
 msgstr "세부정보 숨기기"
 
-#: src/app/task-core-properties.tsx
-msgid "Hide empty properties"
-msgstr "빈 속성 숨기기"
-
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
 msgstr "설치 단계 숨기기"
@@ -3099,6 +3097,7 @@ msgid "Manage"
 msgstr "관리"
 
 #: src/app/palette-commands.ts
+#: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "뷰 관리"
 
@@ -3696,7 +3695,6 @@ msgstr "노트 제목"
 msgid "notes"
 msgstr "노트"
 
-#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -4098,10 +4096,6 @@ msgstr "프로젝트"
 msgid "Projects"
 msgstr "프로젝트"
 
-#: src/app/task-screen.tsx
-msgid "Properties"
-msgstr "속성"
-
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "속성"
@@ -4379,6 +4373,7 @@ msgstr "작업 다시 열기"
 
 #. placeholder {0}: completion.task.title
 #: src/app/app-shell.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Reopened “{0}”"
 msgstr "“{0}” 다시 열림"
 
@@ -5184,6 +5179,7 @@ msgstr "태그"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
 msgstr "태그"
@@ -5218,6 +5214,11 @@ msgstr "{0} 작업 동작"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "작업 추가됨: {0}"
+
+#. placeholder {0}: task.title
+#: src/components/task-added-notice.tsx
+msgid "Task added: <0>{0}</0>"
+msgstr "작업 추가됨: <0>{0}</0>"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
@@ -5262,6 +5263,9 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "작업을 찾을 수 없습니다. 삭제되었거나 이동되었을 수 있습니다."
 
 #: src/app/task-core-properties.tsx
+#: src/app/task-detail-properties.tsx
+#: src/components/task-properties-sheet.tsx
+#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "작업 속성"
 
@@ -5854,6 +5858,7 @@ msgstr "예정된 반복 항목"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "“{title}”을(를) 업데이트했습니다"

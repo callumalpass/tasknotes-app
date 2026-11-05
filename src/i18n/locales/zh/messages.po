@@ -709,6 +709,7 @@ msgstr "活跃"
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 msgid "Add"
 msgstr "添加"
 
@@ -829,10 +830,6 @@ msgstr "添加备注"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "添加投影"
-
-#: src/app/task-core-properties.tsx
-msgid "Add property"
-msgstr "添加属性"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -1498,6 +1495,7 @@ msgstr "关闭键盘快捷键"
 msgid "Close new task"
 msgstr "关闭新建任务"
 
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close property editor"
 msgstr "关闭属性编辑器"
@@ -1634,6 +1632,7 @@ msgid "Completed"
 msgstr "已完成"
 
 #. placeholder {0}: completion.task.title
+#: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "已完成“{0}”"
@@ -1747,6 +1746,7 @@ msgstr "上下文"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Contexts"
 msgstr "上下文"
@@ -1856,6 +1856,7 @@ msgstr "无法重新打开“{0}”"
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Couldn’t undo. Try again."
 msgstr "无法撤销。请重试。"
 
@@ -2202,6 +2203,7 @@ msgstr "已完成"
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Done"
 msgstr "完成"
@@ -2690,10 +2692,6 @@ msgstr "帮助"
 msgid "Hide details"
 msgstr "隐藏详情"
 
-#: src/app/task-core-properties.tsx
-msgid "Hide empty properties"
-msgstr "隐藏空属性"
-
 #: src/app/more-screen.tsx
 msgid "Hide installation steps"
 msgstr "隐藏安装步骤"
@@ -3099,6 +3097,7 @@ msgid "Manage"
 msgstr "管理"
 
 #: src/app/palette-commands.ts
+#: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "管理视图"
 
@@ -3696,7 +3695,6 @@ msgstr "笔记标题"
 msgid "notes"
 msgstr "笔记"
 
-#: src/app/task-core-properties.tsx
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Notes"
@@ -4098,10 +4096,6 @@ msgstr "项目"
 msgid "Projects"
 msgstr "项目"
 
-#: src/app/task-screen.tsx
-msgid "Properties"
-msgstr "属性"
-
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "属性"
@@ -4379,6 +4373,7 @@ msgstr "重新打开任务"
 
 #. placeholder {0}: completion.task.title
 #: src/app/app-shell.tsx
+#: src/components/task-completed-notice.tsx
 msgid "Reopened “{0}”"
 msgstr "已重新打开“{0}”"
 
@@ -5184,6 +5179,7 @@ msgstr "标签"
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-property-editor.tsx
 #: src/i18n/default-labels.ts
 msgid "Tags"
 msgstr "标签"
@@ -5218,6 +5214,11 @@ msgstr "{0}的任务操作"
 #: src/components/task-added-notice.tsx
 msgid "Task added: {0}"
 msgstr "已添加任务：{0}"
+
+#. placeholder {0}: task.title
+#: src/components/task-added-notice.tsx
+msgid "Task added: <0>{0}</0>"
+msgstr "已添加任务：<0>{0}</0>"
 
 #: src/app/view-editor-form.tsx
 msgid "Task creation off"
@@ -5262,6 +5263,9 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "未找到任务。它可能已被删除或移动。"
 
 #: src/app/task-core-properties.tsx
+#: src/app/task-detail-properties.tsx
+#: src/components/task-properties-sheet.tsx
+#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "任务属性"
 
@@ -5854,6 +5858,7 @@ msgstr "即将发生的重复项"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
+#: src/components/task-properties-sheet.tsx
 #: src/components/task-property-editor.tsx
 msgid "Updated “{title}”"
 msgstr "已更新“{title}”"
