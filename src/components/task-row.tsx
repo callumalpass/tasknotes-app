@@ -41,9 +41,7 @@ import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
 import { useTaskOpen } from "../app/open-task";
-import { requestProjectJump } from "../app/project-jump";
 import { rescheduleInput } from "../domain/task-date-actions";
-import { projectLabel } from "../domain/project-shortcuts";
 import { markedPriorityColorOf } from "../domain/task-configuration";
 import { rememberTaskEdit } from "../app/task-edit-undo";
 import {
@@ -145,9 +143,7 @@ export function TaskRow({
   } | null>(null);
   const shownEditor = useExitingValue(editing);
   function openDetail(detail: TaskRowDetail, trigger: HTMLButtonElement) {
-    if (isProjectDetail(detail, configuration)) {
-      requestProjectJump(projectLabel(task.projects[0] ?? detail.value));
-    } else if (canEditProperty(detail.key, configuration)) {
+    if (canEditProperty(detail.key, configuration)) {
       editorTrigger.current = trigger;
       setEditing({ detail, anchor: editorAnchor(trigger) });
     } else {
@@ -363,11 +359,6 @@ export function TaskRow({
         ) : null}
         {command.warning ? <p role="status">{command.warning}</p> : null}
         <div className="task-row-reading">
-          <span
-            className="task-row-touch-heading"
-            aria-hidden="true"
-            data-title={task.title}
-          />
           <button
             className="task-row-title"
             aria-label={task.title}
@@ -386,33 +377,6 @@ export function TaskRow({
               <span>{task.title}</span>
             </span>
           </button>
-          <span className="task-row-touch-details">
-            {tracking ? <TrackingIndicator /> : null}
-            {supportingText ? (
-              <span className="task-row-detail">{supportingText}</span>
-            ) : null}
-            {shownDetails.map((detail) => (
-              <span
-                className={`task-row-detail${detailRank(detail, configuration) === 0 ? " is-date" : ""}${detail.overdue ? " is-overdue" : ""}`}
-                key={detail.key}
-                aria-label={`${detail.label}: ${detail.value}`}
-              >
-                <PropertyGlyph detail={detail} />
-                {isDueDetail(detail, configuration)
-                  ? t`Due ${detail.value}`
-                  : detail.value}
-              </span>
-            ))}
-            {task.projects?.length &&
-            !shownDetails.some((detail) =>
-              isProjectDetail(detail, configuration),
-            ) ? (
-              <span className="task-row-detail">
-                <Folder aria-hidden="true" size={13} />
-                {task.projects.map(linkDisplayLabel).join(", ")}
-              </span>
-            ) : null}
-          </span>
         </div>
         {context && !contextLeadsDetails ? context : null}
         {task.projects?.length &&
@@ -421,10 +385,25 @@ export function TaskRow({
             propertyField(detail),
           ),
         ) ? (
-          <small className="task-row-parent">
+          <button
+            className="task-row-parent task-row-property is-compact is-project"
+            type="button"
+            aria-label={`${t({ message: "Projects" })}: ${task.projects.map(linkDisplayLabel).join(", ")}`}
+            onClick={(event) =>
+              openDetail(
+                {
+                  key: "projects",
+                  label: t({ message: "Projects" }),
+                  value: task.projects.map(linkDisplayLabel).join(", "),
+                  rawValue: task.projects,
+                },
+                event.currentTarget,
+              )
+            }
+          >
             <Folder aria-hidden="true" size={13} />
             {task.projects.map(linkDisplayLabel).join(", ")}
-          </small>
+          </button>
         ) : null}
         {details ? (
           tracking || shownDetails.length ? (
@@ -813,14 +792,6 @@ function priorityOptionDetail(
     ({ value }) => value === detail.rawValue,
   );
   return option ? { ...detail, value: option.label } : detail;
-}
-
-function isProjectDetail(
-  detail: TaskRowDetail,
-  { fieldMapping }: RowConfiguration,
-): boolean {
-  const key = propertyField(detail);
-  return key === fieldMapping.projects || key === "projects";
 }
 
 function isDueDetail(

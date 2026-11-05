@@ -163,8 +163,8 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-  Lists use 32px title and 24px metadata minimum targets on phones and desktop,
-  keeping a single-line title plus one metadata line near 60px without reducing
+  Lists use 32px title and 44px metadata minimum targets on phones and desktop,
+  keeping a single-line title plus one metadata line near 80px without reducing
   typography. Completion and overflow retain independent 44px targets. Dates
   and other properties remain directly editable, with no overlapping hit areas.
   Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows

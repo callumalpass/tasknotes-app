@@ -92,6 +92,37 @@ it.each([true, false])(
     else expect(input.due).toMatch(/T17:00/);
   },
 );
+it.each(["Keep due dates", "Cancel"])(
+  "returns keyboard focus to the list after the deadline choice: %s",
+  async (answer) => {
+    const { store, tasks } = setup();
+    tasks[0].due = "2000-01-01";
+    render(
+      <main id="main-content">
+        {tasks.map((task) => (
+          <div className="task-row" data-task-id={task.id} key={task.id}>
+            <button className="task-row-title">{task.title}</button>
+          </div>
+        ))}
+        <BulkTaskActions store={store} navigationKey="today" />
+      </main>,
+    );
+    const title = screen.getByRole("button", { name: "Task a" });
+    title.focus();
+    fireEvent.keyDown(title, { key: "m" });
+    const choice = await screen.findByRole("button", {
+      name: answer === "Cancel" ? "Keep due dates" : answer,
+    });
+    choice.focus();
+    if (answer === "Cancel") fireEvent.keyDown(choice, { key: "Escape" });
+    else fireEvent.click(choice);
+    await waitFor(() =>
+      expect(document.activeElement).toHaveClass("task-row-title"),
+    );
+    if (answer === "Cancel") expect(fixture.updateTask).not.toHaveBeenCalled();
+    else expect(fixture.updateTask).toHaveBeenCalled();
+  },
+);
 it("announces only accepted rows, names failures and keeps them selected", async () => {
   const { store } = setup();
   render(<BulkTaskActions store={store} navigationKey="today" />);

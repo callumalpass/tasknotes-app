@@ -10,7 +10,17 @@ import {
 import { createPortal } from "react-dom";
 vi.mock("../app/repository-context", () => ({
   useRepository: () => ({
-    configuration: defaultTaskCollectionConfiguration(),
+    configuration: {
+      ...defaultTaskCollectionConfiguration(),
+      userFields: [
+        {
+          id: "energy",
+          key: "energy",
+          displayName: "Energy level",
+          type: "number",
+        },
+      ],
+    },
   }),
 }));
 vi.mock("./task-actions", () => ({
@@ -27,6 +37,39 @@ vi.mock("./task-property-editor", () => ({
   TaskPropertyEditor: () => <div role="dialog">Edit property</div>,
 }));
 afterEach(cleanup);
+it.each([
+  ["status", "Status", "In progress", "in-progress"],
+  ["priority", "Priority", "High", "high"],
+  ["scheduled", "Scheduled", "Tomorrow", "2026-08-13"],
+  ["due", "Due", "Tomorrow", "2026-08-13"],
+  ["projects", "Projects", "Original", ["[[Projects/Original]]"]],
+  ["note.energy", "Energy level", "4", 4],
+])(
+  "opens the %s row property directly without opening the task",
+  (key, label, value, rawValue) => {
+    const open = vi.fn();
+    render(
+      <TaskRow
+        task={task}
+        onOpen={open}
+        onToggle={vi.fn()}
+        details={[
+          {
+            key: key as string,
+            label: label as string,
+            value: value as string,
+            rawValue,
+          },
+        ]}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: new RegExp(`^${label}:`) }),
+    );
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(open).not.toHaveBeenCalled();
+  },
+);
 const task = {
   id: "one",
   title: "Write brief",
@@ -91,6 +134,10 @@ it("keeps a parent label available when project properties are omitted", () => {
   expect(container.querySelector(".task-row-parent")).not.toHaveTextContent(
     "Tasks/Parent.md",
   );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Projects: Parent task" }),
+  );
+  expect(screen.getByRole("dialog")).toBeVisible();
 });
 it("guards repeated completion and offers retry after rejection", async () => {
   let reject!: (reason: Error) => void;

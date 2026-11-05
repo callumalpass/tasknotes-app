@@ -710,6 +710,7 @@ export function ViewsScreen({
     targetId: string | undefined,
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
+    notice?: string,
   ): Promise<boolean> {
     if (!selected || !manualOrder || reorderBlocked) return false;
     const plan = planManualOrder(
@@ -772,7 +773,7 @@ export function ViewsScreen({
         );
         const saved = await updateTasks(updates);
         accepted = true;
-        if (!Object.keys(additionalInput).length) {
+        if (notice || !Object.keys(additionalInput).length) {
           const title = dragged.task.title;
           const receipts = saved.flatMap((task) => {
             const original = before.get(task.id);
@@ -780,7 +781,7 @@ export function ViewsScreen({
           });
           rememberUndo({
             label: title,
-            notice: t`Reordered “${title}”`,
+            notice: notice ?? t`Reordered “${title}”`,
             run: async () => {
               await manualOrderMutationQueue.current;
               const current = await Promise.all(
@@ -798,7 +799,17 @@ export function ViewsScreen({
               await updateTasks(
                 receipts.map(({ before }) => ({
                   id: before.id,
-                  input: { sortOrder: before.sortOrder ?? null },
+                  input: {
+                    sortOrder: before.sortOrder ?? null,
+                    ...(before.id === dragged.task.id
+                      ? Object.fromEntries(
+                          Object.keys(additionalInput).map((field) => [
+                            field,
+                            before[field as keyof TaskSummary] ?? null,
+                          ]),
+                        )
+                      : {}),
+                  } as UpdateTaskInput,
                 })),
               );
               setManualRanks((ranks) => {
@@ -1086,12 +1097,21 @@ export function ViewsScreen({
         });
         return next;
       });
+    const title = row.task.title;
+    const column = destination.label ?? uiCopy("This section");
+    const moved = t`Moved “${title}” to ${column}`;
+    const deadlines =
+      "due" in input && isTaskPastDue(row.task, todayString()) ? 1 : 0;
+    const notice = deadlines
+      ? `${moved}, ${plural(deadlines, { one: "# deadline moved too", other: "# deadlines moved too" })}`
+      : moved;
     const saved = await reorderTasks(
       destination.rows,
       row,
       targetId,
       placement,
       changesLane ? input : {},
+      changesLane ? notice : undefined,
     );
     if (!saved)
       setListMoves((moves) => {
@@ -1408,9 +1428,7 @@ export function ViewsScreen({
                   label: view.name,
                 }))}
                 onChange={(key) => {
-                  const view = views.find(
-                    (candidate) => candidate.key === key,
-                  );
+                  const view = views.find((candidate) => candidate.key === key);
                   if (view) onOpenView(view);
                 }}
               />

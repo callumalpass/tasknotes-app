@@ -192,9 +192,15 @@ export function BulkTaskActions({
 
   // Row keys act on the whole selection while one is held.
   const keyed = useRef(false);
+  const keyedFocus = useRef<(() => void) | null>(null);
   const keyedChange = useEffectEvent((action: TaskShortcutAction) => {
     if (action === "open" || disabled) return false;
     keyed.current = true;
+    const focusedRow =
+      document.activeElement?.closest<HTMLElement>(".task-row");
+    keyedFocus.current = focusedRow
+      ? preserveRowFocus(focusedRow)
+      : returnFocusToList;
     const menus = actionBar.current?.querySelectorAll<HTMLElement>(
       ".tasknotes-select-trigger",
     );
@@ -241,9 +247,9 @@ export function BulkTaskActions({
     setScheduleChoice(null);
     const focusedRow =
       document.activeElement?.closest<HTMLElement>(".task-row");
-    const restoreFocus = focusedRow
-      ? preserveRowFocus(focusedRow)
-      : returnFocusToList;
+    const restoreFocus =
+      keyedFocus.current ??
+      (focusedRow ? preserveRowFocus(focusedRow) : returnFocusToList);
     store.setBusy(true);
     setFailures([]);
     setNotice(null);
@@ -305,12 +311,17 @@ export function BulkTaskActions({
         });
         window.requestAnimationFrame(() => {
           if (!keyed.current) undoRef.current?.focus({ preventScroll: true });
-          else restoreFocus();
-          keyed.current = false;
         });
       }
     } finally {
       store.setBusy(false);
+      if (keyed.current) {
+        requestAnimationFrame(() => {
+          if (currentNavigation.current === origin) restoreFocus();
+          keyed.current = false;
+          keyedFocus.current = null;
+        });
+      }
     }
   }
   async function remove() {
@@ -420,13 +431,17 @@ export function BulkTaskActions({
               pending={store.busy}
               onCancel={() => {
                 setScheduleChoice(null);
-                requestAnimationFrame(() =>
-                  actionBar.current
-                    ?.querySelector<HTMLButtonElement>(
-                      ".tasknotes-select-trigger",
-                    )
-                    ?.focus(),
-                );
+                requestAnimationFrame(() => {
+                  if (keyed.current) keyedFocus.current?.();
+                  else
+                    actionBar.current
+                      ?.querySelector<HTMLButtonElement>(
+                        ".tasknotes-select-trigger",
+                      )
+                      ?.focus();
+                  keyed.current = false;
+                  keyedFocus.current = null;
+                });
               }}
               onAnswer={(keepDeadlines) =>
                 void run({ ...scheduleChoice, moveDeadlines: !keepDeadlines })

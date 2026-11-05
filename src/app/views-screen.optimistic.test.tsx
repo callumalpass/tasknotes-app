@@ -958,74 +958,102 @@ it("offers manual order from a writable kanban view", async () => {
   expect(source.document).toContain("note.tasknotes_manual_order");
 });
 
-it("moves a task between reusable day sections with the shared list move path", async () => {
-  const today = todayString();
-  const view = manualListView("day", { sections: "day" });
-  const tasks: Task[] = [
-    { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
-    { ...listTask("today", "Today task"), due: today },
-  ];
-  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
-    const task = tasks.find((candidate) => candidate.id === id)!;
-    if (input.due !== undefined) task.due = input.due ?? undefined;
-    if (input.sortOrder !== undefined)
-      task.sortOrder = input.sortOrder ?? undefined;
-    tasks.sort((left, right) =>
-      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+it.each(["pointer", "keyboard"])(
+  "moves a task between reusable day sections with the shared %s move path",
+  async (method) => {
+    clearUndoHistory();
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
+    const today = todayString();
+    const view = manualListView("day", { sections: "day" });
+    const tasks: Task[] = [
+      { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
+      { ...listTask("today", "Today task"), due: today },
+    ];
+    const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+      const task = tasks.find((candidate) => candidate.id === id)!;
+      if (input.due !== undefined) task.due = input.due ?? undefined;
+      if (input.sortOrder !== undefined)
+        task.sortOrder = input.sortOrder ?? undefined;
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return task;
+    });
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: [],
+    }));
+
+    repository.getSummary = async (id) =>
+      tasks.find((task) => task.id === id) ?? null;
+    renderListView(repository, view);
+    const handle = await screen.findByRole("button", {
+      name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
+    });
+    if (method === "pointer") {
+      const target = screen
+        .getByText("Today task")
+        .closest<HTMLElement>("[data-manual-order-task]")!;
+      mockPointerCapture(
+        handle.closest<HTMLElement>("[data-manual-order-task]")!,
+      );
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: vi.fn(() => target),
+      });
+      const press = { button: 0, isPrimary: true, pointerId: 9 };
+      expect(screen.queryByText("Drop here")).toBeNull();
+      expect(screen.queryByText("No tasks")).toBeNull();
+      fireEvent.pointerDown(handle, press);
+      expect(screen.getAllByText("Drop here")).toHaveLength(2);
+      fireEvent.pointerCancel(handle, press);
+      expect(screen.queryByText("Drop here")).toBeNull();
+      expect(update).not.toHaveBeenCalled();
+      fireEvent.pointerDown(handle, press);
+      fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
+      fireEvent.pointerUp(handle, press);
+      expect(screen.queryByText("Drop here")).toBeNull();
+    } else {
+      fireEvent.keyDown(handle, { key: "ArrowDown" });
+    }
+
+    await waitFor(() =>
+      expect(
+        update.mock.calls.some(
+          ([id, input]) => id === "overdue" && input.due === today,
+        ),
+      ).toBe(true),
     );
-    return task;
-  });
-  const repository = manualListRepository(view, tasks, update, () => ({
-    view,
-    rows: tasks.map((task) => ({ task, values: {} })),
-    totalCount: tasks.length,
-    hasMore: false,
-    groups: [],
-  }));
-
-  renderListView(repository, view);
-  const handle = await screen.findByRole("button", {
-    name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
-  });
-  const target = screen
-    .getByText("Today task")
-    .closest<HTMLElement>("[data-manual-order-task]")!;
-  mockPointerCapture(handle.closest<HTMLElement>("[data-manual-order-task]")!);
-  Object.defineProperty(document, "elementFromPoint", {
-    configurable: true,
-    value: vi.fn(() => target),
-  });
-  const press = { button: 0, isPrimary: true, pointerId: 9 };
-  expect(screen.queryByText("Drop here")).toBeNull();
-  expect(screen.queryByText("No tasks")).toBeNull();
-  fireEvent.pointerDown(handle, press);
-  expect(screen.getAllByText("Drop here")).toHaveLength(2);
-  fireEvent.pointerCancel(handle, press);
-  expect(screen.queryByText("Drop here")).toBeNull();
-  expect(update).not.toHaveBeenCalled();
-  fireEvent.pointerDown(handle, press);
-  fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
-  fireEvent.pointerUp(handle, press);
-  expect(screen.queryByText("Drop here")).toBeNull();
-
-  await waitFor(() =>
-    expect(
-      update.mock.calls.some(
-        ([id, input]) => id === "overdue" && input.due === today,
-      ),
-    ).toBe(true),
-  );
-  await waitFor(() =>
-    expect(
-      within(
-        screen.getByRole("button", { name: /^Today \d+$/ }).closest("section")!,
-      ).getByText("Overdue task"),
-    ).toBeVisible(),
-  );
-  // Destinations that stayed empty leave the page when the drag ends.
-  expect(screen.queryByText("Anytime")).toBeNull();
-  expect(screen.queryByText("Later")).toBeNull();
-});
+    await waitFor(() =>
+      expect(
+        within(
+          screen
+            .getByRole("button", { name: /^Today \d+$/ })
+            .closest("section")!,
+        ).getByText("Overdue task"),
+      ).toBeVisible(),
+    );
+    // Destinations that stayed empty leave the page when the drag ends.
+    expect(screen.queryByText("Anytime")).toBeNull();
+    expect(screen.queryByText("Later")).toBeNull();
+    await waitFor(() => expect(notice).toHaveBeenCalledOnce());
+    expect(notice.mock.calls[0][0].notice).toBe(
+      "Moved “Overdue task” to Today, 1 deadline moved too",
+    );
+    await act(async () => {
+      await takeUndo()!.run();
+    });
+    expect(tasks.find(({ id }) => id === "overdue")!.due).toBe(
+      shiftTaskDate(today, -2),
+    );
+    unsubscribe();
+    clearUndoHistory();
+  },
+);
 
 it("drags a list row from anywhere on the row with a mouse", async () => {
   const today = todayString();

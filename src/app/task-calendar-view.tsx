@@ -499,6 +499,20 @@ export function TaskCalendarView({
   }
 
   function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    if (agenda) {
+      onSelect(dateStr, startStr);
+      if (
+        jsEvent.target instanceof Element &&
+        jsEvent.target.closest(".tnc-strip")
+      )
+        requestAnimationFrame(() => {
+          rootRef.current
+            ?.querySelector(`.tnc-list-day[data-date="${dateStr}"]`)
+            ?.closest(".tnc-list-section")
+            ?.scrollIntoView({ block: "start" });
+        });
+      return;
+    }
     inspectDate(dateStr, startStr);
     // Below twelve months the day's tasks would be out of sight, so a year
     // day opens its month, as phone calendars do.

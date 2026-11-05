@@ -1736,12 +1736,10 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-nlp-preview {
-    grid-template-columns:
-      var(--scratch-disclosure-track) 44px minmax(0, 1fr)
-      44px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
   .scratchpad-nlp-preview > div {
-    grid-column: 3 / -1;
+    grid-column: 2;
   }
 
   .scratchpad-add-actions {

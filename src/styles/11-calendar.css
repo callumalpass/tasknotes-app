@@ -460,7 +460,7 @@
 @media (min-width: 840px) and (pointer: fine) {
   .full-calendar-view .tnc {
     --tnc-bar-h: 32px;
-    --tnc-more-h: 28px;
+    --tnc-more-h: 44px;
     --tnc-dg-top-h: 26px;
     --tnc-day-min-h: 100px;
   }
@@ -1879,7 +1879,6 @@
   .full-calendar-view.is-agenda .tnc-strip-slot summary {
     padding-inline: 4px;
   }
-
 }
 
 .full-calendar-view.is-agenda .tnc-strip-slot {

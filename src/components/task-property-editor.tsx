@@ -15,6 +15,7 @@ import { usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import { rememberTaskEdit } from "../app/task-edit-undo";
 import { ChoiceOptions } from "./choice-options";
+import { MultiValueField } from "./multi-value-field";
 import {
   combineTaskDateTime,
   taskDatePart,
@@ -115,11 +116,12 @@ export function TaskPropertyEditor({
     modal: window.innerWidth <= 600,
     onDismiss: onClose,
     initialFocus: () =>
-      editorRef.current?.querySelector<HTMLElement>(".choice-options input") ??
-      closeRef.current,
+      editorRef.current?.querySelector<HTMLElement>(
+        ".choice-options input, .multi-value-field input",
+      ) ?? closeRef.current,
   });
 
-  async function save(next: unknown = value, closeAfter = true) {
+  async function save(next: unknown, closeAfter = true) {
     if (!property || saving) return;
     setSaving(true);
     setError(null);
@@ -164,6 +166,12 @@ export function TaskPropertyEditor({
         ref={editorRef}
         role="dialog"
         tabIndex={-1}
+        onKeyDownCapture={(event) => {
+          if (property?.kind !== "projects" || event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }}
         style={
           desktopPosition
             ? ({
@@ -264,14 +272,34 @@ export function TaskPropertyEditor({
             <Trans>Clear value</Trans>
           </button>
         ) : null}
-        {property?.kind === "recurrence" ? (
+        {property?.kind === "recurrence" || property?.kind === "projects" ? (
           <footer>
             <span />
             <button
               className="primary-action"
               disabled={saving}
               type="button"
-              onClick={() => void save()}
+              onClick={() => {
+                const pendingProject =
+                  property.kind === "projects"
+                    ? editorRef.current
+                        ?.querySelector<HTMLInputElement>(
+                          ".multi-value-field input",
+                        )
+                        ?.value.trim()
+                    : "";
+                const projects = Array.isArray(value) ? value : [];
+                const next =
+                  pendingProject &&
+                  !projects.some(
+                    (project: string) =>
+                      project.toLocaleLowerCase() ===
+                      pendingProject.toLocaleLowerCase(),
+                  )
+                    ? [...projects, pendingProject]
+                    : value;
+                void save(next);
+              }}
             >
               {saving ? t({ message: "Saving…" }) : t({ message: "Save" })}
             </button>
@@ -320,6 +348,23 @@ function PropertyControl({
   onAnchorChange(value: "scheduled" | "completion"): void;
 }) {
   const { t } = useLingui();
+  const { repository } = useRepository();
+  if (property.kind === "projects")
+    return (
+      <MultiValueField
+        label={t({ message: "Projects" })}
+        field={configuration.fieldMapping.projects}
+        placeholder={t({ message: "Find a project" })}
+        values={Array.isArray(value) ? value : []}
+        completion={
+          configuration.fieldCompletions[
+            configuration.fieldMapping.projects
+          ] ?? { kind: "records" }
+        }
+        completeField={(request) => repository.completeField(request)}
+        onChange={onChange}
+      />
+    );
   if (property.kind === "status" || property.kind === "priority") {
     const options =
       property.kind === "status"
@@ -504,6 +549,8 @@ function updateFor(
     else customProperties[property.key] = value;
     return { customProperties };
   }
+  if (property.kind === "projects")
+    return { projects: Array.isArray(value) ? value : [] };
   if (
     property.kind === "scheduled" ||
     property.kind === "due" ||
@@ -523,6 +570,7 @@ function canClear(property: EditableProperty): boolean {
     property.kind === "scheduled" ||
     property.kind === "due" ||
     property.kind === "recurrence" ||
+    property.kind === "projects" ||
     (property.kind === "custom" && !property.field.required)
   );
 }

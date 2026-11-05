@@ -5,7 +5,8 @@ import type {
 
 export type EditableProperty =
   | {
-      kind: "status" | "priority" | "scheduled" | "due" | "recurrence";
+      kind:
+        "status" | "priority" | "scheduled" | "due" | "recurrence" | "projects";
       key: string;
     }
   | { kind: "custom"; key: string; field: TaskUserMappedField };
@@ -17,7 +18,14 @@ export function editableProperty(
   if (key.startsWith("file.")) return null;
   const normalized = notePropertyName(key);
   const semantic = (
-    ["status", "priority", "scheduled", "due", "recurrence"] as const
+    [
+      "status",
+      "priority",
+      "scheduled",
+      "due",
+      "recurrence",
+      "projects",
+    ] as const
   ).find(
     (kind) =>
       normalized === kind || normalized === configuration.fieldMapping[kind],
