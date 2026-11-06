@@ -729,6 +729,46 @@ describe("ScratchpadScreen", () => {
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
   });
 
+  it("refreshes a linked task renamed in another tab without rewriting the note", async () => {
+    const task = await repository.create({ title: "Original linked title" });
+    const scratchpad = await repository.getActiveScratchpad();
+    const body = `- [[${task.path.replace(/\.md$/i, "")}#Heading|Preserved alias]]\n`;
+    const saved = await repository.saveScratchpad({
+      ...scratchpad,
+      baseBody: scratchpad.body,
+      body,
+    });
+    renderScratchpad();
+    expect(
+      await screen.findByRole("button", { name: task.title }),
+    ).toBeVisible();
+    const otherTab = await attachTaskNotes(fixture.replica, undefined, {
+      accountId: fixture.accountId,
+    });
+    try {
+      await otherTab.repository.initialize();
+      await act(async () => {
+        await otherTab.repository.update(task.id, {
+          title: "Renamed in another tab",
+        });
+        await repository.refresh();
+      });
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", {
+            name: "Renamed in another tab",
+          }),
+        ).toBeVisible(),
+      );
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body,
+        revision: saved.revision,
+      });
+    } finally {
+      otherTab.close();
+    }
+  });
+
   it("converts only selected drafts and leaves the rest active", async () => {
     const openTask = renderScratchpad();
     const parent = await screen.findByRole(

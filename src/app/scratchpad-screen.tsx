@@ -1819,6 +1819,42 @@ function ScratchpadDocumentEditor({
     };
   }, [hydrate, repository]);
 
+  useEffect(() => {
+    let live = true;
+    let latestRequest = 0;
+    const refreshLinkedTasks = async () => {
+      const documentId = documentRef.current?.id;
+      const request = ++latestRequest;
+      const ids = new Set(
+        nodesRef.current.flatMap((node) =>
+          node.kind === "task" && node.taskId ? [node.taskId] : [],
+        ),
+      );
+      if (!ids.size) return;
+      const tasks = await Promise.all(
+        [...ids].map((id) => repository.getSummary(id).catch(() => null)),
+      );
+      if (
+        !live ||
+        request !== latestRequest ||
+        documentRef.current?.id !== documentId
+      )
+        return;
+      setLinkedTasks((current) => {
+        const next = new Map(current);
+        for (const task of tasks) if (task) next.set(task.id, task);
+        return next;
+      });
+    };
+    const stop = repository.subscribe((change) => {
+      if (!change || change.kind === "data") void refreshLinkedTasks();
+    });
+    return () => {
+      live = false;
+      stop();
+    };
+  }, [repository]);
+
   const persist = useCallback(
     (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
     [persistBody],
@@ -2901,10 +2937,13 @@ function ScratchpadDocumentEditor({
           role="tree"
           aria-label={t({ message: "Scratchpad outline" })}
         >
-          {visibleNodes.map(({ node, descendantCount }) => {
-            const linkedTask = node.taskId
-              ? linkedTasks.get(node.taskId)
+          {visibleNodes.map(({ node: storedNode, descendantCount }) => {
+            const linkedTask = storedNode.taskId
+              ? linkedTasks.get(storedNode.taskId)
               : undefined;
+            const node = linkedTask
+              ? { ...storedNode, text: linkedTask.title }
+              : storedNode;
             const activePreview =
               preview?.id === node.id && preview.text === node.text
                 ? preview.result.preview
