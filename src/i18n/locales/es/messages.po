@@ -1963,6 +1963,10 @@ msgstr "Fecha para las tareas vencidas"
 msgid "Date options"
 msgstr "Opciones de fecha"
 
+#: src/components/expression-builder.tsx
+msgid "Date reference"
+msgstr "Referencia de fecha"
+
 #: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "Fecha que cambiar"
@@ -1994,6 +1998,10 @@ msgstr "El día termina"
 #: src/components/reminder-editor.tsx
 msgid "Days"
 msgstr "Días"
+
+#: src/components/expression-builder.tsx
+msgid "Days from today"
+msgstr "Días desde hoy"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2389,6 +2397,10 @@ msgstr "Termina"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "Introduce una expresión CEL."
+
+#: src/components/expression-builder.tsx
+msgid "Enter a whole number of days."
+msgstr "Introduce un número entero de días."
 
 #: src/app/search-screen.tsx
 msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
@@ -2828,6 +2840,14 @@ msgstr "no es"
 #: src/components/expression-builder.tsx
 msgid "is not empty"
 msgstr "no está vacío"
+
+#: src/components/expression-builder.tsx
+msgid "is on or after"
+msgstr "es el o después del"
+
+#: src/components/expression-builder.tsx
+msgid "is on or before"
+msgstr "es el o antes del"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
@@ -5058,6 +5078,10 @@ msgstr "Propiedad de ordenación {0}"
 msgid "Source file"
 msgstr "Archivo de origen"
 
+#: src/components/expression-builder.tsx
+msgid "Specific date"
+msgstr "Fecha específica"
+
 #: src/app/task-time-tracking.tsx
 msgid "Start"
 msgstr "Inicio"
@@ -5698,6 +5722,7 @@ msgstr "hoy"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/task-calendar-view.tsx
+#: src/components/expression-builder.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx

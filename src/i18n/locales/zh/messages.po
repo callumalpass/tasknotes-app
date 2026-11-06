@@ -1963,6 +1963,10 @@ msgstr "逾期任务的日期"
 msgid "Date options"
 msgstr "日期选项"
 
+#: src/components/expression-builder.tsx
+msgid "Date reference"
+msgstr "日期基准"
+
 #: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "要更改的日期"
@@ -1994,6 +1998,10 @@ msgstr "一天结束时间"
 #: src/components/reminder-editor.tsx
 msgid "Days"
 msgstr "天"
+
+#: src/components/expression-builder.tsx
+msgid "Days from today"
+msgstr "距今天数"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2389,6 +2397,10 @@ msgstr "结束"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "请输入 CEL 表达式。"
+
+#: src/components/expression-builder.tsx
+msgid "Enter a whole number of days."
+msgstr "请输入整数天数。"
 
 #: src/app/search-screen.tsx
 msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
@@ -2828,6 +2840,14 @@ msgstr "不是"
 #: src/components/expression-builder.tsx
 msgid "is not empty"
 msgstr "不为空"
+
+#: src/components/expression-builder.tsx
+msgid "is on or after"
+msgstr "晚于或等于"
+
+#: src/components/expression-builder.tsx
+msgid "is on or before"
+msgstr "早于或等于"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
@@ -5058,6 +5078,10 @@ msgstr "排序属性 {0}"
 msgid "Source file"
 msgstr "源文件"
 
+#: src/components/expression-builder.tsx
+msgid "Specific date"
+msgstr "特定日期"
+
 #: src/app/task-time-tracking.tsx
 msgid "Start"
 msgstr "开始"
@@ -5698,6 +5722,7 @@ msgstr "今天"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/task-calendar-view.tsx
+#: src/components/expression-builder.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx

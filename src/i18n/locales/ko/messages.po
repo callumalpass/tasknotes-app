@@ -1963,6 +1963,10 @@ msgstr "기한 지난 작업의 날짜"
 msgid "Date options"
 msgstr "날짜 옵션"
 
+#: src/components/expression-builder.tsx
+msgid "Date reference"
+msgstr "날짜 기준"
+
 #: src/components/task-date-panel.tsx
 msgid "Date to change"
 msgstr "변경할 날짜"
@@ -1994,6 +1998,10 @@ msgstr "하루 종료"
 #: src/components/reminder-editor.tsx
 msgid "Days"
 msgstr "일"
+
+#: src/components/expression-builder.tsx
+msgid "Days from today"
+msgstr "오늘부터 일수"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2389,6 +2397,10 @@ msgstr "종료"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "CEL 표현식을 입력하세요."
+
+#: src/components/expression-builder.tsx
+msgid "Enter a whole number of days."
+msgstr "일수를 정수로 입력하세요."
 
 #: src/app/search-screen.tsx
 msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
@@ -2828,6 +2840,14 @@ msgstr "같지 않음"
 #: src/components/expression-builder.tsx
 msgid "is not empty"
 msgstr "비어 있지 않음"
+
+#: src/components/expression-builder.tsx
+msgid "is on or after"
+msgstr "이후 또는 당일"
+
+#: src/components/expression-builder.tsx
+msgid "is on or before"
+msgstr "이전 또는 당일"
 
 #: src/components/duration-field.tsx
 msgid "ISO 8601 value"
@@ -5058,6 +5078,10 @@ msgstr "정렬 속성 {0}"
 msgid "Source file"
 msgstr "원본 파일"
 
+#: src/components/expression-builder.tsx
+msgid "Specific date"
+msgstr "특정 날짜"
+
 #: src/app/task-time-tracking.tsx
 msgid "Start"
 msgstr "시작"
@@ -5698,6 +5722,7 @@ msgstr "오늘"
 #: src/app/bulk-task-actions.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/task-calendar-view.tsx
+#: src/components/expression-builder.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-property-editor.tsx
 #: src/components/tasknotes-controls.tsx
