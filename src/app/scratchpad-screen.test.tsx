@@ -713,7 +713,7 @@ describe("ScratchpadScreen", () => {
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
       title: "Readable title property",
-      scheduled: "2026-11-06",
+      scheduled: "2099-11-06",
       priority: "high",
     });
     const scratchpad = await repository.getActiveScratchpad();
@@ -733,7 +733,7 @@ describe("ScratchpadScreen", () => {
     ).toBeVisible();
     expect(screen.queryByText("Filename title")).not.toBeInTheDocument();
     const metadata = document.querySelector(".scratchpad-linked-metadata")!;
-    expect(metadata).toHaveTextContent(/Nov|Tomorrow/);
+    expect(metadata).toHaveTextContent(/Nov/);
     expect(metadata).toHaveTextContent(/high/i);
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
   });
