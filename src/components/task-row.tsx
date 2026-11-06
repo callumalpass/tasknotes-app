@@ -37,7 +37,10 @@ import {
   todayString,
 } from "../domain/task";
 import { formatTaskTime } from "../i18n/presentation";
-import { relativeDateDetail } from "../i18n/view-presentation";
+import {
+  formatPropertyValue,
+  relativeDateDetail,
+} from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
 import { actionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "../app/repository-context";
@@ -237,14 +240,13 @@ export function TaskRow({
         );
     if (Array.isArray(detail.rawValue)) {
       const values = detail.rawValue.filter((value) => !matches(value));
-      return values.length
+      const value = formatPropertyValue(values);
+      return value !== null
         ? [
             {
               ...detail,
               rawValue: values,
-              value: values
-                .map((value) => linkDisplayLabel(String(value)))
-                .join(", "),
+              value,
             },
           ]
         : [];

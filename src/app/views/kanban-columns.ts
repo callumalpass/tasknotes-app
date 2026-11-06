@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { viewPropertyValue } from "../../domain/view-values";
+import { formatPropertyValue } from "../../i18n/view-presentation";
 import type { TaskViewRow } from "../../domain/view";
 
 /** Presence, not truthiness/nullish fallback, determines authoritative values. */
@@ -41,8 +42,10 @@ export function valueKey(value: unknown): string {
 }
 
 export function columnLabel(value: unknown): string {
-  if (value === null || value === "") return t({ message: "No value" });
-  return String(value).replaceAll("-", " ");
+  const label = formatPropertyValue(value);
+  return label === null
+    ? t({ message: "No value" })
+    : label.replaceAll("-", " ");
 }
 
 /**

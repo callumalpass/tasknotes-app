@@ -185,26 +185,51 @@ it("keeps a parent label available when project properties are omitted", () => {
   );
   expect(screen.getByRole("dialog")).toBeVisible();
 });
-it("omits a contextual project but keeps additional memberships in the shared cluster", () => {
-  const { container } = render(
-    <TaskRow
-      task={{
-        ...task,
-        projects: ["[[Projects/Original]]", "[[Projects/Other]]"],
-      }}
-      contextProperties={{ 'note["projects"]': "[[Projects/Original]]" }}
-      onOpen={vi.fn()}
-      onToggle={vi.fn()}
-    />,
-  );
-  expect(container.querySelector(".task-row-meta")).toHaveTextContent("Other");
-  expect(container.querySelector(".task-row-meta")).not.toHaveTextContent(
-    "Original",
-  );
-  expect(
-    screen.getByRole("button", { name: "Properties for Write brief" }),
-  ).toHaveAccessibleDescription(expect.stringContaining("Projects: Other"));
-});
+it.each([false, true])(
+  "omits a contextual project but keeps additional memberships (native cells: %s)",
+  (nativeCells) => {
+    const { container } = render(
+      <TaskRow
+        task={{
+          ...task,
+          projects: ["[[Projects/Original]]", "[[Projects/Other]]"],
+        }}
+        contextProperties={{ 'note["projects"]': "[[Projects/Original]]" }}
+        details={
+          nativeCells
+            ? [
+                {
+                  key: "projects",
+                  label: "Projects",
+                  value: "Original, Other",
+                  rawValue: [
+                    "[[Projects/Original]]",
+                    "[[Projects/Other]]",
+                    {
+                      kind: "unavailable",
+                      code: "view_unsupported_construct",
+                      detail: "link_property",
+                    },
+                  ],
+                },
+              ]
+            : undefined
+        }
+        onOpen={vi.fn()}
+        onToggle={vi.fn()}
+      />,
+    );
+    const metadata = container.querySelector(
+      nativeCells ? ".task-row-inline-metadata" : ".task-row-meta",
+    );
+    expect(metadata).toHaveTextContent("Other");
+    expect(metadata).not.toHaveTextContent("Original");
+    expect(metadata).not.toHaveTextContent("[object Object]");
+    expect(
+      screen.getByRole("button", { name: "Properties for Write brief" }),
+    ).toHaveAccessibleDescription(expect.stringContaining("Projects: Other"));
+  },
+);
 
 it("groups row properties into one Tab stop with arrow and boundary navigation", () => {
   render(
