@@ -610,7 +610,7 @@ async function releaseMetadata(version) {
         return bb[0] - aa[0] || bb[1] - aa[1] || bb[2] - aa[2];
       });
     if (!templates.length)
-      throw new Error("No reviewed store metadata template");
+      throw new Error("No reviewed store metadata template", { cause: error });
     return generatedMetadata(
       JSON.parse(await readFile(`docs/releases/ios/${templates[0]}`, "utf8")),
       version,
