@@ -130,7 +130,7 @@ msgstr "{0, plural, one {Compte déverrouillé. L’accès aux clés de # collec
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, one {# tâche créée} many {# tâches créées} other {# tâches créées}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5764,7 +5764,7 @@ msgstr "Essayez de recharger la vue. Si le problème persiste, modifiez ses para
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "Essayez demain 9h, #tag, @contexte, +projet."
+msgstr "Essayez tomorrow 9am, #tag, @context, +project."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

@@ -130,7 +130,7 @@ msgstr "{0, plural, one {Учётная запись разблокирован�
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, one {Создана # задача} few {Создано # задачи} many {Создано # задач} other {Создано # задач}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "Попробуйте загрузить представление ещ�
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "Попробуйте: завтра 9:00, #тег, @контекст, +проект."
+msgstr "Попробуйте: tomorrow 9am, #tag, @context, +project."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

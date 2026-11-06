@@ -130,7 +130,7 @@ msgstr "{0, plural, other {账户已解锁。# 个私有集合尚未完成密钥
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, other {已创建 # 个任务}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "试试 明天 9点、#标签、@情境、+项目。"
+msgstr "试试 tomorrow 9am、#tag、@context、+project。"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

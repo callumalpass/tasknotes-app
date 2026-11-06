@@ -130,7 +130,7 @@ msgstr "{0, plural, other {アカウントのロックが解除されました�
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, other {# 件のタスクを作成しました}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "もう一度ビューを読み込んでください。問題が続く場
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "明日 9時、#タグ、@コンテキスト、+プロジェクト を試してください。"
+msgstr "tomorrow 9am、#tag、@context、+project を試してください。"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

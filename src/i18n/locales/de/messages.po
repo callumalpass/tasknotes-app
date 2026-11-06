@@ -130,7 +130,7 @@ msgstr "{0, plural, one {Konto entsperrt. F√ºr # private Sammlung muss der Schl√
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, one {# Aufgabe erstellt} other {# Aufgaben erstellt}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "Laden Sie die Ansicht erneut. Wenn das Problem weiterhin auftritt, bearb
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "Versuchen Sie morgen 9 Uhr, #tag, @kontext, +projekt."
+msgstr "Versuchen Sie tomorrow 9am, #tag, @context, +project."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

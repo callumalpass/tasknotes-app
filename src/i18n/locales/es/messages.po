@@ -130,7 +130,7 @@ msgstr "{0, plural, one {Cuenta desbloqueada. # colección privada aún tiene qu
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, one {# tarea creada} many {# tareas creadas} other {# tareas creadas}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "Intenta cargar la vista de nuevo. Si el problema continúa, edita su con
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "Prueba mañana 9am, #etiqueta, @contexto, +proyecto."
+msgstr "Prueba tomorrow 9am, #tag, @context, +project."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

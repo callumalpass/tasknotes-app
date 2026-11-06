@@ -130,7 +130,7 @@ msgstr "{0, plural, other {계정 잠금이 해제되었습니다. 비공개 컬
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
-msgstr ""
+msgstr "{0, plural, other {작업 #개를 만들었습니다}}"
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -5763,7 +5763,7 @@ msgstr "뷰를 다시 불러오세요. 문제가 계속되면 설정을 편집�
 
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
-msgstr "내일 오전 9시, #태그, @컨텍스트, +프로젝트를 입력해 보세요."
+msgstr "tomorrow 9am, #tag, @context, +project를 입력해 보세요."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
