@@ -22,6 +22,7 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
   const app = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PLAY_PACKAGE}`;
   const root = `${app}/edits`;
   const summaryUrls = new Set();
+  let reviewHttpStatus = null;
   async function request(url, method = "GET") {
     if (!(
       (url === root && method === "POST") ||
@@ -39,6 +40,7 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       },
       ...(method === "POST" ? { body: "{}" } : {}),
     });
+    if (summaryUrls.has(url)) reviewHttpStatus = response.status;
     if (!response.ok) throw await googleApiFailure(response);
     return response.status === 204 ? null : response.json();
   }
@@ -60,6 +62,7 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
     // Unlike edits.tracks.list, this non-edit API exposes Console review
     // lifecycle (including rejection). Read EVERY track, not just production.
     let review;
+    let reviewStep = "discover-tracks";
     try {
       const releases = [];
       if (!tracks.some((t) => t.track === "production"))
@@ -67,7 +70,9 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       for (const track of tracks) {
         const url = `${app}/tracks/${encodeURIComponent(track.track)}/releases`;
         summaryUrls.add(url);
+        reviewStep = "request-release-summaries";
         const result = await request(url);
+        reviewStep = "validate-release-summaries";
         if (
           !Array.isArray(result.releases ?? []) ||
           (result.releases ?? []).length >= 20
@@ -95,7 +100,8 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
         available: false,
         releases: [],
         failedStep: "applications.tracks.releases.list",
-        httpStatus: error.httpStatus ?? null,
+        httpStatus: error.httpStatus ?? reviewHttpStatus,
+        operation: reviewStep,
         reason:
           error.reason ??
           ([
@@ -104,7 +110,13 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
             "unknown-review-state",
           ].includes(error.message)
             ? error.message
-            : "review-observation-unavailable"),
+            : error instanceof TypeError
+              ? "review-transport-or-shape-error"
+              : error instanceof SyntaxError
+                ? "review-invalid-json"
+                : error.name === "TimeoutError"
+                  ? "review-request-timeout"
+                  : "review-observation-unavailable"),
       };
     }
     const production = tracks.find((t) => t.track === "production");
