@@ -1487,11 +1487,18 @@ export function ViewsScreen({
             ) : null}
             {selected?.name === "Today" ? (
               <p className="view-date">
-                {new Intl.DateTimeFormat(appLocale(), {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                }).format(new Date())}
+                <span className="today-date-text">
+                  {new Intl.DateTimeFormat(appLocale(), {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  }).format(new Date())}
+                  {overdueCount ? (
+                    <span className="today-overdue-separator" aria-hidden="true">
+                      {" ·"}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="today-progress">
                   {todayProgress ? (
                     <>
@@ -1502,7 +1509,6 @@ export function ViewsScreen({
                 </span>
                 {overdueCount ? (
                   <span className="today-overdue">
-                    <span className="today-overdue-separator"> · </span>
                     <button
                       type="button"
                       onClick={() =>

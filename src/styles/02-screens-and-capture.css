@@ -305,6 +305,11 @@
   display: flex;
   gap: 8px;
 }
+.capture-guide-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 @media (max-width: 839px) {
   .capture-guide {
     display: block;
@@ -366,11 +371,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 0 8px;
   min-height: 43px;
-  padding: 8px 0;
+  padding: 2px 0;
   color: var(--ink-soft);
-  font-size: var(--type-supporting);
+  font-size: 13px;
   line-height: 1.35;
   border-bottom: 1px solid var(--line);
 }
@@ -692,10 +697,10 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding-left: 10px;
+  padding-left: 0;
   color: var(--ink-soft);
-  background: var(--paper-soft);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-control);
 }
 .capture-token > span {
@@ -717,7 +722,7 @@
   cursor: pointer;
 }
 .capture-token > button:first-child {
-  padding-right: var(--space-xs);
+  padding-right: 0;
   color: var(--ink-soft);
   text-align: start;
 }
@@ -733,6 +738,7 @@
 } /* Touch keeps compact chips but gives each chip action a 44px hit area. */
 @media (pointer: coarse) {
   .capture-token > button {
+    min-width: 44px;
     min-height: 44px;
   }
   .capture-token > button:last-child {
@@ -854,18 +860,19 @@
 @media (max-width: 839px) {
   .undo-toast.task-added-notice {
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 4px;
+    padding: 10px 12px;
   }
   .task-added-notice > span,
   .task-added-notice > .record-write-notice {
     flex-basis: 100%;
   }
   .task-added-title {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    display: inline;
+    overflow-wrap: anywhere;
+  }
+  .task-added-notice > span {
+    line-height: 20px;
   }
   .task-added-actions {
     flex: 1 1 100%;
@@ -933,9 +940,10 @@
   background: var(--paper-soft);
 }
 .capture-interpretation > .text-action {
+  min-width: 44px;
   min-height: 44px;
   color: var(--ink-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
 }
 .capture-interpretation > .text-action:hover {

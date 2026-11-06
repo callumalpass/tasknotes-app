@@ -1722,7 +1722,12 @@
     margin-left: calc((var(--page-inset) - 6px) * -1);
   }
 } /* The date-aware capture row (or phone capture button) is the one add action. */
-.has-context-capture .full-calendar-create {
+@media (min-width: 840px) {
+  .has-context-capture .full-calendar-create {
+    display: none;
+  }
+}
+.app-shell:has(.full-calendar-view) .global-capture-fab {
   display: none;
 }
 .full-calendar-view .tnc-popover-close {
@@ -1799,7 +1804,10 @@
     grid-row: 1;
   }
   .full-calendar-navigation .full-calendar-create {
-    display: none;
+    display: inline-flex;
+    padding-inline: 6px;
+    font-size: 14px;
+    font-weight: 500;
   }
   .full-calendar-modes {
     flex: 1 1 100%;

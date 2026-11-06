@@ -81,20 +81,28 @@ it("shows every shorthand kind only while an empty capture is focused", () => {
     />,
   );
   const input = screen.getByRole("combobox", { name: "New task title" });
-  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
   fireEvent.focus(input);
   expect(screen.getByText(/Try tomorrow/)).toHaveTextContent(
     "#tag, @context, +project.",
   );
-  expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "*Status" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Priority" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Status" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Priority" })).toHaveAttribute(
+    "title",
+    "!Priority",
+  );
+  expect(screen.getByRole("button", { name: "Status" })).toHaveAttribute(
+    "title",
+    "*Status",
+  );
   fireEvent.change(input, { target: { value: "A draft" } });
-  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
 });
 
 it("keeps empty capture guidance in place until an outside pointer action finishes", () => {
   const activate = vi.fn(() =>
-    expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible(),
+    expect(screen.getByRole("button", { name: "Priority" })).toBeVisible(),
   );
   render(
     <>
@@ -110,14 +118,14 @@ it("keeps empty capture guidance in place until an outside pointer action finish
   fireEvent.focus(input);
   fireEvent.pointerDown(outside);
   fireEvent.blur(input, { relatedTarget: outside });
-  expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Priority" })).toBeVisible();
   fireEvent.pointerUp(outside);
   fireEvent.click(outside);
   expect(activate).toHaveBeenCalledOnce();
-  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
   fireEvent.focus(input);
   fireEvent.blur(input, { relatedTarget: outside });
-  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
 });
 
 it.each(["priority", "status"] as const)(
@@ -138,7 +146,7 @@ it.each(["priority", "status"] as const)(
     fireEvent.focus(input);
     fireEvent.click(
       screen.getByRole("button", {
-        name: field === "priority" ? "!Priority" : "*Status",
+        name: field === "priority" ? "Priority" : "Status",
       }),
     );
     expect(await screen.findAllByRole("option")).toHaveLength(12);

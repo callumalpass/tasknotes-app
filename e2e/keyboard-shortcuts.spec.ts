@@ -19,11 +19,11 @@ test("j and k move between rows and row keys act on the focused task", async ({
   await page.goto("?demo=50");
   const first = page.locator(".task-row-title").first();
   await expect(first).toBeVisible();
-  const firstLabel = await first.textContent();
+  const firstLabel = await first.getAttribute("aria-label");
   await page.locator("body").press("j");
   await expect(first).toBeFocused();
   await page.keyboard.press("j");
-  const second = await focusedRowTitle(page).textContent();
+  const second = await focusedRowTitle(page).getAttribute("aria-label");
   expect(second).not.toBe(firstLabel);
   await page.keyboard.press("k");
   await expect(first).toBeFocused();
@@ -44,7 +44,7 @@ test("j and k move between rows and row keys act on the focused task", async ({
   await expect(scheduled).toBeHidden();
   await expect(focusedRowTitle(page)).toHaveCount(1);
 
-  const target = (await focusedRowTitle(page).textContent())!;
+  const target = (await focusedRowTitle(page).getAttribute("aria-label"))!;
   await page.keyboard.press("x");
   await expect(page.getByText(`Completed ${target}.`)).toBeAttached();
 });
@@ -158,7 +158,7 @@ test("plain capture, search, and g sequences respect typing and row actions", as
     ).toBeVisible();
   }
   await page.locator("body").press("j");
-  const firstTitle = await focusedRowTitle(page).textContent();
+  const firstTitle = await focusedRowTitle(page).getAttribute("aria-label");
   await page.keyboard.press("g");
   await page.keyboard.press("t");
   await expect(
@@ -231,7 +231,7 @@ test("a single reschedule confirms itself with Undo", async ({ page }) => {
   await page.goto("?demo=60");
   const first = page.locator("button.task-row-title").first();
   await expect(first).toBeVisible();
-  const title = (await first.textContent())!;
+  const title = (await first.getAttribute("aria-label"))!;
   await page.keyboard.press("j");
   await page.keyboard.press("m");
   const toast = page.locator(".undo-toast");

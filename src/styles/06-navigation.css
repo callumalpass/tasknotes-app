@@ -111,6 +111,8 @@
   }
 
   .task-actions-menu {
+    display: flex;
+    flex-direction: column;
     top: auto !important;
     right: 0;
     bottom: 0;
@@ -126,6 +128,16 @@
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 40px var(--color-shadow);
     animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+    overflow: hidden;
+  }
+
+  .task-actions-menu > .task-actions-items {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .task-actions-menu > :not(.task-actions-items) {
+    flex-shrink: 0;
   }
 
   .task-actions-layer[data-state="closed"] .task-actions-menu {
@@ -135,7 +147,7 @@
   .task-actions-menu.is-organize-editor {
     width: 100%;
     max-width: none;
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .task-actions-heading {

@@ -22,7 +22,13 @@ export function TaskPropertiesSheet({
   const { configuration } = useRepository();
   const root = useRef<HTMLElement>(null);
   const saves = useRef(Promise.resolve());
-  useOverlay({ open: true, rootRef: root, modal: true, onDismiss: onClose });
+  useOverlay({
+    open: true,
+    rootRef: root,
+    modal: true,
+    onDismiss: onClose,
+    initialFocus: () => root.current?.querySelector("header button") ?? null,
+  });
   const keys = [
     "status",
     "priority",

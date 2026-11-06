@@ -215,10 +215,17 @@ export function TaskActions({
             ? finePointer
               ? ".multi-value-control input"
               : "[data-panel-back]"
-            : panel === "dates" && finePointer
-              ? ".task-date-presets button"
+            : panel === "dates"
+              ? finePointer
+                ? ".task-date-presets button"
+                : "[data-panel-focus]"
               : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
       const menu = menuRef.current;
+      if (menu) {
+        menu.scrollTop = 0;
+        const body = menu.querySelector<HTMLElement>(".task-actions-items");
+        if (body) body.scrollTop = 0;
+      }
       const current =
         panel === "status" || panel === "priority"
           ? menu?.querySelector<HTMLButtonElement>(
@@ -229,7 +236,7 @@ export function TaskActions({
         menu?.querySelector<HTMLInputElement>(".choice-options input") ??
         current ??
         menu?.querySelector<HTMLButtonElement>(selector)
-      )?.focus();
+      )?.focus({ preventScroll: !finePointer });
     });
   }, [panel, position]);
 
@@ -528,7 +535,13 @@ export function TaskActions({
                         <ChevronLeft aria-hidden="true" size={18} />
                       </button>
                     ) : null}
-                    <strong id={panelHeadingId}>{panelTitle(panel)}</strong>
+                    <strong
+                      id={panelHeadingId}
+                      data-panel-focus
+                      tabIndex={-1}
+                    >
+                      {panelTitle(panel)}
+                    </strong>
                   </div>
                 ) : null}
                 <div

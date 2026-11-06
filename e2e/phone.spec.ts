@@ -67,7 +67,7 @@ test("touch property editing saves, is truly modal and restores its trigger", as
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("?demo=60");
-  const trigger = page.locator(".task-row-metadata-band").first();
+  const trigger = page.locator(".task-row-properties-trigger").first();
   await trigger.tap();
   const dialog = page.getByRole("dialog", {
     name: "Task properties",

@@ -595,6 +595,17 @@
   padding-block: 2px;
 }
 
+@media (pointer: coarse) {
+  .kanban-card .task-row-content {
+    width: auto;
+    margin-left: 0;
+    padding: 0;
+  }
+  .kanban-card .task-row-reading {
+    margin-left: 0;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .kanban-card.is-movable,
   .kanban-card.is-movable .task-row-content,

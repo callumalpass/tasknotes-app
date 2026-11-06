@@ -1667,7 +1667,7 @@
   white-space: nowrap;
 }
 .today-overdue-separator {
-  margin-inline: 6px;
+  margin-inline-start: 6px;
 }
 .today-overdue button {
   min-height: 44px;
@@ -1932,9 +1932,18 @@
   flex-wrap: wrap;
   gap: 4px 12px;
 }
-.overdue-schedule-actions > button {
+.overdue-schedule-actions > button.section-heading-action {
+  padding-inline: 0;
+  color: var(--ink-soft);
   font-size: 13px;
   font-weight: 500;
+}
+.overdue-schedule-actions > button.section-heading-action::before {
+  content: none;
+}
+.overdue-schedule-actions > button.section-heading-action + button::before {
+  left: -6px;
+  content: "";
 }
 .overdue-deadline-choice {
   display: grid;

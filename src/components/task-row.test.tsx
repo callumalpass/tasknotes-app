@@ -293,22 +293,39 @@ it("keeps title and independent controls from also opening via the row", () => {
   expect(open).not.toHaveBeenCalled();
 });
 it.each(["scheduled", "due"])(
-  "opens the compact %s chip directly without opening the task or property sheet",
+  "opens the task when its compact %s metadata is tapped",
   (key) => {
     const open = vi.fn();
     const { container } = render(
       <TaskRow task={task} onOpen={open} onToggle={vi.fn()} />,
     );
-    const chip = container.querySelector<HTMLButtonElement>(
-      `.task-row-date-chip[aria-label*="${key === "due" ? "Due" : "Scheduled"}"]`,
+    const unit = container.querySelector<HTMLElement>(
+      `.task-row-compact-metadata [data-property="${key}"]`,
     )!;
-    expect(chip).toHaveAccessibleName(new RegExp(task.title));
-    expect(chip).toHaveAttribute("aria-haspopup", "dialog");
-    fireEvent.click(chip);
-    expect(screen.getByRole("dialog")).toHaveTextContent("Edit property");
-    expect(open).not.toHaveBeenCalled();
+    expect(unit.closest("button")).toHaveAccessibleName(task.title);
+    expect(unit.querySelector("button")).toBeNull();
+    fireEvent.click(unit);
+    expect(open).toHaveBeenCalledExactlyOnceWith(task, undefined);
+    expect(screen.queryByRole("dialog")).toBeNull();
   },
 );
+it("exposes properties even without visible metadata", () => {
+  const { container } = render(
+    <TaskRow
+      task={{ ...task, scheduled: undefined, due: undefined }}
+      details={[]}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  const properties = screen.getByRole("button", {
+    name: `Properties for ${task.title}`,
+  });
+  expect(properties).toHaveAttribute("aria-haspopup", "dialog");
+  expect(properties).toHaveAttribute("aria-expanded", "false");
+  expect(properties.parentElement).toHaveClass("task-row");
+  expect(container.querySelector(".task-row-compact-metadata")).toBeNull();
+});
 it("retains date labels and omits routine defaults in saved rows", () => {
   const configuration = defaultTaskCollectionConfiguration();
   render(

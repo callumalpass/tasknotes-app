@@ -22,7 +22,7 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
       nodes.find((node) => {
         const rect = node.getBoundingClientRect();
         return rect.top > 150 && rect.bottom < window.innerHeight - 100;
-      })?.textContent,
+      })?.getAttribute("aria-label"),
   );
   expect(title).toBeTruthy();
   const trigger = page.getByRole("button", { name: title!, exact: true });
@@ -48,7 +48,7 @@ test("closing task details returns to the list after switching tasks", async ({
   await page.goto("?demo=50");
   const titles = page.locator(".task-row-title");
   await expect(titles.nth(1)).toBeVisible();
-  const second = await titles.nth(1).textContent();
+  const second = await titles.nth(1).getAttribute("aria-label");
   await titles.first().click();
   const detail = page.getByRole("complementary", { name: "Task details" });
   await expect(detail).toBeVisible();

@@ -40,7 +40,7 @@ import {
 } from "../domain/task";
 import { recurrenceLabel } from "../i18n/presentation";
 import { successFeedback } from "../native/feedback";
-import { ArrowUp, X } from "lucide-react";
+import { ArrowUp, Circle, Flag, X } from "lucide-react";
 
 import { DependencyEditor } from "./dependency-editor";
 import { MultiValueField } from "./multi-value-field";
@@ -628,9 +628,14 @@ export function TaskCapture({
                 <button
                   type="button"
                   key={propertyId}
+                  title={`${trigger}${propertyId === "priority" ? t`Priority` : t`Status`}`}
                   onClick={() => revealChoices(trigger)}
                 >
-                  {trigger}
+                  {propertyId === "priority" ? (
+                    <Flag aria-hidden="true" size={16} />
+                  ) : (
+                    <Circle aria-hidden="true" size={16} />
+                  )}
                   {propertyId === "priority" ? t`Priority` : t`Status`}
                 </button>
               ))}

@@ -11,7 +11,7 @@ import {
   Folder,
   Flag,
   Hash,
-  Pencil,
+  Ellipsis,
   Square,
   Target,
   type LucideIcon,
@@ -452,49 +452,14 @@ export function TaskRow({
             <span className="task-row-title-text">
               <span>{task.title}</span>
             </span>
-          </button>
-        </div>
-        {context && !contextLeadsDetails ? context : null}
-        {tracking || shownDetails.length ? (
-          <div className="task-row-compact-metadata">
-            {shownDetails
-              .filter((detail) => detailRank(detail, configuration) === 0)
-              .map((detail) => (
-                <button
-                  className={`task-row-date-chip${detail.overdue ? " is-overdue" : ""}`}
-                  type="button"
-                  key={detail.key}
-                  aria-label={`${task.title} — ${detail.label} ${detail.value}`}
-                  aria-haspopup="dialog"
-                  onClick={(event) => openDetail(detail, event.currentTarget)}
-                >
-                  <PropertyGlyph detail={detail} />
-                  <span className="task-row-value">
-                    {isDueDetail(detail, configuration)
-                      ? t`Due ${detail.value}`
-                      : detail.value}
-                  </span>
-                </button>
-              ))}
-            <button
-              className="task-row-metadata-band task-row-metadata-more"
-              type="button"
-              ref={propertiesTrigger}
-              aria-label={t`Properties for ${task.title}`}
-              aria-description={shownDetails
-                .map((detail) => `${detail.label}: ${detail.value}`)
-                .join(", ")}
-              aria-haspopup="dialog"
-              onClick={() => setPropertiesOpen(true)}
-            >
-              {tracking ? <TrackingIndicator /> : null}
-              {shownDetails
-                .filter((detail) => detailRank(detail, configuration) !== 0)
-                .map((detail) => (
+            {tracking || shownDetails.length ? (
+              <span className="task-row-compact-metadata" aria-hidden="true">
+                {tracking ? <TrackingIndicator /> : null}
+                {shownDetails.map((detail) => (
                   <span
                     key={detail.key}
                     data-property={propertyField(detail)}
-                    className={`${detail.overdue ? "is-overdue" : ""}${[configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)) ? " is-project" : ""}`}
+                    className={`task-row-metadata-unit${detail.overdue ? " is-overdue" : ""}${[configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)) ? " is-project" : ""}`}
                   >
                     <PropertyGlyph detail={detail} />
                     <span className="task-row-value">
@@ -504,14 +469,11 @@ export function TaskRow({
                     </span>
                   </span>
                 ))}
-              <Pencil
-                className="task-row-metadata-edit"
-                aria-hidden="true"
-                size={12}
-              />
-            </button>
-          </div>
-        ) : null}
+              </span>
+            ) : null}
+          </button>
+        </div>
+        {context && !contextLeadsDetails ? context : null}
         {details ? (
           tracking || shownDetails.length ? (
             <span
@@ -582,6 +544,20 @@ export function TaskRow({
           target={{ kind: "task", id: task.id }}
         />
       </div>
+      <button
+        className="task-row-properties-trigger"
+        type="button"
+        ref={propertiesTrigger}
+        aria-label={t`Properties for ${task.title}`}
+        aria-description={shownDetails
+          .map((detail) => `${detail.label}: ${detail.value}`)
+          .join(", ")}
+        aria-haspopup="dialog"
+        aria-expanded={propertiesOpen}
+        onClick={() => setPropertiesOpen(true)}
+      >
+        <Ellipsis aria-hidden="true" size={18} />
+      </button>
       <TaskActions
         task={task}
         occurrenceDate={occurrence?.date}

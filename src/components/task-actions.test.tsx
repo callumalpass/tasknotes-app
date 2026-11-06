@@ -301,6 +301,38 @@ describe("TaskActions", () => {
     expect(confirmation).toBeVisible();
   });
 
+  it("opens touch Dates at the top with focus on its own heading", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("coarse") || query.includes("max-width"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    try {
+      renderRow();
+      await openMenu();
+      const menu = screen.getByRole("dialog");
+      const body = menu.querySelector<HTMLElement>(".task-actions-items")!;
+      menu.scrollTop = 228;
+      body.scrollTop = 228;
+      fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
+      const heading = screen.getByText("Dates", { selector: "strong" });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(menu.scrollTop).toBe(0);
+      expect(body.scrollTop).toBe(0);
+      expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Back to previous actions" }),
+      ).toBeVisible();
+      fireEvent.keyDown(heading, { key: "Escape" });
+      await waitFor(() =>
+        expect(screen.getByRole("menuitem", { name: /Dates/ })).toBeVisible(),
+      );
+      expect(body.scrollTop).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps occurrence actions separate from series-wide changes", async () => {
     task = await repository.update(task.id, {
       recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260803",

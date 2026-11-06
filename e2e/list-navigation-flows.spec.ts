@@ -11,7 +11,7 @@ test("completion shortcut undo clears its toast and restores row focus", async (
   page,
 }) => {
   const title = page.locator(".task-row-title").first();
-  const label = (await title.textContent())!.trim();
+  const label = (await title.getAttribute("aria-label"))!;
   await title.focus();
   await page.keyboard.press("x");
   await expect(page.locator(".task-completed-notice")).toContainText(
@@ -58,7 +58,7 @@ test("a task's circle selects rather than completes while selecting", async ({
     .first()
     .click();
   const row = page.locator(".task-row").first();
-  const title = await row.locator(".task-row-title").textContent();
+  const title = await row.locator(".task-row-title").getAttribute("aria-label");
   await row.locator(".completion-control").click();
   await expect(page.locator(".bulk-actions")).toContainText("1 selected");
   await page.getByRole("button", { name: `Deselect ${title}` }).click();
