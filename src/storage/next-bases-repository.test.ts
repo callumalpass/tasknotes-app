@@ -1,3 +1,4 @@
+import { MdbaseError } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   AppBasesDescriptor,
@@ -500,22 +501,25 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       "Second native cell",
     ]);
   });
-  it("restarts view discovery when the replica retires a stale discovery cursor", async () => {
-    const f = await fixture();
-    f.list.mockClear();
-    f.list.mockResolvedValueOnce({
-      kind: "refusal",
-      problem: {
+  it.each(["returned", "thrown"] as const)(
+    "restarts view discovery when a stale cursor refusal is %s",
+    async (route) => {
+      const f = await fixture();
+      const problem = {
         code: "conflict",
         recovery: "refresh",
         reason: "view_discovery_stale",
         message: "discovery changed or expired; start fresh discovery",
-      },
-    });
-    const documents = await f.repository.listViews();
-    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
-    expect(f.list).toHaveBeenCalledTimes(2);
-  });
+      } as const;
+      f.list.mockClear();
+      if (route === "returned")
+        f.list.mockResolvedValueOnce({ kind: "refusal", problem });
+      else f.list.mockRejectedValueOnce(new MdbaseError(problem));
+      const documents = await f.repository.listViews();
+      expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+      expect(f.list).toHaveBeenCalledTimes(2);
+    },
+  );
   it("propagates native refusal and pre-cancellation without fallback or hydration", async () => {
     const f = await fixture();
     const get = vi.spyOn(f.client, "get");
