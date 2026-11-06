@@ -42,7 +42,11 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
     });
     if (summaryUrls.has(url)) reviewHttpStatus = response.status;
     if (!response.ok) throw await googleApiFailure(response);
-    return response.status === 204 ? null : response.json();
+    // Empty tracks return 204 live. Only summary GETs may interpret that as
+    // an empty list; production still needs positive artifact corroboration.
+    if (response.status === 204)
+      return summaryUrls.has(url) ? { releases: [] } : null;
+    return response.json();
   }
   let edit;
   try {
