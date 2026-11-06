@@ -464,7 +464,7 @@ export function TaskRow({
                   className={`task-row-date-chip${detail.overdue ? " is-overdue" : ""}`}
                   type="button"
                   key={detail.key}
-                  aria-label={`${task.title} — ${detail.label}: ${detail.value}`}
+                  aria-label={`${task.title} — ${detail.label} ${detail.value}`}
                   aria-haspopup="dialog"
                   onClick={(event) => openDetail(detail, event.currentTarget)}
                 >

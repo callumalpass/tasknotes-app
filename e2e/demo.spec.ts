@@ -343,11 +343,9 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
   const source = current.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
-  await expect(source).toContainText(
-    /- \[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
-  );
+  await expect(source).toContainText("- Prepare quarterly planning session");
   await expect(source).not.toContainText(
-    /\[ \] \[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
+    "[ ] Prepare quarterly planning session",
   );
   await source.fill("[[quarterly");
   const markdownOption = current.getByRole("option", {
