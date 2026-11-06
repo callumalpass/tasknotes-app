@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   assertCooldown,
+  isReadOnlyReceipt,
   assertWasmProof,
   latestExactGreen,
   LINES,
 } from "./mobile-release-policy.mjs";
 
-test("cooldown counts failed and dry attempts and blocks in-flight", () => {
+test("cooldown exempts only verified dry attempts; unknown writes and in-flight block", () => {
   const now = Date.now();
   const previous = {
     id: 1,
@@ -31,6 +32,63 @@ test("cooldown counts failed and dry attempts and blocks in-flight", () => {
     ),
   );
   assert.doesNotThrow(() => assertCooldown([previous], 1, now));
+  assert.doesNotThrow(() =>
+    assertCooldown([{ ...previous, verifiedReadOnly: true }], 2, now),
+  );
+  assert.throws(
+    () =>
+      assertCooldown(
+        [{ ...previous, verifiedReadOnly: true, status: "in_progress" }],
+        2,
+        now,
+      ),
+    /in-flight/,
+  );
+});
+
+test("read-only receipts bind exact protected first attempt and cannot exempt a real submit", () => {
+  const run = {
+    id: 123,
+    head_sha: "a".repeat(40),
+    run_attempt: 1,
+    event: "workflow_dispatch",
+    head_branch: "main",
+    path: ".github/workflows/app-store-submit.yml",
+  };
+  const receipt = {
+    schema: "tasknotes/mobile-read-only-attempt/1",
+    runId: 123,
+    source: run.head_sha,
+    attempt: 1,
+    platform: "ios",
+    submit: false,
+    release: false,
+  };
+  assert.equal(isReadOnlyReceipt(receipt, run, "ios"), true);
+  for (const change of [
+    { runId: 124 },
+    { source: "b".repeat(40) },
+    { attempt: 2 },
+    { platform: "android" },
+    { submit: true },
+    { release: true },
+    { submit: "false" },
+    { schema: "unknown" },
+  ])
+    assert.equal(
+      isReadOnlyReceipt({ ...receipt, ...change }, run, "ios"),
+      false,
+    );
+  for (const change of [
+    { run_attempt: 2 },
+    { head_branch: "other" },
+    { event: "pull_request" },
+    { path: ".github/workflows/other.yml" },
+  ])
+    assert.equal(
+      isReadOnlyReceipt(receipt, { ...run, ...change }, "ios"),
+      false,
+    );
 });
 
 test("exact CI cannot borrow success from an old attempt or other event", () => {

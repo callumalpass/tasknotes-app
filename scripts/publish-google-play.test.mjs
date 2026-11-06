@@ -70,7 +70,10 @@ function successfulFetch(calls) {
         ],
       });
     }
-    if (requestUrl.endsWith(":validate") || requestUrl.endsWith(":commit")) {
+    if (
+      requestUrl.endsWith(":validate") ||
+      requestUrl.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW")
+    ) {
       return jsonResponse({ id: "edit-1" });
     }
     if (options.method === "DELETE") return new Response(null, { status: 204 });
@@ -116,7 +119,9 @@ describe("Google Play closed-test publisher", () => {
       expect.arrayContaining([
         expect.stringMatching(/\/tracks\/alpha$/),
         expect.stringMatching(/:validate$/),
-        expect.stringMatching(/:commit$/),
+        expect.stringMatching(
+          /:commit\?changesInReviewBehavior=ERROR_IF_IN_REVIEW$/,
+        ),
       ]),
     );
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(false);
@@ -157,7 +162,11 @@ describe("Google Play closed-test publisher", () => {
       }),
     ).rejects.toThrow("did not match expected 123401");
 
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -205,7 +214,11 @@ describe("Google Play closed-test publisher", () => {
     ).resolves.toMatchObject({ alreadyPublished: true, versionCode: 123401 });
 
     expect(calls.some((call) => call.url.includes("/bundles"))).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -252,7 +265,11 @@ describe("Google Play closed-test publisher", () => {
         readFileImpl: vi.fn(async () => Buffer.from("bundle")),
       }),
     ).rejects.toThrow("required closed-test release state");
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
   });
 
   it("rejects malformed credentials and non-TaskNotes release names", async () => {
@@ -300,7 +317,10 @@ function promotionFetch(calls, { tracks, putResponse } = {}) {
     if (requestUrl.endsWith("/tracks/production")) {
       return jsonResponse(putResponse ?? JSON.parse(options.body));
     }
-    if (requestUrl.endsWith(":validate") || requestUrl.endsWith(":commit")) {
+    if (
+      requestUrl.endsWith(":validate") ||
+      requestUrl.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW")
+    ) {
       return jsonResponse({ id: "edit-production" });
     }
     if (options.method === "DELETE") return new Response(null, { status: 204 });
@@ -354,7 +374,9 @@ describe("Google Play production promotion", () => {
     });
     const urls = calls.map((call) => call.url);
     expect(urls.findIndex((url) => url.endsWith(":validate"))).toBeLessThan(
-      urls.findIndex((url) => url.endsWith(":commit")),
+      urls.findIndex((url) =>
+        url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
     );
     expect(urls.some((url) => url.includes("/bundles"))).toBe(false);
     expect(urls.some((url) => url.endsWith("/tracks/alpha"))).toBe(false);
@@ -382,7 +404,11 @@ describe("Google Play production promotion", () => {
     await expect(promote(fetchImpl)).resolves.toMatchObject({
       alreadyPublished: false,
     });
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(true);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(true);
   });
 
   it("treats the exact existing production state as a read-only success", async () => {
@@ -409,7 +435,11 @@ describe("Google Play production promotion", () => {
       versionCode: 123401,
     });
     expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -431,7 +461,11 @@ describe("Google Play production promotion", () => {
 
     await expect(promote(fetchImpl)).rejects.toThrow(/closed-test/);
     expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -488,7 +522,13 @@ describe("Google Play production promotion", () => {
 
       await expect(promote(fetchImpl)).rejects.toThrow(message);
       expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-      expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+      expect(
+        calls.some((call) =>
+          call.url.endsWith(
+            ":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW",
+          ),
+        ),
+      ).toBe(false);
     },
   );
 
@@ -512,7 +552,11 @@ describe("Google Play production promotion", () => {
       "required production release state",
     );
     expect(calls.some((call) => call.url.endsWith(":validate"))).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -530,7 +574,11 @@ describe("Google Play production promotion", () => {
     await expect(promote(fetchImpl)).rejects.toThrow(
       "Google Play API request failed (HTTP 400)",
     );
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 

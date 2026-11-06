@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readAppleLive } from "./store-status.mjs";
+import { readAppleLive, playReviewBlock } from "./store-status.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
 import {
   REPO,
@@ -10,6 +10,7 @@ import {
   qualifySource,
   storeLine,
   assertCooldown,
+  cooldownRuns,
   artifactJson,
   requirePolicy,
 } from "./mobile-release-policy.mjs";
@@ -71,7 +72,7 @@ export async function makePlan(platform) {
       ? process.env.TASKNOTES_PLAY_AUTOMATION_ENABLED
       : process.env.TASKNOTES_APP_STORE_AUTOMATION_ENABLED;
   if (enabled !== "true")
-    plan.blockers.push("owner-go-required-automation-disabled");
+    plan.blockers.push("release-supervisor-go-required-automation-disabled");
   const line = await storeLine(platform);
   if (line.stopped) plan.blockers.push("store-line-stopped");
   if (platform === "android") {
@@ -100,9 +101,9 @@ export async function makePlan(platform) {
         plan.store.platform === "android",
       "play-status-binding-required",
     );
-    plan.blockers.push(
-      "play-console-publishing-overview-review-observer-required",
-    );
+    const block = playReviewBlock(plan.store);
+    if (block) plan.blockers.push(block);
+    if (block === "store-rejected") await storeLine(platform, "stop", block);
   } else {
     plan.store = await readAppleLive(
       createStatusClient({
@@ -120,12 +121,7 @@ export async function makePlan(platform) {
       await storeLine(platform, "stop", "store-rejected");
   }
   try {
-    assertCooldown(
-      gh(
-        `repos/${REPO}/actions/workflows/${WORKFLOWS[platform]}/runs?per_page=100`,
-      ).workflow_runs,
-      process.env.GITHUB_RUN_ID,
-    );
+    assertCooldown(await cooldownRuns(platform), process.env.GITHUB_RUN_ID);
   } catch (error) {
     plan.blockers.push(reasonOf(error));
   }

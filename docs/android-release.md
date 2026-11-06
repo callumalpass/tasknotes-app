@@ -117,10 +117,12 @@ the retired full-rollout/manual-promotion procedure:
   independent Play hold and 24-hour gap again at the production boundary.
 - Promotion starts at `inProgress` with `userFraction: 0.1`; previous completed
   releases are preserved. There is no full-rollout fallback.
-- Scheduled post-release infrastructure checks halt the exact owned staged
-  version on failure and stop only `tasknotes-google-play`.
-- Android Publisher does not expose Publishing Overview review/rejection
-  state. The missing Console observer is an explicit publication refusal.
+- Scheduled boundary/Vitals checks halt the exact owned staged version on
+  failure and stop only `tasknotes-google-play`. Guarded 24-hour stages widen
+  10% → 50% → 100%; missing Vitals never authorizes widening.
+- Android Publisher release summaries expose review/rejection lifecycle on
+  every track. Unknown observations fail closed. Commits use the atomic
+  `ERROR_IF_IN_REVIEW` guard, never the review-cancelling API default.
 - The enable variable remains unset; neither this wiring nor a successful
   status read authorizes a production submission.
 
