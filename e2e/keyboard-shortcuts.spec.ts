@@ -203,8 +203,7 @@ test("row keys act on the whole selection and keep the list place", async ({
   const moved = page.locator(`[data-task-id="${first}"]`);
   if (isMobile) {
     const metadata = moved.getByRole("button", {
-      name: "Task properties",
-      exact: true,
+      name: /^Properties for /,
     });
     await expect(metadata).toHaveAccessibleDescription(
       /Scheduled: Tomorrow.*Due: .*ago/,

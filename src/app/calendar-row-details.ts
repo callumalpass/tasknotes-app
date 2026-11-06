@@ -42,12 +42,9 @@ export function calendarRowDetails(
     /^note\[(["'])(.+)\1\]$/.exec(key)?.[2] ?? key.replace(/^note\./, "");
   const shown = details.filter((detail) => {
     const key = fieldKey(detail.key);
-    const date = [
-      "scheduled",
-      "due",
-      configuration.fieldMapping.scheduled,
-      configuration.fieldMapping.due,
-    ].includes(key);
+    const date = ["scheduled", configuration.fieldMapping.scheduled].includes(
+      key,
+    );
     return (
       !day ||
       !date ||

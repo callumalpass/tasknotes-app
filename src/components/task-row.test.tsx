@@ -172,8 +172,67 @@ it("omits a contextual project but keeps additional memberships in the shared cl
     "Original",
   );
   expect(
-    screen.getByRole("button", { name: "Task properties" }),
+    screen.getByRole("button", { name: "Properties for Write brief" }),
   ).toHaveAccessibleDescription(expect.stringContaining("Projects: Other"));
+});
+
+it("groups row properties into one Tab stop with arrow and boundary navigation", () => {
+  render(
+    <TaskRow
+      task={{ ...task, priority: "high", projects: ["Operations"] }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+      details={[
+        {
+          key: "scheduled",
+          label: "Scheduled",
+          value: "Nov 4",
+          rawValue: "2026-11-04",
+        },
+        { key: "due", label: "Due", value: "Nov 5", rawValue: "2026-11-05" },
+      ]}
+    />,
+  );
+  const toolbar = screen.getByRole("toolbar", {
+    name: "Properties for Write brief",
+  });
+  const buttons = [...toolbar.querySelectorAll("button")];
+  expect(buttons.filter((button) => button.tabIndex === 0)).toHaveLength(1);
+  buttons[0].focus();
+  fireEvent.keyDown(buttons[0], { key: "ArrowRight" });
+  expect(buttons[1]).toHaveFocus();
+  expect(buttons[0].tabIndex).toBe(-1);
+  fireEvent.keyDown(buttons[1], { key: "End" });
+  expect(buttons.at(-1)).toHaveFocus();
+  fireEvent.keyDown(buttons.at(-1)!, { key: "Home" });
+  expect(buttons[0]).toHaveFocus();
+  fireEvent.keyDown(buttons[0], { key: "ArrowLeft" });
+  expect(buttons.at(-1)).toHaveFocus();
+  fireEvent.click(buttons.at(-1)!);
+  expect(screen.getByRole("dialog")).toBeVisible();
+});
+
+it("distinguishes a missed deadline from a missed plan without changing dates", () => {
+  const view = render(
+    <TaskRow
+      task={{ ...task, scheduled: "2000-01-01", due: "2000-01-02" }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  expect(view.container.querySelector(".task-row")).toHaveClass(
+    "has-missed-deadline",
+  );
+  view.rerender(
+    <TaskRow
+      task={{ ...task, scheduled: "2000-01-01", due: undefined }}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  expect(view.container.querySelector(".task-row")).not.toHaveClass(
+    "has-missed-deadline",
+  );
 });
 it("guards repeated completion and offers retry after rejection", async () => {
   let reject!: (reason: Error) => void;

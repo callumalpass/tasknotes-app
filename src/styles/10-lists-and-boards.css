@@ -85,7 +85,7 @@
   color: var(--accent);
 }
 
-/* Handles recede until a fine pointer reaches the row or keyboard focus lands. */
+/* The first handle quietly signals ordering without repeating along the list. */
 @media (pointer: fine) {
   .manual-order-handle {
     opacity: 0;
@@ -93,6 +93,7 @@
   }
 
   .manual-order-row:hover .manual-order-handle,
+  .manual-order-row:first-child .manual-order-handle,
   .manual-order-row.is-dragging .manual-order-handle,
   .manual-order-handle:focus-visible {
     opacity: 1;

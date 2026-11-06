@@ -239,6 +239,41 @@ describe("year layout", () => {
 });
 
 describe("shared agenda", () => {
+  it.each(["dayGridMonth", "timeGridWeek", "listWeek"])(
+    "keeps other-day plans on their deadline in %s and in day inspection",
+    (mode) => {
+      const current = execution("2026-07-02");
+      current.rows[0].task.due = "2026-07-01";
+      current.rows[0].values.due = "2026-07-01";
+      current.view.presentation!.options.calendarView = mode;
+      const view = renderCalendar(current, vi.fn());
+      const due = items().find((item) => item.id === "due-one");
+      expect(due?.start).toBe("2026-07-01");
+      if (mode === "listWeek") return;
+      act(() =>
+        (calendar.props!.onDateClick as (info: unknown) => void)({
+          dateStr: "2026-07-01",
+          startStr: "2026-07-01",
+          allDay: true,
+          jsEvent: new MouseEvent("click"),
+        }),
+      );
+      const inspector = within(view.container).getByRole("complementary", {
+        name: "Selected day",
+      });
+      expect(within(inspector).getByText("1 task")).toBeVisible();
+      expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+      expect(
+        within(inspector).getByRole("button", {
+          name: current.rows[0].task.title,
+        }),
+      ).toBeVisible();
+      expect(
+        inspector.querySelector(".task-row-inline-metadata"),
+      ).toHaveTextContent("Due");
+    },
+  );
+
   it("opens grid day details only after a selection and offers an explicit close", () => {
     const view = within(
       renderCalendar(execution("2026-07-24"), vi.fn()).container,

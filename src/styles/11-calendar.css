@@ -459,24 +459,37 @@
 
 @media (min-width: 840px) and (pointer: fine) {
   .full-calendar-view .tnc {
-    --tnc-bar-h: 32px;
+    --tnc-bar-h: 40px;
     --tnc-more-h: 44px;
     --tnc-dg-top-h: 26px;
     --tnc-day-min-h: 100px;
   }
   .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
-    min-height: 32px;
+    min-height: 40px;
   }
   .full-calendar-view .tnc-dg .full-calendar-event-content {
-    min-height: 28px;
-    line-height: 14px;
+    min-height: 36px;
+    font-size: 14px;
+    line-height: 18px;
   }
   .full-calendar-view .tnc-dg .full-calendar-event-primary > span,
   .full-calendar-view .tnc-dg .full-calendar-event-secondary {
-    line-height: 14px;
+    line-height: 18px;
   }
   .full-calendar-view .tnc-dg .full-calendar-event-primary > span {
     -webkit-line-clamp: 2;
+    color: var(--ink);
+  }
+  .full-calendar-view .tnc-dg .full-calendar-event-secondary {
+    display: none;
+  }
+  .full-calendar-view
+    .tnc-dg
+    .full-calendar-event-content.is-due
+    .full-calendar-event-primary
+    > span {
+    color: var(--ink-soft);
+    font-weight: 600;
   }
   .full-calendar-view .tnc-ym-day {
     min-height: 26px;
@@ -2074,6 +2087,30 @@
 .agenda-task-slot {
   min-width: 0;
   font-size: var(--type-body);
+}
+
+.agenda-task-slot .task-row-title {
+  color: var(--ink);
+  font-size: var(--type-control);
+  line-height: 23px;
+}
+.agenda-task-slot
+  :is(.task-row-property, .task-row-meta > button, .task-row-metadata-band) {
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+.agenda-task-slot :is(.task-row-property, .task-row-meta > button).is-overdue,
+.agenda-task-slot .task-row-metadata-band > .is-overdue {
+  color: var(--danger);
+}
+.full-calendar-view .agenda-task-slot .task-row-property.is-project > strong,
+.agenda-task-slot .task-row-metadata-band > .is-project {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .full-calendar-view.is-agenda .tnc-list-add {

@@ -11,6 +11,7 @@ import {
   Folder,
   Flag,
   Hash,
+  Pencil,
   Square,
   Target,
   type LucideIcon,
@@ -25,9 +26,16 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type KeyboardEvent,
+  type FocusEvent,
 } from "react";
 
-import { activeTimeEntry, taskDatePart, taskTimePart } from "../domain/task";
+import {
+  activeTimeEntry,
+  taskDatePart,
+  taskTimePart,
+  todayString,
+} from "../domain/task";
 import { formatTaskTime } from "../i18n/presentation";
 import { relativeDateDetail } from "../i18n/view-presentation";
 import { occurrenceTask } from "../domain/task-occurrence";
@@ -126,6 +134,10 @@ export function TaskRow({
   }
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
   const metadata = taskMeta(displayedTask);
+  const missedDeadline =
+    !displayedTask.completed &&
+    !!displayedTask.due &&
+    taskDatePart(displayedTask.due) < todayString();
   const status = configuration.statuses.find(
     (candidate) => candidate.value === displayedTask.status,
   );
@@ -313,7 +325,7 @@ export function TaskRow({
   return (
     <div
       {...swipe.handlers}
-      className={`task-row${displayedTask.completed ? " is-complete" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${selection.selected ? " is-selected" : ""}${open ? " is-open" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
+      className={`task-row${displayedTask.completed ? " is-complete" : ""}${missedDeadline ? " has-missed-deadline" : ""}${justCompleted && displayedTask.completed ? " is-just-completed" : ""}${tracking ? " is-tracking" : ""}${selection.selected ? " is-selected" : ""}${open ? " is-open" : ""}${swipe.offset ? " is-swiping" : ""}${swipe.direction ? " is-swipe-ready" : ""}`}
       data-selected={selection.selectable ? selection.selected : undefined}
       data-task-id={task.id}
       data-task-title={task.title}
@@ -447,7 +459,7 @@ export function TaskRow({
             className="task-row-metadata-band"
             type="button"
             ref={propertiesTrigger}
-            aria-label={t`Task properties`}
+            aria-label={t`Properties for ${task.title}`}
             aria-description={shownDetails
               .map((detail) => `${detail.label}: ${detail.value}`)
               .join(", ")}
@@ -467,14 +479,25 @@ export function TaskRow({
                   : detail.value}
               </span>
             ))}
+            <Pencil
+              className="task-row-metadata-edit"
+              aria-hidden="true"
+              size={12}
+            />
           </button>
         ) : null}
         {details ? (
           tracking || shownDetails.length ? (
-            <span className="task-row-properties task-row-inline-metadata">
+            <span
+              className="task-row-properties task-row-inline-metadata"
+              role="toolbar"
+              aria-label={t`Properties for ${task.title}`}
+              onKeyDown={navigateRowProperties}
+              onFocus={focusRowProperty}
+            >
               {tracking ? <TrackingIndicator /> : null}
               {contextLeadsDetails ? context : null}
-              {shownDetails.map((detail) => (
+              {shownDetails.map((detail, index) => (
                 <button
                   className={`task-row-property${isCompactDetail(detail, configuration) ? " is-compact" : ""}${propertyField(detail) === configuration.fieldMapping.projects || propertyField(detail) === "projects" ? " is-project" : ""}${detailRank(detail, configuration) === 0 ? " is-date" : ""}${detailRank(detail, configuration) === 2 ? " is-organisation" : ""}${detail.overdue ? " is-overdue" : ""}`}
                   key={detail.key}
@@ -483,6 +506,7 @@ export function TaskRow({
                   }
                   aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
+                  tabIndex={index === 0 ? 0 : -1}
                   onClick={(event) => openDetail(detail, event.currentTarget)}
                 >
                   <span>{detail.label}</span>
@@ -497,16 +521,20 @@ export function TaskRow({
             </span>
           ) : null
         ) : tracking || shownDetails.length ? (
-          <span className="task-row-meta task-row-inline-metadata">
+          <span
+            className="task-row-meta task-row-inline-metadata"
+            role="toolbar"
+            aria-label={t`Properties for ${task.title}`}
+            onKeyDown={navigateRowProperties}
+            onFocus={focusRowProperty}
+          >
             {tracking ? <TrackingIndicator /> : null}
-            {shownDetails.map((detail) => (
+            {shownDetails.map((detail, index) => (
               <button
                 className={detail.overdue ? "is-overdue" : undefined}
                 aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
-                // Row keys and the actions menu reach these without a Tab
-                // stop for every date, tag and project in a long list.
-                tabIndex={-1}
+                tabIndex={index === 0 ? 0 : -1}
                 title={`${detail.label}: ${detail.value}`}
                 type="button"
                 onClick={(event) => openDetail(detail, event.currentTarget)}
@@ -556,6 +584,45 @@ export function TaskRow({
       ) : null}
     </div>
   );
+}
+
+function focusRowProperty(event: FocusEvent<HTMLElement>) {
+  for (const button of event.currentTarget.querySelectorAll<HTMLButtonElement>(
+    "button",
+  ))
+    button.tabIndex = button === event.target ? 0 : -1;
+}
+
+function navigateRowProperties(event: KeyboardEvent<HTMLElement>) {
+  if (
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+  )
+    return;
+  const buttons = [
+    ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+      "button:not(:disabled)",
+    ),
+  ];
+  const index = buttons.indexOf(event.target as HTMLButtonElement);
+  if (index < 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const direction =
+    getComputedStyle(event.currentTarget).direction === "rtl" ? -1 : 1;
+  const next =
+    event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (index +
+            (event.key === "ArrowRight" ? direction : -direction) +
+            buttons.length) %
+          buttons.length;
+  buttons[next]?.focus();
 }
 
 /**

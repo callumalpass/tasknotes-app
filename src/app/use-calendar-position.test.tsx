@@ -82,6 +82,24 @@ it("aligns the selected month's heading and preserves subsequent year browsing",
   expect(scroller.scrollTop).toBe(100);
 });
 
+it("clamps desktop year reveal to the content end without padding out the final row", () => {
+  const root = fixture(
+    '<div class="tnc-year-scroll"><section class="tnc-ym"><button class="tnc-ym-day" data-date="2026-11-05"></button></section></div>',
+  );
+  const scroller = root.current.firstElementChild as HTMLElement;
+  bounds(scroller, 0, 100, 900, 450);
+  bounds(root.current.querySelector(".tnc-ym")!, 0, 1000, 280, 240);
+  Object.defineProperties(scroller, {
+    clientHeight: { value: 450 },
+    scrollHeight: { value: 1100 },
+  });
+  renderHook(() =>
+    useCalendarPosition(root, "multiMonthYear", false, "2026-11-05", 0),
+  );
+  expect(scroller.scrollTop).toBe(650);
+  expect(scroller.style.paddingBottom).toBe("");
+});
+
 it.each(["timeGridDay", "dayGridMonth"])(
   "reveals the active column when returning from %s to a previously scrolled layout",
   async (mode) => {
@@ -182,11 +200,12 @@ it("keeps the selected month heading below an overlapping toolbar", () => {
   );
   bounds(root.current.querySelector(".tnc-ym")!, 0, 900, 240, 200);
   Object.defineProperty(scroller, "clientHeight", { value: 400 });
+  Object.defineProperty(scroller, "scrollHeight", { value: 1600 });
   renderHook(() =>
     useCalendarPosition(root, "multiMonthYear", false, "2026-11-05", 0),
   );
   expect(scroller.scrollTop).toBe(780);
-  expect(scroller.style.paddingBottom).toBe("200px");
+  expect(scroller.style.paddingBottom).toBe("");
 });
 
 it("names the visible phone week columns and updates the cue after scrolling", async () => {

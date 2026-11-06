@@ -30,7 +30,9 @@ test("Upcoming has named, counted week days, respects the first day preference a
   const date = await today.getAttribute("data-date");
   const group = page.locator(`.tnc-list-section[data-date="${date}"]`);
   await expect(group.getByRole("heading")).toContainText("Today ·");
-  const count = await group.locator(".tnc-item--list").count();
+  const count = await group
+    .locator(".tnc-item--list:not(.is-time-entry)")
+    .count();
   await expect(group.locator(".agenda-day-count")).toHaveText(String(count));
   await expect(today.locator(".agenda-strip-count")).toHaveText(String(count));
   const leadIds = await page

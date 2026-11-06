@@ -349,17 +349,45 @@ export function TaskCapture({
     const input = inputRef.current;
     if (!input) return;
     const resize = () => {
+      const cap = Math.min(
+        135,
+        Math.max(
+          44,
+          (window.visualViewport?.height ?? window.innerHeight) * 0.24,
+        ),
+      );
       input.style.height = "0px";
-      input.style.height = `${Math.min(89, Math.max(44, input.scrollHeight))}px`;
+      input.style.maxHeight = `${cap}px`;
+      input.style.height = `${Math.min(cap, Math.max(44, input.scrollHeight))}px`;
+      input.parentElement?.toggleAttribute(
+        "data-overflow",
+        input.scrollHeight > input.clientHeight + 1,
+      );
+      input.parentElement?.style.setProperty(
+        "--capture-scrollbar-width",
+        `${input.offsetWidth - input.clientWidth}px`,
+      );
       syncMirror();
     };
     resize();
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
     observer?.observe(input.parentElement!);
-    return () => observer?.disconnect();
+    window.visualViewport?.addEventListener("resize", resize);
+    window.addEventListener("resize", resize);
+    return () => {
+      observer?.disconnect();
+      window.visualViewport?.removeEventListener("resize", resize);
+      window.removeEventListener("resize", resize);
+    };
   }, [text]);
   useLayoutEffect(syncMirror);
+  useLayoutEffect(() => {
+    if ((expanded || editingField) && inputRef.current) {
+      inputRef.current.scrollTop = 0;
+      syncMirror();
+    }
+  }, [expanded, editingField]);
   useLayoutEffect(() => {
     if (editingField && detailsRef.current && focusDetails.current) {
       const target =
@@ -400,6 +428,15 @@ export function TaskCapture({
     window.requestAnimationFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.setSelectionRange(next.cursor, next.cursor);
+    });
+  }
+
+  function revealChoices(trigger: string) {
+    const value = `${text}${text && !/\s$/u.test(text) ? " " : ""}${trigger}`;
+    changeText(value);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(value.length, value.length);
     });
   }
 
@@ -575,9 +612,24 @@ export function TaskCapture({
 
       {(showGuide || focused) && !text.trim() ? (
         <p className="capture-guide">
-          <Trans>
-            Try tomorrow 9am, #tag, @context, +project, !priority, *status.
-          </Trans>
+          <Trans>Try tomorrow 9am, #tag, @context, +project.</Trans>
+          {triggers
+            .filter(
+              ({ propertyId }) =>
+                (propertyId === "priority" &&
+                  configuration.priorities.length > 0) ||
+                (propertyId === "status" && configuration.statuses.length > 0),
+            )
+            .map(({ propertyId, trigger }) => (
+              <button
+                type="button"
+                key={propertyId}
+                onClick={() => revealChoices(trigger)}
+              >
+                {trigger}
+                {propertyId === "priority" ? t`Priority` : t`Status`}
+              </button>
+            ))}
         </p>
       ) : null}
 

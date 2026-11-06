@@ -84,4 +84,14 @@ it("keeps the project and other-day deadline, without repeating a timed section'
       (detail) => detail.key === "scheduled",
     ),
   ).toBe(true);
+  const deadline = entries.get("2026-11-07")![0]!;
+  expect(
+    calendarRowDetails(
+      deadline,
+      execution,
+      "title",
+      model.configuration(),
+      "2026-11-07",
+    ).find((detail) => detail.key === "due")?.rawValue,
+  ).toBe("2026-11-07");
 });

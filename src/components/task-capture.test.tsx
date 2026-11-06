@@ -60,18 +60,20 @@ it("shows every shorthand kind only while an empty capture is focused", () => {
     />,
   );
   const input = screen.getByRole("combobox", { name: "New task title" });
-  expect(screen.queryByText(/!priority/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
   fireEvent.focus(input);
-  expect(screen.getByText(/!priority/)).toHaveTextContent(
-    "#tag, @context, +project, !priority, *status",
+  expect(screen.getByText(/Try tomorrow/)).toHaveTextContent(
+    "#tag, @context, +project.",
   );
+  expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "*Status" })).toBeVisible();
   fireEvent.change(input, { target: { value: "A draft" } });
-  expect(screen.queryByText(/!priority/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
 });
 
 it("keeps empty capture guidance in place until an outside pointer action finishes", () => {
   const activate = vi.fn(() =>
-    expect(screen.getByText(/!priority/)).toBeVisible(),
+    expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible(),
   );
   render(
     <>
@@ -87,14 +89,74 @@ it("keeps empty capture guidance in place until an outside pointer action finish
   fireEvent.focus(input);
   fireEvent.pointerDown(outside);
   fireEvent.blur(input, { relatedTarget: outside });
-  expect(screen.getByText(/!priority/)).toBeVisible();
+  expect(screen.getByRole("button", { name: "!Priority" })).toBeVisible();
   fireEvent.pointerUp(outside);
   fireEvent.click(outside);
   expect(activate).toHaveBeenCalledOnce();
-  expect(screen.queryByText(/!priority/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
   fireEvent.focus(input);
   fireEvent.blur(input, { relatedTarget: outside });
-  expect(screen.queryByText(/!priority/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "!Priority" })).toBeNull();
+});
+
+it.each(["priority", "status"] as const)(
+  "reveals every configured %s choice through the capture guide",
+  async (field) => {
+    const configuration = defaultTaskCollectionConfiguration();
+    const choices = Array.from({ length: 12 }, (_, index) => ({
+      ...configuration[field === "priority" ? "priorities" : "statuses"][0],
+      id: `custom-${index}`,
+      value: `custom-${index}`,
+      label: `Custom choice ${index}`,
+    }));
+    if (field === "priority")
+      configuration.priorities = choices as typeof configuration.priorities;
+    else configuration.statuses = choices as typeof configuration.statuses;
+    render(<TaskCapture configuration={configuration} createTask={vi.fn()} />);
+    const input = screen.getByRole("combobox", { name: "New task title" });
+    fireEvent.focus(input);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: field === "priority" ? "!Priority" : "*Status",
+      }),
+    );
+    expect(await screen.findAllByRole("option")).toHaveLength(12);
+    fireEvent.click(screen.getByRole("option", { name: "Custom choice 11" }));
+    expect(input).toHaveValue(`${field === "priority" ? "!" : "*"}custom-11 `);
+  },
+);
+
+it("caps capture at five lines, adapts to a constrained viewport and reveals the start for details", () => {
+  const viewport = Object.assign(new EventTarget(), { height: 713 });
+  vi.stubGlobal("visualViewport", viewport);
+  try {
+    render(
+      <TaskCapture
+        configuration={defaultTaskCollectionConfiguration()}
+        createTask={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole("combobox", {
+      name: "New task title",
+    }) as HTMLTextAreaElement;
+    Object.defineProperties(input, {
+      scrollHeight: { configurable: true, value: 280 },
+      clientHeight: { configurable: true, value: 135 },
+    });
+    fireEvent.change(input, { target: { value: "A long title ".repeat(25) } });
+    expect(input.style.height).toBe("135px");
+    expect(input.parentElement).toHaveAttribute("data-overflow");
+    input.scrollTop = 100;
+    fireEvent.click(screen.getByRole("button", { name: "Add details" }));
+    expect(input.scrollTop).toBe(0);
+    viewport.height = 300;
+    act(() => {
+      viewport.dispatchEvent(new Event("resize"));
+    });
+    expect(input.style.height).toBe("72px");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("applies view defaults and keeps a created task recoverable when the view excludes it", async () => {

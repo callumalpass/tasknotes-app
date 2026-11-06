@@ -93,16 +93,28 @@ export function useCalendarPosition(
           const month = target?.closest(".tnc-ym");
           if (month) {
             const monthBounds = month.getBoundingClientRect();
-            scroller.style.paddingBottom = `${Math.max(12, scroller.clientHeight - monthBounds.height)}px`;
+            scroller.style.paddingBottom = phone
+              ? `${Math.max(12, scroller.clientHeight - monthBounds.height)}px`
+              : "";
             const toolbar = root.querySelector(".full-calendar-commandbar");
             const top = Math.max(
               bounds.top,
               toolbar?.getBoundingClientRect().bottom ?? bounds.top,
             );
-            scroller.scrollTop +=
+            const desired =
+              scroller.scrollTop +
               monthBounds.top -
               top -
               (parseFloat(getComputedStyle(scroller).paddingTop) || 0);
+            scroller.scrollTop = phone
+              ? desired
+              : Math.max(
+                  0,
+                  Math.min(
+                    desired,
+                    scroller.scrollHeight - scroller.clientHeight,
+                  ),
+                );
           }
         } else if (target) {
           const gutter = root.querySelector(".tnc-gutter-head");

@@ -76,6 +76,11 @@
   background: var(--paper-soft);
 }
 
+.task-row.has-missed-deadline .task-row-content {
+  box-shadow: -2px 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
+  padding-inline-start: 8px;
+}
+
 .task-actions-trigger {
   display: grid;
   place-items: center;
@@ -1309,6 +1314,7 @@
 }
 
 .task-row-metadata-band {
+  position: relative;
   display: none;
   width: 100%;
   min-height: 44px;
@@ -1317,6 +1323,7 @@
   flex-wrap: wrap;
   gap: 0 8px;
   padding: 0;
+  padding-inline-end: 18px;
   border: 0;
   background: transparent;
   color: var(--ink-muted);
@@ -1335,6 +1342,12 @@
 }
 .task-row-metadata-band > .is-overdue {
   color: var(--danger);
+}
+.task-row-metadata-edit {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 6px;
+  opacity: 0.7;
 }
 .task-properties-sheet-scrim {
   display: grid;
@@ -1366,9 +1379,17 @@
   .task-row-metadata-band {
     display: flex;
   }
-  .task-row:not(.kanban-card *) .task-row-title {
+  .task-row:not(.kanban-card *) .task-row-title,
+  .kanban-card .task-row .task-row-title {
+    display: flex;
+    align-items: flex-end;
     min-height: 44px;
-    padding-block: 2px;
+    padding-block: 0 2px;
+  }
+  .task-row-metadata-band {
+    align-content: flex-start;
+    align-items: flex-start;
+    padding-block: 2px 0;
   }
 }
 

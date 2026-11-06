@@ -3,12 +3,7 @@ import { parseDay, type Calendar, type ItemArg } from "@tasknotes/calendar";
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import { appLocale } from "../i18n/app";
 import { countLabel } from "../i18n/default-labels";
-import {
-  dateFromStorage,
-  taskDatePart,
-  todayString,
-  type TaskSummary,
-} from "../domain/task";
+import { dateFromStorage, todayString, type TaskSummary } from "../domain/task";
 import type { CalendarSettings } from "@tasknotes/model/calendar";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
@@ -110,11 +105,10 @@ export function useCalendarAgenda({
         const day = parseDay(value);
         if (day === null) continue;
         const count = (entries.get(value) ?? []).filter(
-          ({ modelEntry, row, timeEntry }) =>
+          ({ modelEntry, timeEntry }) =>
             !timeEntry &&
             !modelEntry.isOverdueOnToday &&
-            (api.opts.allDaySlot || !modelEntry.allDay) &&
-            !plannedElsewhere(row.task, value),
+            (api.opts.allDaySlot || !modelEntry.allDay),
         ).length;
         const date = new Date(`${value}T12:00:00`);
         const label = new Intl.DateTimeFormat(appLocale(), {
@@ -204,10 +198,4 @@ export function useCalendarAgenda({
   }, [root, calendar, enabled, items, locale, entries]);
 
   return { slots, mount, unmount };
-}
-
-/** The agenda lists a task on its planned day, so only that day counts it. */
-export function plannedElsewhere(task: TaskSummary, day: string): boolean {
-  const planned = taskDatePart(task.scheduled);
-  return !!planned && !task.recurrence && planned !== day;
 }

@@ -32,7 +32,7 @@ import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
 import { useCalendarPosition } from "./use-calendar-position";
 import { useCalendarPreviews } from "./use-calendar-previews";
-import { plannedElsewhere, useCalendarAgenda } from "./use-calendar-agenda";
+import { useCalendarAgenda } from "./use-calendar-agenda";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -275,12 +275,9 @@ export function TaskCalendarView({
   const items = useMemo(
     () =>
       withPendingMoves(built.items, pendingMoves, execution)
-        .filter(
-          (item) =>
-            !repeatsToday(item) && !(agenda && repeatsPlannedTask(item)),
-        )
+        .filter((item) => !repeatsToday(item))
         .map(withRevision),
-    [agenda, built, execution, pendingMoves],
+    [built, execution, pendingMoves],
   );
   const agendaRows = useCalendarAgenda({
     root: rootRef,
@@ -302,10 +299,7 @@ export function TaskCalendarView({
     [built, configuration],
   );
   const selectedEntries = (entries.get(selected) ?? []).filter(
-    (entry) =>
-      !entry.timeEntry &&
-      !entry.modelEntry.isOverdueOnToday &&
-      !plannedElsewhere(entry.row.task, selected),
+    (entry) => !entry.timeEntry && !entry.modelEntry.isOverdueOnToday,
   );
   const listMode = mode === "listWeek";
 
@@ -1123,22 +1117,6 @@ function repeatsToday(item: TaskCalendarItem): boolean {
   );
 }
 
-/** The agenda lists a task on the day planned; its row names the deadline. */
-function repeatsPlannedTask(item: TaskCalendarItem): boolean {
-  const entry = item.data?.metadata.entry;
-  const task = entry?.row.task;
-  const planned = taskDatePart(task?.scheduled);
-  return (
-    !!planned &&
-    !entry?.modelEntry.isOverdueOnToday &&
-    !task?.recurrence &&
-    planned !==
-      (item.allDay
-        ? calendarDay(String(item.start))
-        : todayString(new Date(item.start)))
-  );
-}
-
 function withRevision(item: TaskCalendarItem): TaskCalendarItem {
   const data = { ...item.data! } as Partial<CalendarEventData>;
   delete data.metadata;
@@ -1167,6 +1145,7 @@ function calendarEventContent(
     "span",
     [
       "full-calendar-event-content",
+      presentation?.kind === "Due" ? "is-due" : "",
       presentation?.recurring ? "is-recurring" : "",
       marker ? "has-marker" : "",
     ]
