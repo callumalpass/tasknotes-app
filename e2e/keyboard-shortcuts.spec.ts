@@ -185,18 +185,30 @@ test("row keys act on the whole selection and keep the list place", async ({
 }) => {
   await page.goto("?demo=60");
   await expect(page.locator("button.task-row-title").first()).toBeVisible();
-  await page.keyboard.press("j");
   const rows = page.locator(".task-row[data-task-id]");
-  await expect(rows.first()).toBeVisible();
-  const movable = rows.filter({ has: page.locator(".task-row-quick-date") });
-  await expect(movable.first()).toBeVisible();
-  const first = await movable.first().getAttribute("data-task-id");
+  const overdue = page.locator("#task-section-overdue .task-row");
+  const first = await overdue.first().getAttribute("data-task-id");
+  const nextId = await overdue.nth(2).getAttribute("data-task-id");
+  const next = page.locator(`[data-task-id="${nextId}"] .task-row-title`);
+  const original = await overdue.evaluateAll((elements) =>
+    elements.slice(0, 2).map((element) => ({
+      id: element.getAttribute("data-task-id"),
+      description: element
+        .querySelector(".task-row-title")!
+        .getAttribute("aria-description"),
+    })),
+  );
+  await overdue.first().locator(".task-row-title").focus();
   await page.keyboard.press("v");
   await page.keyboard.press("Shift+J");
   await expect(page.locator(".bulk-selection-count")).toContainText(
     "2 selected",
   );
   await page.keyboard.press("m");
+  await expect(
+    page.getByRole("group", { name: "Due dates that have passed" }),
+  ).toContainText("1 due date has passed");
+  await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Keep due dates", exact: true })
     .click();
@@ -225,6 +237,13 @@ test("row keys act on the whole selection and keep the list place", async ({
   await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
   await expect(page.locator(".app-shell")).not.toHaveClass(/sidebar-collapsed/);
   await expect(rows.locator(".task-row-title:focus")).toHaveCount(1);
+  await expect(next).toBeFocused();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  for (const task of original) {
+    await expect(
+      page.locator(`[data-task-id="${task.id}"] .task-row-title`),
+    ).toHaveAttribute("aria-description", task.description!);
+  }
 });
 
 test("a single reschedule confirms itself with Undo", async ({ page }) => {

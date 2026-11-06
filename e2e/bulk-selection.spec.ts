@@ -2,6 +2,8 @@ import { expect, test, type Page } from "./local-test";
 
 const rows = (page: Page) =>
   page.locator("[data-task-selection-list] .task-row");
+const overdueRows = (page: Page) =>
+  page.locator("#task-section-overdue .task-row");
 const openDemo = async (page: Page, count = 60) => {
   await page.goto(`?demo=${count}`);
   await expect(rows(page).first()).toBeVisible();
@@ -14,11 +16,10 @@ const selectedRows = (page: Page) =>
   rows(page).filter({
     has: page.locator(".task-row-title[aria-pressed=true]"),
   });
-const selectTwo = async (page: Page) => {
-  await rows(page).first().locator(".task-row-title").focus();
+const selectTwo = async (page: Page, candidates = rows(page)) => {
+  await candidates.first().locator(".task-row-title").focus();
   await page.keyboard.press("v");
-  // Skip the recurring demo task at index 1.
-  await rows(page).nth(2).locator(".task-row-title").focus();
+  await candidates.nth(2).locator(".task-row-title").focus();
   await page.keyboard.press("v");
   await expect(page.locator(".bulk-actions")).toContainText("2 selected");
 };
@@ -85,16 +86,30 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
   page,
 }) => {
   await openDemo(page);
-  const titles = await rows(page)
+  const titles = await overdueRows(page)
     .locator(".task-row-title-text")
     .allTextContents();
-  await selectTwo(page);
+  const properties = await overdueRows(page)
+    .locator(".task-row-properties")
+    .allTextContents();
+  await selectTwo(page, overdueRows(page));
   await page.getByRole("combobox", { name: "Schedule selected tasks" }).click();
   await page.getByRole("option", { name: "Tomorrow" }).click();
+  await expect(
+    page.getByRole("group", { name: "Due dates that have passed" }),
+  ).toContainText("1 due date has passed");
+  await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Move due dates too", exact: true })
     .click();
-  await expect(page.getByText(/^Scheduled 2 tasks for /)).toBeVisible();
+  await expect(page.locator(".bulk-update-notice")).toContainText(
+    "Scheduled 2 tasks for Tomorrow and moved 1 missed due date",
+  );
+  await expect(
+    page
+      .locator(".bulk-update-notice")
+      .getByRole("button", { name: "Undo", exact: true }),
+  ).toHaveCount(1);
   for (const title of [titles[0], titles[2]])
     await expect(
       rows(page).getByRole("button", { name: title, exact: true }),
@@ -103,10 +118,18 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
     .locator(".bulk-update-notice")
     .getByRole("button", { name: "Undo", exact: true })
     .click();
-  for (const title of [titles[0], titles[2]])
+  for (const index of [0, 2]) {
     await expect(
-      rows(page).getByRole("button", { name: title, exact: true }),
+      rows(page).getByRole("button", { name: titles[index], exact: true }),
     ).toBeVisible();
+    await expect(
+      rows(page)
+        .filter({
+          has: page.getByRole("button", { name: titles[index], exact: true }),
+        })
+        .locator(".task-row-properties"),
+    ).toHaveText(properties[index]);
+  }
   await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
 });
 
@@ -264,10 +287,13 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
 }) => {
   await openDemo(page);
   for (const choice of ["none", "pick"]) {
-    const titles = await rows(page)
+    const titles = await overdueRows(page)
       .locator(".task-row-title-text")
       .allTextContents();
-    await selectTwo(page);
+    const properties = await overdueRows(page)
+      .locator(".task-row-properties")
+      .allTextContents();
+    await selectTwo(page, overdueRows(page));
     await page
       .getByRole("combobox", { name: "Schedule selected tasks" })
       .click();
@@ -282,6 +308,10 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
       await expect(page.locator(".task-date-hint")).toContainText("Nov 12");
       await page.getByLabel("Type a date").press("Enter");
+      await expect(
+        page.getByRole("group", { name: "Due dates that have passed" }),
+      ).toContainText("1 due date has passed");
+      await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
       await page
         .getByRole("button", { name: "Move due dates too", exact: true })
         .click();
@@ -290,14 +320,22 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
       page.getByText(
         choice === "none"
           ? "Removed scheduled dates from 2 tasks"
-          : /^Scheduled 2 tasks for Thu, Nov 12( and moved \d missed due dates?)?$/,
+          : "Scheduled 2 tasks for Thu, Nov 12 and moved 1 missed due date",
       ),
     ).toBeVisible();
     await page.getByRole("button", { name: "Undo", exact: true }).click();
-    for (const title of [titles[0], titles[2]])
+    for (const index of [0, 2]) {
       await expect(
-        rows(page).getByRole("button", { name: title, exact: true }),
+        rows(page).getByRole("button", { name: titles[index], exact: true }),
       ).toBeVisible();
+      await expect(
+        rows(page)
+          .filter({
+            has: page.getByRole("button", { name: titles[index], exact: true }),
+          })
+          .locator(".task-row-properties"),
+      ).toHaveText(properties[index]);
+    }
   }
 });
 

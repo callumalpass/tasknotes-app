@@ -200,8 +200,11 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
     page.getByRole("button", { name: "Enregistrer la vue", exact: true }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("heading", { name: "Détails de la vue", exact: true }),
+    page.getByRole("heading", { name: "Nouvelle vue", exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".view-layout-disclosure > summary")).toHaveText(
+    "Disposition : Liste",
+  );
   expect(
     (await new AxeBuilder({ page }).include(".view-editor").analyze())
       .violations,
