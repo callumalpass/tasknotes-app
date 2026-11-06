@@ -302,6 +302,20 @@ export function TaskCalendarView({
     (entry) => !entry.timeEntry && !entry.modelEntry.isOverdueOnToday,
   );
   const listMode = mode === "listWeek";
+  const markers =
+    legend.length && !listMode ? (
+      <ul className="full-calendar-legend" aria-label={t`Calendar markers`}>
+        {legend.map((marker) => (
+          <li
+            key={marker.value}
+            style={{ "--event-tone": marker.color } as React.CSSProperties}
+          >
+            <i aria-hidden="true" />
+            {marker.label}
+          </li>
+        ))}
+      </ul>
+    ) : null;
 
   // Rows name an elevated priority so the grid's coloured marks read the
   // same here; without view properties the row's defaults already do.
@@ -695,7 +709,7 @@ export function TaskCalendarView({
           });
       }}
       data-calendar-mode={mode}
-      className={`full-calendar-view${listMode ? " is-agenda" : ""}${inspectingDay ? " has-day-inspector" : ""}`}
+      className={`full-calendar-view${listMode ? " is-agenda" : ""}${inspectingDay || phoneMonth ? " has-day-inspector" : ""}`}
     >
       <div className="full-calendar-workspace">
         {/* The layout switcher belongs to the calendar it changes, so it sits
@@ -978,26 +992,9 @@ export function TaskCalendarView({
               );
             })}
           </div>
-          {legend.length && !listMode ? (
-            <ul
-              className="full-calendar-legend"
-              aria-label={t`Calendar markers`}
-            >
-              {legend.map((marker) => (
-                <li
-                  key={marker.value}
-                  style={
-                    { "--event-tone": marker.color } as React.CSSProperties
-                  }
-                >
-                  <i aria-hidden="true" />
-                  {marker.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          {!phoneMonth ? markers : null}
         </div>
-        {!listMode && inspectingDay ? (
+        {!listMode && (inspectingDay || phoneMonth) ? (
           <aside
             ref={inspectorRef}
             tabIndex={-1}
@@ -1007,14 +1004,16 @@ export function TaskCalendarView({
             <header>
               <h2>{agendaLabel(selected)}</h2>
               <span>{countLabel(selectedEntries.length, "task")}</span>
-              <button
-                aria-label={t`Close day details`}
-                className="icon-action"
-                type="button"
-                onClick={() => setInspectingDay(false)}
-              >
-                <X aria-hidden="true" size={18} />
-              </button>
+              {!phoneMonth ? (
+                <button
+                  aria-label={t`Close day details`}
+                  className="icon-action"
+                  type="button"
+                  onClick={() => setInspectingDay(false)}
+                >
+                  <X aria-hidden="true" size={18} />
+                </button>
+              ) : null}
             </header>
             {selectedEntries.length ? (
               <div className="full-calendar-day-tasks">
@@ -1038,6 +1037,7 @@ export function TaskCalendarView({
             )}
           </aside>
         ) : null}
+        {phoneMonth ? markers : null}
       </div>
       {contextAction ? (
         <TaskActions

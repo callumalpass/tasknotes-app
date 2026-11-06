@@ -78,7 +78,6 @@
 
 .task-row.has-missed-deadline .task-row-content {
   box-shadow: -2px 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
-  padding-inline-start: 8px;
 }
 
 .task-actions-trigger {
@@ -1313,8 +1312,7 @@
   vertical-align: -2px;
 }
 
-.task-row-metadata-band {
-  position: relative;
+.task-row-compact-metadata {
   display: none;
   width: 100%;
   min-height: 44px;
@@ -1323,7 +1321,16 @@
   flex-wrap: wrap;
   gap: 0 8px;
   padding: 0;
-  padding-inline-end: 18px;
+}
+.task-row-metadata-more,
+.task-row-date-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  gap: 4px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--ink-muted);
@@ -1333,14 +1340,38 @@
   text-align: left;
   cursor: pointer;
 }
-.task-row-metadata-band > span {
+.task-row-metadata-more {
+  flex: 1 1 44px;
+  gap: 8px;
+  padding-inline-end: 18px;
+}
+.task-row-metadata-more > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
+  flex-shrink: 0;
+}
+.task-row-metadata-more > .is-project {
+  flex: 0 1 auto;
+}
+.task-row-value {
+  min-width: 0;
+}
+.task-row-date-chip .task-row-value {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
-.task-row-metadata-band > .is-overdue {
+.task-row-metadata-more .task-row-value,
+.task-row-inline-metadata .is-project .task-row-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-row-date-chip.is-overdue {
   color: var(--danger);
 }
 .task-row-metadata-edit {
@@ -1348,6 +1379,18 @@
   inset-inline-end: 0;
   top: 6px;
   opacity: 0.7;
+}
+@container (max-width: 440px) {
+  .task-row-inline-metadata {
+    display: none;
+  }
+  .task-row-compact-metadata {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  .task-row-metadata-more {
+    overflow: hidden;
+  }
 }
 .task-properties-sheet-scrim {
   display: grid;
@@ -1376,7 +1419,7 @@
   .task-row .task-row-inline-metadata {
     display: none;
   }
-  .task-row-metadata-band {
+  .task-row-compact-metadata {
     display: flex;
   }
   .task-row:not(.kanban-card *) .task-row-title,
@@ -1386,10 +1429,9 @@
     min-height: 44px;
     padding-block: 0 2px;
   }
-  .task-row-metadata-band {
-    align-content: flex-start;
-    align-items: flex-start;
-    padding-block: 2px 0;
+  .task-row-compact-metadata {
+    align-content: center;
+    align-items: center;
   }
 }
 

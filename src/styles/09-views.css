@@ -1931,6 +1931,10 @@
   flex-wrap: wrap;
   gap: 4px 12px;
 }
+.overdue-schedule-actions > button {
+  font-size: 13px;
+  font-weight: 500;
+}
 .overdue-deadline-choice {
   display: grid;
   gap: 4px;

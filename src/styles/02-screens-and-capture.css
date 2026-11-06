@@ -276,6 +276,10 @@
 }
 
 .capture-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   margin: 0;
   padding: 9px 0 12px 30px;
   color: var(--ink-muted);
@@ -287,16 +291,28 @@
 .capture-guide button {
   min-width: 44px;
   min-height: 44px;
-  margin-inline-start: 8px;
-  padding: 0 4px;
+  padding: 0 10px;
   color: var(--ink-soft);
   font: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--line-strong);
-  text-underline-offset: 3px;
-  background: transparent;
-  border: 0;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
   cursor: pointer;
+}
+.capture-guide > p {
+  margin: 0;
+}
+.capture-guide-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 839px) {
+  .capture-guide {
+    display: block;
+  }
+  .capture-guide > p {
+    margin-bottom: 4px;
+  }
 }
 .capture-guide button:is(:hover, :focus-visible) {
   color: var(--accent);

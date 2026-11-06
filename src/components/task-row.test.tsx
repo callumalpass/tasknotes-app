@@ -286,12 +286,29 @@ it("keeps title and independent controls from also opening via the row", () => {
   open.mockClear();
   fireEvent.click(screen.getByRole("button", { name: "Complete Write brief" }));
   expect(toggle).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole("button", { name: /Scheduled/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^Scheduled:/ }));
   expect(screen.getByRole("dialog")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Actions" }));
   fireEvent.click(screen.getByTestId("actions-overlay"));
   expect(open).not.toHaveBeenCalled();
 });
+it.each(["scheduled", "due"])(
+  "opens the compact %s chip directly without opening the task or property sheet",
+  (key) => {
+    const open = vi.fn();
+    const { container } = render(
+      <TaskRow task={task} onOpen={open} onToggle={vi.fn()} />,
+    );
+    const chip = container.querySelector<HTMLButtonElement>(
+      `.task-row-date-chip[aria-label*="${key === "due" ? "Due" : "Scheduled"}"]`,
+    )!;
+    expect(chip).toHaveAccessibleName(new RegExp(task.title));
+    expect(chip).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(chip);
+    expect(screen.getByRole("dialog")).toHaveTextContent("Edit property");
+    expect(open).not.toHaveBeenCalled();
+  },
+);
 it("retains date labels and omits routine defaults in saved rows", () => {
   const configuration = defaultTaskCollectionConfiguration();
   render(

@@ -2,7 +2,10 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useCalendarPosition } from "./use-calendar-position";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 function fixture(html: string) {
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
@@ -25,6 +28,37 @@ function bounds(
     new DOMRect(left, top, width, height),
   );
 }
+
+it("reanchors the selected agenda section when detail changes the pane width in either direction", () => {
+  const root = fixture(
+    '<section class="tnc-list-section"><h2 class="tnc-list-day" data-date="2026-11-07"></h2></section>',
+  );
+  let resize = () => {};
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      constructor(callback: () => void) {
+        resize = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  bounds(root.current, 0, 0, 900, 700);
+  const section = root.current.firstElementChild as HTMLElement;
+  section.scrollIntoView = vi.fn();
+  renderHook(() =>
+    useCalendarPosition(root, "listWeek", false, "2026-11-07", 0),
+  );
+  act(() => resize());
+  expect(section.scrollIntoView).not.toHaveBeenCalled();
+  bounds(root.current, 0, 0, 550, 700);
+  act(() => resize());
+  expect(section.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  bounds(root.current, 0, 0, 900, 700);
+  act(() => resize());
+  expect(section.scrollIntoView).toHaveBeenCalledTimes(2);
+});
 
 it("reveals the phone week's selected day fully beside the gutter", () => {
   const root = fixture(

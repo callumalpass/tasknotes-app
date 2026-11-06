@@ -38,11 +38,17 @@
 }
 
 .views-screen:has(.full-calendar-view) > .view-header {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 
 .views-screen:has(.full-calendar-view) > .capture-composer {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
+}
+
+@media (min-width: 840px) {
+  .views-screen:has(.full-calendar-view) {
+    padding-top: calc(28px + env(safe-area-inset-top));
+  }
 }
 
 .views-screen:has(.full-calendar-view.is-agenda) {
@@ -415,6 +421,16 @@
   white-space: nowrap;
 }
 
+.full-calendar-view .tnc-tg-allday .tnc-item--bar {
+  padding-block: 2px;
+}
+.full-calendar-view .tnc-tg-allday .full-calendar-event-primary > span {
+  -webkit-line-clamp: 2;
+}
+.full-calendar-view .tnc-tg-allday .full-calendar-event-secondary {
+  display: none;
+}
+
 .full-calendar-view
   :is(.tnc-dg, .tnc-tg)
   .full-calendar-event-secondary
@@ -774,12 +790,15 @@
    * readably beneath the grid. The day cell is the tap target.
    */
   .full-calendar-view .tnc--month {
-    --tnc-day-min-h: 72px;
+    --tnc-day-min-h: 44px;
+    --tnc-dg-top-h: 24px;
+    --tnc-dot-size: 6px;
   }
 
   .full-calendar-view .tnc-dg-dots {
     justify-content: flex-start;
     align-content: flex-start;
+    gap: 2px;
   }
 
   /* Only an elevated priority colours a dot. */
@@ -2095,22 +2114,32 @@
   line-height: 23px;
 }
 .agenda-task-slot
-  :is(.task-row-property, .task-row-meta > button, .task-row-metadata-band) {
+  :is(
+    .task-row-property,
+    .task-row-meta > button,
+    .task-row-metadata-more,
+    .task-row-date-chip
+  ) {
   color: var(--ink-muted);
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
 }
 .agenda-task-slot :is(.task-row-property, .task-row-meta > button).is-overdue,
-.agenda-task-slot .task-row-metadata-band > .is-overdue {
+.agenda-task-slot .task-row-date-chip.is-overdue {
   color: var(--danger);
 }
 .full-calendar-view .agenda-task-slot .task-row-property.is-project > strong,
-.agenda-task-slot .task-row-metadata-band > .is-project {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.agenda-task-slot .task-row-metadata-more > .is-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.full-calendar-view
+  .agenda-task-slot
+  .task-row-property.is-project
+  .task-row-glyph {
+  margin-right: 0;
 }
 
 .full-calendar-view.is-agenda .tnc-list-add {

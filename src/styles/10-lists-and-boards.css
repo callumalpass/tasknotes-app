@@ -579,6 +579,14 @@
   -webkit-user-drag: none;
 }
 
+.kanban-card .task-row.has-missed-deadline .task-row-content {
+  box-shadow: none;
+}
+
+.kanban-card .task-row.has-missed-deadline .task-row-reading {
+  box-shadow: -2px 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
 .kanban-card .task-row-reading {
   margin-left: 32px;
 }

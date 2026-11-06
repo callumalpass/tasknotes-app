@@ -270,7 +270,8 @@ export function TaskRow({
   const rowRef = useRef<HTMLDivElement>(null);
   const open = useTaskOpen(task.id);
   useLayoutEffect(() => {
-    if (open) rowRef.current?.scrollIntoView?.({ block: "nearest" });
+    if (open && !rowRef.current?.closest(".full-calendar-view.is-agenda"))
+      rowRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [open]);
   useCompletionDeparture(
     rowRef,
@@ -455,36 +456,61 @@ export function TaskRow({
         </div>
         {context && !contextLeadsDetails ? context : null}
         {tracking || shownDetails.length ? (
-          <button
-            className="task-row-metadata-band"
-            type="button"
-            ref={propertiesTrigger}
-            aria-label={t`Properties for ${task.title}`}
-            aria-description={shownDetails
-              .map((detail) => `${detail.label}: ${detail.value}`)
-              .join(", ")}
-            aria-haspopup="dialog"
-            onClick={() => setPropertiesOpen(true)}
-          >
-            {tracking ? <TrackingIndicator /> : null}
-            {shownDetails.map((detail) => (
-              <span
-                key={detail.key}
-                data-property={propertyField(detail)}
-                className={`${detail.overdue ? "is-overdue" : ""}${[configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)) ? " is-project" : ""}`}
-              >
-                <PropertyGlyph detail={detail} />
-                {isDueDetail(detail, configuration)
-                  ? t`Due ${detail.value}`
-                  : detail.value}
-              </span>
-            ))}
-            <Pencil
-              className="task-row-metadata-edit"
-              aria-hidden="true"
-              size={12}
-            />
-          </button>
+          <div className="task-row-compact-metadata">
+            {shownDetails
+              .filter((detail) => detailRank(detail, configuration) === 0)
+              .map((detail) => (
+                <button
+                  className={`task-row-date-chip${detail.overdue ? " is-overdue" : ""}`}
+                  type="button"
+                  key={detail.key}
+                  aria-label={t`${task.title} — ${detail.label} ${detail.value}`}
+                  aria-haspopup="dialog"
+                  onClick={(event) => openDetail(detail, event.currentTarget)}
+                >
+                  <PropertyGlyph detail={detail} />
+                  <span className="task-row-value">
+                    {isDueDetail(detail, configuration)
+                      ? t`Due ${detail.value}`
+                      : detail.value}
+                  </span>
+                </button>
+              ))}
+            <button
+              className="task-row-metadata-band task-row-metadata-more"
+              type="button"
+              ref={propertiesTrigger}
+              aria-label={t`Properties for ${task.title}`}
+              aria-description={shownDetails
+                .map((detail) => `${detail.label}: ${detail.value}`)
+                .join(", ")}
+              aria-haspopup="dialog"
+              onClick={() => setPropertiesOpen(true)}
+            >
+              {tracking ? <TrackingIndicator /> : null}
+              {shownDetails
+                .filter((detail) => detailRank(detail, configuration) !== 0)
+                .map((detail) => (
+                  <span
+                    key={detail.key}
+                    data-property={propertyField(detail)}
+                    className={`${detail.overdue ? "is-overdue" : ""}${[configuration.fieldMapping.projects, "projects"].includes(propertyField(detail)) ? " is-project" : ""}`}
+                  >
+                    <PropertyGlyph detail={detail} />
+                    <span className="task-row-value">
+                      {isDueDetail(detail, configuration)
+                        ? t`Due ${detail.value}`
+                        : detail.value}
+                    </span>
+                  </span>
+                ))}
+              <Pencil
+                className="task-row-metadata-edit"
+                aria-hidden="true"
+                size={12}
+              />
+            </button>
+          </div>
         ) : null}
         {details ? (
           tracking || shownDetails.length ? (
@@ -512,9 +538,11 @@ export function TaskRow({
                   <span>{detail.label}</span>
                   <strong>
                     <PropertyGlyph detail={detail} />
-                    {isDueDetail(detail, configuration)
-                      ? t`Due ${detail.value}`
-                      : detail.value}
+                    <span className="task-row-value">
+                      {isDueDetail(detail, configuration)
+                        ? t`Due ${detail.value}`
+                        : detail.value}
+                    </span>
                   </strong>
                 </button>
               ))}
@@ -540,9 +568,11 @@ export function TaskRow({
                 onClick={(event) => openDetail(detail, event.currentTarget)}
               >
                 <PropertyGlyph detail={detail} />
-                {isDueDetail(detail, configuration)
-                  ? t`Due ${detail.value}`
-                  : detail.value}
+                <span className="task-row-value">
+                  {isDueDetail(detail, configuration)
+                    ? t`Due ${detail.value}`
+                    : detail.value}
+                </span>
               </button>
             ))}
           </span>

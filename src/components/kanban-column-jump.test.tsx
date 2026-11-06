@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { fireEvent, render, screen } from "../test/render";
+import { act, fireEvent, render, screen } from "../test/render";
 import { expect, it, vi } from "vitest";
 import { KanbanColumnJump } from "./kanban-column-jump";
 
@@ -86,4 +86,41 @@ it("hides the jump strip when all configured columns fit", () => {
   expect(
     screen.queryByRole("navigation", { name: "Board columns" }),
   ).not.toBeInTheDocument();
+});
+
+it("keeps an activated end column current at the clamped edge until scrolling away", async () => {
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    callback(0);
+    return 1;
+  });
+  const { container } = render(
+    <Board
+      columns={[
+        { key: "first", label: "Revising", count: 1 },
+        { key: "last", label: "Shipped", count: 1 },
+      ]}
+    />,
+  );
+  const board = container.querySelector(
+    "[data-kanban-column-key]",
+  )!.parentElement!;
+  const firstColumn = board.firstElementChild!;
+  const lastColumn = board.lastElementChild!;
+  vi.spyOn(firstColumn, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 300, 100),
+  );
+  vi.spyOn(lastColumn, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(300, 0, 300, 100),
+  );
+  const last = screen.getByRole("button", { name: /Shipped/ });
+  fireEvent.click(last);
+  await act(() => board.dispatchEvent(new Event("scroll")));
+  expect(last).toHaveAttribute("aria-current", "true");
+  board.scrollLeft = 20;
+  await act(() => board.dispatchEvent(new Event("scroll")));
+  expect(screen.getByRole("button", { name: /Revising/ })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  vi.restoreAllMocks();
 });

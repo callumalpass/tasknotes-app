@@ -23,6 +23,27 @@ vi.mock("../domain/task-capture", async (importOriginal) => {
   };
 });
 
+it("keeps the blank capture explanation separate from its two property actions", () => {
+  const { container } = render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+      showGuide
+    />,
+  );
+  const guide = container.querySelector(".capture-guide")!;
+  expect(guide.firstElementChild?.tagName).toBe("P");
+  expect(
+    guide.querySelectorAll(".capture-guide-actions > button"),
+  ).toHaveLength(2);
+  expect(guide.querySelector(".capture-guide-actions")).toHaveTextContent(
+    "Status",
+  );
+  expect(guide.querySelector(".capture-guide-actions")).toHaveTextContent(
+    "Priority",
+  );
+});
+
 it("opens Notes directly without revealing unrelated capture sections", async () => {
   render(
     <TaskCapture

@@ -611,26 +611,31 @@ export function TaskCapture({
       </div>
 
       {(showGuide || focused) && !text.trim() ? (
-        <p className="capture-guide">
-          <Trans>Try tomorrow 9am, #tag, @context, +project.</Trans>
-          {triggers
-            .filter(
-              ({ propertyId }) =>
-                (propertyId === "priority" &&
-                  configuration.priorities.length > 0) ||
-                (propertyId === "status" && configuration.statuses.length > 0),
-            )
-            .map(({ propertyId, trigger }) => (
-              <button
-                type="button"
-                key={propertyId}
-                onClick={() => revealChoices(trigger)}
-              >
-                {trigger}
-                {propertyId === "priority" ? t`Priority` : t`Status`}
-              </button>
-            ))}
-        </p>
+        <div className="capture-guide">
+          <p>
+            <Trans>Try tomorrow 9am, #tag, @context, +project.</Trans>
+          </p>
+          <div className="capture-guide-actions">
+            {triggers
+              .filter(
+                ({ propertyId }) =>
+                  (propertyId === "priority" &&
+                    configuration.priorities.length > 0) ||
+                  (propertyId === "status" &&
+                    configuration.statuses.length > 0),
+              )
+              .map(({ propertyId, trigger }) => (
+                <button
+                  type="button"
+                  key={propertyId}
+                  onClick={() => revealChoices(trigger)}
+                >
+                  {trigger}
+                  {propertyId === "priority" ? t`Priority` : t`Status`}
+                </button>
+              ))}
+          </div>
+        </div>
       ) : null}
 
       {suggestions.length ? (

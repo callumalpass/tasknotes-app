@@ -14,6 +14,31 @@ export function useCalendarPosition(
 
   useEffect(() => {
     const root = rootRef.current;
+    if (mode !== "listWeek" || !root || typeof ResizeObserver === "undefined")
+      return;
+    let width = root.getBoundingClientRect().width;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      const nextWidth = root.getBoundingClientRect().width;
+      if (nextWidth === width) return;
+      width = nextWidth;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        root
+          .querySelector(`.tnc-list-day[data-date="${selected}"]`)
+          ?.closest(".tnc-list-section")
+          ?.scrollIntoView({ block: "start" });
+      });
+    });
+    observer.observe(root);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [mode, rootRef, selected]);
+
+  useEffect(() => {
+    const root = rootRef.current;
     const layout = `${mode}|${phone}`;
     const changedLayout = previousLayout.current !== layout;
     const resetOuter = changedLayout && previousLayout.current !== "";

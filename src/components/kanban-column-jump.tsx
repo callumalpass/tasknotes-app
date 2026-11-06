@@ -18,6 +18,7 @@ export function KanbanColumnJump({
   const first = columns.find((column) => column.count > 0)?.key;
   const selected = useRef(first ?? columns[0]?.key);
   const initialized = useRef(false);
+  const jumpPosition = useRef<number | null>(null);
   const strip = useRef<HTMLElement>(null);
   const [activeKey, setActiveKey] = useState(first ?? columns[0]?.key);
   const [overflowing, setOverflowing] = useState(false);
@@ -45,6 +46,7 @@ export function KanbanColumnJump({
             board.getBoundingClientRect().left,
           behavior: "instant",
         });
+      jumpPosition.current = board.scrollLeft;
     };
     if (!initialized.current && first) {
       selected.current = first;
@@ -56,6 +58,10 @@ export function KanbanColumnJump({
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (width !== board.clientWidth) return;
+        if (jumpPosition.current !== null) {
+          if (Math.abs(board.scrollLeft - jumpPosition.current) < 2) return;
+          jumpPosition.current = null;
+        }
         const left = board.getBoundingClientRect().left;
         const nearest = elements.reduce<HTMLElement | undefined>(
           (current, element) =>
@@ -123,6 +129,7 @@ export function KanbanColumnJump({
                   board.getBoundingClientRect().left,
                 behavior: "instant",
               });
+            if (board) jumpPosition.current = board.scrollLeft;
             setActiveKey(column.key);
           }}
         >

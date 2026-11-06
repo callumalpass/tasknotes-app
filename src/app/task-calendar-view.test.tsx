@@ -34,10 +34,28 @@ vi.mock("./repository-context", async () => {
 afterEach(async () => {
   cleanup();
   calendar.props = undefined;
+  vi.unstubAllGlobals();
   await act(() => activateAppLocale("en"));
 });
 
 describe("calendar drops", () => {
+  it("shows a phone month's selected-day agenda immediately without a dismiss action", () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const view = renderCalendar(execution("2026-07-01"), vi.fn());
+    const inspector = within(view.container).getByRole("complementary", {
+      name: "Selected day",
+    });
+    expect(inspector).toBeVisible();
+    expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+    expect(
+      within(inspector).queryByRole("button", { name: "Close day details" }),
+    ).toBeNull();
+    expect(calendar.props).toMatchObject({ monthDisplay: "dots" });
+  });
   it("bounds calendar previews and keeps event targets compact", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
     expect(calendar.props).toMatchObject({
