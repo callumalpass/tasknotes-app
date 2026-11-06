@@ -909,6 +909,10 @@ msgstr "Adicionando visualizações iniciais…"
 msgid "Adding…"
 msgstr "Adicionando…"
 
+#: src/app/task-detail-properties.tsx
+msgid "Additional properties"
+msgstr "Propriedades adicionais"
+
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
 msgstr "Adiciona as vistas em falta: Hoje, Próximas, Calendário, Projetos, Arquivo e Caixa de entrada. Os ficheiros existentes e as opções de navegação não mudam."
@@ -3503,6 +3507,7 @@ msgid "next week"
 msgstr "próxima semana"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/task-calendar-view.tsx
 #: src/app/use-calendar-agenda.ts
 #: src/components/task-date-panel.tsx
 msgid "Next week"
@@ -4039,6 +4044,7 @@ msgstr "Tarefa anterior"
 msgid "Previous task (k or Alt+Up)"
 msgstr "Tarefa anterior (k ou Alt+Cima)"
 
+#: src/app/task-calendar-view.tsx
 #: src/app/use-calendar-agenda.ts
 msgid "Previous week"
 msgstr "Semana anterior"
