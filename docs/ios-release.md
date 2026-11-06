@@ -8,6 +8,10 @@ a successful TestFlight upload alone does **not** update the public store.
 
 ## Apple configuration
 
+The existing identities are already configured. Any certificate, signing-identity
+or trust-key change requires Callum's approval with the reason; these setup
+instructions do not authorize a rotation.
+
 In Certificates, Identifiers & Profiles:
 
 1. Keep Push Notifications enabled on the explicit `dev.tasknotes.app` App ID.
@@ -89,98 +93,59 @@ GitHub-hosted runners are discarded after the job.
 
 ## Public App Store releases
 
-### One-time configuration
+The current queue, common source/CI/SDK/wasm gates, 24-hour gap, per-store stops
+and deployment hold are in [mobile store automation](mobile-store-automation.md).
+The old `submit_public` input and combined build/submit job have been removed.
+`ios-release.yml` builds and optionally uploads to TestFlight only.
 
-The `app-store-production` GitHub environment holds the separate publishing
-credential. Keep the existing Developer-role upload key at repository scope;
-**do not elevate or replace it** just to enable public releases.
+The existing `app-store-production` environment admits only main and holds:
 
-Configure this environment with:
+- `APP_STORE_PUBLISH_KEY_ID` and `APP_STORE_PUBLISH_ISSUER_ID` variables;
+- `APP_STORE_PUBLISH_PRIVATE_KEY_BASE64` publishing secret;
+- the existing optional `APP_REVIEW_DEMO_ACCOUNT_NAME` and
+  `APP_REVIEW_DEMO_ACCOUNT_PASSWORD` secrets.
 
-- Required reviewer: `callumalpass`. Self-review is allowed so the sole maintainer
-  can approve a manually dispatched run.
-- Deployment branch policy: **selected branches**, with only the `main` branch
-  allowed (not tags).
-- Variable `APP_STORE_PUBLISH_KEY_ID`: an App Store Connect **team key** with
-  **App Manager** access.
-- Variable `APP_STORE_PUBLISH_ISSUER_ID`: that team's issuer ID.
-- Secret `APP_STORE_PUBLISH_PRIVATE_KEY_BASE64`: base64 of its `.p8` private key.
+Preserve these credentials; do not elevate/replace the upload key or signing
+identity. Routine submissions use automated gates, not a newly added
+per-release human environment review. The initial production hold still needs
+Callum's exact-plan go before enabling the queue.
 
-These are configured for this repository using the existing **TaskNotes
-Publishing** key. The secret is environment-scoped and is only available after
-approval. App Store team keys apply to all apps on the team, so keep this key
-out of ordinary build jobs and fork/PR workflows. Initial listing setup, legal
-agreements, app privacy, age ratings and export-compliance declarations remain
-manual responsibilities. The script never invents or changes those answers.
+### Build, qualify and submit
 
-### Build and submit a new release
+1. Use a new numeric source package version through a normal main PR if the
+   existing version is already live. Version overrides can still build/upload,
+   but automated public submission requires the source package version.
+2. Build/upload to TestFlight with `ios-release.yml`. A successful upload is
+   not proof of native wasm qualification or public release.
+3. The native harness must exercise the exact signed artifact and retain the
+   digest-bound wasm proof described in the automation contract. Its proof
+   producer is not implemented yet; do not synthesize a passing artifact.
+4. The queue plans the newest qualified green main source. Only after the
+   initial hold is cleared with go may it dispatch `app-store-submit.yml`.
+   The publisher rechecks the same source gates and active review state.
+5. Existing listing/screenshots and review contacts are inherited/verified.
+   Explicit version notes are used when available; otherwise neutral
+   locale-complete notes and reviewed sign-in instructions are generated.
+   No credentials or legal/compliance answers are invented.
 
-1. Update `package.json` as usual and commit
-   `docs/releases/ios/<version>.json`, using `1.0.3.json` as the format example.
-   Set the exact numeric `version`, current `copyright`, `whatsNew` for **every
-   existing store locale**, and accurate `reviewNotes`. Keep login credentials
-   out of Git; review contacts and any credentials already in App Store Connect
-   are inherited. Update screenshots in App Store Connect if the old ones no
-   longer accurately represent the app.
-2. Merge the changes to `main`.
-3. Run **iOS release** on `main` with both **Upload** and **Submit public** enabled.
-4. Once the build succeeds, approve the `app-store-production` deployment in
-   GitHub Actions. Check the source commit, version and release notes first.
+The standalone publisher accepts the successful **iOS release workflow run ID**,
+not its build number, and does not rebuild or re-upload the IPA. Its
+`submit=false, release=false` mode is read-only. Real submission/release modes
+have the common guard even when directly dispatched; they are not bypasses.
 
-The public job waits up to 30 minutes for the **exact version and build number**
-to finish processing. It creates/reuses the store version, preserves the
-inherited listing/screenshots, updates release/review notes, attaches the build,
-and submits it for App Review. Release is automatic after Apple approval, for
-all users immediately (no phased rollout). Tags and ordinary uploads remain
-**TestFlight-only**; `submit_public` defaults to false.
+Unknown writes must be reconciled, not rerun. The script refuses to replace a
+different attached build, cancel another review, submit unrelated draft items
+or proceed with missing compliance answers or an ineligible build. Rejection
+stops only `tasknotes-app-store`; agents inspect App Review privately, repair or
+resubmit through CI, reconcile and clear that line. Routine rejection is not an
+owner escalation.
 
-```sh
-gh workflow run ios-release.yml --ref main \
-  -f version=1.0.4 -f upload=true -f submit_public=true
-```
+`WAITING_FOR_REVIEW` means submitted, not live. Default updates release after
+Apple approval; reviewed MANUAL versions still use the same guarded release
+mode. Initial legal/account agreements, app privacy, age ratings and
+export-compliance declarations require truthful account-holder answers and are
+not fabricated by automation. Apple's approval timing remains Apple's decision.
 
-### Promote an existing upload or recover a failed submission
-
-Use **App Store submission** on `main` with the **iOS release workflow run ID**
-(not its build number). It verifies the source workflow succeeded, the source
-commit is an ancestor of the approved policy commit, and its unexpired artifact
-identifies exactly one version/build. The release notes come from the approved
-`main` commit, so this can also promote older uploads that predate the metadata
-file. It does not rebuild or re-upload the IPA.
-
-```sh
-# Read-only preflight (still requires environment approval to use the key):
-gh workflow run app-store-submit.yml --ref main \
-  -f source_run_id=34902463733 -f submit=false
-
-# Deliberate public submission of that exact build:
-gh workflow run app-store-submit.yml --ref main \
-  -f source_run_id=34902463733 -f submit=true
-```
-
-For an interrupted combined run, **rerun failed jobs only**, not the successful
-build job: Apple will reject re-uploading an existing build number. Alternatively,
-use the promotion workflow above. Partial listing/submission setup is reconciled
-on rerun; an already submitted identical build is a read-only success. Writes
-are not blindly retried after ambiguous network failures.
-
-The script refuses to replace a different attached build, cancel another
-release, submit unrelated draft review items, retain a phased rollout, or
-proceed with missing translations, missing compliance answers or an ineligible
-build. Resolve such conflicts in App Store Connect, then rerun deliberately.
-
-### Verification and limits
-
-The Actions summary reports the exact source and Apple's resulting state.
-`WAITING_FOR_REVIEW` means **submitted, not live**. Verify `READY_FOR_SALE` and
-Apple's public listing after approval; approval timing remains Apple's decision.
-
-Local tests require only Node 22 or newer:
-
-```sh
-pnpm test:release
-TASKNOTES_IOS_VERSION=1.0.3 node scripts/submit-app-store.mjs --validate
-```
-
-Running `submit-app-store.mjs` without `--submit` is read-only. API credentials
-are still required outside `--validate`; never print them or commit them.
+`store-status.yml` reports the latest live version separately from the source
+package version, using bounded dashboard JSON artifacts. See the automation
+contract for artifact names, schema and freshness rules.

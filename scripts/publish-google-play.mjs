@@ -1,18 +1,17 @@
 import { createSign } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PLAY_PACKAGE = "dev.tasknotes.app";
 export const PLAY_TRACK = "alpha";
 export const PLAY_RELEASE_STATUS = "completed";
-// Production promotion is a separate, explicitly invoked mode. It never
-// uploads: it promotes a version code that already passed closed testing on
-// PLAY_TRACK. A full rollout is deliberate: the same bundle has already been
-// exercised on the closed track, and a staged rollout would leave an
-// inProgress release that later runs would have to reconcile by hand.
+// Production always starts at 10%; post-release failures halt the same
+// version. Never silently fall back to a full rollout if staging is refused.
 export const PLAY_PRODUCTION_TRACK = "production";
-export const PLAY_PRODUCTION_RELEASE_STATUS = "completed";
+export const PLAY_PRODUCTION_RELEASE_STATUS = "inProgress";
+export const PLAY_PRODUCTION_FRACTION = 0.1;
 const PLAY_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
 const PLAY_API = "https://androidpublisher.googleapis.com/androidpublisher/v3";
 const PLAY_UPLOAD_API =
@@ -83,19 +82,8 @@ export function createServiceAccountAssertion(credential, now = Date.now()) {
 }
 
 async function responseError(response) {
-  let message = "Google Play API request failed";
-  try {
-    const body = await response.json();
-    if (typeof body?.error?.message === "string") {
-      message = body.error.message;
-    } else if (typeof body?.error_description === "string") {
-      message = body.error_description;
-    }
-  } catch {
-    // Do not include raw response bodies: they are not needed and may contain
-    // more detail than release logs should retain.
-  }
-  return new Error(`${message} (HTTP ${response.status})`);
+  // Never emit store payloads/account identifiers into Actions logs.
+  return new Error(`Google Play API request failed (HTTP ${response.status})`);
 }
 
 export async function exchangeAccessToken(
@@ -105,6 +93,8 @@ export async function exchangeAccessToken(
   const assertion = createServiceAccountAssertion(credential, now);
   const response = await fetchImpl(credential.tokenUri, {
     method: "POST",
+    redirect: "error",
+    signal: AbortSignal.timeout(60_000),
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
@@ -144,7 +134,12 @@ async function playRequest(fetchImpl, token, url, options = {}) {
   if (options.body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  const response = await fetchImpl(url, { ...options, headers });
+  const response = await fetchImpl(url, {
+    redirect: "error",
+    signal: AbortSignal.timeout(60_000),
+    ...options,
+    headers,
+  });
   if (!response.ok) throw await responseError(response);
   if (response.status === 204) return undefined;
   return response.json();
@@ -165,7 +160,12 @@ function isExactClosedTestTrack(track, versionCode, name) {
   );
 }
 
-function isExactProductionTrack(track, versionCode, name) {
+function isExactProductionTrack(
+  track,
+  versionCode,
+  name,
+  allowCompleted = true,
+) {
   if (track?.track !== PLAY_PRODUCTION_TRACK) return false;
   const releases = track.releases ?? [];
   const matching = releases.filter((release) =>
@@ -175,9 +175,12 @@ function isExactProductionTrack(track, versionCode, name) {
   const release = matching[0];
   return (
     release?.name === name &&
-    release?.status === PLAY_PRODUCTION_RELEASE_STATUS &&
+    ((allowCompleted &&
+      release?.status === "completed" &&
+      release.userFraction === undefined) ||
+      (release?.status === PLAY_PRODUCTION_RELEASE_STATUS &&
+        release.userFraction === PLAY_PRODUCTION_FRACTION)) &&
     release.versionCodes.length === 1 &&
-    release.userFraction === undefined &&
     release.countryTargeting === undefined &&
     // Play keeps only the newest completed production release on the track.
     releases.every(
@@ -212,7 +215,7 @@ function closedTestReleaseForPromotion(track, versionCode, name) {
 
 function assertProductionAcceptsVersion(track, versionCode) {
   for (const release of track?.releases ?? []) {
-    if (release?.status !== PLAY_PRODUCTION_RELEASE_STATUS) {
+    if (release?.status !== "completed") {
       throw new Error(
         `Google Play production already has a ${release?.status ?? "unknown"} release; resolve it in Play Console first`,
       );
@@ -315,6 +318,7 @@ export async function publishClosedTest({
               name: validatedName,
               versionCodes: [String(versionCode)],
               status: PLAY_RELEASE_STATUS,
+              releaseNotes: [{ language: "en-US", text: `${validatedName}.` }],
             },
           ],
         }),
@@ -415,6 +419,7 @@ export async function promoteToProduction({
       name: validatedName,
       versionCodes: [String(versionCode)],
       status: PLAY_PRODUCTION_RELEASE_STATUS,
+      userFraction: PLAY_PRODUCTION_FRACTION,
     };
     if (
       Array.isArray(closedTestRelease.releaseNotes) &&
@@ -431,11 +436,11 @@ export async function promoteToProduction({
         method: "PUT",
         body: JSON.stringify({
           track: PLAY_PRODUCTION_TRACK,
-          releases: [productionRelease],
+          releases: [...(productionTrack?.releases ?? []), productionRelease],
         }),
       },
     );
-    if (!isExactProductionTrack(track, versionCode, validatedName)) {
+    if (!isExactProductionTrack(track, versionCode, validatedName, false)) {
       throw new Error(
         "Google Play did not return the required production release state",
       );
@@ -476,6 +481,86 @@ export async function promoteToProduction({
   }
 }
 
+/** Reconcile one staged version, preserving previous completed releases.
+ * No upload, automatic retry, downgrade, or full-rollout fallback. */
+export async function setProductionRollout({
+  credentialBase64,
+  expectedVersionCode,
+  status,
+  fetchImpl = fetch,
+}) {
+  const versionCode = String(validateVersionCode(expectedVersionCode));
+  if (!["halted", "completed"].includes(status))
+    throw new Error("Only halt or complete an existing production rollout");
+  const token = await exchangeAccessToken(
+    parseServiceAccount(credentialBase64),
+    { fetchImpl },
+  );
+  const root = `${PLAY_API}/applications/${PLAY_PACKAGE}/edits`;
+  let editId;
+  try {
+    editId = requiredString(
+      (
+        await playRequest(fetchImpl, token, root, {
+          method: "POST",
+          body: "{}",
+        })
+      ).id,
+      "edit id",
+    );
+    const url = `${root}/${encodeURIComponent(editId)}/tracks/production`;
+    const track = await playRequest(fetchImpl, token, url);
+    const releases = track.releases ?? [];
+    const selected = releases.filter((r) =>
+      r.versionCodes?.includes(versionCode),
+    );
+    if (selected.length !== 1 || selected[0].versionCodes.length !== 1)
+      throw new Error("Exact staged version not found");
+    const release = selected[0];
+    if (release.status === status)
+      return { status, versionCode, alreadyApplied: true };
+    if (
+      !["inProgress", "halted"].includes(release.status) ||
+      releases.some((r) => r !== release && r.status !== "completed")
+    )
+      throw new Error("Production rollout cannot be reconciled automatically");
+    const updated = { ...release, status };
+    if (status === "completed") delete updated.userFraction;
+    const next = {
+      track: "production",
+      releases: releases.map((r) => (r === release ? updated : r)),
+    };
+    const saved = await playRequest(fetchImpl, token, url, {
+      method: "PUT",
+      body: JSON.stringify(next),
+    });
+    if (!isDeepStrictEqual(saved.releases, next.releases))
+      throw new Error("Production rollout readback mismatch");
+    await playRequest(
+      fetchImpl,
+      token,
+      `${root}/${encodeURIComponent(editId)}:validate`,
+      { method: "POST", body: "{}" },
+    );
+    await playRequest(
+      fetchImpl,
+      token,
+      `${root}/${encodeURIComponent(editId)}:commit`,
+      { method: "POST", body: "{}" },
+    );
+    editId = undefined;
+    return { status, versionCode, alreadyApplied: false };
+  } finally {
+    if (editId)
+      await playRequest(
+        fetchImpl,
+        token,
+        `${root}/${encodeURIComponent(editId)}`,
+        { method: "DELETE" },
+      );
+  }
+}
+
 export const PROMOTE_PRODUCTION_FLAG = "--promote-production";
 
 async function promoteProductionMain(args) {
@@ -485,11 +570,28 @@ async function promoteProductionMain(args) {
     );
   }
   const [expectedVersionCode, versionName] = args;
+  const qualified = JSON.parse(
+    await readFile("mobile-release-qualified.json", "utf8"),
+  );
+  if (qualified.version !== versionName || !qualified.sourceRunId)
+    throw new Error("Qualified mobile source required before promotion");
   const result = await promoteToProduction({
     credentialBase64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
     expectedVersionCode,
     name: `TaskNotes ${requiredString(versionName, "version name")}`,
   });
+  await writeFile(
+    "mobile-production-result.json",
+    JSON.stringify(
+      {
+        ...result,
+        source: qualified.source,
+        sourceRunId: qualified.sourceRunId,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
   const action = result.alreadyPublished ? "Verified" : "Promoted";
   console.log(
     `${action} ${result.packageName} version code ${result.versionCode} on Google Play production (${result.track}).`,

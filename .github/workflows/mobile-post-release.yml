@@ -1,0 +1,48 @@
+name: Mobile post-release checks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  play:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: google-play-production
+    timeout-minutes: 10
+    concurrency:
+      group: google-play-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Scope ops hold access without an Issues grant
+        id: evidence
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: mdbase-dev
+          repositories: mdbase-cloud-ops
+          permission-contents: read
+          permission-actions: write
+      - name: Check and halt only the owned staged version on failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: node scripts/mobile-post-release.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: mobile-post-release
+          path: mobile-post-release.json
+          retention-days: 90
+          if-no-files-found: error

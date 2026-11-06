@@ -1,8 +1,8 @@
 name: Google Play production
 
 # Promotes a build that already passed Google Play closed testing (alpha) to
-# the public production track. Manual dispatch from protected main only; never
-# triggered by tags. Track, status and rollout policy are fixed in
+# the public production track. Dispatch from protected main only; never
+# triggered by tags. Shared mobile gates and 10% rollout policy are fixed in
 # scripts/publish-google-play.mjs.
 on:
   workflow_dispatch:
@@ -27,6 +27,7 @@ jobs:
     outputs:
       version_code: ${{ steps.metadata.outputs.version_code }}
       version_name: ${{ steps.metadata.outputs.version_name }}
+      source_run_id: ${{ steps.metadata.outputs.source_run_id }}
     env:
       RELEASE_REF: ${{ inputs.release_tag }}
     steps:
@@ -81,6 +82,10 @@ jobs:
             exit 1
           fi
           source_run_number="$run_numbers"
+          source_run_id="$(gh api \
+            "repos/$GH_REPO/actions/workflows/android.yml/runs?event=push&status=success&branch=$RELEASE_REF&head_sha=$release_sha&per_page=100" \
+            --jq '[.workflow_runs[] | select(.head_branch == env.RELEASE_REF)] | max_by(.id) | .id')"
+          echo "source_run_id=$source_run_id" >> "$GITHUB_OUTPUT"
 
           version_code_base="${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}"
           if ! [[ "$version_code_base" =~ ^[0-9]+$ ]]; then
@@ -104,14 +109,38 @@ jobs:
     environment: google-play-production
     permissions:
       contents: read
+      actions: read
     steps:
       - name: Check out protected publication policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
+
+      - name: Scope ops-line and Connect evidence access
+        id: evidence
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: mdbase-dev
+          repositories: |
+            mdbase-cloud-ops
+            mdbase-connect
+          permission-contents: read
+          permission-actions: write
+
+      - name: Enforce shared source, SDK, wasm, hold and 24-hour gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          SOURCE_RUN_ID: ${{ needs.verify-release.outputs.source_run_id }}
+          TASKNOTES_PLAY_AUTOMATION_ENABLED: ${{ vars.TASKNOTES_PLAY_AUTOMATION_ENABLED }}
+        run: node scripts/mobile-release-policy.mjs android
 
       - name: Promote closed-test build to Google Play production
         env:
@@ -123,3 +152,12 @@ jobs:
           node scripts/publish-google-play.mjs --promote-production \
             "$TASKNOTES_ANDROID_VERSION_CODE" \
             "$TASKNOTES_ANDROID_VERSION_NAME"
+
+      - name: Retain exact staged-version ownership
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: mobile-production-result
+          path: mobile-production-result.json
+          retention-days: 90
+          if-no-files-found: warn

@@ -27,6 +27,8 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       throw new Error("Read-only Play transport refused a write");
     const response = await fetchImpl(url, {
       method,
+      redirect: "error",
+      signal: AbortSignal.timeout(60_000),
       headers: {
         authorization: `Bearer ${token}`,
         ...(method === "POST" ? { "content-type": "application/json" } : {}),
@@ -66,6 +68,12 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
         : "unverified",
       // Track state is not review state or proof that every country serves it.
       reviewState: "not-exposed-by-android-publisher-api",
+      liveVersion:
+        production?.releases
+          ?.map((r) => /^TaskNotes (\d+\.\d+\.\d+)$/.exec(r.name ?? "")?.[1])
+          .filter(Boolean)
+          .sort(compareVersions)
+          .at(-1) ?? null,
       live: production?.releases ?? [],
       tracks,
     };
@@ -75,19 +83,37 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
   }
 }
 
+function compareVersions(a, b) {
+  const aa = a.split(".").map(Number),
+    bb = b.split(".").map(Number);
+  return aa[0] - bb[0] || aa[1] - bb[1] || aa[2] - bb[2];
+}
+
 export async function readAppleLive(client) {
   const versions = await client.list(
     `apps/${APP_ID}/appStoreVersions?filter[platform]=IOS&fields[appStoreVersions]=versionString,appStoreState,releaseType`,
   );
+  const available = versions.filter((v) =>
+    ["READY_FOR_SALE", "READY_FOR_DISTRIBUTION"].includes(
+      v.attributes.appStoreState,
+    ),
+  );
+  const newest = available
+    .map((v) => v.attributes.versionString)
+    .filter((v) => /^\d+\.\d+\.\d+$/.test(v))
+    .sort(compareVersions)
+    .at(-1);
   return {
     schema: "tasknotes/store-status/1",
     platform: "ios",
     observedAt: new Date().toISOString(),
+    liveVersion: newest ?? null,
     live: versions
-      .filter((v) =>
-        ["READY_FOR_SALE", "READY_FOR_DISTRIBUTION"].includes(
-          v.attributes.appStoreState,
-        ),
+      .filter(
+        (v) =>
+          ["READY_FOR_SALE", "READY_FOR_DISTRIBUTION"].includes(
+            v.attributes.appStoreState,
+          ) && v.attributes.versionString === newest,
       )
       .map((v) => ({
         version: v.attributes.versionString,
