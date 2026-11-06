@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { DEFAULT_MODEL_CONFIG } from "@tasknotes/model";
-import { parseFrontmatter, serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 
 import { attachTaskNotes, seedRecord } from "../test/next-task-fixture";
@@ -29,8 +32,14 @@ describe("real migrated TaskNotes type bootstrap", () => {
     const typeDefinition = parseFrontmatter(type.text!).frontmatter as {
       schema: { value: { properties: Record<string, unknown> } };
     };
-    typeDefinition.schema.value.properties.completedDate = { type: "string", format: "date" };
-    replica.seedResource("_types/task.md", serializeMarkdownDocument(typeDefinition as never, "Task type"));
+    typeDefinition.schema.value.properties.completedDate = {
+      type: "string",
+      format: "date",
+    };
+    replica.seedResource(
+      "_types/task.md",
+      serializeMarkdownDocument(typeDefinition as never, "Task type"),
+    );
     const task = {
       tags: ["task"],
       "created-date": "2026-11-01T00:00:00Z",
@@ -46,7 +55,13 @@ describe("real migrated TaskNotes type bootstrap", () => {
       path: "tasks/done.md",
       types: ["task"],
       body: "",
-      frontmatter: { ...task, id: "done", title: "Done", status: "done", "completed-date": "2026-10-30" },
+      frontmatter: {
+        ...task,
+        id: "done",
+        title: "Done",
+        status: "done",
+        "completed-date": "2026-10-30",
+      },
     });
 
     const saved = await fixture.repository.toggle("open", undefined, true);
