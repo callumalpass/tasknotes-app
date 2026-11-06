@@ -70,6 +70,24 @@ const setup = () => {
   store.all();
   return { store, tasks };
 };
+it("keeps project failures calm and retries without changing the selection", async () => {
+  const { store } = setup();
+  fixture.completeField.mockRejectedValueOnce(
+    new Error(
+      'QueryError { code: "invalid_query", location: Some("order_by[0]") }',
+    ),
+  );
+  render(<BulkTaskActions store={store} navigationKey="today" />);
+  expect(await screen.findByText("Could not load projects.")).toBeVisible();
+  expect(screen.queryByText(/QueryError/)).toBeNull();
+  const requests = fixture.completeField.mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: /^Retry$/ }));
+  await waitFor(() =>
+    expect(screen.queryByText("Could not load projects.")).toBeNull(),
+  );
+  expect(fixture.completeField.mock.calls.length).toBe(requests + 2);
+  expect(store.count).toBe(2);
+});
 it.each([true, false])(
   "asks before scheduling missed deadlines and respects keep=%s",
   async (keepDeadlines) => {

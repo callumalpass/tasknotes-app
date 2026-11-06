@@ -4511,6 +4511,7 @@ msgid "Resuming…"
 msgstr "Reprise en cours…"
 
 #: src/app/app-shell.tsx
+#: src/app/bulk-task-actions.tsx
 #: src/components/task-row.tsx
 msgid "Retry"
 msgstr "Réessayer"

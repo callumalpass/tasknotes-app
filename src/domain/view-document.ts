@@ -74,6 +74,23 @@ export function updateViewDocument(
     : updateCanonicalDocument(source.document, draft);
 }
 
+export function materializeDefaultViewOrder(
+  source: TaskViewSourceDocument,
+  declaration: TaskViewDeclarationSelector,
+): string | null {
+  checkDeclarationSource(source, declaration);
+  const yaml = obsidianSourceYaml(source.document, declaration);
+  const document = parseDocument(yaml.text);
+  if (document.errors.length) throw new Error(document.errors[0].message);
+  const views = document.get("views");
+  if (!isSeq(views)) return null;
+  const view = views.items[declaration.ordinal];
+  if (!isMap(view) || view.has("order")) return null;
+  checkDeclarationName(view.get("name"), declaration);
+  view.set("order", []);
+  return yaml.wrap(String(document));
+}
+
 export function createViewDocument(
   format: "obsidian.base" | "mdbase.view",
   draft: EditableViewDraft,
@@ -254,11 +271,7 @@ function updateObsidianDocument(
   setOrDelete(view, "name", draft.name);
   setOrDelete(view, "type", obsidianRenderer(draft.renderer));
   setOrDelete(view, "filters", draft.filter);
-  setOrDelete(
-    view,
-    "order",
-    draft.properties.length ? draft.properties : undefined,
-  );
+  setOrDelete(view, "order", draft.properties);
   setOrDelete(
     view,
     "groupBy",

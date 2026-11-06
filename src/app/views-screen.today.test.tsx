@@ -43,6 +43,31 @@ it("puts Today first and links directly to the expanded overdue section", async 
   expect(scroll).toHaveBeenCalled();
 });
 
+it("links to the real overdue section when discovery has no presentation options", async () => {
+  renderToday(
+    repository([
+      task("late", "Late saved task", {
+        due: shiftTaskDate(todayString(), -1),
+      }),
+      task("current", "Current saved task", { scheduled: todayString() }),
+    ]),
+    {},
+    { ...todayView, presentation: { ...todayView.presentation!, options: {} } },
+  );
+  const link = await screen.findByRole("link", { name: "1 overdue" });
+  const section = document.querySelector(link.getAttribute("href")!)!;
+  expect(section).toHaveAttribute("data-list-lane", "section:overdue");
+  const toggle = within(section as HTMLElement).getByRole("button", {
+    name: "Overdue 1",
+  });
+  fireEvent.click(toggle);
+  section.scrollIntoView = vi.fn();
+  fireEvent.click(link);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(toggle).toHaveFocus();
+  expect(section.scrollIntoView).toHaveBeenCalled();
+});
+
 it("moves every overdue task to today in one batch and offers Undo", async () => {
   const today = todayString();
   const tasks: Task[] = [
@@ -341,6 +366,7 @@ function renderToday(
     onOpenView?: (view: TaskView) => void;
     onOpenTask?: (task: Task, occurrence?: string) => void;
   } = {},
+  catalogView = todayView,
 ) {
   return render(
     <RepositoryProvider
@@ -348,7 +374,7 @@ function renderToday(
       repository={repository}
     >
       <ViewsScreen
-        documents={[todayView, upcomingView].map((view) => ({
+        documents={[catalogView, upcomingView].map((view) => ({
           id: view.documentId,
           name: view.documentName,
           source: view.source,
@@ -357,7 +383,7 @@ function renderToday(
         navigationViewKeys={[todayView.key, upcomingView.key]}
         operational
         viewKey={todayView.key}
-        views={[todayView, upcomingView]}
+        views={[catalogView, upcomingView]}
         onBack={() => undefined}
         onOpenTask={handlers.onOpenTask ?? (() => undefined)}
         onOpenView={handlers.onOpenView ?? (() => undefined)}

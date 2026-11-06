@@ -1,5 +1,22 @@
 # Vendored packages
 
+## Test-only native Bases witness
+
+`runtime-bases-witness-4370800f.wasm.gz` is the actual Connect Rust runtime's
+non-app replay artifact from clean commit
+`4370800f0622e0a176118fc26115d2451fe202d5`. It was built with
+`cargo build -p mdbn-wasm --release --target wasm32-unknown-unknown` in `runtime`,
+then stripped of WASM custom sections and gzip-compressed. Its uncompressed
+SHA-256 is `cf38bb15f84966513cea170bbbddd23ce4f35028377ee897da54983d620a44da`
+(6,145,197 bytes). The native document regression checks that digest before use.
+
+Only `src/domain/view-document.native.test.ts` loads it. Its bounded
+`bases_view` witness calls the real `AdmittedBasesView::compile` and evaluation
+path using the existing pinned Obsidian contract resources. It proves source
+admission, not native grants, storage, synchronization or LAB acceptance. The
+production and LAB app-only SDK artifacts deliberately omit the replay export;
+no product dependency or runtime is replaced here.
+
 These tarballs keep coordinated prerelease packages installable without sibling
 repositories or an unpublished registry release. The revision-stamped mdbase
 and Connect SDK artifacts have adjacent JSON provenance manifests containing

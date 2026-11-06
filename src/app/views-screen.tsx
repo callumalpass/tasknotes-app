@@ -341,7 +341,7 @@ export function ViewsScreen({
   );
   const plannerHref = usePlannerViewLink(repository, selected);
   const todayScreen =
-    selected?.presentation?.options.sections === "day" &&
+    selected &&
     (starterViewKind(selected) === "today" || selected.name === "Today");
   const needsIdentityTasks =
     todayScreen ||
@@ -510,11 +510,10 @@ export function ViewsScreen({
   ]);
   const overdueCount = useMemo(
     () =>
-      todayScreen && presentedExecution
+      todayScreen &&
+      presentedExecution?.view.presentation?.options.sections === "day"
         ? presentedExecution.rows.filter(
-            ({ task }) =>
-              taskDayStanding(task, today) === "overdue" ||
-              isTaskPastDue(task, today),
+            ({ task }) => taskDayStanding(task, today) === "overdue",
           ).length
         : 0,
     [presentedExecution, today, todayScreen],
@@ -1485,7 +1484,7 @@ export function ViewsScreen({
                 target={{ kind: "source", path: selected.source.path }}
               />
             ) : null}
-            {selected?.name === "Today" ? (
+            {todayScreen ? (
               <p className="view-date">
                 <span className="today-date-text">
                   {new Intl.DateTimeFormat(appLocale(), {

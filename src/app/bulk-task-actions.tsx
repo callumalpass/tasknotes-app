@@ -82,6 +82,7 @@ export function BulkTaskActions({
   > | null>(null);
   const [projects, setProjects] = useState<FieldCompletion[]>([]);
   const [projectError, setProjectError] = useState("");
+  const [projectAttempt, setProjectAttempt] = useState(0);
   const actionBar = useRef<HTMLElement>(null);
   const pickAnchor = useRef<HTMLElement>(null);
   const deleting = useRef<{ navigationKey: string; ids: string[] } | null>(
@@ -141,11 +142,8 @@ export function BulkTaskActions({
             ).values(),
           ]);
       },
-      (reason) => {
-        if (active)
-          setProjectError(
-            reason instanceof Error ? reason.message : String(reason),
-          );
+      () => {
+        if (active) setProjectError("unavailable");
       },
     );
     return () => {
@@ -156,6 +154,7 @@ export function BulkTaskActions({
     repository,
     configuration.fieldMapping.projects,
     configuration.fieldCompletions,
+    projectAttempt,
   ]);
   useEffect(() => {
     if (!shownNotice || held || undoing || failures.length) return;
@@ -580,7 +579,13 @@ export function BulkTaskActions({
           ) : null}
           {projectError ? (
             <p className="bulk-selection-hint">
-              {t`Could not load projects.`} {projectError}
+              {t`Could not load projects.`}{" "}
+              <button
+                type="button"
+                onClick={() => setProjectAttempt((attempt) => attempt + 1)}
+              >
+                {t`Retry`}
+              </button>
             </p>
           ) : null}
         </section>

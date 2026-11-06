@@ -1,4 +1,86 @@
 import { expect, test, type Page } from "./local-test";
+import { openFixture } from "./next-fixture";
+
+test("long row values fit at 390px and the native-discovered Today links to overdue", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+    hasTouch: false,
+  });
+  const page = await context.newPage();
+  try {
+    const project = "[test] agent-20261106T195757Z-790981 project edited";
+    const token = "Unbroken".repeat(40);
+    await openFixture(page, {
+      viewProperties: [
+        "note.title",
+        "note.projects",
+        "note.tags",
+        "note.reference",
+      ],
+      viewOptions: { sections: "day", create: false },
+      records: [
+        {
+          path: "tasks/long-values.md",
+          types: ["task"],
+          frontmatter: {
+            title: "Long metadata regression",
+            status: "open",
+            scheduled: "2000-01-01",
+            dateCreated: "2026-11-07T00:00:00Z",
+            dateModified: "2026-11-07T00:00:00Z",
+            projects: [project],
+            tags: [token],
+            reference: token,
+          },
+          body: "",
+        },
+      ],
+    });
+    const row = page
+      .locator(".task-row")
+      .filter({ hasText: "Long metadata regression" });
+    await page.locator(".task-row, .view-execution-error").first().waitFor();
+    expect(
+      await page.locator(".view-execution-error").allTextContents(),
+    ).toEqual([]);
+    await expect(row).toBeVisible();
+    const link = page.getByRole("link", { name: "1 overdue", exact: true });
+    await expect(link).toBeVisible();
+    const toggle = page.getByRole("button", { name: "Overdue 1", exact: true });
+    await toggle.click();
+    await link.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toBeFocused();
+    await expectNoHorizontalOverflow(page);
+    const values = row.locator(".task-row-inline-metadata .task-row-value");
+    await expect(values).toHaveCount(3);
+    const geometry = await values.evaluateAll((elements) =>
+      elements.map((element) => ({
+        width: element.getBoundingClientRect().width,
+        right: element.getBoundingClientRect().right,
+        content: element.scrollWidth,
+        overflow: getComputedStyle(element).textOverflow,
+      })),
+    );
+    console.log(JSON.stringify({ viewport: 390, metadata: geometry }));
+    await page.screenshot({ path: test.info().outputPath("today-390.png") });
+    expect(
+      geometry.every(
+        (value) =>
+          value.width > 0 &&
+          value.right <= 390 &&
+          value.overflow === "ellipsis",
+      ),
+    ).toBe(true);
+    expect(geometry.some((value) => value.content > value.width)).toBe(true);
+  } finally {
+    await context.close();
+  }
+});
 
 const rows = (page: Page) =>
   page.locator("[data-task-selection-list] .task-row");

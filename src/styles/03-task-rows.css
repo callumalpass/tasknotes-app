@@ -953,6 +953,7 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   font-weight: 400;
   line-height: 20px;
@@ -1285,7 +1286,7 @@
   max-width: 100%;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
-  display: block;
+  display: flex;
   overflow-wrap: anywhere;
   white-space: normal;
 }
@@ -1321,10 +1322,13 @@
   min-width: 0;
 }
 .task-row-metadata-unit .task-row-value,
-.task-row-inline-metadata .is-project .task-row-value {
+.task-row-inline-metadata .task-row-value {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.task-row-metadata-unit > svg {
+  flex-shrink: 0;
 }
 .task-row-metadata-unit.is-overdue {
   color: var(--danger);
