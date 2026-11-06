@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
+import { DEFAULT_MODEL_CONFIG } from "@tasknotes/model";
+import { parseFrontmatter, serializeMarkdownDocument } from "@tasknotes/model/frontmatter";
+import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 
+import { attachTaskNotes, seedRecord } from "../test/next-task-fixture";
 import { resolveTaskTypeDefinition } from "./tasknotes-collection";
 
 import customType from "../../tests/fixtures/mdbase-upgrades/app-custom/task.md?raw";
@@ -12,6 +16,46 @@ function definition(document: string): Record<string, unknown> {
 }
 
 describe("real migrated TaskNotes type bootstrap", () => {
+  it("completes a task beside a completed task when the schema still names the role", async () => {
+    const modelConfig = structuredClone(DEFAULT_MODEL_CONFIG);
+    modelConfig.fieldMapping = {
+      ...modelConfig.fieldMapping,
+      dateCreated: "created-date",
+      completedDate: "completed-date",
+    };
+    const replica = new MemoryReplica({});
+    const fixture = await attachTaskNotes(replica, undefined, { modelConfig });
+    const type = await fixture.client.resources.get("_types/task.md");
+    const typeDefinition = parseFrontmatter(type.text!).frontmatter as {
+      schema: { value: { properties: Record<string, unknown> } };
+    };
+    typeDefinition.schema.value.properties.completedDate = { type: "string", format: "date" };
+    replica.seedResource("_types/task.md", serializeMarkdownDocument(typeDefinition as never, "Task type"));
+    const task = {
+      tags: ["task"],
+      "created-date": "2026-11-01T00:00:00Z",
+      dateModified: "2026-11-01T00:00:00Z",
+    };
+    seedRecord(replica, {
+      path: "tasks/open.md",
+      types: ["task"],
+      body: "",
+      frontmatter: { ...task, id: "open", title: "Open", status: "open" },
+    });
+    seedRecord(replica, {
+      path: "tasks/done.md",
+      types: ["task"],
+      body: "",
+      frontmatter: { ...task, id: "done", title: "Done", status: "done", "completed-date": "2026-10-30" },
+    });
+
+    const saved = await fixture.repository.toggle("open", undefined, true);
+
+    expect(saved.status).toBe("done");
+    expect(saved.completedDate).toBeTruthy();
+    fixture.close();
+  });
+
   it("keeps a mapped role when the schema still names its contract field", () => {
     const { model } = resolveTaskTypeDefinition({
       name: "task",
