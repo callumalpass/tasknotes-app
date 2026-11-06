@@ -82,9 +82,9 @@ for (const colorScheme of ["light", "dark"] as const) {
         });
         await expect(popover).toBeVisible();
         for (const control of await popover.getByRole("button").all()) {
-          expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(
-            44,
-          );
+          await expect
+            .poll(async () => (await control.boundingBox())?.height ?? 0)
+            .toBeGreaterThanOrEqual(44);
         }
         await page.keyboard.press("Escape");
         await expect(popover).toHaveCount(0);
