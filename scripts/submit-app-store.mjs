@@ -1,5 +1,5 @@
 import { sign } from "node:crypto";
-import { readFile, appendFile } from "node:fs/promises";
+import { readFile, appendFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -569,6 +569,55 @@ export async function releaseAppStore({ client, version, buildNumber }) {
   return { ...result, state: state(after), alreadyReleased: false };
 }
 
+export function generatedMetadata(template, version) {
+  // Reuse reviewed instructions/contact custody; never invent privacy,
+  // export-compliance, account credentials or feature promises.
+  const instructions =
+    /HOW TO REVIEW\n([\s\S]*?)(?:\nWHAT CHANGED|\nWHAT THE APP DOES|$)/
+      .exec(template.reviewNotes)?.[1]
+      ?.trim();
+  if (!instructions) throw new Error("No reviewed store instructions template");
+  return validateMetadata(
+    {
+      version,
+      copyright: template.copyright,
+      releaseType: "AFTER_APPROVAL",
+      whatsNew: Object.fromEntries(
+        Object.keys(template.whatsNew).map((locale) => [
+          locale,
+          `TaskNotes ${version}.`,
+        ]),
+      ),
+      reviewNotes: `TaskNotes ${version}\n\nHOW TO REVIEW\n${instructions}`,
+    },
+    version,
+  );
+}
+
+async function releaseMetadata(version) {
+  try {
+    return validateMetadata(
+      JSON.parse(await readFile(`docs/releases/ios/${version}.json`, "utf8")),
+      version,
+    );
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    const templates = (await readdir("docs/releases/ios"))
+      .filter((n) => /^\d+\.\d+\.\d+\.json$/.test(n))
+      .sort((a, b) => {
+        const aa = a.split(".").map(Number),
+          bb = b.split(".").map(Number);
+        return bb[0] - aa[0] || bb[1] - aa[1] || bb[2] - aa[2];
+      });
+    if (!templates.length)
+      throw new Error("No reviewed store metadata template");
+    return generatedMetadata(
+      JSON.parse(await readFile(`docs/releases/ios/${templates[0]}`, "utf8")),
+      version,
+    );
+  }
+}
+
 async function main() {
   const version = requireValue(
     process.env.TASKNOTES_IOS_VERSION,
@@ -576,10 +625,7 @@ async function main() {
   );
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw new Error("Invalid public release version");
-  const metadata = validateMetadata(
-    JSON.parse(await readFile(`docs/releases/ios/${version}.json`, "utf8")),
-    version,
-  );
+  const metadata = await releaseMetadata(version);
   if (process.argv.includes("--validate")) return;
   const client = createClient({
     keyId: requireValue(

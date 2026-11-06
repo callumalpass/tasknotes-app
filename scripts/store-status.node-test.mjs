@@ -38,11 +38,23 @@ test("Play snapshot cannot commit or update and always deletes", async () => {
     status.productionAccess,
     "confirmed-by-existing-production-release",
   );
+  assert.equal(status.liveVersion, "1.0.11");
   assert.deepEqual(
     calls.map((c) => c[1]),
     ["POST", "POST", "GET", "DELETE"],
   );
   assert.ok(!calls.some(([url]) => url.includes(":commit")));
+});
+
+test("Apple histories with READY_FOR_SALE select the numeric newest", async () => {
+  const result = await readAppleLive({
+    list: async () =>
+      ["1.0.9", "1.0.12", "1.0.10"].map((versionString) => ({
+        attributes: { versionString, appStoreState: "READY_FOR_SALE" },
+      })),
+  });
+  assert.equal(result.liveVersion, "1.0.12");
+  assert.equal(result.live.length, 1);
 });
 
 test("Apple reports actual live version, not package version", async () => {

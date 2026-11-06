@@ -108,6 +108,7 @@ describe("Google Play closed-test publisher", () => {
           name: "TaskNotes 1.2.3",
           versionCodes: ["123401"],
           status: "completed",
+          releaseNotes: [{ language: "en-US", text: "TaskNotes 1.2.3." }],
         },
       ],
     });
@@ -321,10 +322,10 @@ function promote(fetchImpl, overrides = {}) {
 describe("Google Play production promotion", () => {
   it("fixes the production policy in code", () => {
     expect(PLAY_PRODUCTION_TRACK).toBe("production");
-    expect(PLAY_PRODUCTION_RELEASE_STATUS).toBe("completed");
+    expect(PLAY_PRODUCTION_RELEASE_STATUS).toBe("inProgress");
   });
 
-  it("promotes the closed-test version to a completed production release without uploading", async () => {
+  it("promotes the closed-test version to a 10% production rollout without uploading", async () => {
     const calls = [];
     const fetchImpl = promotionFetch(calls);
 
@@ -345,7 +346,8 @@ describe("Google Play production promotion", () => {
         {
           name: "TaskNotes 1.2.3",
           versionCodes: ["123401"],
-          status: "completed",
+          status: "inProgress",
+          userFraction: 0.1,
           releaseNotes: [{ language: "en-US", text: "Closed-test notes" }],
         },
       ],
@@ -446,12 +448,12 @@ describe("Google Play production promotion", () => {
       "or a higher release",
     ],
     [
-      "the same version in a staged rollout",
+      "the same version in a different staged rollout",
       [
         {
           name: "TaskNotes 1.2.3",
           status: "inProgress",
-          userFraction: 0.1,
+          userFraction: 0.2,
           versionCodes: ["123401"],
         },
       ],
@@ -525,7 +527,9 @@ describe("Google Play production promotion", () => {
       return base(url, options);
     });
 
-    await expect(promote(fetchImpl)).rejects.toThrow("Invalid edit (HTTP 400)");
+    await expect(promote(fetchImpl)).rejects.toThrow(
+      "Google Play API request failed (HTTP 400)",
+    );
     expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
