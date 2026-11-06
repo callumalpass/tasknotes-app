@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { googleApiFailure } from "./google-api-failure.mjs";
 import {
   PLAY_PACKAGE,
@@ -185,8 +185,16 @@ export async function readPlayVitals(
   }
 }
 if (process.argv[1]?.endsWith("/play-vitals.mjs")) {
+  // Status and capability are observed under the same publication lock. Probe
+  // the exact live version, not just metric-set access without a query.
+  const status = JSON.parse(
+    await readFile("store-status-android.json", "utf8"),
+  );
+  const codes = [...new Set(status.live.flatMap((r) => r.versionCodes ?? []))];
+  if (codes.length !== 1) throw new Error("Exact live Play version required");
   const result = await readPlayVitals(
     process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
+    { versionCode: codes[0] },
   );
   await writeFile("play-vitals.json", JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify(result)); // bounded enum/status only, never payloads
