@@ -8,6 +8,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       page,
       isMobile,
     }, testInfo) => {
+      await page.clock.setFixedTime(new Date("2026-11-04T11:00:00Z"));
       const width = isMobile ? 412 : 1280;
       await page.setViewportSize({ width, height: 713 });
       await page.addInitScript(() =>
