@@ -129,8 +129,8 @@ msgstr "{0, plural, other {アカウントのロックが解除されました�
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
-msgstr "{0, plural, other {タスクノートを#件作成}}"
+msgid "{0, plural, one {Created # task} other {Created # tasks}}"
+msgstr ""
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -563,12 +563,12 @@ msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
 msgstr "{overdueCount, plural, other {# 件期限超過}}"
 
 #: src/app/scratchpad-screen.tsx
-msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
-msgstr "{selectedReviewCount, plural, other {タスクノートを # 件作成}}"
+msgid "{selectedReviewCount, plural, one {Create # task} other {Create # tasks}}"
+msgstr "{selectedReviewCount, plural, other {# 件のタスクを作成}}"
 
 #: src/app/scratchpad-screen.tsx
-msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
-msgstr "{selectedReviewCount, plural, other {タスクノート # 件を再試行}}"
+msgid "{selectedReviewCount, plural, one {Retry # task} other {Retry # tasks}}"
+msgstr "{selectedReviewCount, plural, other {# 件のタスクを再試行}}"
 
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
@@ -1451,6 +1451,7 @@ msgstr "タスクをクリックして選択します。"
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/tasknotes-controls.tsx
 msgid "Close"
 msgstr "閉じる"
 
@@ -1899,8 +1900,8 @@ msgid "Create task for {0}"
 msgstr "{0}のタスクを作成"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Create task notes"
-msgstr "タスクノートを作成"
+msgid "Create tasks"
+msgstr "タスクを作成"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Create the next after completion"
@@ -2334,10 +2335,6 @@ msgstr "編集が保存されていません"
 msgid "Edit pattern"
 msgstr "パターンを編集"
 
-#: src/components/task-property-editor.tsx
-msgid "Edit property"
-msgstr "プロパティを編集"
-
 #: src/components/outline-textarea.tsx
 msgid "Edit reference Markdown"
 msgstr "参照の Markdown を編集"
@@ -2460,6 +2457,7 @@ msgid "Extra context for the task"
 msgstr "タスクの追加コンテキスト"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "表示するフィールド"
 
@@ -2478,6 +2476,7 @@ msgid "File path"
 msgstr "ファイルパス"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Filter"
 msgstr "フィルター"
 
@@ -2656,6 +2655,7 @@ msgid "Group"
 msgstr "グループ"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Group & sort"
 msgstr "グループ化と並べ替え"
 
@@ -2967,6 +2967,7 @@ msgid "Later"
 msgstr "後で"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Layout"
 msgstr "レイアウト"
 
@@ -3097,6 +3098,7 @@ msgid "Manage"
 msgstr "管理"
 
 #: src/app/palette-commands.ts
+#: src/app/views-screen.tsx
 #: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "ビューを管理"
@@ -4096,6 +4098,11 @@ msgstr "プロジェクト"
 msgid "Projects"
 msgstr "プロジェクト"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Properties for {0}"
+msgstr "{0} のプロパティ"
+
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "プロパティ"
@@ -4862,8 +4869,8 @@ msgid "Selected day"
 msgstr "選択した日"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "選択した下書きは、その場でリンク付きのTaskNotesタスクに変換されます。それ以外の内容はこのスクラッチパッドに残るため、作業を続けられます。"
+msgid "Selected drafts become tasks linked to their Markdown notes. Everything else stays in this scratchpad so you can keep working."
+msgstr "選択した下書きは、Markdown ノートにリンクされたタスクになります。その他の内容はこのスクラッチパッドに残るので、作業を続けられます。"
 
 #: src/app/bulk-task-actions.tsx
 msgid "Selected tasks"
@@ -5265,7 +5272,6 @@ msgstr "タスクが見つかりません。削除または移動された可能
 #: src/app/task-core-properties.tsx
 #: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
-#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "タスクのプロパティ"
 
@@ -5756,8 +5762,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "もう一度ビューを読み込んでください。問題が続く場合は、設定を編集するか別のビューを選択してください。"
 
 #: src/components/task-capture.tsx
-msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
-msgstr "例: 明日 9時、#タグ、@コンテキスト、+プロジェクト、!優先度、*ステータス。"
+msgid "Try tomorrow 9am, #tag, @context, +project."
+msgstr "明日 9時、#タグ、@コンテキスト、+プロジェクト を試してください。"
 
 #: src/components/reminder-editor.tsx
 msgid "Type"

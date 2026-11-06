@@ -129,8 +129,8 @@ msgstr "{0, plural, one {Compte déverrouillé. L’accès aux clés de # collec
 
 #. placeholder {0}: tasks.length
 #: src/app/scratchpad-screen.tsx
-msgid "{0, plural, one {Created # task note} other {Created # task notes}}"
-msgstr "{0, plural, one {# note de tâche créée} other {# notes de tâche créées}}"
+msgid "{0, plural, one {Created # task} other {Created # tasks}}"
+msgstr ""
 
 #. placeholder {0}: result.incomplete.length
 #: src/components/private-account-settings.tsx
@@ -563,12 +563,12 @@ msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
 msgstr "{overdueCount, plural, one {# en retard} many {# en retard} other {# en retard}}"
 
 #: src/app/scratchpad-screen.tsx
-msgid "{selectedReviewCount, plural, one {Create # task note} other {Create # task notes}}"
-msgstr "{selectedReviewCount, plural, one {Créer # note de tâche} many {Créer # notes de tâche} other {Créer # notes de tâche}}"
+msgid "{selectedReviewCount, plural, one {Create # task} other {Create # tasks}}"
+msgstr "{selectedReviewCount, plural, one {Créer # tâche} many {Créer # tâches} other {Créer # tâches}}"
 
 #: src/app/scratchpad-screen.tsx
-msgid "{selectedReviewCount, plural, one {Retry # task note} other {Retry # task notes}}"
-msgstr "{selectedReviewCount, plural, one {Réessayer # note de tâche} many {Réessayer # notes de tâche} other {Réessayer # notes de tâche}}"
+msgid "{selectedReviewCount, plural, one {Retry # task} other {Retry # tasks}}"
+msgstr "{selectedReviewCount, plural, one {Réessayer # tâche} many {Réessayer # tâches} other {Réessayer # tâches}}"
 
 #. placeholder {0}: reviewItems.length
 #: src/app/scratchpad-screen.tsx
@@ -1452,6 +1452,7 @@ msgstr "Cliquez sur des tâches pour les sélectionner."
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
+#: src/components/tasknotes-controls.tsx
 msgid "Close"
 msgstr "Fermer"
 
@@ -1900,8 +1901,8 @@ msgid "Create task for {0}"
 msgstr "Créer une tâche pour {0}"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Create task notes"
-msgstr "Créer des notes de tâche"
+msgid "Create tasks"
+msgstr "Créer les tâches"
 
 #: src/app/occurrence-policy-field.tsx
 msgid "Create the next after completion"
@@ -2335,10 +2336,6 @@ msgstr "Modification non enregistrée"
 msgid "Edit pattern"
 msgstr "Modifier le schéma de récurrence"
 
-#: src/components/task-property-editor.tsx
-msgid "Edit property"
-msgstr "Modifier la propriété"
-
 #: src/components/outline-textarea.tsx
 msgid "Edit reference Markdown"
 msgstr "Modifier le Markdown de la référence"
@@ -2461,6 +2458,7 @@ msgid "Extra context for the task"
 msgstr "Informations complémentaires pour la tâche"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "Champs affichés"
 
@@ -2479,6 +2477,7 @@ msgid "File path"
 msgstr "Chemin du fichier"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Filter"
 msgstr "Filtre"
 
@@ -2657,6 +2656,7 @@ msgid "Group"
 msgstr "Groupe"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Group & sort"
 msgstr "Regrouper et trier"
 
@@ -2968,6 +2968,7 @@ msgid "Later"
 msgstr "Plus tard"
 
 #: src/app/view-editor-form.tsx
+#: src/app/views-screen.tsx
 msgid "Layout"
 msgstr "Disposition"
 
@@ -3098,6 +3099,7 @@ msgid "Manage"
 msgstr "Gérer"
 
 #: src/app/palette-commands.ts
+#: src/app/views-screen.tsx
 #: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "Gérer les vues"
@@ -4097,6 +4099,11 @@ msgstr "projets"
 msgid "Projects"
 msgstr "Projets"
 
+#. placeholder {0}: task.title
+#: src/components/task-row.tsx
+msgid "Properties for {0}"
+msgstr "Propriétés de {0}"
+
 #: src/components/expression-builder.tsx
 msgid "Property"
 msgstr "Propriété"
@@ -4863,8 +4870,8 @@ msgid "Selected day"
 msgstr "Jour sélectionné"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Selected drafts become linked TaskNotes in place. Everything else stays in this scratchpad so you can keep working."
-msgstr "Les brouillons sélectionnés sont convertis en notes de tâche liées, sans changer de place. Les autres éléments restent dans ce bloc-notes pour vous permettre de continuer à travailler."
+msgid "Selected drafts become tasks linked to their Markdown notes. Everything else stays in this scratchpad so you can keep working."
+msgstr "Les brouillons sélectionnés deviennent des tâches liées à leurs notes Markdown. Le reste demeure dans ce bloc-notes pour que vous puissiez continuer à travailler."
 
 #: src/app/bulk-task-actions.tsx
 msgid "Selected tasks"
@@ -5266,7 +5273,6 @@ msgstr "Tâche introuvable. Elle a peut-être été supprimée ou déplacée."
 #: src/app/task-core-properties.tsx
 #: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
-#: src/components/task-row.tsx
 msgid "Task properties"
 msgstr "Propriétés de la tâche"
 
@@ -5757,8 +5763,8 @@ msgid "Try loading the view again. If the problem continues, edit its settings o
 msgstr "Essayez de recharger la vue. Si le problème persiste, modifiez ses paramètres ou choisissez une autre vue."
 
 #: src/components/task-capture.tsx
-msgid "Try tomorrow 9am, #tag, @context, +project, !priority, *status."
-msgstr "Essayez demain 9h, #étiquette, @contexte, +projet, !priorité, *statut."
+msgid "Try tomorrow 9am, #tag, @context, +project."
+msgstr "Essayez demain 9h, #tag, @contexte, +projet."
 
 #: src/components/reminder-editor.tsx
 msgid "Type"
