@@ -15,6 +15,17 @@ test("newest main source order wins over build time and failed newer runs", () =
     [4, 2],
   );
 });
+test("Android debug main runs cannot mask signed tag candidates", () => {
+  const runs = [
+    { id: 1, head_sha: "a", head_branch: "android-v1.0.13" },
+    { id: 2, head_sha: "a", head_branch: "main" },
+  ];
+  assert.deepEqual(
+    newestSourceRuns([{ sha: "a" }], runs, "android").map((r) => r.id),
+    [1],
+  );
+});
+
 test("reviews wait; rejections stop only the Apple line", () => {
   assert.equal(appleQueueBlock([{ state: "READY_FOR_SALE" }]), null);
   assert.equal(

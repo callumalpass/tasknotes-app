@@ -24,10 +24,9 @@ export function newestSourceRuns(commits, runs, platform) {
     (a, b) => b.id - a.id || b.run_attempt - a.run_attempt,
   )) {
     if (
-      run.head_branch === "main" ||
-      (platform === "android"
+      platform === "android"
         ? /^android-v/.test(run.head_branch)
-        : /^ios-v/.test(run.head_branch))
+        : run.head_branch === "main" || /^ios-v/.test(run.head_branch)
     ) {
       if (!latest.has(run.head_sha)) latest.set(run.head_sha, run);
     }
