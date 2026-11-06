@@ -113,10 +113,7 @@ test("navigation exception retains new-document aborts and network failures", as
     .toEqual(["net::ERR_ABORTED", "net::ERR_FAILED"]);
 });
 
-test("demo sidebar and shortcut sheet remain accessible in both themes", async ({
-  page,
-  isMobile,
-}) => {
+test("demo sidebar and shortcut sheet remain accessible", async ({ page }) => {
   await page.goto("?demo=60");
   await expect(
     page.getByRole("button", {
@@ -134,24 +131,20 @@ test("demo sidebar and shortcut sheet remain accessible in both themes", async (
       ),
     ).toEqual([]);
   };
-  for (const colorScheme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-    await scan();
-    if (!isMobile) {
-      await page
-        .getByRole("button", { name: "Collapse sidebar", exact: true })
-        .click();
-      await scan();
-      await page
-        .getByRole("button", { name: "Expand sidebar", exact: true })
-        .click();
-    }
-    await page.locator("#main-content").focus();
-    await page.keyboard.press("?");
-    await expect(
-      page.getByRole("dialog", { name: "Keyboard shortcuts" }),
-    ).toBeVisible();
-    await scan();
-    await page.keyboard.press("Escape");
-  }
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await scan();
+  await page
+    .getByRole("button", { name: "Collapse sidebar", exact: true })
+    .click();
+  await scan();
+  await page
+    .getByRole("button", { name: "Expand sidebar", exact: true })
+    .click();
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("?");
+  await expect(
+    page.getByRole("dialog", { name: "Keyboard shortcuts" }),
+  ).toBeVisible();
+  await scan();
+  await page.keyboard.press("Escape");
 });

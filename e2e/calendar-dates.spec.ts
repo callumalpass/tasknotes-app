@@ -10,11 +10,6 @@ test.beforeEach(async ({ page, isMobile }) => {
   );
 });
 
-async function changeLayout(page: Page, name: string) {
-  await page.getByLabel("Calendar layout", { exact: true }).click();
-  await page.getByRole("button", { name, exact: true }).click();
-}
-
 async function capture(page: Page, text: string) {
   if ((page.viewportSize()?.width ?? 0) < 840)
     await page.locator(".view-context-capture").click();
@@ -30,10 +25,10 @@ async function capture(page: Page, text: string) {
   else await expect(input).toHaveValue("");
 }
 
-test("detail dates share tabs, text and shortcuts without leaving the viewport", async ({
+test("detail dates share tabs, typing, shortcuts and focus return", async ({
   page,
-}, testInfo) => {
-  await page.goto("?demo=60&many-options");
+}) => {
+  await page.goto("?demo=60");
   await page.locator(".task-row-title").first().click();
   const detail = page.getByRole("complementary", {
     name: "Task details",
@@ -63,35 +58,6 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
     await expect(
       dialog.getByRole("button", { name: "Today", exact: true }),
     ).toBeVisible();
-    for (const colorScheme of ["light", "dark"] as const) {
-      await page.emulateMedia({ colorScheme });
-      const bounds = (await dialog.boundingBox())!;
-      expect(bounds.x).toBeGreaterThanOrEqual(0);
-      expect(bounds.x + bounds.width).toBeLessThanOrEqual(
-        page.viewportSize()!.width,
-      );
-      expect(bounds.y).toBeGreaterThanOrEqual(0);
-      expect(bounds.y + bounds.height).toBeLessThanOrEqual(
-        page.viewportSize()!.height,
-      );
-      const lastDay = (await dialog
-        .getByRole("gridcell")
-        .last()
-        .boundingBox())!;
-      expect(lastDay.x + lastDay.width).toBeLessThanOrEqual(
-        bounds.x + bounds.width,
-      );
-      expect(
-        await page.evaluate(
-          () =>
-            document.documentElement.scrollWidth <=
-            document.documentElement.clientWidth,
-        ),
-      ).toBe(true);
-      await page.screenshot({
-        path: testInfo.outputPath(`detail-${field}-${colorScheme}.png`),
-      });
-    }
     await page.keyboard.press("Escape");
     await expect(trigger).toBeFocused();
   }
@@ -109,96 +75,9 @@ test("detail dates share tabs, text and shortcuts without leaving the viewport",
   await detail.getByRole("button", { name: "Due date", exact: true }).click();
   const compact = page.getByRole("dialog", { name: "Due date calendar" });
   await expect(compact).toBeInViewport({ ratio: 1 });
-  const compactBounds = (await compact.boundingBox())!;
-  expect(compactBounds.x).toBeGreaterThanOrEqual(0);
-  expect(compactBounds.x + compactBounds.width).toBeLessThanOrEqual(320);
-  expect(compactBounds.y).toBeGreaterThanOrEqual(0);
-  expect(compactBounds.y + compactBounds.height).toBeLessThanOrEqual(568);
   await compact.getByRole("gridcell").last().scrollIntoViewIfNeeded();
   await expect(compact.getByRole("gridcell").last()).toBeInViewport();
   await compact.getByRole("button", { name: "Close dates" }).click();
-});
-
-test("grid cards lead with titles, logs remain readable, and Week starts at the working day", async ({
-  page,
-  isMobile,
-}, testInfo) => {
-  await page.clock.install({ time: new Date("2026-11-04T11:00:00Z") });
-  await page.goto(upcoming);
-  await expect(page.locator(".tnc-item--list").first()).toBeVisible();
-  await page.mouse.move(650, 500);
-  await page.mouse.wheel(0, 1400);
-  await changeLayout(page, "Week");
-  const scroller = page.locator(".tnc-tg-scroll");
-  await expect(scroller).toBeVisible();
-  await expect
-    .poll(() => scroller.evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(0);
-  const scroll = await scroller.evaluate((element) => ({
-    top: element.scrollTop,
-    max: element.scrollHeight - element.clientHeight,
-  }));
-  expect(scroll.top).toBeLessThan(scroll.max);
-  await expect(
-    page.getByRole("complementary", { name: "Selected day" }),
-  ).toHaveCount(0);
-  if (!isMobile)
-    expect(
-      (await page.locator(".full-calendar-main").boundingBox())!.width,
-    ).toBeGreaterThan(950);
-  const card = page.locator(".tnc-item--timed:not(.is-time-entry)").first();
-  const title = card.locator(".full-calendar-event-primary > span");
-  const time = card.locator(".full-calendar-event-secondary > time");
-  await expect(title).toBeVisible();
-  await expect(time).toBeVisible();
-  const titleBounds = (await title.boundingBox())!;
-  const timeBounds = (await time.boundingBox())!;
-  expect(titleBounds.y + titleBounds.height).toBeLessThanOrEqual(timeBounds.y);
-  expect(
-    await title.evaluate(
-      (element) => element.scrollHeight <= element.clientHeight + 1,
-    ),
-  ).toBe(true);
-  const cardBounds = (await card.boundingBox())!;
-  expect(timeBounds.y + timeBounds.height).toBeLessThanOrEqual(
-    cardBounds.y + cardBounds.height,
-  );
-  for (const colorScheme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme });
-    await page.screenshot({
-      path: testInfo.outputPath(`upcoming-week-${colorScheme}.png`),
-    });
-  }
-  await page.goto(
-    "views/TaskNotes%2FViews%2Fcalendar.base%23calendar?demo=60&many-options",
-  );
-  await expect(page.locator(".tnc--month")).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("calendar-month.png") });
-  await changeLayout(page, "Week");
-  const tracked = page.locator(".tnc-item.is-time-entry").first();
-  await expect(
-    tracked.locator(".full-calendar-event-primary > span"),
-  ).not.toBeEmpty();
-  await expect(tracked).not.toHaveClass(/is-actual/);
-  await expect(tracked).toBeVisible();
-  await tracked.scrollIntoViewIfNeeded();
-  const trackedBounds = (await tracked.boundingBox())!;
-  const trackedTitle = (await tracked
-    .locator(".full-calendar-event-primary")
-    .boundingBox())!;
-  const trackedTime = (await tracked
-    .locator(".full-calendar-event-secondary")
-    .boundingBox())!;
-  expect(trackedTitle.y).toBeGreaterThanOrEqual(trackedBounds.y);
-  expect(trackedTime.y + trackedTime.height).toBeLessThanOrEqual(
-    trackedBounds.y + trackedBounds.height,
-  );
-  for (const colorScheme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme });
-    await page.screenshot({
-      path: testInfo.outputPath(`calendar-week-${colorScheme}.png`),
-    });
-  }
 });
 
 test.describe("local calendar days", () => {

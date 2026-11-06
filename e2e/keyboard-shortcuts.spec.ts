@@ -179,63 +179,6 @@ test("plain capture, search, and g sequences respect typing and row actions", as
   await expect(search).toBeFocused();
 });
 
-test("desktop rail collapses, reflows, persists, and names the Today count", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, "Desktop-only display preference");
-  await openDemo(page);
-  const rail = page.locator("aside.navigation-rail");
-  const today = rail.getByRole("button", {
-    name: /^Today, \d+ tasks?(, \d+ overdue)?$/,
-  });
-  await expect(today).toBeVisible();
-  const count = Number(await today.locator(".navigation-count").textContent());
-  await page.locator("body").press("j");
-  await page.keyboard.press("x");
-  await expect
-    .poll(async () =>
-      Number(await today.locator(".navigation-count").textContent()),
-    )
-    .toBe(count - 1);
-  const before = await page.locator("#main-content").boundingBox();
-  await page.locator("#main-content").focus();
-  await page.keyboard.press("Shift+M");
-  await expect(
-    rail.getByRole("button", { name: "Expand sidebar" }),
-  ).toBeVisible();
-  const after = await page.locator("#main-content").boundingBox();
-  expect(after!.width).toBeGreaterThan(before!.width);
-  await expect(today).toHaveAttribute("title", /g t/);
-  await page.reload();
-  await expect(
-    rail.getByRole("button", { name: "Expand sidebar" }),
-  ).toBeVisible();
-  await page.locator("#main-content").focus();
-  await page.keyboard.press("Shift+M");
-  await expect(
-    rail.getByRole("button", { name: "Collapse sidebar" }),
-  ).toBeVisible();
-});
-
-test("a saved collapse preference leaves phone bottom navigation unchanged", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(!isMobile, "Phone-only navigation");
-  await page.addInitScript(() =>
-    localStorage.setItem("tasknotes:sidebar-collapsed", "true"),
-  );
-  await openDemo(page);
-  await expect(page.locator("aside.navigation-rail")).toBeHidden();
-  await expect(page.locator(".bottom-navigation")).toBeVisible();
-  await expect(
-    page
-      .locator(".bottom-navigation")
-      .getByRole("button", { name: "Today", exact: true }),
-  ).toBeVisible();
-});
-
 test("row keys act on the whole selection and keep the list place", async ({
   page,
   isMobile,

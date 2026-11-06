@@ -16,3 +16,5 @@ translate CSS, identifiers, repository data or authority diagnostics. English re
 synchronously; all ten supported locales are production-enabled on this branch.
 Use the shared @mdbase-dev/i18n kit and preserve authored-PO completeness before
 fallback for every locale. Catalogue completeness does not authorize release.
+
+For user-facing development and after LAB deployment, follow `docs/live-testing.md`.

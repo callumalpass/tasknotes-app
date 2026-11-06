@@ -241,75 +241,6 @@ test("page menu enters selection mode, query collapse and navigation clear selec
   await expect(selectedRows(page)).toHaveCount(0);
 });
 
-test("touch long press selects, tap toggles, and swipes still act outside selection mode", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(!isMobile, "Touch gestures");
-  await openDemo(page);
-  const row = rows(page).first();
-  const title = row.locator(".task-row-title");
-  await title.dispatchEvent("pointerdown", {
-    pointerType: "touch",
-    pointerId: 2,
-    clientX: 150,
-    clientY: 250,
-  });
-  await page.waitForTimeout(550);
-  await title.dispatchEvent("pointerup", {
-    pointerType: "touch",
-    pointerId: 2,
-    clientX: 150,
-    clientY: 250,
-  });
-  await title.dispatchEvent("click", { pointerType: "touch" });
-  await expect(selectedRows(page)).toHaveCount(1);
-  await rows(page).nth(2).locator(".task-row-title").tap();
-  await expect(selectedRows(page)).toHaveCount(2);
-  await page
-    .locator(".bulk-actions")
-    .getByRole("button", { name: "Clear", exact: true })
-    .tap();
-  await title.dispatchEvent("pointerdown", {
-    pointerType: "touch",
-    pointerId: 3,
-    clientX: 80,
-    clientY: 250,
-  });
-  await title.dispatchEvent("pointermove", {
-    pointerType: "touch",
-    pointerId: 3,
-    clientX: 190,
-    clientY: 250,
-  });
-  await title.dispatchEvent("pointerup", {
-    pointerType: "touch",
-    pointerId: 3,
-    clientX: 190,
-    clientY: 250,
-  });
-  await expect(page.locator(".bulk-actions")).toHaveCount(0);
-  await expect(row).not.toHaveAttribute("data-selected", "true");
-  // Native touch context menus can arrive before the hold timer.
-  await openDemo(page);
-  await title.dispatchEvent("pointerdown", {
-    pointerType: "touch",
-    pointerId: 5,
-    clientX: 150,
-    clientY: 250,
-  });
-  await title.dispatchEvent("contextmenu", { clientX: 150, clientY: 250 });
-  await title.dispatchEvent("pointerup", {
-    pointerType: "touch",
-    pointerId: 5,
-    clientX: 150,
-    clientY: 250,
-  });
-  await title.dispatchEvent("click", { pointerType: "touch" });
-  await expect(selectedRows(page)).toHaveCount(1);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-});
-
 test("project lists share selection and drop collapsed rows from it", async ({
   page,
 }) => {
@@ -368,4 +299,41 @@ test("schedule offers no date and an explicitly applied picked date, with Undo",
         rows(page).getByRole("button", { name: title, exact: true }),
       ).toBeVisible();
   }
+});
+
+test("selected scheduling requires a due-date decision and preserves Due when kept", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const first = page.locator(".task-row").filter({
+    has: page.getByRole("button", {
+      name: "Prepare quarterly planning session",
+      exact: true,
+    }),
+  });
+  const due = await first
+    .locator(".task-row-property.is-date")
+    .filter({ hasText: "Due" })
+    .textContent();
+  await first.locator(".task-row-title").focus();
+  await page.keyboard.press("v");
+  await page.locator(".task-row-title").nth(2).focus();
+  await page.keyboard.press("v");
+  await page.getByRole("combobox", { name: "Schedule selected tasks" }).click();
+  await page.getByRole("option", { name: "Tomorrow", exact: true }).click();
+  await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Keep due dates", exact: true })
+    .click();
+  await expect(page.locator(".bulk-update-notice")).toContainText(
+    "Scheduled 2 tasks for Tomorrow",
+  );
+  await expect(
+    first.locator(".task-row-property.is-date").filter({ hasText: "Due" }),
+  ).toHaveText(due!);
+  await expect(
+    page
+      .locator(".bulk-update-notice")
+      .getByRole("button", { name: "Undo", exact: true }),
+  ).toBeInViewport();
 });

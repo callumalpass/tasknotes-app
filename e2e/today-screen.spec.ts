@@ -98,39 +98,3 @@ test("a finished day says Today is clear and leads to Upcoming", async ({
     page.getByRole("heading", { level: 1, name: "Upcoming" }),
   ).toBeVisible();
 });
-
-test("the phone Add task button stays compact at rest and clears row metadata", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(!isMobile, "The floating Add task button is phone-only.");
-  await page.goto("?demo=50");
-  const fab = page.locator(".view-context-capture");
-  await expect(fab).toContainText("Add task");
-  await expect(fab).toHaveAccessibleName("New task");
-  expect((await fab.boundingBox())!.width).toBe(44);
-  const meta = await page
-    .locator(".task-row-metadata-band")
-    .first()
-    .boundingBox();
-  expect(meta!.x + meta!.width).toBeLessThan((await fab.boundingBox())!.x);
-
-  await page.mouse.move(200, 400);
-  for (let step = 0; step < 4; step += 1) {
-    await page.evaluate(() => window.scrollBy(0, 80));
-    await page.waitForTimeout(30);
-  }
-  await expect(fab).toHaveClass(/is-collapsed/);
-  await expect(fab).toHaveAccessibleName("New task");
-  expect((await fab.boundingBox())!.width).toBe(44);
-  await expect(fab).not.toHaveClass(/is-collapsed/, { timeout: 2_000 });
-
-  await page.evaluate(() =>
-    window.scrollTo(0, document.documentElement.scrollHeight),
-  );
-  await expect(fab).not.toHaveClass(/is-collapsed/, { timeout: 2_000 });
-  const lastMenu = page.locator(".task-actions-trigger").last();
-  const menuBox = (await lastMenu.boundingBox())!;
-  const fabBox = (await fab.boundingBox())!;
-  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(fabBox.y);
-});

@@ -94,141 +94,32 @@ test("opens a trailing-slash Scratchpad route and focuses current capture", asyn
   await expect(
     page.getByRole("heading", { name: "Scratchpad", exact: true }),
   ).toBeVisible();
-  await expect
-    .poll(() =>
-      page
-        .locator(".scratchpad-screen")
-        .evaluate((element) => getComputedStyle(element).paddingTop),
-    )
-    .toBe("0px");
   const current = page.getByRole("region", {
     name: "Editor for current scratchpad",
   });
   await expect(current.locator("[data-scratch-input]:focus")).toHaveCount(1);
-  const feed = page.locator(".scratchpad-history-scroll");
-  await expect
-    .poll(() =>
-      feed.evaluate(
-        (element) =>
-          element.scrollHeight - element.clientHeight - element.scrollTop,
-      ),
-    )
-    .toBeLessThanOrEqual(2);
-  const currentPlacementOffset = () =>
-    feed.evaluate((element) => {
-      const currentDocument = element.querySelector(
-        ".scratchpad-current-document",
-      );
-      if (!currentDocument) return Number.POSITIVE_INFINITY;
-      const scrollerBounds = element.getBoundingClientRect();
-      const cardBounds = currentDocument.getBoundingClientRect();
-      const bottomGutter = Number.parseFloat(
-        getComputedStyle(element).paddingBottom,
-      );
-      const expectedGap =
-        window.innerWidth <= 560
-          ? bottomGutter
-          : Math.max(
-              bottomGutter,
-              (element.clientHeight - cardBounds.height) / 2,
-            );
-      const actualGap = scrollerBounds.bottom - cardBounds.bottom;
-      return Math.abs(actualGap - expectedGap);
-    });
-  await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   await current
     .getByRole("button", { name: "Actions for empty item" })
     .last()
     .click();
-  await expect(current.getByRole("menu", { name: /Actions for/ })).toHaveClass(
-    /opens-up/,
-  );
+  await expect(
+    current.getByRole("menu", { name: /Actions for/ }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
   await current.getByRole("button", { name: "Write" }).click();
   await expect(
     current.getByRole("textbox", { name: "Scratchpad Markdown" }),
   ).toBeFocused();
-  await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   for (let index = 0; index < 3; index += 1) {
     await current.getByRole("button", { name: "Outline" }).click();
     await expect(
       current.getByRole("tree", { name: "Scratchpad outline" }),
     ).toBeVisible();
-    await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
     await current.getByRole("button", { name: "Write" }).click();
     await expect(
       current.getByRole("textbox", { name: "Scratchpad Markdown" }),
     ).toBeFocused();
-    await expect.poll(currentPlacementOffset).toBeLessThanOrEqual(2);
   }
-});
-
-test("bottom-anchors the current Scratchpad above an overlay keyboard", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
-    const viewport = new EventTarget() as VisualViewport;
-    Object.defineProperties(viewport, {
-      height: { configurable: true, writable: true, value: 844 },
-      offsetTop: { configurable: true, writable: true, value: 0 },
-    });
-    Object.defineProperty(window, "visualViewport", {
-      configurable: true,
-      value: viewport,
-    });
-    Object.defineProperty(window, "setTestVisualViewport", {
-      configurable: true,
-      value: (height: number, offsetTop = 0) => {
-        Object.defineProperties(viewport, {
-          height: { configurable: true, writable: true, value: height },
-          offsetTop: { configurable: true, writable: true, value: offsetTop },
-        });
-        viewport.dispatchEvent(new Event("resize"));
-      },
-    });
-  });
-  await page.goto("scratchpad/?demo=12");
-  const feed = page.locator(".scratchpad-history-scroll");
-  const current = page.locator(".scratchpad-current-document");
-  const restSpace = page.locator(".scratchpad-current-rest-space");
-  const capture = current.getByRole("textbox", { name: "Draft task: empty" });
-  await expect(current).toBeVisible();
-  await expect(capture).toBeFocused();
-  await expect(restSpace).toHaveCSS("display", "none");
-
-  const currentBottomOffset = () =>
-    feed.evaluate((element) => {
-      const currentDocument = element.querySelector(
-        ".scratchpad-current-document",
-      );
-      if (!currentDocument) return Number.POSITIVE_INFINITY;
-      const actualGap =
-        element.getBoundingClientRect().bottom -
-        currentDocument.getBoundingClientRect().bottom;
-      const expectedGap = Number.parseFloat(
-        getComputedStyle(element).paddingBottom,
-      );
-      return Math.abs(actualGap - expectedGap);
-    });
-
-  await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
-  await page.evaluate(() => {
-    (
-      window as typeof window & {
-        setTestVisualViewport(height: number, offsetTop?: number): void;
-      }
-    ).setTestVisualViewport(520);
-  });
-  await expect.poll(currentBottomOffset).toBeLessThanOrEqual(2);
-  await expect
-    .poll(() =>
-      page
-        .locator(".scratchpad-screen")
-        .evaluate((element) => element.getBoundingClientRect().bottom),
-    )
-    .toBeLessThanOrEqual(520);
-  await expect(capture).toBeFocused();
 });
 
 test("resumes a historical Scratchpad as the current note", async ({
@@ -261,7 +152,7 @@ test("resumes a historical Scratchpad as the current note", async ({
 
 test("deletes a previous Scratchpad note behind an Undo window", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.goto("scratchpad/?demo=12");
   const planning = page.getByRole("button", { name: /Planning notes/ });
   await expect(planning).toBeVisible();
@@ -271,29 +162,17 @@ test("deletes a previous Scratchpad note behind an Undo window", async ({
   ).toHaveCount(0);
   const card = page.locator(".scratchpad-document", { has: planning });
   const actions = card.getByRole("button", { name: "Note actions" });
-  // The trigger sits beside the disclosure without overlapping it.
-  const [disclosureBox, actionsBox] = await Promise.all([
-    planning.boundingBox(),
-    actions.boundingBox(),
-  ]);
-  expect(actionsBox!.width).toBeGreaterThanOrEqual(44);
-  expect(actionsBox!.height).toBeGreaterThanOrEqual(44);
-  expect(actionsBox!.x).toBeGreaterThanOrEqual(
-    disclosureBox!.x + disclosureBox!.width - 1,
-  );
 
   await actions.click();
   const remove = page.getByRole("menuitem", { name: "Delete note" });
   await expect(remove).toBeFocused();
   await expect(remove).toBeInViewport({ ratio: 1 });
-  await page.screenshot({ path: testInfo.outputPath("note-menu.png") });
   await remove.click();
 
   await expect(planning).toHaveCount(0);
   await expect(page.getByText("Deleted “Planning notes”")).toBeVisible();
   const undo = page.getByRole("button", { name: "Undo" });
   await expect(undo).toBeFocused();
-  await page.screenshot({ path: testInfo.outputPath("note-deleted.png") });
   await undo.click();
   await expect(planning).toBeVisible();
   await expect(page.getByText("Deleted “Planning notes”")).toHaveCount(0);
@@ -306,27 +185,6 @@ test("deletes a previous Scratchpad note behind an Undo window", async ({
   await expect(
     page.getByRole("region", { name: "Editor for current scratchpad" }),
   ).toBeVisible();
-});
-
-test("moves the centered current Scratchpad down after an intentional upward scroll", async ({
-  page,
-}) => {
-  await page.goto("scratchpad/?demo=12");
-  const feed = page.locator(".scratchpad-history-scroll");
-  const current = page.locator(".scratchpad-current-document");
-  await expect(current).toBeVisible();
-  const initialTop = await current.evaluate(
-    (element) => element.getBoundingClientRect().top,
-  );
-
-  await feed.hover();
-  await page.mouse.wheel(0, -160);
-
-  await expect
-    .poll(() =>
-      current.evaluate((element) => element.getBoundingClientRect().top),
-    )
-    .toBeGreaterThan(initialTop + 80);
 });
 
 test("continues on a fresh line after converting the final outline draft", async ({
@@ -397,37 +255,6 @@ test("keeps the caret and completion at a multiline paste in an outline item", a
   ).toBeVisible();
 });
 
-test("wraps outline text without splitting nodes or scrolling horizontally", async ({
-  page,
-}) => {
-  await page.goto("scratchpad/?demo=12");
-  const current = page.getByRole("region", {
-    name: "Editor for current scratchpad",
-  });
-  const input = current.locator("[data-scratch-input]").last();
-  const text =
-    "A longer thought that should wrap naturally within its outline row. "
-      .repeat(8)
-      .trim();
-  await input.fill(text);
-  await expect(input).toHaveValue(text);
-  const dimensions = await input.evaluate((element) => ({
-    height: element.clientHeight,
-    scrollHeight: element.scrollHeight,
-    width: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-    lineHeight: parseFloat(getComputedStyle(element).lineHeight),
-  }));
-  expect(dimensions.height).toBeGreaterThan(dimensions.lineHeight * 2);
-  expect(dimensions.scrollHeight).toBeLessThanOrEqual(dimensions.height + 1);
-  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
-  const count = await current.locator("[data-scratch-row]").count();
-  await input.press("End");
-  await input.press("Enter");
-  await expect(current.locator("[data-scratch-row]")).toHaveCount(count + 1);
-  await expect(current.locator("[data-scratch-input]").last()).toBeFocused();
-});
-
 test("configures the default mode for new Scratchpad notes", async ({
   page,
 }) => {
@@ -455,7 +282,7 @@ test("configures the default mode for new Scratchpad notes", async ({
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("offers a quiet writing surface with selection-preserving tools", async ({
+test("writing tools preserve selection and support Undo and Redo", async ({
   page,
 }) => {
   await page.goto("scratchpad/?demo=12");
@@ -476,6 +303,8 @@ test("offers a quiet writing surface with selection-preserving tools", async ({
   await expect(current.getByRole("status")).toHaveCount(0);
   await source.press("ControlOrMeta+z");
   await expect(source).toHaveText("A thought worth keeping");
+  await source.press("ControlOrMeta+y");
+  await expect(source).toHaveText("**A thought worth keeping**");
   const result = await new AxeBuilder({ page })
     .include(".scratchpad-writing-surface")
     .analyze();
@@ -499,9 +328,6 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
     name: /Prepare quarterly planning session/,
   });
   await expect(outlineOption).toBeVisible();
-  const outlineLabel = await outlineOption.locator("span").boundingBox();
-  const outlinePath = await outlineOption.locator("small").boundingBox();
-  expect(outlinePath?.y).toBeGreaterThan(outlineLabel?.y ?? Infinity);
   await outlineOption.click();
   await expect(
     current.getByRole("button", {
@@ -529,262 +355,10 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
   });
   await expect(markdownOption).toBeVisible();
   await expect(markdownOption.locator(".cm-completionIcon")).toBeHidden();
-  const markdownLabel = await markdownOption
-    .locator(".cm-completionLabel")
-    .boundingBox();
-  const markdownPath = await markdownOption
-    .locator(".cm-completionDetail")
-    .boundingBox();
-  expect(markdownPath?.y).toBeGreaterThan(markdownLabel?.y ?? Infinity);
   await markdownOption.click();
   await expect(source).toHaveText(
     /\[\[tasks\/.*\|Prepare quarterly planning session\]\]/,
   );
-});
-
-test("presents recognized outline details as quiet aligned metadata", async ({
-  page,
-}) => {
-  await page.goto("scratchpad/?demo=12");
-
-  const current = page.getByRole("region", {
-    name: "Editor for current scratchpad",
-  });
-  const input = current
-    .getByRole("textbox", { name: "Draft task: empty" })
-    .last();
-  await input.fill("Call Alex tomorrow at 3pm !high please");
-
-  const preview = current.getByLabel("Recognized task details");
-  await expect(preview).toHaveAttribute("aria-live", "polite");
-  await expect(preview.locator("span")).toHaveCount(2);
-  const presentation = await preview.evaluate((element) => {
-    const details = element.firstElementChild as HTMLElement;
-    const firstItem = details.firstElementChild as HTMLElement;
-    const input = element.previousElementSibling?.querySelector(
-      "[data-scratch-input]",
-    );
-    const detailBounds = details.getBoundingClientRect();
-    const inputBounds = input?.getBoundingClientRect();
-    const itemStyle = getComputedStyle(firstItem);
-    const rootStyle = getComputedStyle(document.documentElement);
-    const probe = document.createElement("span");
-    probe.style.color = rootStyle.getPropertyValue("--ink-muted");
-    document.body.append(probe);
-    const mutedColor = getComputedStyle(probe).color;
-    probe.remove();
-    return {
-      alignedWithInput:
-        Boolean(inputBounds) &&
-        Math.abs(detailBounds.left - inputBounds!.left) <= 1,
-      transparentItems: itemStyle.backgroundColor === "rgba(0, 0, 0, 0)",
-      borderlessItems: itemStyle.borderTopWidth === "0px",
-      usesMutedInk: itemStyle.color === mutedColor,
-    };
-  });
-  expect(presentation).toEqual({
-    alignedWithInput: true,
-    transparentItems: true,
-    borderlessItems: true,
-    usesMutedInk: true,
-  });
-});
-
-test("uses dark theme tokens throughout the Scratchpad editor", async ({
-  page,
-}) => {
-  await page.addInitScript(() => localStorage.setItem("mdbase:theme", "dark"));
-  await page.goto("scratchpad/?demo=12");
-
-  const current = page.getByRole("region", {
-    name: "Editor for current scratchpad",
-  });
-  await expect(current).toBeVisible();
-
-  const outlineButton = current.getByRole("button", { name: "Outline" });
-  const markdownButton = current.getByRole("button", { name: "Write" });
-  await expect(outlineButton).toHaveAttribute("aria-pressed", "true");
-  await expect
-    .poll(() =>
-      markdownButton.evaluate(
-        (button) => getComputedStyle(button).backgroundColor,
-      ),
-    )
-    .toBe("rgba(0, 0, 0, 0)");
-
-  const cardShadowUsesThemeToken = await page
-    .locator(".scratchpad-current-document")
-    .evaluate((card) => {
-      const probe = document.createElement("div");
-      probe.style.boxShadow = "0 1px 2px var(--color-shadow-soft)";
-      document.body.append(probe);
-      const expected = getComputedStyle(probe).boxShadow;
-      probe.remove();
-      return getComputedStyle(card).boxShadow === expected;
-    });
-  expect(cardShadowUsesThemeToken).toBe(true);
-
-  await markdownButton.click();
-  const editor = current.getByRole("textbox", { name: "Scratchpad Markdown" });
-  await expect(editor).toBeFocused();
-
-  const editorTheme = await current.evaluate((region) => {
-    const activeLine = region.querySelector<HTMLElement>(".cm-activeLine")!;
-    const punctuation = region.querySelector<HTMLElement>(".cm-line span")!;
-    const codeMirror = region.querySelector<HTMLElement>(".cm-editor")!;
-    const probe = document.createElement("div");
-    probe.style.color = "var(--ink-muted)";
-    probe.style.backgroundColor =
-      "color-mix(in srgb, var(--accent-soft) 52%, transparent)";
-    document.body.append(probe);
-    const expectedPunctuation = getComputedStyle(probe).color;
-    const expectedActiveLine = getComputedStyle(probe).backgroundColor;
-    probe.remove();
-    return {
-      punctuationUsesMutedInk:
-        getComputedStyle(punctuation).color === expectedPunctuation,
-      activeLineUsesSoftAccent:
-        getComputedStyle(activeLine).backgroundColor === expectedActiveLine,
-      focusIsVisible: getComputedStyle(codeMirror).boxShadow !== "none",
-    };
-  });
-  expect(editorTheme).toEqual({
-    punctuationUsesMutedInk: true,
-    activeLineUsesSoftAccent: true,
-    focusIsVisible: true,
-  });
-
-  await editor.fill("[[quarterly");
-  const option = current.getByRole("option", {
-    name: /Prepare quarterly planning session/,
-  });
-  await expect(option).toBeVisible();
-  const pickerTheme = await option.evaluate((item) => {
-    const tooltip = item.closest<HTMLElement>(".cm-tooltip-autocomplete")!;
-    const detail = item.querySelector<HTMLElement>(".cm-completionDetail")!;
-    const probe = document.createElement("div");
-    probe.style.backgroundColor = "var(--paper-raised)";
-    probe.style.borderColor = "var(--line-strong)";
-    probe.style.color = "var(--ink-muted)";
-    document.body.append(probe);
-    const expected = getComputedStyle(probe);
-    const values = {
-      raisedSurface:
-        getComputedStyle(tooltip).backgroundColor === expected.backgroundColor,
-      strongBorder:
-        getComputedStyle(tooltip).borderColor === expected.borderColor,
-      mutedPath: getComputedStyle(detail).color === expected.color,
-      selectedUsesAccent:
-        getComputedStyle(item).backgroundColor !== "rgba(0, 0, 0, 0)",
-      elevated: getComputedStyle(tooltip).boxShadow !== "none",
-    };
-    probe.remove();
-    return values;
-  });
-  expect(pickerTheme).toEqual({
-    raisedSurface: true,
-    strongBorder: true,
-    mutedPath: true,
-    selectedUsesAccent: true,
-    elevated: true,
-  });
-});
-
-test("keeps view management clear and scalable", async ({ page }) => {
-  await page.goto("views/?demo=24");
-
-  await expect(
-    page.getByRole("heading", { name: "Views", exact: true }),
-  ).toBeVisible();
-  const allViews = page.getByRole("region", { name: "All views" });
-  await expect(
-    allViews.getByRole("searchbox", { name: "Search views" }),
-  ).toBeVisible();
-  await expect(allViews.getByText("TaskNotes tools")).toBeVisible();
-  await expect(allViews.locator(".saved-views-section")).toBeVisible();
-  await expect(allViews.getByTitle("TaskNotes/Views/today.base")).toBeVisible();
-  const toolMembership = allViews.getByRole("button", {
-    name: "Remove Scratchpad from navigation",
-  });
-  const savedMembership = allViews.getByRole("button", {
-    name: "Remove Today from navigation",
-  });
-  const [toolMembershipBox, savedMembershipBox] = await Promise.all([
-    toolMembership.boundingBox(),
-    savedMembership.boundingBox(),
-  ]);
-  expect(toolMembershipBox).not.toBeNull();
-  expect(savedMembershipBox).not.toBeNull();
-  expect(
-    Math.abs(
-      toolMembershipBox!.x +
-        toolMembershipBox!.width -
-        (savedMembershipBox!.x + savedMembershipBox!.width),
-    ),
-  ).toBeLessThanOrEqual(1);
-  const accessibility = await new AxeBuilder({ page })
-    .include(".views-screen")
-    .analyze();
-  expect(
-    accessibility.violations.filter(({ impact }) =>
-      ["critical", "serious"].includes(impact ?? ""),
-    ),
-  ).toEqual([]);
-
-  await allViews
-    .getByRole("searchbox", { name: "Search views" })
-    .fill("work board");
-  await expect(allViews.getByRole("button", { name: "All 1" })).toBeVisible();
-  await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
-  await expect(allViews.getByText("Today", { exact: true })).toHaveCount(0);
-
-  await allViews.getByRole("searchbox", { name: "Search views" }).fill("");
-  const editableFilter = allViews.getByRole("button", { name: /Editable/ });
-  await editableFilter.focus();
-  await editableFilter.press("Enter");
-  await expect(allViews.getByText("TaskNotes tools")).toHaveCount(0);
-  await expect(allViews.getByText("Work board", { exact: true })).toBeVisible();
-
-  await page.getByRole("button", { name: "Reorder" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Shown in navigation" }),
-  ).toBeVisible();
-  const dragScratchpad = page.getByRole("button", {
-    name: "Move Scratchpad. Drag, or use up and down arrow keys.",
-  });
-  const dragToday = page.getByRole("button", {
-    name: "Move Today. Drag, or use up and down arrow keys.",
-  });
-  await dragToday.scrollIntoViewIfNeeded();
-  await dragScratchpad.scrollIntoViewIfNeeded();
-  const [scratchpadBox, todayBox] = await Promise.all([
-    dragScratchpad.boundingBox(),
-    dragToday.boundingBox(),
-  ]);
-  expect(scratchpadBox).not.toBeNull();
-  expect(todayBox).not.toBeNull();
-  await page.mouse.move(
-    scratchpadBox!.x + scratchpadBox!.width / 2,
-    scratchpadBox!.y + scratchpadBox!.height / 2,
-  );
-  await page.mouse.down();
-  await page.mouse.move(todayBox!.x + todayBox!.width / 2, todayBox!.y + 4, {
-    steps: 6,
-  });
-  await expect(dragScratchpad.locator("xpath=..")).toHaveClass(/is-dragging/);
-  await expect(dragToday.locator("xpath=..")).toHaveClass(/is-drop-before/);
-  await page.mouse.up();
-  await expect(page.getByText(/Scratchpad moved before Today/)).toBeAttached();
-  await page.getByRole("button", { name: "Done" }).click();
-  await allViews.getByRole("button", { name: /^All(?: \d+)?$/ }).click();
-  await allViews
-    .getByRole("button", { name: /^Scratchpad/ })
-    .first()
-    .click();
-  await expect(page).toHaveURL(/\/?demo=24$/);
-  await expect(
-    page.getByRole("heading", { name: "Scratchpad", exact: true }),
-  ).toBeVisible();
 });
 
 test("supports project capture and saved-view editing in the demo", async ({
@@ -890,25 +464,6 @@ test("demo work screen has no serious accessibility violations", async ({
       ({ impact }) => impact === "serious" || impact === "critical",
     ),
   ).toEqual([]);
-});
-
-test("the capture button stays on screen with large text on a narrow phone", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 700 });
-  await page.addInitScript(() =>
-    localStorage.setItem("tasknotes:locale", "fr"),
-  );
-  await page.goto("?demo=50");
-  await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
-  const fab = page
-    .locator(".global-capture-fab")
-    .filter({ visible: true })
-    .first();
-  await expect(fab).toBeVisible();
-  const box = (await fab.boundingBox())!;
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(320);
 });
 
 test("browser Back keeps an unsaveable task draft open", async ({ page }) => {

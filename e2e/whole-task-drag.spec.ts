@@ -94,3 +94,30 @@ test("kanban cards drag by their title", async ({ page }) => {
     page.getByRole("complementary", { name: "Task details" }),
   ).toHaveCount(0);
 });
+
+test("section drop moves a missed deadline with its plan instead of leaving it overdue", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date("2026-11-06T12:00:00"));
+  await page.goto("?demo=60");
+  const title = "Prepare quarterly planning session";
+  const overdue = page.locator('section[data-list-lane="section:overdue"]');
+  const source = overdue.getByRole("button", { name: title, exact: true });
+  await expect(source).toBeVisible();
+  const today = page.locator('section[data-list-lane="section:today"]');
+  await dragBetween(page, source, today.locator(".task-section-toggle"));
+  await expect(source).toHaveCount(0);
+  const moved = today.getByRole("button", { name: title, exact: true });
+  await expect(moved).toBeVisible();
+  await expect(
+    page.getByRole("complementary", { name: "Task details" }),
+  ).toHaveCount(0);
+  await moved.click();
+  const detail = page.getByRole("complementary", { name: "Task details" });
+  await detail.locator(".task-properties-disclosure > summary").click();
+  for (const name of ["Scheduled date", "Due date"]) {
+    await expect(
+      detail.getByRole("button", { name, exact: true }),
+    ).toHaveAttribute("data-value", "2026-11-06");
+  }
+});

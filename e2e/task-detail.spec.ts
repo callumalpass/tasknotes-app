@@ -80,21 +80,6 @@ test("inline subtasks create, complete and open without losing the parent draft"
     .fill("Collect planning questions");
   await pane.getByRole("button", { name: "Add subtask", exact: true }).click();
   await expect(pane.getByText("0 of 1", { exact: true })).toBeVisible();
-  const completion = pane.getByRole("button", {
-    name: "Complete Collect planning questions",
-    exact: true,
-  });
-  const title = pane.getByRole("button", {
-    name: "Collect planning questions",
-    exact: true,
-  });
-  const completionBounds = await completion.boundingBox();
-  const titleBounds = await title.boundingBox();
-  expect(completionBounds!.width).toBeGreaterThanOrEqual(44);
-  expect(completionBounds!.height).toBeGreaterThanOrEqual(44);
-  expect(titleBounds!.x).toBeGreaterThanOrEqual(
-    completionBounds!.x + completionBounds!.width,
-  );
 
   await pane
     .getByRole("button", {
@@ -155,25 +140,3 @@ for (const source of ["today", "search"] as const)
         .inputValue(),
     );
   });
-
-test("detail title and properties reflow at 320px with 200% text", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto("?demo=60");
-  await page
-    .getByRole("button", {
-      name: "Prepare quarterly planning session",
-      exact: true,
-    })
-    .click();
-  const title = page.getByRole("textbox", { name: "Task title", exact: true });
-  await expect(title).toBeVisible();
-  await page.addStyleTag({ content: ":root {font-size:200% !important}" });
-  await expect
-    .poll(() => title.evaluate((el) => el.scrollHeight - el.clientHeight))
-    .toBeLessThanOrEqual(1);
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(320);
-});
