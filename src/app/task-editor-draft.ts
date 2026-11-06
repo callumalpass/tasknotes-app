@@ -43,6 +43,7 @@ export function scheduleSummary(
   draft: Draft,
   configuration: TaskCollectionConfiguration,
   occurrenceDate?: string,
+  projectLabels: ReadonlyMap<string, string> = new Map(),
 ): string {
   const dates =
     occurrenceDate && draft.recurrence
@@ -60,6 +61,16 @@ export function scheduleSummary(
       : draft;
   return (
     [
+      draft.priority && draft.priority !== "none"
+        ? (configuration.priorities.find(
+            ({ value }) => value === draft.priority,
+          )?.label ?? draft.priority)
+        : "",
+      draft.projects
+        .map(
+          (project) => projectLabels.get(project) ?? linkDisplayLabel(project),
+        )
+        .join(", "),
       draft.status !== "none" && draft.status !== configuration.defaults.status
         ? (configuration.statuses.find(
             (status) => status.value === draft.status,

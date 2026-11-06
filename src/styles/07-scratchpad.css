@@ -1819,3 +1819,8 @@ html.scratchpad-route
   flex: 1;
   min-height: 0;
 }
+.scratchpad-wikilink-label {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

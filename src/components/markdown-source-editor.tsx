@@ -15,6 +15,7 @@ import { observeTheme, resolveDarkTheme } from "@mdbase-dev/ui/theme";
 import { useEffect, useRef } from "react";
 import { Bold, Italic, Heading2, Quote, Link } from "lucide-react";
 import { writingCommand, type WritingAction } from "./markdown-writing-command";
+import { readableWikilinks } from "./markdown-wikilink-decoration";
 
 import {
   recordWikilinkCompletionSource,
@@ -173,6 +174,7 @@ export function MarkdownSourceEditor({
           ]),
           basicSetup,
           markdown(),
+          readableWikilinks,
           autocompletion({
             activateOnTyping: true,
             override: [completionSource],

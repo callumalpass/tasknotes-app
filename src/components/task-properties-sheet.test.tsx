@@ -37,6 +37,13 @@ it("edits priority and a configured custom field from one named property sheet",
   }));
   render(<TaskPropertiesSheet task={task} onClose={vi.fn()} />);
   expect(screen.getByRole("dialog", { name: "Task properties" })).toBeVisible();
+  const heading = screen.getByRole("heading", { name: "Task properties" });
+  expect(heading.parentElement).toContainElement(
+    screen.getByRole("button", { name: "Close property editor" }),
+  );
+  expect(heading.parentElement?.nextElementSibling).toHaveTextContent(
+    task.title,
+  );
   fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
   fireEvent.click(screen.getByRole("option", { name: /High/ }));
   await waitFor(() =>

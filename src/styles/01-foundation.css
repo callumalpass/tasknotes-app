@@ -186,6 +186,7 @@ label:has(> input[type="checkbox"]:not([role="switch"])) {
 }
 
 button {
+  border-radius: var(--radius-control);
   -webkit-tap-highlight-color: transparent;
   transition:
     color 150ms var(--ease-out),
@@ -204,6 +205,26 @@ a:focus-visible {
 }
 
 button:disabled {
+  cursor: default;
+}
+
+body
+  button:is(
+    .primary-action,
+    .primary,
+    .save-view-action,
+    .capture-submit,
+    .global-capture-fab
+  ):disabled,
+body .app-update-notice button:first-child:disabled,
+body
+  .tasknotes-time-popover
+  .tasknotes-picker-actions
+  > button:last-child:disabled {
+  color: var(--ink-muted);
+  background: var(--paper-soft);
+  border-color: var(--line);
+  opacity: 1;
   cursor: default;
 }
 

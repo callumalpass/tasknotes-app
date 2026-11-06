@@ -44,6 +44,7 @@ export function SearchScreen({
 }) {
   const { t } = useLingui();
   const [query, setQuery] = useState("");
+  const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const [assignedToMe, setAssignedToMe] = useState(false);
   const people = usePeople(assignedToMe);
   const personPath =
@@ -181,11 +182,15 @@ export function SearchScreen({
           placeholder={t({ message: "Tasks, tags, projects" })}
           type="search"
           aria-describedby={
-            tasks.length && searching ? "search-navigation-hint" : undefined
+            tasks.length && searching && keyboardNavigation
+              ? "search-navigation-hint"
+              : undefined
           }
           value={query}
           onChange={(event) => chooseQuery(event.target.value)}
           onKeyDown={(event) => {
+            if (["Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key))
+              setKeyboardNavigation(true);
             if (event.key === "Enter" && !event.nativeEvent.isComposing) {
               rememberSearch(query);
               const first = document.querySelector<HTMLElement>(
@@ -318,7 +323,7 @@ export function SearchScreen({
               : `${hasMore ? t`${tasks.length}+ tasks` : countLabel(tasks.length, "task")}${stale ? t({ message: " — previously loaded" }) : ""}`}
           </p>
           <p
-            className="search-navigation-hint"
+            className={`search-navigation-hint${keyboardNavigation ? " is-keyboard-navigation" : ""}`}
             id="search-navigation-hint"
             role="status"
           >

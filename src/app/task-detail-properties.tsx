@@ -25,7 +25,13 @@ export function TaskDetailProperties({
             <Trans>Task properties</Trans>
           </strong>
           <small>
-            {scheduleSummary(task, draft, configuration, occurrenceDate)}
+            {scheduleSummary(
+              task,
+              draft,
+              configuration,
+              occurrenceDate,
+              props.projectLabels,
+            )}
           </small>
         </span>
       </summary>

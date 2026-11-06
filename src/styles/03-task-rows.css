@@ -484,16 +484,14 @@
 
 .task-actions-organize-editor > button.primary {
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--control-min-size);
   color: var(--accent);
   font-weight: 650;
   border: 1px solid var(--line-strong);
 }
 
-.task-actions-organize-editor > button.primary:hover,
-.task-actions-organize-editor > button.primary:focus-visible {
+.task-actions-organize-editor > button.primary:not(:disabled):hover {
   background: var(--accent-soft);
-  outline: 0;
 }
 
 .task-actions-items button[aria-checked="true"] {

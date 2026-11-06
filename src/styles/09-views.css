@@ -929,7 +929,8 @@
 }
 
 .view-editor-body input:not([type]),
-.view-editor-body input[type="text"] {
+.view-editor-body input[type="text"],
+.view-editor-body input[type="number"] {
   width: 100%;
   min-height: var(--control-min-size);
   padding: var(--space-sm) 12px;
@@ -1240,7 +1241,7 @@
 }
 
 .filter-group-heading .tasknotes-control-trigger {
-  min-height: 38px;
+  min-height: var(--control-min-size);
 }
 
 .filter-rule {
@@ -1316,6 +1317,12 @@
   gap: 8px;
   min-height: 58px;
   border-bottom: 1px solid var(--line);
+}
+
+.view-sort-rules .tasknotes-select-trigger > span,
+.filter-rule .tasknotes-select-trigger > span {
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .view-order-actions {
@@ -1534,12 +1541,6 @@
   background: var(--accent);
   border-color: var(--accent);
   border-radius: 6px;
-}
-
-.save-view-action:disabled {
-  color: var(--ink-muted);
-  cursor: default;
-  opacity: 0.55;
 }
 
 .view-editor-confirmation-layer,

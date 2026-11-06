@@ -1118,6 +1118,47 @@ function TaskEditor({
           onChange={change}
         />
 
+        <TaskFormSection
+          summary={organizeSummary(draft, false)}
+          title={t({ message: "Organize" })}
+        >
+          <div className="field-grid metadata-fields">
+            <ListField
+              field={configuration.fieldMapping.contexts}
+              label={t({ message: "Contexts" })}
+              placeholder={t({ message: "Computer, Errands" })}
+              values={draft.contexts}
+              completion={
+                configuration.fieldCompletions[
+                  configuration.fieldMapping.contexts
+                ] ?? { kind: "values" }
+              }
+              completeField={completeField}
+              onChange={(contexts) => change({ contexts })}
+            />
+          </div>
+          <AssigneeEditor
+            taskId={task.id}
+            linkWriteFormat={configuration.linkWriteFormat}
+            values={draft.assignees ?? []}
+            onChange={(assignees) => change({ assignees })}
+          />
+          <DependencyEditor
+            completeField={completeDependencyField}
+            dependencies={draft.blockedBy}
+            field={configuration.fieldMapping.blockedBy}
+            labels={
+              new Map(
+                relationships.blockedBy.flatMap(({ dependency, task }) =>
+                  task ? [[dependency.uid, task.title] as const] : [],
+                ),
+              )
+            }
+            onChange={(blockedBy) => change({ blockedBy })}
+          />
+          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
+        </TaskFormSection>
+
         <section className="notes-field">
           <header className="notes-field-heading">
             <h2 id="task-notes-title" tabIndex={-1}>
@@ -1209,47 +1250,6 @@ function TaskEditor({
             task={task}
           />
         ) : null}
-
-        <TaskFormSection
-          summary={organizeSummary(draft, false)}
-          title={t({ message: "Organize" })}
-        >
-          <div className="field-grid metadata-fields">
-            <ListField
-              field={configuration.fieldMapping.contexts}
-              label={t({ message: "Contexts" })}
-              placeholder={t({ message: "Computer, Errands" })}
-              values={draft.contexts}
-              completion={
-                configuration.fieldCompletions[
-                  configuration.fieldMapping.contexts
-                ] ?? { kind: "values" }
-              }
-              completeField={completeField}
-              onChange={(contexts) => change({ contexts })}
-            />
-          </div>
-          <AssigneeEditor
-            taskId={task.id}
-            linkWriteFormat={configuration.linkWriteFormat}
-            values={draft.assignees ?? []}
-            onChange={(assignees) => change({ assignees })}
-          />
-          <DependencyEditor
-            completeField={completeDependencyField}
-            dependencies={draft.blockedBy}
-            field={configuration.fieldMapping.blockedBy}
-            labels={
-              new Map(
-                relationships.blockedBy.flatMap(({ dependency, task }) =>
-                  task ? [[dependency.uid, task.title] as const] : [],
-                ),
-              )
-            }
-            onChange={(blockedBy) => change({ blockedBy })}
-          />
-          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
-        </TaskFormSection>
 
         <TaskFormSection
           defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}

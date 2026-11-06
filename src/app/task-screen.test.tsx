@@ -63,6 +63,13 @@ describe("TaskScreen", () => {
     await screen.findByLabelText("Task title", { exact: true });
     expect(screen.getByLabelText("Notes")).toBeVisible();
     expect(
+      screen
+        .getByText("Organize", { selector: "strong" })
+        .compareDocumentPosition(
+          screen.getByRole("heading", { name: "Notes" }),
+        ),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
       document.querySelector(".task-properties-disclosure"),
     ).not.toHaveAttribute("open");
     fireEvent.click(

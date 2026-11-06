@@ -9,6 +9,7 @@ import { editableProperty, type EditableProperty } from "./task-property-kind";
 import { PropertyControl } from "./task-property-editor";
 import { propertyValue, updateFor } from "./task-property-input";
 import type { TaskSummary } from "../domain/task";
+import "./task-properties-sheet.css";
 
 export function TaskPropertiesSheet({
   task,
@@ -56,19 +57,19 @@ export function TaskPropertiesSheet({
         tabIndex={-1}
       >
         <header>
-          <div>
+          <div className="task-properties-sheet-heading">
             <h2>
               <Trans>Task properties</Trans>
             </h2>
-            <p>{task.title}</p>
+            <button
+              type="button"
+              aria-label={t`Close property editor`}
+              onClick={onClose}
+            >
+              <X size={19} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            aria-label={t`Close property editor`}
-            onClick={onClose}
-          >
-            <X size={19} aria-hidden="true" />
-          </button>
+          <p>{task.title}</p>
         </header>
         {properties.map((property) => (
           <SheetProperty

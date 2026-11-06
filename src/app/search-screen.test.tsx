@@ -32,7 +32,19 @@ it("hands Enter to the first result and exposes the navigation hint", async () =
   search();
   const input = screen.getByRole("searchbox");
   await screen.findByText("1 task");
+  expect(document.querySelector(".search-navigation-hint")).not.toHaveClass(
+    "is-keyboard-navigation",
+  );
+  expect(input).not.toHaveAttribute("aria-describedby");
+  fireEvent.keyDown(input, { key: "Unidentified" });
+  fireEvent.keyDown(input, { key: "r" });
+  expect(document.querySelector(".search-navigation-hint")).not.toHaveClass(
+    "is-keyboard-navigation",
+  );
   fireEvent.keyDown(input, { key: "Enter" });
+  expect(document.querySelector(".search-navigation-hint")).toHaveClass(
+    "is-keyboard-navigation",
+  );
   expect(screen.getByRole("button", { name: "Match first" })).toHaveFocus();
   expect(input).toHaveAccessibleDescription(
     "Enter or ↓ to focus the first result. j / k to move, Enter to open.",

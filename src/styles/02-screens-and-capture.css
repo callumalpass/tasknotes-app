@@ -258,7 +258,6 @@
   background: var(--paper-soft);
 }
 
-.primary-action:disabled,
 .secondary-action:disabled {
   cursor: default;
   opacity: 0.5;

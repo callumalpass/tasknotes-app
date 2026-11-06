@@ -1665,7 +1665,7 @@
   }
 
   .view-sort-rules > div {
-    grid-template-columns: minmax(0, 1fr) 128px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 146px), 1fr));
     padding: 8px 0;
   }
 
