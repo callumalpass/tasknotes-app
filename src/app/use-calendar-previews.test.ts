@@ -61,3 +61,15 @@ it("replaces overlapping fragments with a keyboard-operable day expansion", () =
   trigger.click();
   expect(inspect).toHaveBeenCalledWith("2026-11-07");
 });
+
+it("leaves Day's wrapping all-day cards and library overflow count intact", () => {
+  const root = document.createElement("div");
+  root.className = "is-day";
+  root.innerHTML = `<div class="tnc-tg-top"><div class="tnc-dh" data-date="2026-11-05"></div><div class="tnc-allday-layer"><div class="tnc-more-layer"><button class="tnc-more">+4 more</button></div>${[0, 1, 2, 3, 4, 5].map((level) => `<button class="tnc-item" style="top: calc(${level} * 48px)">Task ${level}</button>`).join("")}</div></div>`;
+  boundCalendarPreviews(root, vi.fn(), (count) => `+${count} more`);
+  expect(
+    root.querySelectorAll(".tnc-item:not(.tnc-preview-hidden)"),
+  ).toHaveLength(6);
+  expect(root.querySelector(".tnc-more")).toHaveTextContent("+4 more");
+  expect(root.querySelector(".tnc-preview-more")).toBeNull();
+});

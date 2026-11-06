@@ -1200,7 +1200,6 @@ function QuickAction({
       aria-label={label}
       disabled={disabled}
       role={checked === undefined ? "menuitem" : "menuitemradio"}
-      title={label}
       type="button"
       onClick={onClick}
     >

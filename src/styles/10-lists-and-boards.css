@@ -522,10 +522,10 @@
   top: 0;
   left: 0;
   z-index: 80;
-  overflow: hidden;
+  box-sizing: border-box;
   color: var(--ink);
   background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
+  outline: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow:
     0 2px 6px var(--color-shadow-soft),
@@ -537,7 +537,7 @@
 }
 
 .kanban-drag-preview > .kanban-card {
-  border-bottom: 0;
+  margin-top: 0;
   opacity: 0.86;
 }
 
@@ -572,6 +572,7 @@
 }
 
 .kanban-card .task-row-content {
+  container-type: inline-size;
   width: calc(100% + 32px);
   margin-left: -32px;
   padding: 6px 0;

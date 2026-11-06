@@ -1196,10 +1196,11 @@ html.scratchpad-route .page-surface {
   min-width: 44px;
   min-height: 44px;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 0 7px;
   color: var(--ink-soft);
-  font-size: var(--type-label);
+  font-size: 13px;
   background: var(--paper-soft);
   border: 0;
   border-radius: var(--radius-control);
@@ -1735,7 +1736,7 @@ html.scratchpad-route .page-surface {
     gap: 4px;
     padding: 0 7px;
     color: var(--ink-soft);
-    font-size: var(--type-label);
+    font-size: 13px;
     background: var(--paper-soft);
     border: 0;
     border-radius: var(--radius-control);

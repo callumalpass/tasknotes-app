@@ -16,6 +16,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { KanbanColumnJump } from "../../components/kanban-column-jump";
+import { kanbanPreviewContent } from "./kanban-preview";
 import {
   columnLabel,
   kanbanColumnLabel,
@@ -944,33 +945,6 @@ function kanbanPreviewTransform(
     Math.max(inset, window.innerHeight - height - inset),
   );
   return `translate3d(${x}px, ${y}px, 0)`;
-}
-
-/**
- * A still, inert copy of the card for the drag preview. Cloning the rendered
- * card keeps it identical (wrapped title, chips, colours) without mounting a
- * second live task row with its own shortcuts and subscriptions; identity
- * and accessibility attributes are dropped so the copy is never found.
- */
-function kanbanPreviewContent(card: HTMLElement): HTMLElement {
-  const copy = card.cloneNode(true) as HTMLElement;
-  copy.classList.remove("is-dragging", "is-pending", "is-movable");
-  for (const name of [...copy.classList])
-    if (name.startsWith("is-drop-")) copy.classList.remove(name);
-  for (const element of [copy, ...copy.querySelectorAll("*")]) {
-    for (const { name } of [...element.attributes])
-      if (
-        name === "id" ||
-        name === "role" ||
-        name === "tabindex" ||
-        name === "for" ||
-        name.startsWith("aria-") ||
-        name.startsWith("data-")
-      )
-        element.removeAttribute(name);
-  }
-  copy.inert = true;
-  return copy;
 }
 
 function edgeScrollDistance(

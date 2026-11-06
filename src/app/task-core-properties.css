@@ -1,32 +1,25 @@
-.task-properties-disclosure > summary {
-  display: flex;
+.task-detail-properties > header {
+  padding-block: 12px;
   min-height: 44px;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
+}
+.task-detail-properties > header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--task-section-size, 15px);
+  font-weight: 600;
+}
+.task-detail-properties > header p {
+  margin: 3px 0 0;
   color: var(--ink-muted);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 400;
   line-height: 20px;
 }
-.task-properties-disclosure > summary::before {
-  content: "›";
-  font-size: 20px;
-  transform: rotate(0deg);
-}
-.task-properties-disclosure[open] > summary::before {
-  transform: rotate(90deg);
-}
-.task-properties-disclosure > summary strong,
-.task-properties-disclosure > summary small {
-  display: block;
-  font-size: 14px;
-  font-weight: 400;
-}
-.task-properties-disclosure .form-field > span,
-.task-properties-disclosure .task-inline-property > span {
+.task-detail-properties .form-field > span,
+.task-detail-properties .task-inline-property > span {
   font-size: 14px;
 }
-.task-form > .task-properties-disclosure + .notes-field {
+.task-form > .task-detail-properties + .notes-field {
   padding-top: 4px;
 }
 .task-inline-property-editor {

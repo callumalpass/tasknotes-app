@@ -425,7 +425,7 @@
   cursor: pointer;
 }
 
-.task-actions-items button > span {
+.task-actions-items button > span:not(.quick-action-tooltip) {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -534,7 +534,7 @@
   top: 100%;
   left: 0;
   width: max-content;
-  max-width: 100%;
+  max-width: min(240px, calc(100vw - 32px));
   white-space: normal;
   overflow-wrap: anywhere;
   padding: 6px 8px;

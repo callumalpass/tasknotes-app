@@ -76,6 +76,35 @@ describe("calendar drops", () => {
     });
   });
 
+  it("exposes a bounded set of wrapping all-day cards in Day", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "timeGridDay";
+    renderCalendar(original, vi.fn());
+    expect(calendar.props!.dayMaxEventRows).toBe(7);
+    expect(document.querySelector(".full-calendar-view")).toHaveClass("is-day");
+  });
+
+  it("keeps Agenda's layout and navigation in the common toolbar", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "listWeek";
+    const view = renderCalendar(original, vi.fn());
+    const toolbar = view.container.querySelector(".full-calendar-commandbar")!;
+    expect(
+      within(toolbar as HTMLElement).getByText("Agenda", {
+        selector: "summary span",
+      }),
+    ).toBeVisible();
+    const stripNext = document.createElement("button");
+    stripNext.className = "tnc-strip-next";
+    const navigate = vi.fn();
+    stripNext.addEventListener("click", navigate);
+    view.container.querySelector(".full-calendar-view")!.append(stripNext);
+    fireEvent.click(
+      within(toolbar as HTMLElement).getByRole("button", { name: "Next week" }),
+    );
+    expect(navigate).toHaveBeenCalledOnce();
+  });
+
   it("keeps a dropped task at its new date while the write is pending", async () => {
     const write = deferred();
     const onUpdate = vi.fn(() => write.promise);
@@ -477,18 +506,33 @@ describe("calendar entry labels", () => {
     );
     expect(el.querySelector(".full-calendar-event-secondary")).toBeNull();
   });
-  it("provides the full event identity for hover and focused inspection", () => {
-    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
-    const item = items().find((entry) => !entry.allDay)!;
-    const el = document.createElement("div");
-    (calendar.props!.itemDidMount as (arg: unknown) => void)({
-      item,
-      el,
-      variant: "timed",
-    });
-    expect(el.title).toContain(item.title);
-    expect(el.title).toBe(el.getAttribute("aria-label"));
-  });
+  it.each(["timed", "bar"])(
+    "provides one full-title tooltip on hover and focus for %s",
+    (variant) => {
+      renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+      const item = items().find((entry) => !entry.allDay)!;
+      const el = document.createElement("div");
+      el.className = `tnc-item tnc-item--${variant}`;
+      el.setAttribute("role", "button");
+      (calendar.props!.itemDidMount as (arg: unknown) => void)({
+        item,
+        el,
+        variant,
+      });
+      expect(el).not.toHaveAttribute("title");
+      document.querySelector(".full-calendar-view")!.append(el);
+      fireEvent.pointerOver(el);
+      expect(document.querySelector('[role="tooltip"]')).toHaveTextContent(
+        item.title,
+      );
+      fireEvent.pointerOut(el);
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+      fireEvent.focus(el);
+      expect(document.querySelector('[role="tooltip"]')).toHaveTextContent(
+        item.title,
+      );
+    },
+  );
   it("names an all-day entry's own day west of UTC", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
     const item = items().find((entry) => entry.allDay)!;

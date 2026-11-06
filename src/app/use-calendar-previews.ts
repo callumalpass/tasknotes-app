@@ -67,6 +67,11 @@ export function boundCalendarPreviews(
       );
       const more = layer?.querySelector(".tnc-more-layer");
       if (!layer || !more) return;
+      if (
+        root.classList.contains("is-day") &&
+        layer.matches(".tnc-allday-layer")
+      )
+        return;
       const visibleRows =
         row.matches(".tnc-tg-top") &&
         window.matchMedia?.("(max-width: 839px)").matches &&

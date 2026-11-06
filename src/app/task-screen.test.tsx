@@ -58,7 +58,7 @@ describe("TaskScreen", () => {
     fireEvent.change(title, { target: { value: "Unsaved important draft" } });
   }
 
-  it("brings notes forward and reveals every primary property in one action", async () => {
+  it("keeps notes and every primary property directly inspectable", async () => {
     const back = renderTask();
     await screen.findByLabelText("Task title", { exact: true });
     expect(screen.getByLabelText("Notes")).toBeVisible();
@@ -70,11 +70,8 @@ describe("TaskScreen", () => {
         ),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
-      document.querySelector(".task-properties-disclosure"),
-    ).not.toHaveAttribute("open");
-    fireEvent.click(
-      screen.getByText("Task properties", { selector: "strong" }),
-    );
+      screen.getByRole("heading", { name: "Task properties" }),
+    ).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Status" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
     expect(

@@ -16,7 +16,6 @@ test("detail properties are directly editable and adjacent navigation saves note
   await expect(
     pane.getByRole("button", { name: "Previous task", exact: true }),
   ).toBeDisabled();
-  await pane.locator(".task-properties-disclosure > summary").click();
   for (const name of ["Status", "Priority"])
     await expect(
       pane.getByRole("combobox", { name, exact: true }),
@@ -47,7 +46,6 @@ test("detail properties are directly editable and adjacent navigation saves note
   await expect(pane.locator(".markdown-preview")).toContainText(
     "A note saved before browsing.j",
   );
-  await pane.locator(".task-properties-disclosure > summary").click();
   await pane.getByRole("combobox", { name: "Priority", exact: true }).click();
   await page.keyboard.press("j");
   await expect(
@@ -94,7 +92,6 @@ test("inline subtasks create, complete and open without losing the parent draft"
   await expect(
     pane.getByRole("textbox", { name: "Task title", exact: true }),
   ).toHaveValue("Collect planning questions");
-  await pane.locator(".task-properties-disclosure > summary").click();
   await expect(
     pane.getByRole("button", { name: "Edit Project", exact: true }),
   ).toContainText("Prepare quarterly planning session");

@@ -34,7 +34,6 @@ test("detail dates share tabs, typing, shortcuts and focus return", async ({
     name: "Task details",
     exact: true,
   });
-  await detail.locator(".task-properties-disclosure > summary").click();
   for (const field of ["Scheduled", "Due"]) {
     const trigger = detail.getByRole("button", {
       name: `${field} date`,

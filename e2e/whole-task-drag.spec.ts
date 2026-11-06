@@ -114,7 +114,6 @@ test("section drop moves a missed deadline with its plan instead of leaving it o
   ).toHaveCount(0);
   await moved.click();
   const detail = page.getByRole("complementary", { name: "Task details" });
-  await detail.locator(".task-properties-disclosure > summary").click();
   for (const name of ["Scheduled date", "Due date"]) {
     await expect(
       detail.getByRole("button", { name, exact: true }),

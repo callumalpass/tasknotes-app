@@ -532,11 +532,13 @@ test("edits a contract-defined task without collapsing custom status or fields t
   await page
     .getByText("Respect the collection contract", { exact: true })
     .click();
-  await page.locator(".task-properties-disclosure > summary").click();
   await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
     "data-value",
     "doing",
   );
+  await expect(page.getByRole("combobox", { name: "Status" })).toBeVisible();
+  await expect(page.getByLabel("Energy level")).toBeHidden();
+  await page.locator(".task-properties-disclosure > summary").click();
   await page
     .locator("details.task-form-section > summary")
     .filter({ hasText: /^Organize/ })

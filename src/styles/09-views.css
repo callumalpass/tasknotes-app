@@ -125,7 +125,7 @@
 }
 
 .saved-view-list {
-  border-top: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line);
 }
 
 .view-catalog {
@@ -146,7 +146,7 @@
 }
 
 .navigation-view-order {
-  border-top: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line);
 }
 
 .navigation-view-order > header,
@@ -602,7 +602,7 @@
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -778,8 +778,12 @@
 }
 
 .view-draft-preview {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: block;
   padding: 4px 0;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 .view-draft-preview > summary,
@@ -818,6 +822,8 @@
 }
 .view-draft-preview[open] > ol {
   margin: 8px 16px 12px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 .view-planner-explanation,
 .connection-technical-details p {

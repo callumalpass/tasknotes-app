@@ -20,6 +20,12 @@
 }
 
 .full-calendar-view {
+  --calendar-event-size: 13px;
+  --calendar-event-line: 18px;
+  --calendar-event-radius: 6px;
+  --calendar-event-fill: var(--paper-soft);
+  --calendar-event-border: var(--line);
+  --calendar-event-inset: 4px;
   /* @tasknotes/calendar reads its palette from these theme variables. */
   --tnc-theme-bg: var(--paper);
   --tnc-theme-bg-2: var(--paper-soft);
@@ -49,10 +55,6 @@
   .views-screen:has(.full-calendar-view) {
     padding-top: calc(28px + env(safe-area-inset-top));
   }
-}
-
-.views-screen:has(.full-calendar-view.is-agenda) {
-  width: min(100%, var(--content-width));
 }
 
 .full-calendar-commandbar {
@@ -200,10 +202,10 @@
 
 /* Sizes and the neutral item tone; colours come from the theme above. */
 .full-calendar-view .tnc {
-  --tnc-radius: var(--radius-control);
-  --tnc-font-size: var(--type-supporting);
-  --tnc-small: var(--type-label);
-  --tnc-bar-h: 44px;
+  --tnc-radius: var(--calendar-event-radius);
+  --tnc-font-size: var(--calendar-event-size);
+  --tnc-small: 13px;
+  --tnc-bar-h: 46px;
   --tnc-col-min: 120px;
   /* More is a 44px target; the calendar sizes rows to fit it. */
   --tnc-more-h: 44px;
@@ -282,12 +284,13 @@
 .full-calendar-view .tnc-slot-label,
 .full-calendar-view .tnc-gutter-label {
   color: var(--ink-muted);
-  font-size: var(--type-label);
+  font-size: 13px;
 }
 
 .full-calendar-view .tnc-item {
-  font-size: 14px;
-  line-height: 18px;
+  font-size: var(--calendar-event-size);
+  font-weight: 400;
+  line-height: var(--calendar-event-line);
 }
 
 .full-calendar-view .tnc-item.is-completed {
@@ -299,14 +302,13 @@
 }
 
 .full-calendar-view .tnc-item--dot,
-.full-calendar-view .tnc-item--bar {
-  padding: 0 3px;
-}
-
-/* Month entries read as quiet text; only multi-day spans keep a band. */
-.full-calendar-view .tnc-dg .tnc-item--bar {
-  background: var(--paper-soft);
-  border-color: transparent;
+.full-calendar-view .tnc-item--bar,
+.full-calendar-view .tnc-item--timed {
+  padding: var(--calendar-event-inset);
+  background: var(--calendar-event-fill);
+  border: 1px solid var(--calendar-event-border);
+  border-radius: var(--calendar-event-radius);
+  box-shadow: none;
 }
 
 .full-calendar-view .tnc-item--dot:hover,
@@ -368,7 +370,7 @@
   min-width: 0;
   flex: 0 0 auto;
   color: var(--ink-muted);
-  font-size: var(--type-label);
+  font-size: var(--calendar-event-size);
   line-height: 18px;
 }
 
@@ -422,7 +424,7 @@
 }
 
 .full-calendar-view .tnc-tg-allday .tnc-item--bar {
-  padding-block: 2px;
+  padding-block: var(--calendar-event-inset);
 }
 .full-calendar-view .tnc-tg-allday .full-calendar-event-primary > span {
   -webkit-line-clamp: 2;
@@ -475,17 +477,16 @@
 
 @media (min-width: 840px) and (pointer: fine) {
   .full-calendar-view .tnc {
-    --tnc-bar-h: 40px;
     --tnc-more-h: 44px;
     --tnc-dg-top-h: 26px;
     --tnc-day-min-h: 100px;
   }
   .full-calendar-view .tnc-dg .tnc-item:not(.tnc-item--indicator) {
-    min-height: 40px;
+    min-height: 44px;
   }
   .full-calendar-view .tnc-dg .full-calendar-event-content {
     min-height: 36px;
-    font-size: 14px;
+    font-size: var(--calendar-event-size);
     line-height: 18px;
   }
   .full-calendar-view .tnc-dg .full-calendar-event-primary > span,
@@ -505,7 +506,7 @@
     .full-calendar-event-primary
     > span {
     color: var(--ink-soft);
-    font-weight: 600;
+    font-weight: 400;
   }
   .full-calendar-view .tnc-ym-day {
     min-height: 26px;
@@ -539,11 +540,6 @@
   .full-calendar-view .tnc-dh.is-today {
     border-bottom-color: var(--accent);
   }
-}
-
-.full-calendar-view .tnc-item--timed {
-  border-inline-start: 3px solid var(--event-tone, var(--accent));
-  box-shadow: 0 0 0 1px var(--paper);
 }
 
 .calendar-event-inspection {
@@ -622,14 +618,6 @@
   }
 }
 
-.full-calendar-view .tnc-item--timed {
-  padding: 1px 4px;
-  background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-control);
-  box-shadow: none;
-}
-
 .full-calendar-view .tnc-item--timed .full-calendar-event-content {
   display: flex;
   flex-direction: column;
@@ -652,10 +640,11 @@
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary > span {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
   white-space: normal;
   overflow-wrap: anywhere;
-  line-height: 16px;
+  line-height: var(--calendar-event-line);
 }
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-secondary {
@@ -734,7 +723,7 @@
   flex: 0 0 auto;
   padding: 0 6px;
   color: var(--ink-soft);
-  font-size: var(--type-label);
+  font-size: 13px;
   font-style: normal;
   line-height: 1.6;
   background: var(--paper-soft);
@@ -829,12 +818,12 @@
   align-items: center;
   min-width: 44px;
   color: var(--ink-soft);
-  font-size: var(--type-label);
+  font-size: 13px;
 }
 
 @media (max-width: 839px) {
   .full-calendar-view :is(.tnc-dg-dow, .tnc-dh-dow) {
-    font-size: 11px;
+    font-size: 13px;
     line-height: 16px;
   }
   .full-calendar-view :is(.tnc-more, .tnc-dg-dots-more) {
@@ -1737,6 +1726,31 @@
   min-width: 44px;
   min-height: 44px;
 }
+.full-calendar-view.is-day .tnc-allday-layer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  align-content: start;
+  gap: var(--calendar-event-inset);
+  padding: var(--calendar-event-inset);
+  height: auto !important;
+  max-height: 192px;
+  overflow-y: auto;
+}
+.full-calendar-view.is-day .tnc-allday-layer > .tnc-item,
+.full-calendar-view.is-day .tnc-allday-layer .tnc-more {
+  position: relative;
+  left: auto !important;
+  top: auto !important;
+  width: auto !important;
+  max-width: 320px;
+  min-height: 44px;
+}
+.full-calendar-view.is-day .tnc-allday-layer > .tnc-more-layer {
+  display: contents;
+}
+.full-calendar-view.is-day .tnc-allday-layer .tnc-more {
+  order: 1;
+}
 .full-calendar-view .tnc-popover {
   width: min(320px, calc(100vw - 24px));
   max-height: 70dvh;
@@ -1769,7 +1783,7 @@
 }
 .full-calendar-view .tnc-popover .full-calendar-event-content {
   min-height: 44px;
-  font-size: var(--type-body);
+  font-size: var(--calendar-event-size);
 }
 
 .full-calendar-view .tnc-popover .full-calendar-event-primary > span {
@@ -1905,13 +1919,13 @@
 }
 
 /* Upcoming shares the calendar's scrolling/drag layer and the lists' rows. */
-.full-calendar-view.is-agenda .full-calendar-workspace {
+.full-calendar-view.is-agenda .tnc-list-body {
   width: min(100%, var(--content-width));
   margin-inline: auto;
 }
 
 .full-calendar-view.is-agenda .tnc {
-  --tnc-sticky-top: 0px;
+  --tnc-sticky-top: 44px;
   border-top: 0;
 }
 
@@ -1928,9 +1942,7 @@
 .full-calendar-view.is-agenda
   .tnc-strip-head
   :is(.tnc-strip-nav, .tnc-strip-today, .tnc-strip-slot) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
 }
 
 .full-calendar-view.is-agenda .tnc-strip-head {

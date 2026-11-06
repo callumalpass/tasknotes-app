@@ -1431,7 +1431,7 @@
 .notes-field-heading h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 16px;
+  font-size: var(--task-section-size, 15px);
   font-weight: 600;
 }
 
@@ -1506,9 +1506,9 @@
 }
 
 .task-attachments-heading h2 {
-  color: var(--ink-muted);
-  font-size: var(--type-body);
-  font-weight: 400;
+  color: var(--ink);
+  font-size: var(--task-section-size, 15px);
+  font-weight: 600;
 }
 
 .task-attachments-heading p {
@@ -1861,7 +1861,7 @@
 }
 
 .task-form-section > summary strong {
-  font-size: var(--type-body);
+  font-size: var(--task-section-size, 15px);
   font-weight: 600;
 }
 
@@ -2256,7 +2256,7 @@
 .task-subtasks h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 16px;
+  font-size: var(--task-section-size, 15px);
   font-weight: 600;
 }
 .task-subtasks > header > span {
