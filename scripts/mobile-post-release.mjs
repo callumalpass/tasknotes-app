@@ -222,11 +222,10 @@ async function main() {
     (r) =>
       r.id !== Number(process.env.GITHUB_RUN_ID) &&
       r.status === "completed" &&
-      r.run_attempt === 1 &&
       r.path === ".github/workflows/mobile-post-release.yml",
   );
   let previous;
-  if (last?.conclusion === "success")
+  if (last?.conclusion === "success" && last.run_attempt === 1)
     previous = await artifactJson(
       last.id,
       "mobile-post-release",

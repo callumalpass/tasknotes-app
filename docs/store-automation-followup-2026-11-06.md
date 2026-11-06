@@ -81,7 +81,10 @@ The legacy no-write observation is narrowly SHA/run/attempt/time bound in
 payload. A direct current-API cooldown evaluation verified that this run is
 read-only and that the App Store cooldown passes. New read-only dispatches retain
 an exact-run receipt before preflight; missing/unknown write evidence still
-blocks. In-flight and rerun attempts never borrow a prior receipt.
+blocks. In-flight and rerun attempts never borrow a prior receipt. A second
+protected-main dry dispatch [42302746031](https://github.com/callumalpass/tasknotes-app/actions/runs/42302746031)
+passed with both mutation inputs false; its retained receipt parsed successfully,
+and a current-API cooldown evaluation excluded **both** dry runs and passed.
 
 ## Proposed release plan — blocked, not GO-ready
 
