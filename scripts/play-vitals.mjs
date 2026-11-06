@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import { googleApiFailure } from "./google-api-failure.mjs";
 import {
   PLAY_PACKAGE,
   parseServiceAccount,
@@ -92,6 +93,7 @@ export async function readPlayVitals(
   { versionCode, since, fetchImpl = fetch, now = Date.now() } = {},
 ) {
   let httpStatus = null;
+  const results = [];
   try {
     const token = await exchangeAccessToken(
       parseServiceAccount(credentialBase64),
@@ -112,10 +114,9 @@ export async function readPlayVitals(
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       httpStatus = response.status;
-      if (!response.ok) throw new Error("vitals-unavailable");
+      if (!response.ok) throw await googleApiFailure(response);
       return response.json();
     }
-    const results = [];
     for (const [set, metric] of SETS) {
       const metadata = await request(`${ROOT}/${set}`);
       if (versionCode === undefined) continue; // read-only capability probe
@@ -168,13 +169,17 @@ export async function readPlayVitals(
       signal: "android-vitals-exact-version",
       observedAt: new Date(now).toISOString(),
     };
-  } catch {
+  } catch (error) {
     return {
       schema: "tasknotes/play-vitals/1",
       available: false,
-      verdict: "unavailable",
-      signal: "connect-cp-provider-readiness-only",
+      verdict: results.includes("failed") ? "failed" : "unavailable",
+      signal: results.includes("failed")
+        ? "android-vitals-exact-version"
+        : "connect-cp-provider-readiness-only",
       httpStatus,
+      reason: error.reason ?? "vitals-observation-unavailable",
+      failedStep: "playdeveloperreporting.vitals.metricset-read",
       observedAt: new Date(now).toISOString(),
     };
   }

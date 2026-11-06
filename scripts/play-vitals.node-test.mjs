@@ -112,3 +112,34 @@ test("disabled API/permission uses named infrastructure fallback, not a passing 
   assert.equal(result.signal, "connect-cp-provider-readiness-only");
   assert.equal(JSON.stringify(result).includes("private"), false);
 });
+
+test("an observed crash still fails if the later ANR API read is denied", async () => {
+  const result = await readPlayVitals(credential, {
+    versionCode: 123,
+    since: start - HOUR,
+    now: end + HOUR,
+    fetchImpl: async (url, options) => {
+      if (url.includes("oauth2"))
+        return Response.json({ access_token: "test" });
+      if (url.includes("anrRateMetricSet"))
+        return Response.json(
+          { error: { message: "private" } },
+          { status: 403 },
+        );
+      if (options.method === "GET")
+        return Response.json({
+          freshnessInfo: {
+            freshnesses: [
+              { aggregationPeriod: "HOURLY", latestEndTime: dt(end) },
+            ],
+          },
+        });
+      const p = payload();
+      p.rows[0].metrics[0].decimalValue.value = "0.1";
+      return Response.json(p);
+    },
+  });
+  assert.equal(result.available, false);
+  assert.equal(result.verdict, "failed");
+  assert.equal(result.signal, "android-vitals-exact-version");
+});

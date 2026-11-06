@@ -8,6 +8,7 @@ import {
 } from "./publish-google-play.mjs";
 import { APP_ID } from "./submit-app-store.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
+import { googleApiFailure } from "./google-api-failure.mjs";
 
 // The edit is a disposable snapshot: never upload, update a track, validate,
 // or commit. Only insert, GET and delete are allowed by this transport.
@@ -38,8 +39,7 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       },
       ...(method === "POST" ? { body: "{}" } : {}),
     });
-    if (!response.ok)
-      throw new Error(`Play status unavailable (HTTP ${response.status})`);
+    if (!response.ok) throw await googleApiFailure(response);
     return response.status === 204 ? null : response.json();
   }
   let edit;
@@ -89,9 +89,23 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
         }
       }
       review = { available: true, releases };
-    } catch {
+    } catch (error) {
       // Keep the nearest observable track state, but never call it review proof.
-      review = { available: false, releases: [] };
+      review = {
+        available: false,
+        releases: [],
+        failedStep: "applications.tracks.releases.list",
+        httpStatus: error.httpStatus ?? null,
+        reason:
+          error.reason ??
+          ([
+            "missing-track",
+            "incomplete-review-snapshot",
+            "unknown-review-state",
+          ].includes(error.message)
+            ? error.message
+            : "review-observation-unavailable"),
+      };
     }
     const production = tracks.find((t) => t.track === "production");
     return {
