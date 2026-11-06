@@ -30,6 +30,7 @@ import {
   type ViewDraftPreview,
 } from "../domain/view-preview";
 import { loadViewEditorForm } from "./view-editor-loader";
+import type { ViewEditorSection } from "./view-editor-form";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { useRepository } from "./repository-context";
 
@@ -45,12 +46,14 @@ export function ViewEditor({
   view,
   duplicate = false,
   confirmDelete = false,
+  initialSection,
   onClose,
   onChanged,
 }: {
   view?: TaskView;
   duplicate?: boolean;
   confirmDelete?: boolean;
+  initialSection?: ViewEditorSection;
   onClose(): void;
   onChanged(): Promise<void>;
 }) {
@@ -162,10 +165,11 @@ export function ViewEditor({
   }, [repository, view]);
 
   useEffect(() => {
-    if (!draft || !view || focusedInitialEditor.current) return;
+    if (!draft || !view || initialSection || focusedInitialEditor.current)
+      return;
     focusedInitialEditor.current = true;
     editorRef.current?.focus();
-  }, [draft, view]);
+  }, [draft, initialSection, view]);
 
   useEffect(() => {
     if (!changed) return;
@@ -324,6 +328,7 @@ export function ViewEditor({
             <Suspense fallback={<ViewEditorLoading />}>
               <ViewPreview preview={preview} />
               <ViewEditorForm
+                initialSection={initialSection}
                 autoFocusName={!view || duplicate}
                 configuration={configuration}
                 draft={draft}

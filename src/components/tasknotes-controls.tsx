@@ -50,6 +50,7 @@ export function TaskNotesSelect({
   placeholder = translate({ message: "Choose" }),
   className,
   triggerLabel,
+  actions = [],
 }: {
   value: string;
   options: readonly TaskNotesOption[];
@@ -61,6 +62,7 @@ export function TaskNotesSelect({
   placeholder?: string;
   className?: string;
   triggerLabel?: string;
+  actions?: readonly { label: string; onChoose(): void }[];
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -239,6 +241,23 @@ export function TaskNotesSelect({
                 triggerRef.current?.focus();
               }}
             />
+            {actions.length ? (
+              <div className="tasknotes-select-actions">
+                {actions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      triggerRef.current?.focus();
+                      action.onChoose();
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </>
       ) : null}
@@ -874,11 +893,24 @@ export function TaskNotesTimePicker({
             inert={!open}
             role="dialog"
           >
-            <div className="tasknotes-time-heading">
-              <span>
+            <header className="tasknotes-time-heading">
+              <strong>
                 <Trans>Time</Trans>
-              </span>
-              <strong>{timeLabel(hour, minute)}</strong>
+              </strong>
+              <button
+                aria-label={t`Close`}
+                className="icon-action"
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+              >
+                <X aria-hidden="true" size={20} />
+              </button>
+            </header>
+            <div className="tasknotes-time-value">
+              {timeLabel(hour, minute)}
             </div>
             <div className="tasknotes-time-columns">
               <TimeColumn

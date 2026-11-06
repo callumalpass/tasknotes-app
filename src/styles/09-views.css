@@ -874,7 +874,6 @@
   display: grid;
   gap: 16px;
   padding: 24px 0 0;
-  border-bottom: 1px solid var(--line);
 }
 
 .view-identity-heading h2,
@@ -1662,20 +1661,17 @@
   font-size: var(--type-supporting);
 }
 .today-overdue {
+  display: inline-flex;
+  align-items: baseline;
   white-space: nowrap;
 }
-@media (max-width: 640px) {
-  .today-overdue {
-    display: block;
-    white-space: normal;
-  }
-  .today-overdue-separator {
-    display: none;
-  }
+.today-overdue-separator {
+  margin-inline: 6px;
 }
 .today-overdue button {
-  margin-block: -6px;
-  padding: 6px 0;
+  min-height: 44px;
+  margin-block: -12px;
+  padding: 12px 0;
   color: var(--danger);
   font: inherit;
   font-weight: 600;

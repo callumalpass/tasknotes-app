@@ -690,9 +690,9 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(draft, { target: { value: "Portable draft" } });
     fireEvent.click(screen.getByRole("button", { name: "Write" }));
     await screen.findByRole("textbox", { name: "Scratchpad Markdown" });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
     const dialog = await screen.findByRole("dialog", {
-      name: "Create task notes",
+      name: "Create tasks",
     });
     expect(
       within(dialog).getByRole("checkbox", { name: "Portable draft" }),
@@ -755,8 +755,8 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(child, { target: { value: "Write announcement" } });
     fireEvent.keyDown(child, { key: "Tab" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    const dialog = screen.getByRole("dialog", { name: "Create task notes" });
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    const dialog = screen.getByRole("dialog", { name: "Create tasks" });
     expect(dialog).toHaveTextContent("1 of 2 selected");
     expect(
       screen.getByRole("checkbox", { name: "Write announcement" }),
@@ -766,9 +766,9 @@ describe("ScratchpadScreen", () => {
     );
     fireEvent.click(screen.getByRole("checkbox", { name: "Plan launch" }));
     expect(dialog).toHaveTextContent("1 of 2 selected");
-    fireEvent.click(screen.getByRole("button", { name: "Create 1 task note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 1 task" }));
 
-    await screen.findByText("Created 1 task note");
+    await screen.findByText("Created 1 task");
     expect(await repository.list({ status: "all" })).toEqual([
       expect.objectContaining({ title: "Plan launch" }),
     ]);
@@ -811,18 +811,14 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(note, {
       target: { value: "Keep the tone straightforward" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
     expect(
-      screen.getByRole("dialog", { name: "Create task notes" }),
+      screen.getByRole("dialog", { name: "Create tasks" }),
     ).toHaveTextContent("0 of 2 selected");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Select all" }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 2 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 2 tasks" }));
 
-    await screen.findByText("Created 2 task notes");
+    await screen.findByText("Created 2 tasks");
     await waitFor(async () => {
       const tasks = await repository.list({ status: "all" });
       expect(tasks).toHaveLength(2);
@@ -911,24 +907,18 @@ describe("ScratchpadScreen", () => {
       name: "Draft task: empty",
     });
     fireEvent.change(second, { target: { value: "Second task" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Select all" }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 2 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 2 tasks" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Temporary write failure",
     );
-    expect(
-      screen.getByRole("button", { name: "Retry 1 task note" }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Retry 1 task" })).toBeEnabled();
     expect(await repository.list({ status: "all" })).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task note" }));
-    await screen.findByText("Created 2 task notes");
+    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task" }));
+    await screen.findByText("Created 2 tasks");
     expect(await repository.list({ status: "all" })).toHaveLength(2);
     expect(attempts).toBe(3);
   });
@@ -1315,8 +1305,8 @@ describe("ScratchpadScreen", () => {
     );
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: "Plan launch" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create 1 task note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 1 task" }));
 
     await act(async () => vi.advanceTimersByTimeAsync(320));
     const savesBeforeRelease = saveScratchpad.mock.calls.length;
@@ -1324,7 +1314,7 @@ describe("ScratchpadScreen", () => {
     expect(savesBeforeRelease).toBe(0);
 
     releaseCreate();
-    await screen.findByText("Created 1 task note");
+    await screen.findByText("Created 1 task");
     expect((await repository.getActiveScratchpad()).body).toContain("[[tasks/");
   });
 });

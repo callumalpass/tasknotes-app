@@ -155,9 +155,7 @@ describe("TaskActions", () => {
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
     await waitFor(() =>
-      expect(
-        screen.getByRole("combobox", { name: "Filter Priority" }),
-      ).toHaveFocus(),
+      expect(screen.getByRole("option", { name: "High" })).toHaveFocus(),
     );
     fireEvent.click(screen.getByRole("option", { name: "Low" }));
 

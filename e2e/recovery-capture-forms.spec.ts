@@ -112,10 +112,10 @@ for (const theme of ["light"] as const) {
     await page.getByRole("button", { name: "Add image", exact: true }).click();
     await current.focus();
     await page
-      .getByRole("button", { name: "Create task notes", exact: true })
+      .getByRole("button", { name: "Create tasks", exact: true })
       .click();
     const review = page.getByRole("dialog", {
-      name: "Create task notes",
+      name: "Create tasks",
       exact: true,
     });
     await expect(review).toContainText("1 of");

@@ -209,8 +209,8 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
       page.getByRole("button", { name: "Child", exact: true }),
     ).toBeVisible();
   }
-  await page.getByRole("button", { name: "Create task notes" }).click();
-  const review = page.getByRole("dialog", { name: "Create task notes" });
+  await page.getByRole("button", { name: "Create tasks" }).click();
+  const review = page.getByRole("dialog", { name: "Create tasks" });
   await expect(review).toContainText("1 of 3 selected");
   await expect(
     review.getByRole("checkbox", { name: "Child task" }),
@@ -236,7 +236,7 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
   await page.getByRole("button", { name: "Keep writing" }).click();
   await expect(review).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Create task notes", exact: true }),
+    page.getByRole("button", { name: "Create tasks", exact: true }),
   ).toBeFocused();
   await expect(
     page.getByRole("button", { name: "New note", exact: true }),

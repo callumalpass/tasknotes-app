@@ -17,14 +17,16 @@ it("preserves keyboard navigation when scrolling moves an option under a station
       onChoose={vi.fn()}
     />,
   );
-  const filter = screen.getByRole("combobox", { name: "Filter Priority" });
+  expect(screen.queryByRole("combobox")).toBeNull();
+  const first = screen.getByRole("option", { name: "First" });
   const middle = screen.getByRole("option", { name: "Middle" });
   const last = screen.getByRole("option", { name: "Last" });
-  fireEvent.keyDown(filter, { key: "End" });
+  fireEvent.keyDown(first, { key: "End" });
   fireEvent.mouseEnter(middle);
-  expect(filter).toHaveAttribute("aria-activedescendant", last.id);
+  expect(last).toHaveFocus();
+  expect(last).toHaveClass("is-active");
   fireEvent.mouseMove(middle);
-  expect(filter).toHaveAttribute("aria-activedescendant", middle.id);
+  expect(middle).toHaveClass("is-active");
 });
 
 it("keeps the long-picker viewport when filtering to one or zero results", () => {
@@ -50,7 +52,7 @@ it("keeps the long-picker viewport when filtering to one or zero results", () =>
   expect(container.querySelector(".choice-options")).toHaveClass("is-long");
 });
 
-it("names a short picker and offers a visible close action before its search", () => {
+it("names a short picker and focuses its choice without search chrome", () => {
   const close = vi.fn();
   const { container } = render(
     <ChoiceOptions
@@ -64,7 +66,8 @@ it("names a short picker and offers a visible close action before its search", (
   expect(container.querySelector(".choice-options-header")).toHaveTextContent(
     "Theme",
   );
-  expect(screen.getByRole("combobox", { name: "Filter Theme" })).toHaveFocus();
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(screen.getByRole("option", { name: "Light" })).toHaveFocus();
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(close).toHaveBeenCalledOnce();
 });
@@ -79,6 +82,10 @@ it("starts on the selected value and skips a disabled first match after filterin
         { value: "disabled", label: "Custom disabled", disabled: true },
         { value: "enabled", label: "Custom enabled" },
         { value: "current", label: "Current priority" },
+        ...Array.from({ length: 4 }, (_, index) => ({
+          value: `extra-${index}`,
+          label: `Extra ${index}`,
+        })),
       ]}
       onChoose={choose}
     />,
@@ -106,6 +113,10 @@ it("filters arbitrary options immediately and chooses the active enabled match",
         { value: "two", label: "Custom blocked", disabled: true },
         { value: "three", label: "Custom active" },
         { value: "four", label: "Unrelated" },
+        ...Array.from({ length: 3 }, (_, index) => ({
+          value: `extra-${index}`,
+          label: `Extra ${index}`,
+        })),
       ]}
       onChoose={choose}
     />,

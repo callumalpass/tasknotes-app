@@ -19,6 +19,31 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 describe("ViewEditor", () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it.each(["layout", "view-filter", "view-group-sort", "view-fields"] as const)(
+    "opens the existing editor directly at %s",
+    async (initialSection) => {
+      renderEditor({
+        repository: repository(),
+        view: savedView(),
+        initialSection,
+      });
+      const dialog = await screen.findByRole("dialog", { name: "Work" });
+      await screen.findByRole("heading", { name: "View details" });
+      if (initialSection === "layout") {
+        const layout = dialog.querySelector(".view-layout-disclosure")!;
+        expect(layout).toHaveAttribute("open");
+        expect(layout.querySelector("summary")).toHaveFocus();
+      } else {
+        const title = dialog.querySelector(`#${initialSection}-title`)!;
+        expect(title.closest("button")).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        );
+        expect(title.closest("button")).toHaveFocus();
+      }
+    },
+  );
+
   it("uses one complete editor for an existing view and saves organization changes", async () => {
     const source = baseSource(`views:
   - type: tasknotesTaskList
@@ -432,6 +457,7 @@ views:
 });
 
 function renderEditor({
+  initialSection,
   repository: supplied,
   view,
   duplicate,
@@ -439,6 +465,7 @@ function renderEditor({
   onClose = vi.fn(),
   onChanged = vi.fn(async () => undefined),
 }: {
+  initialSection?: import("./view-editor-form").ViewEditorSection;
   repository: TaskRepository;
   view?: TaskView;
   duplicate?: boolean;
@@ -452,6 +479,7 @@ function renderEditor({
       repository={supplied}
     >
       <ViewEditor
+        initialSection={initialSection}
         confirmDelete={confirmDelete}
         duplicate={duplicate}
         view={view}

@@ -2540,8 +2540,8 @@ function ScratchpadDocumentEditor({
     const tasks = [...completed.values()];
     setNotice({
       message: plural(tasks.length, {
-        one: "Created # task note",
-        other: "Created # task notes",
+        one: "Created # task",
+        other: "Created # tasks",
       }),
       tasks,
     });
@@ -2762,7 +2762,7 @@ function ScratchpadDocumentEditor({
             </button>
           ) : null}
           <button
-            aria-label={t({ message: "Create task notes" })}
+            aria-label={t({ message: "Create tasks" })}
             className="text-action scratchpad-review-action"
             disabled={editorMode === "outline" && !drafts}
             type="button"
@@ -2774,7 +2774,7 @@ function ScratchpadDocumentEditor({
             }}
           >
             <ListChecks aria-hidden="true" size={17} />{" "}
-            <Trans>Create task notes</Trans>
+            <Trans>Create tasks</Trans>
           </button>
         </div>
       </header>
@@ -3281,7 +3281,7 @@ function ScratchpadDocumentEditor({
                   <Trans>Choose what becomes a task</Trans>
                 </p>
                 <h2 id="review-scratchpad-title">
-                  <Trans>Create task notes</Trans>
+                  <Trans>Create tasks</Trans>
                 </h2>
               </div>
               <button
@@ -3296,8 +3296,9 @@ function ScratchpadDocumentEditor({
             </header>
             <p>
               <Trans>
-                Selected drafts become linked TaskNotes in place. Everything
-                else stays in this scratchpad so you can keep working.
+                Selected drafts become tasks linked to their Markdown notes.
+                Everything else stays in this scratchpad so you can keep
+                working.
               </Trans>
             </p>
             <div className="scratchpad-review-toolbar">
@@ -3434,12 +3435,12 @@ function ScratchpadDocumentEditor({
                   ? t({ message: "Creating…" })
                   : failedReviewCount
                     ? plural(selectedReviewCount, {
-                        one: "Retry # task note",
-                        other: "Retry # task notes",
+                        one: "Retry # task",
+                        other: "Retry # tasks",
                       })
                     : plural(selectedReviewCount, {
-                        one: "Create # task note",
-                        other: "Create # task notes",
+                        one: "Create # task",
+                        other: "Create # tasks",
                       })}
               </button>
             </div>

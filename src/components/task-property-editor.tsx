@@ -118,7 +118,7 @@ export function TaskPropertyEditor({
     onDismiss: onClose,
     initialFocus: () =>
       editorRef.current?.querySelector<HTMLElement>(
-        ".choice-options input, .multi-value-field input",
+        ".choice-options input, .choice-options .is-active, .multi-value-field input",
       ) ?? closeRef.current,
   });
 
@@ -182,13 +182,8 @@ export function TaskPropertyEditor({
             : undefined
         }
       >
-        <header>
-          <div>
-            <span>
-              <Trans>Edit property</Trans>
-            </span>
-            <h2>{detail.label}</h2>
-          </div>
+        <header className="choice-options-header">
+          <strong>{detail.label}</strong>
           <button
             aria-label={t({ message: "Close property editor" })}
             ref={closeRef}

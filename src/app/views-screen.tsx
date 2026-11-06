@@ -124,6 +124,7 @@ import { useStableCallback, useStableView } from "./use-stable-identity";
 import { hasAllTaskNotesStarterViews } from "../application/ensure-default-view-source";
 
 type ViewEditorRequest = {
+  initialSection?: import("./view-editor-form").ViewEditorSection;
   view?: TaskView;
   duplicate?: boolean;
   confirmDelete?: boolean;
@@ -1423,6 +1424,49 @@ export function ViewsScreen({
             {selected && views ? (
               <TaskNotesSelect
                 ariaLabel={t`Saved view`}
+                actions={[
+                  ...(selected.source.writable
+                    ? [
+                        {
+                          label: t`Edit view`,
+                          onChoose: () => setEditing({ view: selected }),
+                        },
+                        {
+                          label: t`Layout`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "layout",
+                            }),
+                        },
+                        {
+                          label: t`Filter`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-filter",
+                            }),
+                        },
+                        {
+                          label: t`Group & sort`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-group-sort",
+                            }),
+                        },
+                        {
+                          label: t`Fields shown`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-fields",
+                            }),
+                        },
+                      ]
+                    : []),
+                  { label: t`Manage views`, onChoose: onManageViews },
+                ]}
                 className="view-heading-select"
                 value={selected.key}
                 options={views.map((view) => ({
@@ -1631,6 +1675,7 @@ export function ViewsScreen({
         ) : null}
         {editing ? (
           <ViewEditor
+            initialSection={editing.initialSection}
             confirmDelete={editing.confirmDelete}
             duplicate={editing.duplicate}
             view={editing.view}

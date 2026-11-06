@@ -28,6 +28,7 @@ export function ChoiceOptions({
   const root = useRef<HTMLDivElement>(null);
   const defaultLabel = t`options`;
   const filterLabel = label ?? defaultLabel;
+  const filterable = options.length > 6;
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(() => {
     const selected = options.findIndex(
@@ -41,7 +42,9 @@ export function ChoiceOptions({
     option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
   );
   useEffect(() => {
-    root.current?.querySelector("input")?.focus({ preventScroll: true });
+    root.current
+      ?.querySelector<HTMLElement>("input, .is-active")
+      ?.focus({ preventScroll: true });
   }, []);
   useEffect(() => {
     root.current
@@ -52,6 +55,48 @@ export function ChoiceOptions({
     <div
       className={`choice-options${options.length > 6 ? " is-long" : ""}`}
       ref={root}
+      onKeyDown={(event) => {
+        if (
+          !(event.target instanceof HTMLElement) ||
+          !event.target.matches(
+            'input, [role="option"], [role="menuitemradio"]',
+          )
+        )
+          return;
+        const enabled = filtered.flatMap((option, index) =>
+          option.disabled ? [] : [index],
+        );
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.stopPropagation();
+          const option = filtered[active];
+          if (option && !option.disabled && !disabled) onChoose(option.value);
+        } else if (
+          ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          const current = enabled.indexOf(active);
+          const next =
+            event.key === "Home"
+              ? enabled[0]
+              : event.key === "End"
+                ? enabled.at(-1)
+                : enabled[
+                    (current +
+                      (event.key === "ArrowDown" ? 1 : -1) +
+                      enabled.length) %
+                      enabled.length
+                  ];
+          if (next !== undefined) {
+            setActive(next);
+            if (!filterable)
+              root.current
+                ?.querySelector<HTMLElement>(`[id="${id}-${next}"]`)
+                ?.focus();
+          }
+        }
+      }}
     >
       {onClose ? (
         <header className="choice-options-header">
@@ -66,58 +111,33 @@ export function ChoiceOptions({
           </button>
         </header>
       ) : null}
-      <input
-        aria-label={t`Filter ${filterLabel}`}
-        aria-controls={`${id}-list`}
-        aria-activedescendant={filtered[active] ? `${id}-${active}` : undefined}
-        autoComplete="off"
-        placeholder={t`Filter…`}
-        role="combobox"
-        aria-expanded="true"
-        aria-autocomplete="list"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setActive(
-            options
-              .filter((option) =>
-                option.label
-                  .toLocaleLowerCase()
-                  .includes(event.target.value.trim().toLocaleLowerCase()),
-              )
-              .findIndex((option) => !option.disabled),
-          );
-        }}
-        onKeyDown={(event) => {
-          const enabled = filtered.flatMap((option, index) =>
-            option.disabled ? [] : [index],
-          );
-          if (event.key === "Enter") {
-            event.preventDefault();
-            event.stopPropagation();
-            const option = filtered[active];
-            if (option && !option.disabled && !disabled) onChoose(option.value);
-          } else if (
-            ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
-          ) {
-            event.preventDefault();
-            event.stopPropagation();
-            const current = enabled.indexOf(active);
-            const next =
-              event.key === "Home"
-                ? enabled[0]
-                : event.key === "End"
-                  ? enabled.at(-1)
-                  : enabled[
-                      (current +
-                        (event.key === "ArrowDown" ? 1 : -1) +
-                        enabled.length) %
-                        enabled.length
-                    ];
-            if (next !== undefined) setActive(next);
+      {filterable ? (
+        <input
+          aria-label={t`Filter ${filterLabel}`}
+          aria-controls={`${id}-list`}
+          aria-activedescendant={
+            filtered[active] ? `${id}-${active}` : undefined
           }
-        }}
-      />
+          autoComplete="off"
+          placeholder={t`Filter…`}
+          role="combobox"
+          aria-expanded="true"
+          aria-autocomplete="list"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActive(
+              options
+                .filter((option) =>
+                  option.label
+                    .toLocaleLowerCase()
+                    .includes(event.target.value.trim().toLocaleLowerCase()),
+                )
+                .findIndex((option) => !option.disabled),
+            );
+          }}
+        />
+      ) : null}
       <div
         className="tasknotes-option-list"
         id={`${id}-list`}
@@ -139,6 +159,8 @@ export function ChoiceOptions({
             key={option.value}
             role={role}
             type="button"
+            tabIndex={active === index ? 0 : -1}
+            onFocus={() => setActive(index)}
             onMouseMove={() => setActive(index)}
             onClick={() => onChoose(option.value)}
           >

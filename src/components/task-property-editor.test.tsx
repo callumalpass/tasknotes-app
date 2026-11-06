@@ -122,10 +122,11 @@ it("offers every configured priority directly and saves the choice", async () =>
   );
   const current = screen.getByRole("option", { name: "Normal" });
   expect(current).toHaveAttribute("aria-selected", "true");
-  const filter = screen.getByRole("combobox", { name: "Filter Priority" });
-  expect(filter).toHaveFocus();
-  fireEvent.change(filter, { target: { value: "High" } });
-  fireEvent.keyDown(filter, { key: "Enter" });
+  expect(
+    screen.queryByRole("combobox", { name: "Filter Priority" }),
+  ).toBeNull();
+  expect(current).toHaveFocus();
+  fireEvent.click(screen.getByRole("option", { name: "High" }));
   await waitFor(() =>
     expect(updateTask).toHaveBeenCalledWith(
       "one",

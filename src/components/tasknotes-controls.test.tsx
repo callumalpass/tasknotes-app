@@ -65,6 +65,26 @@ it("filters long shared capture-chip choices without changing short picker behav
   expect(change).toHaveBeenCalledWith("custom-11");
 });
 
+it("offers view actions in the existing switcher and returns focus before opening an editor", () => {
+  const edit = vi.fn();
+  render(
+    <TaskNotesSelect
+      ariaLabel="Saved view"
+      value="today"
+      options={[{ value: "today", label: "Today" }]}
+      onChange={vi.fn()}
+      actions={[{ label: "Layout", onChoose: edit }]}
+    />,
+  );
+  const trigger = screen.getByRole("combobox", { name: "Saved view" });
+  fireEvent.click(trigger);
+  expect(screen.getByRole("option", { name: "Today" })).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+  expect(edit).toHaveBeenCalledOnce();
+  expect(trigger).toHaveFocus();
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
 it("filters native property suggestions while preserving free-form values", () => {
   function Example() {
     const [value, setValue] = useState("");

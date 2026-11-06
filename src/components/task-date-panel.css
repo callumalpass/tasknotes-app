@@ -15,3 +15,6 @@
   display: grid;
   gap: 6px;
 }
+.task-date-panel .task-date-target button {
+  min-height: 44px;
+}

@@ -15,13 +15,19 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 44px;
+  padding-inline-start: 4px;
   margin-bottom: 6px;
   color: var(--ink);
-  font-size: var(--type-supporting);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
 }
 .choice-options-header > strong {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.task-property-editor header.choice-options-header {
+  margin-bottom: 6px;
 }
 .choice-options-header > button {
   display: grid;
@@ -83,6 +89,30 @@
 .choice-check-empty {
   visibility: hidden;
 }
-.choice-options .is-active {
-  background: var(--paper-soft);
+.choice-options .tasknotes-option-list > button.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper-raised));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.tasknotes-select-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.tasknotes-select-actions > button {
+  min-height: 44px;
+  padding: 8px;
+  color: var(--ink-soft);
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.tasknotes-select-actions > button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }

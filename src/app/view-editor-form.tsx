@@ -14,7 +14,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ExpressionBuilder,
@@ -48,6 +48,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskRepository } from "../application/ports/task-repository";
 
 interface ViewEditorFormProps {
+  initialSection?: ViewEditorSection;
   autoFocusName: boolean;
   draft: EditableViewDraft;
   configuration: TaskCollectionConfiguration;
@@ -58,8 +59,12 @@ interface ViewEditorFormProps {
   onComputedValidityChange(valid: boolean): void;
 }
 
+export type ViewEditorSection =
+  "layout" | "view-filter" | "view-group-sort" | "view-fields";
+
 export function ViewEditorForm({
   autoFocusName,
+  initialSection,
   draft,
   configuration,
   repository,
@@ -71,7 +76,20 @@ export function ViewEditorForm({
   const { t } = useLingui();
   const [propertyInput, setPropertyInput] = useState("");
   const [sortPropertyInput, setSortPropertyInput] = useState("");
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>(
+    initialSection ?? null,
+  );
+  const formRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!initialSection) return;
+    const target = formRef.current?.querySelector<HTMLElement>(
+      initialSection === "layout"
+        ? ".view-layout-disclosure > summary"
+        : `#${initialSection}-title`,
+    );
+    target?.closest<HTMLElement>("button, summary")?.focus();
+    target?.scrollIntoView?.({ block: "start" });
+  }, [initialSection]);
   const fields = useMemo(
     () =>
       viewFields(configuration, [
@@ -109,8 +127,9 @@ export function ViewEditorForm({
   }
 
   return (
-    <div className="view-editor-form">
+    <div className="view-editor-form" ref={formRef}>
       <ViewIdentitySection
+        initialLayoutOpen={initialSection === "layout"}
         autoFocusName={autoFocusName}
         draft={draft}
         onChange={onChange}
@@ -589,16 +608,18 @@ function ComputedPropertiesSection({
 }
 
 function ViewIdentitySection({
+  initialLayoutOpen = false,
   autoFocusName,
   draft,
   onChange,
 }: {
+  initialLayoutOpen?: boolean;
   autoFocusName: boolean;
   draft: EditableViewDraft;
   onChange(draft: EditableViewDraft): void;
 }) {
   const { t } = useLingui();
-  const [layoutOpen, setLayoutOpen] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(initialLayoutOpen);
   const layoutLabel =
     layouts.find((layout) => layout.value === draft.renderer)?.label ??
     draft.renderer;

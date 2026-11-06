@@ -16,12 +16,12 @@ test("Scratchpad review owns focus and isolates the background", async ({
     includeHidden: true,
   });
   const trigger = page.getByRole("button", {
-    name: "Create task notes",
+    name: "Create tasks",
     exact: true,
   });
   await trigger.focus();
   await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Create task notes" });
+  const dialog = page.getByRole("dialog", { name: "Create tasks" });
   const close = dialog.getByRole("button", { name: "Close", exact: true });
   await expect(close).toBeFocused();
   expect(
@@ -36,7 +36,7 @@ test("Scratchpad review owns focus and isolates the background", async ({
     }),
   ).toBe(true);
   const create = dialog.getByRole("button", {
-    name: /^Create \d+ task notes?$/,
+    name: /^Create \d+ tasks?$/,
   });
   await create.focus();
   await page.keyboard.press("Tab");

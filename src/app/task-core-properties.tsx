@@ -48,7 +48,9 @@ export function TaskCoreProperties({
           <Trans>Use the occurrence actions above to change this state.</Trans>
         </small>
       ) : null}
-      <TaskDetailDates draft={draft} onChange={onChange} />
+      <div className="task-core-dates">
+        <TaskDetailDates draft={draft} onChange={onChange} />
+      </div>
       {seriesDates ? (
         <p className="field-help">
           <Trans>

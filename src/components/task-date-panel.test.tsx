@@ -38,8 +38,13 @@ describe("TaskDatePanel", () => {
 
   it("targets the scheduled date unless only a due date exists", () => {
     renderPanel({ due: "2026-11-20" });
-    fireEvent.click(screen.getByText("Date options"));
     expect(screen.getByRole("radio", { name: /Due/ })).toBeChecked();
+    expect(
+      screen
+        .getByRole("radiogroup", { name: "Date to change" })
+        .closest("details"),
+    ).toBeNull();
+    expect(screen.getByLabelText("Type a date")).not.toBeVisible();
   });
 
   it("keeps a task's time when a preset moves the day", () => {
