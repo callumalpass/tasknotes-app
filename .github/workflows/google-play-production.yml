@@ -138,6 +138,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
           SOURCE_RUN_ID: ${{ needs.verify-release.outputs.source_run_id }}
           TASKNOTES_PLAY_AUTOMATION_ENABLED: ${{ vars.TASKNOTES_PLAY_AUTOMATION_ENABLED }}
         run: node scripts/mobile-release-policy.mjs android

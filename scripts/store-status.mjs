@@ -18,11 +18,14 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       fetchImpl,
     },
   );
-  const root = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PLAY_PACKAGE}/edits`;
+  const app = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PLAY_PACKAGE}`;
+  const root = `${app}/edits`;
+  const summaryUrls = new Set();
   async function request(url, method = "GET") {
     if (!(
       (url === root && method === "POST") ||
-      (url.startsWith(root + "/") && ["GET", "DELETE"].includes(method))
+      (url.startsWith(root + "/") && ["GET", "DELETE"].includes(method)) ||
+      (summaryUrls.has(url) && method === "GET")
     ))
       throw new Error("Read-only Play transport refused a write");
     const response = await fetchImpl(url, {
@@ -45,17 +48,51 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
     if (!/^[A-Za-z0-9_-]+$/.test(edit?.id ?? ""))
       throw new Error("Invalid disposable Play edit");
     const snapshot = await request(`${root}/${edit.id}/tracks`);
-    const tracks = (snapshot.tracks ?? [])
-      .filter((t) => ["production", "alpha"].includes(t.track))
-      .map((t) => ({
-        track: t.track,
-        releases: (t.releases ?? []).map((r) => ({
-          versionCodes: r.versionCodes,
-          name: r.name,
-          status: r.status,
-          userFraction: r.userFraction ?? null,
-        })),
-      }));
+    const tracks = (snapshot.tracks ?? []).map((t) => ({
+      track: t.track,
+      releases: (t.releases ?? []).map((r) => ({
+        versionCodes: r.versionCodes,
+        name: r.name,
+        status: r.status,
+        userFraction: r.userFraction ?? null,
+      })),
+    }));
+    // Unlike edits.tracks.list, this non-edit API exposes Console review
+    // lifecycle (including rejection). Read EVERY track, not just production.
+    let review;
+    try {
+      const releases = [];
+      if (!tracks.some((t) => t.track === "production"))
+        throw new Error("missing-track");
+      for (const track of tracks) {
+        const url = `${app}/tracks/${encodeURIComponent(track.track)}/releases`;
+        summaryUrls.add(url);
+        const result = await request(url);
+        if (
+          !Array.isArray(result.releases ?? []) ||
+          (result.releases ?? []).length >= 20
+        )
+          throw new Error("incomplete-review-snapshot");
+        for (const release of result.releases ?? []) {
+          if (
+            release.track !== track.track ||
+            !REVIEW_STATES.includes(release.releaseLifecycleState)
+          )
+            throw new Error("unknown-review-state");
+          releases.push({
+            track: track.track,
+            state: release.releaseLifecycleState,
+            versionCodes: (release.activeArtifacts ?? []).map((a) =>
+              String(a.versionCode),
+            ),
+          });
+        }
+      }
+      review = { available: true, releases };
+    } catch {
+      // Keep the nearest observable track state, but never call it review proof.
+      review = { available: false, releases: [] };
+    }
     const production = tracks.find((t) => t.track === "production");
     return {
       schema: "tasknotes/store-status/1",
@@ -66,8 +103,10 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
       )
         ? "confirmed-by-existing-production-release"
         : "unverified",
-      // Track state is not review state or proof that every country serves it.
-      reviewState: "not-exposed-by-android-publisher-api",
+      reviewState: review.available
+        ? "observed-release-lifecycle"
+        : "release-lifecycle-unavailable",
+      review,
       liveVersion:
         production?.releases
           ?.map((r) => /^TaskNotes (\d+\.\d+\.\d+)$/.exec(r.name ?? "")?.[1])
@@ -81,6 +120,42 @@ export async function readPlayStatus(credentialBase64, fetchImpl = fetch) {
     if (edit?.id && /^[A-Za-z0-9_-]+$/.test(edit.id))
       await request(`${root}/${edit.id}`, "DELETE");
   }
+}
+
+const REVIEW_STATES = [
+  "RELEASE_LIFECYCLE_STATE_DRAFT",
+  "RELEASE_LIFECYCLE_STATE_NOT_SENT_FOR_REVIEW",
+  "RELEASE_LIFECYCLE_STATE_IN_REVIEW",
+  "RELEASE_LIFECYCLE_STATE_APPROVED_NOT_PUBLISHED",
+  "RELEASE_LIFECYCLE_STATE_NOT_APPROVED",
+  "RELEASE_LIFECYCLE_STATE_PUBLISHED",
+];
+export function playReviewBlock(status) {
+  if (status.review?.available !== true)
+    return "play-release-lifecycle-observer-unavailable";
+  const releases = status.review.releases;
+  if (
+    !Array.isArray(releases) ||
+    releases.some((r) => !REVIEW_STATES.includes(r.state))
+  )
+    return "play-release-lifecycle-observer-unavailable";
+  if (releases.some((r) => r.state === "RELEASE_LIFECYCLE_STATE_NOT_APPROVED"))
+    return "store-rejected";
+  if (releases.some((r) => r.state !== "RELEASE_LIFECYCLE_STATE_PUBLISHED"))
+    return "earlier-store-version-in-flight";
+  // A published production summary must corroborate the track snapshot.
+  if (
+    status.live.some(
+      (r) =>
+        !(r.versionCodes ?? []).every((code) =>
+          releases.some(
+            (s) => s.track === "production" && s.versionCodes.includes(code),
+          ),
+        ),
+    )
+  )
+    return "play-release-lifecycle-observer-unavailable";
+  return null;
 }
 
 function compareVersions(a, b) {

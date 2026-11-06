@@ -3,7 +3,7 @@
 ## Current rollout hold
 
 **Automation is disabled by default. Do not enable or submit until Callum has
-seen the exact candidate plan and said go, and the wasm route has been exercised
+seen the exact candidate plan and said go **as release supervisor**, and the wasm route has been exercised
 on that exact signed build.** This implementation does not change either enable
 variable, signing identity, trust key, environment policy or store submission.
 
@@ -27,9 +27,19 @@ evidence that an older TestFlight or Play build contains that SDK.
   code. iOS must have exactly one signed artifact and a confirmed TestFlight
   upload. The normal Apple submission script independently checks the exact
   processed, App-Store-eligible build, metadata and all active reviews.
-- A 24-hour gap counts every earlier production-workflow attempt, including
-  dry/preflight failures, conservatively. In-flight attempts block. Rerunning a
-  production workflow is refused; unknown writes require reconciliation.
+- A 24-hour gap counts production-workflow attempts with possible writes.
+  **Read-only dry runs do not consume it**, including failed read-only checks
+  with a retained, exact-run read-only receipt. In-flight attempts still block.
+  Missing/expired/unbound receipts and unknown writes remain conservative blocks.
+  Rerunning a production workflow is refused; unknown writes require reconciliation.
+  The successful 2026-11-06 **21:11:47Z** App Store dry run
+  [42294707028](https://github.com/callumalpass/tasknotes-app/actions/runs/42294707028)
+  was verified privately: `SUBMIT=false`, `RELEASE=false`. The old queue's
+  workflow-counting rule, **not an observed Apple limit**, consumed the cooldown.
+  `config/mobile-read-only-reconciliations.json` binds this legacy no-write
+  observation to its exact SHA, attempt, timestamp and step-log digest; it
+  contains no log payload. Future dry dispatches retain
+  `mobile-read-only-attempt/read-only-attempt.json` before source checks.
 - Both existing production publishers repeat the common guards immediately
   before a mutation. `ios-release.yml` only builds/uploads TestFlight now;
   its parallel public-submission path is removed. Direct recovery submission
@@ -76,38 +86,71 @@ registered test account, and emit the digest-bound proof in the source run.
 Until that producer exists, the guard refuses publication. Current older
 production/TestFlight builds do not qualify by association with newer main.
 
-## Play rollout and its API limit
+## Play review observer and rollout
 
-Production promotion now requests `inProgress` at **10%**, preserving the
-previous completed release. There is no full-rollout fallback if Play refuses
-staging. `setProductionRollout` supports exact-version halt/completion, preserving
-other completed versions; only halt is scheduled.
+The current Android Publisher API **does expose release review lifecycle** through
+[`applications.tracks.releases.list`](https://developers.google.com/android-publisher/api-ref/rest/v3/applications.tracks.releases/list),
+outside a disposable edit. `store-status.mjs` reads every discovered track,
+including custom closed tracks. It distinguishes draft, not sent, in review,
+approved/unpublished, rejected (`NOT_APPROVED`) and published releases.
+The release summaries must corroborate the production version codes.
+Unknown/unavailable/malformed/capped observations fail closed; rejection stops
+only Play. A completed edit track is never substituted for review approval.
 
-`mobile-post-release.yml` checks every 15 minutes under the same production
-concurrency lock as promotion and Play status reads. It checks Connect health,
-CP readiness and provider readiness. A failed check halts only the exact owned
-staged version, then opens only the Play app stop. Unknown ownership or halt
-outcome stops the line without guessing a track mutation. Healthy checks do
-**not** silently complete the rollout. These infrastructure checks are not
-Android Vitals or an on-device post-release smoke.
+Both initial publication and rollout mutations also use
+[`changesInReviewBehavior=ERROR_IF_IN_REVIEW`](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit).
+This is a store-side final race guard, not a retry: unlike the API default,
+it must not cancel an earlier review. There is no fallback without that guard.
+Release summaries do **not** provide rejection text or all app-level policy/
+metadata-only pending changes. The exact residual private step is **Play Console
+→ this app → Publishing overview / Policy status → rejection details**.
+A review-guard rejection/unknown write stops this line for reconciliation; no
+owner escalation is needed for routine repair. Legal attestations remain human
+decisions. No Console automation or unsupported scraping is introduced.
 
-Android Publisher `edits.tracks.list` **does not expose** Publishing Overview
-review state, pending changes or rejection reasons. Existing production release
-state confirms historical production access; `completed` alone does not prove
-there is no earlier change in review or universal live availability.
-Therefore Play submission always additionally refuses with
-`play-console-publishing-overview-review-observer-required`, even if enabled.
+Production starts at **10%**. `mobile-post-release.yml` observes every 15 minutes
+under the production concurrency lock. It checks Connect health, CP readiness,
+provider readiness, release lifecycle, and exact-version Android Vitals.
+Widening additionally requires the enable variable and an unstopped Play line:
 
-Exact remaining integration: an authenticated agent/Console observer must read
-**Play Console → this app → Publishing overview**, establish no earlier change
-in review/pending publication, and read any rejection reason privately. Its
-fresh source-bound observation needs a mechanically checked custody contract
-before the refusal can be replaced. No loose boolean/repository variable
-substitutes for it. Play rejection detection/reason retrieval, Android Vitals,
-and safe completion of the staged rollout are not implemented by this API-only
-integration. No owner escalation is required for routine rejection: an agent
-reads the reason, fixes/rebuilds or resubmits through green CI, reconciles and
-clears only the affected line. Signing/trust changes still return to Callum.
+1. 10% → 50% after at least **24 continuous monitored hours** at 10%.
+2. 50% → completed/100% after a further **24 continuous monitored hours** at 50%.
+3. Continue post-completion checks through seven days after initial promotion.
+
+Each step needs the latest **six complete hourly Vitals buckets**, all after
+the stage began, for the exact version. Each bucket needs at least 100 reported
+distinct users, and zero user-perceived crashes/ANRs (conservative initial
+threshold). The freshest complete data may lag at most 24 hours. No empty,
+small, stale, wrong-version, paginated or malformed sample counts as healthy.
+Monitor evidence is source/run/version/fraction bound; a gap over one hour,
+missing/failed prior report or ownership change restarts the dwell, never widens.
+The 24-hour submission cooldown is separate from the per-stage dwell.
+
+Vitals uses the existing service account with OAuth scope
+`https://www.googleapis.com/auth/playdeveloperreporting`, against
+`playdeveloperreporting.googleapis.com/v1beta1/apps/dev.tasknotes.app/{crashRateMetricSet,anrRateMetricSet}`
+(GET freshness and POST `:query`). The Google Play Developer Reporting API must
+be enabled in its credential project and the account must have **View app
+information (read-only)** for TaskNotes. `store-status.yml` retains a bounded
+`play-vitals-capability/play-vitals.json` probe: availability and HTTP status,
+never Google payloads or identifiers.
+
+If Reporting is unavailable, the named nearest signal is **Connect/CP/provider
+readiness only**; this is not Android Vitals or device smoke. The monitor retains
+that limitation and holds the current fraction; it does not widen on this
+substitute. If exact-version Vitals is still unavailable/insufficient at 72 hours
+of continuous observation at that stage (after publication), it halts the owned
+staged version. Time waiting for store review does not consume the stage window.
+
+A known boundary/Vitals failure or observed rejection halts **only the exact
+owned in-progress version**, preserving the older completed release, and opens
+only the Play stop even if the halt outcome is unknown. Halted versions never
+resume automatically. Widening uses expected-fraction checks and cannot skip
+10% → 50% or complete directly from 10%. Unknown ownership stops the line
+without a speculative store write. Once 100% is completed, Play's staged-halt
+mechanism is no longer available: failures **stop future Play publications**;
+there is no automatic downgrade/rollback. Recovery needs a separately qualified
+release/reconciliation plan from the release supervisor.
 
 ## Isolated stops
 
@@ -157,7 +200,8 @@ reader; no dashboard deployment is made here.
    package version is already live. Build/upload only to alpha/TestFlight.
 3. Exercise wasm on the **exact signed artifact** and retain the bound proof.
    Implement the missing proof producer; do not synthesize a passing artifact.
-4. Read a fresh store plan. For Play, implement the Console observer first.
+4. Read a fresh store plan and exact-run status/Vitals capability evidence.
+   Reconcile any release-review or API-observation block; do not override it.
 5. Tell Callum the exact platform, source SHA, SDK producer, artifact digest,
    store version/build, review state, notes and proposed 10% rollout/Apple release
    policy. Wait for go before enabling either line or submitting.
@@ -165,8 +209,8 @@ reader; no dashboard deployment is made here.
    dispatch through the existing publisher. Observe review, rollout and checks.
    Retain the bounded attempt and complete the normal deployment report.
 
-Unattended end-to-end production is **not ready** until the named proof producer
-and Play Console observer are implemented and exercised. Apple review and store
+Unattended end-to-end production is **not ready** until the signed-native wasm
+proof producer is implemented and exercised on a new qualified signed build. Apple review and store
 policy/legal account attestations remain store-owned; no workflow can grant
 approval or invent a legal response. No production submission was made by this
 implementation.

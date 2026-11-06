@@ -45,6 +45,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Record read-only dispatch (never consumes submission cooldown)
+        if: ${{ !inputs.submit && !inputs.release }}
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("read-only-attempt.json", JSON.stringify({schema:"tasknotes/mobile-read-only-attempt/1",platform:"ios",runId:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),source:process.env.GITHUB_SHA,submit:false,release:false})+"\n")'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: ${{ !inputs.submit && !inputs.release }}
+        with:
+          name: mobile-read-only-attempt
+          path: read-only-attempt.json
+          retention-days: 90
+          if-no-files-found: error
+
       - name: Verify source workflow and resolve exact uploaded build
         env:
           GH_TOKEN: ${{ github.token }}

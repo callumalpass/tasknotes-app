@@ -62,13 +62,24 @@ export function parseServiceAccount(encodedCredential) {
   return { clientEmail, privateKey, tokenUri: credential.token_uri };
 }
 
-export function createServiceAccountAssertion(credential, now = Date.now()) {
+export function createServiceAccountAssertion(
+  credential,
+  now = Date.now(),
+  scope = PLAY_SCOPE,
+) {
+  if (
+    ![
+      PLAY_SCOPE,
+      "https://www.googleapis.com/auth/playdeveloperreporting",
+    ].includes(scope)
+  )
+    throw new Error("Unsupported Google API scope");
   const issuedAt = Math.floor(now / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = base64Url(
     JSON.stringify({
       iss: credential.clientEmail,
-      scope: PLAY_SCOPE,
+      scope,
       aud: credential.tokenUri,
       iat: issuedAt,
       exp: issuedAt + 3600,
@@ -88,9 +99,9 @@ async function responseError(response) {
 
 export async function exchangeAccessToken(
   credential,
-  { fetchImpl = fetch, now = Date.now() } = {},
+  { fetchImpl = fetch, now = Date.now(), scope = PLAY_SCOPE } = {},
 ) {
-  const assertion = createServiceAccountAssertion(credential, now);
+  const assertion = createServiceAccountAssertion(credential, now, scope);
   const response = await fetchImpl(credential.tokenUri, {
     method: "POST",
     redirect: "error",
@@ -339,7 +350,7 @@ export async function publishClosedTest({
     await playRequest(
       fetchImpl,
       token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:commit`,
+      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`,
       { method: "POST", body: "{}" },
     );
     editId = undefined;
@@ -455,7 +466,7 @@ export async function promoteToProduction({
     await playRequest(
       fetchImpl,
       token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:commit`,
+      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`,
       { method: "POST", body: "{}" },
     );
     editId = undefined;
@@ -487,11 +498,18 @@ export async function setProductionRollout({
   credentialBase64,
   expectedVersionCode,
   status,
+  userFraction,
+  expectedFraction,
   fetchImpl = fetch,
 }) {
   const versionCode = String(validateVersionCode(expectedVersionCode));
-  if (!["halted", "completed"].includes(status))
-    throw new Error("Only halt or complete an existing production rollout");
+  if (
+    !["halted", "completed", "inProgress"].includes(status) ||
+    (status === "inProgress" &&
+      (userFraction !== 0.5 || expectedFraction !== 0.1)) ||
+    (status === "completed" && expectedFraction !== 0.5)
+  )
+    throw new Error("Only halt, widen 10% to 50%, or complete 50% rollout");
   const token = await exchangeAccessToken(
     parseServiceAccount(credentialBase64),
     { fetchImpl },
@@ -517,15 +535,20 @@ export async function setProductionRollout({
     if (selected.length !== 1 || selected[0].versionCodes.length !== 1)
       throw new Error("Exact staged version not found");
     const release = selected[0];
-    if (release.status === status)
+    if (
+      release.status === status &&
+      (status !== "inProgress" || release.userFraction === userFraction)
+    )
       return { status, versionCode, alreadyApplied: true };
     if (
-      !["inProgress", "halted"].includes(release.status) ||
+      release.status !== "inProgress" ||
+      (status !== "halted" && release.userFraction !== expectedFraction) ||
       releases.some((r) => r !== release && r.status !== "completed")
     )
       throw new Error("Production rollout cannot be reconciled automatically");
     const updated = { ...release, status };
     if (status === "completed") delete updated.userFraction;
+    if (status === "inProgress") updated.userFraction = userFraction;
     const next = {
       track: "production",
       releases: releases.map((r) => (r === release ? updated : r)),
@@ -545,7 +568,7 @@ export async function setProductionRollout({
     await playRequest(
       fetchImpl,
       token,
-      `${root}/${encodeURIComponent(editId)}:commit`,
+      `${root}/${encodeURIComponent(editId)}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`,
       { method: "POST", body: "{}" },
     );
     editId = undefined;
@@ -587,6 +610,7 @@ async function promoteProductionMain(args) {
         ...result,
         source: qualified.source,
         sourceRunId: qualified.sourceRunId,
+        promotedAt: new Date().toISOString(),
       },
       null,
       2,

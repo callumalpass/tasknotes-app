@@ -85,12 +85,82 @@ export function assertCooldown(runs, currentRun, now = Date.now()) {
       run.status === "completed",
       "earlier-store-attempt-in-flight",
     );
-    // Includes dry runs and failed preflight, conservatively. Unknown writes
-    // cannot earn a retry by lacking a success receipt.
+    // Only an exact-run read-only receipt can exempt a dry run. Missing
+    // receipts and failed/unknown writes still consume the cooldown.
+    if (run.verifiedReadOnly === true) continue;
     const created = Date.parse(run.created_at);
     requirePolicy(Number.isFinite(created), "store-attempt-time-unavailable");
     requirePolicy(now - created >= 86_400_000, "store-24-hour-cooldown");
   }
+}
+export function isReadOnlyReceipt(receipt, run, platform) {
+  return (
+    receipt?.schema === "tasknotes/mobile-read-only-attempt/1" &&
+    receipt.runId === run.id &&
+    receipt.source === run.head_sha &&
+    receipt.attempt === 1 &&
+    run.run_attempt === 1 &&
+    run.event === "workflow_dispatch" &&
+    run.head_branch === "main" &&
+    run.path === `.github/workflows/${WORKFLOWS[platform]}` &&
+    receipt.platform === platform &&
+    receipt.submit === false &&
+    receipt.release === false
+  );
+}
+export async function cooldownRuns(platform) {
+  const reconciled = JSON.parse(
+    await readFile(
+      new URL(
+        "../config/mobile-read-only-reconciliations.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ).runs;
+  const runs = gh(
+    `repos/${REPO}/actions/workflows/${WORKFLOWS[platform]}/runs?per_page=100`,
+    { pages: true },
+  ).flatMap((page) => page.workflow_runs);
+  for (const run of runs) {
+    if (
+      Date.now() - Date.parse(run.created_at) >= 86_400_000 ||
+      run.status !== "completed" ||
+      run.head_branch !== "main" ||
+      run.event !== "workflow_dispatch" ||
+      run.path !== `.github/workflows/${WORKFLOWS[platform]}` ||
+      run.run_attempt !== 1
+    )
+      continue;
+    run.verifiedReadOnly =
+      run.conclusion === "success" &&
+      reconciled.some(
+        (r) =>
+          r.platform === platform &&
+          r.id === run.id &&
+          r.headSha === run.head_sha &&
+          r.attempt === run.run_attempt &&
+          r.createdAt === run.created_at,
+      );
+    if (run.verifiedReadOnly || platform !== "ios") continue;
+    // Artifact comes only from this successful, protected, first-attempt run.
+    const artifacts = gh(
+      `repos/${REPO}/actions/runs/${run.id}/artifacts?per_page=100`,
+    ).artifacts;
+    if (
+      !artifacts.some(
+        (a) => !a.expired && a.name === "mobile-read-only-attempt",
+      )
+    )
+      continue;
+    const receipt = await artifactJson(
+      run.id,
+      "mobile-read-only-attempt",
+      "read-only-attempt.json",
+    );
+    run.verifiedReadOnly = isReadOnlyReceipt(receipt, run, platform);
+  }
+  return runs;
 }
 export function assertWasmProof(proof, source, run, artifact, platform) {
   requirePolicy(
@@ -346,18 +416,19 @@ async function main() {
     platform === "android"
       ? process.env.TASKNOTES_PLAY_AUTOMATION_ENABLED
       : process.env.TASKNOTES_APP_STORE_AUTOMATION_ENABLED;
-  requirePolicy(enabled === "true", "owner-go-required-automation-disabled");
+  requirePolicy(
+    enabled === "true",
+    "release-supervisor-go-required-automation-disabled",
+  );
   const source = await qualifySource(platform, process.env.SOURCE_RUN_ID);
-  const runs = gh(
-    `repos/${REPO}/actions/workflows/${WORKFLOWS[platform]}/runs?per_page=100`,
-  ).workflow_runs;
-  assertCooldown(runs, process.env.GITHUB_RUN_ID);
+  assertCooldown(await cooldownRuns(platform), process.env.GITHUB_RUN_ID);
   if (platform === "android") {
-    // tracks.list has no review status, rejection reason, or Publishing
-    // Overview pending-change state. Never equate "completed" to no review.
-    throw new Error(
-      "play-console-publishing-overview-review-observer-required",
+    const { readPlayStatus, playReviewBlock } =
+      await import("./store-status.mjs");
+    const status = await readPlayStatus(
+      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
     );
+    requirePolicy(!playReviewBlock(status), playReviewBlock(status));
   }
   await writeFile(
     "mobile-release-qualified.json",

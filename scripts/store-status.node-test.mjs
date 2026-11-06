@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readAppleLive, readPlayStatus } from "./store-status.mjs";
+import {
+  readAppleLive,
+  readPlayStatus,
+  playReviewBlock,
+} from "./store-status.mjs";
 import { generateKeyPairSync } from "node:crypto";
 
 test("Play snapshot cannot commit or update and always deletes", async () => {
@@ -19,6 +23,16 @@ test("Play snapshot cannot commit or update and always deletes", async () => {
     if (url.includes("oauth2")) return Response.json({ access_token: "test" });
     if (options.method === "POST") return Response.json({ id: "123" });
     if (options.method === "DELETE") return new Response(null, { status: 204 });
+    if (url.endsWith("/tracks/production/releases"))
+      return Response.json({
+        releases: [
+          {
+            track: "production",
+            releaseLifecycleState: "RELEASE_LIFECYCLE_STATE_PUBLISHED",
+            activeArtifacts: [{ versionCode: 101 }],
+          },
+        ],
+      });
     return Response.json({
       tracks: [
         {
@@ -41,9 +55,11 @@ test("Play snapshot cannot commit or update and always deletes", async () => {
   assert.equal(status.liveVersion, "1.0.11");
   assert.deepEqual(
     calls.map((c) => c[1]),
-    ["POST", "POST", "GET", "DELETE"],
+    ["POST", "POST", "GET", "GET", "DELETE"],
   );
   assert.ok(!calls.some(([url]) => url.includes(":commit")));
+  assert.equal(playReviewBlock(status), null);
+  assert.equal(status.reviewState, "observed-release-lifecycle");
 });
 
 test("Apple histories with READY_FOR_SALE select the numeric newest", async () => {
