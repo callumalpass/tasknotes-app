@@ -247,16 +247,6 @@ msgstr "{0} tracked"
 msgid "{0} You’ll have 30 seconds to undo."
 msgstr "{0} You’ll have 30 seconds to undo."
 
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr "{0}. Drag to move between columns. Use left and right arrow keys."
-
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr "{0}. Drag to move. Use arrow keys to arrange."
-
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
@@ -496,6 +486,7 @@ msgstr "{label} moved."
 msgid "{label} suggestions"
 msgstr "{label} suggestions"
 
+#: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
@@ -908,10 +899,6 @@ msgstr "Adding starter views…"
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
 msgstr "Adding…"
-
-#: src/app/task-detail-properties.tsx
-msgid "Additional properties"
-msgstr "Additional properties"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
@@ -1764,6 +1751,10 @@ msgstr "Contexts, people, dependencies and custom properties"
 msgid "Continue on the timeline"
 msgstr "Continue on the timeline"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Conversion undone"
+msgstr "Conversion undone"
+
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
@@ -1886,10 +1877,6 @@ msgstr "Create a view"
 msgid "Create files ahead"
 msgstr "Create files ahead"
 
-#: src/app/view-editor.tsx
-msgid "Create saved view"
-msgstr "Create saved view"
-
 #: src/components/task-actions.tsx
 msgid "Create subtask"
 msgstr "Create subtask"
@@ -2006,6 +1993,11 @@ msgstr "Days"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Days from today"
+
+#: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
+msgid "Default fields"
+msgstr "Default fields"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2234,6 +2226,14 @@ msgid "Draft task"
 msgstr "Draft task"
 
 #: src/app/views/kanban-view.tsx
+msgid "Drag to move between columns. Use left and right arrow keys."
+msgstr "Drag to move between columns. Use left and right arrow keys."
+
+#: src/app/views/kanban-view.tsx
+msgid "Drag to move. Use arrow keys to arrange."
+msgstr "Drag to move. Use arrow keys to arrange."
+
+#: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
 msgstr "Drop here"
@@ -2301,10 +2301,6 @@ msgstr "Due set"
 msgid "Duplicate"
 msgstr "Duplicate"
 
-#: src/app/view-editor.tsx
-msgid "Duplicate saved view"
-msgstr "Duplicate saved view"
-
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
 msgstr "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
@@ -2354,10 +2350,6 @@ msgstr "Edit reference Markdown"
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "Edit repeating task"
-
-#: src/app/view-editor.tsx
-msgid "Edit saved view"
-msgstr "Edit saved view"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -2473,6 +2465,7 @@ msgid "Extra context for the task"
 msgstr "Extra context for the task"
 
 #: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "Fields shown"
@@ -3257,6 +3250,10 @@ msgstr "More"
 msgid "More actions for {0}"
 msgstr "More actions for {0}"
 
+#: src/app/task-screen.tsx
+msgid "More properties"
+msgstr "More properties"
+
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "More task actions"
@@ -3415,10 +3412,6 @@ msgstr "Moving {0}."
 #: src/i18n/view-presentation.ts
 msgid "Name"
 msgstr "Name"
-
-#: src/app/view-editor-form.tsx
-msgid "Name this view and choose its layout."
-msgstr "Name this view and choose its layout."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Navigation"
@@ -3906,7 +3899,6 @@ msgstr "options"
 msgid "or"
 msgstr "or"
 
-#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
@@ -5062,6 +5054,10 @@ msgstr "Some files could not be read and were omitted from this view."
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "Some note changes are not saved. Keep this page open and try again."
 
+#: src/app/scratchpad-screen.tsx
+msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+msgstr "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "Sort"
@@ -5211,7 +5207,7 @@ msgid "tags"
 msgstr "tags"
 
 #: src/app/search-screen.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5300,7 +5296,6 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "Task not found. It may have been deleted or moved."
 
 #: src/app/task-core-properties.tsx
-#: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "Task properties"
@@ -5704,10 +5699,6 @@ msgstr "Timing"
 msgid "Title"
 msgstr "Title"
 
-#: src/app/view-editor-form.tsx
-msgid "Title only"
-msgstr "Title only"
-
 #: src/app/task-screen.tsx
 msgid "Title required"
 msgstr "Title required"
@@ -5799,6 +5790,10 @@ msgstr "Try tomorrow 9am, #tag, @context, +project."
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Type"
+
+#: src/components/task-capture.tsx
+msgid "Type {example} in the task title."
+msgstr "Type {example} in the task title."
 
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
@@ -5959,9 +5954,9 @@ msgstr "Version {__APP_VERSION__}"
 msgid "Versions of {0}"
 msgstr "Versions of {0}"
 
-#: src/app/view-editor-form.tsx
-msgid "View details"
-msgstr "View details"
+#: src/components/tasknotes-controls.tsx
+msgid "View actions"
+msgstr "View actions"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

@@ -247,16 +247,6 @@ msgstr "{0}を記録しました"
 msgid "{0} You’ll have 30 seconds to undo."
 msgstr "{0}。30秒以内なら元に戻せます。"
 
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr "{0}。ドラッグして列間を移動します。左右の矢印キーも使えます。"
-
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr "{0}。ドラッグして移動します。矢印キーで並べ替えます。"
-
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
@@ -496,6 +486,7 @@ msgstr "{label}を移動しました。"
 msgid "{label} suggestions"
 msgstr "{label}の候補"
 
+#: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
@@ -908,10 +899,6 @@ msgstr "初期ビューを追加中…"
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
 msgstr "追加中…"
-
-#: src/app/task-detail-properties.tsx
-msgid "Additional properties"
-msgstr "追加のプロパティ"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
@@ -1764,6 +1751,10 @@ msgstr "コンテキスト、担当者、依存関係、カスタムプロパテ
 msgid "Continue on the timeline"
 msgstr "タイムラインを続ける"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Conversion undone"
+msgstr "変換を取り消しました"
+
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
@@ -1886,10 +1877,6 @@ msgstr "ビューを作成"
 msgid "Create files ahead"
 msgstr "先の日付のファイルを作成"
 
-#: src/app/view-editor.tsx
-msgid "Create saved view"
-msgstr "保存済みビューを作成"
-
 #: src/components/task-actions.tsx
 msgid "Create subtask"
 msgstr "サブタスクを作成"
@@ -2006,6 +1993,11 @@ msgstr "日数"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "今日からの日数"
+
+#: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
+msgid "Default fields"
+msgstr "既定のフィールド"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2234,6 +2226,14 @@ msgid "Draft task"
 msgstr "タスクの下書き"
 
 #: src/app/views/kanban-view.tsx
+msgid "Drag to move between columns. Use left and right arrow keys."
+msgstr "ドラッグして列間を移動します。左右の矢印キーも使えます。"
+
+#: src/app/views/kanban-view.tsx
+msgid "Drag to move. Use arrow keys to arrange."
+msgstr "ドラッグして移動します。矢印キーで並べ替えられます。"
+
+#: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
 msgstr "ここにドロップ"
@@ -2301,10 +2301,6 @@ msgstr "期限を設定しました"
 msgid "Duplicate"
 msgstr "複製"
 
-#: src/app/view-editor.tsx
-msgid "Duplicate saved view"
-msgstr "保存済みビューを複製"
-
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
 msgstr "各日付は繰り返しタスク上で記録されます。個別のタスクファイルは、必要な場合にのみ作成されます。"
@@ -2354,10 +2350,6 @@ msgstr "参照の Markdown を編集"
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "繰り返しタスクを編集"
-
-#: src/app/view-editor.tsx
-msgid "Edit saved view"
-msgstr "保存済みビューを編集"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -2473,6 +2465,7 @@ msgid "Extra context for the task"
 msgstr "タスクの追加コンテキスト"
 
 #: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "表示するフィールド"
@@ -3257,6 +3250,10 @@ msgstr "その他"
 msgid "More actions for {0}"
 msgstr "{0}のその他の操作"
 
+#: src/app/task-screen.tsx
+msgid "More properties"
+msgstr "その他のプロパティ"
+
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "その他のタスク操作"
@@ -3415,10 +3412,6 @@ msgstr "{0}を移動中。"
 #: src/i18n/view-presentation.ts
 msgid "Name"
 msgstr "名前"
-
-#: src/app/view-editor-form.tsx
-msgid "Name this view and choose its layout."
-msgstr "このビューに名前を付け、レイアウトを選択します。"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Navigation"
@@ -3906,7 +3899,6 @@ msgstr "オプション"
 msgid "or"
 msgstr "または"
 
-#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
@@ -5062,6 +5054,10 @@ msgstr "一部のファイルを読み取れなかったため、このビュー
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "一部のノート変更は保存されていません。このページを開いたまま、もう一度お試しください。"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+msgstr "変換後に変更されたタスクまたはノートがあります。それらは保持され、下書きは復元されませんでした。"
+
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "並べ替え"
@@ -5211,7 +5207,7 @@ msgid "tags"
 msgstr "タグ"
 
 #: src/app/search-screen.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5300,7 +5296,6 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "タスクが見つかりません。削除または移動された可能性があります。"
 
 #: src/app/task-core-properties.tsx
-#: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "タスクのプロパティ"
@@ -5704,10 +5699,6 @@ msgstr "タイミング"
 msgid "Title"
 msgstr "タイトル"
 
-#: src/app/view-editor-form.tsx
-msgid "Title only"
-msgstr "タイトルのみ"
-
 #: src/app/task-screen.tsx
 msgid "Title required"
 msgstr "タイトルが必要です"
@@ -5799,6 +5790,10 @@ msgstr "tomorrow 9am、#tag、@context、+project を試してください。"
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "種類"
+
+#: src/components/task-capture.tsx
+msgid "Type {example} in the task title."
+msgstr "タスクのタイトルに {example} と入力します。"
 
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
@@ -5959,9 +5954,9 @@ msgstr "バージョン {__APP_VERSION__}"
 msgid "Versions of {0}"
 msgstr "「{0}」のバージョン"
 
-#: src/app/view-editor-form.tsx
-msgid "View details"
-msgstr "詳細を表示"
+#: src/components/tasknotes-controls.tsx
+msgid "View actions"
+msgstr "ビューの操作"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

@@ -247,16 +247,6 @@ msgstr "{0} erfasst"
 msgid "{0} You’ll have 30 seconds to undo."
 msgstr "{0} Sie haben 30 Sekunden Zeit, um den Vorgang rückgängig zu machen."
 
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr "{0}. Zum Verschieben zwischen Spalten ziehen. Verwenden Sie die Pfeiltasten nach links und rechts."
-
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr "{0}. Zum Verschieben ziehen. Verwenden Sie zum Anordnen die Pfeiltasten."
-
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
@@ -496,6 +486,7 @@ msgstr "{label} verschoben."
 msgid "{label} suggestions"
 msgstr "Vorschläge für {label}"
 
+#: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
@@ -908,10 +899,6 @@ msgstr "Startansichten werden hinzugefügt…"
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
 msgstr "Wird hinzugefügt…"
-
-#: src/app/task-detail-properties.tsx
-msgid "Additional properties"
-msgstr "Weitere Eigenschaften"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
@@ -1764,6 +1751,10 @@ msgstr "Kontexte, Personen, Abhängigkeiten und benutzerdefinierte Eigenschaften
 msgid "Continue on the timeline"
 msgstr "Auf der Zeitleiste fortfahren"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Conversion undone"
+msgstr "Umwandlung rückgängig gemacht"
+
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
@@ -1886,10 +1877,6 @@ msgstr "Ansicht erstellen"
 msgid "Create files ahead"
 msgstr "Dateien im Voraus erstellen"
 
-#: src/app/view-editor.tsx
-msgid "Create saved view"
-msgstr "Gespeicherte Ansicht erstellen"
-
 #: src/components/task-actions.tsx
 msgid "Create subtask"
 msgstr "Unteraufgabe erstellen"
@@ -2006,6 +1993,11 @@ msgstr "Tage"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Tage ab heute"
+
+#: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
+msgid "Default fields"
+msgstr "Standardfelder"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2234,6 +2226,14 @@ msgid "Draft task"
 msgstr "Aufgabenentwurf"
 
 #: src/app/views/kanban-view.tsx
+msgid "Drag to move between columns. Use left and right arrow keys."
+msgstr "Zum Verschieben zwischen Spalten ziehen. Verwenden Sie die Pfeiltasten nach links und rechts."
+
+#: src/app/views/kanban-view.tsx
+msgid "Drag to move. Use arrow keys to arrange."
+msgstr "Zum Verschieben ziehen. Mit den Pfeiltasten anordnen."
+
+#: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
 msgstr "Hier ablegen"
@@ -2301,10 +2301,6 @@ msgstr "Fälligkeit festgelegt"
 msgid "Duplicate"
 msgstr "Duplizieren"
 
-#: src/app/view-editor.tsx
-msgid "Duplicate saved view"
-msgstr "Gespeicherte Ansicht duplizieren"
-
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
 msgstr "Jedes Datum wird bei der wiederkehrenden Aufgabe erfasst. Eine separate Aufgabendatei wird nur erstellt, wenn Sie dies veranlassen."
@@ -2354,10 +2350,6 @@ msgstr "Markdown der Referenz bearbeiten"
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "Wiederkehrende Aufgabe bearbeiten"
-
-#: src/app/view-editor.tsx
-msgid "Edit saved view"
-msgstr "Gespeicherte Ansicht bearbeiten"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -2473,6 +2465,7 @@ msgid "Extra context for the task"
 msgstr "Zusätzlicher Kontext für die Aufgabe"
 
 #: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "Angezeigte Felder"
@@ -3257,6 +3250,10 @@ msgstr "Mehr"
 msgid "More actions for {0}"
 msgstr "Weitere Aktionen für {0}"
 
+#: src/app/task-screen.tsx
+msgid "More properties"
+msgstr "Weitere Eigenschaften"
+
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "Weitere Aufgabenaktionen"
@@ -3415,10 +3412,6 @@ msgstr "{0} wird verschoben."
 #: src/i18n/view-presentation.ts
 msgid "Name"
 msgstr "Name"
-
-#: src/app/view-editor-form.tsx
-msgid "Name this view and choose its layout."
-msgstr "Benennen Sie diese Ansicht und wählen Sie ihr Layout."
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Navigation"
@@ -3906,7 +3899,6 @@ msgstr "Optionen"
 msgid "or"
 msgstr "oder"
 
-#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
@@ -5062,6 +5054,10 @@ msgstr "Einige Dateien konnten nicht gelesen werden und wurden in dieser Ansicht
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "Einige Notizänderungen sind nicht gespeichert. Lassen Sie diese Seite geöffnet und versuchen Sie es erneut."
 
+#: src/app/scratchpad-screen.tsx
+msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+msgstr "Einige Aufgaben oder Notizen wurden nach der Umwandlung geändert. Sie wurden beibehalten; ihre Entwürfe wurden nicht wiederhergestellt."
+
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "Sortieren"
@@ -5211,7 +5207,7 @@ msgid "tags"
 msgstr "Tags"
 
 #: src/app/search-screen.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5300,7 +5296,6 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "Aufgabe nicht gefunden. Sie wurde möglicherweise gelöscht oder verschoben."
 
 #: src/app/task-core-properties.tsx
-#: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "Aufgabeneigenschaften"
@@ -5704,10 +5699,6 @@ msgstr "Zeitplanung"
 msgid "Title"
 msgstr "Titel"
 
-#: src/app/view-editor-form.tsx
-msgid "Title only"
-msgstr "Nur Titel"
-
 #: src/app/task-screen.tsx
 msgid "Title required"
 msgstr "Titel erforderlich"
@@ -5799,6 +5790,10 @@ msgstr "Versuchen Sie tomorrow 9am, #tag, @context, +project."
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "Typ"
+
+#: src/components/task-capture.tsx
+msgid "Type {example} in the task title."
+msgstr "Geben Sie {example} im Aufgabentitel ein."
 
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
@@ -5959,9 +5954,9 @@ msgstr "Version {__APP_VERSION__}"
 msgid "Versions of {0}"
 msgstr "Versionen von {0}"
 
-#: src/app/view-editor-form.tsx
-msgid "View details"
-msgstr "Ansichtsdetails"
+#: src/components/tasknotes-controls.tsx
+msgid "View actions"
+msgstr "Ansichtsaktionen"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

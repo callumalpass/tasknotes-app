@@ -247,16 +247,6 @@ msgstr "已记录 {0}"
 msgid "{0} You’ll have 30 seconds to undo."
 msgstr "{0} 你有 30 秒可以撤销。"
 
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move between columns. Use left and right arrow keys."
-msgstr "{0}。拖动可在列之间移动。使用左右方向键。"
-
-#. placeholder {0}: row.task.title
-#: src/app/views/kanban-view.tsx
-msgid "{0}. Drag to move. Use arrow keys to arrange."
-msgstr "{0}。拖动以移动。使用方向键调整顺序。"
-
 #. placeholder {0}: linkLabel[0].toUpperCase()
 #. placeholder {1}: linkLabel.slice(1)
 #: src/components/task-record-file.tsx
@@ -496,6 +486,7 @@ msgstr "{label} 已移动。"
 msgid "{label} suggestions"
 msgstr "{label} 建议"
 
+#: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
@@ -908,10 +899,6 @@ msgstr "正在添加初始视图…"
 #: src/app/scratchpad-screen.tsx
 msgid "Adding…"
 msgstr "正在添加…"
-
-#: src/app/task-detail-properties.tsx
-msgid "Additional properties"
-msgstr "其他属性"
 
 #: src/app/views/starter-views-offer.tsx
 msgid "Adds missing Today, Upcoming, Calendar, Projects, Archive, and Inbox views. Existing files and navigation choices stay unchanged."
@@ -1764,6 +1751,10 @@ msgstr "情境、人员、依赖关系和自定义属性"
 msgid "Continue on the timeline"
 msgstr "沿时间线继续"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Conversion undone"
+msgstr "已撤销转换"
+
 #. placeholder {0}: node.text || uiCopy("empty task")
 #: src/app/scratchpad-screen.tsx
 msgid "Convert {0} to note"
@@ -1886,10 +1877,6 @@ msgstr "创建视图"
 msgid "Create files ahead"
 msgstr "提前创建文件"
 
-#: src/app/view-editor.tsx
-msgid "Create saved view"
-msgstr "创建已保存视图"
-
 #: src/components/task-actions.tsx
 msgid "Create subtask"
 msgstr "创建子任务"
@@ -2006,6 +1993,11 @@ msgstr "天"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "距今天数"
+
+#: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
+msgid "Default fields"
+msgstr "默认字段"
 
 #: src/app/more-screen.tsx
 msgid "Default mode for new notes"
@@ -2234,6 +2226,14 @@ msgid "Draft task"
 msgstr "任务草稿"
 
 #: src/app/views/kanban-view.tsx
+msgid "Drag to move between columns. Use left and right arrow keys."
+msgstr "拖动可在列之间移动。可使用左右方向键。"
+
+#: src/app/views/kanban-view.tsx
+msgid "Drag to move. Use arrow keys to arrange."
+msgstr "拖动可移动。可使用方向键排列。"
+
+#: src/app/views/kanban-view.tsx
 #: src/app/views/task-list-view.tsx
 msgid "Drop here"
 msgstr "放到这里"
@@ -2301,10 +2301,6 @@ msgstr "已设置截止日期"
 msgid "Duplicate"
 msgstr "复制"
 
-#: src/app/view-editor.tsx
-msgid "Duplicate saved view"
-msgstr "复制已保存的视图"
-
 #: src/components/task-model-settings.tsx
 msgid "Each date is tracked on the repeating task. A separate task file is created only when you ask for one."
 msgstr "每个日期都会记录在重复任务中。只有在你请求时，才会单独创建任务文件。"
@@ -2354,10 +2350,6 @@ msgstr "编辑引用 Markdown"
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "编辑重复任务"
-
-#: src/app/view-editor.tsx
-msgid "Edit saved view"
-msgstr "编辑已保存的视图"
 
 #: src/app/views-screen.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -2473,6 +2465,7 @@ msgid "Extra context for the task"
 msgstr "任务的补充上下文"
 
 #: src/app/view-editor-form.tsx
+#: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
 msgid "Fields shown"
 msgstr "显示的字段"
@@ -3257,6 +3250,10 @@ msgstr "更多"
 msgid "More actions for {0}"
 msgstr "{0}的更多操作"
 
+#: src/app/task-screen.tsx
+msgid "More properties"
+msgstr "更多属性"
+
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "更多任务操作"
@@ -3415,10 +3412,6 @@ msgstr "正在移动 {0}。"
 #: src/i18n/view-presentation.ts
 msgid "Name"
 msgstr "名称"
-
-#: src/app/view-editor-form.tsx
-msgid "Name this view and choose its layout."
-msgstr "为此视图命名并选择布局。"
 
 #: src/app/keyboard-shortcuts.ts
 msgid "Navigation"
@@ -3906,7 +3899,6 @@ msgstr "选项"
 msgid "or"
 msgstr "或"
 
-#: src/app/task-screen.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
 msgid "Organize"
@@ -5062,6 +5054,10 @@ msgstr "部分文件无法读取，已从此视图中排除。"
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "部分笔记更改尚未保存。请保持此页面打开并重试。"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+msgstr "部分任务或笔记在转换后已更改。它们已保留,其草稿未恢复。"
+
 #: src/app/view-editor-form.tsx
 msgid "Sort"
 msgstr "排序"
@@ -5211,7 +5207,7 @@ msgid "tags"
 msgstr "标签"
 
 #: src/app/search-screen.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5300,7 +5296,6 @@ msgid "Task not found. It may have been deleted or moved."
 msgstr "未找到任务。它可能已被删除或移动。"
 
 #: src/app/task-core-properties.tsx
-#: src/app/task-detail-properties.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "任务属性"
@@ -5704,10 +5699,6 @@ msgstr "计时"
 msgid "Title"
 msgstr "标题"
 
-#: src/app/view-editor-form.tsx
-msgid "Title only"
-msgstr "仅标题"
-
 #: src/app/task-screen.tsx
 msgid "Title required"
 msgstr "必须填写标题"
@@ -5799,6 +5790,10 @@ msgstr "试试 tomorrow 9am、#tag、@context、+project。"
 #: src/components/reminder-editor.tsx
 msgid "Type"
 msgstr "类型"
+
+#: src/components/task-capture.tsx
+msgid "Type {example} in the task title."
+msgstr "在任务标题中输入 {example}。"
 
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
@@ -5959,9 +5954,9 @@ msgstr "版本 {__APP_VERSION__}"
 msgid "Versions of {0}"
 msgstr "{0}的版本"
 
-#: src/app/view-editor-form.tsx
-msgid "View details"
-msgstr "查看详情"
+#: src/components/tasknotes-controls.tsx
+msgid "View actions"
+msgstr "视图操作"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"
