@@ -35,11 +35,6 @@
   .view-detail.is-agenda-default > .view-header {
     margin-bottom: 4px;
   }
-  .view-detail.is-agenda-default .full-calendar-view.is-agenda .tnc-strip-day {
-    min-height: 60px;
-    padding-block: 2px;
-    gap: 0;
-  }
   .view-detail.is-agenda-default .tnc-strip {
     z-index: 4;
     top: 0;

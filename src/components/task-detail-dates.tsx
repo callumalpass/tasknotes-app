@@ -18,9 +18,11 @@ import "./task-detail-dates.css";
 type DateTarget = "scheduled" | "due";
 
 export function TaskDetailDates({
+  compact = false,
   draft,
   onChange,
 }: {
+  compact?: boolean;
   draft: Pick<Draft, DateTarget>;
   onChange(patch: Partial<Draft>): void;
 }) {
@@ -54,10 +56,13 @@ export function TaskDetailDates({
               >
                 <CalendarDays aria-hidden="true" size={16} strokeWidth={1.65} />
                 <span className={date ? undefined : "is-placeholder"}>
-                  {date ? formatTaskDate(date) : t`No date`}
+                  {compact ? `${label}: ` : ""}
+                  {date
+                    ? formatTaskDate(compact ? draft[field]! : date)
+                    : t`No date`}
                 </span>
               </button>
-              {date ? (
+              {date && !compact ? (
                 <TaskNotesTimePicker
                   ariaLabel={t`${label} time`}
                   value={taskTimePart(draft[field]) || undefined}
@@ -74,6 +79,7 @@ export function TaskDetailDates({
         <TaskDatePopover
           key={target}
           draft={draft}
+          showTime={compact}
           target={target}
           trigger={trigger}
           onClose={() => setTarget(null)}
@@ -94,6 +100,7 @@ export function TaskDetailDates({
 export function TaskDatePopover({
   draft,
   planOnly = false,
+  showTime = false,
   target,
   title,
   trigger,
@@ -102,6 +109,7 @@ export function TaskDatePopover({
 }: {
   draft: Pick<Draft, DateTarget>;
   planOnly?: boolean;
+  showTime?: boolean;
   target: DateTarget;
   title?: string;
   trigger: RefObject<HTMLElement | null>;
@@ -190,6 +198,7 @@ export function TaskDatePopover({
           busy={false}
           initialTarget={target}
           planOnly={planOnly}
+          showTime={showTime}
           task={draft}
           onApply={onApply}
         />

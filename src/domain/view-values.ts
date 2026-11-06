@@ -19,6 +19,20 @@ export interface ViewPropertyDetail {
   description?: string;
 }
 
+export function resolvedViewProperties(
+  properties: readonly TaskViewProperty[],
+): readonly TaskViewProperty[] {
+  return properties.length
+    ? properties
+    : [
+        { key: "note.scheduled" },
+        { key: "note.due" },
+        { key: "note.priority" },
+        { key: "note.status" },
+        { key: "note.projects" },
+      ];
+}
+
 export function viewPropertyDetails(
   row: TaskViewRow,
   properties: readonly TaskViewProperty[],
@@ -32,15 +46,19 @@ export function viewPropertyDetails(
     occurrence?: TaskOccurrence;
   } = {},
 ): ViewPropertyDetail[] | undefined {
-  if (!properties.length) return undefined;
-  return properties.flatMap((property) => {
+  return resolvedViewProperties(properties).flatMap((property) => {
     if (
       property.hidden ||
       omittedProperties.includes(property.key) ||
       (identityProperty && isIdentityProperty(property.key, identityProperty))
     )
       return [];
-    const value = viewPropertyValue(row, property.key, occurrence);
+    const field = notePropertyName(property.key) ?? property.key;
+    const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
+    const value =
+      !properties.length && field in displayed
+        ? displayed[field as keyof TaskSummary]
+        : viewPropertyValue(row, property.key, occurrence);
     if (isNullTaskOption(property.key, value)) return [];
     const formatted = formatPropertyValue(value, property.format);
     return formatted === null

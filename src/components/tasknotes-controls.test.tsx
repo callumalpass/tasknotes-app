@@ -79,6 +79,9 @@ it("offers view actions in the existing switcher and returns focus before openin
   const trigger = screen.getByRole("combobox", { name: "Saved view" });
   fireEvent.click(trigger);
   expect(screen.getByRole("option", { name: "Today" })).toHaveFocus();
+  expect(screen.getByRole("group", { name: "View actions" })).toContainElement(
+    screen.getByRole("button", { name: "Layout" }),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Layout" }));
   expect(edit).toHaveBeenCalledOnce();
   expect(trigger).toHaveFocus();

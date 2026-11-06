@@ -76,10 +76,6 @@
   background: var(--paper-soft);
 }
 
-.task-row.has-missed-deadline .task-row-content {
-  box-shadow: -2px 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
-}
-
 .task-actions-trigger {
   display: grid;
   place-items: center;
@@ -245,7 +241,7 @@
   color: var(--ink);
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   box-shadow: 0 12px 30px var(--color-shadow-soft);
   transform-origin: top right;
   animation: motion-pop-in var(--motion-enter) var(--ease-out);
@@ -529,10 +525,8 @@
   font-size: 12px;
 }
 .quick-action-tooltip {
-  position: absolute;
-  z-index: 2;
-  top: 100%;
-  left: 0;
+  position: fixed;
+  z-index: 1000;
   width: max-content;
   max-width: min(240px, calc(100vw - 32px));
   white-space: normal;
@@ -545,12 +539,6 @@
   border-radius: 6px;
   box-shadow: 0 2px 8px var(--color-shadow);
   pointer-events: none;
-  visibility: hidden;
-}
-.task-actions-quick-row
-  button:is(:hover, :focus-visible)
-  .quick-action-tooltip {
-  visibility: visible;
 }
 
 .task-actions-items .task-actions-quick-row button {

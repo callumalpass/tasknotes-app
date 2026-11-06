@@ -37,6 +37,8 @@ import { useRepository } from "./repository-context";
 import type { TaskView, TaskViewSourceDocument } from "../domain/view";
 import type { TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import { resolvedViewProperties } from "../domain/view-values";
+import { propertyLabel } from "../i18n/view-presentation";
 
 const ViewEditorForm = lazy(async () => ({
   default: (await loadViewEditorForm()).ViewEditorForm,
@@ -296,13 +298,6 @@ export function ViewEditor({
       >
         <header className="view-editor-header">
           <div>
-            <p className="eyebrow">
-              {duplicate
-                ? t({ message: "Duplicate saved view" })
-                : view
-                  ? t({ message: "Edit saved view" })
-                  : t({ message: "Create saved view" })}
-            </p>
             <h1 id="view-editor-title">{title}</h1>
           </div>
           <button
@@ -326,7 +321,7 @@ export function ViewEditor({
             <ViewEditorLoading />
           ) : (
             <Suspense fallback={<ViewEditorLoading />}>
-              <ViewPreview preview={preview} />
+              <ViewPreview preview={preview} draft={draft} />
               <ViewEditorForm
                 initialSection={initialSection}
                 autoFocusName={!view || duplicate}
@@ -395,7 +390,13 @@ export function ViewEditor({
   );
 }
 
-function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
+function ViewPreview({
+  preview,
+  draft,
+}: {
+  preview: ViewDraftPreview;
+  draft: EditableViewDraft;
+}) {
   const { t } = useLingui();
   return (
     <details className="view-draft-preview">
@@ -404,6 +405,12 @@ function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
         <span aria-live="polite">{previewLabel(preview)}</span>
         <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </summary>
+      <p className="view-preview-fields">
+        {draft.properties.length ? t`Fields shown` : t`Default fields`}:{" "}
+        {resolvedViewProperties(draft.properties.map((key) => ({ key })))
+          .map(({ key }) => propertyLabel(key))
+          .join(", ")}
+      </p>
       {preview.tasks.length ? (
         <ol aria-label={t({ message: "Preview tasks" })}>
           {preview.tasks.map((task) => (

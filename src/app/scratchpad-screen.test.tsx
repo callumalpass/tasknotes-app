@@ -691,18 +691,9 @@ describe("ScratchpadScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Write" }));
     await screen.findByRole("textbox", { name: "Scratchpad Markdown" });
     fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
-    const dialog = await screen.findByRole("dialog", {
-      name: "Create tasks",
-    });
-    expect(
-      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
-    ).not.toBeChecked();
-    fireEvent.click(
-      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
-    );
-    expect(
-      within(dialog).getByRole("checkbox", { name: "Portable draft" }),
-    ).toBeChecked();
+    await screen.findByText("Created “Portable draft”");
+    expect(screen.queryByRole("dialog", { name: "Create tasks" })).toBeNull();
+    expect((await repository.getActiveScratchpad()).body).toContain("[[tasks/");
     expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -1286,7 +1277,82 @@ describe("ScratchpadScreen", () => {
     });
   });
 
-  it("suspends a pending autosave as soon as reviewed conversion begins", async () => {
+  it.each([false, true])(
+    "safely undoes a single conversion with later task edits: %s",
+    async (changed) => {
+      const create = vi.spyOn(repository, "create");
+      renderScratchpad();
+      const input = await screen.findByRole("textbox", {
+        name: "Draft task: empty",
+      });
+      fireEvent.change(input, { target: { value: "Recover this draft" } });
+      fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+      await screen.findByText("Created “Recover this draft”");
+      expect(screen.queryByRole("dialog", { name: "Create tasks" })).toBeNull();
+      const created = await create.mock.results[0]!.value;
+      if (changed)
+        await act(async () => {
+          await repository.update(created.id, {
+            title: "Edited after conversion",
+          });
+        });
+      const continuation = screen.getByRole("textbox", {
+        name: "Draft task: empty",
+      });
+      fireEvent.change(continuation, { target: { value: "Later note edit" } });
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      await screen.findByText(
+        changed
+          ? "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+          : "Conversion undone",
+      );
+      const current = await repository.get(created.id);
+      const note = await repository.getActiveScratchpad();
+      expect(note.body).toContain("Later note edit");
+      if (changed) {
+        expect(current?.title).toBe("Edited after conversion");
+        expect(note.body).toContain("[[tasks/");
+        expect(
+          screen.queryByRole("textbox", {
+            name: "Draft task: Recover this draft",
+          }),
+        ).toBeNull();
+      } else {
+        expect(current).toBeNull();
+        expect(note.body).toContain("Recover this draft");
+        expect(note.body).not.toContain("[[tasks/");
+        expect(
+          screen.getByRole("textbox", {
+            name: "Draft task: Recover this draft",
+          }),
+        ).toBeVisible();
+      }
+    },
+  );
+
+  it("creates a fresh task when a restored draft is converted again", async () => {
+    const create = vi.spyOn(repository, "create");
+    renderScratchpad();
+    const input = await screen.findByRole("textbox", {
+      name: "Draft task: empty",
+    });
+    fireEvent.change(input, { target: { value: "Convert again" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    await screen.findByText("Created “Convert again”");
+    const first = await create.mock.results[0]!.value;
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await screen.findByText("Conversion undone");
+    expect(await repository.get(first.id)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    await screen.findByText("Created “Convert again”");
+    const second = await create.mock.results[1]!.value;
+    expect(second.id).not.toBe(first.id);
+    expect(await repository.get(second.id)).toMatchObject({
+      title: "Convert again",
+    });
+  });
+
+  it("suspends a pending autosave as soon as single-draft conversion begins", async () => {
     const saveScratchpad = vi.spyOn(repository, "saveScratchpad");
     const create = repository.create.bind(repository);
     let releaseCreate!: () => void;
@@ -1306,7 +1372,6 @@ describe("ScratchpadScreen", () => {
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: "Plan launch" } });
     fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create 1 task" }));
 
     await act(async () => vi.advanceTimersByTimeAsync(320));
     const savesBeforeRelease = saveScratchpad.mock.calls.length;
@@ -1314,7 +1379,7 @@ describe("ScratchpadScreen", () => {
     expect(savesBeforeRelease).toBe(0);
 
     releaseCreate();
-    await screen.findByText("Created 1 task");
+    await screen.findByText("Created “Plan launch”");
     expect((await repository.getActiveScratchpad()).body).toContain("[[tasks/");
   });
 });

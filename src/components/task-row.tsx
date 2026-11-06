@@ -257,6 +257,7 @@ export function TaskRow({
     configuration,
   ).sort(
     (first, second) =>
+      Number(Boolean(second.overdue)) - Number(Boolean(first.overdue)) ||
       detailRank(first, configuration) - detailRank(second, configuration),
   );
   const statusColor = distinctStatus ? status?.color : undefined;

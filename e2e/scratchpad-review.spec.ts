@@ -10,6 +10,15 @@ test("Scratchpad review owns focus and isolates the background", async ({
     exact: true,
   });
   await input.fill("Review focus regression");
+  await page
+    .getByRole("textbox", {
+      name: "Draft task: Review focus regression",
+      exact: true,
+    })
+    .press("Enter");
+  await page
+    .getByRole("textbox", { name: "Draft task: empty", exact: true })
+    .fill("Another draft for review");
   const draft = page.getByRole("textbox", {
     name: "Draft task: Review focus regression",
     exact: true,

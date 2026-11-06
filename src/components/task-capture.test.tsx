@@ -90,11 +90,11 @@ it("shows every shorthand kind only while an empty capture is focused", () => {
   expect(screen.getByRole("button", { name: "Status" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Priority" })).toHaveAttribute(
     "title",
-    "!Priority",
+    "Type !low in the task title.",
   );
   expect(screen.getByRole("button", { name: "Status" })).toHaveAttribute(
     "title",
-    "*Status",
+    "Type *in-progress in the task title.",
   );
   fireEvent.change(input, { target: { value: "A draft" } });
   expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();

@@ -6,6 +6,7 @@ import {
   relativeDateDetail,
   propertyLabel,
   viewPropertyDetails,
+  resolvedViewProperties,
 } from "./view-values";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
@@ -53,6 +54,28 @@ const row: TaskViewRow = {
 };
 
 describe("saved-view values", () => {
+  it("resolves the same useful empty-configuration fields for every layout", () => {
+    expect(resolvedViewProperties([]).map(({ key }) => key)).toEqual([
+      "note.scheduled",
+      "note.due",
+      "note.priority",
+      "note.status",
+      "note.projects",
+    ]);
+    const explicit = [{ key: "note.contexts" }];
+    expect(resolvedViewProperties(explicit)).toBe(explicit);
+    expect(
+      viewPropertyDetails(row, [])?.map(({ key, rawValue }) => ({
+        key,
+        rawValue,
+      })),
+    ).toEqual([
+      { key: "note.due", rawValue: task.due },
+      { key: "note.priority", rawValue: task.priority },
+      { key: "note.status", rawValue: task.status },
+      { key: "note.projects", rawValue: task.projects },
+    ]);
+  });
   it("omits the task identity while preserving configured property order", () => {
     expect(
       viewPropertyDetails(

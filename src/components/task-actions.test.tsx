@@ -44,6 +44,26 @@ describe("TaskActions", () => {
     );
   }
 
+  it("mounts quick-action tooltips outside the scrolling menu only while active", async () => {
+    task = await repository.update(task.id, { scheduled: todayString() });
+    renderRow();
+    await openMenu();
+    const action = screen.getByRole("menuitem", {
+      name: "Clear scheduled date",
+    });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.mouseEnter(action);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.parentElement).toBe(document.body);
+    expect(tooltip).toHaveTextContent("Clear scheduled date");
+    fireEvent.mouseLeave(action);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.focus(action);
+    expect(screen.getByRole("tooltip")).toBeVisible();
+    fireEvent.blur(action);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("copies the task's wikilink and path from the Copy submenu", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

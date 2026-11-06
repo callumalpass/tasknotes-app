@@ -37,6 +37,36 @@ vi.mock("./task-property-editor", () => ({
   TaskPropertyEditor: () => <div role="dialog">Edit property</div>,
 }));
 afterEach(cleanup);
+
+it("leads metadata with a missed deadline rather than its routine scheduled date", () => {
+  render(
+    <TaskRow
+      task={{ ...task, due: "2020-01-02", scheduled: "2020-01-01" }}
+      details={[
+        {
+          key: "scheduled",
+          label: "Scheduled",
+          value: "2020-01-01",
+          rawValue: "2020-01-01",
+        },
+        {
+          key: "due",
+          label: "Due",
+          value: "2020-01-02",
+          rawValue: "2020-01-02",
+        },
+      ]}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  const properties = document.querySelectorAll(".task-row-property");
+  expect(properties[0]).toHaveAttribute(
+    "aria-label",
+    expect.stringContaining("Due:"),
+  );
+  expect(properties[0]).toHaveClass("is-overdue");
+});
 it("keeps priority ink supporting while preserving the collection colour on its flag", () => {
   render(
     <TaskRow

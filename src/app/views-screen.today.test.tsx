@@ -21,6 +21,28 @@ import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskView } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
 
+it("puts Today first and links directly to the expanded overdue section", async () => {
+  renderToday(
+    repository([
+      task("late", "Late", { scheduled: shiftTaskDate(todayString(), -1) }),
+      task("current", "Current", { scheduled: todayString() }),
+    ]),
+  );
+  const link = await screen.findByRole("link", { name: "1 overdue" });
+  const sections = document.querySelectorAll(".task-section");
+  expect(sections[0]).toHaveAttribute("data-list-lane", "section:today");
+  expect(sections[1]).toHaveAttribute("data-list-lane", "section:overdue");
+  const overdue = screen.getByRole("button", { name: "Overdue 1" });
+  fireEvent.click(overdue);
+  expect(overdue).toHaveAttribute("aria-expanded", "false");
+  const scroll = vi.fn();
+  sections[1]!.scrollIntoView = scroll;
+  fireEvent.click(link);
+  expect(overdue).toHaveAttribute("aria-expanded", "true");
+  expect(overdue).toHaveFocus();
+  expect(scroll).toHaveBeenCalled();
+});
+
 it("moves every overdue task to today in one batch and offers Undo", async () => {
   const today = todayString();
   const tasks: Task[] = [
@@ -113,7 +135,9 @@ it("schedules overdue work for another day and names moved deadlines in its undo
   fireEvent.change(typed, { target: { value: date } });
   await screen.findByText(/^Enter to set/);
   fireEvent.keyDown(typed, { key: "Enter" });
-  fireEvent.click(await screen.findByRole("button", { name: "Move due dates too" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Move due dates too" }),
+  );
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${date}T09:30`, due: date } },

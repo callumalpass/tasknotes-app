@@ -31,6 +31,7 @@ import {
   suggestedFilterAndSortFields,
 } from "../domain/view-document";
 import { isManualOrderProperty } from "../domain/manual-order";
+import { resolvedViewProperties } from "../domain/view-values";
 import {
   field,
   fieldOptions,
@@ -116,8 +117,11 @@ export function ViewEditorForm({
   useEffect(() => {
     onComputedValidityChange(!computedError);
   }, [computedError, onComputedValidityChange]);
-  const selectedFields = draft.properties.map(
-    (key) =>
+  const displayedProperties = resolvedViewProperties(
+    draft.properties.map((key) => ({ key })),
+  );
+  const selectedFields = displayedProperties.map(
+    ({ key }) =>
       fields.find((candidate) => candidate.key === key) ??
       field(key, humanize(key)),
   );
@@ -315,18 +319,24 @@ export function ViewEditorForm({
                 <Trans>Shown in this order below each item.</Trans>
               </p>
             </div>
-            <span className="view-editor-count">{draft.properties.length}</span>
+            <span className="view-editor-count">{selectedFields.length}</span>
           </div>
           <PropertyOrder
             fields={selectedFields}
             onMove={(from, to) =>
-              patch({ properties: move(draft.properties, from, to) })
+              patch({
+                properties: move(
+                  displayedProperties.map(({ key }) => key),
+                  from,
+                  to,
+                ),
+              })
             }
             onRemove={(index) =>
               patch({
-                properties: draft.properties.filter(
-                  (_, candidate) => candidate !== index,
-                ),
+                properties: displayedProperties
+                  .map(({ key }) => key)
+                  .filter((_, candidate) => candidate !== index),
               })
             }
           />
@@ -341,12 +351,17 @@ export function ViewEditorForm({
             <button
               disabled={
                 !propertyInput.trim() ||
-                draft.properties.includes(propertyInput.trim())
+                displayedProperties.some(
+                  ({ key }) => key === propertyInput.trim(),
+                )
               }
               type="button"
               onClick={() => {
                 patch({
-                  properties: [...draft.properties, propertyInput.trim()],
+                  properties: [
+                    ...displayedProperties.map(({ key }) => key),
+                    propertyInput.trim(),
+                  ],
                 });
                 setPropertyInput("");
               }}
@@ -624,15 +639,7 @@ function ViewIdentitySection({
     layouts.find((layout) => layout.value === draft.renderer)?.label ??
     draft.renderer;
   return (
-    <section className="view-identity" aria-labelledby="view-identity-title">
-      <div className="view-identity-heading">
-        <h2 id="view-identity-title">
-          <Trans>View details</Trans>
-        </h2>
-        <p>
-          <Trans>Name this view and choose its layout.</Trans>
-        </p>
-      </div>
+    <section className="view-identity">
       <label className="view-name-field">
         <span>
           <Trans>View name</Trans>
@@ -1223,7 +1230,7 @@ function groupSortSummary(draft: EditableViewDraft): string {
 function fieldsSummary(draft: EditableViewDraft): string {
   return draft.properties.length
     ? countLabel(draft.properties.length, "field")
-    : t({ message: "Title only" });
+    : t({ message: "Default fields" });
 }
 
 function calendarSummary(draft: EditableViewDraft): string {

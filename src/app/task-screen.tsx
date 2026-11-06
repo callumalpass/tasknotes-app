@@ -21,6 +21,7 @@ import {
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
 import { TaskDetailProperties } from "./task-detail-properties";
+import { TaskCoreProperties, InlineList } from "./task-core-properties";
 import { TaskSubtasks } from "./task-subtasks";
 import { useTaskDetailKeys } from "./use-task-detail-keys";
 import { markedPriorityColorOf } from "../domain/task-configuration";
@@ -67,7 +68,6 @@ import {
 } from "./task-editor-layout";
 import {
   formatOccurrenceDate,
-  organizeSummary,
   repeatSummary,
   timeSummary,
   toDraft,
@@ -1106,9 +1106,7 @@ function TaskEditor({
           </p>
         ) : null}
 
-        <TaskDetailProperties
-          task={task}
-          occurrenceDate={occurrenceDate}
+        <TaskCoreProperties
           draft={draft}
           configuration={configuration}
           projectLabels={projectLabels}
@@ -1117,47 +1115,6 @@ function TaskEditor({
           completeField={completeField}
           onChange={change}
         />
-
-        <TaskFormSection
-          summary={organizeSummary(draft, false)}
-          title={t({ message: "Organize" })}
-        >
-          <div className="field-grid metadata-fields">
-            <ListField
-              field={configuration.fieldMapping.contexts}
-              label={t({ message: "Contexts" })}
-              placeholder={t({ message: "Computer, Errands" })}
-              values={draft.contexts}
-              completion={
-                configuration.fieldCompletions[
-                  configuration.fieldMapping.contexts
-                ] ?? { kind: "values" }
-              }
-              completeField={completeField}
-              onChange={(contexts) => change({ contexts })}
-            />
-          </div>
-          <AssigneeEditor
-            taskId={task.id}
-            linkWriteFormat={configuration.linkWriteFormat}
-            values={draft.assignees ?? []}
-            onChange={(assignees) => change({ assignees })}
-          />
-          <DependencyEditor
-            completeField={completeDependencyField}
-            dependencies={draft.blockedBy}
-            field={configuration.fieldMapping.blockedBy}
-            labels={
-              new Map(
-                relationships.blockedBy.flatMap(({ dependency, task }) =>
-                  task ? [[dependency.uid, task.title] as const] : [],
-                ),
-              )
-            }
-            onChange={(blockedBy) => change({ blockedBy })}
-          />
-          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
-        </TaskFormSection>
 
         <section className="notes-field">
           <header className="notes-field-heading">
@@ -1251,75 +1208,131 @@ function TaskEditor({
           />
         ) : null}
 
-        <TaskFormSection
-          defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
-          summary={timeSummary(task, draft.timeEstimate)}
-          title={t({ message: "Time", context: "time tracking duration" })}
-        >
-          <label className="form-field time-estimate-field">
-            <span>
-              <Trans>Estimate (minutes)</Trans>
-            </span>
-            <input
-              inputMode="numeric"
-              min="0"
-              type="number"
-              value={draft.timeEstimate ?? ""}
-              onChange={(event) =>
-                change({
-                  timeEstimate: event.target.value
-                    ? Number(event.target.value)
-                    : undefined,
-                })
+        <TaskFormSection title={t({ message: "More properties" })} summary="">
+          <InlineList
+            label={t({ message: "Tags" })}
+            values={draft.tags.filter((tag) => tag !== "task")}
+            field="tags"
+            completion={
+              configuration.fieldCompletions.tags ?? { kind: "values" }
+            }
+            completeField={completeField}
+            onChange={(tags) => change({ tags: ["task", ...tags] })}
+          />
+          <ListField
+            field={configuration.fieldMapping.contexts}
+            label={t({ message: "Contexts" })}
+            placeholder={t({ message: "Computer, Errands" })}
+            values={draft.contexts}
+            completion={
+              configuration.fieldCompletions[
+                configuration.fieldMapping.contexts
+              ] ?? { kind: "values" }
+            }
+            completeField={completeField}
+            onChange={(contexts) => change({ contexts })}
+          />
+          <AssigneeEditor
+            taskId={task.id}
+            linkWriteFormat={configuration.linkWriteFormat}
+            values={draft.assignees ?? []}
+            onChange={(assignees) => change({ assignees })}
+          />
+          <DependencyEditor
+            completeField={completeDependencyField}
+            dependencies={draft.blockedBy}
+            field={configuration.fieldMapping.blockedBy}
+            labels={
+              new Map(
+                relationships.blockedBy.flatMap(({ dependency, task }) =>
+                  task ? [[dependency.uid, task.title] as const] : [],
+                ),
+              )
+            }
+            onChange={(blockedBy) => change({ blockedBy })}
+          />
+          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
+          <TaskDetailProperties
+            draft={draft}
+            configuration={configuration}
+            projectLabels={projectLabels}
+            occurrenceNote={Boolean(task.occurrenceDate)}
+            seriesDates={Boolean(occurrenceDate && draft.recurrence)}
+            completeField={completeField}
+            onChange={change}
+          />
+          <TaskFormSection
+            defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
+            summary={timeSummary(task, draft.timeEstimate)}
+            title={t({ message: "Time", context: "time tracking duration" })}
+          >
+            <label className="form-field time-estimate-field">
+              <span>
+                <Trans>Estimate (minutes)</Trans>
+              </span>
+              <input
+                inputMode="numeric"
+                min="0"
+                type="number"
+                value={draft.timeEstimate ?? ""}
+                onChange={(event) =>
+                  change({
+                    timeEstimate: event.target.value
+                      ? Number(event.target.value)
+                      : undefined,
+                  })
+                }
+              />
+            </label>
+            <TimeTrackingField
+              busy={timeAction}
+              entries={task.timeEntries}
+              error={timeError}
+              onRemove={(index) =>
+                runTimeAction(() => removeTimeEntry(task.id, index))
               }
+              onReplace={(entries) =>
+                runTimeAction(() => replaceTimeEntries(task.id, entries))
+              }
+              onStart={(description) =>
+                runTimeAction(() => startTimeTracking(task.id, description))
+              }
+              onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
             />
-          </label>
-          <TimeTrackingField
-            busy={timeAction}
-            entries={task.timeEntries}
-            error={timeError}
-            onRemove={(index) =>
-              runTimeAction(() => removeTimeEntry(task.id, index))
-            }
-            onReplace={(entries) =>
-              runTimeAction(() => replaceTimeEntries(task.id, entries))
-            }
-            onStart={(description) =>
-              runTimeAction(() => startTimeTracking(task.id, description))
-            }
-            onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
-          />
-        </TaskFormSection>
+          </TaskFormSection>
 
-        <TaskFormSection
-          summary={repeatSummary(draft)}
-          title={t({ message: "Repeat and reminders" })}
-        >
-          <RecurrenceField
-            anchor={draft.recurrenceAnchor}
-            scheduled={draft.scheduled}
-            due={draft.due}
-            value={draft.recurrence}
-            onAnchorChange={(recurrenceAnchor) => change({ recurrenceAnchor })}
-            onChange={(recurrence) => change({ recurrence })}
-          />
-          {draft.recurrence && !task.occurrenceDate ? (
-            <OccurrencePolicyField
-              futureHorizon={draft.occurrenceFutureHorizon}
-              materialization={draft.occurrenceMaterialization ?? "manual"}
-              nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
-              pastHorizon={draft.occurrencePastHorizon}
-              template={draft.occurrenceTemplate}
-              onChange={(patch) => change(patch)}
+          <TaskFormSection
+            summary={repeatSummary(draft)}
+            title={t({ message: "Repeat and reminders" })}
+          >
+            <RecurrenceField
+              anchor={draft.recurrenceAnchor}
+              scheduled={draft.scheduled}
+              due={draft.due}
+              value={draft.recurrence}
+              onAnchorChange={(recurrenceAnchor) =>
+                change({ recurrenceAnchor })
+              }
+              onChange={(recurrence) => change({ recurrence })}
             />
-          ) : null}
-          <ReminderEditor
-            deliveryMode="mdbase"
-            due={draft.due}
-            reminders={draft.reminders}
-            scheduled={draft.scheduled}
-            onChange={(reminders) => change({ reminders })}
-          />
+            {draft.recurrence && !task.occurrenceDate ? (
+              <OccurrencePolicyField
+                futureHorizon={draft.occurrenceFutureHorizon}
+                materialization={draft.occurrenceMaterialization ?? "manual"}
+                nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
+                pastHorizon={draft.occurrencePastHorizon}
+                template={draft.occurrenceTemplate}
+                onChange={(patch) => change(patch)}
+              />
+            ) : null}
+            <ReminderEditor
+              deliveryMode="mdbase"
+              due={draft.due}
+              reminders={draft.reminders}
+              scheduled={draft.scheduled}
+              onChange={(reminders) => change({ reminders })}
+            />
+          </TaskFormSection>
         </TaskFormSection>
 
         <TaskRecordFile

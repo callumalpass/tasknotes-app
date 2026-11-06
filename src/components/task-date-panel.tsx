@@ -7,10 +7,15 @@ import {
   setTaskDate,
   shiftTaskDate,
 } from "../domain/task-date-actions";
-import { formatTaskDate, taskDatePart } from "../domain/task";
+import {
+  combineTaskDateTime,
+  formatTaskDate,
+  taskDatePart,
+  taskTimePart,
+} from "../domain/task";
 import { parseTaskCapture } from "../domain/task-capture";
 import { useRepository } from "../app/repository-context";
-import { StandaloneCalendar } from "./tasknotes-controls";
+import { StandaloneCalendar, TaskNotesTimePicker } from "./tasknotes-controls";
 import "./task-date-panel.css";
 
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
@@ -25,6 +30,7 @@ export function TaskDatePanel({
   task,
   initialTarget,
   planOnly = false,
+  showTime = false,
   onApply,
 }: {
   busy: boolean;
@@ -32,6 +38,7 @@ export function TaskDatePanel({
   initialTarget?: DateTarget;
   /** For choosing one plan date across many tasks. */
   planOnly?: boolean;
+  showTime?: boolean;
   onApply(input: UpdateTaskInput): void;
 }) {
   const { t } = useLingui();
@@ -47,6 +54,7 @@ export function TaskDatePanel({
   const weekday = new Date(`${today}T12:00:00`).getDay();
   const weekend = shiftTaskDate(today, (6 - weekday + 7) % 7 || 7);
   const current = task[target];
+  const label = target === "scheduled" ? t`Scheduled` : t`Due`;
   const shownDate = parsed?.text === text ? parsed.date : undefined;
   const unreadable = Boolean(
     text.trim() && parsed?.text === text && !shownDate,
@@ -136,6 +144,18 @@ export function TaskDatePanel({
         <summary>
           <Trans>Date options</Trans>
         </summary>
+        {showTime && current ? (
+          <TaskNotesTimePicker
+            ariaLabel={t`${label} time`}
+            disabled={busy}
+            value={taskTimePart(current) || undefined}
+            onChange={(time) =>
+              onApply({
+                [target]: combineTaskDateTime(taskDatePart(current), time),
+              })
+            }
+          />
+        ) : null}
         <input
           aria-describedby={hintId}
           aria-invalid={unreadable}

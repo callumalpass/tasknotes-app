@@ -20,6 +20,7 @@ import {
   type Dispatch,
   type KeyboardEvent,
   type RefObject,
+  type ReactNode,
   type SetStateAction,
 } from "react";
 
@@ -50,7 +51,9 @@ export function TaskNotesSelect({
   placeholder = translate({ message: "Choose" }),
   className,
   triggerLabel,
+  triggerIcon,
   actions = [],
+  help,
 }: {
   value: string;
   options: readonly TaskNotesOption[];
@@ -62,7 +65,9 @@ export function TaskNotesSelect({
   placeholder?: string;
   className?: string;
   triggerLabel?: string;
+  triggerIcon?: ReactNode;
   actions?: readonly { label: string; onChoose(): void }[];
+  help?: string;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -204,6 +209,7 @@ export function TaskNotesSelect({
         onClick={() => (open ? setOpen(false) : openOptions())}
         onKeyDown={keyDown}
       >
+        {triggerIcon}
         <span className={selected ? undefined : "is-placeholder"}>
           {triggerLabel ?? selected?.label ?? placeholder}
         </span>
@@ -242,7 +248,12 @@ export function TaskNotesSelect({
               }}
             />
             {actions.length ? (
-              <div className="tasknotes-select-actions">
+              <div
+                className="tasknotes-select-actions"
+                role="group"
+                aria-label={t`View actions`}
+              >
+                <p className="tasknotes-select-group-label">{t`View actions`}</p>
                 {actions.map((action) => (
                   <button
                     key={action.label}
@@ -258,6 +269,7 @@ export function TaskNotesSelect({
                 ))}
               </div>
             ) : null}
+            {help ? <p className="tasknotes-select-help">{help}</p> : null}
           </div>
         </>
       ) : null}

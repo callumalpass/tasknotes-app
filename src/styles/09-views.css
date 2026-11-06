@@ -1675,7 +1675,7 @@
 .today-overdue-separator {
   margin-inline-start: 6px;
 }
-.today-overdue button {
+.today-overdue a {
   min-height: 44px;
   margin-block: -12px;
   padding: 12px 0;
@@ -1686,8 +1686,9 @@
   border: 0;
   cursor: pointer;
   text-underline-offset: 3px;
+  text-decoration: none;
 }
-.today-overdue button:hover {
+.today-overdue a:hover {
   text-decoration: underline;
 }
 .today-progress {

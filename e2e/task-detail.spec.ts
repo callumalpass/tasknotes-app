@@ -20,13 +20,13 @@ test("detail properties are directly editable and adjacent navigation saves note
     await expect(
       pane.getByRole("combobox", { name, exact: true }),
     ).toBeVisible();
-  for (const name of [
-    "Scheduled date",
-    "Due date",
-    "Edit Project",
-    "Edit Tags",
-  ])
+  for (const name of ["Scheduled date", "Due date", "Edit Project"])
     await expect(pane.getByRole("button", { name, exact: true })).toBeVisible();
+  await pane.getByText("More properties", { exact: true }).click();
+  await expect(
+    pane.getByRole("button", { name: "Edit Tags", exact: true }),
+  ).toBeVisible();
+  await pane.getByText("More properties", { exact: true }).click();
   await pane.getByRole("button", { name: "Write", exact: true }).click();
   const notes = pane.getByRole("textbox", { name: "Notes", exact: true });
   await notes.fill("A note saved before browsing.");

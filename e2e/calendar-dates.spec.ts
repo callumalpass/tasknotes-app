@@ -68,8 +68,8 @@ test("detail dates share tabs, typing, shortcuts and focus return", async ({
   await input.press("Enter");
   await expect(page.locator(".task-detail-date-popover")).toHaveCount(0);
   await expect(
-    detail.getByRole("button", { name: "Due time", exact: true }),
-  ).toHaveAttribute("data-value", "09:00");
+    detail.getByRole("button", { name: "Due date", exact: true }),
+  ).toContainText("9:00");
   await page.setViewportSize({ width: 320, height: 568 });
   await detail.getByRole("button", { name: "Due date", exact: true }).click();
   const compact = page.getByRole("dialog", { name: "Due date calendar" });

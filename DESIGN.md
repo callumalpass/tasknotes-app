@@ -297,7 +297,11 @@ Today             Search       More
   in the row menu on every layout. Unfocused rows render `[[path|alias]]` links
   as their label; focusing the row shows the exact source.
   Create task notes converts only chosen drafts in place; New note preserves the
-  exact current outline without creating tasks. An expanded historical note can
+  exact current outline without creating tasks. A single simple draft converts
+  without review; multiple drafts retain review. Conversion Undo restores the
+  draft only while its linked note and created task revision remain unchanged,
+  preserving later edits with an explicit notice instead of deleting them.
+  An expanded historical note can
   Resume as current: pending edits to both notes save first, the selected note
   retains its identity and contents, and the displaced current note becomes the
   newest history entry.
@@ -389,14 +393,15 @@ Today             Search       More
 - Scheduled and Due retain visible labels, including when both dates occur on
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
-- Task detail leads with a title-level completion control and the note body.
-  The Schedule and status summary uses the same relative date labels as rows;
-  exact dates remain in its fields. Existing notes open as rendered Markdown; clicking the text or choosing
+- Task detail leads with a title-level completion control, then compact wrapping
+  chips for status, priority, Scheduled, Due, and project. Each chip opens its
+  existing editor; long values truncate without widening the pane. Notes follow
+  immediately, then Subtasks and Attachments. More properties starts collapsed
+  and retains every secondary and custom field. Existing notes open as rendered Markdown; clicking the text or choosing
   Write opens the source. Empty notes open ready for writing. Save status is
   quiet proportional text beside the task actions. Without images,
   Attachments collapses to one row holding its heading and add actions.
-  Schedule and status have a compact, wrapping disclosure summary; advanced
-  properties remain inspectable. The editor ends with the task's Markdown
+  The editor ends with the task's Markdown
   file: its collection-relative path in muted mono, with quiet Copy path and
   Copy wikilink actions (Copy Markdown link when the collection writes
   Markdown links). Copying confirms inline in a polite status that clears
@@ -435,8 +440,11 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
-- Desktop calendar month events use a 24px content minimum; timed events use
-  a 28px minimum. Phone months draw every task as a colored dot, with no More
+- Fine-pointer desktop Month uses single-line 26px bars with 18px title lines;
+  available height determines capacity and excess entries remain in More.
+  Toolbar and More controls retain 44px targets. Week and Day keep two-line
+  titles. Phone months reserve an unwrapped count slot before fitting priority
+  dots, with no More
   popover; the dots are indicators hidden from assistive technology, a tap
   selects the day (at least 44px), and the selected day's tasks are listed as
   ordinary task rows beneath the grid.
@@ -464,7 +472,10 @@ Today             Search       More
   and transfers its return-focus target rather than leaving competing owners.
 - View editing has one compact Preview disclosure. On phones, Layout initially
   summarizes the chosen layout so filters are reachable without passing every
-  layout tile. Planner is explicitly an external app before saving. Ordinary
+  layout tile. An empty Fields shown configuration means Default fields, with
+  the same resolved fields listed in the editor and Preview for every layout.
+  The view switcher separates destinations from its labelled actions group.
+  Planner is explicitly an external app before saving. Ordinary
   pages and editors reflow at 320px with 200% root text; deliberate board and
   calendar scrolling stays local rather than widening the document.
 - Board columns holding the empty status or priority read "No status" or

@@ -28,7 +28,7 @@ describe("ViewEditor", () => {
         initialSection,
       });
       const dialog = await screen.findByRole("dialog", { name: "Work" });
-      await screen.findByRole("heading", { name: "View details" });
+      await screen.findByLabelText("View name");
       if (initialSection === "layout") {
         const layout = dialog.querySelector(".view-layout-disclosure")!;
         expect(layout).toHaveAttribute("open");
@@ -69,9 +69,10 @@ describe("ViewEditor", () => {
     const dialog = await screen.findByRole("dialog", { name: "Work" });
     expect(dialog).toBeVisible();
     await waitFor(() => expect(dialog).toHaveFocus());
-    await screen.findByRole("heading", { name: "View details" });
+    await screen.findByLabelText("View name");
+    expect(screen.queryByText("Edit saved view")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "View details" })).toBeNull();
     for (const name of [
-      "View details",
       "Advanced",
       "Filter",
       "Group & sort",
@@ -143,7 +144,7 @@ describe("ViewEditor", () => {
     });
 
     await screen.findByRole("dialog", { name: "Work copy" });
-    expect(screen.getByText("Duplicate saved view")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Work copy" })).toBeVisible();
     expect(screen.getByLabelText("View name")).toHaveValue("Work copy");
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
 
@@ -209,6 +210,36 @@ describe("ViewEditor", () => {
       },
     ]);
   });
+
+  it.each(["tasknotesTaskList", "tasknotesKanban", "tasknotesCalendar"])(
+    "resolves default fields in the %s editor and preview",
+    async (type) => {
+      renderEditor({
+        repository: repository({
+          source: baseSource(`views: [{ type: ${type}, name: Work }]\n`),
+        }),
+        view: savedView(),
+        initialSection: "view-fields",
+      });
+      await screen.findByLabelText("View name");
+      expect(
+        screen.getByRole("button", { name: /Fields shown Default fields/ }),
+      ).toBeVisible();
+      const fields = document.querySelector(".selected-view-properties")!;
+      expect(
+        [...fields.querySelectorAll("strong")].map(
+          (element) => element.textContent,
+        ),
+      ).toEqual(["Scheduled", "Due", "Priority", "Status", "Projects"]);
+      expect(screen.queryByText("Only the task title is shown.")).toBeNull();
+      fireEvent.click(
+        screen.getByText("Preview", { selector: "summary", exact: false }),
+      );
+      expect(document.querySelector(".view-preview-fields")).toHaveTextContent(
+        "Default fields: Scheduled, Due, Priority, Status, Projects",
+      );
+    },
+  );
 
   it("closes an untouched new view without asking", async () => {
     const onClose = vi.fn();

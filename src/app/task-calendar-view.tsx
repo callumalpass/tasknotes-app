@@ -13,6 +13,7 @@ import { formatDay } from "@tasknotes/calendar";
 import {
   Check,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
   LayoutGrid,
   Plus,
@@ -33,6 +34,7 @@ import { useCalendarOverflow } from "./use-calendar-overflow";
 import { useCalendarPosition } from "./use-calendar-position";
 import { useCalendarPreviews } from "./use-calendar-previews";
 import { useCalendarAgenda } from "./use-calendar-agenda";
+import { useCalendarMonthLayout } from "./use-calendar-month-layout";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -152,6 +154,9 @@ export function TaskCalendarView({
   }, [mode]);
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
+  const fineMonth =
+    useMediaQuery("(min-width: 840px) and (pointer: fine)") &&
+    mode === "dayGridMonth";
   // One agenda on every screen: keep the calendar's date navigation, lazy
   // day loading and drag semantics, with ordinary task rows inside it.
   const agenda = mode === "listWeek";
@@ -289,6 +294,11 @@ export function TaskCalendarView({
     configuration,
     display,
   });
+  const monthLayout = useCalendarMonthLayout(
+    rootRef,
+    mode === "dayGridMonth",
+    items.length,
+  );
   const legend = useMemo(
     () =>
       calendarPriorityLegend(
@@ -302,7 +312,7 @@ export function TaskCalendarView({
   );
   const listMode = mode === "listWeek";
   const markers =
-    legend.length && !listMode ? (
+    legend.length && !listMode && mode !== "multiMonthYear" ? (
       <ul className="full-calendar-legend" aria-label={t`Calendar markers`}>
         {legend.map((marker) => (
           <li
@@ -788,7 +798,23 @@ export function TaskCalendarView({
               </button>
             </div>
             <h2 aria-live="polite" hidden={stripped && !agenda}>
-              {title}
+              {agenda ? (
+                <button
+                  className="agenda-range-toggle"
+                  type="button"
+                  aria-expanded={agendaRows.expanded}
+                  onClick={() =>
+                    rootRef.current
+                      ?.querySelector<HTMLButtonElement>(".tnc-strip-title")
+                      ?.click()
+                  }
+                >
+                  {agendaRows.stripTitle}
+                  <ChevronDown aria-hidden="true" size={14} />
+                </button>
+              ) : (
+                title
+              )}
             </h2>
             {layoutSwitcher}
           </div>
@@ -878,7 +904,8 @@ export function TaskCalendarView({
                 onCreate(dateStr);
               }}
               toolbar={false}
-              height="auto"
+              height={fineMonth ? "fill" : "auto"}
+              style={fineMonth ? { height: monthLayout.height } : undefined}
               navLinks={false}
               editable
               selectable
@@ -899,13 +926,15 @@ export function TaskCalendarView({
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"
-              eventMinHeight={44}
+              eventMinHeight={fineMonth ? 26 : 44}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
-              dayMaxEvents={phoneMonth ? 3 : 2}
+              dayMaxEvents={
+                phoneMonth ? monthLayout.dots : fineMonth ? true : 2
+              }
               dayMaxEventRows={
-                phoneMonth
+                phoneMonth || fineMonth
                   ? 0
                   : mode === "timeGridDay"
                     ? 7

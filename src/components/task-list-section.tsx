@@ -63,6 +63,7 @@ export function TaskListSection({
   );
   return (
     <section
+      id={laneKey === "section:overdue" ? "task-section-overdue" : undefined}
       className={`task-section${laneKey === "section:overdue" ? " is-overdue" : ""} ${className}`}
       data-list-lane={laneKey}
     >

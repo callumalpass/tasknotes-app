@@ -628,7 +628,13 @@ export function TaskCapture({
                 <button
                   type="button"
                   key={propertyId}
-                  title={`${trigger}${propertyId === "priority" ? t`Priority` : t`Status`}`}
+                  aria-label={
+                    propertyId === "priority" ? t`Priority` : t`Status`
+                  }
+                  title={captureOptionHelp(
+                    configuration,
+                    propertyId as "priority" | "status",
+                  )}
                   onClick={() => revealChoices(trigger)}
                 >
                   {propertyId === "priority" ? (
@@ -637,6 +643,12 @@ export function TaskCapture({
                     <Circle aria-hidden="true" size={16} />
                   )}
                   {propertyId === "priority" ? t`Priority` : t`Status`}
+                  <span className="capture-guide-example">
+                    {captureOptionExample(
+                      configuration,
+                      propertyId as "priority" | "status",
+                    )}
+                  </span>
                 </button>
               ))}
           </div>
@@ -890,6 +902,31 @@ export function TaskCapture({
   );
 }
 
+function captureOptionExample(
+  configuration: TaskCollectionConfiguration,
+  field: "status" | "priority",
+) {
+  const trigger = captureTriggers(configuration).find(
+    ({ propertyId }) => propertyId === field,
+  )?.trigger;
+  const options =
+    field === "status" ? configuration.statuses : configuration.priorities;
+  const option =
+    options.find(
+      ({ value }) =>
+        value !== "none" && value !== configuration.defaults[field],
+    ) ?? options[0];
+  return trigger && option ? `${trigger}${option.value}` : "";
+}
+
+function captureOptionHelp(
+  configuration: TaskCollectionConfiguration,
+  field: "status" | "priority",
+) {
+  const example = captureOptionExample(configuration, field);
+  return example ? translate`Type ${example} in the task title.` : undefined;
+}
+
 function CaptureTargetField({
   field,
   configuration,
@@ -923,6 +960,7 @@ function CaptureTargetField({
     return (
       <TaskNotesSelectField
         label={field === "status" ? t`Status` : t`Priority`}
+        help={captureOptionHelp(configuration, field)}
         options={
           field === "status" ? configuration.statuses : configuration.priorities
         }
@@ -1060,12 +1098,14 @@ function CaptureDetails({
         <div className="capture-details-grid">
           <TaskNotesSelectField
             label={t({ message: "Status" })}
+            help={captureOptionHelp(configuration, "status")}
             options={configuration.statuses}
             value={input.status ?? configuration.defaults.status}
             onChange={(status) => onChange({ status })}
           />
           <TaskNotesSelectField
             label={t({ message: "Priority" })}
+            help={captureOptionHelp(configuration, "priority")}
             options={configuration.priorities}
             value={input.priority ?? configuration.defaults.priority}
             onChange={(priority) => onChange({ priority })}

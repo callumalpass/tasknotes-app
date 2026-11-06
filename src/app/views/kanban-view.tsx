@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import {
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -188,6 +189,7 @@ export function KanbanView({
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
+  const moveHelpId = useId();
   useFlipMotion(boardRef, "data-kanban-card-id");
   const draggingRef = useRef<{
     row: TaskViewRow;
@@ -761,6 +763,11 @@ export function KanbanView({
         }}
         ref={boardRef}
       >
+        <p id={moveHelpId} className="visually-hidden">
+          {manualOrder
+            ? t`Drag to move. Use arrow keys to arrange.`
+            : t`Drag to move between columns. Use left and right arrow keys.`}
+        </p>
         {shownColumns.map((shown, columnIndex) => {
           const column = orderedColumns[columnIndex]!;
           const key = valueKey(column.value);
@@ -813,13 +820,8 @@ export function KanbanView({
                     dragging?.row.task.id === row.task.id;
                   return (
                     <div
-                      aria-label={
-                        movable
-                          ? manualOrder
-                            ? t`${row.task.title}. Drag to move. Use arrow keys to arrange.`
-                            : t`${row.task.title}. Drag to move between columns. Use left and right arrow keys.`
-                          : undefined
-                      }
+                      aria-label={movable ? row.task.title : undefined}
+                      aria-describedby={movable ? moveHelpId : undefined}
                       aria-busy={pending}
                       className={`kanban-card${movable ? " is-movable" : ""}${pending ? " is-pending" : ""}${draggingThisCard ? " is-dragging" : ""}${manualOrder && !dragging?.reflow && overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
                       data-kanban-card-id={row.task.id}

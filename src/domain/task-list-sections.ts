@@ -31,8 +31,8 @@ export function sectionTaskViewRows(
 ): TaskListSection[] {
   if (mode !== "day") return [];
   const sections: TaskListSection[] = [
-    { key: "overdue", label: "Overdue", rows: [] },
     { key: "today", label: "Today", rows: [] },
+    { key: "overdue", label: "Overdue", rows: [] },
     { key: "anytime", label: "Anytime", rows: [] },
     { key: "later", label: "Later", rows: [] },
   ];

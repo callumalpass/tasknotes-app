@@ -99,6 +99,10 @@ import {
 } from "../components/outline-selection";
 import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
 import { initialScratchpadMode } from "./scratchpad-preferences";
+import {
+  undoScratchpadConversion,
+  type ScratchpadConversion,
+} from "../application/scratchpad-conversion";
 
 import type {
   FieldCompletion,
@@ -143,6 +147,7 @@ interface ReviewResult {
 interface ScratchpadNotice {
   message: string;
   tasks?: TaskSummary[];
+  conversions?: ScratchpadConversion[];
 }
 
 /** Matches the recovery window of deleted tasks. */
@@ -1598,6 +1603,7 @@ function ScratchpadDocumentEditor({
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [convertingId, setConvertingId] = useState<string>();
   const [notice, setNotice] = useState<ScratchpadNotice | null>(null);
+  const [undoingConversion, setUndoingConversion] = useState(false);
   const initialDocumentRef = useRef(initialDocument);
   const documentRef = useRef<ScratchpadDocument | null>(null);
   const nodesRef = useRef<ScratchNode[]>([]);
@@ -2282,6 +2288,7 @@ function ScratchpadDocumentEditor({
 
   async function convertNode(id: string) {
     if (convertingId || reviewProcessing) return;
+    autosaveSuspended.current = true;
     setConvertingId(id);
     setError("");
     try {
@@ -2289,15 +2296,28 @@ function ScratchpadDocumentEditor({
       focusAfterRender.current = { id: converted.continuationId, cursor: 0 };
       updateNodes(converted.nodes);
       await persist(converted.nodes);
-      await linkExistingChildren(converted.nodes, id, converted.task);
+      const children = await linkExistingChildren(
+        converted.nodes,
+        id,
+        converted.task,
+      );
       successFeedback();
       setNotice({
         message: t`Created “${converted.task.title}”`,
         tasks: [converted.task],
+        conversions: [
+          {
+            draft: converted.draft,
+            linked: converted.nodes.find((node) => node.id === id)!,
+            task: converted.task,
+            children,
+          },
+        ],
       });
     } catch (reason) {
       setError(message(reason));
     } finally {
+      autosaveSuspended.current = false;
       setConvertingId(undefined);
     }
   }
@@ -2353,6 +2373,7 @@ function ScratchpadDocumentEditor({
     ).value;
     return {
       task,
+      draft: node,
       ...ensureScratchContinuation(
         source.map((candidate) => {
           if (candidate.id !== id) return candidate;
@@ -2376,8 +2397,9 @@ function ScratchpadDocumentEditor({
     parentId: string,
     parentTask: TaskSummary,
   ) {
+    const children: ScratchpadConversion["children"] = [];
     const parentIndex = source.findIndex((node) => node.id === parentId);
-    if (parentIndex < 0) return;
+    if (parentIndex < 0) return children;
     const parentLink = recordCompletion(
       {
         path: parentTask.path,
@@ -2398,8 +2420,12 @@ function ScratchpadDocumentEditor({
       const task = await resolveLinkedTask(node);
       if (!task || task.projects.some((value) => value === parentLink))
         continue;
-      await updateTask(task.id, { projects: [...task.projects, parentLink] });
+      const after = await updateTask(task.id, {
+        projects: [...task.projects, parentLink],
+      });
+      children.push({ before: task, after });
     }
+    return children;
   }
 
   async function resolveLinkedTask(
@@ -2438,6 +2464,15 @@ function ScratchpadDocumentEditor({
     const items = nodesRef.current
       .filter((node) => node.kind === "draft" && node.text.trim())
       .map(({ id, text, depth }) => ({ id, text, depth }));
+    if (
+      items.length === 1 &&
+      nodesRef.current.every(
+        (node) => node.id === items[0]!.id || !node.text.trim(),
+      )
+    ) {
+      void convertNode(items[0]!.id);
+      return;
+    }
     setReviewItems(items);
     const current = items.find((item) => item.id === activeId);
     setSelectedReviewIds(new Set(current ? [current.id] : []));
@@ -2476,6 +2511,7 @@ function ScratchpadDocumentEditor({
     setError("");
     const failedIds = new Set<string>();
     const completed = new Map<string, TaskSummary>();
+    const conversions: ScratchpadConversion[] = [];
     for (const result of Object.values(reviewResults))
       if (result.state === "created" && result.task)
         completed.set(result.task.id, result.task);
@@ -2487,6 +2523,7 @@ function ScratchpadDocumentEditor({
         [item.id]: { state: "creating", task: previous?.task },
       }));
       let createdTask = previous?.task;
+      let convertedDraft: ScratchNode | undefined;
       try {
         let working = nodesRef.current;
         const currentNode = working.find((node) => node.id === item.id);
@@ -2494,6 +2531,7 @@ function ScratchpadDocumentEditor({
           const converted = await createTaskForNode(working, item.id);
           working = converted.nodes;
           createdTask = converted.task;
+          convertedDraft = converted.draft;
           focusAfterRender.current = {
             id: converted.continuationId,
             cursor: 0,
@@ -2511,7 +2549,18 @@ function ScratchpadDocumentEditor({
             t({ message: "The created TaskNote could not be found." }),
           );
         await persist(working);
-        await linkExistingChildren(working, item.id, createdTask);
+        const children = await linkExistingChildren(
+          working,
+          item.id,
+          createdTask,
+        );
+        if (convertedDraft)
+          conversions.push({
+            draft: convertedDraft,
+            linked: working.find((node) => node.id === item.id)!,
+            task: createdTask,
+            children,
+          });
         completed.set(createdTask.id, createdTask);
         setReviewResults((current) => ({
           ...current,
@@ -2544,8 +2593,56 @@ function ScratchpadDocumentEditor({
         other: "Created # tasks",
       }),
       tasks,
+      conversions,
     });
     successFeedback();
+  }
+
+  async function undoConversion() {
+    if (!notice?.conversions?.length || undoingConversion) return;
+    const conversions = notice.conversions;
+    setUndoingConversion(true);
+    autosaveSuspended.current = true;
+    let changed = false;
+    try {
+      await flush();
+      if (
+        editorModeRef.current === "markdown" &&
+        sourceRef.current !== scratchBody(nodesRef.current)
+      ) {
+        changed = true;
+      } else {
+        for (const conversion of [...conversions].reverse()) {
+          const result = await undoScratchpadConversion(
+            repository,
+            conversion,
+            () => nodesRef.current,
+          );
+          if (result === "changed") {
+            changed = true;
+            continue;
+          }
+          createIntents.current.delete(conversion.draft);
+          const next = nodesRef.current.map((node) =>
+            node.id === conversion.draft.id ? conversion.draft : node,
+          );
+          updateNodes(next);
+          if (editorModeRef.current === "markdown")
+            changeSource(scratchBody(next));
+          await persist(next);
+        }
+      }
+      setNotice({
+        message: changed
+          ? t`Some tasks or notes changed after conversion. They were kept; their drafts were not restored.`
+          : t`Conversion undone`,
+      });
+    } catch (reason) {
+      setError(message(reason));
+    } finally {
+      autosaveSuspended.current = false;
+      setUndoingConversion(false);
+    }
   }
 
   async function changeEditorMode(nextMode: "outline" | "markdown") {
@@ -2672,6 +2769,8 @@ function ScratchpadDocumentEditor({
   return (
     <section
       className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
+      inert={undoingConversion}
+      aria-busy={undoingConversion}
       aria-label={t`Editor for ${document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))}`}
     >
       <div className="scratchpad-title-row">
@@ -3450,6 +3549,15 @@ function ScratchpadDocumentEditor({
       {notice ? (
         <div className="scratchpad-notice" role="status">
           <span>{notice.message}</span>
+          {notice.conversions?.length ? (
+            <button
+              className="scratchpad-notice-action"
+              type="button"
+              onClick={() => void undoConversion()}
+            >
+              <Trans>Undo</Trans>
+            </button>
+          ) : null}
           {notice.tasks?.length ? (
             <button
               className="scratchpad-notice-action"

@@ -1,4 +1,5 @@
 import { projectShortcuts } from "../domain/project-shortcuts";
+import { TaskRevisionChangedError } from "../application/ports/task-repository";
 import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
   CalendarTaskEdit,
@@ -353,8 +354,17 @@ export class DemoTaskRepository implements TaskRepository {
     return this.persist(this.model.editCalendar(this.requireTask(id), edit));
   }
 
-  async update(id: string, input: UpdateTaskInput): Promise<Task> {
+  async update(
+    id: string,
+    input: UpdateTaskInput,
+    options: { expectedRevision?: number } = {},
+  ): Promise<Task> {
     const current = this.requireTask(id);
+    if (
+      options.expectedRevision !== undefined &&
+      current.revision !== options.expectedRevision
+    )
+      throw new TaskRevisionChangedError("The task changed after creation.");
     const task = this.model.update(current, input, {
       now: new Date().toISOString(),
     });
@@ -513,7 +523,15 @@ export class DemoTaskRepository implements TaskRepository {
     return this.persist(destination ? { ...task, path: destination } : task);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(
+    id: string,
+    options: { expectedRevision?: number } = {},
+  ): Promise<void> {
+    if (
+      options.expectedRevision !== undefined &&
+      this.tasks.get(id)?.revision !== options.expectedRevision
+    )
+      throw new TaskRevisionChangedError("The task changed after creation.");
     if (this.tasks.delete(id)) this.changed();
   }
 

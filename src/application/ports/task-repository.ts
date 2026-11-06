@@ -122,7 +122,11 @@ export interface TaskRepository {
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
-  update(id: string, input: UpdateTaskInput): Promise<Task>;
+  update(
+    id: string,
+    input: UpdateTaskInput,
+    options?: { expectedRevision?: number },
+  ): Promise<Task>;
   /** Apply an exact calendar plan with normal authority/revision safeguards. */
   editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
   updateMany(
@@ -145,7 +149,10 @@ export interface TaskRepository {
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setArchived(id: string, archived: boolean): Promise<Task>;
-  delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
+  delete(
+    id: string,
+    options?: { authorityRequestId?: string; expectedRevision?: number },
+  ): Promise<void>;
   /** Session metadata only; null until the existing index is complete. Never starts a read. */
   todayTaskCounts?(
     today: string,
@@ -290,3 +297,5 @@ export interface RefreshResult {
 
 /** The repository cancelled deletion before creating or submitting a write. */
 export class TaskDeletionNotStartedError extends Error {}
+
+export class TaskRevisionChangedError extends Error {}

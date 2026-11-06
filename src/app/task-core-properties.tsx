@@ -1,5 +1,6 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { useLayoutEffect, useRef, useState } from "react";
+import { Circle, Flag } from "lucide-react";
 import { ListField } from "./task-editor-layout";
 import { TaskNotesSelectField } from "../components/tasknotes-controls";
 import { TaskDetailDates } from "../components/task-detail-dates";
@@ -37,6 +38,7 @@ export function TaskCoreProperties({
     >
       <TaskNotesSelectField
         label={t({ message: "Status" })}
+        triggerIcon={<Circle aria-hidden="true" size={14} />}
         disabled={occurrenceNote}
         ariaDescribedBy={occurrenceNote ? "occurrence-status-help" : undefined}
         options={[...configuration.statuses].sort((a, b) => a.order - b.order)}
@@ -48,23 +50,16 @@ export function TaskCoreProperties({
           <Trans>Use the occurrence actions above to change this state.</Trans>
         </small>
       ) : null}
-      <div className="task-core-dates">
-        <TaskDetailDates draft={draft} onChange={onChange} />
-      </div>
-      {seriesDates ? (
-        <p className="field-help">
-          <Trans>
-            These dates edit the repeating task, including future occurrences.
-          </Trans>
-        </p>
-      ) : null}
       <TaskNotesSelectField
         label={t({ message: "Priority" })}
+        triggerIcon={<Flag aria-hidden="true" size={14} />}
         options={configuration.priorities}
         value={draft.priority}
         onChange={(priority) => onChange({ priority })}
       />
+      <TaskDetailDates compact draft={draft} onChange={onChange} />
       <InlineList
+        compact
         label={t({ message: "Project" })}
         values={draft.projects}
         valueLabels={projectLabels}
@@ -77,21 +72,23 @@ export function TaskCoreProperties({
         completeField={completeField}
         onChange={(projects) => onChange({ projects })}
       />
-      <InlineList
-        label={t({ message: "Tags" })}
-        values={draft.tags.filter((tag) => tag !== "task")}
-        field="tags"
-        completion={configuration.fieldCompletions.tags ?? { kind: "values" }}
-        completeField={completeField}
-        onChange={(tags) => onChange({ tags: ["task", ...tags] })}
-      />
+      {seriesDates ? (
+        <p className="field-help">
+          <Trans>
+            These dates edit the repeating task, including future occurrences.
+          </Trans>
+        </p>
+      ) : null}
     </section>
   );
 }
 
-function InlineList(
-  props: Omit<Parameters<typeof ListField>[0], "placeholder">,
-) {
+export function InlineList({
+  compact = false,
+  ...props
+}: Omit<Parameters<typeof ListField>[0], "placeholder"> & {
+  compact?: boolean;
+}) {
   const { t } = useLingui();
   const [editing, setEditing] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -129,6 +126,7 @@ function InlineList(
         aria-expanded={editing}
         onClick={() => setEditing(true)}
       >
+        {compact ? <span>{props.label}: </span> : null}
         {props.values.length ? (
           props.values
             .map(

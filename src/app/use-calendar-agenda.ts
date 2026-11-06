@@ -197,5 +197,26 @@ export function useCalendarAgenda({
     return () => observer.disconnect();
   }, [root, calendar, enabled, items, locale, entries]);
 
-  return { slots, mount, unmount };
+  const lastShown = new Date(stripRange.end);
+  lastShown.setDate(lastShown.getDate() - 1);
+  const stripTitle = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+  }).formatRange(stripRange.start, lastShown);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const host = root.current;
+    if (!enabled || !host) return;
+    const update = () =>
+      setExpanded(Boolean(host.querySelector(".tnc-strip.is-expanded")));
+    const observer = new MutationObserver(update);
+    observer.observe(host, {
+      attributes: true,
+      attributeFilter: ["class"],
+      subtree: true,
+    });
+    update();
+    return () => observer.disconnect();
+  }, [enabled, root]);
+  return { slots, mount, unmount, stripTitle, expanded };
 }

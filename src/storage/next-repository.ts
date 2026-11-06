@@ -27,7 +27,10 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
-import { TaskDeletionNotStartedError } from "../application/ports/task-repository";
+import {
+  TaskDeletionNotStartedError,
+  TaskRevisionChangedError,
+} from "../application/ports/task-repository";
 import type {
   TaskRepository,
   TaskCreateIntent,
@@ -2154,12 +2157,31 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
-  update(id: string, input: UpdateTaskInput) {
+  update(
+    id: string,
+    input: UpdateTaskInput,
+    options: { expectedRevision?: number } = {},
+  ) {
     return this.mutateTask(
       id,
-      JSON.stringify(["task:update", id, input]),
-      (task, model) =>
-        model.update(task, input, { now: new Date().toISOString() }),
+      JSON.stringify([
+        "task:update",
+        id,
+        input,
+        ...(options.expectedRevision === undefined
+          ? []
+          : [options.expectedRevision]),
+      ]),
+      (task, model) => {
+        if (
+          options.expectedRevision !== undefined &&
+          task.revision !== options.expectedRevision
+        )
+          throw new TaskRevisionChangedError(
+            "The task changed after creation.",
+          );
+        return model.update(task, input, { now: new Date().toISOString() });
+      },
     );
   }
   async updateMany(updates: readonly { id: string; input: UpdateTaskInput }[]) {
@@ -2509,7 +2531,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   async delete(
     id: string,
-    options: { authorityRequestId?: string } = {},
+    options: { authorityRequestId?: string; expectedRevision?: number } = {},
   ): Promise<void> {
     const owner = this.scope.signal;
     try {
@@ -2546,6 +2568,13 @@ export class NextTaskRepository implements TaskRepository {
         requestId: options.authorityRequestId,
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
+          if (
+            options.expectedRevision !== undefined &&
+            current.task.revision !== options.expectedRevision
+          )
+            throw new TaskRevisionChangedError(
+              "The task changed after creation.",
+            );
           recordId = current.record.id;
           return () =>
             this.client.delete(current.record, {

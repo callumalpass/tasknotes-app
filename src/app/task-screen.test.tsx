@@ -64,14 +64,14 @@ describe("TaskScreen", () => {
     expect(screen.getByLabelText("Notes")).toBeVisible();
     expect(
       screen
-        .getByText("Organize", { selector: "strong" })
+        .getByText("More properties", { selector: "strong" })
         .compareDocumentPosition(
           screen.getByRole("heading", { name: "Notes" }),
         ),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    ).toBe(Node.DOCUMENT_POSITION_PRECEDING);
     expect(
-      screen.getByRole("heading", { name: "Task properties" }),
-    ).toBeVisible();
+      screen.queryByRole("heading", { name: "Task properties" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Status" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
     expect(
@@ -79,6 +79,9 @@ describe("TaskScreen", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Due date" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Edit Project" })).toBeVisible();
+    fireEvent.click(
+      screen.getByText("More properties", { selector: "strong" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Edit Tags" }));
     const tags = screen.getByRole("combobox", { name: "Tags" });
     expect(tags).toHaveFocus();

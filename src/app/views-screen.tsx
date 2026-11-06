@@ -1494,7 +1494,10 @@ export function ViewsScreen({
                     day: "numeric",
                   }).format(new Date())}
                   {overdueCount ? (
-                    <span className="today-overdue-separator" aria-hidden="true">
+                    <span
+                      className="today-overdue-separator"
+                      aria-hidden="true"
+                    >
                       {" ·"}
                     </span>
                   ) : null}
@@ -1509,20 +1512,29 @@ export function ViewsScreen({
                 </span>
                 {overdueCount ? (
                   <span className="today-overdue">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        document
-                          .querySelector(".task-section")
-                          ?.scrollIntoView({ block: "start" })
-                      }
+                    <a
+                      href="#task-section-overdue"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const section = document.getElementById(
+                          "task-section-overdue",
+                        );
+                        const toggle =
+                          section?.querySelector<HTMLButtonElement>(
+                            ".task-section-toggle",
+                          );
+                        if (toggle?.getAttribute("aria-expanded") === "false")
+                          toggle.click();
+                        section?.scrollIntoView({ block: "start" });
+                        toggle?.focus({ preventScroll: true });
+                      }}
                     >
                       <Plural
                         value={overdueCount}
                         one="# overdue"
                         other="# overdue"
                       />
-                    </button>
+                    </a>
                   </span>
                 ) : null}
               </p>

@@ -35,7 +35,14 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { rememberTaskEdit } from "../app/task-edit-undo";
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { completionKey } from "../application/task-mutations";
@@ -535,11 +542,7 @@ export function TaskActions({
                         <ChevronLeft aria-hidden="true" size={18} />
                       </button>
                     ) : null}
-                    <strong
-                      id={panelHeadingId}
-                      data-panel-focus
-                      tabIndex={-1}
-                    >
+                    <strong id={panelHeadingId} data-panel-focus tabIndex={-1}>
                       {panelTitle(panel)}
                     </strong>
                   </div>
@@ -1194,14 +1197,43 @@ function QuickAction({
   label: string;
   onClick(): void;
 }) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  const tooltip = useRef<HTMLSpanElement>(null);
+  const tooltipId = useId();
+  useLayoutEffect(() => {
+    const element = tooltip.current;
+    if (!element || !anchor) return;
+    const bounds = element.getBoundingClientRect();
+    element.style.left = `${Math.max(8, Math.min(anchor.left, window.innerWidth - bounds.width - 8))}px`;
+    element.style.top = `${Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - bounds.height - 8))}px`;
+  }, [anchor]);
+  useEffect(() => {
+    if (!anchor) return;
+    const hide = () => setAnchor(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("resize", hide);
+    };
+  }, [anchor]);
   return (
     <button
       aria-checked={checked}
       aria-label={label}
+      aria-describedby={anchor ? tooltipId : undefined}
       disabled={disabled}
       role={checked === undefined ? "menuitem" : "menuitemradio"}
       type="button"
       onClick={onClick}
+      onMouseEnter={(event) =>
+        setAnchor(event.currentTarget.getBoundingClientRect())
+      }
+      onMouseLeave={() => setAnchor(null)}
+      onFocus={(event) =>
+        setAnchor(event.currentTarget.getBoundingClientRect())
+      }
+      onBlur={() => setAnchor(null)}
     >
       <Icon
         aria-hidden="true"
@@ -1210,7 +1242,19 @@ function QuickAction({
         strokeWidth={1.7}
         style={color ? { color } : undefined}
       />
-      <span className="quick-action-tooltip">{label}</span>
+      {anchor
+        ? createPortal(
+            <span
+              className="quick-action-tooltip"
+              id={tooltipId}
+              ref={tooltip}
+              role="tooltip"
+            >
+              {label}
+            </span>,
+            document.body,
+          )
+        : null}
     </button>
   );
 }

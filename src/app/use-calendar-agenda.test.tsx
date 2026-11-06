@@ -46,7 +46,7 @@ it("counts other-day planned deadlines in the strip, excluding tracked time from
       strip: { measure },
     } as unknown as Calendar<CalendarEventData>,
   };
-  renderHook(() =>
+  const { result } = renderHook(() =>
     useCalendarAgenda({
       root: { current: root },
       calendar,
@@ -64,4 +64,5 @@ it("counts other-day planned deadlines in the strip, excluding tracked time from
   );
   expect(root.querySelector(".agenda-day-count")).toHaveTextContent("2");
   expect(measure).toHaveBeenCalled();
+  expect(result.current.stripTitle).toBe("Nov 4");
 });

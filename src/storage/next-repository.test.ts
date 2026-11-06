@@ -7,6 +7,7 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
   TaskDeletionNotStartedError,
+  TaskRevisionChangedError,
   type TaskCreateIntent,
 } from "../application/ports/task-repository";
 import type { UpdateTaskInput } from "../domain/task";
@@ -44,6 +45,29 @@ async function seed(
 }
 
 describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", () => {
+  it("guards conversion recovery writes against a later task revision", async () => {
+    const f = await fixture();
+    const created = await f.repository.create({ title: "Converted draft" });
+    const edited = await f.repository.update(created.id, {
+      title: "Later edit",
+    });
+    await expect(
+      f.repository.delete(created.id, { expectedRevision: created.revision }),
+    ).rejects.toBeInstanceOf(TaskRevisionChangedError);
+    await expect(
+      f.repository.update(
+        created.id,
+        { projects: [] },
+        { expectedRevision: created.revision },
+      ),
+    ).rejects.toBeInstanceOf(TaskRevisionChangedError);
+    expect((await f.repository.get(created.id))?.title).toBe("Later edit");
+    await f.repository.delete(created.id, {
+      expectedRevision: edited.revision,
+    });
+    expect(await f.repository.get(created.id)).toBeNull();
+  });
+
   it("identifies a deletion cancelled before index loading submits a write", async () => {
     const f = await fixture();
     const task = await seed(f);

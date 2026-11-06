@@ -65,6 +65,34 @@ describe("calendar drops", () => {
     });
   });
 
+  it("lets fine-pointer Month fit single-line bars to the available height", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("pointer: fine"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    renderCalendar(execution("2026-07-24"), vi.fn());
+    expect(calendar.props).toMatchObject({
+      dayMaxEvents: true,
+      dayMaxEventRows: 0,
+    });
+    expect(calendar.props).toMatchObject({
+      height: "fill",
+      eventMinHeight: 26,
+    });
+    expect(calendar.props).toMatchObject({
+      style: { height: expect.any(Number) },
+    });
+  });
+
+  it("omits priority markers from the intensity-based Year layout", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "multiMonthYear";
+    original.rows[0]!.task.priority = "high";
+    const view = renderCalendar(original, vi.fn());
+    expect(view.container.querySelector(".full-calendar-legend")).toBeNull();
+  });
+
   it("reserves one all-day preview plus disclosure in timed layouts", () => {
     const original = execution("2026-07-24");
     original.view.presentation!.options.calendarView = "timeGridWeek";

@@ -54,8 +54,11 @@ it.each(["status", "note.status"])(
     );
     renderListView(repository, execution.view);
     const card = await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     });
+    expect(card).toHaveAccessibleDescription(
+      "Drag to move between columns. Use left and right arrow keys.",
+    );
     expect(card.closest("[data-kanban-column-key]")).toHaveAttribute(
       "data-kanban-column-key",
       "null",
@@ -99,7 +102,7 @@ it.each(["status", "note.status"])(
     );
     // Refreshed projected null must not be confirmed from raw status=open.
     const moved = within(open).getByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     });
     expect(moved).toBeVisible();
     fireEvent.keyDown(moved, { key: "ArrowRight" });
@@ -181,7 +184,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     screen.queryByRole("button", { name: "Move cards between columns" }),
   ).not.toBeInTheDocument();
   const card = screen.getByRole("group", {
-    name: "Move on the board. Drag to move between columns. Use left and right arrow keys.",
+    name: "Move on the board",
   });
   const title = within(card).getByRole("button", {
     name: "Move on the board",
@@ -435,13 +438,13 @@ it("settles a pending manual board write before sending the queued move", async 
   ).not.toBeInTheDocument();
   fireEvent.keyDown(
     await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move\. Use arrow keys to arrange\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
   fireEvent.keyDown(
     screen.getByRole("group", {
-      name: /Move next\. Drag to move\. Use arrow keys to arrange\./,
+      name: "Move next",
     }),
     { key: "ArrowRight" },
   );
@@ -543,7 +546,7 @@ it("serializes rapid consecutive board moves without rejecting the second move",
 
   fireEvent.keyDown(
     await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
@@ -552,7 +555,7 @@ it("serializes rapid consecutive board moves without rejecting the second move",
   });
   fireEvent.keyDown(
     await within(inProgress).findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
@@ -1018,7 +1021,7 @@ it.each(["pointer", "keyboard"])(
       fireEvent.pointerUp(handle, press);
       expect(screen.queryByText("Drop here")).toBeNull();
     } else {
-      fireEvent.keyDown(handle, { key: "ArrowDown" });
+      fireEvent.keyDown(handle, { key: "ArrowUp" });
     }
 
     await waitFor(() =>
@@ -1371,7 +1374,7 @@ it("keeps an accepted board move without an action failure banner when its post-
   );
   renderListView(repository, execution.view);
   fireEvent.keyDown(
-    await screen.findByRole("group", { name: /Move on the board\. Drag/ }),
+    await screen.findByRole("group", { name: "Move on the board" }),
     { key: "ArrowRight" },
   );
   await waitFor(() => expect(update).toHaveBeenCalledOnce());

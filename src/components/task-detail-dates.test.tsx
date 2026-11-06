@@ -24,7 +24,7 @@ describe("shared detail dates", () => {
     );
   });
 
-  function renderDates() {
+  function renderDates(compact = false) {
     const onChange = vi.fn();
     render(
       <RepositoryProvider
@@ -32,6 +32,7 @@ describe("shared detail dates", () => {
         mutationJournal={new MemoryMutationJournal()}
       >
         <TaskDetailDates
+          compact={compact}
           draft={{ scheduled: "2026-01-02T09:30", due: "2029-11-20" }}
           onChange={onChange}
         />
@@ -60,6 +61,17 @@ describe("shared detail dates", () => {
     });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("button", { name: "Due date" })).toHaveFocus();
+  });
+
+  it("keeps the time editor inside compact date options", () => {
+    renderDates(true);
+    expect(screen.queryByRole("button", { name: "Scheduled time" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Scheduled date" }));
+    fireEvent.click(screen.getByText("Date options"));
+    fireEvent.click(screen.getByRole("button", { name: "Scheduled time" }));
+    expect(
+      screen.getByRole("dialog", { name: "Scheduled time" }),
+    ).toBeVisible();
   });
 
   it("clears just the requested draft field and dismisses with Escape", async () => {
