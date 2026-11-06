@@ -12,6 +12,72 @@ function definition(document: string): Record<string, unknown> {
 }
 
 describe("real migrated TaskNotes type bootstrap", () => {
+  it("keeps a mapped role when the schema still names its contract field", () => {
+    const { model } = resolveTaskTypeDefinition({
+      name: "task",
+      schema: {
+        value: {
+          type: "object",
+          properties: {
+            status: { enum: ["active", "completed"], default: "active" },
+            deadline: { type: "string" },
+            "created-date": { type: "string" },
+            "modified-date": { type: "string" },
+            "completed-date": { type: "string" },
+            due: { type: "string" },
+            dateCreated: { type: "string" },
+            completedDate: { type: "string" },
+            recurrence_anchor: { type: "string" },
+            effort: { type: "number" },
+          },
+        },
+      },
+      implements: [
+        {
+          contract: "tasknotes.task",
+          version: "0.3.0-rc.6",
+          fields: {
+            status: "status",
+            due: "deadline",
+            dateCreated: "created-date",
+            dateModified: "modified-date",
+            completedDate: "completed-date",
+          },
+          binding: {
+            status: {
+              values: ["active", "completed"],
+              default: "active",
+              completed_values: ["completed"],
+            },
+          },
+        },
+      ],
+    });
+    expect(model.config.userFields.map(({ key }) => key)).toEqual(["effort"]);
+
+    const task = model.read({
+      path: "tasks/a.md",
+      body: "",
+      frontmatter: {
+        title: "A",
+        status: "active",
+        tags: ["task"],
+        deadline: "2026-11-09",
+        "created-date": "2026-11-01T00:00:00Z",
+        "modified-date": "2026-11-01T00:00:00Z",
+      },
+    });
+    expect(task.due).toBe("2026-11-09");
+
+    const done = model.toggle(task, { currentDate: "2026-11-06" });
+    expect(done.frontmatter["completed-date"]).toBe("2026-11-06");
+    expect(done.frontmatter).not.toHaveProperty("completedDate");
+    expect(
+      model.read({ path: task.path, body: "", frontmatter: done.frontmatter })
+        .completedDate,
+    ).toBe("2026-11-06");
+  });
+
   it("exposes Effort and reads its captured value without modifying the schema", () => {
     const type = definition(customType);
     const before = structuredClone(type);

@@ -495,8 +495,12 @@ function inferUserFields(
   fieldMapping: TaskNotesModelConfig["fieldMapping"],
   required: ReadonlySet<string>,
 ): TaskUserMappedField[] {
+  // A role keeps its contract name and default property even when the type
+  // stores it elsewhere: as a custom field, either would hide the role's value.
   const reserved = new Set([
+    ...Object.keys(fieldMapping),
     ...Object.values(fieldMapping),
+    ...Object.values(resolveModelConfig().fieldMapping),
     "type",
     "types",
     "id",
