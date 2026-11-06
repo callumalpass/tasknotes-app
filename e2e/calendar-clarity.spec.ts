@@ -114,6 +114,8 @@ test("desktop agenda tasks drag onto a week-strip day without opening details", 
     isMobile,
     "Pointer drag is exercised on desktop; phones retain the calendar touch gesture",
   );
+  // Midweek, so today always has a following day in the strip.
+  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
   await page.goto(view("upcoming"));
   const source = page
     .locator(".tnc-list-lead")
