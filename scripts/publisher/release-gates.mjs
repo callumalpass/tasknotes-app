@@ -1,8 +1,9 @@
 // Workflow-owned #1223 admission. Smoke does not qualify Cloud-copy setup or wasm.
 export const minimumSdkCommit = "c42d004e3e4985df2cf54829c693f0e864972d2e";
-// Enable only in a reviewed PR retaining exact-source staging Cloud-copy upgraded
-// plugin-type completion/reopen and post-repin wasm-route evidence.
-export const productionEnabled = false;
+// Enabled only after distinct Cloud-copy upgraded-plugin-type completion/reopen
+// and actual wasm-route qualification at app 15d91901 / SDK producer 373c4a4e.
+// Retained evidence: mdbase-cloud-ops PR #1576. SDK floor remains mandatory.
+export const productionEnabled = true;
 export function assertProductionEnabled(target) {
   if (target === "production" && !productionEnabled)
     throw Error(
