@@ -38,6 +38,7 @@ import { useCalendarPosition } from "./use-calendar-position";
 import { useCalendarPreviews } from "./use-calendar-previews";
 import { useCalendarAgenda } from "./use-calendar-agenda";
 import { useCalendarMonthLayout } from "./use-calendar-month-layout";
+import { useCalendarTimedLayout } from "./use-calendar-timed-layout";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -302,6 +303,7 @@ export function TaskCalendarView({
     configuration,
     display,
   });
+  useCalendarTimedLayout(rootRef, mode.startsWith("timeGrid"));
   const monthLayout = useCalendarMonthLayout(
     rootRef,
     mode === "dayGridMonth",

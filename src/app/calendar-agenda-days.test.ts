@@ -26,6 +26,19 @@ it("collapses empty runs while keeping today, selection and busy event days", ()
     "hidden",
   );
   compactAgendaDays(root, "2026-11-09", "en");
+  expect(root.querySelectorAll(".is-add-day")).toHaveLength(2);
+  expect(root.querySelector('[data-date="2026-11-07"]')).toHaveClass(
+    "is-add-day",
+  );
+  expect(root.querySelector('[data-date="2026-11-09"]')).toHaveClass(
+    "is-add-day",
+  );
+  expect(root.querySelector('[data-date="2026-11-10"]')).not.toHaveClass(
+    "is-add-day",
+  );
+  expect(root.querySelector('[data-date="2026-11-11"]')).not.toHaveClass(
+    "is-add-day",
+  );
   expect(root.querySelector('[data-date="2026-11-09"]')).not.toHaveAttribute(
     "hidden",
   );

@@ -636,6 +636,40 @@
   min-height: 0;
   overflow: hidden;
   align-content: start;
+  justify-content: flex-start;
+}
+
+.full-calendar-view .tnc-item--timed {
+  container: calendar-event / size;
+}
+
+.full-calendar-view .tnc-item--timed[data-readable-cascade] {
+  left: var(--calendar-timed-left) !important;
+  width: var(--calendar-timed-width) !important;
+}
+
+.full-calendar-view
+  .tnc-item--timed[data-readable-cascade]
+  .full-calendar-event-secondary {
+  display: none;
+}
+
+.full-calendar-view .tnc-item--timed:is(:hover, :focus-visible) {
+  z-index: 25 !important;
+}
+
+.full-calendar-view
+  .tnc-item--timed[data-readable-cascade]:is(:hover, :focus-visible) {
+  left: 0 !important;
+  width: calc(100% - 1px) !important;
+}
+
+.full-calendar-view .tnc-col.has-actual .tnc-col-plan {
+  right: calc(40% + 4px);
+}
+
+.full-calendar-view .tnc-col.has-actual .tnc-col-actual {
+  width: 40%;
 }
 
 .full-calendar-view .tnc-item--timed.is-short .tnc-item-main {
@@ -646,7 +680,7 @@
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary {
   flex-wrap: nowrap;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -655,7 +689,8 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
   line-height: var(--calendar-event-line);
 }
 
@@ -671,8 +706,22 @@
   white-space: nowrap;
 }
 
+@container calendar-event (height < 58px) or (width < 104px) {
+  .full-calendar-event-secondary {
+    display: none;
+  }
+}
+
+@container calendar-event (height < 36px) or (width < 104px) {
+  .full-calendar-event-primary > span {
+    display: block !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis;
+  }
+}
+
 .full-calendar-view .tnc-item.is-time-entry {
-  background: color-mix(in srgb, var(--success), transparent 90%);
+  background: color-mix(in srgb, var(--success) 10%, var(--paper));
   border-color: color-mix(in srgb, var(--success), var(--line) 72%);
 }
 
@@ -2273,6 +2322,16 @@
   min-height: 44px;
   padding: var(--space-sm) 12px;
   font-size: var(--type-supporting);
+}
+
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) .tnc-list-add {
+  opacity: 0;
+}
+
+.full-calendar-view.is-agenda
+  .tnc-list-section:is(:hover, :focus-within)
+  .tnc-list-add {
+  opacity: 1;
 }
 
 .full-calendar-view.is-agenda .tnc-list-section.is-empty {

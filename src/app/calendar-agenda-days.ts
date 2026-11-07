@@ -39,6 +39,10 @@ export function compactAgendaDays(
     section.hidden = false;
     section.classList.remove("is-empty-range");
     const date = section.dataset.date;
+    section.classList.toggle(
+      "is-add-day",
+      date === selected || date === todayString(),
+    );
     if (
       section.classList.contains("is-empty") &&
       date !== selected &&

@@ -484,10 +484,16 @@ Today             Search       More
   Overdue work leads the agenda with a count and Move all to today (with Undo),
   rather than being repeated in today's group. Sticky day headings name Today
   and Tomorrow, show nonzero counts, and retain a quiet Add task on the selected
-  day and today. Other consecutive empty days share a quiet date-range row;
+  day and today; other populated days reveal it on hover or keyboard focus.
+  Other consecutive empty days share a quiet date-range row;
   Show more days extends the agenda without unbounded empty-day loading.
-  Overlapping timed tasks keep separate side-by-side titles and drag targets;
-  only the all-day row and month grid use overflow summaries.
+  Overlapping timed tasks keep separate titles and drag targets, side by side
+  when space permits and cascading in narrow lanes. Hover or keyboard focus
+  brings a cascaded item forward; full titles remain available in its tooltip.
+  Short or narrow entries omit their time before compromising their title;
+  titles wrap at word boundaries or ellipsize, never through words. Tracked
+  time uses its own lane beside planned tasks. Only the all-day row and month
+  grid use overflow summaries.
   All six calendar modes live in a compact layout
   disclosure beside date navigation. A calendar view with a capture row has no
   second Add task button in its toolbar. Metadata and wrapped content grow

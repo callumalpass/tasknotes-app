@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { parseDay, type Calendar, type ItemArg } from "@tasknotes/calendar";
-import { useEffect, useMemo, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { appLocale } from "../i18n/app";
 import { countLabel } from "../i18n/default-labels";
 import { dateFromStorage, todayString, type TaskSummary } from "../domain/task";
@@ -35,6 +35,20 @@ export function useCalendarAgenda({
   configuration: TaskCollectionConfiguration;
   display: CalendarSettings;
 }) {
+  const previousSelection = useRef(selected);
+  useEffect(() => {
+    const changed = previousSelection.current !== selected;
+    previousSelection.current = selected;
+    if (!enabled || !changed) return;
+    const frame = requestAnimationFrame(() => {
+      root.current
+        ?.querySelector<HTMLElement>(
+          `.tnc-list-section[data-date="${selected}"]`,
+        )
+        ?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [enabled, root, selected]);
   const [slots, setSlots] = useState<
     ReadonlyMap<HTMLElement, ItemArg<CalendarEventData>>
   >(new Map());

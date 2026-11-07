@@ -7,6 +7,7 @@ const view = (id: string) =>
 test("Upcoming has named, counted week days, respects the first day preference and supports keyboard selection", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
   await page.addInitScript(() =>
     localStorage.setItem(
       "tasknotes:calendar-preferences:v1",
