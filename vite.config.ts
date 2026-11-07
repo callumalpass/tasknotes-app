@@ -58,7 +58,10 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : "assets/[name]-[hash].js",
+            : chunk.name === "app" &&
+                /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
+              ? `assets/index-tasknotes-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}.js`
+              : "assets/[name]-[hash].js",
       },
     },
   },
@@ -101,7 +104,13 @@ export default defineConfig(({ mode }) => ({
       },
     },
     environment: "jsdom",
-    exclude: ["**/.claude/**", "**/e2e/**", "**/node_modules/**"],
+    // Publisher node:test suites run separately via test:publisher (with crypto).
+    exclude: [
+      "**/.claude/**",
+      "**/e2e/**",
+      "**/node_modules/**",
+      "**/scripts/publisher/**",
+    ],
     globals: true,
     maxWorkers: 4,
     setupFiles: "./src/test/setup.ts",
