@@ -29,6 +29,34 @@ export async function runNativeJourney({
   save = () => {},
 }) {
   let report = { status: "failed", phase: "fixture-preflight" };
+  const observations = [];
+  const allowed = new Set([
+    "pairing-observation-unavailable",
+    "pairing-approved-owned",
+    "pairing-approved-target-unverified",
+    "pairing-attested",
+    "pairing-account-confirmed",
+    "pairing-account-unconfirmed",
+    "portal-closed",
+    ...[
+      "signed_out",
+      "starting",
+      "authorizing",
+      "opening",
+      "setup",
+      "problem",
+      "unavailable",
+      "chooser",
+      "empty",
+      "other",
+    ].map((p) => `native-ui-${p}`),
+  ]);
+  const observe = (state) => {
+    if (!allowed.has(state) || observations.length >= 12) return;
+    observations.push({ state, at: new Date().toISOString() });
+    report = { ...report, observations: [...observations] };
+    save(report);
+  };
   const phase = (phase) => {
     const cleanup = [
       "failure-task-cleanup",
@@ -53,7 +81,7 @@ export async function runNativeJourney({
       environment.public_origin !== "https://connect.mdbase.dev"
     )
       throw new Error("environment-mismatch");
-    const result = await journey({ ...fixture, phase });
+    const result = await journey({ ...fixture, phase, observe });
     if (
       !CHECKS.every((c) => result?.checks?.[c] === true) ||
       result.cleanup !== CLEANUP
@@ -66,6 +94,7 @@ export async function runNativeJourney({
       cleanup: result.cleanup,
       environment: "production",
       serverRevision: environment.revision,
+      observations,
     };
   } catch {
     // Playwright errors can include credentials, private URLs and DOM contents.

@@ -93,6 +93,78 @@ export async function approveNativePortal(portal, collectionName) {
   }
 }
 
+// Observations contain only fixed enums/booleans, never request IDs, URLs,
+// account labels, raw errors or DOM. This is a read of the ORIGINAL request,
+// not an approval, callback exchange or substitute SDK owner.
+export function pairingObservation(value, collectionName) {
+  const p = value?.pairing;
+  if (!p || typeof p.installation_device !== "boolean")
+    return "pairing-observation-unavailable";
+  const selected = p.collections?.find(
+    (c) => c.collection_id === p.selected_collection_id,
+  );
+  if (p.approved_at)
+    return selected?.display_name === collectionName
+      ? "pairing-approved-owned"
+      : "pairing-approved-target-unverified";
+  if (p.attested) return "pairing-attested";
+  if (p.account_selection_confirmed) return "pairing-account-confirmed";
+  return "pairing-account-unconfirmed";
+}
+
+async function observePairing(portal, collectionName, observe) {
+  if (portal.isClosed()) return observe("portal-closed");
+  const state = await portal
+    .evaluate(async (collectionName) => {
+      const id = location.pathname.match(/^\/pair\/([0-9a-f-]+)$/i)?.[1];
+      if (!id || location.origin !== "https://connect.mdbase.dev") return null;
+      const r = await fetch(`/v1/pairing-requests/${id}`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!r.ok) return null;
+      const { pairing: p } = await r.json();
+      // Reduce private response inside the page. No inventory leaves the browser.
+      return {
+        pairing: {
+          installation_device: p.installation_device,
+          approved_at: !!p.approved_at,
+          attested: !!p.attested,
+          account_selection_confirmed: !!p.account_selection_confirmed,
+          selected_collection_id: "owned",
+          collections: p.collections?.some(
+            (c) =>
+              c.collection_id === p.selected_collection_id &&
+              c.display_name === collectionName,
+          )
+            ? [{ collection_id: "owned", display_name: collectionName }]
+            : [],
+        },
+      };
+    }, collectionName)
+    .catch(() => null);
+  observe(pairingObservation(state, collectionName));
+}
+
+async function observeNativePage(page, observe) {
+  const state = await page
+    .locator(".mdbase-collections-gate")
+    .getAttribute("data-phase", { timeout: 2000 })
+    .catch(() => null);
+  const allowed = [
+    "signed_out",
+    "starting",
+    "authorizing",
+    "opening",
+    "setup",
+    "problem",
+    "unavailable",
+    "chooser",
+    "empty",
+  ];
+  observe(allowed.includes(state) ? `native-ui-${state}` : "native-ui-other");
+}
+
 async function readAccountAccess(page) {
   return page.evaluate(async () => {
     const response = await fetch("/v1/me", {
@@ -197,6 +269,7 @@ export async function exerciseAndroidWasm({
   runId,
   serial,
   phase = () => {},
+  observe = () => {},
 }) {
   if (
     !email ||
@@ -216,6 +289,7 @@ export async function exerciseAndroidWasm({
   let forwardedPort;
   let page;
   let accessBefore;
+  let portal;
   let connect;
   let taskCreated = false;
   let taskDeleted = false;
@@ -283,7 +357,7 @@ export async function exerciseAndroidWasm({
     phase("native-sign-in");
     const previousPages = new Set(browser.contexts().flatMap((c) => c.pages()));
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    const portal = await until(async () => {
+    portal = await until(async () => {
       for (const p of browser.contexts().flatMap((c) => c.pages())) {
         if (!previousPages.has(p) && new URL(p.url()).origin === ORIGIN)
           return p;
@@ -345,7 +419,9 @@ export async function exerciseAndroidWasm({
       timeout: WAIT,
     });
     phase("fixture-approval-dispatch");
+    await observePairing(portal, collectionName, observe);
     await approveNativePortal(portal, collectionName);
+    await observePairing(portal, collectionName, observe);
     phase("runtime-open");
     // Resume the installed app as a user can from Android's app switcher. Only
     // its original authenticated poll completes the grant; no URL/code injection.
@@ -356,6 +432,7 @@ export async function exerciseAndroidWasm({
     phase("native-target-reacquire");
     page = await connect();
     page.setDefaultTimeout(WAIT);
+    await observeNativePage(page, observe);
     // A retained collection may still need its first TaskNotes model setup.
     // Creating the collection and initializing its model are independent. Do
     // not put the setup write in a polling callback: submit exactly once.
@@ -434,6 +511,8 @@ export async function exerciseAndroidWasm({
     };
   } catch (error) {
     failure = error;
+    if (portal) await observePairing(portal, collectionName, observe);
+    if (page && !page.isClosed()) await observeNativePage(page, observe);
   } finally {
     // Keep the original host alive until owned data is removed, including when
     // an assertion fails after creation. Never retry an unknown delete write.

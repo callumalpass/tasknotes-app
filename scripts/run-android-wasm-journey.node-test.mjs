@@ -64,6 +64,24 @@ test("requires every exercise and verified cleanup", async () => {
   }
 });
 
+test("observations allow only bounded fixed enums, never caller-supplied diagnostics", async () => {
+  const report = await runNativeJourney({
+    account: JSON.stringify(fixture),
+    health,
+    journey: async ({ observe }) => {
+      observe(fixture.password);
+      observe({ state: "pairing-attested", token: fixture.password });
+      for (let i = 0; i < 30; i++) observe("pairing-account-confirmed");
+      throw new Error(fixture.email);
+    },
+  });
+  assert.equal(report.observations.length, 12);
+  assert.ok(
+    report.observations.every((o) => o.state === "pairing-account-confirmed"),
+  );
+  assert.doesNotMatch(JSON.stringify(report), /not-a-real|registered@example/);
+});
+
 test("failure diagnostics retain phase but never credential-bearing errors", async () => {
   const saved = [];
   const report = await runNativeJourney({

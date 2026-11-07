@@ -6,6 +6,7 @@ import {
   openNativeWorkspace,
   ownedFixtureInstallations,
   approveNativePortal,
+  pairingObservation,
 } from "./android-wasm-journey.mjs";
 
 const page = (url, closed = false) => ({
@@ -117,6 +118,35 @@ test("never retries an uncertain model setup write", async () => {
   const page = workspace(false, unknown);
   await assert.rejects(openNativeWorkspace(page), (error) => error === unknown);
   assert.equal(page.clicks(), 1);
+});
+
+test("approval observations distinguish dispatch, attestation and exact target approval", () => {
+  const name = "[test] agent-owned";
+  const pairing = {
+    installation_device: true,
+    collections: [{ collection_id: "private-id", display_name: name }],
+    selected_collection_id: "private-id",
+  };
+  const state = (extra) =>
+    pairingObservation({ pairing: { ...pairing, ...extra } }, name);
+  assert.equal(state({}), "pairing-account-unconfirmed");
+  assert.equal(
+    state({ account_selection_confirmed: true }),
+    "pairing-account-confirmed",
+  );
+  assert.equal(state({ attested: true }), "pairing-attested");
+  assert.equal(
+    state({ approved_at: "private-time" }),
+    "pairing-approved-owned",
+  );
+  assert.equal(
+    state({ approved_at: true, selected_collection_id: "different" }),
+    "pairing-approved-target-unverified",
+  );
+  assert.equal(
+    pairingObservation(null, name),
+    "pairing-observation-unavailable",
+  );
 });
 
 const fixture = "[test] agent-native-fixture";
