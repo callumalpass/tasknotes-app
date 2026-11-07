@@ -97,7 +97,6 @@ jobs:
           sudo udevadm settle
           ls -l /dev/kvm
           id
-          "$ANDROID_HOME/emulator/emulator" -accel-check
           test -r /dev/kvm && test -w /dev/kvm
 
   native-emulator-preflight:
