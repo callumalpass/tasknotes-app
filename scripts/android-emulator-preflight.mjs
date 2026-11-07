@@ -37,7 +37,17 @@ try {
   ).page();
   page.setDefaultTimeout(90_000);
   phase = "app-ready";
-  await page.getByRole("button", { name: "Sign in", exact: true }).waitFor();
+  const ready = await Promise.race([
+    page
+      .getByRole("button", { name: "Sign in", exact: true })
+      .waitFor()
+      .then(() => true),
+    page
+      .getByRole("button", { name: "Restart TaskNotes", exact: true })
+      .waitFor()
+      .then(() => false),
+  ]);
+  if (!ready) throw new Error("public-native-startup-failure");
   console.log("native-emulator-preflight: passed (Chrome, real app WebView)");
 } catch {
   // This lane never clicks Sign in or receives any account input, and starts
@@ -51,9 +61,29 @@ try {
         .isVisible())
     )
       await page.locator("details.technical-details summary").click();
-    if (page)
+    if (page) {
+      // Probe only a constant public origin, never application/storage state.
+      const probe = await page.evaluate(() => {
+        const value = "capacitor://app.tasknotes.dev";
+        const u = new URL(value);
+        return {
+          userAgent: navigator.userAgent,
+          protocol: u.protocol,
+          host: u.host,
+          hostname: u.hostname,
+          exactAuthority: `${u.protocol}//${u.host}` === value,
+          userEmpty: !u.username,
+          passwordEmpty: !u.password,
+          searchEmpty: !u.search,
+          hashEmpty: !u.hash,
+        };
+      });
+      await writeFile(
+        "native-preflight-probe.json",
+        JSON.stringify(probe, null, 2),
+      );
       await page.screenshot({ path: "native-preflight.png", fullPage: true });
-    else if (device)
+    } else if (device)
       await writeFile("native-preflight.png", await device.screenshot());
     if (page)
       console.log(

@@ -149,7 +149,7 @@ jobs:
       - name: Exercise real Chrome and application WebView without credentials
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           force-avd-creation: true
@@ -165,7 +165,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: tasknotes-native-preflight
-          path: native-preflight.png
+          path: |
+            native-preflight.png
+            native-preflight-probe.json
           if-no-files-found: warn
 
   native-debug-journey:
@@ -203,7 +205,7 @@ jobs:
         env:
           TASKNOTES_NATIVE_ACCOUNT: ${{ secrets.TASKNOTES_NATIVE_ACCOUNT }}
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           force-avd-creation: true
@@ -387,7 +389,7 @@ jobs:
           TEST_HOST_ARTIFACT_DIGEST: ${{ needs.release.outputs.host_digest }}
           TASKNOTES_NATIVE_ACCOUNT: ${{ secrets.TASKNOTES_NATIVE_ACCOUNT }}
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           force-avd-creation: true
