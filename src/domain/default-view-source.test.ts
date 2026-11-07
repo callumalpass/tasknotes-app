@@ -355,14 +355,9 @@ describe("explicit starter views after setup", () => {
 });
 
 function starterDocuments(): TaskViewDocument[] {
-  return [
-    "today",
-    "upcoming",
-    "calendar",
-    "projects",
-    "archive",
-    "inbox",
-  ].map((id) => starterDocument(id));
+  return ["today", "upcoming", "calendar", "projects", "archive", "inbox"].map(
+    (id) => starterDocument(id),
+  );
 }
 
 function starterDocument(id: string): TaskViewDocument {

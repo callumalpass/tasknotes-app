@@ -74,8 +74,7 @@ export async function parseTaskCapture(
     : text;
   const parsed = parser.parseInputWithSpans(readable(source));
   const { data } = parsed;
-  if (monthly)
-    data.title = data.title.replace(/[ \t]+/gu, " ").trim();
+  if (monthly) data.title = data.title.replace(/[ \t]+/gu, " ").trim();
   if (monthly) {
     data.recurrence = `FREQ=MONTHLY;BYMONTHDAY=${monthly.day}`;
     if (!data.scheduledDate && !data.dueDate)

@@ -177,7 +177,7 @@ export function useCalendarAgenda({
           else heading.append(badge);
         }
         const count = section.querySelectorAll(
-          ".tnc-item--list:not(.is-time-entry)",
+          ".tnc-item--list:not(.is-time-entry):not(.google-calendar-event)",
         ).length;
         badge.textContent = String(count);
         badge.setAttribute("aria-label", countLabel(count, "task"));

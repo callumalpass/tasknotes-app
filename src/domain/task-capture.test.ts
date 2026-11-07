@@ -188,8 +188,7 @@ describe("priority in capture", () => {
         },
       ],
     } as never);
-    const parsed = (text: string) =>
-      parseTaskCapture(text, wordy, "en-AU");
+    const parsed = (text: string) => parseTaskCapture(text, wordy, "en-AU");
     for (const text of ["Call Rowan !very-high", "Call Rowan !Very high"]) {
       const result = await parsed(text);
       expect(result.input).toEqual({

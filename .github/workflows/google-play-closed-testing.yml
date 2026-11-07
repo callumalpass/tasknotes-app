@@ -106,6 +106,10 @@ jobs:
     needs: verify-release
     runs-on: ubuntu-latest
     environment: google-play-closed-testing
+    # All edits use the same service account/application, across tracks.
+    concurrency:
+      group: google-play-production
+      cancel-in-progress: false
     permissions:
       actions: read
       contents: read

@@ -81,6 +81,10 @@ reads as white rather than tinted, and the accent is the only blue the
 interface itself draws. Danger is a plain red and success a plain green, both
 at the accent's lightness. Do not introduce a second blue or a tinted surface.
 
+A rounded shape never carries a coloured single edge. Colour on a curved element
+fills or outlines the whole shape, and a drop position is its own line beside
+the element. A leading bar belongs only on square rows.
+
 Dark mode uses deep blue-black paper rather than pure black. Raised surfaces
 remain close to the canvas, dividers become visible through lightness rather
 than saturation, and accent and semantic colors become lighter to retain AA

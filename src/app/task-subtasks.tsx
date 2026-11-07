@@ -108,7 +108,11 @@ export function TaskSubtasks({
           onChange={(event) => setTitle(event.target.value)}
         />
         {title.trim() ? (
-          <button className="text-action" type="submit" disabled={busy || !link}>
+          <button
+            className="text-action"
+            type="submit"
+            disabled={busy || !link}
+          >
             <Trans>Add subtask</Trans>
           </button>
         ) : null}

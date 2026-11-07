@@ -6,6 +6,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
 "Language: zh\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
 
 #: src/app/search-screen.tsx
 msgid " — previously loaded"
@@ -88,6 +94,10 @@ msgstr "({left}) 且 ({right})"
 msgid "({left}) or ({right})"
 msgstr "({left}) 或 ({right})"
 
+#: src/app/task-calendar-view.tsx
+msgid "(No title)"
+msgstr "（无标题）"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（有未保存的更改）"
@@ -101,6 +111,11 @@ msgstr "{0, plural, =1 {正在添加图片…} other {正在添加 # 张图片�
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {已添加图片} other {已添加 # 张图片}}"
+
+#. placeholder {0}: google.omitted
+#: src/app/task-calendar-view.tsx
+msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
+msgstr "{0, plural, other {有 # 个 Google 活动无法显示。}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -976,6 +991,7 @@ msgstr "全部"
 msgid "All conditions match"
 msgstr "符合所有条件"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "全天"
@@ -1000,6 +1016,10 @@ msgstr "所有任务"
 #: src/app/views/view-catalog.tsx
 msgid "All views"
 msgstr "所有视图"
+
+#: src/calendar-service/failure-message.ts
+msgid "Allow popups for TaskNotes to sign in with Google."
+msgstr "请允许 TaskNotes 显示弹出窗口，以便使用 Google 登录。"
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
@@ -1199,6 +1219,7 @@ msgstr "任务最多的项目"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
+#: src/calendar-service/event-dialog.tsx
 msgid "Calendar"
 msgstr "日历"
 
@@ -1216,6 +1237,7 @@ msgstr "之后还能更换集合吗？"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/held-edits.tsx
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
@@ -1279,6 +1301,10 @@ msgstr "更改每个重复项的时间"
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "已更改： "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Changes apply to this occurrence only."
+msgstr "更改仅适用于此次活动。"
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
@@ -1437,6 +1463,7 @@ msgstr "点击任务以选择。"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/choice-options.tsx
 #: src/components/command-palette.tsx
 #: src/components/task-actions.tsx
@@ -1684,9 +1711,17 @@ msgstr "电脑、差事"
 msgid "Condition"
 msgstr "条件"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm"
+msgstr "确认"
+
 #: src/components/held-edits.tsx
 msgid "Confirm "
 msgstr "确认  "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Confirm delete"
+msgstr "确认删除"
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
@@ -1700,6 +1735,10 @@ msgstr "确认新恢复密码"
 msgid "Confirm protected-version replacement"
 msgstr "确认替换受保护版本"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm: delete account"
+msgstr "确认：删除账号"
+
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
 msgstr "正在确认“"
@@ -1708,7 +1747,12 @@ msgstr "正在确认“"
 msgid "Conflicting changes"
 msgstr "冲突的更改"
 
+#: src/calendar-service/settings.tsx
+msgid "Connect calendars"
+msgstr "连接日历"
+
 #: src/app/more-screen.tsx
+#: src/calendar-service/settings.tsx
 msgid "Connected"
 msgstr "已连接"
 
@@ -2023,6 +2067,7 @@ msgstr "根据简单筛选条件推断出的默认值会在创建任务时添加
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/views/view-catalog.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
 msgstr "删除"
@@ -2030,6 +2075,10 @@ msgstr "删除"
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
 msgstr "删除“{name}”？"
+
+#: src/calendar-service/settings.tsx
+msgid "Delete calendar account"
+msgstr "删除日历账号"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
@@ -2096,6 +2145,7 @@ msgstr "依赖项"
 msgid "Descending"
 msgstr "降序"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/reminder-editor.tsx
 msgid "Description"
 msgstr "描述"
@@ -2169,6 +2219,10 @@ msgstr "放弃恢复数据"
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "放弃操作会移除所有已保存的恢复数据并断开此集合连接，但不会撤销可能已经完成的删除。"
+
+#: src/calendar-service/settings.tsx
+msgid "Disconnect calendars"
+msgstr "断开日历连接"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/scratchpad-screen.tsx
@@ -2344,6 +2398,10 @@ msgstr "编辑日期和提醒"
 msgid "Edit details"
 msgstr "编辑详情"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Edit Google event"
+msgstr "编辑 Google 活动"
+
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
 msgstr "编辑未保存"
@@ -2395,6 +2453,7 @@ msgstr "空任务"
 msgid "Enable strict mode"
 msgstr "启用严格模式"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/recurrence-field.tsx
 msgid "Ends"
 msgstr "结束"
@@ -2410,6 +2469,10 @@ msgstr "请输入整数天数。"
 #: src/app/search-screen.tsx
 msgid "Enter or ↓ to focus the first result. j / k to move, Enter to open."
 msgstr "按 Enter 或 ↓ 聚焦第一个结果。按 j / k 移动，按 Enter 打开。"
+
+#: src/calendar-service/settings.tsx
+msgid "Enter the code shown in the Google window"
+msgstr "输入 Google 窗口中显示的代码"
 
 #. placeholder {0}: formatTaskDate(shownDate)
 #: src/components/task-date-panel.tsx
@@ -2551,6 +2614,10 @@ msgstr "查找任务。"
 msgid "Find tasks across your collection"
 msgstr "在整个集合中查找任务"
 
+#: src/calendar-service/settings.tsx
+msgid "Finish in the Google window."
+msgstr "请在 Google 窗口中完成操作。"
+
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
 msgstr "重新加载前，请先完成或关闭视图编辑器。"
@@ -2667,6 +2734,30 @@ msgstr "前往"
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
 msgstr "前往、执行操作或查找任务…"
+
+#: src/calendar-service/settings.tsx
+msgid "Google Calendar"
+msgstr "Google 日历"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar didn’t accept this change."
+msgstr "Google 日历未接受此更改。"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is busy. Try again shortly."
+msgstr "Google 日历正忙，请稍后重试。"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is unavailable right now. Try again."
+msgstr "Google 日历目前不可用，请重试。"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google didn’t complete the authorization. Try again."
+msgstr "Google 未完成授权，请重试。"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Google event"
+msgstr "Google 活动"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
@@ -3094,6 +3185,10 @@ msgstr "正在加载你的人物身份…"
 msgid "Loading…"
 msgstr "正在加载…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Location"
+msgstr "地点"
+
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
 msgstr "在此设备上锁定恢复密钥"
@@ -3426,6 +3521,10 @@ msgstr "名称"
 msgid "Navigation"
 msgstr "导航"
 
+#: src/calendar-service/settings.tsx
+msgid "Needs reconnecting"
+msgstr "需要重新连接"
+
 #: src/components/expression-builder.tsx
 msgid "Nested group"
 msgstr "嵌套分组"
@@ -3441,6 +3540,14 @@ msgstr "从不"
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
 msgstr "新设备需要由现有设备批准。密码和恢复密钥解锁将停止使用。在集合应用撤销操作并重新生成密钥之前，持有旧密码和密钥包的人仍可能读取早先的内容。"
+
+#: src/app/task-calendar-view.tsx
+msgid "New event"
+msgstr "新建活动"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "New Google event"
+msgstr "新建 Google 活动"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3681,6 +3788,10 @@ msgstr "不可用"
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
 msgstr "此浏览器中不可用"
+
+#: src/calendar-service/settings.tsx
+msgid "Not connected"
+msgstr "未连接"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
@@ -4168,6 +4279,10 @@ msgstr "快捷提醒"
 msgid "Quote"
 msgstr "引用"
 
+#: src/calendar-service/settings.tsx
+msgid "Read-only"
+msgstr "只读"
+
 #: src/app/search-screen.tsx
 msgid "Recent searches"
 msgstr "最近的搜索"
@@ -4179,6 +4294,10 @@ msgstr "最近打开"
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
 msgstr "已识别的任务详情"
+
+#: src/calendar-service/settings.tsx
+msgid "Reconnect"
+msgstr "重新连接"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
@@ -4608,6 +4727,7 @@ msgstr "进行其他更改前，请先检查此任务。"
 msgid "Review your protected edits before reloading."
 msgstr "重新加载前，请先检查受保护的编辑。"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
 msgstr "保存"
@@ -5006,6 +5126,10 @@ msgstr "显示较少"
 msgid "Show future virtual occurrences."
 msgstr "显示未来的虚拟重复项。"
 
+#: src/calendar-service/settings.tsx
+msgid "Show in the calendar"
+msgstr "在日历中显示"
+
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "显示更多结果"
@@ -5035,6 +5159,22 @@ msgstr "显示在导航中"
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
 msgstr "按此顺序显示在各项目下方。"
+
+#: src/app/task-calendar-view.tsx
+msgid "Sign in to Google Calendar in Settings to see events."
+msgstr "请在设置中登录 Google 日历以查看活动。"
+
+#: src/calendar-service/settings.tsx
+msgid "Sign in with Google"
+msgstr "使用 Google 登录"
+
+#: src/calendar-service/settings.tsx
+msgid "Sign out"
+msgstr "退出登录"
+
+#: src/calendar-service/settings.tsx
+msgid "Signed in. Connect your calendars next."
+msgstr "已登录。接下来请连接你的日历。"
 
 #: src/app/task-screen.tsx
 msgid "Skip"
@@ -5122,6 +5262,10 @@ msgstr "初始视图"
 msgid "Starting…"
 msgstr "正在启动…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Starts"
+msgstr "开始"
+
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5153,6 +5297,10 @@ msgstr "任务完成后停止正在运行的计时器"
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "停止计时器"
+
+#: src/calendar-service/settings.tsx
+msgid "Stop waiting"
+msgstr "停止等待"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
@@ -5405,6 +5553,10 @@ msgstr "Templates/Occurrence.md"
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
 
+#: src/calendar-service/failure-message.ts
+msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
+msgstr "该确认码未被接受或已过期。请重新开始以获取新的确认码。"
+
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
 msgstr "该密码或恢复密钥无法解锁此账户。请检查后重试。"
@@ -5424,6 +5576,10 @@ msgstr "操作已完成，但无法刷新账户状态。请再次检查状态。
 #: src/components/task-attachments.tsx
 msgid "The attachment is not a supported image."
 msgstr "附件不是受支持的图片格式。"
+
+#: src/calendar-service/failure-message.ts
+msgid "The authorization link wasn’t valid, so it wasn’t opened."
+msgstr "授权链接无效，因此未打开。"
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."
@@ -5461,9 +5617,17 @@ msgstr "删除操作"
 msgid "the destination section"
 msgstr "目标分区"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "The event must end after it starts."
+msgstr "活动的结束时间必须晚于开始时间。"
+
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
 msgstr "第一个视图是首页。此集合在此设备上的顺序和可见性已保存。"
+
+#: src/calendar-service/failure-message.ts
+msgid "The Google authorization expired. Try again."
+msgstr "Google 授权已过期，请重试。"
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
@@ -5576,6 +5740,10 @@ msgstr "此设置用于确定重复模式的锚点。计划日期仍是你计划
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "此看板按计算属性分组，因此无法在列之间移动卡片。"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "This calendar is read-only."
+msgstr "此日历为只读。"
+
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "此集合未定义已完成任务的状态。"
@@ -5596,6 +5764,14 @@ msgstr "此草稿已不在随手记中。"
 msgid "This edits the repeating task, including future occurrences."
 msgstr "编辑重复任务会同时更改未来的重复项。"
 
+#: src/calendar-service/failure-message.ts
+msgid "This event changed in Google. The latest version has been loaded; review it and try again."
+msgstr "此活动已在 Google 中更改。最新版本已加载，请检查后重试。"
+
+#: src/calendar-service/failure-message.ts
+msgid "This event no longer exists in Google Calendar."
+msgstr "此活动已不在 Google 日历中。"
+
 #: src/components/expression-builder.tsx
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "此筛选器使用构建器无法安全编辑的语法。"
@@ -5611,6 +5787,10 @@ msgstr "此 Markdown 包含大纲无法表示的内容。内容已保存；请�
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "仅此重复项"
+
+#: src/calendar-service/failure-message.ts
+msgid "This period has too many events. Choose a shorter one."
+msgstr "此时间段内的活动过多，请选择更短的时间段。"
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
@@ -5709,6 +5889,7 @@ msgstr "计时"
 
 #: src/app/view-editor-fields.ts
 #: src/app/view-sort-choices.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "标题"
@@ -6121,6 +6302,10 @@ msgstr "昨天"
 msgid "You can close this window."
 msgstr "你可以关闭此窗口。"
 
+#: src/calendar-service/settings.tsx
+msgid "You stay signed in here until you sign out. Deleting the account removes the connection, not your Google events or tasks."
+msgstr "在你退出登录之前，这里会一直保持登录状态。删除账号只会移除连接，不会删除你的 Google 活动或任务。"
+
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
 msgstr "今天的任务已完成。"
@@ -6152,6 +6337,10 @@ msgstr "此设备上已无法访问你的编辑。放弃该编辑以加载最新
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "你的编辑未保存。"
+
+#: src/calendar-service/failure-message.ts
+msgid "Your Google Calendar session ended. Sign in again in Settings."
+msgstr "你的 Google 日历会话已结束。请在设置中重新登录。"
 
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."

@@ -1,5 +1,5 @@
 import "@tasknotes/calendar/calendar.css";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
 import { TaskListSection } from "../components/task-list-section";
@@ -29,6 +29,9 @@ import {
   type CalendarEventMetadata,
   type TaskCalendarItem,
 } from "./calendar-items";
+import { GoogleEventDialog } from "../calendar-service/event-dialog";
+import { calendarServiceFailureMessage } from "../calendar-service/failure-message";
+import { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
 import { useCalendarPosition } from "./use-calendar-position";
@@ -276,12 +279,16 @@ export function TaskCalendarView({
     const kept = withoutSupersededMoves(pendingMoves, built.items, execution);
     if (kept !== pendingMoves) setPendingMoves(kept);
   }
+  const google = useGoogleCalendarOverlay(range);
   const items = useMemo(
     () =>
-      withPendingMoves(built.items, pendingMoves, execution)
-        .filter((item) => !repeatsToday(item))
-        .map(withRevision),
-    [built, execution, pendingMoves],
+      [
+        ...withPendingMoves(built.items, pendingMoves, execution).filter(
+          (item) => !repeatsToday(item),
+        ),
+        ...google.items,
+      ].map(withRevision),
+    [built, execution, pendingMoves, google.items],
   );
   const agendaRows = useCalendarAgenda({
     root: rootRef,
@@ -310,6 +317,20 @@ export function TaskCalendarView({
   const selectedEntries = (entries.get(selected) ?? []).filter(
     (entry) => !entry.timeEntry && !entry.modelEntry.isOverdueOnToday,
   );
+  const selectedGoogleItems = google.items.filter((item) => {
+    const dayStart = dateFromStorage(selected)!;
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const start = item.allDay
+      ? dateFromStorage(calendarDay(item.start))!
+      : new Date(item.start);
+    const end = item.end
+      ? item.allDay
+        ? dateFromStorage(calendarDay(item.end))!
+        : new Date(item.end)
+      : start;
+    return start < dayEnd && (end > dayStart || start >= dayStart);
+  });
   const listMode = mode === "listWeek";
   const markers =
     legend.length && !listMode && mode !== "multiMonthYear" ? (
@@ -609,7 +630,7 @@ export function TaskCalendarView({
   const overdueRows = useMemo(() => {
     const rows = new Map<string, TaskViewRow>();
     for (const item of items) {
-      const entry = item.data?.metadata.entry;
+      const entry = item.data?.metadata?.entry;
       if (!entry?.modelEntry.isOverdueOnToday) continue;
       rows.set(entry.row.task.id, entry.row);
     }
@@ -771,6 +792,14 @@ export function TaskCalendarView({
                 <Plus aria-hidden="true" size={16} />
                 <Trans>Add task</Trans>
               </button>
+              {google.writable.length ? (
+                <button
+                  type="button"
+                  onClick={() => google.create(selected, selectedCreateValue)}
+                >
+                  <Trans>New event</Trans>
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>
@@ -859,6 +888,36 @@ export function TaskCalendarView({
               {mutationError}
             </p>
           ) : null}
+          {google.failure ? (
+            <p className="inline-error" role="alert">
+              {calendarServiceFailureMessage(google.failure)}
+            </p>
+          ) : null}
+          {google.omitted ? (
+            <p className="inline-error" role="status">
+              {plural(google.omitted, {
+                one: "# Google event couldn’t be shown.",
+                other: "# Google events couldn’t be shown.",
+              })}
+            </p>
+          ) : null}
+          {google.enabled && !google.signedIn ? (
+            <p className="section-copy" role="status">
+              <Trans>
+                Sign in to Google Calendar in Settings to see events.
+              </Trans>
+            </p>
+          ) : null}
+          {google.editor ? (
+            <GoogleEventDialog
+              request={google.editor}
+              events={google.events}
+              writable={google.writable}
+              onSaved={google.replaceEvent}
+              onChanged={google.reload}
+              onClose={google.closeEditor}
+            />
+          ) : null}
           <div
             className={
               stripped
@@ -892,7 +951,7 @@ export function TaskCalendarView({
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>
-                !!item.data?.metadata.entry.modelEntry.isOverdueOnToday
+                !!item.data?.metadata?.entry.modelEntry.isOverdueOnToday
               }
               listLeadDidMount={({ el }) => setLeadSlot(el)}
               listLeadWillUnmount={({ el }) =>
@@ -954,7 +1013,7 @@ export function TaskCalendarView({
               }
               itemContent={(arg) => calendarEventContent(arg, configuration)}
               listItemContent={(arg) =>
-                agenda && !arg.isMirror
+                agenda && !arg.isMirror && arg.item.data?.metadata
                   ? Object.assign(document.createElement("div"), {
                       className: "agenda-task-slot",
                     })
@@ -966,6 +1025,10 @@ export function TaskCalendarView({
               }}
               itemWillUnmount={agendaRows.unmount}
               onItemClick={({ item }) => {
+                if (item.data?.google) {
+                  google.open(item.data.google);
+                  return;
+                }
                 if (agenda) return;
                 const metadata = item.data?.metadata;
                 if (metadata)
@@ -974,8 +1037,16 @@ export function TaskCalendarView({
               onItemContextMenu={(arg) => {
                 if (!agenda) openContextActions(arg);
               }}
-              onItemDrop={(info) => void moveEvent(info)}
-              onItemResize={(info) => void resizeEvent(info)}
+              onItemDrop={(info) =>
+                void (info.item.data?.google
+                  ? google.move(info)
+                  : moveEvent(info))
+              }
+              onItemResize={(info) =>
+                void (info.item.data?.google
+                  ? google.move(info)
+                  : resizeEvent(info))
+              }
               onSelect={createFromSelection}
               onDateClick={selectDate}
               onRangeChange={(view: ViewInfo) => {
@@ -989,7 +1060,7 @@ export function TaskCalendarView({
             />
             {[...agendaRows.slots].map(([slot, arg]) => {
               const item = items.find(({ id }) => id === arg.item.id);
-              const entry = item?.data?.metadata.entry;
+              const entry = item?.data?.metadata?.entry;
               if (!item || !entry || !agenda) return null;
               const kind = localizedEntryKind(
                 calendarEntryKind(
@@ -1080,6 +1151,31 @@ export function TaskCalendarView({
                 </Trans>
               </p>
             )}
+            {selectedGoogleItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="full-calendar-google-event"
+                aria-label={calendarEventLabel(item)}
+                style={{ "--c": item.color } as React.CSSProperties}
+                onClick={() => google.open(item.data!.google!)}
+              >
+                <span>{item.title || t`(No title)`}</span>
+                <small>
+                  {[
+                    !item.allDay
+                      ? new Intl.DateTimeFormat(locale, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        }).format(new Date(item.start))
+                      : null,
+                    item.data!.google!.calendar.name,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </small>
+              </button>
+            ))}
           </aside>
         ) : null}
         {phoneMonth ? markers : null}
@@ -1155,7 +1251,7 @@ function calendarView(mode: CalendarMode): ViewType {
 /** Stamps what an item draws as its `rev`, leaving the task records out. */
 /** A task scheduled today already has its row; a missed Due date adds no other. */
 function repeatsToday(item: TaskCalendarItem): boolean {
-  const entry = item.data?.metadata.entry;
+  const entry = item.data?.metadata?.entry;
   return (
     !!entry?.modelEntry.isOverdueOnToday &&
     taskDatePart(entry.row.task.scheduled) === todayString()
@@ -1165,6 +1261,7 @@ function repeatsToday(item: TaskCalendarItem): boolean {
 function withRevision(item: TaskCalendarItem): TaskCalendarItem {
   const data = { ...item.data! } as Partial<CalendarEventData>;
   delete data.metadata;
+  delete data.google;
   return { ...item, rev: JSON.stringify({ ...item, data }) };
 }
 
@@ -1208,13 +1305,12 @@ function calendarEventContent(
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
   const monthEntry = variant === "bar";
+  const title = item.title || t`(No title)`;
   primary.append(
     node(
       "span",
       undefined,
-      monthEntry
-        ? [timeText, kind, item.title].filter(Boolean).join(" · ")
-        : item.title,
+      monthEntry ? [timeText, kind, title].filter(Boolean).join(" · ") : title,
     ),
   );
   if (!listView && !monthEntry && (timeText || kind)) {
@@ -1294,7 +1390,8 @@ function calendarDay(value: TaskCalendarItem["start"]): string {
 
 function calendarEventLabel(item: TaskCalendarItem): string {
   const start = new Date(item.start);
-  if (Number.isNaN(start.getTime())) return item.title;
+  const title = item.title || t`(No title)`;
+  if (Number.isNaN(start.getTime())) return title;
   // An all-day date is a calendar day, not an instant: name that day everywhere.
   const day = item.allDay ? calendarDay(item.start) : todayString(start);
   const date =
@@ -1312,7 +1409,7 @@ function calendarEventLabel(item: TaskCalendarItem): string {
         hour: "numeric",
         minute: "2-digit",
       }).format(start)}`;
-  return `${item.title} ${date}${time}`;
+  return `${title} ${date}${time}`;
 }
 
 function listDayLabel(date: Date): string {

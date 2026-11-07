@@ -607,7 +607,11 @@ export class NextTaskRepository implements TaskRepository {
         if (
           !(reason instanceof MdbaseError) ||
           reason.code !== "conflict" ||
-          reason.reason !== "collection_changed"
+          // The replica also retires a discovery cursor when the collection
+          // moves under it. Connected computers throw this; the local runtime
+          // returns it as a refusal, and both arrive here as an MdbaseError.
+          (reason.reason !== "collection_changed" &&
+            reason.reason !== "view_discovery_stale")
         )
           throw reason;
         // A currentness refusal is a retired READ, not a failed collection.
@@ -2770,16 +2774,7 @@ export class NextTaskRepository implements TaskRepository {
           { captureTimezone: timezone, limit: 128, continuation },
           signal,
         );
-        if (result.kind === "refusal") {
-          // The replica retires a discovery cursor when the collection moves
-          // under it. That is a retired READ: start a fresh discovery.
-          if (
-            result.problem.code === "conflict" &&
-            result.problem.reason === "view_discovery_stale"
-          )
-            throw collectionChanged();
-          throw new MdbaseError(result.problem);
-        }
+        if (result.kind === "refusal") throw new MdbaseError(result.problem);
         return result;
       }, signal)) {
         this.assertCurrentData(revision);

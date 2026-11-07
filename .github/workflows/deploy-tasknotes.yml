@@ -1,0 +1,441 @@
+name: Publish immutable TaskNotes
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full 40-character source commit, reachable from main.
+        required: true
+        type: string
+      target:
+        description: TaskNotes target; dispatch this workflow on main.
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      drill:
+        description: Deliberately fail smoke after uploading the already-live production source (manual only).
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: tasknotes-pages-${{ github.event_name == 'workflow_dispatch' && inputs.target || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+# CI is ci.yml. Ops and direct operators dispatch this immutable publisher.
+jobs:
+  admit:
+    # Validate dispatch shape before acquiring an environment.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - env:
+          TARGET: ${{ inputs.target }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in staging|production) ;; *) exit 1 ;; esac
+          [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          node scripts/publisher/refs.mjs
+          node scripts/publisher/drill.mjs admit
+
+  inputs:
+    needs: admit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    environment: ${{ inputs.target }}
+    outputs:
+      trust: ${{ steps.hashes.outputs.trust }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Workflow-owned ancestry check before reading environment inputs
+        env:
+          TARGET: ${{ inputs.target }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publisher/refs.mjs
+      - id: hashes
+        env:
+          TASKNOTES_TRUST_ASSET_SHA256: ${{ vars.TASKNOTES_TRUST_ASSET_SHA256 }}
+        run: |
+          set -euo pipefail
+          [[ "$TASKNOTES_TRUST_ASSET_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          printf 'trust=%s\n' "$TASKNOTES_TRUST_ASSET_SHA256" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Unprivileged frozen TaskNotes build
+    needs: inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # No GitHub environment or Cloudflare secrets. Original intake before hooks.
+    defaults:
+      run:
+        working-directory: candidate
+    env:
+      TARGET: ${{ inputs.target }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      TASKNOTES_TRUST_ASSET_SHA256: ${{ needs.inputs.outputs.trust }}
+      TASKNOTES_SOURCE_ROOT: ${{ github.workspace }}/candidate
+    outputs:
+      artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+      artifact-digest: ${{ steps.artifact.outputs.artifact-digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: publisher
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Workflow-owned ancestry check before candidate checkout or execution
+        working-directory: publisher
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publisher/refs.mjs
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Data-only original intake before dependency execution
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/tasknotes-build"
+          node ../publisher/scripts/publisher/publisher.mjs guard > "$RUNNER_TEMP/tasknotes-build/plan.json"
+      - run: node ../publisher/scripts/publisher/install-inputs.mjs "$RUNNER_TEMP/tasknotes-build/plan.json"
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+        with:
+          # Workspace root has only publisher/ and candidate/, no package.json.
+          version: 10.7.0
+          run_install: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - name: ALL installed original members, then unprivileged build once
+        run: node ../publisher/scripts/publisher/build.mjs "$RUNNER_TEMP/tasknotes-build"
+      - run: node ../publisher/scripts/publisher/envelope.mjs "$RUNNER_TEMP/tasknotes-build"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: artifact
+        with:
+          name: tasknotes-build-${{ inputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-build/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retain failed build plan without manufacturing a successful artifact
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tasknotes-build-failure-${{ inputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-build/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish:
+    name: Protected immutable TaskNotes upload
+    needs: [inputs, build]
+    outputs:
+      ready: ${{ steps.compatibility.outputs.ready }}
+    runs-on: ubuntu-24.04
+    # Upload has a separate 7-minute bound; leave time for checks and recovery.
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: publisher
+    concurrency:
+      group: tasknotes-upload-${{ inputs.target }}
+      cancel-in-progress: false
+    # External environment policy admits main without per-publish approval.
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ inputs.target == 'production' && 'https://app.tasknotes.dev/' || 'https://staging.tasknotes-app.pages.dev/' }}
+    env:
+      TARGET: ${{ inputs.target }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      TASKNOTES_TRUST_ASSET_SHA256: ${{ vars.TASKNOTES_TRUST_ASSET_SHA256 }}
+      ARTIFACT_ID: ${{ needs.build.outputs.artifact-id }}
+      ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
+      TASKNOTES_SOURCE_ROOT: ${{ github.workspace }}/candidate
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      # A recovery point must predate everything its run published.
+      - name: One publication per run; dispatch a new run to retry
+        timeout-minutes: 1
+        working-directory: ${{ github.workspace }}
+        run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: publisher
+          fetch-depth: 0
+          persist-credentials: false
+        timeout-minutes: 3
+      - name: Workflow-owned ancestry check before candidate data is read
+        timeout-minutes: 1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publisher/refs.mjs
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+        timeout-minutes: 3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+        timeout-minutes: 2
+      - name: Workflow-owned guard; candidate is data only
+        timeout-minutes: 4
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/tasknotes-receipt" "$RUNNER_TEMP/tasknotes-upload"
+          node scripts/publisher/publisher.mjs guard > "$RUNNER_TEMP/tasknotes-receipt/plan.json"
+      - name: Isolated official tool lock only; no app hooks
+        timeout-minutes: 3
+        run: node scripts/publisher/tool.mjs "$RUNNER_TEMP/tasknotes-tool-path"
+      - name: Immutable artifact identity and full original inventory
+        timeout-minutes: 4
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/publisher/artifact.mjs "$RUNNER_TEMP/tasknotes-upload/artifact"
+          cp "$RUNNER_TEMP/tasknotes-upload/artifact/"{inventory.json,envelope.json} "$RUNNER_TEMP/tasknotes-receipt/"
+          cp "$RUNNER_TEMP/tasknotes-upload/artifact-metadata.json" "$RUNNER_TEMP/tasknotes-receipt/"
+          cmp "$RUNNER_TEMP/tasknotes-receipt/plan.json" "$RUNNER_TEMP/tasknotes-upload/artifact/plan.json"
+          node scripts/publisher/publisher.mjs inventory "$RUNNER_TEMP/tasknotes-upload/artifact/publish" "$RUNNER_TEMP/tasknotes-receipt/plan.json" > "$RUNNER_TEMP/tasknotes-receipt/revalidated-inventory.json"
+          cmp "$RUNNER_TEMP/tasknotes-receipt/inventory.json" "$RUNNER_TEMP/tasknotes-receipt/revalidated-inventory.json"
+          chmod -R a-w "$RUNNER_TEMP/tasknotes-upload/artifact"
+      - name: Existing project identity (never provision)
+        timeout-minutes: 1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/publisher/publisher.mjs project > "$RUNNER_TEMP/tasknotes-receipt/project.json"
+      - name: Live production contains the authenticated SDK producer
+        id: compatibility
+        timeout-minutes: 2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publisher/compatibility.mjs "$RUNNER_TEMP/tasknotes-receipt/plan.json" "$RUNNER_TEMP/tasknotes-receipt/compatibility.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        timeout-minutes: 2
+        with:
+          name: tasknotes-compatibility-${{ inputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-receipt/compatibility.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Capture production recovery point before upload
+        if: steps.compatibility.outputs.ready == 'true'
+        timeout-minutes: 4
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/publisher/rollback.mjs snapshot "$RUNNER_TEMP/tasknotes-receipt"
+      # Stored before upload, so recovery survives a lost job or receipt.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: inputs.target == 'production' && steps.compatibility.outputs.ready == 'true'
+        timeout-minutes: 2
+        with:
+          name: tasknotes-production-recovery-point-${{ github.run_id }}
+          path: ${{ runner.temp }}/tasknotes-receipt/previous.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Drill requires the exact source already live before upload
+        if: inputs.drill && steps.compatibility.outputs.ready == 'true'
+        timeout-minutes: 1
+        env:
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/publisher/drill.mjs before-upload "$RUNNER_TEMP/tasknotes-receipt"
+      - name: Recheck immutable inventory and upload once
+        id: upload
+        if: steps.compatibility.outputs.ready == 'true'
+        timeout-minutes: 7
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          node scripts/publisher/refs.mjs
+          branch=$(jq -er .pagesBranch "$RUNNER_TEMP/tasknotes-receipt/plan.json")
+          node scripts/publisher/publisher.mjs assert-inventory "$RUNNER_TEMP/tasknotes-upload/artifact/publish" "$RUNNER_TEMP/tasknotes-receipt/inventory.json"
+          cli=$(cat "$RUNNER_TEMP/tasknotes-tool-path")
+          cd "$RUNNER_TEMP/tasknotes-upload"
+          node "$cli" pages deploy artifact/publish --no-bundle --project-name tasknotes-app --branch "$branch" --commit-hash "$SOURCE_SHA" --commit-dirty=false > "$RUNNER_TEMP/tasknotes-upload/wrangler-output.txt" 2>&1
+      - name: Resolve actual full deployment UUID before served checks
+        id: deployment
+        timeout-minutes: 1
+        if: always() && steps.compatibility.outputs.ready == 'true' && (steps.upload.outcome == 'success' || steps.upload.outcome == 'failure' || steps.upload.outcome == 'cancelled')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/publisher/publisher.mjs capture "$RUNNER_TEMP/tasknotes-upload/wrangler-output.txt" > "$RUNNER_TEMP/tasknotes-receipt/deployment.json"
+      - name: All deployment URL AND alias bytes, source-owned headers and routes
+        id: verification
+        timeout-minutes: 9
+        if: always() && steps.compatibility.outputs.ready == 'true' && steps.deployment.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          node scripts/publisher/hosting.mjs "$RUNNER_TEMP/tasknotes-receipt/plan.json" "$RUNNER_TEMP/tasknotes-receipt/inventory.json" "$RUNNER_TEMP/tasknotes-receipt/deployment.json" "$RUNNER_TEMP/tasknotes-upload/artifact" > "$RUNNER_TEMP/tasknotes-receipt/verification.json"
+          if [ "$DRILL" = true ]; then node scripts/publisher/drill.mjs uploaded "$RUNNER_TEMP/tasknotes-receipt"; fi
+      - name: Preserve honest failure or complete static-publication receipt
+        timeout-minutes: 1
+        if: always() && steps.compatibility.outputs.ready == 'true'
+        run: |
+          if [ -f "$RUNNER_TEMP/tasknotes-upload/artifact-metadata.json" ]; then cp "$RUNNER_TEMP/tasknotes-upload/artifact-metadata.json" "$RUNNER_TEMP/tasknotes-receipt/"; fi
+          node scripts/publisher/publisher.mjs receipt "$RUNNER_TEMP/tasknotes-receipt" > "$RUNNER_TEMP/tasknotes-receipt/receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 2
+        if: always()
+        with:
+          name: tasknotes-receipt-${{ inputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-receipt/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
+
+  smoke:
+    name: TaskNotes fresh-browser smoke
+    needs: publish
+    if: needs.publish.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # No environment, Cloudflare credentials, candidate checkout or app install.
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      TARGET: ${{ inputs.target }}
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.tasknotes-smoke-browsers
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Isolated pinned browser tool with install scripts disabled
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          node scripts/publisher/tool.mjs "$RUNNER_TEMP/tasknotes-smoke-tool" smoke
+          module=$(cat "$RUNNER_TEMP/tasknotes-smoke-tool")
+          node "$(dirname "$module")/cli.js" install --with-deps chromium
+      - name: Fresh load, source entry asset, readiness and sign-in
+        timeout-minutes: 3
+        run: node scripts/publisher/smoke.mjs "$RUNNER_TEMP/tasknotes-smoke-tool" "$RUNNER_TEMP/tasknotes-smoke.json"
+      - name: Read this run's verified upload receipt for the manual drill
+        if: inputs.drill && inputs.target == 'production' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "tasknotes-receipt-production-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir "$RUNNER_TEMP/tasknotes-drill"
+      - name: Deliberate smoke failure after real same-source production upload
+        if: inputs.drill && inputs.target == 'production' && github.event_name == 'workflow_dispatch'
+        env:
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+        run: node scripts/publisher/drill.mjs fail "$RUNNER_TEMP/tasknotes-drill" "$RUNNER_TEMP/tasknotes-drill.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && inputs.drill
+        with:
+          name: tasknotes-production-drill-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-drill.json
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: ${{ inputs.target }}-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-smoke.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  production-recovery:
+    name: Restore production after incomplete publication or smoke
+    needs: [publish, smoke]
+    # A job-level always() still runs after cancellation or a job timeout.
+    if: always() && inputs.target == 'production' && needs.publish.result != 'skipped' && needs.smoke.result != 'success' && needs.publish.outputs.ready != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+        timeout-minutes: 3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+        timeout-minutes: 2
+      - name: Find the recovery point stored before upload
+        id: point
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_RESULT: ${{ needs.publish.result }}
+        run: |
+          set -euo pipefail
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=tasknotes-production-recovery-point-$GITHUB_RUN_ID" --jq '[.artifacts[]|select(.expired|not)]|first|.id // empty')
+          if [ -z "$id" ] && [ "$DEPLOY_RESULT" = success ]; then
+            echo 'A completed publication has no recovery point' >&2
+            exit 1
+          fi
+          echo "artifact-id=$id" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        if: steps.point.outputs.artifact-id != ''
+        timeout-minutes: 2
+        with:
+          artifact-ids: ${{ steps.point.outputs.artifact-id }}
+          path: ${{ runner.temp }}/tasknotes-recovery
+          merge-multiple: true
+      - name: Restore snapshot and verify every previous asset; keep run failed
+        if: steps.point.outputs.artifact-id != ''
+        timeout-minutes: 7
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/publisher/rollback.mjs recover "$RUNNER_TEMP/tasknotes-recovery"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 2
+        if: always() && steps.point.outputs.artifact-id != ''
+        with:
+          name: tasknotes-production-recovery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tasknotes-recovery/
+          if-no-files-found: warn
+          retention-days: 90

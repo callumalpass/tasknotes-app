@@ -17,12 +17,13 @@ test("large lists keep a bounded DOM while scrolling and preserve detail focus",
   await expect
     .poll(() => page.locator(".task-row-title").first().textContent())
     .not.toBe(initial);
-  const title = await page.locator(".task-row-title").evaluateAll(
-    (nodes) =>
-      nodes.find((node) => {
+  const title = await page.locator(".task-row-title").evaluateAll((nodes) =>
+    nodes
+      .find((node) => {
         const rect = node.getBoundingClientRect();
         return rect.top > 150 && rect.bottom < window.innerHeight - 100;
-      })?.getAttribute("aria-label"),
+      })
+      ?.getAttribute("aria-label"),
   );
   expect(title).toBeTruthy();
   const trigger = page.getByRole("button", { name: title!, exact: true });

@@ -15,7 +15,7 @@ vi.mock("./use-calendar-entries", () => ({
 }));
 afterEach(cleanup);
 
-it("counts other-day planned deadlines in the strip, excluding tracked time from task counts", () => {
+it("counts other-day planned deadlines in the strip, excluding tracked time and Google events from task counts", () => {
   const model = new TaskNotesTaskModel();
   const task = model.create(
     { title: "Deadline", scheduled: "2026-11-03", due: "2026-11-04" },
@@ -38,7 +38,7 @@ it("counts other-day planned deadlines in the strip, excluding tracked time from
   ]);
   const root = document.createElement("div");
   root.innerHTML =
-    '<button class="tnc-strip-day" data-date="2026-11-04"></button><section class="tnc-list-section"><h2 class="tnc-list-day">November 4</h2><div class="tnc-item--list"></div><div class="tnc-item--list"></div><div class="tnc-item--list is-time-entry"></div></section>';
+    '<button class="tnc-strip-day" data-date="2026-11-04"></button><section class="tnc-list-section"><h2 class="tnc-list-day">November 4</h2><div class="tnc-item--list"></div><div class="tnc-item--list"></div><div class="tnc-item--list is-time-entry"></div><div class="tnc-item--list google-calendar-event"></div></section>';
   const measure = vi.fn();
   const calendar = {
     current: {

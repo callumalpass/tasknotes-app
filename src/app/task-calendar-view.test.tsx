@@ -7,6 +7,7 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskCalendarView } from "./task-calendar-view";
 import type { CalendarEventData } from "./calendar-items";
 import { defaultCalendarPreferences } from "./calendar-preferences";
+import type { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 
 import { parseDay } from "@tasknotes/calendar";
 import type { TaskCalendarItem } from "./calendar-items";
@@ -17,7 +18,19 @@ import type { TaskViewExecution } from "../domain/view";
 // hands it, which is where a dropped item's dates come from.
 const calendar = vi.hoisted(() => ({
   props: undefined as undefined | Record<string, unknown>,
+  google: undefined as ReturnType<typeof useGoogleCalendarOverlay> | undefined,
 }));
+vi.mock("../calendar-service/use-google-calendar-overlay", async (original) => {
+  const actual =
+    await original<
+      typeof import("../calendar-service/use-google-calendar-overlay")
+    >();
+  return {
+    useGoogleCalendarOverlay: (
+      ...args: Parameters<typeof useGoogleCalendarOverlay>
+    ) => calendar.google ?? actual.useGoogleCalendarOverlay(...args),
+  };
+});
 vi.mock("@tasknotes/calendar/react", () => ({
   TaskCalendar: (props: Record<string, unknown>) => {
     calendar.props = props;
@@ -34,8 +47,126 @@ vi.mock("./repository-context", async () => {
 afterEach(async () => {
   cleanup();
   calendar.props = undefined;
+  calendar.google = undefined;
   vi.unstubAllGlobals();
   await act(() => activateAppLocale("en"));
+});
+
+describe("Google events alongside task calendars", () => {
+  function overlay() {
+    const googleCalendar = {
+      id: "calendar-one",
+      name: "Work",
+      can_write: true,
+      is_primary: true,
+    };
+    const event = {
+      status: "confirmed" as const,
+      id: "google-one",
+      calendar_id: googleCalendar.id,
+      etag: '"1"',
+      title: "Planning",
+      description: null,
+      location: null,
+      recurrence: null,
+      start: { kind: "date" as const, date: "2026-06-30" },
+      end: { kind: "date" as const, date: "2026-07-02" },
+    };
+    const item: TaskCalendarItem = {
+      id: "google:google-one",
+      title: event.title,
+      start: event.start.date,
+      end: event.end.date,
+      allDay: true,
+      color: "var(--google-calendar-tone-0)",
+      editable: true,
+      data: {
+        details: [],
+        recurring: false,
+        google: { event, calendar: googleCalendar },
+      },
+    };
+    calendar.google = {
+      enabled: true,
+      signedIn: true,
+      items: [item],
+      writable: [googleCalendar],
+      events: [event],
+      failure: null,
+      omitted: 0,
+      loading: false,
+      reload: vi.fn(),
+      replaceEvent: vi.fn(),
+      move: vi.fn(),
+      editor: null,
+      closeEditor: vi.fn(),
+      open: vi.fn(),
+      create: vi.fn(),
+    };
+    return { item, google: calendar.google };
+  }
+
+  it.each(["dayGridMonth", "timeGridWeek", "listWeek"])(
+    "renders and edits Google events in %s without treating them as tasks",
+    (mode) => {
+      const { item, google } = overlay();
+      const current = execution("2026-07-01");
+      current.view.presentation!.options.calendarView = mode;
+      const update = vi.fn();
+      renderCalendar(current, update);
+      expect(items().some((candidate) => candidate.id === item.id)).toBe(true);
+      const content = (
+        calendar.props![
+          mode === "listWeek" ? "listItemContent" : "itemContent"
+        ] as (arg: unknown) => Node
+      )({
+        item,
+        el: document.createElement("div"),
+        variant: mode === "listWeek" ? "list" : "bar",
+        timeText: "",
+        isMirror: false,
+        view: { type: mode === "listWeek" ? "list" : "month" },
+      });
+      expect(content.textContent).toContain("Planning");
+      expect(
+        (content as HTMLElement).querySelector(".agenda-task-slot"),
+      ).toBeNull();
+      (calendar.props!.onItemClick as (arg: unknown) => void)({ item });
+      expect(google.open).toHaveBeenCalledWith(item.data!.google);
+      for (const handler of ["onItemDrop", "onItemResize"]) {
+        const change = { item, revert: vi.fn() };
+        (calendar.props![handler] as (arg: unknown) => void)(change);
+        expect(google.move).toHaveBeenCalledWith(change);
+      }
+      expect(update).not.toHaveBeenCalled();
+    },
+  );
+
+  it("opens spanning Google events from a phone month's selected day", () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const { item, google } = overlay();
+    google.items.push({
+      ...item,
+      id: "google:finished",
+      title: "Finished yesterday",
+      start: "2026-06-30",
+      end: "2026-07-01",
+    });
+    const view = renderCalendar(execution("2026-07-01"), vi.fn());
+    const inspector = within(view.container).getByRole("complementary", {
+      name: "Selected day",
+    });
+    fireEvent.click(
+      within(inspector).getByRole("button", { name: /^Planning / }),
+    );
+    expect(google.open).toHaveBeenCalledWith(item.data!.google);
+    expect(within(inspector).queryByText("Finished yesterday")).toBeNull();
+    expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+  });
 });
 
 describe("calendar drops", () => {

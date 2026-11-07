@@ -70,7 +70,10 @@ function successfulFetch(calls) {
         ],
       });
     }
-    if (requestUrl.endsWith(":validate") || requestUrl.endsWith(":commit")) {
+    if (
+      requestUrl.endsWith(":validate") ||
+      requestUrl.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW")
+    ) {
       return jsonResponse({ id: "edit-1" });
     }
     if (options.method === "DELETE") return new Response(null, { status: 204 });
@@ -108,6 +111,7 @@ describe("Google Play closed-test publisher", () => {
           name: "TaskNotes 1.2.3",
           versionCodes: ["123401"],
           status: "completed",
+          releaseNotes: [{ language: "en-US", text: "TaskNotes 1.2.3." }],
         },
       ],
     });
@@ -115,7 +119,9 @@ describe("Google Play closed-test publisher", () => {
       expect.arrayContaining([
         expect.stringMatching(/\/tracks\/alpha$/),
         expect.stringMatching(/:validate$/),
-        expect.stringMatching(/:commit$/),
+        expect.stringMatching(
+          /:commit\?changesInReviewBehavior=ERROR_IF_IN_REVIEW$/,
+        ),
       ]),
     );
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(false);
@@ -156,7 +162,11 @@ describe("Google Play closed-test publisher", () => {
       }),
     ).rejects.toThrow("did not match expected 123401");
 
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -204,7 +214,11 @@ describe("Google Play closed-test publisher", () => {
     ).resolves.toMatchObject({ alreadyPublished: true, versionCode: 123401 });
 
     expect(calls.some((call) => call.url.includes("/bundles"))).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -251,7 +265,11 @@ describe("Google Play closed-test publisher", () => {
         readFileImpl: vi.fn(async () => Buffer.from("bundle")),
       }),
     ).rejects.toThrow("required closed-test release state");
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
   });
 
   it("rejects malformed credentials and non-TaskNotes release names", async () => {
@@ -299,7 +317,10 @@ function promotionFetch(calls, { tracks, putResponse } = {}) {
     if (requestUrl.endsWith("/tracks/production")) {
       return jsonResponse(putResponse ?? JSON.parse(options.body));
     }
-    if (requestUrl.endsWith(":validate") || requestUrl.endsWith(":commit")) {
+    if (
+      requestUrl.endsWith(":validate") ||
+      requestUrl.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW")
+    ) {
       return jsonResponse({ id: "edit-production" });
     }
     if (options.method === "DELETE") return new Response(null, { status: 204 });
@@ -321,10 +342,10 @@ function promote(fetchImpl, overrides = {}) {
 describe("Google Play production promotion", () => {
   it("fixes the production policy in code", () => {
     expect(PLAY_PRODUCTION_TRACK).toBe("production");
-    expect(PLAY_PRODUCTION_RELEASE_STATUS).toBe("completed");
+    expect(PLAY_PRODUCTION_RELEASE_STATUS).toBe("inProgress");
   });
 
-  it("promotes the closed-test version to a completed production release without uploading", async () => {
+  it("promotes the closed-test version to a 10% production rollout without uploading", async () => {
     const calls = [];
     const fetchImpl = promotionFetch(calls);
 
@@ -345,14 +366,17 @@ describe("Google Play production promotion", () => {
         {
           name: "TaskNotes 1.2.3",
           versionCodes: ["123401"],
-          status: "completed",
+          status: "inProgress",
+          userFraction: 0.1,
           releaseNotes: [{ language: "en-US", text: "Closed-test notes" }],
         },
       ],
     });
     const urls = calls.map((call) => call.url);
     expect(urls.findIndex((url) => url.endsWith(":validate"))).toBeLessThan(
-      urls.findIndex((url) => url.endsWith(":commit")),
+      urls.findIndex((url) =>
+        url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
     );
     expect(urls.some((url) => url.includes("/bundles"))).toBe(false);
     expect(urls.some((url) => url.endsWith("/tracks/alpha"))).toBe(false);
@@ -380,7 +404,11 @@ describe("Google Play production promotion", () => {
     await expect(promote(fetchImpl)).resolves.toMatchObject({
       alreadyPublished: false,
     });
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(true);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(true);
   });
 
   it("treats the exact existing production state as a read-only success", async () => {
@@ -407,7 +435,11 @@ describe("Google Play production promotion", () => {
       versionCode: 123401,
     });
     expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -429,7 +461,11 @@ describe("Google Play production promotion", () => {
 
     await expect(promote(fetchImpl)).rejects.toThrow(/closed-test/);
     expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -446,12 +482,12 @@ describe("Google Play production promotion", () => {
       "or a higher release",
     ],
     [
-      "the same version in a staged rollout",
+      "the same version in a different staged rollout",
       [
         {
           name: "TaskNotes 1.2.3",
           status: "inProgress",
-          userFraction: 0.1,
+          userFraction: 0.2,
           versionCodes: ["123401"],
         },
       ],
@@ -486,7 +522,13 @@ describe("Google Play production promotion", () => {
 
       await expect(promote(fetchImpl)).rejects.toThrow(message);
       expect(calls.some((call) => call.options.method === "PUT")).toBe(false);
-      expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+      expect(
+        calls.some((call) =>
+          call.url.endsWith(
+            ":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW",
+          ),
+        ),
+      ).toBe(false);
     },
   );
 
@@ -510,7 +552,11 @@ describe("Google Play production promotion", () => {
       "required production release state",
     );
     expect(calls.some((call) => call.url.endsWith(":validate"))).toBe(false);
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
@@ -525,8 +571,14 @@ describe("Google Play production promotion", () => {
       return base(url, options);
     });
 
-    await expect(promote(fetchImpl)).rejects.toThrow("Invalid edit (HTTP 400)");
-    expect(calls.some((call) => call.url.endsWith(":commit"))).toBe(false);
+    await expect(promote(fetchImpl)).rejects.toThrow(
+      "Google Play API request failed (HTTP 400)",
+    );
+    expect(
+      calls.some((call) =>
+        call.url.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    ).toBe(false);
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 

@@ -58,7 +58,10 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : "assets/[name]-[hash].js",
+            : chunk.name === "app" &&
+                /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
+              ? `assets/index-tasknotes-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}.js`
+              : "assets/[name]-[hash].js",
       },
     },
   },
@@ -66,6 +69,18 @@ export default defineConfig(({ mode }) => ({
     host: process.env.TASKNOTES_DEV_HOST ?? "127.0.0.1",
     port: Number(process.env.TASKNOTES_DEV_PORT ?? 4173),
     strictPort: true,
+    // A service on another site can't set the same-site session cookie, so LAB
+    // reaches it same-origin. Set VITE_TASKNOTES_CALENDAR_ORIGIN to this path.
+    proxy: process.env.TASKNOTES_CALENDAR_PROXY
+      ? {
+          "/calendar-service": {
+            target: process.env.TASKNOTES_CALENDAR_PROXY,
+            changeOrigin: true,
+            headers: { origin: "http://localhost:4173" },
+            rewrite: (path) => path.replace(/^\/calendar-service/, ""),
+          },
+        }
+      : undefined,
     https:
       process.env.TASKNOTES_HTTPS_KEY && process.env.TASKNOTES_HTTPS_CERT
         ? {
@@ -89,7 +104,13 @@ export default defineConfig(({ mode }) => ({
       },
     },
     environment: "jsdom",
-    exclude: ["**/.claude/**", "**/e2e/**", "**/node_modules/**"],
+    // Publisher node:test suites run separately via test:publisher (with crypto).
+    exclude: [
+      "**/.claude/**",
+      "**/e2e/**",
+      "**/node_modules/**",
+      "**/scripts/publisher/**",
+    ],
     globals: true,
     maxWorkers: 4,
     setupFiles: "./src/test/setup.ts",

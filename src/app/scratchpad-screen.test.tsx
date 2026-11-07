@@ -563,7 +563,11 @@ describe("ScratchpadScreen", () => {
       target: { files: [image, image] },
     });
 
-    await screen.findByText("Image added");
+    await screen.findByText(
+      "Image added",
+      {},
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
     expect(uploadFile).toHaveBeenCalledOnce();
     expect(
       (await repository.listScratchFeed()).items.filter(

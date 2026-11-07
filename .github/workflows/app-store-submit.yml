@@ -45,6 +45,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Record read-only dispatch (never consumes submission cooldown)
+        if: ${{ !inputs.submit && !inputs.release }}
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("read-only-attempt.json", JSON.stringify({schema:"tasknotes/mobile-read-only-attempt/1",platform:"ios",runId:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),source:process.env.GITHUB_SHA,submit:false,release:false})+"\n")'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: ${{ !inputs.submit && !inputs.release }}
+        with:
+          name: mobile-read-only-attempt
+          path: read-only-attempt.json
+          retention-days: 90
+          if-no-files-found: error
+
       - name: Verify source workflow and resolve exact uploaded build
         env:
           GH_TOKEN: ${{ github.token }}
@@ -52,6 +64,29 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
           node scripts/app-store-source-run.mjs
+
+      - name: Scope ops-line and Connect evidence access
+        id: evidence
+        if: inputs.submit || inputs.release
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: mdbase-dev
+          repositories: |
+            mdbase-cloud-ops
+            mdbase-connect
+          permission-contents: read
+          permission-actions: write
+
+      - name: Enforce shared source, SDK, wasm, hold and 24-hour gates
+        if: inputs.submit || inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          TASKNOTES_APP_STORE_AUTOMATION_ENABLED: ${{ vars.TASKNOTES_APP_STORE_AUTOMATION_ENABLED }}
+        run: node scripts/mobile-release-policy.mjs ios
 
       - name: Test publication policy
         run: node --test scripts/submit-app-store.node-test.mjs scripts/app-store-source-run.node-test.mjs

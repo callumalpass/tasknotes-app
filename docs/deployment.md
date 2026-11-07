@@ -1,87 +1,98 @@
-# Web deployment and production gate
+# Web App CD
 
-`.github/workflows/deploy-pages.yml` verifies the application and browser artifact
-before deploying. Pushes to **main** deploy only
-<https://staging.tasknotes-app.pages.dev/> through `MDBASE_ENV=staging pnpm deploy:dev`.
-That existing script selects the native staging environment and exact staging
-Connect/Editor origins, with no Connect loopback URL (LAB/local only). It validates
-the artifact, deploys the Cloudflare `staging` branch, and smokes staging.
-Native staging still requires its own authenticated SDK packet; selecting the
-build environment does not retarget the LAB packet or authorize a deployment.
-LAB remains separate and is not changed by this workflow.
+Ops `mdbase-dev/mdbase-cloud-ops` owns selection through `bin/release app-cd`,
+`config/app-cd.json` and one reusable `app-publish.yml`. It selects exact-source
+green main push CI (`ci.yml`), publishes/smokes staging, then publishes/smokes
+production. One failed app stops only its own line and wakes the existing release
+supervisor webhook. No Server CD or store logic is added.
 
-## Next app Editor destination
+`deploy-tasknotes.yml` accepts a full `source_sha` on main, never a native branch
+or mutable tag. Workflow-owned helpers authenticate npm/Sigstore production SDK,
+the same-producer signed staging archive, frozen file/UI originals, all installed
+original members, protected raw target trust and immutable same-run artifact
+custody before protected upload. The unprivileged build dynamically imports
+candidate-local build code **after** the ALL-original gate; the dependency-free
+publisher never executes candidate code. Both upload boundaries re-read actual
+production server/provider producer ancestry. Incompatible/unknown revisions wait
+without uploading.
 
-Next builds must set `VITE_TASKNOTES_EDITOR_ORIGIN` explicitly alongside their
-app environment and origin. Use the exact Editor origin for that environment:
-`https://lab.mdbase-editor-lab.pages.dev` for the current isolated LAB,
-`https://editor-staging.mdbase.dev` for staging (the staging deploy target
-sets it), or the approved production Editor origin when preparing a
-production build. An isolated
-local Editor may use an exact `http://127.0.0.1:<port>` origin. Paths, credentials,
-queries, and fragments are not valid configuration. Startup rejects a missing or
-invalid value rather than silently using another environment's Editor.
+The served entry `assets/index-tasknotes-<12-hex-source>.js` identifies the build.
+The dashboard reads that entry, never main's desired SDK pin. Old content hash
+`app-BS9YgI2X.js` is explicitly unknown source, not an inferred commit.
 
-The person-record action retains the authority's collection, server, settings
-surface, and person anchor; only its browser destination origin changes. This
-configuration does not select runtime assets or alter authentication authority.
+## #1223: qualified, permanent SDK floor remains
 
-## Promote to production
+The actual SDK pin names beta.158, producer
+`373c4a4e78e821e45a330e156a019a7aa635cfe8`, containing Connect
+`c42d004e3e4985df2cf54829c693f0e864972d2e`. TaskNotes #338 is merged.
+The publisher independently checks beta.158+ and authenticated producer ancestry;
+ops enforces the same permanent producer floor.
 
-1. Validate the staging commit with a disposable collection.
-2. Open **Actions → Deploy Pages → Run workflow**, select branch **main** and
-   target **production**. The default target is **staging**, not production.
-3. Review the selected commit and approve the protected production environments.
-   If main has advanced since staging validation, validate the new commit first.
+Production was initially disabled in both repositories. The distinct GCP staging
+qualification at app `15d919011a5ae743618517d03a60acf4ed7fa91e` and server
+`4af641695de2e6de0d5674f715dd1eccb8d03aa6` passed: released beta.7-upgraded custom
+type in **Cloud copy**, preserved mappings and task bytes through Setup,
+mapped completion/reopen and reload with native daemon off, and actual pinned
+runtime/SQLite wasm routes. The previewed automatic type update 4→5 preserved
+every mapping; no replacement was accepted. Full cleanup is retained in
+[ops #1576](https://github.com/mdbase-dev/mdbase-cloud-ops/pull/1576) and
+`docs/deployment-reports/2026-11-07-tasknotes-web-enrollment-and-staging-hold.md`
+there. Signed-out smoke was not used as that evidence.
 
-Production dispatch reruns verification, then deploys and smokes the existing
-GitHub Pages surface. Only after that succeeds does it deploy and smoke
-<https://app.tasknotes.dev/>. Both production jobs are manual-dispatch-only.
-Deployments are serialized per target and are not cancelled mid-deploy.
+App production admission is enabled only after this qualification; the central
+ops production flag must also be enabled through its normal reviewed PR. No UI,
+SDK, wasm, trust or mobile behavior changes with this publisher-only enablement.
+There is no dispatch override. Exact-source CI, fresh staging/smoke, production
+compatibility, production smoke and predecessor recovery remain mandatory.
 
-Every successful production upload is followed by `pnpm test:production-smoke`
-in the same job. Cloudflare smoke always targets **app.tasknotes.dev**, including
-its production-only frame-denial check; a missing URL variable cannot skip it.
-A smoke failure fails the deployment run with an error annotation. The deployment
-has already happened: investigate and, if necessary, perform an explicit operator
-rollback; there is no automatic rollback.
+## Targets, settings and identity
 
-`.github/workflows/production-smoke.yml` retains artifact checks for pull requests to `main`,
-manual dispatch, and the **six-hour schedule**. Scheduled/manual smoke checks the
-canonical **app.tasknotes.dev** origin. The smoke checks shell/PWA/auth/notification
-and Connect boundaries, not authenticated CRUD in a real collection.
+- Existing Pages project `tasknotes-app`, UUID
+  `8f377e88-f1d0-4a5a-8928-2daa3e7c527a`, production channel `main`.
+- Staging `https://staging.tasknotes-app.pages.dev`; production
+  `https://app.tasknotes.dev`. Keep Cloudflare Git deployments disabled.
+- Existing protected `staging` and `production` environments admit only main,
+  with no tags, reviewers or wait timer for web App CD.
+- Existing `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` credentials remain.
+  `TASKNOTES_TRUST_ASSET_SHA256` must be set at each target environment:
+  production `7912e40838213e60b65848350d319a48019021317b112e3326429b250f0133d7`;
+  staging `18ae86a26f9c8b2442235c537b8d58dcc059c05e4bb0f175607fd0aeacc3f0ad`.
+  Raw assets in `config/next-trust/` are byte-verbatim, never formatter-owned.
+  Old staging differs only in issuance/source attribution; roots, policy keys
+  and origins are unchanged. Remove retired `NATIVE_*_SHA256` variables and
+  native environment ref admission after the replacement merges.
+- The existing release App is installed on this personal-account repository.
+  Ops mints repository-scoped Actions-write/Contents-read credentials from the
+  configured owner and a separate ops/Connect evidence reader. No token fallback.
+- Web builds set the exact target app/Editor origins, web-only manifest and no
+  Firebase native delivery. Mobile manifests, signing, store lines and #348
+  are untouched. LAB remains on its independent development helper.
+- `ci.yml` retains the legacy GitHub Pages redirect only; it never uploads a
+  Cloudflare web build. The retired manual/native/weekly web paths are not
+  alternatives. The central SDK repinner remains the only SDK writer.
 
-## Required administrator settings
+## Verification and automatic recovery
 
-- Create GitHub environment **tasknotes-staging**, restricted to deployment branch
-  **main**. No required reviewers are needed for automatic staging deployment.
-- Keep production environments **github-pages** and **cloudflare-pages**, restricted
-  to **main**. Add required production reviewers, prevent self-review, and disable
-  protection-rule bypass where supported. Manual dispatch is already a code-level
-  gate; environment approval provides an additional reviewer gate.
-- In **tasknotes-staging** and **cloudflare-pages**, set environment secrets
-  **CLOUDFLARE_API_TOKEN** (account-scoped **Cloudflare Pages: Edit**) and
-  **CLOUDFLARE_ACCOUNT_ID**. Reuse the existing credential names; no additional
-  credential type is introduced. Verification and smoke jobs need no credentials.
-- Keep GitHub Pages source set to **GitHub Actions**, and its existing URL
-  <https://callumalpass.github.io/tasknotes-app/>. Production retains this surface
-  as a prerequisite to deploying the canonical Cloudflare domain.
-- Keep Cloudflare Pages project **tasknotes-app**, production branch **main**,
-  custom domain **app.tasknotes.dev**, and staging alias
-  **staging.tasknotes-app.pages.dev**. Disable separate Cloudflare Git-triggered
-  production deployments if configured, otherwise they bypass the GitHub gate.
-- Keep `TASKNOTES_FIREBASE_PROJECT_ID` at repository scope if required by the
-  existing notification setup; verification has no deployment environment.
-  The staging script deliberately clears it for its web-only manifest.
-- `CLOUDFLARE_PAGES_ENABLED` and `TASKNOTES_PRODUCTION_URL` are no longer used by
-  these workflows: production explicitly deploys Cloudflare and always smokes
-  the canonical origin. They can be removed after checking other consumers.
-- Enable failure notifications for deployment and scheduled-smoke workflows.
-  Smoke is mandatory but does not automatically notify a separate incident system.
+Full inventories include hidden/control files, custom callback/route rewrites,
+404, security/cache/MIME policy, PWA/service worker and original SDK native/SQLite
+bytes. Fresh cache/SW-free browser smoke verifies source, Sign in, no page errors
+and no readiness fence. Both immutable deployment and canonical alias are read.
 
-These workflows do not configure environments, secrets, reviewers, or Cloudflare
-settings. Staging validation is an operator/reviewer responsibility, not an
-automated assertion that the same SHA previously passed staging.
+Before production upload, retain the full canonical UUID and transitive static
+asset fingerprints. Incomplete upload, failed verification, smoke failure or
+cancellation invoke normal predecessor Pages recovery. Recovery refuses a newer
+publisher and verifies saved alias bytes over a stable interval. A restore is
+still a failed app attempt, never a green release. Do not rerun CD to qualify it.
 
-Pull requests to other branches do not run the Android, iOS or smoke workflows.
-Run `pnpm verify` locally before merging them.
+After production is enabled and shipped, a direct human same-source
+`drill: true` run captures the predecessor, publishes a distinct UUID, completes
+normal smoke, intentionally fails, and proves normal recovery. It is not a
+cross-source, signed-in or mobile drill. Preserve bounded attempt artifacts and
+normally merge a privacy-bounded ops deployment report after every deployment.
+
+Local source checks: `rpnpm run test:publisher`, `rpnpm run verify`, and
+`rpnpm run rehearse:publisher production|staging`. Rehearsals reproduce separate
+candidate and dependency-free publisher checkouts, authenticate actual originals
+and verify complete final inventories without publishing. No deployment secrets
+are permitted. `production-smoke.yml` keeps the existing scheduled public
+boundary checks; it neither publishes nor authorizes #1223 qualification.

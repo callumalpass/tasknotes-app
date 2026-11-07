@@ -98,69 +98,36 @@ Publish a newer corrective build or halt the closed track in Play Console.
 
 ## Promote a closed-test build to production
 
-TaskNotes has Play production access. Production releases are never triggered
-by tags: a build first goes through the closed-testing flow above, and only
-then is promoted on demand.
+A fresh read-only API snapshot on 2026-11-06 confirmed an existing completed
+production release: TaskNotes 1.0.12, version code 100738. Production access is
+not the same thing as review clearance for the next version.
 
-### One-time production environment setup
+The `google-play-production` environment already has the scoped
+`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64` secret and admits only `main`.
+Preserve existing credentials and signing identities. Do not add per-release
+human approval as a substitute for automated qualification.
 
-A repository administrator creates the GitHub environment
-`google-play-production`:
+Current production policy, queue, exact-build wasm evidence, isolated store
+holds, dashboard artifacts and remaining API limits are documented in
+[mobile store automation](mobile-store-automation.md). That document supersedes
+the retired full-rollout/manual-promotion procedure:
 
-1. **Required reviewers:** `callumalpass`. Leave "Prevent self-review" off,
-   because the same maintainer dispatches and approves the run, and disable
-   administrator bypass if the plan offers it.
-2. **Deployment branches and tags:** selected branches only, with the single
-   rule `main`.
-3. **Environment secret:** `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64`, holding
-   the same base64-encoded service-account JSON as the
-   `google-play-closed-testing` environment. GitHub cannot copy secrets between
-   environments; set it again from the durable private copy of the key file,
-   for example
-   `base64 -w0 service-account.json | gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 --env google-play-production`.
+- The queue selects the newest qualified green main source with a completed
+  alpha build and enforces the SDK floor, exact signed-build wasm proof,
+  independent Play hold and 24-hour gap again at the production boundary.
+- Promotion starts at `inProgress` with `userFraction: 0.1`; previous completed
+  releases are preserved. There is no full-rollout fallback.
+- Scheduled boundary/Vitals checks halt the exact owned staged version on
+  failure and stop only `tasknotes-google-play`. Guarded 24-hour stages widen
+  10% → 50% → 100%; missing Vitals never authorizes widening.
+- Android Publisher release summaries expose review/rejection lifecycle on
+  every track. Unknown observations fail closed. Commits use the atomic
+  `ERROR_IF_IN_REVIEW` guard, never the review-cancelling API default.
+- The enable variable remains unset; neither this wiring nor a successful
+  status read authorizes a production submission.
 
-The service account must have permission to release to production in Play
-Console (see the one-time Play Console setup above).
-
-### Production policy
-
-`scripts/publish-google-play.mjs --promote-production <versionCode> <version>`
-uses a fixed policy:
-
-- package: `dev.tasknotes.app`;
-- track: `production`;
-- release status: `completed` (full rollout, no `userFraction`);
-- no upload: the version code must already be a completed `alpha` release
-  named `TaskNotes <version>`; its release notes are copied unchanged;
-- refuses if production has any release that is not `completed` (for example
-  a staged rollout or halted release started in Play Console), or already
-  contains this or a higher version code in a different state;
-- the exact existing production state is a read-only success, so reruns are
-  safe;
-- validates the edit before committing it.
-
-A full rollout is deliberate: the identical bundle has already run on the
-closed track, the install base is small, and a staged rollout would leave an
-`inProgress` release requiring manual follow-up before the next promotion. To
-halt a bad production release, use Play Console and publish a newer
-corrective build through closed testing and promotion.
-
-### Dispatch a production promotion
-
-1. Confirm the version is on the `alpha` track and has been tested.
-2. Dispatch the workflow from `main`:
-
-   ```bash
-   gh workflow run google-play-production.yml --ref main \
-     -f release_tag=android-v1.0.10
-   ```
-
-3. The **Google Play production** workflow verifies the tag commit is
-   reachable from `main` and matches `package.json`, and derives the version
-   code from the tag's successful **Android** run exactly as closed testing
-   did. It then waits for approval on the `google-play-production`
-   environment.
-4. Approve the deployment in the Actions run. The publisher checks that the
-   version code is on `alpha`, promotes it, and commits after Play validates
-   the edit. Production releases then go through Google Play review before
-   they reach the store.
+Do not dispatch a production promotion until the exact plan has been presented,
+the signed build's wasm route has passed, and Callum has said go. The existing
+`google-play-production.yml` is still the only production publisher; the queue
+uses that same guarded path. Never rerun an unknown store mutation or manipulate
+Server CD to recover a Play release.

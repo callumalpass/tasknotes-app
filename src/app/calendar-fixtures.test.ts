@@ -105,7 +105,7 @@ describe("shared calendar contract through app mapping and exact repository pers
       // Ordering/grouping is host presentation, not entry identity.
       expect(
         items
-          .map((item) => item.data!.metadata.entry.modelEntry)
+          .map((item) => item.data!.metadata!.entry.modelEntry)
           .sort((a, b) => a.id.localeCompare(b.id)),
       ).toEqual(
         [...fixture.expectedEntries].sort((a, b) => a.id.localeCompare(b.id)),
@@ -132,7 +132,7 @@ describe("shared calendar contract through app mapping and exact repository pers
         const fresh = freshFixture.repository;
         await fresh.initialize();
         const item = items.find((candidate) => candidate.id === edit.entryId)!;
-        const neutral = item.data!.metadata.entry.modelEntry;
+        const neutral = item.data!.metadata!.entry.modelEntry;
         const before = (await fresh.get(neutral.taskId))!;
         const after = await fresh.editCalendar(neutral.taskId, {
           entry: neutral,
