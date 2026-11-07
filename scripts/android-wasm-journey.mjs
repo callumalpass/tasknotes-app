@@ -70,14 +70,12 @@ export function nativeApprovalButton(portal, collectionName) {
   // The portal can include the selected collection in its accessible label.
   // Both accepted labels name this application; the expanded label must name
   // exactly the run-owned fixture, never a prefix or another collection.
-  return portal
-    .getByRole("button", { name: "Open TaskNotes", exact: true })
-    .or(
-      portal.getByRole("button", {
-        name: `Open TaskNotes with ${collectionName}`,
-        exact: true,
-      }),
-    );
+  return portal.getByRole("button", { name: "Open TaskNotes", exact: true }).or(
+    portal.getByRole("button", {
+      name: `Open TaskNotes with ${collectionName}`,
+      exact: true,
+    }),
+  );
 }
 
 export async function approveNativePortal(portal, collectionName) {
