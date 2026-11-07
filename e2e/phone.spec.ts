@@ -190,6 +190,7 @@ test("touch property editing saves, is truly modal and restores its trigger", as
 test("touch month selection consumes its compatibility click, not the next intentional tap", async ({
   page,
 }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
   await page.setViewportSize({ width: 412, height: 713 });
   await page.clock.setFixedTime(new Date("2026-11-06T10:00:00"));
   await page.goto(route("calendar"));
@@ -203,10 +204,40 @@ test("touch month selection consumes its compatibility click, not the next inten
   await expect(
     page.getByRole("textbox", { name: "Task title", exact: true }),
   ).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("phone-month-day.png"),
+  });
   await agenda.locator(".task-row-title").first().tap();
   await expect(
     page.getByRole("textbox", { name: "Task title", exact: true }),
   ).toBeVisible();
+});
+
+test("phone expanded agenda keeps compact markers and selected-day capture", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("views/TaskNotes%2FViews%2Fupcoming.base%23upcoming?demo=60");
+  await page.locator(".agenda-range-toggle").click();
+  const strip = page.locator(".tnc-strip");
+  await expect(strip).toHaveClass(/is-expanded/);
+  const marker = strip.locator(".tnc-strip-day.is-focus .tnc-strip-num");
+  const bounds = (await marker.boundingBox())!;
+  expect(Math.abs(bounds.width - bounds.height)).toBeLessThan(1);
+  await expect(
+    strip.locator(".agenda-strip-count", { hasText: /^0$/ }),
+  ).toHaveCount(0);
+  const selected = await strip
+    .locator(".tnc-strip-day.is-focus")
+    .getAttribute("data-date");
+  await expect(
+    page.locator(`.tnc-list-section[data-date="${selected}"] .tnc-list-add`),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: test.info().outputPath("phone-agenda.png") });
 });
 
 test("touch long press selects, tap toggles, and swipes still act outside selection mode", async ({

@@ -1250,6 +1250,94 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
 
+it.each(["pointer", "keyboard"])(
+  "moves into an empty date group without manual sorting and offers date-only Undo (%s)",
+  async (method) => {
+    clearUndoHistory();
+    const view = manualListView("empty-date");
+    view.sort = [{ property: "note.title", direction: "asc" }];
+    const tasks = [
+      {
+        ...listTask("dated", "Dated task"),
+        scheduled: "2026-11-07T09:30",
+        due: "2026-11-20T17:00",
+        priority: "high",
+        projects: ["Research"],
+      },
+    ];
+    const original = { ...tasks[0] };
+    const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+      const current = tasks.find((task) => task.id === id)!;
+      if (input.scheduled !== undefined)
+        current.scheduled = input.scheduled ?? "";
+      current.revision = Number(current.revision) + 1;
+      return { ...current };
+    });
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({
+        task,
+        values: { "note.scheduled": task.scheduled.slice(0, 10) },
+      })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: ["2026-11-07", "2026-11-08"].map((date) => ({
+        values: { "note.scheduled": date },
+        count: tasks.filter((task) => task.scheduled.startsWith(date)).length,
+        summaries: {},
+      })),
+    }));
+    repository.readViewSource = async () => ({
+      ...view.source,
+      document:
+        "views:\n  - type: tasknotesTaskList\n    name: empty-date\n    groupBy: { property: note.scheduled, direction: ASC }\n    sort:\n      - column: note.title\n        direction: ASC\n",
+    });
+    repository.getSummary = async () => ({ ...tasks[0] });
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
+    const { container } = renderListView(repository, view);
+    const handle = await screen.findByRole("button", {
+      name: /Reorder Dated task/,
+    });
+    const target = container.querySelectorAll<HTMLElement>(
+      "section[data-list-lane]",
+    )[1]!;
+    expect(target).toHaveTextContent("No tasks");
+    if (method === "pointer") {
+      mockPointerCapture(
+        handle.closest<HTMLElement>("[data-manual-order-task]")!,
+      );
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: vi.fn(() => target),
+      });
+      const press = { button: 0, isPrimary: true, pointerId: 27 };
+      fireEvent.pointerDown(handle, press);
+      fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
+      expect(target).toHaveClass("is-drop-target");
+      fireEvent.pointerUp(handle, press);
+    } else fireEvent.keyDown(handle, { key: "ArrowDown" });
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith("dated", {
+        scheduled: "2026-11-08T09:30",
+      }),
+    );
+    await waitFor(() => expect(notice).toHaveBeenCalledOnce());
+    expect(tasks[0]).toMatchObject({
+      ...original,
+      scheduled: "2026-11-08T09:30",
+      revision: 2,
+    });
+    await act(async () => {
+      await takeUndo()!.run();
+    });
+    expect(update).toHaveBeenLastCalledWith("dated", {
+      scheduled: "2026-11-07T09:30",
+    });
+    unsubscribe();
+  },
+);
+
 it.each([false, true])(
   "journals manual ranks and guards Undo against later edits (%s)",
   async (changed) => {

@@ -52,6 +52,43 @@ afterEach(async () => {
   await act(() => activateAppLocale("en"));
 });
 
+it("keeps the time-grid overlap layout uncapped and non-obscuring", () => {
+  const model = new TaskNotesTaskModel();
+  const execution = {
+    view: {
+      key: "calendar",
+      properties: [],
+      presentation: {
+        type: "tasknotes.calendar",
+        options: { calendarView: "timeGridWeek" },
+      },
+    },
+    rows: [],
+    groups: [],
+    totalCount: 0,
+    hasMore: false,
+  } as unknown as TaskViewExecution;
+  render(
+    <TaskCalendarView
+      execution={execution}
+      preferences={defaultCalendarPreferences("en-US")}
+      identityTasks={[]}
+      selected="2026-11-07"
+      selectedCreateValue="2026-11-07"
+      titleProperty={model.configuration().fieldMapping.title}
+      onSelect={vi.fn()}
+      onCreate={vi.fn()}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+      onEdit={vi.fn()}
+    />,
+  );
+  expect(calendar.props).toMatchObject({
+    eventMaxStack: 0,
+    slotEventOverlap: false,
+  });
+});
+
 describe("Google events alongside task calendars", () => {
   function overlay() {
     const googleCalendar = {

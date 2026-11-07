@@ -636,6 +636,46 @@
   min-height: 0;
   overflow: hidden;
   align-content: start;
+  justify-content: flex-start;
+}
+
+.full-calendar-view .tnc-item--timed {
+  container: calendar-event / size;
+}
+
+.full-calendar-view .tnc-item--timed[data-readable-cascade] {
+  left: var(--calendar-timed-left) !important;
+  width: var(--calendar-timed-width) !important;
+}
+
+.full-calendar-view
+  .tnc-item--timed[data-readable-cascade]
+  .full-calendar-event-secondary {
+  display: none;
+}
+
+.full-calendar-view
+  .tnc-item--timed[data-cascade-sliver]:not(:hover, :focus-visible)
+  .full-calendar-event-content {
+  visibility: hidden;
+}
+
+.full-calendar-view .tnc-item--timed:is(:hover, :focus-visible) {
+  z-index: 25 !important;
+}
+
+.full-calendar-view
+  .tnc-item--timed[data-readable-cascade]:is(:hover, :focus-visible) {
+  left: 0 !important;
+  width: calc(100% - 1px) !important;
+}
+
+.full-calendar-view .tnc-col.has-actual .tnc-col-plan {
+  right: calc(40% + 4px);
+}
+
+.full-calendar-view .tnc-col.has-actual .tnc-col-actual {
+  width: 40%;
 }
 
 .full-calendar-view .tnc-item--timed.is-short .tnc-item-main {
@@ -646,7 +686,7 @@
 
 .full-calendar-view .tnc-item--timed .full-calendar-event-primary {
   flex-wrap: nowrap;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -655,7 +695,8 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
   line-height: var(--calendar-event-line);
 }
 
@@ -671,8 +712,22 @@
   white-space: nowrap;
 }
 
+@container calendar-event (height < 58px) or (width < 104px) {
+  .full-calendar-event-secondary {
+    display: none;
+  }
+}
+
+@container calendar-event (height < 36px) or (width < 104px) {
+  .full-calendar-event-primary > span {
+    display: block !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis;
+  }
+}
+
 .full-calendar-view .tnc-item.is-time-entry {
-  background: color-mix(in srgb, var(--success), transparent 90%);
+  background: color-mix(in srgb, var(--success) 10%, var(--paper));
   border-color: color-mix(in srgb, var(--success), var(--line) 72%);
 }
 
@@ -877,27 +932,6 @@
   .full-calendar-view[data-calendar-mode="timeGridDay"] .tnc-tg-head {
     display: none;
   }
-}
-
-.full-calendar-view .tnc-collision-hidden {
-  visibility: hidden;
-  pointer-events: none;
-}
-.calendar-collision-trigger {
-  position: absolute;
-  inset-inline: 2px;
-  z-index: 4;
-  min-height: 44px;
-  padding: 4px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-control);
-  color: var(--ink);
-  background: var(--paper-raised);
-  font: inherit;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-  pointer-events: auto;
 }
 
 @media (min-width: 840px) {
@@ -2063,11 +2097,18 @@
   gap: var(--space-xs);
 }
 
+.full-calendar-view.is-agenda :is(.tnc-strip-grid, .tnc-strip-dows) {
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
 .full-calendar-view.is-agenda .tnc-strip-day {
   gap: 2px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 16px 20px;
+  grid-template-columns: 28px auto;
+  grid-template-rows: 16px 28px;
+  justify-content: center;
+  align-items: center;
   min-height: 44px;
   height: auto;
   padding: 2px;
@@ -2085,11 +2126,12 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip-num {
-  width: auto;
-  height: 20px;
-  aspect-ratio: auto;
+  width: 28px;
+  height: 28px;
+  aspect-ratio: 1;
+  border-radius: 50%;
   font-size: 14px;
-  line-height: 20px;
+  line-height: 28px;
   font-weight: 500;
 }
 
@@ -2177,11 +2219,6 @@
   line-height: 16px;
 }
 
-.agenda-strip-count.is-zero {
-  color: var(--ink-faint);
-  font-weight: 400;
-}
-
 .full-calendar-view.is-agenda .tnc-strip-day.is-other-month,
 .full-calendar-view.is-agenda
   .tnc-strip-day.is-other-month
@@ -2191,6 +2228,7 @@
 
 .agenda-strip-count {
   color: var(--ink-muted);
+  font-family: inherit;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2292,8 +2330,56 @@
   font-size: var(--type-supporting);
 }
 
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) .tnc-list-add {
+  position: absolute;
+  inset-block-start: var(--space-md);
+  inset-inline-end: 0;
+  z-index: 3;
+  width: auto;
+  opacity: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) {
+  position: relative;
+}
+
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) .tnc-list-day {
+  padding-inline-end: 110px;
+}
+
+.full-calendar-view.is-agenda
+  .tnc-list-section:is(:hover, :focus-within)
+  .tnc-list-add {
+  opacity: 1;
+}
+
 .full-calendar-view.is-agenda .tnc-list-section.is-empty {
   padding-top: var(--space-xs);
+}
+
+.full-calendar-view.is-agenda .tnc-list-section[hidden],
+.full-calendar-view.is-agenda .is-empty-range > :not(.agenda-empty-range),
+.full-calendar-view.is-agenda .tnc-list-more {
+  display: none;
+}
+
+.agenda-empty-range,
+.agenda-load-more {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-sm) 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.agenda-load-more {
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 /* Keeps the open row clear of the sticky calendar strip and section heading. */
@@ -2314,17 +2400,41 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-grid {
-  max-height: 176px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  max-height: none;
+  overflow: visible;
 }
 
 .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-day {
   min-height: 44px;
+  height: 44px;
+  grid-template-rows: 28px;
   padding-block: 2px;
 }
 
 @media (max-width: 839px) {
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-day {
+    padding-inline-end: 48px;
+  }
+
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-add {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+    text-align: center;
+  }
+
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-add::before {
+    width: auto;
+    margin: 0;
+    font-size: var(--type-supporting);
+  }
+
   .full-calendar-view.is-agenda .tnc-strip-day {
     min-height: 44px;
     padding-inline: 0;

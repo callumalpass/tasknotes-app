@@ -38,6 +38,7 @@ import { useCalendarPosition } from "./use-calendar-position";
 import { useCalendarPreviews } from "./use-calendar-previews";
 import { useCalendarAgenda } from "./use-calendar-agenda";
 import { useCalendarMonthLayout } from "./use-calendar-month-layout";
+import { useCalendarTimedLayout } from "./use-calendar-timed-layout";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
@@ -294,6 +295,7 @@ export function TaskCalendarView({
     root: rootRef,
     calendar: calendarRef,
     enabled: agenda,
+    selected,
     items,
     locale,
     execution,
@@ -301,6 +303,7 @@ export function TaskCalendarView({
     configuration,
     display,
   });
+  useCalendarTimedLayout(rootRef, mode.startsWith("timeGrid"));
   const monthLayout = useCalendarMonthLayout(
     rootRef,
     mode === "dayGridMonth",
@@ -986,6 +989,8 @@ export function TaskCalendarView({
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"
               eventMinHeight={fineMonth ? 26 : 44}
+              eventMaxStack={0}
+              slotEventOverlap={false}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}

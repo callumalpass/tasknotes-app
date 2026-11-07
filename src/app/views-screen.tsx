@@ -714,14 +714,16 @@ export function ViewsScreen({
     additionalInput: UpdateTaskInput = {},
     notice?: string,
   ): Promise<boolean> {
-    if (!selected || !manualOrder || reorderBlocked) return false;
-    const plan = planManualOrder(
-      rows.map(({ task }) => task),
-      dragged.task,
-      targetId,
-      placement,
-      manualOrder.direction,
-    );
+    if (!selected || reorderBlocked) return false;
+    const plan = manualOrder
+      ? planManualOrder(
+          rows.map(({ task }) => task),
+          dragged.task,
+          targetId,
+          placement,
+          manualOrder.direction,
+        )
+      : { writes: [] };
     const draggedWrite = plan.writes.find(
       ({ taskId }) => taskId === dragged.task.id,
     );
@@ -802,7 +804,9 @@ export function ViewsScreen({
                 receipts.map(({ before }) => ({
                   id: before.id,
                   input: {
-                    sortOrder: before.sortOrder ?? null,
+                    ...(manualOrder
+                      ? { sortOrder: before.sortOrder ?? null }
+                      : {}),
                     ...(before.id === dragged.task.id
                       ? Object.fromEntries(
                           Object.keys(additionalInput).map((field) => [
@@ -1073,7 +1077,7 @@ export function ViewsScreen({
     targetId: string | undefined,
     placement: ManualOrderPlacement,
   ) {
-    if (!selected || !manualOrder) return;
+    if (!selected || (!manualOrder && source.key === destination.key)) return;
     const changesLane = source.key !== destination.key;
     const input = changesLane
       ? taskListLaneMoveInput(row.task, source, destination, configuration)

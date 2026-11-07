@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { parseDay, type Calendar, type ItemArg } from "@tasknotes/calendar";
-import { useEffect, useMemo, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { appLocale } from "../i18n/app";
 import { countLabel } from "../i18n/default-labels";
 import { dateFromStorage, todayString, type TaskSummary } from "../domain/task";
@@ -9,12 +9,14 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
 import { useCalendarEntries } from "./use-calendar-entries";
 import type { CalendarEventData, TaskCalendarItem } from "./calendar-items";
+import { compactAgendaDays } from "./calendar-agenda-days";
 
 /** React owns row contents; the calendar retains its scrolling and drag layer. */
 export function useCalendarAgenda({
   root,
   calendar,
   enabled,
+  selected,
   items,
   locale,
   execution,
@@ -25,6 +27,7 @@ export function useCalendarAgenda({
   root: RefObject<HTMLDivElement | null>;
   calendar: RefObject<Calendar<CalendarEventData> | null>;
   enabled: boolean;
+  selected: string;
   items: readonly TaskCalendarItem[];
   locale: string;
   execution: TaskViewExecution;
@@ -32,6 +35,20 @@ export function useCalendarAgenda({
   configuration: TaskCollectionConfiguration;
   display: CalendarSettings;
 }) {
+  const previousSelection = useRef(selected);
+  useEffect(() => {
+    const changed = previousSelection.current !== selected;
+    previousSelection.current = selected;
+    if (!enabled || !changed) return;
+    const frame = requestAnimationFrame(() => {
+      root.current
+        ?.querySelector<HTMLElement>(
+          `.tnc-list-section[data-date="${selected}"]`,
+        )
+        ?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [enabled, root, selected]);
   const [slots, setSlots] = useState<
     ReadonlyMap<HTMLElement, ItemArg<CalendarEventData>>
   >(new Map());
@@ -140,8 +157,8 @@ export function useCalendarAgenda({
           badge.setAttribute("aria-hidden", "true");
           cell.append(badge);
         }
-        badge.textContent = String(count);
-        badge.classList.toggle("is-zero", count === 0);
+        badge.textContent = count ? String(count) : "";
+        badge.hidden = count === 0;
       }
       const prev = host!.querySelector(".tnc-strip-prev");
       const next = host!.querySelector(".tnc-strip-next");
@@ -179,8 +196,30 @@ export function useCalendarAgenda({
         const count = section.querySelectorAll(
           ".tnc-item--list:not(.is-time-entry):not(.google-calendar-event)",
         ).length;
-        badge.textContent = String(count);
+        badge.textContent = count ? String(count) : "";
+        badge.hidden = count === 0;
         badge.setAttribute("aria-label", countLabel(count, "task"));
+      }
+      compactAgendaDays(host!, selected, locale);
+      const sentinel = host!.querySelector<HTMLElement>(".tnc-list-more");
+      if (sentinel) {
+        let more = host!.querySelector<HTMLButtonElement>(".agenda-load-more");
+        if (!more) {
+          more = document.createElement("button");
+          more.type = "button";
+          more.className = "agenda-load-more";
+          more.addEventListener("click", () => {
+            const sections = host!.querySelectorAll<HTMLElement>(
+              ".tnc-list-section[data-date]",
+            );
+            const last = parseDay(
+              sections[sections.length - 1]?.dataset.date ?? "",
+            );
+            if (last !== null) api!.extendList(last + 8);
+          });
+          sentinel.after(more);
+        }
+        more.textContent = t`Show more days`;
       }
       api.strip?.measure();
     }
@@ -194,8 +233,22 @@ export function useCalendarAgenda({
     });
     decorate();
     observe();
-    return () => observer.disconnect();
-  }, [root, calendar, enabled, items, locale, entries]);
+    const reveal = (event: MouseEvent) => {
+      const day = (event.target as Element | null)?.closest<HTMLElement>(
+        ".tnc-strip-day",
+      )?.dataset.date;
+      if (day) {
+        observer.disconnect();
+        compactAgendaDays(host, day, locale);
+        observe();
+      }
+    };
+    host.addEventListener("click", reveal, true);
+    return () => {
+      observer.disconnect();
+      host.removeEventListener("click", reveal, true);
+    };
+  }, [root, calendar, enabled, items, locale, entries, selected]);
 
   const lastShown = new Date(stripRange.end);
   lastShown.setDate(lastShown.getDate() - 1);

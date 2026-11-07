@@ -87,6 +87,7 @@ test.describe("local calendar days", () => {
   }) => {
     await page.clock.install({ time: new Date("2026-11-04T00:00:00Z") });
     await page.goto(upcoming);
+    await expect(page.locator(".tnc-strip")).toBeVisible({ timeout: 15_000 });
     const day = "2026-11-05";
     const stripDay = page.locator(`.tnc-strip-day[data-date="${day}"]`);
     await expect(stripDay.locator(".agenda-strip-count")).toHaveText(/\d+/);

@@ -1,4 +1,5 @@
 import type { FieldMapping } from "@tasknotes/model/types";
+import { setTaskDate } from "./task-date-actions";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { TaskSummary, UpdateTaskInput } from "./task";
@@ -122,7 +123,9 @@ export function viewPropertyMoveInput({
     return {
       [role]:
         typeof destinationValue === "string" && destinationValue
-          ? destinationValue
+          ? /^\d{4}-\d{2}-\d{2}$/.test(destinationValue)
+            ? setTaskDate(task[role], destinationValue)
+            : destinationValue
           : null,
     };
   if (role === "tags" || role === "projects" || role === "contexts") {
