@@ -130,6 +130,8 @@ jobs:
       - run: node ../publisher/scripts/publisher/install-inputs.mjs "$RUNNER_TEMP/tasknotes-build/plan.json"
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
         with:
+          # Workspace root has only publisher/ and candidate/, no package.json.
+          version: 10.7.0
           run_install: false
       - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
       - name: ALL installed original members, then unprivileged build once
