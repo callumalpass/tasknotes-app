@@ -62,6 +62,34 @@ export async function openNativeWorkspace(page) {
   await ready.waitFor({ state: "visible" });
 }
 
+// A native return can close the Custom Tab while Playwright waits for its
+// navigation. Submit once without a navigation wait; a closed tab is not proof
+// of approval. The original installed app's authenticated poll and real CRUD
+// below must still pass. Never repeat an unknown approval write.
+export function nativeApprovalButton(portal, collectionName) {
+  // The portal can include the selected collection in its accessible label.
+  // Both accepted labels name this application; the expanded label must name
+  // exactly the run-owned fixture, never a prefix or another collection.
+  return portal
+    .getByRole("button", { name: "Open TaskNotes", exact: true })
+    .or(
+      portal.getByRole("button", {
+        name: `Open TaskNotes with ${collectionName}`,
+        exact: true,
+      }),
+    );
+}
+
+export async function approveNativePortal(portal, collectionName) {
+  try {
+    await nativeApprovalButton(portal, collectionName).click({
+      noWaitAfter: true,
+    });
+  } catch (error) {
+    if (!portal.isClosed()) throw error;
+  }
+}
+
 async function readAccountAccess(page) {
   return page.evaluate(async () => {
     const response = await fetch("/v1/me", {
@@ -301,10 +329,12 @@ export async function exerciseAndroidWasm({
       .filter({ hasText: collectionName });
     await expect(option).toHaveCount(1);
     await option.click();
-    phase("fixture-approve");
-    await portal
-      .getByRole("button", { name: "Open TaskNotes", exact: true })
-      .click();
+    phase("fixture-approval-ready");
+    await expect(nativeApprovalButton(portal, collectionName)).toBeEnabled({
+      timeout: WAIT,
+    });
+    phase("fixture-approval-dispatch");
+    await approveNativePortal(portal, collectionName);
     phase("runtime-open");
     // Resume the installed app as a user can from Android's app switcher. Only
     // its original authenticated poll completes the grant; no URL/code injection.

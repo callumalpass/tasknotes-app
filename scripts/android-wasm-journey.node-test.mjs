@@ -5,6 +5,7 @@ import {
   launchNativeBrowser,
   openNativeWorkspace,
   ownedFixtureInstallations,
+  approveNativePortal,
 } from "./android-wasm-journey.mjs";
 
 const page = (url, closed = false) => ({
@@ -32,6 +33,40 @@ function workspace(initialized, setupError = null) {
             waitFor: async () => assert.equal(initialized, true),
           },
   };
+}
+
+for (const closed of [false, true]) {
+  test(`native approval submits only once across a tab return (closed=${closed})`, async () => {
+    let attempts = 0;
+    const failure = new Error("unknown-approval-write");
+    const labels = [];
+    const button = {
+      or: () => button,
+      click: async (options) => {
+        attempts++;
+        assert.equal(options.noWaitAfter, true);
+        throw failure;
+      },
+    };
+    const portal = {
+      isClosed: () => closed,
+      getByRole: (role, options) => {
+        assert.equal(role, "button");
+        assert.equal(options.exact, true);
+        labels.push(options.name);
+        return button;
+      },
+    };
+    const name = "[test] agent-owned-approval";
+    if (closed) await approveNativePortal(portal, name);
+    else
+      await assert.rejects(
+        approveNativePortal(portal, name),
+        (e) => e === failure,
+      );
+    assert.equal(attempts, 1);
+    assert.deepEqual(labels, ["Open TaskNotes", `Open TaskNotes with ${name}`]);
+  });
 }
 
 test("a missing Chrome debugging socket has a bounded preflight deadline", async () => {
