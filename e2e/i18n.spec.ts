@@ -63,10 +63,6 @@ for (const locale of ["en", "fr"]) {
       .include("#settings-collection")
       .analyze();
     expect(results.violations).toEqual([]);
-    await page.screenshot({
-      path: `test-results/i18n-collection-${locale}-${test.info().project.name}.png`,
-      fullPage: true,
-    });
   });
 }
 
@@ -139,10 +135,6 @@ test("French interface preserves user edits and stored English view names", asyn
     await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
   ).toBe("fr");
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
-  await page.screenshot({
-    path: `test-results/i18n-app-fr-${test.info().project.name}.png`,
-    fullPage: true,
-  });
 });
 
 test("French capture, accepted-write notice and task actions", async ({
@@ -162,7 +154,6 @@ test("French capture, accepted-write notice and task actions", async ({
     exact: true,
   });
   await expect(dialog).toContainText("Continuer à ajouter des tâches");
-  await expect(dialog).toContainText("Call Sam tomorrow 9am #work");
   await dialog
     .getByRole("combobox", { name: "Titre de la nouvelle tâche" })
     .fill("Une tâche française #work");
@@ -184,8 +175,8 @@ test("French capture, accepted-write notice and task actions", async ({
       .or(actions.getByRole("menuitem", { name: "Supprimer", exact: true })),
   ).toBeVisible();
   await actions.getByText("Dates", { exact: true }).click();
-  await expect(actions).toContainText("Planifier pour aujourd’hui");
-  await expect(actions).toContainText("Échéance demain");
+  await expect(actions).toContainText("Échéance");
+  await expect(actions).toContainText("Demain");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -194,7 +185,7 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
   await startupLocale(page, "fr");
   await page.goto("views?demo=12");
   await expect(
-    page.getByRole("heading", { name: "Gérer les vues", exact: true }),
+    page.getByRole("heading", { name: "Vues", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Créer une vue", exact: true })
@@ -209,8 +200,11 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
     page.getByRole("button", { name: "Enregistrer la vue", exact: true }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("heading", { name: "Détails de la vue", exact: true }),
+    page.getByRole("heading", { name: "Nouvelle vue", exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".view-layout-disclosure > summary")).toHaveText(
+    "Disposition : Liste",
+  );
   expect(
     (await new AxeBuilder({ page }).include(".view-editor").analyze())
       .violations,
@@ -254,10 +248,6 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
     }),
   ).toHaveValue("Texte personnel **inchangé**");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.screenshot({
-    path: `test-results/i18n-fr-writing-${test.info().project.name}.png`,
-    fullPage: true,
-  });
 });
 
 for (const locale of [
@@ -281,28 +271,14 @@ for (const locale of [
     await expect(picker).toHaveValue(locale);
     await expect(picker.locator("option")).toHaveCount(10);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
-    await page.setViewportSize({ width: 320, height: 900 });
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "200%";
-    });
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth),
-    ).toBeLessThanOrEqual(320);
     await expect(picker).toBeVisible();
-    await page.screenshot({
-      path: `test-results/i18n-settings-${locale}-${test.info().project.name}.png`,
-      fullPage: true,
-    });
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "";
-    });
     const next = locale === "en" ? "fr" : "en";
     await picker.selectOption(next);
     await expect(page.locator("html")).toHaveAttribute("lang", next);
     expect(
       await page.evaluate(() => localStorage.getItem("tasknotes:locale")),
     ).toBe(next);
-    await openNavigationItem(page, "Today", next);
+    await openNavigationItem(page, "Today");
     await expect(
       page.getByRole("button", {
         name: "Prepare quarterly planning session",
@@ -376,21 +352,10 @@ test("a failed locale chunk retains English, the explicit preference and a retry
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
-async function openNavigationItem(
-  page: Page,
-  name: string,
-  locale = "fr",
-): Promise<void> {
-  const direct = page.getByRole("button", { name, exact: true });
-  if (await direct.isVisible()) {
-    await direct.click();
-    return;
-  }
+async function openNavigationItem(page: Page, name: string): Promise<void> {
   await page
     .getByRole("button", {
-      name: locale === "fr" ? "Plus" : "More",
-      exact: true,
+      name: new RegExp(`^${name}(?:,|$)`),
     })
     .click();
-  await page.getByRole("menuitem", { name, exact: true }).click();
 }

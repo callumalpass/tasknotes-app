@@ -51,7 +51,7 @@
 .view-header h1 {
   margin: 0;
   font-size: var(--type-page);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 1.08;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .saved-view-list {
-  border-top: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line);
 }
 
 .view-catalog {
@@ -145,9 +145,8 @@
   line-height: 1.45;
 }
 
-.navigation-view-order,
-.all-views {
-  border-top: 1px solid var(--line-strong);
+.navigation-view-order {
+  border-top: 1px solid var(--line);
 }
 
 .navigation-view-order > header,
@@ -347,8 +346,8 @@
 
 .view-catalog-controls {
   display: grid;
-  gap: var(--space-md);
-  margin-bottom: var(--space-xl);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .view-search-field {
@@ -400,7 +399,7 @@
   color: var(--ink-muted);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -432,8 +431,7 @@
   color: var(--ink-muted);
 }
 
-.view-document + .view-document,
-.saved-views-section {
+.view-document + .view-document {
   margin-top: var(--space-xxl);
 }
 
@@ -447,8 +445,7 @@
 
 .view-document-heading h3,
 .view-document-heading p,
-.saved-view-source-heading h4,
-.saved-view-source-heading small {
+.saved-view-source-heading h4 {
   margin: 0;
 }
 
@@ -464,16 +461,6 @@
   font-size: var(--type-body);
 }
 
-.saved-view-source-heading small,
-.saved-view-path {
-  overflow: hidden;
-  color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .saved-view-document + .saved-view-document {
   margin-top: 0;
 }
@@ -486,7 +473,7 @@
   width: 100%;
   min-height: 64px;
   padding: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
 }
 
 .saved-view-row.is-tool-row .saved-view-membership {
@@ -495,7 +482,7 @@
 
 .saved-view-open {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   min-height: 63px;
@@ -513,10 +500,6 @@
 
 .saved-view-open > svg:first-child {
   color: var(--accent);
-}
-
-.saved-view-open > svg:last-child {
-  color: var(--ink-muted);
 }
 
 .saved-view-open span {
@@ -566,7 +549,7 @@
 }
 
 .saved-view-menu {
-  position: absolute;
+  position: fixed;
   z-index: 24;
   top: calc(100% - 2px);
   right: 0;
@@ -601,6 +584,9 @@
 
 .saved-view-menu button.is-danger {
   color: var(--danger);
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .saved-view-membership {
@@ -613,11 +599,11 @@
   padding: 0 10px;
   color: var(--ink-muted);
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: var(--type-label);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .membership-label-short {
@@ -625,9 +611,8 @@
 }
 
 .saved-view-membership[aria-pressed="true"] {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  color: var(--ink-muted);
+  background: transparent;
 }
 
 .saved-view-membership:disabled {
@@ -682,33 +667,10 @@
     display: inline;
   }
 
-  .saved-view-menu {
-    position: fixed;
-    top: auto;
-    right: var(--space-md);
-    bottom: calc(
-      var(--mobile-bottom-nav-height, var(--nav-height)) + var(--space-md)
-    );
-    left: var(--space-md);
-    min-width: 0;
-    padding: var(--space-sm);
-    border-radius: var(--radius-panel);
-    box-shadow: 0 16px 44px var(--color-shadow);
-  }
-
-  .saved-view-menu button {
-    min-height: 52px;
-    font-size: var(--type-body);
-  }
-
   .saved-view-source-heading {
     align-items: flex-start;
     flex-direction: column;
     gap: 2px;
-  }
-
-  .saved-view-source-heading small {
-    max-width: 100%;
   }
 }
 
@@ -816,8 +778,12 @@
 }
 
 .view-draft-preview {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: block;
   padding: 4px 0;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 .view-draft-preview > summary,
@@ -828,6 +794,27 @@
   cursor: pointer;
   overflow-wrap: anywhere;
 }
+.view-draft-preview > summary,
+.view-layout-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+.view-draft-preview > summary::-webkit-details-marker,
+.view-layout-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.view-draft-preview > summary > svg,
+.view-layout-disclosure > summary > svg {
+  flex: none;
+  margin-inline-start: auto;
+  transform: rotate(-90deg);
+}
+.view-draft-preview[open] > summary > svg,
+.view-layout-disclosure[open] > summary > svg {
+  transform: none;
+}
 .view-draft-preview > summary > span {
   margin-left: 8px;
   color: var(--ink-muted);
@@ -835,6 +822,8 @@
 }
 .view-draft-preview[open] > ol {
   margin: 8px 16px 12px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 .view-planner-explanation,
 .connection-technical-details p {
@@ -889,9 +878,8 @@
 
 .view-identity {
   display: grid;
-  gap: 24px;
-  padding: 28px 0 34px;
-  border-bottom: 1px solid var(--line);
+  gap: 16px;
+  padding: 24px 0 0;
 }
 
 .view-identity-heading h2,
@@ -947,16 +935,16 @@
 }
 
 .view-editor-body input:not([type]),
-.view-editor-body input[type="text"] {
+.view-editor-body input[type="text"],
+.view-editor-body input[type="number"] {
   width: 100%;
   min-height: var(--control-min-size);
-  padding: var(--space-sm) 0;
+  padding: var(--space-sm) 12px;
   color: var(--ink);
   font-size: var(--type-field);
   background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
 }
 
 .view-editor-body textarea {
@@ -974,14 +962,11 @@
 }
 
 .view-editor-body .view-name-field input {
-  min-height: 50px;
-  padding: 0;
-  font-size: 1.42rem;
-  font-weight: 700;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  font-size: var(--type-control);
+}
+
+.view-layout-disclosure[open] {
+  padding-bottom: 12px;
 }
 
 .view-kind-field,
@@ -1004,8 +989,8 @@
   grid-template-columns: 24px minmax(0, 1fr) 22px;
   gap: 8px;
   align-items: center;
-  min-height: 66px;
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 6px 10px;
   color: var(--ink-soft);
   background: transparent;
   cursor: pointer;
@@ -1061,14 +1046,14 @@
   border-top: 1px solid var(--line);
 }
 
-.view-editor-section-heading {
+.view-editor .view-editor-section-heading {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 80px;
-  padding: 18px 0;
+  min-height: 64px;
+  padding: 8px 0;
   color: inherit;
   text-align: left;
   background: transparent;
@@ -1081,14 +1066,19 @@
   min-width: 0;
 }
 
+.view-editor .view-editor-section-heading:not(:has(p)) {
+  min-height: 44px;
+}
+
 .view-editor-section-heading > svg {
   flex: 0 0 auto;
   color: var(--ink-muted);
+  transform: rotate(-90deg);
   transition: transform 150ms ease;
 }
 
 .view-editor-section.is-open > .view-editor-section-heading > svg {
-  transform: rotate(180deg);
+  transform: none;
 }
 
 .view-editor-section-heading:focus-visible {
@@ -1107,7 +1097,7 @@
 
 .view-editor-section-heading p {
   max-width: 52ch;
-  margin-top: 5px;
+  margin-top: 4px;
   overflow: hidden;
   color: var(--ink-muted);
   font-size: var(--type-supporting);
@@ -1118,20 +1108,20 @@
 
 .view-editor-section-content {
   display: grid;
-  gap: 24px;
-  padding: 4px 0 36px;
+  gap: 16px;
+  padding: 0 0 24px;
 }
 
 .view-editor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 160px;
-  gap: 12px;
+  gap: 16px;
 }
 
 .view-editor-subsection {
   display: grid;
   gap: 16px;
-  padding-top: 26px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 
@@ -1173,6 +1163,8 @@
 .expression-builder,
 .filter-children {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 12px;
 }
 
@@ -1181,12 +1173,14 @@
 .filter-add-actions,
 .add-view-property {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
 .expression-mode {
   width: max-content;
+  max-width: 100%;
   gap: 0;
   border-bottom: 1px solid var(--line);
 }
@@ -1236,6 +1230,7 @@
 }
 
 .filter-group {
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   padding-left: 12px;
   border-left: 1px solid var(--line-strong);
@@ -1248,11 +1243,11 @@
 
 .filter-group-heading > .tasknotes-select {
   width: auto;
-  min-width: 13rem;
+  min-width: min(13rem, 100%);
 }
 
 .filter-group-heading .tasknotes-control-trigger {
-  min-height: 38px;
+  min-height: var(--control-min-size);
 }
 
 .filter-rule {
@@ -1328,6 +1323,12 @@
   gap: 8px;
   min-height: 58px;
   border-bottom: 1px solid var(--line);
+}
+
+.view-sort-rules .tasknotes-select-trigger > span,
+.filter-rule .tasknotes-select-trigger > span {
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .view-order-actions {
@@ -1540,13 +1541,12 @@
 }
 
 .view-editor-footer .save-view-action {
-  min-height: 42px;
-}
-
-.save-view-action:disabled {
-  color: var(--ink-muted);
-  cursor: default;
-  opacity: 0.55;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  border-radius: 6px;
 }
 
 .view-editor-confirmation-layer,
@@ -1667,6 +1667,30 @@
   color: var(--ink-soft);
   font-size: var(--type-supporting);
 }
+.today-overdue {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.today-overdue-separator {
+  margin-inline-start: 6px;
+}
+.today-overdue a {
+  min-height: 44px;
+  margin-block: -12px;
+  padding: 12px 0;
+  color: var(--danger);
+  font: inherit;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-underline-offset: 3px;
+  text-decoration: none;
+}
+.today-overdue a:hover {
+  text-decoration: underline;
+}
 .today-progress {
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
@@ -1717,10 +1741,11 @@
 }
 /* A quiet heading action: it reads as part of the heading, not a button. */
 .section-heading.has-action {
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 0 12px;
 }
 .section-heading.has-action > h2 {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 .section-heading-action {
@@ -1758,6 +1783,10 @@
 .view-options {
   position: relative;
 }
+.search-header > .view-header-action {
+  margin-left: auto;
+}
+
 .view-options > summary {
   display: flex;
   align-items: center;
@@ -1803,6 +1832,23 @@
 }
 .view-options-panel > button:hover {
   background: var(--paper-soft);
+}
+
+.view-options-heading {
+  margin: 0;
+  padding: 6px 12px 2px;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.view-options-panel .layout-option-space {
+  flex: none;
+  width: 18px;
+}
+
+.view-sort-direction {
+  margin-left: auto;
+  color: var(--ink-soft);
 } /* Intrinsic sizing must not turn larger text into page-wide overflow. */
 .screen,
 .screen > *,
@@ -1863,4 +1909,140 @@
 
 .starter-views-offer button {
   min-height: 44px;
+}
+
+/* Lists read at a measure: titles and their details stay within one glance. */
+.views-screen.has-list-capture:not(.detail-inspector *) {
+  width: min(100%, var(--content-width));
+}
+
+.views-screen.view-detail.is-task-list-view,
+.views-screen.view-detail.is-agenda-default:not(:has(.full-calendar-view)) {
+  width: min(100%, var(--content-width));
+}
+.view-date {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.35em;
+}
+.today-progress {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  white-space: nowrap;
+}
+
+.overdue-schedule-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.overdue-schedule-actions > button.section-heading-action {
+  padding-inline: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+.overdue-schedule-actions > button.section-heading-action::before {
+  content: none;
+}
+.overdue-schedule-actions > button.section-heading-action + button::before {
+  left: -6px;
+  content: "";
+}
+.overdue-deadline-choice {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.overdue-deadline-choice > span:first-child {
+  color: var(--ink-soft);
+}
+.overdue-deadline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.overdue-deadline-actions > button {
+  padding-inline-start: 0;
+}
+.overdue-deadline-actions > button::before {
+  content: none;
+}
+.saved-view-menu-scrim {
+  z-index: 100;
+}
+@media (max-width: 600px) {
+  .saved-view-menu-scrim .saved-view-menu {
+    position: fixed;
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0;
+    left: 0;
+    min-width: 0;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 16px 44px var(--color-shadow);
+  }
+
+  .saved-view-menu button {
+    min-height: 52px;
+    font-size: var(--type-body);
+  }
+}
+.view-heading-select {
+  font-size: var(--type-page);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+.view-heading-select .tasknotes-control-trigger {
+  width: auto;
+  max-width: 100%;
+  padding: 0;
+  gap: 10px;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+}
+.view-heading-select .tasknotes-popover {
+  min-width: min(320px, calc(100vw - 32px));
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+@media (max-width: 839px) {
+  .screen:has(.task-row) {
+    padding-bottom: calc(
+      var(--nav-height) + env(safe-area-inset-bottom) + 100px
+    );
+  }
+  /* The board sizes itself to the screen and scrolls clear of Add task. */
+  .screen.is-kanban-view:has(.task-row) {
+    padding-bottom: 0;
+  }
+  .app-shell:not(:has(.bottom-navigation)) .view-detail.is-kanban-view {
+    height: 100dvh;
+  }
+  .page-surface:has(.is-kanban-view) {
+    padding-bottom: 0;
+  }
+  .view-detail.is-kanban-view > .kanban-board {
+    padding-bottom: calc(44px + 16px + 32px);
+  }
+  .view-date .today-progress {
+    flex-basis: 100%;
+  }
+  .views-screen:has(.full-calendar-view.is-agenda) > .view-header {
+    margin-bottom: 8px;
+    min-height: 44px;
+  }
+  .views-screen:has(.full-calendar-view.is-agenda)
+    > .view-header
+    .view-summary {
+    display: none;
+  }
 }

@@ -79,56 +79,6 @@
   }
 }
 
-.global-capture-scrim {
-  position: fixed;
-  z-index: 60;
-  inset: var(--capture-viewport-top, 0px) 0 auto;
-  height: var(--capture-viewport-height, 100dvh);
-  display: grid;
-  align-items: start;
-  justify-items: center;
-  padding: max(24px, env(safe-area-inset-top)) 16px
-    max(24px, env(safe-area-inset-bottom));
-  overflow-y: auto;
-  background: var(--color-scrim);
-  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
-}
-
-.global-capture-scrim[data-state="closed"] {
-  animation: motion-scrim-out var(--motion-exit) var(--ease-in) forwards;
-}
-
-.global-capture-dialog {
-  width: min(100%, 680px);
-  max-height: calc(var(--capture-viewport-height, 100dvh) - 48px);
-  padding: var(--space-xl) var(--space-xl) 28px;
-  overflow-y: auto;
-  color: var(--ink);
-  background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sheet);
-  box-shadow: 0 24px 70px var(--color-shadow);
-  transform-origin: top center;
-  animation: motion-dialog-in var(--motion-enter) var(--ease-out);
-}
-
-.global-capture-scrim[data-state="closed"] .global-capture-dialog {
-  animation: motion-dialog-out var(--motion-exit) var(--ease-in) forwards;
-}
-
-.global-capture-dialog > header {
-  display: flex;
-  min-height: 52px;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.global-capture-dialog h2 {
-  margin: 2px 0 0;
-  font-size: 1.45rem;
-}
-
 .mdbase-explainer {
   max-width: 500px;
   margin-top: 12px;
@@ -253,8 +203,7 @@
 }
 
 .view-header > .back-action {
-  grid-column: 1 / -1;
-  flex-basis: 100%;
+  flex: 0 0 auto;
 }
 
 .view-header > div {

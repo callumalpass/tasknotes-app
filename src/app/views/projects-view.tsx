@@ -1,14 +1,22 @@
+import { TaskSelectionList } from "../task-selection";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { countLabel } from "../../i18n/default-labels";
-import { ChevronRight, Plus } from "lucide-react";
-import { useContext, useId, useState } from "react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useContext, useEffect, useEffectEvent, useId, useState } from "react";
 import {
   sectionCollapsed,
   saveSectionCollapsed,
 } from "../../application/section-preferences";
 
 import { TaskRow } from "../../components/task-row";
+import { TaskNotesSelect } from "../../components/tasknotes-controls";
+import {
+  onProjectJump,
+  setFocusedProject,
+  takeProjectJump,
+  useFocusedProject,
+} from "../project-jump";
 import {
   TaskCompletionHoldsContext,
   TaskDeparturesContext,
@@ -122,6 +130,38 @@ export function ProjectsView({
         left.label.localeCompare(right.label) ||
         (left.path ?? "").localeCompare(right.path ?? ""),
     );
+  const focusedLabel = useFocusedProject();
+  const focused = ordered.find((project) => project.label === focusedLabel);
+  const shown = focused ? [focused] : ordered;
+  const focusProject = (label: string | null) => {
+    const project = ordered.find((candidate) => candidate.label === label);
+    if (!project) return;
+    collapse(project.key, false);
+    setFocusedProject(project.label);
+    window.scrollTo({ top: 0 });
+  };
+  const jumpTo = (label: string | null) => {
+    const index = ordered.findIndex((project) => project.label === label);
+    const project = ordered[index];
+    if (!project) return;
+    collapse(project.key, false);
+    // The jump picker returns focus to itself after onChange, so wait a frame.
+    requestAnimationFrame(() => {
+      const heading = document.getElementById(`${id}-${index}`);
+      heading?.querySelector("button")?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ block: "start" });
+    });
+  };
+  const takeJump = useEffectEvent(() => focusProject(takeProjectJump()));
+  useEffect(() => {
+    const frame = requestAnimationFrame(takeJump);
+    const stop = onProjectJump(takeJump);
+    return () => {
+      cancelAnimationFrame(frame);
+      stop();
+      setFocusedProject(null);
+    };
+  }, []);
   if (!ordered.length)
     return (
       <div className="plain-empty">
@@ -134,92 +174,107 @@ export function ProjectsView({
       </div>
     );
   return (
-    <div className="projects-view">
-      <label className="project-index">
-        <span>{countLabel(ordered.length, "project")}</span>
-        <select
-          aria-label={t({ message: "Jump to project" })}
-          value=""
-          onChange={(event) => {
-            const index = Number(event.target.value);
-            const project = ordered[index];
-            if (!project) return;
-            collapse(project.key, false);
-            const heading = document.getElementById(`${id}-${index}`);
-            heading?.querySelector("button")?.focus({ preventScroll: true });
-            heading?.scrollIntoView({ block: "start" });
-          }}
-        >
-          <option value="" disabled>
-            <Trans>Jump to project</Trans>
-          </option>
-          {ordered.map((project, index) => (
-            <option key={project.key} value={index}>
-              {project.label}
-              {project.path ? ` — ${project.path}` : ""} ({project.count})
-            </option>
-          ))}
-        </select>
-      </label>
-      {ordered.map((project, index) => {
-        const isCollapsed =
-          collapsed[project.key] ??
-          sectionCollapsed(preferenceKey(project.key));
-        const listId = `${id}-${index}-tasks`;
-        return (
-          <section
-            id={`${id}-${index}`}
-            className="project-group"
-            key={project.key}
+    <TaskSelectionList
+      tasks={shown.flatMap((project) =>
+        (collapsed[project.key] ?? sectionCollapsed(preferenceKey(project.key)))
+          ? []
+          : project.tasks.filter((task) => !departing.has(task.id)),
+      )}
+    >
+      <div className={`projects-view${focused ? " is-focused" : ""}`}>
+        {focused ? (
+          <button
+            className="project-back"
+            type="button"
+            onClick={() => setFocusedProject(null)}
           >
-            <header>
-              <div>
-                <h2>
-                  <button
-                    className="project-toggle"
-                    type="button"
-                    aria-expanded={!isCollapsed}
-                    aria-controls={listId}
-                    onClick={() => collapse(project.key, !isCollapsed)}
-                  >
-                    <ChevronRight aria-hidden="true" size={16} />
-                    <span>{project.label}</span>
-                    <span className="project-count">
-                      {project.count}{" "}
-                      {project.count === 1
-                        ? translate({ message: "task" })
-                        : translate({ message: "tasks" })}
-                    </span>
-                  </button>
-                </h2>
-                {project.path ? <small>{project.path}</small> : null}
+            <ChevronLeft aria-hidden="true" size={16} />
+            <Trans>All projects</Trans>
+          </button>
+        ) : (
+          <label className="project-index">
+            <span>{countLabel(ordered.length, "project")}</span>
+            <TaskNotesSelect
+              ariaLabel={t({ message: "Jump to project" })}
+              options={ordered.map((project) => ({
+                value: project.label,
+                label: `${project.label} (${project.count})`,
+                description: project.path,
+              }))}
+              placeholder={t({ message: "Jump to project" })}
+              value=""
+              onChange={jumpTo}
+            />
+          </label>
+        )}
+        {shown.map((project) => {
+          const index = ordered.indexOf(project);
+          const isCollapsed =
+            collapsed[project.key] ??
+            sectionCollapsed(preferenceKey(project.key));
+          const listId = `${id}-${index}-tasks`;
+          return (
+            <section
+              id={`${id}-${index}`}
+              className="project-group"
+              key={project.key}
+            >
+              <header>
+                <div>
+                  <h2>
+                    <button
+                      className="project-toggle"
+                      type="button"
+                      aria-expanded={!isCollapsed}
+                      aria-controls={listId}
+                      onClick={() =>
+                        focused
+                          ? undefined
+                          : collapse(project.key, !isCollapsed)
+                      }
+                    >
+                      {focused ? null : (
+                        <ChevronRight aria-hidden="true" size={16} />
+                      )}
+                      <span>{project.label}</span>
+                      <span className="project-count">
+                        {project.count}{" "}
+                        {project.count === 1
+                          ? translate({ message: "task" })
+                          : translate({ message: "tasks" })}
+                      </span>
+                    </button>
+                  </h2>
+                  {project.path ? <small>{project.path}</small> : null}
+                </div>
+                <button
+                  aria-label={t`Add task to ${project.label}`}
+                  type="button"
+                  onClick={() => onCreate(project.value, project.label)}
+                >
+                  <Plus aria-hidden="true" size={16} />
+                  <Trans>Add task</Trans>
+                </button>
+              </header>
+              <div id={listId} className="saved-task-list" hidden={isCollapsed}>
+                <TaskDeparturesContext.Provider value={departing}>
+                  {!isCollapsed &&
+                    project.tasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        contextProperties={{ projects: project.value }}
+                        onOpen={onOpen}
+                        onToggle={onToggle}
+                      />
+                    ))}
+                </TaskDeparturesContext.Provider>
               </div>
-              <button
-                aria-label={t`Add task to ${project.label}`}
-                type="button"
-                onClick={() => onCreate(project.value, project.label)}
-              >
-                <Plus aria-hidden="true" size={16} />
-                <Trans>Add task</Trans>
-              </button>
-            </header>
-            <div id={listId} className="saved-task-list" hidden={isCollapsed}>
-              <TaskDeparturesContext.Provider value={departing}>
-                {!isCollapsed &&
-                  project.tasks.map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onOpen={onOpen}
-                      onToggle={onToggle}
-                    />
-                  ))}
-              </TaskDeparturesContext.Provider>
-            </div>
-          </section>
-        );
-      })}
-    </div>
+            </section>
+          );
+        })}
+      </div>
+    </TaskSelectionList>
   );
 }
 

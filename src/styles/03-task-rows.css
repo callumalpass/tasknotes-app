@@ -67,6 +67,11 @@
   }
 }
 
+.task-row.is-open {
+  background: var(--accent-soft);
+  border-radius: var(--radius-control);
+}
+
 .task-row.is-tracking {
   background: var(--paper-soft);
 }
@@ -107,17 +112,136 @@
   }
 }
 
+.task-date-panel {
+  display: grid;
+  gap: 6px;
+  padding: 4px 2px 6px;
+}
+
+.task-date-target {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  background: var(--paper-sunken, var(--color-surface-sunken, transparent));
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.task-actions-menu .task-date-target button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: auto;
+  min-height: 40px;
+  padding: 3px 6px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-target button[aria-checked="true"] {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--paper-raised);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.task-actions-menu .task-date-target small {
+  display: block;
+  margin: 0;
+  color: var(--ink-muted);
+  text-align: center;
+  font-size: var(--type-caption, 12px);
+  font-weight: 400;
+}
+
+.task-date-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
+.task-date-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.task-date-hint {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-caption, 12px);
+}
+
+.task-date-hint.is-error {
+  color: var(--danger);
+}
+
+.task-date-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.task-actions-menu .task-date-presets button {
+  display: block;
+  width: auto;
+  min-height: 36px;
+  padding: 0 4px;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-presets button:hover:not(:disabled),
+.task-actions-menu .task-date-presets button:focus-visible {
+  background: var(--accent-soft, var(--paper-sunken));
+}
+
+.task-actions-menu .task-date-clear {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.task-actions-menu .task-date-clear:hover {
+  color: var(--danger);
+}
+
 .task-actions-menu {
   position: fixed;
   z-index: 40;
   width: 304px;
+  max-width: calc(100vw - 16px);
   max-height: min(640px, calc(100dvh - 16px));
   padding: 6px;
   overflow-y: auto;
   color: var(--ink);
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   box-shadow: 0 12px 30px var(--color-shadow-soft);
   transform-origin: top right;
   animation: motion-pop-in var(--motion-enter) var(--ease-out);
@@ -245,6 +369,7 @@
 }
 
 .task-actions-subheading strong {
+  grid-column: 2;
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
@@ -274,6 +399,8 @@
 .task-actions-items,
 .task-actions-confirm {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
 }
 
 .task-actions-items button,
@@ -282,6 +409,8 @@
   align-items: center;
   gap: var(--space-md);
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 40px;
   padding: 0 8px;
   color: var(--ink);
@@ -292,7 +421,8 @@
   cursor: pointer;
 }
 
-.task-actions-items button > span {
+.task-actions-items button > span:not(.quick-action-tooltip) {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -315,6 +445,34 @@
   padding: 12px 10px 8px;
 }
 
+.task-actions-items.is-move .field-suggestions {
+  position: static;
+  max-height: 15rem;
+  padding: 4px 0 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.task-actions-organize-more {
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0 8px;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--type-supporting);
+}
+
+.task-actions-organize-more:hover,
+.task-actions-organize-more:focus-visible {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
 .task-actions-organize-editor .form-field > label {
   color: var(--ink-soft);
   font-size: var(--type-supporting);
@@ -322,16 +480,14 @@
 
 .task-actions-organize-editor > button.primary {
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--control-min-size);
   color: var(--accent);
   font-weight: 650;
   border: 1px solid var(--line-strong);
 }
 
-.task-actions-organize-editor > button.primary:hover,
-.task-actions-organize-editor > button.primary:focus-visible {
+.task-actions-organize-editor > button.primary:not(:disabled):hover {
   background: var(--accent-soft);
-  outline: 0;
 }
 
 .task-actions-items button[aria-checked="true"] {
@@ -341,6 +497,64 @@
 .task-actions-items button:disabled {
   cursor: default;
   opacity: 0.45;
+}
+
+.task-actions-quick {
+  display: grid;
+  gap: 2px;
+  padding: 2px 2px 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+  min-width: 0;
+}
+
+.task-actions-quick-row {
+  display: flex;
+  min-width: 0;
+  gap: 2px;
+}
+
+@media (pointer: coarse) {
+  .task-actions-quick-priority {
+    display: none;
+  }
+}
+.task-actions-quick-label {
+  margin: 6px 10px 2px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.quick-action-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 32px));
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding: 6px 8px;
+  color: var(--ink);
+  font-size: 12px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  pointer-events: none;
+}
+
+.task-actions-items .task-actions-quick-row button {
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+}
+
+.task-actions-items .task-actions-quick-row button[aria-checked="true"] {
+  background: var(--paper-soft);
 }
 
 .task-actions-items hr {
@@ -363,6 +577,12 @@
 .task-actions-confirm button:focus-visible {
   background: var(--paper-soft);
   outline: 0;
+}
+
+.task-actions-items button:focus-visible,
+.task-actions-confirm button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .task-actions-items button.danger,
@@ -470,11 +690,33 @@
     background-color 160ms var(--ease-out);
 }
 
-/* A coloured, non-default status draws the ring itself, slightly heavier, and
-   names the status in the control's label and tooltip. Its lightness is
-   clamped so a pale or dark stored colour keeps 3:1 against the paper. */
+/* A marked priority sets a tick in the row's margin. It takes the colour the
+   collection gave that priority, so it holds for any number of them. */
+.completion-control.has-priority {
+  position: relative;
+}
+
+.completion-control.has-priority::before {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--priority-color);
+  background: oklch(from var(--priority-color) min(l, 0.58) c h);
+  content: "";
+  transform: translateY(-50%);
+}
+
+:root[data-theme="dark"] .completion-control.has-priority::before {
+  background: oklch(from var(--priority-color) max(l, 0.68) c h);
+}
+
+/* A coloured, non-default status colours the ring, and names the status in
+   the control's label and tooltip. Its lightness is clamped so a pale or dark
+   stored colour keeps 3:1 against the paper. */
 .completion-control.has-status span {
-  border-width: 2px;
   border-color: var(--status-color);
   border-color: oklch(from var(--status-color) min(l, 0.58) c h);
 }
@@ -487,6 +729,10 @@
   :root:not([data-theme]) .completion-control.has-status span {
     border-color: oklch(from var(--status-color) max(l, 0.7) c h);
   }
+}
+
+.completion-control.has-status[aria-pressed="true"] span::before {
+  display: none;
 }
 
 .completion-control[aria-busy="true"] {
@@ -576,7 +822,7 @@
   outline: 0;
 }
 
-.task-row:has(> .task-row-content > .task-row-title:focus-visible) {
+.task-row:has(.task-row-title:focus-visible) {
   background: var(--accent-soft);
   box-shadow: inset 2px 0 var(--accent);
 }
@@ -605,19 +851,19 @@
 .task-row-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs) 10px;
+  gap: 0 8px;
   color: var(--ink-muted);
   font-family: inherit;
-  font-size: var(--type-supporting);
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .task-row-meta > button {
   display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 24px;
+  min-height: 24px;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 0;
   color: inherit;
   font: inherit;
@@ -631,23 +877,6 @@
 .task-row-property.is-overdue > span,
 .task-row-property.is-overdue > strong {
   color: var(--danger);
-}
-
-/* Inside Overdue the heading already says so; the dates read as ordinary
-   metadata rather than a column of red. */
-.day-task-sections .task-section.is-overdue .task-row-meta .is-overdue,
-.day-task-sections
-  .task-section.is-overdue
-  .task-row-property.is-overdue
-  > span {
-  color: var(--ink-muted);
-}
-
-.day-task-sections
-  .task-section.is-overdue
-  .task-row-property.is-overdue
-  > strong {
-  color: inherit;
 }
 
 .task-row-tracking {
@@ -666,19 +895,20 @@
 .task-row-properties {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 14px;
-  color: var(--ink-soft);
-  font-size: var(--type-mono-detail);
-  line-height: 1.35;
+  gap: 0 8px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .task-row-property {
   display: inline-flex;
   align-items: center;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  max-width: 100%;
   gap: 4px;
-  padding: 2px 0;
+  padding: 0;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -704,10 +934,10 @@
   color: var(--ink-muted);
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
   font-size: inherit;
-  line-height: 1.35;
+  line-height: 20px;
 }
 
-.task-row-property.is-compact > span:first-child {
+.task-row-property > span:first-child {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -719,10 +949,74 @@
 }
 
 .task-row-property > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 20px;
+}
+
+.task-row-property.is-date > strong {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.task-row-property.is-organisation {
+  color: var(--ink-muted);
+}
+
+.task-row-glyph {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+}
+
+.is-overdue .task-row-glyph {
+  color: inherit;
+}
+
+/* Touch keeps every action in the menu and on the swipe. */
+.task-row-quick-date {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .task-row:not(.kanban-card *) {
+    position: relative;
+  }
+
+  .task-row-quick-date {
+    position: absolute;
+    top: 6px;
+    right: 44px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: var(--ink-muted);
+    background: var(--paper);
+    border: 0;
+    border-radius: var(--radius-control, 6px);
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  .task-row:hover .task-row-quick-date,
+  .task-row-quick-date:focus-visible {
+    opacity: 1;
+  }
+
+  .task-row-quick-date:hover {
+    color: var(--ink);
+    background: var(--paper-soft);
+  }
+
+  .kanban-card .task-row-quick-date {
+    display: none;
+  }
 }
 
 .task-property-editor-scrim {
@@ -771,6 +1065,50 @@
 
 .task-property-editor header {
   margin-bottom: 12px;
+}
+.task-property-options {
+  display: grid;
+  max-height: min(320px, 50vh);
+  margin-inline: -8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.task-property-options button {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 16px;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 8px;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.task-property-options button:hover,
+.task-property-options button:focus-visible {
+  background: var(--paper-soft);
+}
+.task-property-options button[aria-pressed="true"] {
+  font-weight: 600;
+}
+.task-property-options button > i {
+  width: 10px;
+  height: 10px;
+  background: var(--option-color, transparent);
+  border: 1px solid var(--option-color, var(--line-strong));
+  border-radius: 50%;
+}
+.task-property-options button > span {
+  overflow-wrap: anywhere;
+}
+@media (pointer: coarse) {
+  .task-property-options button {
+    min-height: 44px;
+  }
 }
 .task-property-editor header span {
   display: none;
@@ -908,16 +1246,11 @@
    Wrapped content grows naturally rather than being forced into a fixed row. */
 .task-row:not(.kanban-card *) .task-row-content {
   justify-content: center;
-  padding-block: 1px;
+  padding-block: 2px;
 }
 .task-row:not(.kanban-card *) .task-row-title {
   min-height: 32px;
   padding-block: 4px;
-}
-.task-row .task-row-property,
-.task-row .task-row-meta > button {
-  min-height: 24px;
-  padding-block: 2px;
 }
 .task-section-count {
   margin-left: auto;
@@ -928,28 +1261,147 @@
 }
 
 /* Overdue names itself once, in its label; the count stays ordinary. */
-.day-task-sections .task-section.is-overdue .task-section-toggle > svg,
-.day-task-sections .task-section.is-overdue .task-section-count {
+.task-section.is-overdue .task-section-toggle > svg,
+.task-section.is-overdue .task-section-count {
   color: var(--ink-muted);
 }
 
-/* List rows keep wrapped metadata on an even 24px rhythm. A project, status,
-   or priority value shrinks to an ellipsis on the line it starts rather than
-   dropping alone onto another; its full value stays in the accessible name. */
+/* List rows keep wrapped metadata on an even 24px rhythm. A project only shrinks
+   while its name stays readable; a fragment says less than a second line, so it
+   wraps first. Its full value stays in the accessible name. A status or priority
+   names a state, so it stays whole and starts a new line when it has to. */
 .task-row:not(.kanban-card *) .task-row-properties {
   row-gap: 0;
-  column-gap: 12px;
+  column-gap: 8px;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact {
-  flex: 1 1 0;
+  flex: 0 1 max-content;
   flex-wrap: nowrap;
-  min-width: min(4.5rem, 100%);
-  max-width: max-content;
+  min-width: min(2.75rem, 100%);
+  max-width: 100%;
+}
+.task-row:not(.kanban-card *) .task-row-property.is-project {
+  flex: 0 1 max-content;
+  min-width: min(2.75rem, 100%);
+  max-width: 100%;
 }
 .task-row:not(.kanban-card *) .task-row-property.is-compact > strong {
+  display: flex;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.task-row:not(.kanban-card *) .task-row-property.is-compact .task-row-glyph {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+.task-row-compact-metadata {
+  display: none;
+  width: 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.task-row-metadata-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.task-row-metadata-unit.is-project {
+  flex: 0 1 max-content;
+  min-width: min(100%, 10ch);
+}
+.task-row-value {
+  min-width: 0;
+}
+.task-row-metadata-unit .task-row-value,
+.task-row-inline-metadata .task-row-value {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.task-row-metadata-unit > svg {
+  flex-shrink: 0;
+}
+.task-row-metadata-unit.is-overdue {
+  color: var(--danger);
+}
+.task-row-properties-trigger {
+  display: none;
+}
+.task-properties-sheet-scrim {
+  display: grid;
+  place-items: center;
+}
+.task-properties-sheet {
+  position: relative;
+  inset: auto;
+  width: min(100%, 540px);
+  max-height: min(85dvh, 760px);
+  overflow-y: auto;
+}
+.task-properties-sheet > header p {
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+.task-sheet-property {
+  margin-block: 16px;
+}
+@media (max-width: 600px) {
+  .task-properties-sheet-scrim {
+    align-items: end;
+  }
+}
+@media (pointer: coarse) {
+  .task-row .task-row-inline-metadata {
+    display: none;
+  }
+  .task-row:not(.kanban-card *) .task-row-content,
+  .kanban-card .task-row .task-row-content {
+    min-height: 48px;
+    padding-block: 0;
+    justify-content: flex-start;
+  }
+  .task-row:not(.kanban-card *) .task-row-title,
+  .kanban-card .task-row .task-row-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 48px;
+    padding-block: 12px 8px;
+    overflow: visible;
+    line-height: 24px;
+  }
+  .task-row-compact-metadata {
+    display: flex;
+    margin-top: 0;
+  }
+  .task-row > .task-actions-trigger {
+    display: none;
+  }
+  .task-row > .task-row-properties-trigger {
+    display: grid;
+    place-items: center;
+    align-self: start;
+    width: 44px;
+    min-height: 44px;
+    margin-top: 2px;
+    padding: 0;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .task-row > .completion-control {
+    margin-top: 2px;
+  }
 }
 
 .undo-toast.task-completed-notice {
@@ -969,4 +1421,17 @@
   padding: 0;
   color: var(--ink-muted);
   border-left: 0;
+}
+
+@media (pointer: fine) {
+  .task-date-panel .tasknotes-calendar-grid [role="gridcell"] {
+    max-width: 34px;
+    height: 34px;
+  }
+}
+
+/* The capture bar already closes the header, so the list adds no second rule. */
+.has-list-capture .saved-task-list,
+.saved-task-list .saved-task-list {
+  border-top: 0;
 }

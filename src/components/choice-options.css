@@ -1,0 +1,129 @@
+.choice-options > input[role="combobox"] {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+}
+.choice-options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding-inline-start: 4px;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.choice-options-header > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-property-editor header.choice-options-header {
+  margin-bottom: 6px;
+}
+.choice-options-header > button {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+@media (max-width: 839px) {
+  .tasknotes-select-popover:has(.choice-options) {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px 12px 0 0;
+  }
+  .tasknotes-select-popover > .choice-options {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .tasknotes-select-popover .choice-options > :not(.tasknotes-option-list) {
+    flex: 0 0 auto;
+  }
+  .tasknotes-select-popover .choice-options > .tasknotes-option-list {
+    min-height: 0;
+    flex: 0 1 auto;
+  }
+}
+.choice-options .tasknotes-option-list {
+  max-height: 308px;
+  padding-block: 1px;
+  overflow-y: auto;
+  scroll-padding-block: 1px;
+}
+.choice-options.is-long .tasknotes-option-list {
+  block-size: 308px;
+  max-block-size: min(308px, calc(82dvh - 116px));
+}
+.choice-options .tasknotes-option-list > button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  gap: 12px;
+  min-height: 44px;
+  text-align: start;
+}
+.choice-options .tasknotes-option-list > button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.choice-options .value-color,
+.choice-options .tasknotes-option-list > button > svg {
+  justify-self: center;
+}
+.choice-check-empty {
+  visibility: hidden;
+}
+.choice-options .tasknotes-option-list > button.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper-raised));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.tasknotes-select-actions {
+  display: grid;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.tasknotes-select-group-label,
+.tasknotes-select-help {
+  margin: 0;
+  padding: 8px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.capture-guide-example {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+.tasknotes-select-actions > button {
+  min-height: 44px;
+  padding: 8px;
+  color: var(--ink-soft);
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.tasknotes-select-actions > button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}

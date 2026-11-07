@@ -121,6 +121,51 @@ describe("ScratchpadScreen", () => {
       });
   }
 
+  it("shares one leading lane between branch disclosure and leaf completion", async () => {
+    await reopenWith((replica) => {
+      seedRecord(replica, scratchpadRecord("- [ ] Parent\n  - [ ] Child\n"));
+    });
+    renderScratchpad();
+    const parent = await screen.findByRole("textbox", {
+      name: "Draft task: Parent",
+    });
+    const child = screen.getByRole("textbox", { name: "Draft task: Child" });
+    const branch = parent.closest<HTMLElement>(".scratchpad-row")!;
+    const leaf = child.closest<HTMLElement>(".scratchpad-row")!;
+    expect(branch).toHaveClass("has-children");
+    expect(
+      within(branch).getByRole("button", { name: /Collapse Parent/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(leaf).not.toHaveClass("has-children");
+    expect(leaf.querySelector(".scratchpad-disclosure-space")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(leaf.querySelector(".scratchpad-collapse")).toBeNull();
+    expect(
+      within(leaf).getByRole("button", { name: "Mark complete Child" }),
+    ).toBeVisible();
+    fireEvent.click(
+      within(branch).getByRole("button", { name: "Actions for Parent" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mark complete" }));
+    expect(
+      within(branch).getByRole("button", { name: "Mark incomplete Parent" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(
+      within(branch).getByRole("button", { name: /Collapse Parent/ }),
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Draft task: Child" }),
+    ).toBeNull();
+    fireEvent.click(
+      within(branch).getByRole("button", { name: /Expand Parent/ }),
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Draft task: Child" }),
+    ).toBeVisible();
+  });
+
   it("distinguishes native note pending metadata from authority Saved (component port stand-in)", async () => {
     const current = await repository.getActiveScratchpad();
     const writeState = vi.fn(() => "pending" as const);
@@ -425,6 +470,38 @@ describe("ScratchpadScreen", () => {
     expect(title).toHaveValue("My title");
   });
 
+  it("releases bottom pinning when image capture is explicitly opened", async () => {
+    let notifyResize = () => {};
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private callback: () => void) {}
+        observe(element: Element) {
+          if (element.classList.contains("scratchpad-history-scroll"))
+            notifyResize = this.callback;
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    renderScratchpad();
+    await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    const scroller = document.querySelector<HTMLElement>(
+      ".scratchpad-history-scroll",
+    )!;
+    Object.defineProperty(scroller, "scrollHeight", { value: 1200 });
+    act(() => notifyResize());
+    expect(scroller.scrollTop).toBe(1200);
+    fireEvent.click(screen.getByRole("button", { name: "Add image" }));
+    scroller.scrollTop = 300;
+    act(() => notifyResize());
+    expect(scroller.scrollTop).toBe(300);
+  });
+
   it("opens an accessible image capture panel and retains it after an invalid drop", async () => {
     renderScratchpad();
     await screen.findByRole(
@@ -607,10 +684,32 @@ describe("ScratchpadScreen", () => {
     expect(source).toHaveTextContent("Newer Markdown edit");
   });
 
+  it("bridges Write mode to task conversion without losing Markdown edits", async () => {
+    renderScratchpad();
+    const draft = await screen.findByRole(
+      "textbox",
+      { name: "Draft task: empty" },
+      { timeout: SCRATCHPAD_LOAD_TIMEOUT },
+    );
+    fireEvent.change(draft, { target: { value: "Portable draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Write" }));
+    await screen.findByRole("textbox", { name: "Scratchpad Markdown" });
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    await screen.findByText("Created “Portable draft”");
+    expect(screen.queryByRole("dialog", { name: "Create tasks" })).toBeNull();
+    expect((await repository.getActiveScratchpad()).body).toContain("[[tasks/");
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("resolves a linked task title without rewriting its exact link", async () => {
     const created = await repository.create({ title: "Filename title" });
     const renamed = await repository.update(created.id, {
       title: "Readable title property",
+      scheduled: "2099-11-06",
+      priority: "high",
     });
     const scratchpad = await repository.getActiveScratchpad();
     const exactBody = `- [[${renamed.path.replace(/\.md$/i, "")}]]\n`;
@@ -628,7 +727,50 @@ describe("ScratchpadScreen", () => {
       await screen.findByRole("button", { name: "Readable title property" }),
     ).toBeVisible();
     expect(screen.queryByText("Filename title")).not.toBeInTheDocument();
+    const metadata = document.querySelector(".scratchpad-linked-metadata")!;
+    expect(metadata).toHaveTextContent(/Nov/);
+    expect(metadata).toHaveTextContent(/high/i);
     expect((await repository.getActiveScratchpad()).body).toBe(exactBody);
+  });
+
+  it("refreshes a linked task renamed in another tab without rewriting the note", async () => {
+    const task = await repository.create({ title: "Original linked title" });
+    const scratchpad = await repository.getActiveScratchpad();
+    const body = `- [[${task.path.replace(/\.md$/i, "")}#Heading|Preserved alias]]\n`;
+    const saved = await repository.saveScratchpad({
+      ...scratchpad,
+      baseBody: scratchpad.body,
+      body,
+    });
+    renderScratchpad();
+    expect(
+      await screen.findByRole("button", { name: task.title }),
+    ).toBeVisible();
+    const otherTab = await attachTaskNotes(fixture.replica, undefined, {
+      accountId: fixture.accountId,
+    });
+    try {
+      await otherTab.repository.initialize();
+      await act(async () => {
+        await otherTab.repository.update(task.id, {
+          title: "Renamed in another tab",
+        });
+        await repository.refresh();
+      });
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", {
+            name: "Renamed in another tab",
+          }),
+        ).toBeVisible(),
+      );
+      expect(await repository.getActiveScratchpad()).toMatchObject({
+        body,
+        revision: saved.revision,
+      });
+    } finally {
+      otherTab.close();
+    }
   });
 
   it("converts only selected drafts and leaves the rest active", async () => {
@@ -648,18 +790,20 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(child, { target: { value: "Write announcement" } });
     fireEvent.keyDown(child, { key: "Tab" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    const dialog = screen.getByRole("dialog", { name: "Create task notes" });
-    expect(dialog).toHaveTextContent("2 of 2 selected");
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    const dialog = screen.getByRole("dialog", { name: "Create tasks" });
+    expect(dialog).toHaveTextContent("1 of 2 selected");
+    expect(
+      screen.getByRole("checkbox", { name: "Write announcement" }),
+    ).toBeChecked();
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Write announcement" }),
     );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Plan launch" }));
     expect(dialog).toHaveTextContent("1 of 2 selected");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create 1 task" }));
 
-    await screen.findByText("Created 1 task note");
+    await screen.findByText("Created 1 task");
     expect(await repository.list({ status: "all" })).toEqual([
       expect.objectContaining({ title: "Plan launch" }),
     ]);
@@ -702,12 +846,14 @@ describe("ScratchpadScreen", () => {
     fireEvent.change(note, {
       target: { value: "Keep the tone straightforward" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 2 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    expect(
+      screen.getByRole("dialog", { name: "Create tasks" }),
+    ).toHaveTextContent("0 of 2 selected");
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 2 tasks" }));
 
-    await screen.findByText("Created 2 task notes");
+    await screen.findByText("Created 2 tasks");
     await waitFor(async () => {
       const tasks = await repository.list({ status: "all" });
       expect(tasks).toHaveLength(2);
@@ -796,21 +942,18 @@ describe("ScratchpadScreen", () => {
       name: "Draft task: empty",
     });
     fireEvent.change(second, { target: { value: "Second task" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 2 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create 2 tasks" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Temporary write failure",
     );
-    expect(
-      screen.getByRole("button", { name: "Retry 1 task notes" }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Retry 1 task" })).toBeEnabled();
     expect(await repository.list({ status: "all" })).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task notes" }));
-    await screen.findByText("Created 2 task notes");
+    fireEvent.click(screen.getByRole("button", { name: "Retry 1 task" }));
+    await screen.findByText("Created 2 tasks");
     expect(await repository.list({ status: "all" })).toHaveLength(2);
     expect(attempts).toBe(3);
   });
@@ -1178,7 +1321,82 @@ describe("ScratchpadScreen", () => {
     });
   });
 
-  it("suspends a pending autosave as soon as reviewed conversion begins", async () => {
+  it.each([false, true])(
+    "safely undoes a single conversion with later task edits: %s",
+    async (changed) => {
+      const create = vi.spyOn(repository, "create");
+      renderScratchpad();
+      const input = await screen.findByRole("textbox", {
+        name: "Draft task: empty",
+      });
+      fireEvent.change(input, { target: { value: "Recover this draft" } });
+      fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+      await screen.findByText("Created “Recover this draft”");
+      expect(screen.queryByRole("dialog", { name: "Create tasks" })).toBeNull();
+      const created = await create.mock.results[0]!.value;
+      if (changed)
+        await act(async () => {
+          await repository.update(created.id, {
+            title: "Edited after conversion",
+          });
+        });
+      const continuation = screen.getByRole("textbox", {
+        name: "Draft task: empty",
+      });
+      fireEvent.change(continuation, { target: { value: "Later note edit" } });
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      await screen.findByText(
+        changed
+          ? "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
+          : "Conversion undone",
+      );
+      const current = await repository.get(created.id);
+      const note = await repository.getActiveScratchpad();
+      expect(note.body).toContain("Later note edit");
+      if (changed) {
+        expect(current?.title).toBe("Edited after conversion");
+        expect(note.body).toContain("[[tasks/");
+        expect(
+          screen.queryByRole("textbox", {
+            name: "Draft task: Recover this draft",
+          }),
+        ).toBeNull();
+      } else {
+        expect(current).toBeNull();
+        expect(note.body).toContain("Recover this draft");
+        expect(note.body).not.toContain("[[tasks/");
+        expect(
+          screen.getByRole("textbox", {
+            name: "Draft task: Recover this draft",
+          }),
+        ).toBeVisible();
+      }
+    },
+  );
+
+  it("creates a fresh task when a restored draft is converted again", async () => {
+    const create = vi.spyOn(repository, "create");
+    renderScratchpad();
+    const input = await screen.findByRole("textbox", {
+      name: "Draft task: empty",
+    });
+    fireEvent.change(input, { target: { value: "Convert again" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    await screen.findByText("Created “Convert again”");
+    const first = await create.mock.results[0]!.value;
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await screen.findByText("Conversion undone");
+    expect(await repository.get(first.id)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
+    await screen.findByText("Created “Convert again”");
+    const second = await create.mock.results[1]!.value;
+    expect(second.id).not.toBe(first.id);
+    expect(await repository.get(second.id)).toMatchObject({
+      title: "Convert again",
+    });
+  });
+
+  it("suspends a pending autosave as soon as single-draft conversion begins", async () => {
     const saveScratchpad = vi.spyOn(repository, "saveScratchpad");
     const create = repository.create.bind(repository);
     let releaseCreate!: () => void;
@@ -1197,10 +1415,7 @@ describe("ScratchpadScreen", () => {
     );
     vi.useFakeTimers();
     fireEvent.change(input, { target: { value: "Plan launch" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create task notes" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create 1 task notes" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create tasks" }));
 
     await act(async () => vi.advanceTimersByTimeAsync(320));
     const savesBeforeRelease = saveScratchpad.mock.calls.length;
@@ -1208,7 +1423,7 @@ describe("ScratchpadScreen", () => {
     expect(savesBeforeRelease).toBe(0);
 
     releaseCreate();
-    await screen.findByText("Created 1 task note");
+    await screen.findByText("Created “Plan launch”");
     expect((await repository.getActiveScratchpad()).body).toContain("[[tasks/");
   });
 });

@@ -62,6 +62,27 @@ export function enableManualOrderSort(
   ];
 }
 
+/** Leads with a property; choosing the current lead reverses it. */
+export function leadSortWith(
+  sort: readonly TaskViewSort[] | undefined,
+  property: string,
+  sortOrderField: string,
+): TaskViewSort[] {
+  const rest = disableManualOrderSort(sort, sortOrderField);
+  const lead = sort?.[0];
+  const reversing =
+    lead && propertyName(lead.property) === propertyName(property);
+  return [
+    {
+      property: lead && reversing ? lead.property : property,
+      direction: reversing && lead.direction === "asc" ? "desc" : "asc",
+    },
+    ...rest.filter(
+      (rule) => propertyName(rule.property) !== propertyName(property),
+    ),
+  ];
+}
+
 export function disableManualOrderSort(
   sort: readonly TaskViewSort[] | undefined,
   sortOrderField: string,

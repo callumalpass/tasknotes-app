@@ -55,6 +55,7 @@ import { useCollectionSummary, useRepository } from "./repository-context";
 import {
   settingsSectionId,
   settingsSectionLabels,
+  visibleSettingsSection,
   type SettingsSection,
 } from "./settings-sections";
 import { storageExplanation } from "./storage-trust";
@@ -253,28 +254,34 @@ function SettingsIndex({
   const [visible, setVisible] = useState<SettingsSection | undefined>(current);
   const sectionKeys = sections.join(" ");
   useEffect(() => {
-    if (typeof IntersectionObserver !== "function") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const top = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort(
-            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
-          )[0];
-        if (top)
-          setVisible(
-            top.target.id.replace(/^settings-/, "") as SettingsSection,
-          );
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    );
-    for (const key of sectionKeys.split(" ")) {
+    const elements = sectionKeys.split(" ").flatMap((key) => {
       const element = document.getElementById(
         settingsSectionId(key as SettingsSection),
       );
-      if (element) observer.observe(element);
-    }
-    return () => observer.disconnect();
+      return element ? [{ key: key as SettingsSection, element }] : [];
+    });
+    const update = () =>
+      setVisible(
+        visibleSettingsSection(
+          elements.map(({ key, element }) => ({
+            key,
+            top: element.getBoundingClientRect().top,
+          })),
+          window.innerHeight,
+        ),
+      );
+    const observer =
+      typeof IntersectionObserver === "function"
+        ? new IntersectionObserver(update, { rootMargin: "0px 0px -70% 0px" })
+        : null;
+    for (const { element } of elements) observer?.observe(element);
+    document.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
   }, [sectionKeys]);
   const active = visible ?? current ?? sections[0];
   return (
@@ -710,7 +717,7 @@ function DeviceSettings({
   onCalendarPreferencesChange(value: CalendarPreferences): void;
 }) {
   return (
-    <>
+    <div className="device-settings">
       <p className="section-copy">
         <Trans>
           These choices apply as soon as you make them and don’t change the
@@ -754,7 +761,7 @@ function DeviceSettings({
           onChange={onCalendarPreferencesChange}
         />
       </div>
-    </>
+    </div>
   );
 }
 

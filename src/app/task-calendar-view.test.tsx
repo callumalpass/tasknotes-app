@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "../test/render";
+import { act, cleanup, fireEvent, render, within } from "../test/render";
 import { activateAppLocale } from "../i18n/app";
 import type { ItemArg } from "@tasknotes/calendar";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +7,7 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskCalendarView } from "./task-calendar-view";
 import type { CalendarEventData } from "./calendar-items";
 import { defaultCalendarPreferences } from "./calendar-preferences";
+import type { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 
 import { parseDay } from "@tasknotes/calendar";
 import type { TaskCalendarItem } from "./calendar-items";
@@ -17,7 +18,19 @@ import type { TaskViewExecution } from "../domain/view";
 // hands it, which is where a dropped item's dates come from.
 const calendar = vi.hoisted(() => ({
   props: undefined as undefined | Record<string, unknown>,
+  google: undefined as ReturnType<typeof useGoogleCalendarOverlay> | undefined,
 }));
+vi.mock("../calendar-service/use-google-calendar-overlay", async (original) => {
+  const actual =
+    await original<
+      typeof import("../calendar-service/use-google-calendar-overlay")
+    >();
+  return {
+    useGoogleCalendarOverlay: (
+      ...args: Parameters<typeof useGoogleCalendarOverlay>
+    ) => calendar.google ?? actual.useGoogleCalendarOverlay(...args),
+  };
+});
 vi.mock("@tasknotes/calendar/react", () => ({
   TaskCalendar: (props: Record<string, unknown>) => {
     calendar.props = props;
@@ -34,10 +47,223 @@ vi.mock("./repository-context", async () => {
 afterEach(async () => {
   cleanup();
   calendar.props = undefined;
+  calendar.google = undefined;
+  vi.unstubAllGlobals();
   await act(() => activateAppLocale("en"));
 });
 
+describe("Google events alongside task calendars", () => {
+  function overlay() {
+    const googleCalendar = {
+      id: "calendar-one",
+      name: "Work",
+      can_write: true,
+      is_primary: true,
+    };
+    const event = {
+      status: "confirmed" as const,
+      id: "google-one",
+      calendar_id: googleCalendar.id,
+      etag: '"1"',
+      title: "Planning",
+      description: null,
+      location: null,
+      recurrence: null,
+      start: { kind: "date" as const, date: "2026-06-30" },
+      end: { kind: "date" as const, date: "2026-07-02" },
+    };
+    const item: TaskCalendarItem = {
+      id: "google:google-one",
+      title: event.title,
+      start: event.start.date,
+      end: event.end.date,
+      allDay: true,
+      color: "var(--google-calendar-tone-0)",
+      editable: true,
+      data: {
+        details: [],
+        recurring: false,
+        google: { event, calendar: googleCalendar },
+      },
+    };
+    calendar.google = {
+      enabled: true,
+      signedIn: true,
+      items: [item],
+      writable: [googleCalendar],
+      events: [event],
+      failure: null,
+      omitted: 0,
+      loading: false,
+      reload: vi.fn(),
+      replaceEvent: vi.fn(),
+      move: vi.fn(),
+      editor: null,
+      closeEditor: vi.fn(),
+      open: vi.fn(),
+      create: vi.fn(),
+    };
+    return { item, google: calendar.google };
+  }
+
+  it.each(["dayGridMonth", "timeGridWeek", "listWeek"])(
+    "renders and edits Google events in %s without treating them as tasks",
+    (mode) => {
+      const { item, google } = overlay();
+      const current = execution("2026-07-01");
+      current.view.presentation!.options.calendarView = mode;
+      const update = vi.fn();
+      renderCalendar(current, update);
+      expect(items().some((candidate) => candidate.id === item.id)).toBe(true);
+      const content = (
+        calendar.props![
+          mode === "listWeek" ? "listItemContent" : "itemContent"
+        ] as (arg: unknown) => Node
+      )({
+        item,
+        el: document.createElement("div"),
+        variant: mode === "listWeek" ? "list" : "bar",
+        timeText: "",
+        isMirror: false,
+        view: { type: mode === "listWeek" ? "list" : "month" },
+      });
+      expect(content.textContent).toContain("Planning");
+      expect(
+        (content as HTMLElement).querySelector(".agenda-task-slot"),
+      ).toBeNull();
+      (calendar.props!.onItemClick as (arg: unknown) => void)({ item });
+      expect(google.open).toHaveBeenCalledWith(item.data!.google);
+      for (const handler of ["onItemDrop", "onItemResize"]) {
+        const change = { item, revert: vi.fn() };
+        (calendar.props![handler] as (arg: unknown) => void)(change);
+        expect(google.move).toHaveBeenCalledWith(change);
+      }
+      expect(update).not.toHaveBeenCalled();
+    },
+  );
+
+  it("opens spanning Google events from a phone month's selected day", () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const { item, google } = overlay();
+    google.items.push({
+      ...item,
+      id: "google:finished",
+      title: "Finished yesterday",
+      start: "2026-06-30",
+      end: "2026-07-01",
+    });
+    const view = renderCalendar(execution("2026-07-01"), vi.fn());
+    const inspector = within(view.container).getByRole("complementary", {
+      name: "Selected day",
+    });
+    fireEvent.click(
+      within(inspector).getByRole("button", { name: /^Planning / }),
+    );
+    expect(google.open).toHaveBeenCalledWith(item.data!.google);
+    expect(within(inspector).queryByText("Finished yesterday")).toBeNull();
+    expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+  });
+});
+
 describe("calendar drops", () => {
+  it("shows a phone month's selected-day agenda immediately without a dismiss action", () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const view = renderCalendar(execution("2026-07-01"), vi.fn());
+    const inspector = within(view.container).getByRole("complementary", {
+      name: "Selected day",
+    });
+    expect(inspector).toBeVisible();
+    expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+    expect(
+      within(inspector).queryByRole("button", { name: "Close day details" }),
+    ).toBeNull();
+    expect(calendar.props).toMatchObject({ monthDisplay: "dots" });
+  });
+  it("bounds calendar previews and keeps event targets compact", () => {
+    renderCalendar(execution("2026-07-24"), vi.fn());
+    expect(calendar.props).toMatchObject({
+      eventMinHeight: 44,
+      dayMaxEvents: 2,
+      dayMaxEventRows: 3,
+    });
+  });
+
+  it("lets fine-pointer Month fit single-line bars to the available height", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("pointer: fine"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    renderCalendar(execution("2026-07-24"), vi.fn());
+    expect(calendar.props).toMatchObject({
+      dayMaxEvents: true,
+      dayMaxEventRows: 0,
+    });
+    expect(calendar.props).toMatchObject({
+      height: "fill",
+      eventMinHeight: 26,
+    });
+    expect(calendar.props).toMatchObject({
+      style: { height: expect.any(Number) },
+    });
+  });
+
+  it("omits priority markers from the intensity-based Year layout", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "multiMonthYear";
+    original.rows[0]!.task.priority = "high";
+    const view = renderCalendar(original, vi.fn());
+    expect(view.container.querySelector(".full-calendar-legend")).toBeNull();
+  });
+
+  it("reserves one all-day preview plus disclosure in timed layouts", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "timeGridWeek";
+    renderCalendar(original, vi.fn());
+    expect(calendar.props).toMatchObject({
+      eventMinHeight: 44,
+      slotHeight: 36,
+      dayMaxEventRows: 2,
+    });
+  });
+
+  it("exposes a bounded set of wrapping all-day cards in Day", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "timeGridDay";
+    renderCalendar(original, vi.fn());
+    expect(calendar.props!.dayMaxEventRows).toBe(7);
+    expect(document.querySelector(".full-calendar-view")).toHaveClass("is-day");
+  });
+
+  it("keeps Agenda's layout and navigation in the common toolbar", () => {
+    const original = execution("2026-07-24");
+    original.view.presentation!.options.calendarView = "listWeek";
+    const view = renderCalendar(original, vi.fn());
+    const toolbar = view.container.querySelector(".full-calendar-commandbar")!;
+    expect(
+      within(toolbar as HTMLElement).getByText("Agenda", {
+        selector: "summary span",
+      }),
+    ).toBeVisible();
+    const stripNext = document.createElement("button");
+    stripNext.className = "tnc-strip-next";
+    const navigate = vi.fn();
+    stripNext.addEventListener("click", navigate);
+    view.container.querySelector(".full-calendar-view")!.append(stripNext);
+    fireEvent.click(
+      within(toolbar as HTMLElement).getByRole("button", { name: "Next week" }),
+    );
+    expect(navigate).toHaveBeenCalledOnce();
+  });
+
   it("keeps a dropped task at its new date while the write is pending", async () => {
     const write = deferred();
     const onUpdate = vi.fn(() => write.promise);
@@ -218,7 +444,254 @@ describe("year layout", () => {
   });
 });
 
+describe("shared agenda", () => {
+  it.each(["dayGridMonth", "timeGridWeek", "listWeek"])(
+    "keeps other-day plans on their deadline in %s and in day inspection",
+    (mode) => {
+      const current = execution("2026-07-02");
+      current.rows[0].task.due = "2026-07-01";
+      current.rows[0].values.due = "2026-07-01";
+      current.view.presentation!.options.calendarView = mode;
+      const view = renderCalendar(current, vi.fn());
+      const due = items().find((item) => item.id === "due-one");
+      expect(due?.start).toBe("2026-07-01");
+      if (mode === "listWeek") return;
+      act(() =>
+        (calendar.props!.onDateClick as (info: unknown) => void)({
+          dateStr: "2026-07-01",
+          startStr: "2026-07-01",
+          allDay: true,
+          jsEvent: new MouseEvent("click"),
+        }),
+      );
+      const inspector = within(view.container).getByRole("complementary", {
+        name: "Selected day",
+      });
+      expect(within(inspector).getByText("1 task")).toBeVisible();
+      expect(inspector.querySelectorAll(".task-row")).toHaveLength(1);
+      expect(
+        within(inspector).getByRole("button", {
+          name: current.rows[0].task.title,
+        }),
+      ).toBeVisible();
+      expect(
+        inspector.querySelector(".task-row-inline-metadata"),
+      ).toHaveTextContent("Due");
+    },
+  );
+
+  it("opens grid day details only after a selection and offers an explicit close", () => {
+    const view = within(
+      renderCalendar(execution("2026-07-24"), vi.fn()).container,
+    );
+    expect(
+      view.queryByRole("complementary", { name: "Selected day" }),
+    ).toBeNull();
+    act(() =>
+      (calendar.props!.onDateClick as (info: unknown) => void)({
+        dateStr: "2026-07-24",
+        startStr: "2026-07-24",
+        allDay: true,
+        jsEvent: new MouseEvent("click"),
+      }),
+    );
+    expect(
+      view.getByRole("complementary", { name: "Selected day" }),
+    ).toBeVisible();
+    fireEvent.click(view.getByRole("button", { name: "Close day details" }));
+    expect(
+      view.queryByRole("complementary", { name: "Selected day" }),
+    ).toBeNull();
+  });
+
+  it("starts a newly chosen time grid at the working day, not the agenda scroll offset", () => {
+    const current = execution("2026-07-24");
+    current.view.presentation!.options.calendarView = "dayGridMonth";
+    const view = within(renderCalendar(current, vi.fn()).container);
+    const scrollToTime = vi.fn();
+    (calendar.props!.calendarRef as (instance: unknown) => void)({
+      scrollToTime,
+    });
+    fireEvent.click(view.getByLabelText("Calendar layout"));
+    fireEvent.click(view.getByRole("button", { name: "Week" }));
+    expect(scrollToTime).toHaveBeenCalledWith("08:00:00");
+    expect(calendar.props!.scrollTime).toBe("08:00:00");
+  });
+  it("uses the agenda, overdue lead and date-aware capture on desktop without changing Base options", () => {
+    const current = execution("2026-07-24");
+    current.view.presentation!.options = {
+      calendarView: "listWeek",
+      listDayCount: 11,
+    };
+    const onCreate = vi.fn();
+    const onSelect = vi.fn();
+    const preferences = { ...defaultCalendarPreferences("en-US"), firstDay: 1 };
+    render(
+      <TaskCalendarView
+        execution={current}
+        identityTasks={current.rows.map((row) => row.task)}
+        preferences={preferences}
+        selected="2026-07-24"
+        selectedCreateValue="2026-07-24"
+        titleProperty="title"
+        onCreate={onCreate}
+        onSelect={onSelect}
+        onOpen={vi.fn()}
+        onToggle={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
+    expect(calendar.props).toMatchObject({
+      view: "list",
+      listAgenda: true,
+      dateStrip: true,
+      listLeadTitle: "Overdue",
+      listAddText: "Add task",
+      firstDay: 1,
+      listDayCount: 11,
+    });
+    act(() =>
+      (calendar.props!.onListAdd as (arg: unknown) => void)({
+        dateStr: "2026-07-29",
+      }),
+    );
+    expect(onSelect).toHaveBeenCalledWith("2026-07-29");
+    expect(onCreate).toHaveBeenCalledWith("2026-07-29");
+    expect(current.view.presentation!.options).toEqual({
+      calendarView: "listWeek",
+      listDayCount: 11,
+    });
+  });
+
+  it("mounts ordinary task controls without a surrounding calendar button", async () => {
+    const current = execution("2026-07-24T09:30");
+    current.view.presentation!.options.calendarView = "listWeek";
+    const onOpen = vi.fn();
+    const onToggle = vi.fn();
+    const view = render(
+      <TaskCalendarView
+        execution={current}
+        identityTasks={current.rows.map((row) => row.task)}
+        preferences={defaultCalendarPreferences("en-US")}
+        selected="2026-07-24"
+        selectedCreateValue="2026-07-24"
+        titleProperty="title"
+        onCreate={vi.fn()}
+        onSelect={vi.fn()}
+        onOpen={onOpen}
+        onToggle={onToggle}
+        onEdit={vi.fn()}
+      />,
+    );
+    const item = items().find((item) => item.id === "scheduled-one")!;
+    const el = document.createElement("div");
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+    const arg = {
+      item,
+      el,
+      variant: "list",
+      isMirror: false,
+      day: parseDay("2026-07-24"),
+      timeText: "9:30am",
+    };
+    el.append((calendar.props!.listItemContent as (arg: unknown) => Node)(arg));
+    view.container.append(el);
+    act(() => (calendar.props!.itemDidMount as (arg: unknown) => void)(arg));
+    expect(el).not.toHaveAttribute("role");
+    expect(el).not.toHaveAttribute("tabindex");
+    expect(el.querySelector(".task-row")).toBeTruthy();
+    expect(el).toHaveTextContent("9:30am");
+    fireEvent.click(view.getByRole("button", { name: "Calendar task" }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      fireEvent.click(
+        view.getByRole("button", { name: "Complete Calendar task" }),
+      ),
+    );
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    act(() => (calendar.props!.itemWillUnmount as (arg: unknown) => void)(arg));
+    expect(el.querySelector(".task-row")).toBeNull();
+  });
+});
+
 describe("calendar entry labels", () => {
+  it("names a timed entry's local day east of UTC", () => {
+    renderCalendar(execution("2026-07-24T22:00:00Z"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    vi.stubEnv("TZ", "Australia/Melbourne");
+    try {
+      (calendar.props!.itemDidMount as (arg: unknown) => void)({
+        item,
+        el,
+        variant: "timed",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(el.dataset.date).toBe("2026-07-25");
+    expect(el.getAttribute("aria-label")).toContain("Saturday, July 25");
+  });
+
+  it("puts the title before the time in grid cards", () => {
+    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    const fragment = (calendar.props!.itemContent as (arg: unknown) => Node)({
+      item,
+      el,
+      variant: "timed",
+      timeText: "9:30am – 10:30am",
+    });
+    el.append(fragment);
+    expect(el.textContent).toMatch(/^Calendar task9:30am/);
+  });
+  it("keeps month entry times and titles together for two-line wrapping", () => {
+    renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+    const item = items().find((entry) => !entry.allDay)!;
+    const el = document.createElement("div");
+    el.append(
+      (calendar.props!.itemContent as (arg: unknown) => Node)({
+        item,
+        el,
+        variant: "bar",
+        timeText: "9:30am",
+      }),
+    );
+    expect(el.querySelector(".full-calendar-event-primary")).toHaveTextContent(
+      "9:30am · Calendar task",
+    );
+    expect(el.querySelector(".full-calendar-event-secondary")).toBeNull();
+  });
+  it.each(["timed", "bar"])(
+    "provides one full-title tooltip on hover and focus for %s",
+    (variant) => {
+      renderCalendar(execution("2026-07-24T09:30"), vi.fn());
+      const item = items().find((entry) => !entry.allDay)!;
+      const el = document.createElement("div");
+      el.className = `tnc-item tnc-item--${variant}`;
+      el.setAttribute("role", "button");
+      (calendar.props!.itemDidMount as (arg: unknown) => void)({
+        item,
+        el,
+        variant,
+      });
+      expect(el).not.toHaveAttribute("title");
+      document.querySelector(".full-calendar-view")!.append(el);
+      fireEvent.pointerOver(el);
+      expect(document.querySelector('[role="tooltip"]')).toHaveTextContent(
+        item.title,
+      );
+      fireEvent.pointerOut(el);
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+      fireEvent.focus(el);
+      expect(document.querySelector('[role="tooltip"]')).toHaveTextContent(
+        item.title,
+      );
+    },
+  );
   it("names an all-day entry's own day west of UTC", () => {
     renderCalendar(execution("2026-07-24"), vi.fn());
     const item = items().find((entry) => entry.allDay)!;

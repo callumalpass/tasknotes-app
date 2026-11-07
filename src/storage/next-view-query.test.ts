@@ -128,7 +128,7 @@ for (const [profile, config] of [
 
 describe("shared compiler artifact intake (synthetic declarations, not native/Core/LAB qualification)", () => {
   it("preserves source-global AND view predicates and exact raw dependencies", () => {
-    expect(cases).toHaveLength(20);
+    expect(cases).toHaveLength(24);
     const result = compileTaskNotesQuery(
       {
         dialect: "obsidian-bases",

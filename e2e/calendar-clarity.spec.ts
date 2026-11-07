@@ -4,140 +4,146 @@ import { expect, test } from "./local-test";
 const view = (id: string) =>
   `views/${encodeURIComponent(`TaskNotes/Views/${id}.base#${id}`)}?demo=50`;
 
-test("calendar names elevated priority and keeps entries accessible", async ({
+test("Upcoming has named, counted week days, respects the first day preference and supports keyboard selection", async ({
   page,
 }) => {
-  await page.goto(view("calendar"));
-  await expect(page.locator(".tnc-dg .tnc-item").first()).toBeVisible();
-  await expect(page.getByRole("list", { name: "Calendar markers" })).toHaveText(
-    "High priority",
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "tasknotes:calendar-preferences:v1",
+      JSON.stringify({ firstDay: 1 }),
+    ),
   );
+  await page.goto(view("upcoming"));
+  // Persisting a preference makes this fixture a returning user, whose
+  // one-time upgrade notice otherwise covers the sticky strip on phones.
+  await page
+    .getByRole("complementary", { name: "mdbase update" })
+    .getByRole("button", { name: "Dismiss" })
+    .click();
+  const strip = page.locator(".tnc-strip");
+  const days = strip.locator(".tnc-strip-day");
+  await expect(days).toHaveCount(7);
+  const first = await days.first().getAttribute("data-date");
+  expect(new Date(`${first}T12:00:00`).getDay()).toBe(1);
+  const today = strip.locator('.tnc-strip-day[aria-current="date"]');
+  await expect(today).toHaveAttribute("aria-label", /\d+ tasks?$/);
+  const date = await today.getAttribute("data-date");
+  const group = page.locator(`.tnc-list-section[data-date="${date}"]`);
+  await expect(group.getByRole("heading")).toContainText("Today ·");
+  const count = await group
+    .locator(".tnc-item--list:not(.is-time-entry)")
+    .count();
+  await expect(group.locator(".agenda-day-count")).toHaveText(String(count));
+  await expect(today.locator(".agenda-strip-count")).toHaveText(String(count));
+  const leadIds = await page
+    .locator(".tnc-list-lead .tnc-item")
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-id")));
+  expect(
+    await group
+      .locator(".tnc-item")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("data-id")),
+      ),
+  ).not.toEqual(expect.arrayContaining([leadIds[0]]));
+  await today.focus();
+  await page.keyboard.press("ArrowRight");
+  const focused = strip.locator(".tnc-strip-day:focus");
+  const selectedDate = await focused.getAttribute("data-date");
+  await page.keyboard.press("Enter");
+  await expect(
+    strip.locator(`.tnc-strip-day[data-date="${selectedDate}"]`),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.locator(
+      `.tnc-list-section[data-date="${selectedDate}"] .tnc-list-day`,
+    ),
+  ).toBeInViewport();
+  await page.getByRole("button", { name: "Next week", exact: true }).click();
+  expect(await days.first().getAttribute("data-date")).not.toBe(first);
+  await page
+    .getByRole("button", { name: "Previous week", exact: true })
+    .click();
+  await expect(days.first()).toHaveAttribute("data-date", first!);
   const accessibility = await new AxeBuilder({ page })
     .include(".full-calendar-view")
     .analyze();
   expect(accessibility.violations).toEqual([]);
-  const phone = (page.viewportSize()?.width ?? 0) < 840;
-  if (phone) {
-    // Phone months draw every task as a dot; only elevated ones are coloured.
-    await expect(
-      page.locator(".tnc-dg-dots .tnc-item--indicator.has-marker").first(),
-    ).toBeAttached();
-    return;
-  }
-  const marked = page
-    .locator(".tnc-item:has(.full-calendar-event-content.has-marker)")
-    .first();
-  await expect(marked).toHaveAttribute("title", "High priority");
-  await expect(marked).toHaveAttribute("aria-label", /high priority$/);
-  const unmarked = page
-    .locator(".tnc-dg .tnc-item .full-calendar-event-content:not(.has-marker)")
-    .first();
-  await expect(unmarked.locator("i")).toHaveCount(0);
 });
 
-test("agenda groups all-day tasks under the date and labels only timed ones", async ({
-  page,
-}) => {
-  await page.goto(view("upcoming"));
-  await expect(page.locator(".tnc-item--list").first()).toBeVisible();
-  const times = await page
-    .locator(".tnc-item--list .full-calendar-event-time")
-    .evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim()));
-  expect(times).not.toContain("All day");
-  expect(times.some((time) => /\d/.test(time ?? ""))).toBe(true);
-  // A due-day row whose details read "Due …" does not repeat a Due label.
-  const duplicated = await page
-    .locator(".tnc-item--list")
-    .evaluateAll(
-      (rows) =>
-        rows.filter(
-          (row) =>
-            row.querySelector(".full-calendar-event-kind")?.textContent ===
-              "Due" &&
-            [
-              ...row.querySelectorAll(
-                ".full-calendar-event-properties > span > span",
-              ),
-            ].some((label) => label.textContent === "Due"),
-        ).length,
-    );
-  expect(duplicated).toBe(0);
-  await expect(
-    page.locator(".tnc-list .full-calendar-event-primary > i"),
-  ).toHaveCount(0);
-});
-
-test("the layout switcher sits on the date row above the calendar on both screens", async ({
-  page,
-}) => {
-  // Phone agendas keep the switcher in their date strip instead.
-  const phone = (page.viewportSize()?.width ?? 0) < 840;
-  for (const id of phone ? ["calendar"] : ["upcoming", "calendar"]) {
-    await page.goto(view(id));
-    const modes = page.getByLabel("Calendar layout");
-    await expect(modes).toBeVisible();
-    const surface = (await page
-      .locator(".full-calendar-surface")
-      .boundingBox())!;
-    const box = (await modes.boundingBox())!;
-    // Beside the day list the range takes its own line; the switcher stays
-    // on the row with the date navigation either way.
-    const navigation = (await page
-      .locator(".full-calendar-navigation")
-      .boundingBox())!;
-    const title = (await page
-      .locator(".full-calendar-commandbar > h2")
-      .boundingBox())!;
-    expect(box.x + box.width).toBeLessThanOrEqual(
-      surface.x + surface.width + 1,
-    );
-    expect(box.y + box.height).toBeLessThanOrEqual(surface.y);
-    expect(title.y + title.height).toBeLessThanOrEqual(surface.y);
-    if ((page.viewportSize()?.width ?? 0) >= 1024)
-      expect(
-        Math.abs(
-          box.y + box.height / 2 - (navigation.y + navigation.height / 2),
-        ),
-      ).toBeLessThan(4);
-  }
-});
-
-test("the phone agenda keeps its strip in view and moves overdue work to today", async ({
+test("an empty agenda day creates a saved task on that day", async ({
   page,
   isMobile,
 }) => {
-  test.skip(!isMobile, "The date strip is the phone agenda");
   await page.goto(view("upcoming"));
   const strip = page.locator(".tnc-strip");
-  await expect(strip.getByLabel("Calendar layout")).toBeVisible();
-  await expect(page.locator(".full-calendar-commandbar")).toBeHidden();
-  await page.mouse.wheel(0, 1500);
-  await expect
-    .poll(async () => (await strip.boundingBox())?.y ?? -1)
-    .toBeGreaterThanOrEqual(0);
-  await expect(strip.locator(".tnc-strip-day.is-focus")).not.toHaveClass(
-    /is-today/,
+  for (let week = 0; week < 4; week++)
+    await page.getByRole("button", { name: "Next week", exact: true }).click();
+  const day = strip
+    .locator(".tnc-strip-day")
+    .filter({ has: page.locator(".agenda-strip-count", { hasText: /^0$/ }) })
+    .first();
+  const date = await day.getAttribute("data-date");
+  await day.click();
+  const section = page.locator(`.tnc-list-section[data-date="${date}"]`);
+  await expect(section).toHaveClass(/is-empty/);
+  await expect(section.locator(".agenda-day-count")).toHaveText("0");
+  await section.getByRole("button", { name: /^Add task,/ }).click();
+  const capture = isMobile
+    ? page.getByRole("dialog", { name: "New task" })
+    : page.locator(".view-detail > .capture-composer");
+  const input = capture.getByRole("combobox", { name: "New task title" });
+  await expect(input).toBeFocused();
+  await input.fill("Empty day capture regression");
+  if (isMobile)
+    await capture.getByRole("button", { name: "Add", exact: true }).click();
+  else await input.press("Enter");
+  await expect(
+    section.getByRole("button", {
+      name: "Empty day capture regression",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(section.locator(".agenda-day-count")).toHaveText("1");
+});
+
+test("desktop agenda tasks drag onto a week-strip day without opening details", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(
+    isMobile,
+    "Pointer drag is exercised on desktop; phones retain the calendar touch gesture",
   );
-  // Today returns to the top, where overdue work waits above today.
-  await strip.getByRole("button", { name: "Today" }).click();
-  const overdue = page.locator(".tnc-list-lead");
-  await expect(overdue.getByText("2 days ago").first()).toBeVisible();
-  // As in the Today view, Scheduled moves to today and Due stays the
-  // deadline, so only work overdue by Due stays listed here.
-  const items = overdue.locator(".tnc-item");
-  const before = await items.count();
-  const move = overdue.getByRole("button", {
-    name: /^Move all to today, \d+ overdue tasks?$/,
+  // Midweek, so today always has a following day in the strip.
+  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
+  await page.goto(view("upcoming"));
+  const source = page
+    .locator(".tnc-list-lead")
+    .getByRole("button", { name: "Book the project room", exact: true });
+  const target = page
+    .locator(".tnc-strip-day[aria-current=date]")
+    .locator("xpath=following-sibling::button[1]");
+  const date = await target.getAttribute("data-date");
+  await source.scrollIntoViewIfNeeded();
+  const from = (await source.boundingBox())!;
+  const to = (await target.boundingBox())!;
+  await page.mouse.move(from.x + 20, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 20, from.y + from.height / 2 + 10, {
+    steps: 3,
   });
-  await move.click();
-  await expect(page.locator(".undo-toast")).toContainText("to today");
-  await expect.poll(() => items.count()).toBeLessThan(before);
-  await expect(move).toHaveCount(0);
-  await page
-    .locator(".undo-toast")
-    .getByRole("button", { name: "Undo" })
-    .click();
-  await expect.poll(() => items.count()).toBe(before);
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+    steps: 10,
+  });
+  await page.mouse.up();
+  await expect(source).toHaveCount(0);
+  const section = page.locator(`.tnc-list-section[data-date="${date}"]`);
+  await expect(
+    section.getByRole("button", { name: "Book the project room", exact: true }),
+  ).toBeAttached();
+  await expect(
+    page.getByRole("complementary", { name: "Task details" }),
+  ).toHaveCount(0);
 });
 
 test.describe("calendar drops", () => {

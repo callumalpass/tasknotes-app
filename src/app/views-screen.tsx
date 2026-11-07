@@ -1,6 +1,8 @@
+import type { TaskNavigationTarget } from "./use-workspace-navigation";
+import { SelectTasksOption } from "./task-selection";
 import { t as translate, plural } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
-import { useLingui, Trans } from "@lingui/react/macro";
+import { useLingui, Plural, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
   Check,
@@ -14,20 +16,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureSessionFor } from "../application/capture-session";
 import { GlobalTaskCapture } from "../components/global-task-capture";
 import { ViewOptions } from "../components/view-options";
+import { TaskNotesSelect } from "../components/tasknotes-controls";
 import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
-import { basesProperty } from "../domain/default-view-source";
+import { basesProperty, starterViewKind } from "../domain/default-view-source";
 import { ProjectPropertyOffer } from "./views/project-property-offer";
-import { kanbanRowValue, valueKey } from "./views/kanban-columns";
+import { kanbanPropertyRole } from "../domain/kanban";
+import {
+  kanbanColumnLabel,
+  kanbanRowValue,
+  valueKey,
+} from "./views/kanban-columns";
 import { navigationViewScope } from "./navigation-views";
 import { LoadingRows } from "../components/loading";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { ViewExecutionErrorNotice } from "../components/view-execution-error-notice";
 import { taskCompletion } from "../domain/task-completion";
 import { TaskCapture } from "../components/task-capture";
-import { todayString } from "../domain/task";
+import { isTaskPastDue, taskDayStanding, todayString } from "../domain/task";
 import {
+  missedDeadlineCount,
   scheduleRowsTodayUpdates,
   sectionTaskViewRows,
   todayCaptureDefaults,
@@ -35,10 +44,12 @@ import {
 import { summarizeToday } from "../domain/today-summary";
 import { TodayClear, TodayFirstRun } from "./today-clear";
 import { CaptureFab } from "../components/capture-fab";
+import "./daily-behavior.css";
 import {
   appendManualOrderRank,
   disableManualOrderSort,
   enableManualOrderSort,
+  leadSortWith,
   manualOrderConfiguration,
   planManualOrder,
   type ManualOrderPlacement,
@@ -53,6 +64,11 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { propertyLabel } from "../i18n/view-presentation";
 import { selectionFeedback } from "../native/feedback";
 import { useRepository, useTasks } from "./repository-context";
+import { forgetUndo, rememberUndo, type UndoEntry } from "./undo-history";
+import { ViewSortChoices } from "./view-sort-choices";
+import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
+import { countLabel } from "../i18n/default-labels";
+import { formatTaskDate } from "../i18n/presentation";
 import { RecordWriteNotice } from "../components/record-write-notice";
 import { ViewEditor } from "./view-editor";
 import { preloadViewEditor } from "./view-editor-loader";
@@ -105,9 +121,10 @@ import { KanbanView } from "./views/kanban-view";
 import { TaskListView } from "./views/task-list-view";
 import { StarterViewsOffer } from "./views/starter-views-offer";
 import { useStableCallback, useStableView } from "./use-stable-identity";
-import { hasTaskNotesStarterViews } from "../application/ensure-default-view-source";
+import { hasAllTaskNotesStarterViews } from "../application/ensure-default-view-source";
 
 type ViewEditorRequest = {
+  initialSection?: import("./view-editor-form").ViewEditorSection;
   view?: TaskView;
   duplicate?: boolean;
   confirmDelete?: boolean;
@@ -123,6 +140,7 @@ export function ViewsScreen({
   navigationViewKeys,
   operational = false,
   onBack,
+  onManageViews = onBack,
   onOpenTask,
   onTaskAdded,
   onSearch,
@@ -142,7 +160,12 @@ export function ViewsScreen({
   navigationViewKeys: string[];
   operational?: boolean;
   onBack(): void;
-  onOpenTask(task: TaskSummary, occurrenceDate?: string): void;
+  onManageViews?(): void;
+  onOpenTask(
+    task: TaskSummary,
+    occurrenceDate?: string,
+    order?: readonly TaskNavigationTarget[],
+  ): void;
   onTaskAdded?(task: TaskSummary): void;
   onSearch(): void;
   onOpenView(view: TaskView): void;
@@ -160,6 +183,7 @@ export function ViewsScreen({
     updateTasks,
     configuration,
     pendingDeletion,
+    deletionError,
   } = useRepository();
   // A completed row that leaves the results is held where it was, so it can
   // linger and fold away; rows that stay (or move) are left to the result.
@@ -239,10 +263,13 @@ export function ViewsScreen({
   const [rescheduled, setRescheduled] = useState<{
     viewKey: string;
     count: number;
+    deadlines: number;
+    date: string;
     undo: { id: string; input: UpdateTaskInput }[];
   } | null>(null);
   const [reschedulePending, setReschedulePending] = useState(false);
   const rescheduleUndoRef = useRef<HTMLButtonElement | null>(null);
+  const rescheduleUndoEntry = useRef<UndoEntry | null>(null);
   const [viewActionError, setViewActionError] = useState<{
     viewKey: string;
     message: string;
@@ -314,8 +341,8 @@ export function ViewsScreen({
   );
   const plannerHref = usePlannerViewLink(repository, selected);
   const todayScreen =
-    selected?.presentation?.options.sections === "day" &&
-    (selected.id === "today" || selected.name === "Today");
+    selected &&
+    (starterViewKind(selected) === "today" || selected.name === "Today");
   const needsIdentityTasks =
     todayScreen ||
     selected?.presentation?.type === "tasknotes.calendar" ||
@@ -461,8 +488,13 @@ export function ViewsScreen({
         : { execution: ranked, departing: new Map<string, number | null>() };
     return {
       execution:
-        held.execution && pendingDeletion
-          ? executionWithoutTask(held.execution, pendingDeletion.id)
+        held.execution &&
+        pendingDeletion &&
+        !(pendingDeletion.bulk && deletionError)
+          ? (pendingDeletion.ids ?? [pendingDeletion.id]).reduce(
+              (result, id) => executionWithoutTask(result, id),
+              held.execution,
+            )
           : held.execution,
       departing: held.departing,
     };
@@ -472,9 +504,20 @@ export function ViewsScreen({
     manualOrder,
     manualRanks,
     pendingDeletion,
+    deletionError,
     selected,
     visibleExecution,
   ]);
+  const overdueCount = useMemo(
+    () =>
+      todayScreen &&
+      presentedExecution?.view.presentation?.options.sections === "day"
+        ? presentedExecution.rows.filter(
+            ({ task }) => taskDayStanding(task, today) === "overdue",
+          ).length
+        : 0,
+    [presentedExecution, today, todayScreen],
+  );
   const todayProgress = useMemo(() => {
     if (
       !todayScreen ||
@@ -512,7 +555,8 @@ export function ViewsScreen({
     return () => window.clearTimeout(timeout);
   }, [rescheduled]);
   const upcomingView = views?.find(
-    (view) => view.id === "upcoming" && view.key !== selected?.key,
+    (view) =>
+      starterViewKind(view) === "upcoming" && view.key !== selected?.key,
   );
   useEffect(() => {
     presentedRef.current = presentedExecution;
@@ -603,19 +647,24 @@ export function ViewsScreen({
     viewCaptureDefaults && todayScreen
       ? todayCaptureDefaults(viewCaptureDefaults, today)
       : viewCaptureDefaults;
+  const selectionAvailable =
+    selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.projects";
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
+    selected?.presentation?.type === "tasknotes.projects" ||
     selected?.presentation?.type === "tasknotes.planner"
       ? " is-task-list-view"
       : selected?.presentation?.type === "tasknotes.kanban"
         ? " is-kanban-view"
         : selected?.presentation?.type === "tasknotes.calendar"
-          ? " is-full-calendar-view"
+          ? ` is-full-calendar-view${selected.presentation.options?.calendarView === "listWeek" ? " is-agenda-default" : ""}`
           : selected?.presentation?.type === "tasknotes.mini-calendar"
             ? " is-mini-calendar-view"
             : "";
 
-  async function setManualOrderSort(enabled: boolean) {
+  /** Manual order on or off, or the field to lead the view's sort with. */
+  async function setManualOrderSort(choice: boolean | string) {
     if (!selected || !selected.source.writable || manualOrderSortPending)
       return false;
     const view = selected;
@@ -629,9 +678,18 @@ export function ViewsScreen({
         draft.dialect === "obsidian-bases"
           ? basesProperty(sortOrderField)
           : sortOrderField;
-      const sort = enabled
-        ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)
-        : disableManualOrderSort(draft.sort, sortOrderField);
+      const sort =
+        typeof choice === "string"
+          ? leadSortWith(
+              draft.sort,
+              draft.dialect === "obsidian-bases"
+                ? basesProperty(choice)
+                : choice,
+              sortOrderField,
+            )
+          : choice
+            ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)
+            : disableManualOrderSort(draft.sort, sortOrderField);
       await repository.updateViewSource({
         path: source.path,
         ifRevision: source.revision,
@@ -654,6 +712,7 @@ export function ViewsScreen({
     targetId: string | undefined,
     placement: ManualOrderPlacement,
     additionalInput: UpdateTaskInput = {},
+    notice?: string,
   ): Promise<boolean> {
     if (!selected || !manualOrder || reorderBlocked) return false;
     const plan = planManualOrder(
@@ -696,7 +755,7 @@ export function ViewsScreen({
     const operation = manualOrderMutationQueue.current.then(async () => {
       let accepted = false;
       try {
-        await updateTasks([
+        const updates = [
           ...plan.writes
             .filter(({ taskId }) => taskId !== dragged.task.id)
             .map(({ taskId, sortOrder }) => ({
@@ -710,8 +769,61 @@ export function ViewsScreen({
               ...(draggedWrite ? { sortOrder: draggedWrite.sortOrder } : {}),
             },
           },
-        ]);
+        ];
+        const before = new Map(
+          [...rows, dragged].map(({ task }) => [task.id, { ...task }]),
+        );
+        const saved = await updateTasks(updates);
         accepted = true;
+        if (notice || !Object.keys(additionalInput).length) {
+          const title = dragged.task.title;
+          const receipts = saved.flatMap((task) => {
+            const original = before.get(task.id);
+            return original ? [{ before: original, saved: { ...task } }] : [];
+          });
+          rememberUndo({
+            label: title,
+            notice: notice ?? t`Reordered “${title}”`,
+            run: async () => {
+              await manualOrderMutationQueue.current;
+              const current = await Promise.all(
+                receipts.map(({ saved }) => repository.getSummary(saved.id)),
+              );
+              if (
+                current.some(
+                  (task, index) =>
+                    !task || task.revision !== receipts[index].saved.revision,
+                )
+              )
+                throw new Error(
+                  t`This task changed. Review it before trying again.`,
+                );
+              await updateTasks(
+                receipts.map(({ before }) => ({
+                  id: before.id,
+                  input: {
+                    sortOrder: before.sortOrder ?? null,
+                    ...(before.id === dragged.task.id
+                      ? Object.fromEntries(
+                          Object.keys(additionalInput).map((field) => [
+                            field,
+                            before[field as keyof TaskSummary] ?? null,
+                          ]),
+                        )
+                      : {}),
+                  } as UpdateTaskInput,
+                })),
+              );
+              setManualRanks((ranks) => {
+                const next = new Map(ranks);
+                for (const { saved } of receipts) next.delete(saved.id);
+                return next;
+              });
+              const refreshed = await repository.executeView(view);
+              if (selectedKeyRef.current === view.key) setExecution(refreshed);
+            },
+          });
+        }
         const refreshed = await repository.executeView(view);
         if (selectedKeyRef.current === view.key) {
           setExecution(refreshed);
@@ -818,7 +930,11 @@ export function ViewsScreen({
         order.placement,
         changesColumn ? input : {},
       );
-      if (!saved) clearBoardMove(row.task.id, sequence);
+      if (!saved) {
+        clearBoardMove(row.task.id, sequence);
+        return;
+      }
+      if (changesColumn) rememberBoardMove(row, property, value, input);
       return;
     }
 
@@ -865,6 +981,7 @@ export function ViewsScreen({
         boardMutationQueues.current.delete(row.task.id);
     }
 
+    if (changesColumn) rememberBoardMove(row, property, value, input);
     if (viewMutationSequence.current.get(row.task.id) !== sequence) return;
     try {
       const refreshed = await repository.executeView(selected);
@@ -880,6 +997,53 @@ export function ViewsScreen({
     } finally {
       clearBoardMovePending(row.task.id, sequence);
     }
+  }
+
+  function rememberBoardMove(
+    row: TaskViewRow,
+    property: string,
+    destination: unknown,
+    input: UpdateTaskInput,
+  ) {
+    if (!selected) return;
+    const view = selected;
+    const { id, title } = row.task;
+    const earlier = Object.fromEntries(
+      Object.keys(input).map((key) => [
+        key,
+        row.task[key as keyof TaskSummary] ?? null,
+      ]),
+    ) as UpdateTaskInput;
+    const role = kanbanPropertyRole(property, configuration.fieldMapping);
+    const options =
+      role === "status"
+        ? configuration.statuses
+        : role === "priority"
+          ? configuration.priorities
+          : [];
+    const column = kanbanColumnLabel(
+      {
+        value: destination,
+        label: options.find((option) => option.value === destination)?.label,
+      },
+      role,
+    );
+    rememberUndo({
+      label: title,
+      notice: t`Moved “${title}” to ${column}`,
+      run: async () => {
+        viewMutationSequence.current.set(
+          id,
+          (viewMutationSequence.current.get(id) ?? 0) + 1,
+        );
+        await updateTask(id, earlier);
+        clearBoardMove(id);
+        const refreshed = await repository.executeView(view);
+        if (selectedKeyRef.current !== view.key) return;
+        setExecution(refreshed);
+        setExecutionError(null);
+      },
+    });
   }
 
   function clearBoardMove(taskId: string, sequence?: number) {
@@ -935,12 +1099,21 @@ export function ViewsScreen({
         });
         return next;
       });
+    const title = row.task.title;
+    const column = destination.label ?? uiCopy("This section");
+    const moved = t`Moved “${title}” to ${column}`;
+    const deadlines =
+      "due" in input && isTaskPastDue(row.task, todayString()) ? 1 : 0;
+    const notice = deadlines
+      ? `${moved}, ${plural(deadlines, { one: "# deadline moved too", other: "# deadlines moved too" })}`
+      : moved;
     const saved = await reorderTasks(
       destination.rows,
       row,
       targetId,
       placement,
       changesLane ? input : {},
+      changesLane ? notice : undefined,
     );
     if (!saved)
       setListMoves((moves) => {
@@ -1012,10 +1185,19 @@ export function ViewsScreen({
     return true;
   }
 
-  async function moveOverdueToToday(rows: readonly TaskViewRow[]) {
+  async function moveOverdueToToday(
+    rows: readonly TaskViewRow[],
+    date = todayString(),
+    keepDeadlines = false,
+  ) {
     if (!selected || reschedulePending) return;
     const view = selected;
-    const updates = scheduleRowsTodayUpdates(rows);
+    const updates = scheduleRowsTodayUpdates(
+      rows,
+      date,
+      todayString(),
+      keepDeadlines,
+    );
     if (!updates.length) return;
     setReschedulePending(true);
     setRescheduled(null);
@@ -1024,13 +1206,39 @@ export function ViewsScreen({
     try {
       const saved = await moveRowsToSection(
         updates.map(({ id, input }) => ({ id, input })),
-        "section:today",
+        date === todayString()
+          ? "section:today"
+          : date > todayString()
+            ? "section:later"
+            : "section:overdue",
       );
-      if (saved && selectedKeyRef.current === view.key) {
+      if (saved) {
+        const undo = updates.map(({ id, undo }) => ({ id, input: undo }));
+        const entry: UndoEntry = {
+          label: plural(updates.length, {
+            one: "# task",
+            other: "# tasks",
+          }),
+          undoNotice: plural(updates.length, {
+            one: "Restored dates for # task",
+            other: "Restored dates for # tasks",
+          }),
+          run: async () => {
+            const restored = await moveRowsToSection(undo, "section:overdue");
+            if (!restored)
+              throw new Error(translate`Couldn’t undo. Try again.`);
+            setRescheduled(null);
+          },
+        };
+        rescheduleUndoEntry.current = entry;
+        rememberUndo(entry);
+        if (selectedKeyRef.current !== view.key) return;
         setRescheduled({
           viewKey: view.key,
           count: updates.length,
-          undo: updates.map(({ id, undo }) => ({ id, input: undo })),
+          deadlines: updates.filter(({ input }) => "due" in input).length,
+          date,
+          undo,
         });
         window.requestAnimationFrame(() => rescheduleUndoRef.current?.focus());
       }
@@ -1041,12 +1249,15 @@ export function ViewsScreen({
 
   async function undoReschedule() {
     if (!rescheduled || reschedulePending) return;
-    const { undo } = rescheduled;
-    setRescheduled(null);
+    const entry = rescheduleUndoEntry.current;
+    if (!entry) return;
     setReschedulePending(true);
     document.getElementById("main-content")?.focus({ preventScroll: true });
     try {
-      await moveRowsToSection(undo, "section:overdue");
+      await entry.run();
+      forgetUndo(entry);
+    } catch {
+      return;
     } finally {
       setReschedulePending(false);
     }
@@ -1090,20 +1301,9 @@ export function ViewsScreen({
       captureSession.getSnapshot().version === draftVersion
     )
       setCreationContext(null);
-    if (!refreshed) return;
-    return refreshed.rows.some((row) => row.task.id === task.id)
-      ? undefined
-      : {
-          message: refreshed.hasMore
-            ? t({
-                message:
-                  "Task created. It may be in an unloaded page or excluded by this view’s filters.",
-              })
-            : t({
-                message:
-                  "Task created, but this view does not show it. Its filters or result limit may exclude it.",
-              }),
-        };
+    // A task this view leaves out is normal; say where it went, once.
+    if (refreshed && !refreshed.rows.some((row) => row.task.id === task.id))
+      onTaskAdded?.(task);
   }
 
   function createInBoardColumn(
@@ -1138,14 +1338,8 @@ export function ViewsScreen({
           <header className="screen-header compact-header views-catalog-header">
             <div>
               <h1 id="views-title">
-                <Trans>Manage views</Trans>
+                <Trans>Views</Trans>
               </h1>
-              <p>
-                <Trans>
-                  Choose what appears in navigation, change its order, and
-                  manage saved views.
-                </Trans>
-              </p>
             </div>
             <div className="views-header-actions">
               <button
@@ -1170,7 +1364,7 @@ export function ViewsScreen({
               })}
             />
           ) : null}
-          {documents && !hasTaskNotesStarterViews(documents) ? (
+          {documents && !hasAllTaskNotesStarterViews(documents) ? (
             <StarterViewsOffer onAdded={onViewsChanged} />
           ) : null}
           {!documents || !views ? (
@@ -1207,7 +1401,7 @@ export function ViewsScreen({
   return (
     <CompletionMotion holds={holds} departing={departing}>
       <section
-        className={`screen views-screen view-detail${
+        className={`screen views-screen view-detail${todayScreen || (selected && starterViewKind(selected) === "inbox") ? " has-parent-context" : ""}${
           captureDefaults &&
           selected?.presentation?.type === "tasknotes.task-list"
             ? " has-list-capture"
@@ -1222,25 +1416,124 @@ export function ViewsScreen({
             </button>
           ) : null}
           <div>
-            <h1>{selected?.name ?? translate({ message: "Saved view" })}</h1>
+            {/* The switcher shows the title, so the heading keeps its plain name. */}
+            <h1 className={selected && views ? "visually-hidden" : undefined}>
+              {selected?.name ?? translate({ message: "Saved view" })}
+            </h1>
+            {selected && views ? (
+              <TaskNotesSelect
+                ariaLabel={t`Saved view`}
+                actions={[
+                  ...(selected.source.writable
+                    ? [
+                        {
+                          label: t`Edit view`,
+                          onChoose: () => setEditing({ view: selected }),
+                        },
+                        {
+                          label: t`Layout`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "layout",
+                            }),
+                        },
+                        {
+                          label: t`Filter`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-filter",
+                            }),
+                        },
+                        {
+                          label: t`Group & sort`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-group-sort",
+                            }),
+                        },
+                        {
+                          label: t`Fields shown`,
+                          onChoose: () =>
+                            setEditing({
+                              view: selected,
+                              initialSection: "view-fields",
+                            }),
+                        },
+                      ]
+                    : []),
+                  { label: t`Manage views`, onChoose: onManageViews },
+                ]}
+                className="view-heading-select"
+                value={selected.key}
+                options={views.map((view) => ({
+                  value: view.key,
+                  label: view.name,
+                }))}
+                onChange={(key) => {
+                  const view = views.find((candidate) => candidate.key === key);
+                  if (view) onOpenView(view);
+                }}
+              />
+            ) : null}
             {selected ? (
               <RecordWriteNotice
                 repository={repository}
                 target={{ kind: "source", path: selected.source.path }}
               />
             ) : null}
-            {selected?.name === "Today" ? (
+            {todayScreen ? (
               <p className="view-date">
-                {new Intl.DateTimeFormat(appLocale(), {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                }).format(new Date())}
-                {todayProgress ? (
-                  <span className="today-progress">
-                    {" "}
-                    · {todayProgress.done} <Trans>of </Trans>
-                    {todayProgress.total} <Trans>done</Trans>
+                <span className="today-date-text">
+                  {new Intl.DateTimeFormat(appLocale(), {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  }).format(new Date())}
+                  {overdueCount ? (
+                    <span
+                      className="today-overdue-separator"
+                      aria-hidden="true"
+                    >
+                      {" ·"}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="today-progress">
+                  {todayProgress ? (
+                    <>
+                      · {todayProgress.done} <Trans>of </Trans>
+                      {todayProgress.total} <Trans>done</Trans>
+                    </>
+                  ) : null}
+                </span>
+                {overdueCount ? (
+                  <span className="today-overdue">
+                    <a
+                      href="#task-section-overdue"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const section = document.getElementById(
+                          "task-section-overdue",
+                        );
+                        const toggle =
+                          section?.querySelector<HTMLButtonElement>(
+                            ".task-section-toggle",
+                          );
+                        if (toggle?.getAttribute("aria-expanded") === "false")
+                          toggle.click();
+                        section?.scrollIntoView({ block: "start" });
+                        toggle?.focus({ preventScroll: true });
+                      }}
+                    >
+                      <Plural
+                        value={overdueCount}
+                        one="# overdue"
+                        other="# overdue"
+                      />
+                    </a>
                   </span>
                 ) : null}
               </p>
@@ -1259,7 +1552,8 @@ export function ViewsScreen({
               </small>
             ) : null}
           </div>
-          {!editing && (selected?.source.writable || operational) ? (
+          {!editing &&
+          (selected?.source.writable || operational || selectionAvailable) ? (
             <div className="view-header-actions">
               {operational ? (
                 <button
@@ -1271,8 +1565,14 @@ export function ViewsScreen({
                   <Search aria-hidden="true" size={18} />
                 </button>
               ) : null}
+              {selectionAvailable ? <SelectTasksOption /> : null}
               {selected?.source.writable ? (
-                <ViewOptions>
+                <ViewOptions onManageViews={onManageViews}>
+                  {selectionAvailable ? (
+                    <p className="view-options-heading">
+                      <Trans>Sort by</Trans>
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     aria-pressed={Boolean(manualOrder)}
@@ -1290,6 +1590,18 @@ export function ViewsScreen({
                     )}{" "}
                     <Trans>Manual order</Trans>
                   </button>
+                  {selectionAvailable ? (
+                    <ViewSortChoices
+                      configuration={configuration}
+                      disabled={
+                        manualOrderSortPending !== null ||
+                        manualOrderPendingForSelected ||
+                        currentExecutionRefreshing
+                      }
+                      sort={currentSort}
+                      onChoose={(field) => void setManualOrderSort(field)}
+                    />
+                  ) : null}
                   <ArrangeTasksOption
                     available={Boolean(manualOrder)}
                     arrangingViewKey={arrangingViewKey}
@@ -1380,6 +1692,7 @@ export function ViewsScreen({
         ) : null}
         {editing ? (
           <ViewEditor
+            initialSection={editing.initialSection}
             confirmDelete={editing.confirmDelete}
             duplicate={editing.duplicate}
             view={editing.view}
@@ -1430,7 +1743,7 @@ export function ViewsScreen({
             placeholder={
               currentCreationContext
                 ? t`Add to ${currentCreationContext.label}`
-                : t`Add to ${selected?.name ?? uiCopy("this view")}`
+                : addTaskPrompt(selected?.name ?? uiCopy("this view"))
             }
             onCreated={refreshAfterCreate}
             onOpenCreated={onOpenTask}
@@ -1536,7 +1849,7 @@ export function ViewsScreen({
             onOpen={openTask}
             onToggle={toggleTask}
             onEdit={calendarMutations.edit}
-            onMoveOverdueToToday={(rows) => void moveOverdueToToday(rows)}
+            onMoveOverdueToToday={moveOverdueToToday}
             movingOverdue={reschedulePending}
           />
         ) : (
@@ -1570,18 +1883,14 @@ export function ViewsScreen({
             onToggle={toggleTask}
             sectionAction={(lane) =>
               lane.key === "section:overdue" && lane.rows.length ? (
-                <button
-                  className="section-heading-action"
-                  type="button"
-                  aria-label={plural(lane.rows.length, {
-                    one: "Move all to today, # overdue task",
-                    other: "Move all to today, # overdue tasks",
-                  })}
-                  disabled={reschedulePending}
-                  onClick={() => void moveOverdueToToday(lane.rows)}
-                >
-                  <Trans>Move all to today</Trans>
-                </button>
+                <OverdueScheduleActions
+                  count={lane.rows.length}
+                  deadlines={missedDeadlineCount(lane.rows)}
+                  pending={reschedulePending}
+                  onSchedule={(date, keepDeadlines) =>
+                    moveOverdueToToday(lane.rows, date, keepDeadlines)
+                  }
+                />
               ) : null
             }
             emptyState={
@@ -1623,23 +1932,11 @@ export function ViewsScreen({
         {rescheduled && rescheduled.viewKey === selected?.key ? (
           <>
             <p aria-atomic="true" className="visually-hidden" role="status">
-              <Trans>Moved </Trans>
-              {rescheduled.count}{" "}
-              {rescheduled.count === 1
-                ? translate({ message: "task" })
-                : translate({ message: "tasks" })}{" "}
-              <Trans>to today.</Trans>
+              {rescheduledSummary(rescheduled)}
             </p>
             {!pendingDeletion ? (
               <div className="undo-toast is-above-mobile-controls">
-                <span>
-                  <Trans>Moved </Trans>
-                  {rescheduled.count}{" "}
-                  {rescheduled.count === 1
-                    ? translate({ message: "task" })
-                    : translate({ message: "tasks" })}{" "}
-                  <Trans>to today</Trans>
-                </span>
+                <span>{rescheduledSummary(rescheduled)}</span>
                 <button
                   ref={rescheduleUndoRef}
                   type="button"
@@ -1694,4 +1991,38 @@ function CompletionMotion({
 
 function message(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function addTaskPrompt(name: string) {
+  return translate({
+    message: `Add to ${name} — tomorrow 9am, +project, #tag`,
+    comment:
+      "Translate the prompt, but keep the example's English NLP tokens (tomorrow 9am, +project, #tag). Catalogue extraction does not change the input grammar.",
+  });
+}
+
+/** Moving late work also moves any deadline it missed, so the summary says so. */
+function rescheduledSummary({
+  count,
+  deadlines,
+  date: scheduled,
+}: {
+  count: number;
+  deadlines: number;
+  date: string;
+}): string {
+  const date = formatTaskDate(scheduled);
+  const moved =
+    scheduled === todayString()
+      ? plural(count, {
+          one: "Moved # task to today",
+          other: "Moved # tasks to today",
+        })
+      : translate`Moved ${countLabel(count, "task")} to ${date}`;
+  if (!deadlines) return moved;
+  const also = plural(deadlines, {
+    one: "# deadline moved too",
+    other: "# deadlines moved too",
+  });
+  return `${moved}, ${also}`;
 }

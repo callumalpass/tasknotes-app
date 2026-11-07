@@ -51,7 +51,28 @@ Obsidian UI at phone scale.
 7. Keep reminders dependable. Mdbase owns reminder delivery so it does not depend on TaskNotes staying open.
 8. Keep capture history available. Scratchpad is a mixed stream of editable Markdown notes and independent image cards, ordered by when notes most recently entered history and when images were created. Its Add image panel accepts drag and drop, multi-file upload, clipboard paste, and the mobile camera picker through one provider-neutral image pipeline. Note titles are optional and explicitly editable; TaskNotes never derives one from outline content, and an untitled historical note shows only its date. Historical notes and image cards can be collapsed, with collection-scoped collapse preferences retained locally across reloads and new-note transitions. A previous note can be resumed as the sole current note without changing either note’s identity, path, title, body, or creation date; the displaced current note becomes the newest history entry. A previous note can be deleted from its card menu: the card is hidden at once, Undo is offered for 30 seconds, and the record is removed only when that window closes or the screen is left. The current note cannot be deleted. The current note is the final item in the same fixed-height scrolling feed. On wider screens, when it fits, the feed opens with that note vertically centered; long notes fall back to keeping the active capture area near the bottom. On phones, the current note follows the visual viewport and remains immediately above an overlaying onscreen keyboard. Intentional upward scrolling reveals history and loading older items preserves the visible position.
 
+## Daily work and task details
+
+Today puts today's dated work before Overdue. Its overdue-count link expands,
+scrolls to and focuses the overdue section. Phone rows keep the title and
+compact supporting metadata together; a separate properties control opens the
+editable property sheet instead of crowding the row with individual controls.
+
+Task detail puts editable status, priority, Scheduled, Due and project chips
+below the title, then Notes, Subtasks and Attachments. More properties starts
+collapsed without removing secondary or custom fields. Attachments accept files
+the collection supports; safe raster images retain previews and Insert, while
+other files, including SVG, are download-only. Detach keeps the collection file.
+
+Fine-pointer desktop Month uses 26px single-line bars, with overflow behind More.
+Phone Month shows day indicators and the selected day's task rows below the
+grid. Google Calendar events remain visible and open their event editor from
+the calendar, Agenda or the selected-day list, subject to calendar permissions.
+
 ## Scratchpad durability
+
+New note saves the current note into history and opens an empty current note
+without a warning or creating tasks. The previous note's contents remain intact.
 
 Scratchpad selects its current note from the notes themselves, without a
 separate coordination record. If concurrent clients or an interrupted operation

@@ -1,10 +1,8 @@
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../../i18n/ui-copy";
-import { countLabel } from "../../i18n/default-labels";
 import {
   Check,
-  ChevronRight,
   FilePenLine,
   MoreHorizontal,
   Pencil,
@@ -14,7 +12,9 @@ import {
   Trash2,
   Copy,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useOverlay } from "../../components/overlays/use-overlay";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { TaskView, TaskViewDocument } from "../../domain/view";
@@ -125,47 +125,23 @@ export function ViewCatalog({
       )
       .map((view) => view.key),
   );
+  // Order is settled on arrival, so pinning leaves the row under the pointer.
+  const [arrivalKeys] = useState(() => new Set(navigationViewKeys));
+  const allPinned = (document: TaskViewDocument) =>
+    document.views.every((view) => arrivalKeys.has(view.key));
   const visibleDocuments = documents
     .map((document) => ({
       ...document,
       views: document.views.filter((view) => visibleViewKeys.has(view.key)),
     }))
-    .filter((document) => document.views.length > 0);
+    .filter((document) => document.views.length > 0)
+    // The sidebar already reaches pinned views, so the rest lead here.
+    .sort((left, right) => Number(allPinned(left)) - Number(allPinned(right)));
   const visibleCount = visibleTools.length + visibleViewKeys.size;
 
   return (
     <div className="view-catalog">
-      <NavigationViewOrder
-        keys={navigationViewKeys}
-        specialViews={[
-          {
-            key: SCRATCHPAD_NAVIGATION_KEY,
-            name: t`Scratchpad`,
-            icon: FilePenLine,
-          },
-          { key: SEARCH_NAVIGATION_KEY, name: t`Search`, icon: SearchIcon },
-        ]}
-        views={views}
-        onMove={onMoveNavigation}
-      />
-
-      <section className="all-views" aria-labelledby="all-views-title">
-        <header className="all-views-heading">
-          <div>
-            <h2 id="all-views-title">
-              <Trans>All views</Trans>
-            </h2>
-            <p>
-              <Trans>
-                Open a view or choose whether it appears in navigation.
-              </Trans>
-            </p>
-          </div>
-          <span aria-label={t`${visibleCount} views shown`}>
-            {countLabel(visibleCount, "view")}
-          </span>
-        </header>
-
+      <section className="all-views" aria-label={t({ message: "All views" })}>
         <div className="view-catalog-controls">
           <label className="view-search-field">
             <Search aria-hidden="true" size={18} />
@@ -194,7 +170,13 @@ export function ViewCatalog({
                 type="button"
                 onClick={() => setFilter(key)}
               >
-                {label} <span>{counts[key]}</span>
+                {label}
+                {key === filter ? (
+                  <>
+                    {" "}
+                    <span>{counts[key]}</span>
+                  </>
+                ) : null}
               </button>
             ))}
           </div>
@@ -211,6 +193,54 @@ export function ViewCatalog({
           </div>
         ) : (
           <div className="view-document-list">
+            {visibleDocuments.length ? (
+              <div className="saved-views-section">
+                {visibleDocuments.map((document) => (
+                  <section
+                    aria-label={document.name}
+                    className="view-document saved-view-document"
+                    key={document.source.path}
+                  >
+                    {document.views.length > 1 ? (
+                      <header
+                        className="saved-view-source-heading"
+                        title={document.source.path}
+                      >
+                        <h4>
+                          {document.name === document.source.path
+                            ? document.views
+                                .map((view) => view.name)
+                                .join(" · ")
+                            : document.name}
+                        </h4>
+                      </header>
+                    ) : null}
+                    <div className="saved-view-list">
+                      {document.views.map((view) => {
+                        const inNavigation = navigationViewKeys.includes(
+                          view.key,
+                        );
+                        const isOnlyNavigationEntry =
+                          inNavigation && navigationViewKeys.length === 1;
+                        return (
+                          <SavedViewRow
+                            inNavigation={inNavigation}
+                            isOnlyNavigationEntry={isOnlyNavigationEntry}
+                            key={view.key}
+                            view={view}
+                            onDelete={onDelete}
+                            onDuplicate={onDuplicate}
+                            onEdit={onEdit}
+                            onOpen={onOpenView}
+                            onToggleNavigation={onToggleNavigation}
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : null}
             {visibleTools.length ? (
               <section
                 aria-labelledby="view-document-tasknotes"
@@ -242,63 +272,23 @@ export function ViewCatalog({
                 </div>
               </section>
             ) : null}
-
-            {visibleDocuments.length ? (
-              <section
-                className="saved-views-section"
-                aria-labelledby="saved-views-title"
-              >
-                <header className="view-document-heading saved-views-heading">
-                  <div>
-                    <h3 id="saved-views-title">
-                      <Trans>Saved views</Trans>
-                    </h3>
-                    <p>
-                      <Trans>Views stored in your collection</Trans>
-                    </p>
-                  </div>
-                </header>
-                {visibleDocuments.map((document) => (
-                  <section
-                    aria-label={document.name}
-                    className="view-document saved-view-document"
-                    key={document.source.path}
-                  >
-                    {document.views.length > 1 ? (
-                      <header className="saved-view-source-heading">
-                        <h4>{document.name}</h4>
-                        <small>{document.source.path}</small>
-                      </header>
-                    ) : null}
-                    <div className="saved-view-list">
-                      {document.views.map((view) => {
-                        const inNavigation = navigationViewKeys.includes(
-                          view.key,
-                        );
-                        const isOnlyNavigationEntry =
-                          inNavigation && navigationViewKeys.length === 1;
-                        return (
-                          <SavedViewRow
-                            inNavigation={inNavigation}
-                            isOnlyNavigationEntry={isOnlyNavigationEntry}
-                            key={view.key}
-                            view={view}
-                            onDelete={onDelete}
-                            onDuplicate={onDuplicate}
-                            onEdit={onEdit}
-                            onOpen={onOpenView}
-                            onToggleNavigation={onToggleNavigation}
-                          />
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </section>
-            ) : null}
           </div>
         )}
       </section>
+
+      <NavigationViewOrder
+        keys={navigationViewKeys}
+        specialViews={[
+          {
+            key: SCRATCHPAD_NAVIGATION_KEY,
+            name: t`Scratchpad`,
+            icon: FilePenLine,
+          },
+          { key: SEARCH_NAVIGATION_KEY, name: t`Search`, icon: SearchIcon },
+        ]}
+        views={views}
+        onMove={onMoveNavigation}
+      />
     </div>
   );
 }
@@ -323,7 +313,6 @@ function ToolRow({
           <strong>{tool.name}</strong>
           <small>{tool.description}</small>
         </span>
-        <ChevronRight aria-hidden="true" size={18} />
       </button>
       <NavigationMembershipButton
         disabled={isOnlyNavigationEntry}
@@ -358,15 +347,14 @@ function SavedViewRow({
     <div className="saved-view-row">
       <button
         className="saved-view-open"
+        title={view.source.path}
         type="button"
         onClick={() => onOpen(view)}
       >
         <ViewIcon view={view} />
         <span>
           <strong>{view.name}</strong>
-          <small className="saved-view-path">{view.source.path}</small>
         </span>
-        <ChevronRight aria-hidden="true" size={18} />
       </button>
       <ViewActions
         view={view}
@@ -443,30 +431,46 @@ function ViewActions({
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const firstActionRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ top: 0, right: 12 });
+  useOverlay({
+    open,
+    rootRef: menuRef,
+    modal: window.innerWidth <= 600,
+    dismissOnTab: window.innerWidth <= 600 ? undefined : "always",
+    onDismiss: () => setOpen(false),
+    initialFocus: () => firstActionRef.current,
+    returnFocusRef: triggerRef,
+  });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    firstActionRef.current?.focus();
-    const close = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    const positionMenu = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect)
+        setPosition({
+          top: Math.max(
+            12,
+            Math.min(
+              rect.bottom + 4,
+              window.innerHeight - (menuRef.current?.offsetHeight ?? 240) - 12,
+            ),
+          ),
+          right: Math.max(12, window.innerWidth - rect.right),
+        });
     };
-    const keyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
-        setOpen(false);
-        return;
-      }
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setOpen(false);
-        rootRef.current?.querySelector<HTMLElement>("[aria-haspopup]")?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", keyDown);
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    document.addEventListener("animationend", positionMenu);
+    document.addEventListener("transitionend", positionMenu);
     return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", keyDown);
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+      document.removeEventListener("animationend", positionMenu);
+      document.removeEventListener("transitionend", positionMenu);
     };
   }, [open]);
 
@@ -503,51 +507,61 @@ function ViewActions({
         aria-haspopup="menu"
         aria-label={t`More actions for ${view.name}`}
         className="saved-view-more"
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((current) => !current)}
       >
         <MoreHorizontal aria-hidden="true" size={19} />
       </button>
-      {open ? (
-        <div
-          aria-label={t`Actions for ${view.name}`}
-          className="saved-view-menu"
-          role="menu"
-          onKeyDown={navigateMenu}
-        >
-          {view.source.writable ? (
-            <button
-              ref={firstActionRef}
-              role="menuitem"
-              tabIndex={-1}
-              type="button"
-              onClick={() => choose(() => onEdit(view))}
-            >
-              <Pencil aria-hidden="true" size={16} /> <Trans>Edit</Trans>
-            </button>
-          ) : null}
-          <button
-            ref={view.source.writable ? undefined : firstActionRef}
-            role="menuitem"
-            tabIndex={-1}
-            type="button"
-            onClick={() => choose(() => onDuplicate(view))}
-          >
-            <Copy aria-hidden="true" size={16} /> <Trans>Duplicate</Trans>
-          </button>
-          {view.source.writable ? (
-            <button
-              className="is-danger"
-              role="menuitem"
-              tabIndex={-1}
-              type="button"
-              onClick={() => choose(() => onDelete(view))}
-            >
-              <Trash2 aria-hidden="true" size={16} /> <Trans>Delete</Trans>
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      {open
+        ? createPortal(
+            <div className="task-property-editor-scrim saved-view-menu-scrim">
+              <div
+                aria-label={t`Actions for ${view.name}`}
+                className="saved-view-menu"
+                ref={menuRef}
+                role="menu"
+                style={{ top: position.top, right: position.right }}
+                onKeyDown={navigateMenu}
+              >
+                <header className="tasknotes-popover-title">{view.name}</header>
+                {view.source.writable ? (
+                  <button
+                    ref={firstActionRef}
+                    role="menuitem"
+                    tabIndex={-1}
+                    type="button"
+                    onClick={() => choose(() => onEdit(view))}
+                  >
+                    <Pencil aria-hidden="true" size={16} /> <Trans>Edit</Trans>
+                  </button>
+                ) : null}
+                <button
+                  ref={view.source.writable ? undefined : firstActionRef}
+                  role="menuitem"
+                  tabIndex={-1}
+                  type="button"
+                  onClick={() => choose(() => onDuplicate(view))}
+                >
+                  <Copy aria-hidden="true" size={16} /> <Trans>Duplicate</Trans>
+                </button>
+                {view.source.writable ? (
+                  <button
+                    className="is-danger"
+                    role="menuitem"
+                    tabIndex={-1}
+                    type="button"
+                    onClick={() => choose(() => onDelete(view))}
+                  >
+                    <Trash2 aria-hidden="true" size={16} />{" "}
+                    <Trans>Delete</Trans>
+                  </button>
+                ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

@@ -48,6 +48,68 @@ async function fixture(options: Parameters<typeof nextTaskFixture>[0] = {}) {
 }
 
 describe("native view source boundaries (protocol stand-ins)", () => {
+  it("repairs a legacy omitted order with revision CAS before retrying the same native declaration", async () => {
+    const f = await fixture();
+    const replace = vi.spyOn(f.client, "replaceDocument");
+    const currentDescriptor = async () => ({
+      ...f.descriptor,
+      sourceRevision: (await f.client.get(f.record.id)).revision,
+    });
+    f.list.mockImplementation(async () => ({
+      kind: "success",
+      views: [await currentDescriptor()],
+      clock,
+      collectionRevision: f.record.revision,
+      continuation: null,
+    }));
+    f.source.mockImplementation(async () => ({
+      kind: "success",
+      view: await currentDescriptor(),
+      source: (await f.client.get(f.record.id, { document: true })).document!,
+      clock,
+      collectionRevision: f.record.revision,
+    }));
+    const execute = vi
+      .spyOn(f.client, "executeAppBases")
+      .mockResolvedValueOnce({
+        kind: "refusal",
+        problem: {
+          code: "invalid_request",
+          reason: "view_unsupported_construct",
+          message: "base_display_order_missing",
+          recovery: "refresh",
+        },
+      })
+      .mockImplementation(async () => ({
+        kind: "success",
+        view: await currentDescriptor(),
+        columns: [],
+        unavailableColumns: [],
+        rows: [],
+        groups: [],
+        clock,
+        collectionRevision: f.record.revision,
+      }));
+    const view = (await f.repository.listViews())[0]!.views[0]!;
+    const result = await f.repository.executeView(view);
+    expect(result.rows).toEqual([]);
+    expect(result.view.properties).toEqual([]);
+    expect(
+      (await f.client.get(f.record.id, { document: true })).document,
+    ).toContain("order: []");
+    expect(replace).toHaveBeenCalledOnce();
+    expect(replace).toHaveBeenCalledWith(
+      expect.objectContaining({ id: f.record.id }),
+      expect.stringContaining("order: []"),
+      expect.objectContaining({ ifRevision: f.record.revision }),
+    );
+    expect(execute).toHaveBeenCalledTimes(2);
+    const reloaded = (await f.repository.listViews())[0]!.views[0]!;
+    await expect(f.repository.executeView(reloaded)).resolves.toMatchObject({
+      rows: [],
+    });
+    expect(replace).toHaveBeenCalledOnce();
+  });
   it("older source edit ACKs read current absence after a newer pending delete without reissuing either write", async () => {
     const f = await fixture({ confirmDelayMs: null });
     const update = vi.spyOn(f.client, "replaceDocument");

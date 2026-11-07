@@ -10,6 +10,7 @@ export const developmentDeployments = Object.freeze({
     editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28487",
+    sdkArtifact: "vendor/sdk-4443fd15-lab-beta149.tgz",
     project: "tasknotes-app",
     branch: "lab",
     wranglerVersion: "4.114.0",
@@ -182,7 +183,15 @@ export async function deployDevelopmentTaskNotes(
     environment,
     deployment,
   );
-  const restoreTargets = manifestTargets;
+  const restoreTargets = [
+    ...manifestTargets,
+    ...(deployment.sdkArtifact
+      ? [
+          resolve(projectRoot, "package.json"),
+          resolve(projectRoot, "pnpm-lock.yaml"),
+        ]
+      : []),
+  ];
   const previousManifests = await Promise.all(
     restoreTargets.map(async (target) => {
       try {
@@ -195,6 +204,19 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
+    if (deployment.sdkArtifact) {
+      // The SDK refuses any environment but the one its trust was built for.
+      // Only this deployment swaps it; keep the production/iOS pin.
+      await dependencies.run(
+        pnpm,
+        [
+          "add",
+          "--ignore-scripts",
+          `@mdbase-dev/sdk@file:${deployment.sdkArtifact}`,
+        ],
+        deploymentEnvironment,
+      );
+    }
     await dependencies.run(pnpm, ["build:assets"], deploymentEnvironment);
     await dependencies.verifyBuild(deployment);
   } finally {
@@ -259,15 +281,31 @@ async function verifyDevelopmentBuild(deployment = developmentDeployment) {
   const sources = await Promise.all(
     scripts.map((script) => readFile(script, "utf8")),
   );
-  for (const expected of [
-    deployment.connectOrigin,
-    ...(deployment.loopbackOrigin ? [deployment.loopbackOrigin] : []),
-  ]) {
-    if (!sources.some((source) => source.includes(expected))) {
-      throw new Error(
-        `TaskNotes deployment bundle does not contain ${expected}.`,
-      );
-    }
+  if (!sources.some((source) => source.includes(deployment.connectOrigin))) {
+    throw new Error(
+      `TaskNotes deployment bundle does not contain ${deployment.connectOrigin}.`,
+    );
+  }
+  requireBundledTrust(sources, deployment);
+}
+
+/** A build whose SDK trusts another environment deploys cleanly and passes the
+ * smoke, then stops on first load, so it never leaves this machine. */
+export function requireBundledTrust(sources, deployment) {
+  const environments = sources.flatMap((source) =>
+    [
+      ...source.matchAll(
+        /mdbn-app-trust\/release\/1[`"'],\s*"?environment"?:\s*[`"'](\w+)/g,
+      ),
+    ].map((match) => match[1]),
+  );
+  if (
+    !environments.length ||
+    environments.some((value) => value !== deployment.environment)
+  ) {
+    throw new Error(
+      `TaskNotes ${deployment.environment} bundle carries SDK trust for ${environments.join(", ") || "no environment"}.`,
+    );
   }
 }
 

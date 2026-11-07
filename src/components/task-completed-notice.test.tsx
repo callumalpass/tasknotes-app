@@ -13,6 +13,21 @@ const completion = {
   occurrenceDate: "2026-10-11",
 };
 
+it("offers Undo for a reopened task with the correct confirmation", () => {
+  render(
+    <TaskCompletedNotice
+      completion={{ ...completion, completed: false }}
+      aboveMobileControls={false}
+      onUndo={vi.fn()}
+      onDismiss={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Reopened “Write brief”",
+  );
+  expect(screen.getByRole("button", { name: "Undo" })).toBeVisible();
+});
+
 it("undoes the completion it names, then dismisses", async () => {
   const undo = vi.fn(async () => undefined);
   const dismiss = vi.fn();
@@ -83,7 +98,7 @@ it("leaves on its own unless focus is inside it", () => {
     (document.activeElement as HTMLElement).blur();
   });
   act(() => {
-    vi.advanceTimersByTime(6_000);
+    vi.advanceTimersByTime(10_000);
   });
   expect(dismiss).toHaveBeenCalledOnce();
 });

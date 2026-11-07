@@ -1,6 +1,10 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { t } from "@lingui/core/macro";
-import { compileFilter } from "obsidian-bases-expression";
+import {
+  compileFilter,
+  parseExpression,
+  type Expression,
+} from "obsidian-bases-expression";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
@@ -27,6 +31,8 @@ type RuleOperator =
   | "not-contains"
   | "before"
   | "after"
+  | "on-or-before"
+  | "on-or-after"
   | "empty"
   | "not-empty";
 
@@ -36,6 +42,11 @@ interface FilterRule {
   field: string;
   operator: RuleOperator;
   value: string;
+  dateOnly?: boolean;
+  dateValue?: "today" | "date";
+  offset?: string;
+  literal?: string;
+  method?: "hasTag";
 }
 
 interface FilterGroup {
@@ -79,7 +90,13 @@ export function ExpressionBuilder({
         : rawFilter(state.raw, dialect),
     [dialect, state],
   );
-  const error = useMemo(() => validate(encoded, dialect), [dialect, encoded]);
+  const error = useMemo(
+    () =>
+      state.mode === "visual" && invalidDateOffset(state.root)
+        ? t`Enter a whole number of days.`
+        : validate(encoded, dialect),
+    [dialect, encoded, state, t],
+  );
   const visualDraft = useMemo(
     () =>
       state.mode === "visual"
@@ -146,12 +163,16 @@ export function ExpressionBuilder({
         </button>
       </div>
       {state.mode === "raw" && dialect === "obsidian-bases" && !visualDraft ? (
-        <p className="expression-mode-note">
-          <Trans>
-            This filter uses advanced syntax. Edit it here to preserve it
-            exactly.
-          </Trans>
-        </p>
+        <div className="expression-mode-note">
+          <p>{explainFilter(encoded, fields)}</p>
+          <p>
+            <Trans>
+              The builder cannot represent every condition in this filter. Use
+              Advanced to preserve its expressions; changing other view settings
+              keeps the filter intact.
+            </Trans>
+          </p>
+        </div>
       ) : null}
       {state.mode === "visual" ? (
         <FilterGroupEditor
@@ -289,7 +310,12 @@ function FilterRuleEditor({
   onRemove(): void;
 }) {
   const { t } = useLingui();
-  const field = fields.find((candidate) => candidate.key === rule.field);
+  const field = fields.find(
+    (candidate) =>
+      candidate.key === rule.field ||
+      candidate.key ===
+        rule.field.replace(/^note\["(.+)"\]$/, "$1").replace(/^note\./, ""),
+  );
   const noValue = rule.operator === "empty" || rule.operator === "not-empty";
   return (
     <div className="filter-rule">
@@ -303,8 +329,22 @@ function FilterRuleEditor({
             value: candidate.key,
             label: candidate.label,
           }))}
-          value={rule.field}
-          onChange={(field) => onChange({ ...rule, field })}
+          value={field?.key ?? rule.field}
+          onChange={(field) =>
+            onChange({
+              ...rule,
+              field,
+              method: field === "tags" ? rule.method : undefined,
+              ...(fields.find((candidate) => candidate.key === field)?.type !==
+              "date"
+                ? {
+                    dateOnly: undefined,
+                    dateValue: undefined,
+                    offset: undefined,
+                  }
+                : {}),
+            })
+          }
         />
       </label>
       <label>
@@ -323,6 +363,8 @@ function FilterRuleEditor({
             },
             { value: "before", label: t({ message: "is before" }) },
             { value: "after", label: t({ message: "is after" }) },
+            { value: "on-or-before", label: t({ message: "is on or before" }) },
+            { value: "on-or-after", label: t({ message: "is on or after" }) },
             { value: "empty", label: t({ message: "is empty" }) },
             { value: "not-empty", label: t({ message: "is not empty" }) },
           ]}
@@ -348,11 +390,52 @@ function FilterRuleEditor({
               onChange={(value) => onChange({ ...rule, value })}
             />
           ) : field?.type === "date" ? (
-            <TaskNotesDatePicker
-              ariaLabel={t({ message: "Filter value" })}
-              value={rule.value || undefined}
-              onChange={(value) => onChange({ ...rule, value: value ?? "" })}
-            />
+            <>
+              <TaskNotesSelect
+                ariaLabel={t`Date reference`}
+                value={rule.dateValue ?? "date"}
+                options={[
+                  { value: "date", label: t`Specific date` },
+                  { value: "today", label: t`Today` },
+                ]}
+                onChange={(dateValue) =>
+                  onChange({
+                    ...rule,
+                    dateOnly: true,
+                    dateValue: dateValue as "today" | "date",
+                  })
+                }
+              />
+              {rule.dateValue === "today" ? (
+                <>
+                  <span className="field-help">
+                    <Trans>Days from today</Trans>
+                  </span>
+                  <input
+                    aria-label={t`Days from today`}
+                    type="number"
+                    step="1"
+                    value={rule.offset ?? "0"}
+                    onChange={(event) =>
+                      onChange({ ...rule, offset: event.target.value })
+                    }
+                  />
+                </>
+              ) : (
+                <TaskNotesDatePicker
+                  ariaLabel={t({ message: "Filter value" })}
+                  value={rule.value || undefined}
+                  onChange={(value) =>
+                    onChange({
+                      ...rule,
+                      dateOnly: true,
+                      dateValue: "date",
+                      value: value ?? "",
+                    })
+                  }
+                />
+              )}
+            </>
           ) : (
             <input
               aria-label={t({ message: "Filter value" })}
@@ -387,12 +470,132 @@ function initialState(value: unknown, dialect: ViewDialect): BuilderState {
   };
 }
 
+function explainFilter(value: unknown, fields: ExpressionField[]): string {
+  if (typeof value === "string") {
+    const parsed = parseExpression(value);
+    return parsed.ast &&
+      !parsed.diagnostics.some((diagnostic) => diagnostic.severity === "error")
+      ? explainExpression(parsed.ast, value, fields)
+      : t`Advanced condition: ${value}`;
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 1) {
+      const [operator, children] = entries[0];
+      const descriptions = (
+        Array.isArray(children) ? children : [children]
+      ).map((child) => explainFilter(child, fields));
+      if (operator === "and") return t`All of: ${descriptions.join("; ")}`;
+      if (operator === "or") return t`Any of: ${descriptions.join("; ")}`;
+      if (operator === "not") return t`Not: ${descriptions.join("; ")}`;
+    }
+  }
+  const source = filterSource(value);
+  return t`Advanced condition: ${source}`;
+}
+
+function explainExpression(
+  expression: Expression,
+  source: string,
+  fields: ExpressionField[],
+): string {
+  const describe = (child: Expression) =>
+    explainExpression(child, source, fields);
+  if (expression.type === "Literal") return String(expression.value);
+  if (expression.type === "Identifier")
+    return (
+      fields.find((field) => field.key === expression.name)?.label ??
+      expression.name
+    );
+  if (
+    expression.type === "Member" &&
+    expression.object.type === "Identifier" &&
+    expression.object.name === "note"
+  ) {
+    const property =
+      typeof expression.property === "string"
+        ? expression.property
+        : expression.property.type === "Literal"
+          ? String(expression.property.value)
+          : undefined;
+    if (property)
+      return (
+        fields.find(
+          (field) =>
+            field.key ===
+              source.slice(expression.span.start, expression.span.end) ||
+            field.key === property,
+        )?.label ?? property
+      );
+  }
+  if (expression.type === "Binary") {
+    const left = describe(expression.left),
+      right = describe(expression.right);
+    switch (expression.operator) {
+      case "&&":
+        return t`(${left}) and (${right})`;
+      case "||":
+        return t`(${left}) or (${right})`;
+      case "==":
+        return t`${left} is ${right}`;
+      case "!=":
+        return t`${left} is not ${right}`;
+      case "<":
+        return t`${left} is before ${right}`;
+      case ">":
+        return t`${left} is after ${right}`;
+      case "<=":
+        return t`${left} is on or before ${right}`;
+      case ">=":
+        return t`${left} is on or after ${right}`;
+    }
+  }
+  if (expression.type === "Unary" && expression.operator === "!") {
+    const condition = describe(expression.argument);
+    return t`Not (${condition})`;
+  }
+  if (expression.type === "Call") {
+    if (
+      expression.callee.type === "Identifier" &&
+      expression.callee.name === "today" &&
+      !expression.args.length
+    )
+      return t`today`;
+    if (
+      expression.callee.type === "Member" &&
+      typeof expression.callee.property === "string"
+    ) {
+      const field = describe(expression.callee.object);
+      if (expression.callee.property === "isEmpty" && !expression.args.length)
+        return t`${field} is empty`;
+      if (
+        expression.callee.property === "contains" &&
+        expression.args.length === 1
+      ) {
+        const value = describe(expression.args[0]);
+        return t`${field} contains ${value}`;
+      }
+      if (
+        expression.callee.property === "hasTag" &&
+        expression.callee.object.type === "Identifier" &&
+        expression.callee.object.name === "file" &&
+        expression.args.length === 1
+      ) {
+        const tag = describe(expression.args[0]);
+        return t`Has tag ${tag}`;
+      }
+    }
+  }
+  const condition = source.slice(expression.span.start, expression.span.end);
+  return t`Advanced condition: ${condition}`;
+}
+
 function decodeFilter(value: unknown): FilterGroup | null {
   if (value === undefined || value === null || value === "")
     return emptyGroup();
   if (typeof value === "string") {
-    const rule = decodeRule(value);
-    return rule ? group("and", [rule]) : null;
+    const node = decodeExpression(value);
+    return node ? (node.kind === "group" ? node : group("and", [node])) : null;
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const entries = Object.entries(value as Record<string, unknown>);
@@ -401,33 +604,121 @@ function decodeFilter(value: unknown): FilterGroup | null {
   if (operator !== "and" && operator !== "or") return null;
   const nodes = (Array.isArray(children) ? children : [children]).map(
     (child): FilterNode | null => {
-      if (typeof child === "string") return decodeRule(child);
+      if (typeof child === "string") return decodeExpression(child);
       return decodeFilter(child);
     },
   );
   return nodes.every(Boolean) ? group(operator, nodes as FilterNode[]) : null;
 }
 
+function decodeExpression(source: string): FilterNode | null {
+  const parsed = parseExpression(source);
+  if (
+    !parsed.ast ||
+    parsed.diagnostics.some(({ severity }) => severity === "error")
+  )
+    return null;
+  return decodeNode(parsed.ast, source);
+}
+
+function decodeNode(expression: Expression, source: string): FilterNode | null {
+  if (
+    expression.type === "Binary" &&
+    ["&&", "||"].includes(expression.operator)
+  ) {
+    const left = decodeNode(expression.left, source);
+    const right = decodeNode(expression.right, source);
+    return left && right
+      ? group(expression.operator === "&&" ? "and" : "or", [left, right])
+      : null;
+  }
+  return decodeRule(source.slice(expression.span.start, expression.span.end));
+}
+
 function decodeRule(source: string): FilterRule | null {
-  const empty = source.match(/^!?([\w.:-]+)\.isEmpty\(\)$/);
+  const tag = source.match(
+    /^(!)?file\.hasTag\(("(?:[^"\\]|\\.)*")\)(?:\s*(==|!=)\s*(true|false))?$/,
+  );
+  if (tag) {
+    const positive = tag[3] ? (tag[3] === "==") === (tag[4] === "true") : true;
+    return rule(
+      "tags",
+      positive !== Boolean(tag[1]) ? "contains" : "not-contains",
+      decodeLiteral(tag[2]),
+      { method: "hasTag", literal: tag[2] },
+    );
+  }
+  const property = String.raw`(?:[\w:-]+(?:\.[\w:-]+|\[(?:"[^"\\]+"|'[^'\\]+')\])*)`;
+  const present = source.match(
+    new RegExp(`^(${property})\\.isEmpty\\(\\)\\s*==\\s*(true|false)$`),
+  );
+  if (present)
+    return rule(present[1], present[2] === "false" ? "not-empty" : "empty", "");
+  const date = source.match(
+    new RegExp(
+      `^date\\((${property})\\)\\.date\\(\\)\\s*(==|!=|<=|>=|<|>)\\s*(.+)$`,
+    ),
+  );
+  if (date) {
+    const reference = date[3].match(/^today\(\)(?:\s*([+-])\s*"(\d+)d")?$/);
+    const fixed = date[3].match(/^date\("(\d{4}-\d{2}-\d{2})"\)$/);
+    if (!reference && !fixed) return null;
+    return {
+      ...rule(date[1], comparisonOperator(date[2]), fixed?.[1] ?? ""),
+      dateOnly: true,
+      dateValue: reference ? "today" : "date",
+      offset: reference?.[2]
+        ? `${reference[1] === "-" ? "-" : ""}${reference[2]}`
+        : "0",
+    };
+  }
+  const empty = source.match(new RegExp(`^!?(${property})\\.isEmpty\\(\\)$`));
   if (empty)
     return rule(empty[1], source.startsWith("!") ? "not-empty" : "empty", "");
-  const contains = source.match(/^(!)?([\w.:-]+)\.contains\((.*)\)$/);
-  if (contains)
+  const contains = source.match(
+    new RegExp(`^(!)?(${property})\\.contains\\((.*)\\)$`),
+  );
+  if (contains && isLiteral(contains[3]))
     return rule(
       contains[2],
       contains[1] ? "not-contains" : "contains",
       decodeLiteral(contains[3]),
+      { literal: contains[3] },
     );
-  const comparison = source.match(/^([\w.:-]+)\s*(==|!=|<|>)\s*(.+)$/);
+  const comparison = source.match(
+    new RegExp(`^(${property})\\s*(==|!=|<=|>=|<|>)\\s*(.+)$`),
+  );
   if (!comparison) return null;
+  const reference = comparison[3].match(/^today\(\)$/);
+  if (!reference && !isLiteral(comparison[3])) return null;
   return rule(
     comparison[1],
-    { "==": "equals", "!=": "not-equals", "<": "before", ">": "after" }[
-      comparison[2]
-    ] as RuleOperator,
-    decodeLiteral(comparison[3]),
+    comparisonOperator(comparison[2]),
+    reference ? "" : decodeLiteral(comparison[3]),
+    reference
+      ? { dateValue: "today", offset: "0" }
+      : { literal: comparison[3] },
   );
+}
+
+function comparisonOperator(value: string): RuleOperator {
+  return {
+    "==": "equals",
+    "!=": "not-equals",
+    "<": "before",
+    ">": "after",
+    "<=": "on-or-before",
+    ">=": "on-or-after",
+  }[value] as RuleOperator;
+}
+
+function isLiteral(value: string): boolean {
+  const parsed = parseExpression(value);
+  return parsed.ast?.type === "Literal" &&
+    !parsed.diagnostics.length &&
+    typeof parsed.ast.value === "string"
+    ? JSON.stringify(parsed.ast.value) === value.trim()
+    : /^(?:-?\d+(?:\.\d+)?|true|false|null)$/.test(value.trim());
 }
 
 function encodeGroup(value: FilterGroup): unknown {
@@ -441,23 +732,45 @@ function encodeGroup(value: FilterGroup): unknown {
   return { [value.operator]: children };
 }
 
+function invalidDateOffset(node: FilterNode): boolean {
+  return node.kind === "group"
+    ? node.children.some(invalidDateOffset)
+    : node.dateValue === "today" &&
+        (!(node.offset ?? "0").trim() ||
+          !Number.isSafeInteger(Number(node.offset ?? 0)));
+}
+
 function encodeRule(value: FilterRule): string | undefined {
   if (!value.field.trim()) return undefined;
   if (value.operator === "empty") return `${value.field}.isEmpty()`;
   if (value.operator === "not-empty") return `!${value.field}.isEmpty()`;
-  if (!value.value.trim()) return undefined;
-  const literal = encodeLiteral(value.value);
+  if (value.dateValue !== "today" && !value.value.trim()) return undefined;
+  const offset = Number(value.offset ?? 0);
+  const literal =
+    value.dateValue === "today"
+      ? `today()${Number.isInteger(offset) && offset !== 0 ? ` ${offset < 0 ? "-" : "+"} "${Math.abs(offset)}d"` : ""}`
+      : value.dateValue === "date"
+        ? `date(${JSON.stringify(value.value)})`
+        : value.literal?.trim().startsWith('"')
+          ? JSON.stringify(value.value)
+          : encodeLiteral(value.value);
   if (value.operator === "contains")
-    return `${value.field}.contains(${literal})`;
+    return value.method === "hasTag"
+      ? `file.hasTag(${literal})`
+      : `${value.field}.contains(${literal})`;
   if (value.operator === "not-contains")
-    return `!${value.field}.contains(${literal})`;
+    return value.method === "hasTag"
+      ? `!file.hasTag(${literal})`
+      : `!${value.field}.contains(${literal})`;
   const operator = {
     equals: "==",
     "not-equals": "!=",
     before: "<",
     after: ">",
+    "on-or-before": "<=",
+    "on-or-after": ">=",
   }[value.operator];
-  return `${value.field} ${operator} ${literal}`;
+  return `${value.dateOnly ? `date(${value.field}).date()` : value.field} ${operator} ${literal}`;
 }
 
 function encodeLiteral(value: string): string {
@@ -484,9 +797,9 @@ function rawFilter(source: string, dialect: ViewDialect): unknown {
   if (dialect === "mdbase-cel") return trimmed;
   try {
     const parsed = parse(trimmed);
-    return parsed && typeof parsed === "object" ? parsed : trimmed;
+    return parsed && typeof parsed === "object" ? parsed : source;
   } catch {
-    return trimmed;
+    return source;
   }
 }
 
@@ -533,8 +846,9 @@ function rule(
   field: string,
   operator: RuleOperator,
   value: string,
+  options: Partial<FilterRule> = {},
 ): FilterRule {
-  return { kind: "rule", id: nextId++, field, operator, value };
+  return { kind: "rule", id: nextId++, field, operator, value, ...options };
 }
 
 function group(operator: "and" | "or", children: FilterNode[]): FilterGroup {

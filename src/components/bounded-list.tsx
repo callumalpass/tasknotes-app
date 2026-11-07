@@ -34,6 +34,7 @@ export function BoundedList<T>({
   renderItem,
   estimateSize = defaultEstimate,
   relatedIndices,
+  taskId,
   className = "",
 }: {
   items: readonly T[];
@@ -42,6 +43,7 @@ export function BoundedList<T>({
   estimateSize?(item: T): number;
   relatedIndices?(index: number): number[];
   className?: string;
+  taskId?(item: T): string | undefined;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
@@ -80,6 +82,32 @@ export function BoundedList<T>({
     scrollMargin,
     rangeExtractor,
   });
+  useEffect(() => {
+    const region = root.current?.closest("[data-task-selection-list]");
+    if (!region || !taskId) return;
+    let frame = 0;
+    const reveal = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      const index = items.findIndex((item) => taskId(item) === id);
+      if (index < 0) return;
+      virtualizer.scrollToIndex(index, { align: "auto" });
+      // Scroll materializes the target; focus it after React measures the window.
+      let attempts = 0;
+      const focus = () => {
+        const title = root.current?.querySelector<HTMLButtonElement>(
+          `.task-row[data-task-id="${CSS.escape(id)}"] .task-row-title`,
+        );
+        if (title) title.focus({ preventScroll: true });
+        else if (++attempts < 10) frame = requestAnimationFrame(focus);
+      };
+      frame = requestAnimationFrame(focus);
+    };
+    region.addEventListener("tasknotes:reveal-task", reveal);
+    return () => {
+      region.removeEventListener("tasknotes:reveal-task", reveal);
+      cancelAnimationFrame(frame);
+    };
+  }, [items, taskId, virtualizer]);
   useLayoutEffect(() => {
     const measure = () => {
       if (root.current?.getClientRects().length)

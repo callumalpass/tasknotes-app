@@ -38,7 +38,11 @@ export function CalendarViewPresentation({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
-  onMoveOverdueToToday?(rows: readonly TaskViewRow[]): void;
+  onMoveOverdueToToday?(
+    rows: readonly TaskViewRow[],
+    date: string,
+    keepDeadlines: boolean,
+  ): Promise<void>;
   movingOverdue?: boolean;
 }) {
   return execution.view.presentation?.type === "tasknotes.calendar" ? (

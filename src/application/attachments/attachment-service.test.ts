@@ -6,6 +6,107 @@ import { AttachmentService } from "./attachment-service";
 import type { TaskRepository } from "../ports/task-repository";
 
 describe("AttachmentService", () => {
+  it.each([
+    ["notes.txt", "text/plain", "Text notes"],
+    ["page.html", "text/html", "<script>alert('untrusted')</script>"],
+    ["drawing.svg", "image/svg+xml", "<svg onload='alert(1)'/>"],
+    ["document.pdf", "application/pdf", "%PDF"],
+    ["archive.custom-extension", "application/octet-stream", "binary"],
+    ["empty.txt", "text/plain", ""],
+  ])(
+    "attaches %s byte-for-byte with canonical membership",
+    async (name, type, content) => {
+      const { repository, files } = await fixture();
+      const task = await repository.create({
+        title: "Any file",
+        body: "Keep notes",
+      });
+      const service = new AttachmentService(repository);
+      const result = await service.attachFile(
+        task.id,
+        new File([content], name, { type }),
+      );
+
+      expect(result.task.attachments).toEqual([result.reference]);
+      expect(result.task.frontmatter.attachments).toEqual([result.reference]);
+      expect(result.reference).toBe(`[[${result.file.path}]]`);
+      expect(result.task.body).toBe("Keep notes");
+      expect(await (await files.download(result.file)).text()).toBe(content);
+      expect(result.file.size).toBe(new Blob([content]).size);
+      await expect(
+        service.assertInlineInsertable(task.id, result.reference),
+      ).rejects.toThrow("Only supported images");
+      await service.detach(task.id, result.reference);
+      expect(await files.list({ folder: "Attachments" })).toHaveLength(1);
+    },
+  );
+
+  it("reports the model's extensionless-link restriction before uploading any bytes", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({ title: "Extensionless file" });
+    const upload = vi.spyOn(repository.files!, "upload");
+    await expect(
+      new AttachmentService(repository).attachFile(
+        task.id,
+        new File(["text"], "README"),
+      ),
+    ).rejects.toThrow("Invalid attachment path");
+    expect(upload).not.toHaveBeenCalled();
+    expect((await repository.get(task.id))?.attachments).toEqual([]);
+  });
+
+  it("keeps arbitrary filename syntax within one portable attachment path", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({ title: "Names" });
+    const service = new AttachmentService(repository);
+    const result = await service.attachFile(
+      task.id,
+      new File(["safe"], "../folder/report.[[bad]].html"),
+    );
+    expect(result.file.path).toMatch(
+      /^Attachments\/[0-9a-f-]+-report-bad\.html$/,
+    );
+  });
+
+  it("recovers a non-image membership after a held record write fails", async () => {
+    const { repository } = await fixture();
+    const task = await repository.create({ title: "Held file" });
+    const update = repository.update.bind(repository);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let markEntered!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      markEntered = resolve;
+    });
+    repository.update = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        markEntered();
+        await held;
+        throw new Error("record write interrupted");
+      })
+      .mockImplementation(update);
+    const service = new AttachmentService(repository);
+    const pending = service.attachFile(
+      task.id,
+      new File(["receipt"], "receipt.txt"),
+    );
+    const rejection = expect(pending).rejects.toThrow(
+      "record write interrupted",
+    );
+    await entered;
+    expect((await repository.get(task.id))?.attachments).toEqual([]);
+    release();
+    await rejection;
+    await service.recover();
+    expect((await repository.get(task.id))?.attachments).toHaveLength(1);
+    expect(
+      await repository.files!.list({ folder: "Attachments" }),
+    ).toHaveLength(1);
+  });
+
   it("makes frontmatter membership authoritative and keeps detach non-destructive", async () => {
     const { repository, files } = await fixture();
     const task = await repository.create({

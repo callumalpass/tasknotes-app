@@ -1,0 +1,33 @@
+.outline-text-shell.is-rich-reference > textarea {
+  color: transparent;
+  caret-color: var(--ink);
+}
+.outline-text-shell:has(.outline-source-toggle) > textarea,
+.outline-text-shell:has(.outline-source-toggle) .outline-rendered-text {
+  padding-right: 44px;
+}
+.outline-text-shell.is-rich-reference .outline-rendered-text,
+.outline-text-shell.is-rich-reference:focus-within .outline-rendered-text {
+  display: block;
+}
+.outline-text-shell .outline-link {
+  background: var(--accent-soft, var(--paper-soft));
+  border-radius: var(--radius-control);
+}
+.outline-source-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.outline-text-shell:focus-within .outline-source-toggle {
+  display: inline-flex;
+}

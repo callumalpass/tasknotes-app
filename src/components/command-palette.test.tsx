@@ -30,6 +30,21 @@ const commands = (): PaletteCommand[] => [
   },
 ];
 
+it("provides a visible close button beside the search", () => {
+  const close = vi.fn();
+  render(
+    <CommandPalette
+      open
+      commands={commands()}
+      query=""
+      onQueryChange={vi.fn()}
+      onClose={close}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(close).toHaveBeenCalledOnce();
+});
+
 function Palette({
   items,
   onClose = vi.fn(),
@@ -131,7 +146,7 @@ it("shows the shortcut sheet with global and row keys", () => {
   const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
   expect(dialog).toHaveTextContent("Command palette");
   expect(dialog).toHaveTextContent("New task");
-  expect(dialog).toHaveTextContent("Undo a deleted task");
+  expect(dialog).toHaveTextContent("Undo last action");
   expect(dialog).toHaveTextContent("Schedule next week");
   expect(
     screen.getByRole("button", { name: "Close keyboard shortcuts" }),

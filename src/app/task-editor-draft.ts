@@ -43,6 +43,7 @@ export function scheduleSummary(
   draft: Draft,
   configuration: TaskCollectionConfiguration,
   occurrenceDate?: string,
+  projectLabels: ReadonlyMap<string, string> = new Map(),
 ): string {
   const dates =
     occurrenceDate && draft.recurrence
@@ -60,6 +61,16 @@ export function scheduleSummary(
       : draft;
   return (
     [
+      draft.priority && draft.priority !== "none"
+        ? (configuration.priorities.find(
+            ({ value }) => value === draft.priority,
+          )?.label ?? draft.priority)
+        : "",
+      draft.projects
+        .map(
+          (project) => projectLabels.get(project) ?? linkDisplayLabel(project),
+        )
+        .join(", "),
       draft.status !== "none" && draft.status !== configuration.defaults.status
         ? (configuration.statuses.find(
             (status) => status.value === draft.status,
@@ -101,26 +112,29 @@ export function toDraft(task: Task): Draft {
   };
 }
 
-export function organizeSummary(draft: Draft): string {
+export function organizeSummary(draft: Draft, includeCore = true): string {
   const values: string[] = [];
-  if (draft.priority !== "normal" && draft.priority !== "none")
+  if (includeCore && draft.priority !== "normal" && draft.priority !== "none")
     values.push(t`${humanizeValue(draft.priority)} priority`);
   if (draft.assignees?.length)
     values.push(t`${draft.assignees.length} assigned`);
-  if (draft.projects.length)
+  if (includeCore && draft.projects.length)
     values.push(listSummary(draft.projects, "project"));
   if (draft.blockedBy.length)
     values.push(countLabel(draft.blockedBy.length, "dependency"));
   if (draft.contexts.length)
     values.push(listSummary(draft.contexts, "context"));
   const tags = draft.tags.filter((tag) => tag !== "task");
-  if (tags.length) values.push(countLabel(tags.length, "tag"));
+  if (includeCore && tags.length) values.push(countLabel(tags.length, "tag"));
   const customCount = Object.values(draft.customProperties).filter(
     (value) => !isEmptyFieldValue(value),
   ).length;
   if (customCount) values.push(countLabel(customCount, "property"));
   return (
-    values.join(" · ") || t`Priority, projects, dependencies, contexts and tags`
+    values.join(" · ") ||
+    (includeCore
+      ? t`Priority, projects, dependencies, contexts and tags`
+      : t`Contexts, people, dependencies and custom properties`)
   );
 }
 

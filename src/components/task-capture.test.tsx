@@ -23,6 +23,171 @@ vi.mock("../domain/task-capture", async (importOriginal) => {
   };
 });
 
+it("keeps the blank capture explanation separate from its two property actions", () => {
+  const { container } = render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+      showGuide
+    />,
+  );
+  const guide = container.querySelector(".capture-guide")!;
+  expect(guide.firstElementChild?.tagName).toBe("P");
+  expect(
+    guide.querySelectorAll(".capture-guide-actions > button"),
+  ).toHaveLength(2);
+  expect(guide.querySelector(".capture-guide-actions")).toHaveTextContent(
+    "Status",
+  );
+  expect(guide.querySelector(".capture-guide-actions")).toHaveTextContent(
+    "Priority",
+  );
+});
+
+it("opens Notes directly without revealing unrelated capture sections", async () => {
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    target: { value: "Draft with context" },
+  });
+  const notes = await screen.findByRole("button", {
+    name: "Notes",
+  });
+  fireEvent.click(notes);
+  expect(await screen.findByRole("textbox", { name: "Notes" })).toHaveFocus();
+  expect(
+    screen.queryByRole("spinbutton", { name: "Estimate (minutes)" }),
+  ).toBeNull();
+  expect(screen.queryByRole("button", { name: "Scheduled date" })).toBeNull();
+  fireEvent.change(screen.getByRole("textbox", { name: "Notes" }), {
+    target: { value: "One sentence of context." },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  fireEvent.click(notes);
+  expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue(
+    "One sentence of context.",
+  );
+});
+
+it("shows every shorthand kind only while an empty capture is focused", () => {
+  render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={vi.fn()}
+    />,
+  );
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
+  fireEvent.focus(input);
+  expect(screen.getByText(/Try tomorrow/)).toHaveTextContent(
+    "#tag, @context, +project.",
+  );
+  expect(screen.getByRole("button", { name: "Priority" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Status" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Priority" })).toHaveAttribute(
+    "title",
+    "Type !low in the task title.",
+  );
+  expect(screen.getByRole("button", { name: "Status" })).toHaveAttribute(
+    "title",
+    "Type *in-progress in the task title.",
+  );
+  fireEvent.change(input, { target: { value: "A draft" } });
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
+});
+
+it("keeps empty capture guidance in place until an outside pointer action finishes", () => {
+  const activate = vi.fn(() =>
+    expect(screen.getByRole("button", { name: "Priority" })).toBeVisible(),
+  );
+  render(
+    <>
+      <TaskCapture
+        configuration={defaultTaskCollectionConfiguration()}
+        createTask={vi.fn()}
+      />
+      <button onClick={activate}>Outside action</button>
+    </>,
+  );
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  const outside = screen.getByRole("button", { name: "Outside action" });
+  fireEvent.focus(input);
+  fireEvent.pointerDown(outside);
+  fireEvent.blur(input, { relatedTarget: outside });
+  expect(screen.getByRole("button", { name: "Priority" })).toBeVisible();
+  fireEvent.pointerUp(outside);
+  fireEvent.click(outside);
+  expect(activate).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
+  fireEvent.focus(input);
+  fireEvent.blur(input, { relatedTarget: outside });
+  expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
+});
+
+it.each(["priority", "status"] as const)(
+  "reveals every configured %s choice through the capture guide",
+  async (field) => {
+    const configuration = defaultTaskCollectionConfiguration();
+    const choices = Array.from({ length: 12 }, (_, index) => ({
+      ...configuration[field === "priority" ? "priorities" : "statuses"][0],
+      id: `custom-${index}`,
+      value: `custom-${index}`,
+      label: `Custom choice ${index}`,
+    }));
+    if (field === "priority")
+      configuration.priorities = choices as typeof configuration.priorities;
+    else configuration.statuses = choices as typeof configuration.statuses;
+    render(<TaskCapture configuration={configuration} createTask={vi.fn()} />);
+    const input = screen.getByRole("combobox", { name: "New task title" });
+    fireEvent.focus(input);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: field === "priority" ? "Priority" : "Status",
+      }),
+    );
+    expect(await screen.findAllByRole("option")).toHaveLength(12);
+    fireEvent.click(screen.getByRole("option", { name: "Custom choice 11" }));
+    expect(input).toHaveValue(`${field === "priority" ? "!" : "*"}custom-11 `);
+  },
+);
+
+it("caps capture at five lines, adapts to a constrained viewport and reveals the start for details", () => {
+  const viewport = Object.assign(new EventTarget(), { height: 713 });
+  vi.stubGlobal("visualViewport", viewport);
+  try {
+    render(
+      <TaskCapture
+        configuration={defaultTaskCollectionConfiguration()}
+        createTask={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole("combobox", {
+      name: "New task title",
+    }) as HTMLTextAreaElement;
+    Object.defineProperties(input, {
+      scrollHeight: { configurable: true, value: 280 },
+      clientHeight: { configurable: true, value: 135 },
+    });
+    fireEvent.change(input, { target: { value: "A long title ".repeat(25) } });
+    expect(input.style.height).toBe("135px");
+    expect(input.parentElement).toHaveAttribute("data-overflow");
+    input.scrollTop = 100;
+    fireEvent.click(screen.getByRole("button", { name: "Add details" }));
+    expect(input.scrollTop).toBe(0);
+    viewport.height = 300;
+    act(() => {
+      viewport.dispatchEvent(new Event("resize"));
+    });
+    expect(input.style.height).toBe("72px");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 it("applies view defaults and keeps a created task recoverable when the view excludes it", async () => {
   const create = vi.fn(async (input: CreateTaskInput) => task(input));
   const open = vi.fn();
@@ -116,7 +281,7 @@ it("acknowledges a task immediately while a remote create is pending", async () 
     />,
   );
 
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   fireEvent.change(input, { target: { value: "Slow relay task" } });
   fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
@@ -295,7 +460,7 @@ it("offers contract-aware inline suggestions with keyboard selection", async () 
     />,
   );
 
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   fireEvent.change(input, {
     target: { value: "Call plumber @ho", selectionStart: 16 },
   });

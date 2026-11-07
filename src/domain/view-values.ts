@@ -19,6 +19,35 @@ export interface ViewPropertyDetail {
   description?: string;
 }
 
+type ViewValueDiagnostic =
+  | { kind: "unavailable"; code: string; detail: string }
+  | { kind: "error"; message: string };
+
+function isViewValueDiagnostic(value: unknown): value is ViewValueDiagnostic {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    (candidate.kind === "unavailable" &&
+      typeof candidate.code === "string" &&
+      typeof candidate.detail === "string") ||
+    (candidate.kind === "error" && typeof candidate.message === "string")
+  );
+}
+
+export function resolvedViewProperties(
+  properties: readonly TaskViewProperty[],
+): readonly TaskViewProperty[] {
+  return properties.length
+    ? properties
+    : [
+        { key: "note.scheduled" },
+        { key: "note.due" },
+        { key: "note.priority" },
+        { key: "note.status" },
+        { key: "note.projects" },
+      ];
+}
+
 export function viewPropertyDetails(
   row: TaskViewRow,
   properties: readonly TaskViewProperty[],
@@ -32,15 +61,29 @@ export function viewPropertyDetails(
     occurrence?: TaskOccurrence;
   } = {},
 ): ViewPropertyDetail[] | undefined {
-  if (!properties.length) return undefined;
-  return properties.flatMap((property) => {
+  return resolvedViewProperties(properties).flatMap((property) => {
     if (
       property.hidden ||
       omittedProperties.includes(property.key) ||
       (identityProperty && isIdentityProperty(property.key, identityProperty))
     )
       return [];
-    const value = viewPropertyValue(row, property.key, occurrence);
+    const field = notePropertyName(property.key) ?? property.key;
+    const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
+    const projectedValue =
+      !properties.length && field in displayed
+        ? displayed[field as keyof TaskSummary]
+        : viewPropertyValue(row, property.key, occurrence);
+    const value =
+      isViewValueDiagnostic(projectedValue) &&
+      projectedValue.kind === "unavailable" &&
+      projectedValue.code === "view_unsupported_construct" &&
+      projectedValue.detail === "link_property" &&
+      (notePropertyName(property.key) !== undefined ||
+        !property.key.includes(".")) &&
+      Object.hasOwn(displayed.frontmatter, field)
+        ? displayed.frontmatter[field]
+        : projectedValue;
     if (isNullTaskOption(property.key, value)) return [];
     const formatted = formatPropertyValue(value, property.format);
     return formatted === null
@@ -108,7 +151,13 @@ export function formatPropertyValue(
   value: unknown,
   format?: string,
 ): string | null {
-  if (value === null || value === undefined || value === "") return null;
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    isViewValueDiagnostic(value)
+  )
+    return null;
   if (Array.isArray(value)) {
     const values = value
       .map((item) => formatPropertyValue(item))
@@ -171,12 +220,14 @@ export function formatPropertyValue(
       return object.display;
     if (typeof object.path === "string") return object.path;
     try {
-      return JSON.stringify(value);
+      return JSON.stringify(value, (_key, nested: unknown) =>
+        isViewValueDiagnostic(nested) ? undefined : nested,
+      );
     } catch {
-      return String(value);
+      return null;
     }
   }
-  return String(value);
+  return null;
 }
 
 function isIdentityProperty(key: string, identityProperty: string): boolean {

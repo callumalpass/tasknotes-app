@@ -1,4 +1,5 @@
-import { taskDatePart } from "./task";
+import { taskDatePart, todayString } from "./task";
+import type { TaskSummary, UpdateTaskInput } from "./task";
 
 /**
  * Move a TaskNotes date or datetime by whole local calendar days while
@@ -47,4 +48,22 @@ export function setTaskDate(
     Number(target[3]),
   );
   return instant.toISOString().replace(".000Z", "Z");
+}
+
+/**
+ * Moves the plan without changing a deadline unless explicitly requested.
+ */
+export function rescheduleInput(
+  task: Pick<TaskSummary, "scheduled" | "due">,
+  date: string,
+  today = todayString(),
+  moveDeadlines = false,
+): Pick<UpdateTaskInput, "scheduled" | "due"> {
+  const due = taskDatePart(task.due);
+  return {
+    scheduled: setTaskDate(task.scheduled, date),
+    ...(moveDeadlines && due && due < today && date >= today
+      ? { due: setTaskDate(task.due, date) }
+      : {}),
+  };
 }

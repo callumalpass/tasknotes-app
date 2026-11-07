@@ -7,11 +7,78 @@ import {
   readViewDraft,
   removeViewFromDocument,
   updateViewDocument,
+  emptyViewDraft,
+  materializeDefaultViewOrder,
 } from "./view-document";
+import { resolvedViewProperties } from "./view-values";
+import type { ViewRenderer } from "./view-renderer";
 
 import type { TaskViewSourceDocument } from "./view";
 
 describe("saved view documents", () => {
+  it("preserves default fields as an empty order across layouts and repairs only an omitted selected order", () => {
+    const defaults: string[] = [];
+    const draft = { ...emptyViewDraft("obsidian-bases"), properties: [] };
+    for (const renderer of [
+      "tasknotes.task-list",
+      "tasknotes.kanban",
+      "tasknotes.calendar",
+      "tasknotes.mini-calendar",
+      "tasknotes.planner",
+    ] satisfies ViewRenderer[]) {
+      const source = baseSource(
+        createViewDocument("obsidian.base", { ...draft, renderer }),
+      );
+      expect(parse(source.document).views[0].order).toEqual(defaults);
+      expect(
+        resolvedViewProperties(
+          readViewDraft(source, "new-view").properties.map((key) => ({ key })),
+        ),
+      ).toEqual(resolvedViewProperties([]));
+      expect(
+        parse(
+          updateViewDocument(source, {
+            ...readViewDraft(source, "new-view"),
+            properties: [],
+          }),
+        ).views[0].order,
+      ).toEqual(defaults);
+    }
+    const source = {
+      ...baseSource(
+        "# keep extensions\nx-extra: retained\nviews:\n  - name: Same\n    type: table\n  - name: Same\n    type: tasknotesCalendar\n    x-layout: retained\n",
+      ),
+      recordId: "original",
+    };
+    const declaration = {
+      recordId: source.recordId,
+      path: source.path,
+      revision: source.revision,
+      ordinal: 1,
+      name: "Same",
+    };
+    const repaired = materializeDefaultViewOrder(source, declaration)!;
+    expect(repaired).toContain("# keep extensions");
+    expect(parse(repaired)).toMatchObject({
+      "x-extra": "retained",
+      views: [
+        { name: "Same", type: "table" },
+        { type: "tasknotesCalendar", order: defaults, "x-layout": "retained" },
+      ],
+    });
+    expect(
+      materializeDefaultViewOrder(
+        { ...source, document: repaired },
+        declaration,
+      ),
+    ).toBeNull();
+    expect(
+      materializeDefaultViewOrder(
+        { ...source, document: source.document + "    order: []\n" },
+        declaration,
+      ),
+    ).toBeNull();
+  });
   it("round-trips the TaskNotes Planner Base renderer", () => {
     const source = baseSource(`views:
   - type: tasknotesPlanner

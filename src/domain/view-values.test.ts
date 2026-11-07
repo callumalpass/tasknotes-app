@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { decodeAppBasesCell } from "@mdbase-dev/sdk/app-host";
+import { nativeCellValue } from "../storage/next-bases-values";
 
 import {
   formatPropertyValue,
@@ -6,6 +8,7 @@ import {
   relativeDateDetail,
   propertyLabel,
   viewPropertyDetails,
+  resolvedViewProperties,
 } from "./view-values";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
@@ -53,6 +56,28 @@ const row: TaskViewRow = {
 };
 
 describe("saved-view values", () => {
+  it("resolves the same useful empty-configuration fields for every layout", () => {
+    expect(resolvedViewProperties([]).map(({ key }) => key)).toEqual([
+      "note.scheduled",
+      "note.due",
+      "note.priority",
+      "note.status",
+      "note.projects",
+    ]);
+    const explicit = [{ key: "note.contexts" }];
+    expect(resolvedViewProperties(explicit)).toBe(explicit);
+    expect(
+      viewPropertyDetails(row, [])?.map(({ key, rawValue }) => ({
+        key,
+        rawValue,
+      })),
+    ).toEqual([
+      { key: "note.due", rawValue: task.due },
+      { key: "note.priority", rawValue: task.priority },
+      { key: "note.status", rawValue: task.status },
+      { key: "note.projects", rawValue: task.projects },
+    ]);
+  });
   it("omits the task identity while preserving configured property order", () => {
     expect(
       viewPropertyDetails(
@@ -230,7 +255,6 @@ describe("saved-view values", () => {
         components: [1, 2, 3, 4, 5, 6, 7, Infinity],
         display: "invalid component",
       },
-      { kind: "error", message: "native error", display: "not temporal" },
     ])
       expect(formatPropertyValue(value)).toBe(JSON.stringify(value));
   });
@@ -246,6 +270,48 @@ describe("saved-view values", () => {
         month: "short",
       }).format(new Date("2026-07-23T23:00:00Z")),
     );
+  });
+
+  it("renders native unavailable link projections from record fields without exposing diagnostics", () => {
+    const unavailable = nativeCellValue(
+      decodeAppBasesCell([9, "view_unsupported_construct", "link_property"]),
+    );
+    for (const key of ["note.projects", 'note["project_links"]', "assignees"]) {
+      const field =
+        key === "note.projects"
+          ? "projects"
+          : key === "assignees"
+            ? key
+            : "project_links";
+      const linkedRow = {
+        task: {
+          ...task,
+          frontmatter: { [field]: ["[[Projects/release|Release plan]]"] },
+        },
+        values: { [key]: unavailable },
+      };
+      expect(viewPropertyDetails(linkedRow, [{ key }])?.[0]?.value).toBe(
+        "Release plan",
+      );
+      expect(linkedRow.values[key]).toEqual(unavailable);
+    }
+    expect(formatPropertyValue(unavailable)).toBeNull();
+    expect(formatPropertyValue([unavailable, "Readable"])).toBe("Readable");
+    expect(
+      formatPropertyValue({ nested: unavailable, label: "Readable" }),
+    ).toBe('{"label":"Readable"}');
+    expect(
+      viewPropertyDetails(
+        { ...row, values: { "formula.unknown": unavailable } },
+        [{ key: "formula.unknown" }],
+      ),
+    ).toEqual([]);
+    expect(groupLabel([["note.projects", unavailable]])).toBe("No projects");
+    expect(
+      formatPropertyValue(
+        nativeCellValue(decodeAppBasesCell([8, "native diagnostic"])),
+      ),
+    ).toBeNull();
   });
 });
 

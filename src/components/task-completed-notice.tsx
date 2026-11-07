@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { TaskCompletion } from "./task-completion-motion";
 
-const NOTICE_MS = 6000;
+const NOTICE_MS = 10000;
 
 export function TaskCompletedNotice({
   completion,
@@ -37,8 +37,12 @@ export function TaskCompletedNotice({
   }, [completion, held, undoing, failed, onDismiss]);
   const message = completion
     ? failed
-      ? `Couldn’t reopen “${completion.task.title}”`
-      : `Completed “${completion.task.title}”`
+      ? completion.completed === false
+        ? translate({ message: "Couldn’t undo. Try again." })
+        : translate`Couldn’t reopen “${completion.task.title}”`
+      : completion.completed === false
+        ? translate`Reopened “${completion.task.title}”`
+        : translate`Completed “${completion.task.title}”`
     : "";
   return (
     <FeedbackNotice>

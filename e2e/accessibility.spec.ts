@@ -43,6 +43,12 @@ test("unconfigured build restart screen has no serious accessibility violations"
 }) => {
   const requests = trackRequestFailures(page);
   await page.goto("./");
+  await expect(
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
+  ).toBeVisible();
   await page.evaluate(() => localStorage.clear());
   requests.beforeNavigation();
   await page.reload();
@@ -79,6 +85,12 @@ test("navigation exception retains new-document aborts and network failures", as
 }) => {
   const requests = trackRequestFailures(page);
   await page.goto("./");
+  await expect(
+    page.getByRole("heading", {
+      name: "TaskNotes needs to restart.",
+      exact: true,
+    }),
+  ).toBeVisible();
   requests.beforeNavigation();
   await page.reload();
   await expect(
@@ -99,4 +111,40 @@ test("navigation exception retains new-document aborts and network failures", as
   await expect
     .poll(() => requests.failures.slice(before))
     .toEqual(["net::ERR_ABORTED", "net::ERR_FAILED"]);
+});
+
+test("demo sidebar and shortcut sheet remain accessible", async ({ page }) => {
+  await page.goto("?demo=60");
+  await expect(
+    page.getByRole("button", {
+      name: "Send the research summary to Rowan",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const scan = async () => {
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(
+      results.violations.filter(
+        ({ impact }) => impact === "serious" || impact === "critical",
+      ),
+    ).toEqual([]);
+  };
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await scan();
+  await page
+    .getByRole("button", { name: "Collapse sidebar", exact: true })
+    .click();
+  await scan();
+  await page
+    .getByRole("button", { name: "Expand sidebar", exact: true })
+    .click();
+  await page.locator("#main-content").focus();
+  await page.keyboard.press("?");
+  await expect(
+    page.getByRole("dialog", { name: "Keyboard shortcuts" }),
+  ).toBeVisible();
+  await scan();
+  await page.keyboard.press("Escape");
 });

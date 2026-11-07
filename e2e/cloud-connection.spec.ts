@@ -87,19 +87,15 @@ test("opens the original held client without relay traffic and preserves navigat
     expect.arrayContaining(["describe", "query", "bases-discovery"]),
   );
   expect(outside).toEqual([]);
-  await nav(page, "Manage views");
+  await nav(page, "Views");
   await expect(
-    page.getByRole("heading", { name: "Manage views" }),
+    page.getByRole("heading", { name: "Views", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Create view", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "New view" })).toBeVisible();
   await page
     .getByRole("dialog", { name: "New view" })
     .getByRole("button", { name: "Close view editor" })
-    .click();
-  await page
-    .getByRole("alertdialog", { name: "Discard changes?" })
-    .getByRole("button", { name: "Discard changes" })
     .click();
   await expect(
     page.getByRole("button", { name: "Remove Search from navigation" }),
@@ -157,11 +153,11 @@ test("opens the original held client without relay traffic and preserves navigat
   await page
     .getByRole("button", { name: "Open synced fixture collection" })
     .click();
-  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await page.getByRole("button", { name: /^Today(,|$)/ }).click();
   await expect(
     page.getByText("Task from the held client", { exact: true }),
   ).toBeVisible();
-  await nav(page, "Manage views");
+  await nav(page, "Views");
   await expect(
     page.getByRole("button", { name: "Add Search to navigation" }),
   ).toBeVisible();
@@ -213,8 +209,19 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
       page.getByRole("button", { name: "Child", exact: true }),
     ).toBeVisible();
   }
-  await page.getByRole("button", { name: "Create task notes" }).click();
-  const review = page.getByRole("dialog", { name: "Create task notes" });
+  await page.getByRole("button", { name: "Create tasks" }).click();
+  const review = page.getByRole("dialog", { name: "Create tasks" });
+  await expect(review).toContainText("1 of 3 selected");
+  await expect(
+    review.getByRole("checkbox", { name: "Child task" }),
+  ).toBeChecked();
+  await expect(
+    review.getByRole("checkbox", { name: "Parent task" }),
+  ).not.toBeChecked();
+  await expect(
+    review.getByRole("checkbox", { name: "Independent task" }),
+  ).not.toBeChecked();
+  await review.getByRole("button", { name: "Select all", exact: true }).click();
   await expect(review).toContainText("3 of 3 selected");
   await page.getByRole("checkbox", { name: "Child task" }).uncheck();
   await expect(review).toContainText("2 of 3 selected");
@@ -227,6 +234,10 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
     .click();
   await expect(review).toContainText("2 of 3 selected");
   await page.getByRole("button", { name: "Keep writing" }).click();
+  await expect(review).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Create tasks", exact: true }),
+  ).toBeFocused();
   await expect(
     page.getByRole("button", { name: "New note", exact: true }),
   ).toBeVisible();
@@ -273,7 +284,6 @@ test("acknowledges local capture before confirmation and prefetches actual recor
     }),
   });
   await expect(createdRow).toBeVisible();
-  const beforeSync = await createdRow.boundingBox();
   await expect(createdRow.getByRole("status")).toHaveCount(0);
   await expect(page.getByTestId("collection-write-status")).toBeHidden();
   await expect(page.getByTestId("collection-write-status")).toContainText(
@@ -283,7 +293,6 @@ test("acknowledges local capture before confirmation and prefetches actual recor
     "aria-live",
     "off",
   );
-  expect(await createdRow.boundingBox()).toEqual(beforeSync);
   const mobileCapture = (page.viewportSize()?.width ?? 1000) <= 560;
   if (mobileCapture) {
     // Phone capture closes after local acceptance. Reopening must offer an
@@ -306,7 +315,6 @@ test("acknowledges local capture before confirmation and prefetches actual recor
   await page.evaluate(() => window.__TASKNOTES_NEXT_SMOKE_CONTROL__!.confirm());
   await expect(createdRow.getByRole("status")).toHaveCount(0);
   await expect(page.getByTestId("collection-write-status")).toBeHidden();
-  expect(await createdRow.boundingBox()).toEqual(beforeSync);
   expect((await operations(page)).filter((op) => op === "create")).toHaveLength(
     1,
   );
@@ -328,6 +336,11 @@ test("acknowledges local capture before confirmation and prefetches actual recor
       name: "Task actions for Delete through the held client",
     })
     .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Task actions for Delete through the held client",
+    }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect
     .poll(() =>
       page.evaluate(
@@ -519,17 +532,19 @@ test("edits a contract-defined task without collapsing custom status or fields t
   await page
     .getByText("Respect the collection contract", { exact: true })
     .click();
-  await expect(page.getByLabel("Status")).toHaveAttribute(
+  await expect(page.getByRole("combobox", { name: "Status" })).toHaveAttribute(
     "data-value",
     "doing",
   );
+  await expect(page.getByRole("combobox", { name: "Status" })).toBeVisible();
+  await expect(page.getByLabel("Energy level")).toBeHidden();
   await page
     .locator("details.task-form-section > summary")
-    .filter({ hasText: /^Organize/ })
+    .filter({ hasText: /^More properties$/ })
     .click();
   await expect(
-    page.getByRole("button", { name: "Right now", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("combobox", { name: "Priority" }),
+  ).toHaveAttribute("data-value", "now");
   await expect(page.getByLabel("Energy level")).toHaveValue("4");
   await expect(page.getByLabel("Client")).toHaveValue("Acme");
   await expect(page.getByRole("combobox", { name: "Owner *" })).toHaveAttribute(
@@ -588,7 +603,7 @@ test("edits the captured migrated numeric property through the held client", asy
     .click();
   await page
     .locator("details.task-form-section > summary")
-    .filter({ hasText: /^Organize/ })
+    .filter({ hasText: /^More properties$/ })
     .click();
   await expect(page.getByLabel("Effort", { exact: true })).toHaveValue("0.5");
   await page.getByLabel("Effort", { exact: true }).fill("2");

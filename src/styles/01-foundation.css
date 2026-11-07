@@ -31,6 +31,7 @@
   --ink: var(--color-text);
   --ink-soft: var(--color-text-soft);
   --ink-muted: var(--color-text-muted);
+  --overdue-heading: var(--danger);
   --line: var(--color-border);
   --line-strong: var(--color-border-strong);
   --accent: var(--color-accent);
@@ -119,8 +120,17 @@
   }
 }
 
+@media (min-width: 840px) {
+  html {
+    /* Dialogs lock page scroll; the page keeps its width when they do. */
+    scrollbar-gutter: stable;
+  }
+}
+
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
 html {
@@ -145,8 +155,38 @@ select {
   color: inherit;
   font: inherit;
 }
+input[type="checkbox"]:not([role="switch"]) {
+  appearance: none;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  cursor: pointer;
+}
+input[type="checkbox"]:not([role="switch"]):checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+input[type="checkbox"]:not([role="switch"]):checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  margin: 2px 0 0 6px;
+  border: solid var(--color-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+label:has(> input[type="checkbox"]:not([role="switch"])) {
+  min-height: 44px;
+}
 
 button {
+  border-radius: var(--radius-control);
   -webkit-tap-highlight-color: transparent;
   transition:
     color 150ms var(--ease-out),
@@ -165,6 +205,26 @@ a:focus-visible {
 }
 
 button:disabled {
+  cursor: default;
+}
+
+body
+  button:is(
+    .primary-action,
+    .primary,
+    .save-view-action,
+    .capture-submit,
+    .global-capture-fab
+  ):disabled,
+body .app-update-notice button:first-child:disabled,
+body
+  .tasknotes-time-popover
+  .tasknotes-picker-actions
+  > button:last-child:disabled {
+  color: var(--ink-muted);
+  background: var(--paper-soft);
+  border-color: var(--line);
+  opacity: 1;
   cursor: default;
 }
 
@@ -207,6 +267,10 @@ button:disabled {
   min-height: 100vh;
   min-height: 100dvh;
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+}
+
+.detail-inspector:focus {
+  outline: 0;
 }
 
 .detail-inspector {

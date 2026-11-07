@@ -1,0 +1,20 @@
+.task-date-panel .task-date-presets {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.task-date-panel .task-date-presets button {
+  min-height: 44px;
+}
+.task-date-more > summary {
+  display: list-item;
+  min-height: 44px;
+  padding: 12px 8px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.task-date-more[open] {
+  display: grid;
+  gap: 6px;
+}
+.task-date-panel .task-date-target button {
+  min-height: 44px;
+}

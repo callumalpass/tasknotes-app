@@ -126,6 +126,27 @@ it("retires an imperative popup before another overlay and transfers return focu
   await Promise.resolve();
   expect(document.activeElement).toBe(trigger);
 });
+it("does not restore stale focus after a popup remounts", async () => {
+  const trigger = element("button");
+  const popup = element("div");
+  const input = element("input", popup);
+  const options = {
+    root: popup,
+    modal: false,
+    dismiss: vi.fn(),
+    returnFocus: trigger,
+    initialFocus: () => input,
+  };
+  const remove = registerOverlay(options);
+  remove();
+  const removeAgain = registerOverlay(options);
+  disposals.push(removeAgain);
+  await Promise.resolve();
+  expect(document.activeElement).toBe(input);
+  removeAgain();
+  await Promise.resolve();
+  expect(document.activeElement).toBe(trigger);
+});
 it("respects handled Escape and preserves an existing inert/scroll state", () => {
   document.body.style.overflow = "clip";
   const app = element("main");
@@ -142,4 +163,22 @@ it("respects handled Escape and preserves an existing inert/scroll state", () =>
   remove();
   expect(app.inert).toBe(true);
   expect(document.body.style.overflow).toBe("clip");
+});
+it("keeps a disclosure summary in a modal's Tab order", () => {
+  const dialog = element("div");
+  const first = element("button", dialog);
+  const disclosure = element("details", dialog);
+  const summary = element("summary", disclosure);
+  const remove = registerOverlay({
+    root: dialog,
+    modal: true,
+    initialFocus: () => first,
+    dismiss: () => remove(),
+  });
+  disposals.push(remove);
+  summary.focus();
+  key("Tab");
+  expect(document.activeElement).toBe(first);
+  key("Tab", true);
+  expect(document.activeElement).toBe(summary);
 });

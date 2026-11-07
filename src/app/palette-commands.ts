@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { starterViewKind } from "../domain/default-view-source";
 import type { PaletteCommand } from "./command-palette-model";
 import {
   requestTaskShortcut,
@@ -40,6 +41,7 @@ export function navigationCommands({
   navigate,
   newTask,
   showShortcuts,
+  toggleSidebar,
 }: {
   navigationKeys: readonly string[];
   views: readonly TaskView[];
@@ -47,6 +49,7 @@ export function navigationCommands({
   navigate(route: Route): void;
   newTask(): void;
   showShortcuts(): void;
+  toggleSidebar?(): void;
 }): PaletteCommand[] {
   const commands: PaletteCommand[] = [];
   const routeFor = (key: string, route: Route): Route =>
@@ -57,6 +60,7 @@ export function navigationCommands({
     seen.add(key);
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
       commands.push({
+        shortcut: "g s",
         id: "go:scratchpad",
         label: t({ message: "Scratchpad" }),
         section: "navigate",
@@ -67,6 +71,7 @@ export function navigationCommands({
     }
     if (key === SEARCH_NAVIGATION_KEY) {
       commands.push({
+        shortcut: "/",
         id: "go:search",
         label: t({ message: "Search" }),
         section: "navigate",
@@ -78,6 +83,7 @@ export function navigationCommands({
     const view = views.find((candidate) => candidate.key === key);
     if (!view) return;
     commands.push({
+      shortcut: viewNavigationShortcut(view),
       id: `go:view:${view.key}`,
       label: view.name,
       section: "navigate",
@@ -105,6 +111,7 @@ export function navigationCommands({
       run: () => navigate({ page: "more" }),
     },
     {
+      shortcut: "q / n",
       id: "action:new-task",
       label: t({ message: "New task" }),
       section: "actions",
@@ -120,6 +127,14 @@ export function navigationCommands({
       run: showShortcuts,
     },
   );
+  if (toggleSidebar)
+    commands.push({
+      id: "action:sidebar",
+      label: t({ message: "Toggle sidebar" }),
+      section: "actions",
+      shortcut: "Shift M",
+      run: toggleSidebar,
+    });
   return commands;
 }
 
@@ -137,7 +152,8 @@ export function taskCommands(
   if (row.dataset.taskId !== openTaskId)
     commands.push({
       id: "task:open",
-      label: t`Open “${title}”`,
+      label: t`Open task`,
+      detail: title,
       section: "task",
       keywords: ["details", "edit"],
       shortcut: "o",
@@ -151,6 +167,33 @@ export function taskCommands(
       keywords: ["done", "finish", "check"],
       shortcut: "x",
       run: request("toggle"),
+    },
+    {
+      id: "task:priority",
+      label: t({ message: "Set priority" }),
+      section: "task",
+      keywords: ["rank", "urgent", "importance"],
+      shortcut: "p",
+      detail: title,
+      run: request("priority"),
+    },
+    {
+      id: "task:status",
+      label: t({ message: "Set status" }),
+      section: "task",
+      keywords: ["state", "progress", "stage"],
+      shortcut: "s",
+      detail: title,
+      run: request("status"),
+    },
+    {
+      id: "task:project",
+      label: t({ message: "Move to project" }),
+      section: "task",
+      keywords: ["organize", "assign"],
+      shortcut: "+",
+      detail: title,
+      run: request("project"),
     },
     {
       id: "task:today",
@@ -181,4 +224,19 @@ export function taskCommands(
     },
   );
   return commands;
+}
+
+/** Built-in identities only: custom names and navigation order stay user-owned. */
+export function viewNavigationShortcut(view: TaskView): string | undefined {
+  const kind = starterViewKind(view);
+  return kind
+    ? {
+        today: "g t",
+        upcoming: "g u",
+        calendar: "g c",
+        projects: "g p",
+        archive: undefined,
+        inbox: "g i",
+      }[kind]
+    : undefined;
 }

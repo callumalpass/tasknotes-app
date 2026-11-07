@@ -9,7 +9,9 @@ vi.mock("./repository-context", () => ({
 }));
 vi.mock("./use-people", () => ({ usePeople: () => ({ supported: false }) }));
 vi.mock("../components/task-row", () => ({
-  TaskRow: ({ task }: { task: { title: string } }) => <div>{task.title}</div>,
+  TaskRow: ({ task }: { task: { title: string } }) => (
+    <button className="task-row-title">{task.title}</button>
+  ),
 }));
 afterEach(async () => {
   cleanup();
@@ -22,6 +24,32 @@ function search() {
     target: { value: "Match" },
   });
 }
+it("hands Enter to the first result and exposes the navigation hint", async () => {
+  fixture.query.mockReturnValue({
+    tasks: [{ task: { id: "first", title: "Match first" }, bodyMatches: [] }],
+    retry: fixture.retry,
+  });
+  search();
+  const input = screen.getByRole("searchbox");
+  await screen.findByText("1 task");
+  expect(document.querySelector(".search-navigation-hint")).not.toHaveClass(
+    "is-keyboard-navigation",
+  );
+  expect(input).not.toHaveAttribute("aria-describedby");
+  fireEvent.keyDown(input, { key: "Unidentified" });
+  fireEvent.keyDown(input, { key: "r" });
+  expect(document.querySelector(".search-navigation-hint")).not.toHaveClass(
+    "is-keyboard-navigation",
+  );
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(document.querySelector(".search-navigation-hint")).toHaveClass(
+    "is-keyboard-navigation",
+  );
+  expect(screen.getByRole("button", { name: "Match first" })).toHaveFocus();
+  expect(input).toHaveAccessibleDescription(
+    "Enter or ↓ to focus the first result. j / k to move, Enter to open.",
+  );
+});
 it("keeps browse groups expanded when the display language changes", async () => {
   fixture.query.mockReturnValue({
     tasks: Array.from({ length: 6 }, (_, index) => ({
@@ -59,6 +87,46 @@ it("shows an actionable error rather than pretending a failed search was empty",
   expect(screen.queryByText("No tasks matched.")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Retry search" }));
   expect(fixture.retry).toHaveBeenCalledOnce();
+});
+it("keeps matching result order through rescheduling and Undo refreshes", async () => {
+  const result = (id: string) => ({
+    task: { id, title: `Match ${id}` },
+    bodyMatches: [],
+  });
+  const first = result("first"),
+    second = result("second");
+  fixture.query.mockReturnValue({
+    tasks: [first, second],
+    retry: fixture.retry,
+  });
+  const { rerender } = render(<SearchScreen onOpen={vi.fn()} />);
+  fireEvent.change(screen.getByRole("searchbox"), {
+    target: { value: "Match" },
+  });
+  await screen.findByText("2 tasks");
+  fixture.query.mockReturnValue({
+    tasks: [second, first],
+    refreshing: true,
+    retry: fixture.retry,
+  });
+  rerender(<SearchScreen onOpen={vi.fn()} />);
+  expect(
+    screen
+      .getByText("Match first")
+      .compareDocumentPosition(screen.getByText("Match second")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fixture.query.mockReturnValue({
+    tasks: [first, second],
+    retry: fixture.retry,
+  });
+  rerender(<SearchScreen onOpen={vi.fn()} />);
+  expect(
+    screen
+      .getByText("Match first")
+      .compareDocumentPosition(screen.getByText("Match second")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 it("labels stale results instead of silently presenting them as current", async () => {
   fixture.query.mockReturnValue({

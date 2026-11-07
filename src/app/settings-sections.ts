@@ -38,3 +38,14 @@ export function isSettingsSection(value: string): value is SettingsSection {
 export function settingsSectionId(section: SettingsSection): string {
   return `settings-${section}`;
 }
+
+export function visibleSettingsSection(
+  sections: readonly { key: SettingsSection; top: number }[],
+  viewportHeight: number,
+): SettingsSection | undefined {
+  const boundary = Math.min(120, viewportHeight * 0.2);
+  return (
+    sections.filter((section) => section.top <= boundary).at(-1)?.key ??
+    sections[0]?.key
+  );
+}

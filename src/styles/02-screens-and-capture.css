@@ -19,7 +19,7 @@
   margin: 1px 0 0;
   font-size: var(--type-page);
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 1.08;
 }
 
@@ -27,7 +27,7 @@
 .scratchpad-header h2,
 .view-header h1 {
   font-size: var(--type-page);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
 }
 
 .compact-header {
@@ -88,7 +88,8 @@
   line-height: 1;
 }
 
-.quick-capture input {
+.quick-capture input,
+.quick-capture textarea {
   flex: 1;
   min-width: 0;
   min-height: 52px;
@@ -99,8 +100,8 @@
   outline: 0;
 }
 
-/* Recognized phrases sit on a backdrop that mirrors the input's text, so the
-   caret, selection, and IME remain native. Only the marks are visible. */
+/* The text is drawn by a backdrop that mirrors the input, so recognised
+   phrases can take colour while the caret, selection, and IME remain native. */
 .capture-field {
   position: relative;
   display: flex;
@@ -115,29 +116,66 @@
   margin-inline-end: 12px;
 }
 
-.quick-capture .capture-field input {
+.quick-capture .capture-field textarea {
   position: relative;
   z-index: 1;
+  color: transparent;
+  caret-color: var(--ink);
+  min-height: 44px;
+  max-height: 135px;
+  padding-block: 10px;
+  padding-inline-end: 16px;
+  line-height: 23px;
+  resize: none;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-faint) transparent;
+}
+
+.quick-capture .capture-field textarea::selection {
+  color: transparent;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .capture-highlights {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
+  inset: 10px 0;
+  inset-inline-end: var(--capture-scrollbar-width, 0px);
+  padding-inline-end: 16px;
+  display: block;
   overflow: hidden;
   pointer-events: none;
   font-size: var(--type-control);
-  white-space: pre;
-  color: transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 23px;
+  color: var(--ink);
 }
 
 .capture-highlights > span {
+  display: block;
   will-change: transform;
 }
 
+.capture-field[data-overflow]::after {
+  position: absolute;
+  right: 3px;
+  bottom: 9px;
+  width: 5px;
+  height: 5px;
+  content: "";
+  pointer-events: none;
+  border-right: 1px solid var(--ink-muted);
+  border-bottom: 1px solid var(--ink-muted);
+  transform: rotate(45deg);
+}
+
+.capture-link-bracket {
+  visibility: hidden;
+}
+
 .capture-highlights mark {
-  color: transparent;
+  color: var(--accent);
   background: color-mix(in srgb, var(--accent) 13%, transparent);
   border-radius: 3px;
   /* A spread ring pads the tint without moving the mirrored glyphs. */
@@ -163,7 +201,7 @@
   }
 }
 
-.quick-capture input::placeholder,
+.quick-capture textarea::placeholder,
 .notes-field textarea::placeholder {
   color: var(--ink-muted);
   opacity: 1;
@@ -220,7 +258,6 @@
   background: var(--paper-soft);
 }
 
-.primary-action:disabled,
 .secondary-action:disabled {
   cursor: default;
   opacity: 0.5;
@@ -238,12 +275,51 @@
 }
 
 .capture-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   margin: 0;
   padding: 9px 0 12px 30px;
   color: var(--ink-muted);
-  font-size: var(--type-supporting);
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 18px;
   border-bottom: 1px solid var(--line);
+}
+
+.capture-guide button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--ink-soft);
+  font: inherit;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.capture-guide > p {
+  margin: 0;
+}
+.capture-guide-actions {
+  display: flex;
+  gap: 8px;
+}
+.capture-guide-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+@media (max-width: 839px) {
+  .capture-guide {
+    display: block;
+  }
+  .capture-guide > p {
+    margin-bottom: 4px;
+  }
+}
+.capture-guide button:is(:hover, :focus-visible) {
+  color: var(--accent);
 }
 
 .capture-suggestions {
@@ -290,30 +366,38 @@
   white-space: nowrap;
 }
 
+/* Chips and Add details wrap as one group. */
 .capture-interpretation {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
   min-height: 43px;
-  padding: 8px 0;
+  padding: 2px 0;
   color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.35;
   border-bottom: 1px solid var(--line);
 }
 
 .capture-interpretation > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: var(--type-supporting);
-  line-height: 1.35;
+  display: contents;
 }
 
 .capture-interpretation > .text-action {
   flex: 0 0 auto;
+  margin-block: 0;
+  font-size: var(--type-supporting);
   white-space: nowrap;
+}
+
+.capture-title-preview {
+  display: -webkit-box;
+  flex: 1 0 100%;
+  overflow: hidden;
+  color: var(--ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .capture-parsing,
@@ -363,22 +447,30 @@
 }
 
 .capture-details-section-content {
-  padding: 10px 0 22px;
+  padding: 8px 0 24px;
 }
 
 .capture-details-section-content > .dependency-editor,
 .capture-details-section-content > .capture-template-choice {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .capture-details-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px 24px;
+  gap: 16px;
 }
 
 .capture-details .form-field > span {
   margin-bottom: 7px;
+}
+
+.capture-details .form-field > input,
+.capture-targeted-edit .form-field > input {
+  min-height: 44px;
+  padding-inline: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
 }
 
 .capture-notes {
@@ -543,6 +635,23 @@
   padding-bottom: 12px;
   overflow: auto;
 }
+.view-detail.is-kanban-view > .view-header {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.view-detail.is-kanban-view > .capture-composer {
+  margin-bottom: 8px;
+}
+.capture-targeted-edit {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-block: 8px;
+}
+.capture-targeted-edit > :first-child {
+  flex: 1;
+  min-width: 0;
+}
 
 .task-groups {
   padding-top: 12px;
@@ -571,10 +680,10 @@
   font: inherit;
 }
 
-.day-task-sections .task-section.is-overdue .section-heading {
-  color: var(--danger);
+.task-section.is-overdue .task-section-toggle > span:not(.task-section-count) {
+  color: var(--overdue-heading, var(--danger));
 }
-.capture-composer .quick-capture input:focus-visible {
+.capture-composer .quick-capture textarea:focus-visible {
   outline: 0 !important;
 }
 .capture-composer .quick-capture:focus-within {
@@ -584,19 +693,14 @@
     var(--line-strong) 78%
   );
 }
-.capture-title-preview {
-  flex-basis: 100%;
-  color: var(--ink);
-  font-weight: 700;
-}
 .capture-token {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding-left: 10px;
+  padding-left: 0;
   color: var(--ink-soft);
-  background: var(--paper-soft);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-control);
 }
 .capture-token > span {
@@ -606,8 +710,9 @@
   padding-right: 0;
 }
 .capture-token > button {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 32px;
   padding: 0;
   color: inherit;
@@ -617,7 +722,11 @@
   cursor: pointer;
 }
 .capture-token > button:first-child {
-  padding-right: 4px;
+  padding-right: 0;
+  color: var(--ink-soft);
+  text-align: start;
+}
+.capture-token > button:first-child:hover {
   color: var(--accent);
 }
 .capture-token > button:last-child {
@@ -629,25 +738,95 @@
 } /* Touch keeps compact chips but gives each chip action a 44px hit area. */
 @media (pointer: coarse) {
   .capture-token > button {
-    position: relative;
+    min-width: 44px;
+    min-height: 44px;
   }
-
-  .capture-token > button::after {
-    position: absolute;
-    inset: -6px 0;
-    content: "";
-  }
-
-  .capture-token > button:last-child::after {
-    inset: -6px;
+  .capture-token > button:last-child {
+    min-width: 44px;
   }
 }
+.global-capture-scrim {
+  position: fixed;
+  z-index: 60;
+  inset: var(--capture-viewport-top, 0px) 0 auto;
+  height: var(--capture-viewport-height, 100dvh);
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px
+    max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--color-scrim);
+  animation: motion-scrim-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] {
+  animation: motion-scrim-out var(--motion-exit) var(--ease-in) forwards;
+}
+
+.global-capture-dialog {
+  position: relative;
+  width: min(100%, 660px);
+  max-height: calc(var(--capture-viewport-height, 100dvh) - 48px);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  overflow-y: auto;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sheet);
+  box-shadow: 0 24px 70px var(--color-shadow);
+  transform-origin: top center;
+  animation: motion-dialog-in var(--motion-enter) var(--ease-out);
+}
+
+.global-capture-scrim[data-state="closed"] .global-capture-dialog {
+  animation: motion-dialog-out var(--motion-exit) var(--ease-in) forwards;
+}
+
+/* Sliding up from below would cross an already visible keyboard. */
+.global-capture-scrim[data-keyboard-occluded] .global-capture-dialog {
+  animation: none;
+}
+
+@media (min-width: 840px) {
+  .global-capture-scrim {
+    padding-top: clamp(48px, 10vh, 96px);
+  }
+}
+
+@media (max-width: 839px) {
+  .global-capture-dialog.is-compact {
+    padding: var(--space-sm) var(--page-inset)
+      calc(var(--space-sm) + env(safe-area-inset-bottom));
+  }
+  .global-capture-dialog .capture-highlights mark {
+    color: var(--ink-soft);
+    background: transparent;
+    box-shadow: none;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 3px;
+  }
+  .global-capture-dialog .capture-token {
+    padding-inline-start: 0;
+    color: var(--ink-muted);
+    background: transparent;
+    border-color: transparent;
+  }
+  .global-capture-dialog .capture-token > button:first-child {
+    color: var(--ink-muted);
+  }
+  .global-capture-dialog .capture-interpretation {
+    gap: 0 8px;
+  }
+}
+
 .capture-keep-adding {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  margin-top: 12px;
+  margin: 0;
   color: var(--ink-soft);
   font-size: var(--type-supporting);
 }
@@ -661,14 +840,127 @@
   flex: 1 1 10rem;
   min-width: 0;
 }
-.task-added-notice > button {
+.task-added-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+.task-added-actions > button {
   flex: 0 0 auto;
 }
-.undo-toast.task-added-notice > button:last-child {
+.undo-toast.task-added-notice .task-added-actions > button:last-child {
   display: grid;
   place-items: center;
   min-width: 44px;
   padding: 0;
   color: var(--ink-muted);
   border-left: 0;
+}
+
+@media (max-width: 839px) {
+  .undo-toast.task-added-notice {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 12px;
+  }
+  .task-added-notice > span,
+  .task-added-notice > .record-write-notice {
+    flex-basis: 100%;
+  }
+  .task-added-title {
+    display: inline;
+    overflow-wrap: anywhere;
+  }
+  .task-added-notice > span {
+    line-height: 20px;
+  }
+  .task-added-actions {
+    flex: 1 1 100%;
+    min-height: 44px;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+/* Capture owns its floating surface on desktop and its keyboard-aware sheet. */
+/* The footer stays reachable while details scroll, so it holds the Add action. */
+.capture-footer {
+  position: sticky;
+  z-index: 1;
+  bottom: calc(-1 * var(--space-sm));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: var(--space-sm);
+  background: var(--paper-raised);
+}
+.capture-footer .capture-discard {
+  min-height: 44px;
+  margin-inline-start: auto;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  font-weight: 400;
+}
+.capture-footer .capture-discard:hover {
+  color: var(--danger);
+}
+.global-capture-dialog > .capture-close {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+}
+.global-capture-dialog .quick-capture {
+  padding-inline-end: 40px;
+}
+.capture-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.capture-footer-actions .capture-add {
+  min-height: 44px;
+  padding-inline: 20px;
+}
+.quick-capture .capture-submit {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  padding: 0;
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-radius: var(--radius-control);
+}
+.quick-capture .capture-submit:disabled {
+  color: var(--ink-muted);
+  background: var(--paper-soft);
+}
+.capture-interpretation > .text-action {
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.capture-interpretation > .text-action:hover {
+  color: var(--accent);
+}
+.capture-token > button:first-child > .value-color {
+  padding: 0;
+}
+@media (max-width: 479px) {
+  .capture-interpretation {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .capture-interpretation > div {
+    flex-basis: 100%;
+  }
+  .capture-interpretation > .text-action {
+    margin-inline-start: auto;
+  }
 }

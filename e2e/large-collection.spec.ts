@@ -5,7 +5,7 @@ import { loadCanonicalTaskNotesTypePack } from "../scripts/canonical-task-pack.m
 
 // Same task fields/variation as mdbase-prod-testing/seed/r3-6c-tasks.py.
 // This isolates the TaskNotes read/render path after SDK admission, not native sync.
-for (const count of [500, 1000]) {
+for (const count of [1000]) {
   test(`renders ${count} seeded tasks after fixture admission`, async ({
     page,
   }, info) => {

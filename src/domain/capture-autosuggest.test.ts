@@ -4,9 +4,13 @@ import {
   activeCaptureToken,
   applyCaptureSuggestion,
   captureSuggestionRequest,
+  captureSuggestionText,
   captureTriggers,
+  linkCapturedProjects,
 } from "./capture-autosuggest";
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
+
+import type { FieldCompletion } from "./completion";
 
 describe("capture autosuggestions", () => {
   it("finds configured multi-character triggers at the cursor", () => {
@@ -54,5 +58,97 @@ describe("capture autosuggestions", () => {
         "home",
       ),
     ).toEqual({ text: "Work @home ", cursor: 11 });
+  });
+});
+
+describe("project names in capture", () => {
+  const configuration = defaultTaskCollectionConfiguration();
+  const operations: FieldCompletion = {
+    kind: "value",
+    value: "[[Projects/Operations]]",
+    label: "Operations",
+  };
+
+  it("writes a linked suggestion by name", () => {
+    expect(captureSuggestionText(operations)).toBe("Operations");
+    expect(
+      captureSuggestionText({
+        kind: "record",
+        value: "[[Projects/Field Work|Field Work]]",
+        label: "Field Work",
+      }),
+    ).toBe("[[Field Work]]");
+    expect(
+      captureSuggestionText({ kind: "value", value: "home", label: "Home" }),
+    ).toBe("home");
+  });
+
+  it("links a typed name to the one project it names", async () => {
+    const result = await linkCapturedProjects(
+      { title: "Stamps", projects: ["operations"] },
+      configuration,
+      async () => [operations],
+    );
+    expect(result.projects).toEqual([operations.value]);
+  });
+
+  it("prefers a project in use over a note of the same name", async () => {
+    const result = await linkCapturedProjects(
+      { title: "Stamps", projects: ["Operations"] },
+      configuration,
+      async () => [
+        operations,
+        {
+          kind: "record",
+          value: "[[Archive/Operations]]",
+          label: "Operations",
+        },
+      ],
+    );
+    expect(result.projects).toEqual([operations.value]);
+  });
+
+  it.each([
+    [
+      "no project has that name",
+      [
+        {
+          ...operations,
+          label: "Operations old",
+          value: "[[Projects/Operations old]]",
+        },
+      ],
+    ],
+    [
+      "two records share it",
+      [
+        {
+          kind: "record" as const,
+          value: "[[A/Operations]]",
+          label: "Operations",
+        },
+        {
+          kind: "record" as const,
+          value: "[[B/Operations]]",
+          label: "Operations",
+        },
+      ],
+    ],
+  ])("keeps the name as typed when %s", async (_, matches) => {
+    const result = await linkCapturedProjects(
+      { title: "Stamps", projects: ["Operations"] },
+      configuration,
+      async () => matches,
+    );
+    expect(result.projects).toEqual(["Operations"]);
+  });
+
+  it("keeps the name as typed when the lookup fails", async () => {
+    const result = await linkCapturedProjects(
+      { title: "Stamps", projects: ["Operations"] },
+      configuration,
+      () => Promise.reject(new Error("offline")),
+    );
+    expect(result.projects).toEqual(["Operations"]);
   });
 });

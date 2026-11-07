@@ -16,6 +16,7 @@ import { todayString } from "../domain/task";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { RepositoryProvider } from "./repository-context";
 import { ViewsScreen } from "./views-screen";
+import { clearUndoHistory, takeUndo, onUndoNotice } from "./undo-history";
 
 import type { Task, TaskSummary } from "../domain/task";
 import type { TaskView, TaskViewExecution } from "../domain/view";
@@ -53,8 +54,11 @@ it.each(["status", "note.status"])(
     );
     renderListView(repository, execution.view);
     const card = await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     });
+    expect(card).toHaveAccessibleDescription(
+      "Drag to move between columns. Use left and right arrow keys.",
+    );
     expect(card.closest("[data-kanban-column-key]")).toHaveAttribute(
       "data-kanban-column-key",
       "null",
@@ -98,7 +102,7 @@ it.each(["status", "note.status"])(
     );
     // Refreshed projected null must not be confirmed from raw status=open.
     const moved = within(open).getByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     });
     expect(moved).toBeVisible();
     fireEvent.keyDown(moved, { key: "ArrowRight" });
@@ -180,7 +184,7 @@ it("moves a board card immediately and rolls it back when persistence fails", as
     screen.queryByRole("button", { name: "Move cards between columns" }),
   ).not.toBeInTheDocument();
   const card = screen.getByRole("group", {
-    name: "Move on the board. Drag to move between columns. Use left and right arrow keys.",
+    name: "Move on the board",
   });
   const title = within(card).getByRole("button", {
     name: "Move on the board",
@@ -434,13 +438,13 @@ it("settles a pending manual board write before sending the queued move", async 
   ).not.toBeInTheDocument();
   fireEvent.keyDown(
     await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move\. Use arrow keys to arrange\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
   fireEvent.keyDown(
     screen.getByRole("group", {
-      name: /Move next\. Drag to move\. Use arrow keys to arrange\./,
+      name: "Move next",
     }),
     { key: "ArrowRight" },
   );
@@ -542,7 +546,7 @@ it("serializes rapid consecutive board moves without rejecting the second move",
 
   fireEvent.keyDown(
     await screen.findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
@@ -551,7 +555,7 @@ it("serializes rapid consecutive board moves without rejecting the second move",
   });
   fireEvent.keyDown(
     await within(inProgress).findByRole("group", {
-      name: /Move on the board\. Drag to move between columns\./,
+      name: "Move on the board",
     }),
     { key: "ArrowRight" },
   );
@@ -957,76 +961,102 @@ it("offers manual order from a writable kanban view", async () => {
   expect(source.document).toContain("note.tasknotes_manual_order");
 });
 
-it("moves a task between reusable day sections with the shared list move path", async () => {
-  const today = todayString();
-  const view = manualListView("day", { sections: "day" });
-  const tasks: Task[] = [
-    { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
-    { ...listTask("today", "Today task"), due: today },
-  ];
-  const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
-    const task = tasks.find((candidate) => candidate.id === id)!;
-    if (input.due !== undefined) task.due = input.due ?? undefined;
-    if (input.sortOrder !== undefined)
-      task.sortOrder = input.sortOrder ?? undefined;
-    tasks.sort((left, right) =>
-      (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+it.each(["pointer", "keyboard"])(
+  "moves a task between reusable day sections with the shared %s move path",
+  async (method) => {
+    clearUndoHistory();
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
+    const today = todayString();
+    const view = manualListView("day", { sections: "day" });
+    const tasks: Task[] = [
+      { ...listTask("overdue", "Overdue task"), due: shiftTaskDate(today, -2) },
+      { ...listTask("today", "Today task"), due: today },
+    ];
+    const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+      const task = tasks.find((candidate) => candidate.id === id)!;
+      if (input.due !== undefined) task.due = input.due ?? undefined;
+      if (input.sortOrder !== undefined)
+        task.sortOrder = input.sortOrder ?? undefined;
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return task;
+    });
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      totalCount: tasks.length,
+      hasMore: false,
+      groups: [],
+    }));
+
+    repository.getSummary = async (id) =>
+      tasks.find((task) => task.id === id) ?? null;
+    renderListView(repository, view);
+    const handle = await screen.findByRole("button", {
+      name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
+    });
+    if (method === "pointer") {
+      const target = screen
+        .getByText("Today task")
+        .closest<HTMLElement>("[data-manual-order-task]")!;
+      mockPointerCapture(
+        handle.closest<HTMLElement>("[data-manual-order-task]")!,
+      );
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: vi.fn(() => target),
+      });
+      const press = { button: 0, isPrimary: true, pointerId: 9 };
+      expect(screen.queryByText("Drop here")).toBeNull();
+      expect(screen.queryByText("No tasks")).toBeNull();
+      fireEvent.pointerDown(handle, press);
+      expect(screen.getAllByText("Drop here")).toHaveLength(2);
+      fireEvent.pointerCancel(handle, press);
+      expect(screen.queryByText("Drop here")).toBeNull();
+      expect(update).not.toHaveBeenCalled();
+      fireEvent.pointerDown(handle, press);
+      fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
+      fireEvent.pointerUp(handle, press);
+      expect(screen.queryByText("Drop here")).toBeNull();
+    } else {
+      fireEvent.keyDown(handle, { key: "ArrowUp" });
+    }
+
+    await waitFor(() =>
+      expect(
+        update.mock.calls.some(
+          ([id, input]) => id === "overdue" && input.due === today,
+        ),
+      ).toBe(true),
     );
-    return task;
-  });
-  const repository = manualListRepository(view, tasks, update, () => ({
-    view,
-    rows: tasks.map((task) => ({ task, values: {} })),
-    totalCount: tasks.length,
-    hasMore: false,
-    groups: [],
-  }));
-
-  renderListView(repository, view);
-  const handle = await screen.findByRole("button", {
-    name: "Reorder Overdue task. Drag, or use up and down arrow keys.",
-  });
-  const target = screen
-    .getByText("Today task")
-    .closest<HTMLElement>("[data-manual-order-task]")!;
-  mockPointerCapture(handle.closest<HTMLElement>("[data-manual-order-task]")!);
-  Object.defineProperty(document, "elementFromPoint", {
-    configurable: true,
-    value: vi.fn(() => target),
-  });
-  const press = { button: 0, isPrimary: true, pointerId: 9 };
-  expect(screen.queryByText("Drop here")).toBeNull();
-  expect(screen.getAllByText("No tasks")).toHaveLength(2);
-  fireEvent.pointerDown(handle, press);
-  expect(screen.getAllByText("Drop here")).toHaveLength(2);
-  fireEvent.pointerCancel(handle, press);
-  expect(screen.queryByText("Drop here")).toBeNull();
-  expect(update).not.toHaveBeenCalled();
-  fireEvent.pointerDown(handle, press);
-  fireEvent.pointerMove(handle, { ...press, clientX: 20, clientY: 20 });
-  fireEvent.pointerUp(handle, press);
-  expect(screen.queryByText("Drop here")).toBeNull();
-
-  await waitFor(() =>
-    expect(
-      update.mock.calls.some(
-        ([id, input]) => id === "overdue" && input.due === today,
-      ),
-    ).toBe(true),
-  );
-  await waitFor(() =>
-    expect(
-      within(screen.getByText("Today").closest("section")!).getByText(
-        "Overdue task",
-      ),
-    ).toBeVisible(),
-  );
-  expect(screen.getByText("Anytime")).toBeVisible();
-  expect(screen.getByText("Later")).toBeVisible();
-  expect(
-    within(screen.getByText("Later").closest("section")!).getByText("No tasks"),
-  ).toBeVisible();
-});
+    await waitFor(() =>
+      expect(
+        within(
+          screen
+            .getByRole("button", { name: /^Today \d+$/ })
+            .closest("section")!,
+        ).getByText("Overdue task"),
+      ).toBeVisible(),
+    );
+    // Destinations that stayed empty leave the page when the drag ends.
+    expect(screen.queryByText("Anytime")).toBeNull();
+    expect(screen.queryByText("Later")).toBeNull();
+    await waitFor(() => expect(notice).toHaveBeenCalledOnce());
+    expect(notice.mock.calls[0][0].notice).toBe(
+      "Moved “Overdue task” to Today, 1 deadline moved too",
+    );
+    await act(async () => {
+      await takeUndo()!.run();
+    });
+    expect(tasks.find(({ id }) => id === "overdue")!.due).toBe(
+      shiftTaskDate(today, -2),
+    );
+    unsubscribe();
+    clearUndoHistory();
+  },
+);
 
 it("drags a list row from anywhere on the row with a mouse", async () => {
   const today = todayString();
@@ -1220,6 +1250,63 @@ it("loads remaining manual-sort rows without a reorder mode or sort rewrite", as
   expect(repository.updateViewSource).not.toHaveBeenCalled();
 });
 
+it.each([false, true])(
+  "journals manual ranks and guards Undo against later edits (%s)",
+  async (changed) => {
+    clearUndoHistory();
+    const view = manualListView("undo-order");
+    const tasks: Task[] = [
+      { ...listTask("alpha", "Alpha"), sortOrder: "tnzzzzzzzzzz" },
+      { ...listTask("bravo", "Bravo"), sortOrder: "tnmmmmmmmmmm" },
+    ];
+    const ranks = new Map(tasks.map((task) => [task.id, task.sortOrder]));
+    const update = vi.fn<TaskRepository["update"]>(async (id, input) => {
+      const index = tasks.findIndex((task) => task.id === id);
+      tasks[index] = {
+        ...tasks[index],
+        sortOrder: input.sortOrder ?? undefined,
+        revision: Number(tasks[index].revision) + 1,
+      };
+      tasks.sort((left, right) =>
+        (right.sortOrder ?? "").localeCompare(left.sortOrder ?? ""),
+      );
+      return tasks.find((task) => task.id === id)!;
+    });
+    const repository = manualListRepository(view, tasks, update, () => ({
+      view,
+      rows: tasks.map((task) => ({ task, values: {} })),
+      groups: [],
+      totalCount: tasks.length,
+      hasMore: false,
+    }));
+    repository.getSummary = async (id) =>
+      tasks.find((task) => task.id === id) ?? null;
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
+    renderListView(repository, view);
+    fireEvent.keyDown(
+      await screen.findByRole("button", { name: /Reorder Alpha/ }),
+      { key: "ArrowDown" },
+    );
+    await waitFor(() => expect(notice).toHaveBeenCalledOnce());
+    expect(notice.mock.calls[0][0].notice).toBe("Reordered “Alpha”");
+    const undo = takeUndo()!;
+    const writes = update.mock.calls.length;
+    if (changed) {
+      for (const task of tasks) task.revision = Number(task.revision) + 1;
+      await expect(undo.run()).rejects.toThrow("This task changed");
+      expect(update).toHaveBeenCalledTimes(writes);
+    } else {
+      await act(async () => {
+        await undo.run();
+      });
+      for (const task of tasks) expect(task.sortOrder).toBe(ranks.get(task.id));
+    }
+    unsubscribe();
+    clearUndoHistory();
+  },
+);
+
 it("keeps an accepted manual reorder when only its post-write refresh fails", async () => {
   const view = manualListView("accepted-reorder");
   const tasks = [listTask("alpha", "Alpha"), listTask("bravo", "Bravo")];
@@ -1287,7 +1374,7 @@ it("keeps an accepted board move without an action failure banner when its post-
   );
   renderListView(repository, execution.view);
   fireEvent.keyDown(
-    await screen.findByRole("group", { name: /Move on the board\. Drag/ }),
+    await screen.findByRole("group", { name: "Move on the board" }),
     { key: "ArrowRight" },
   );
   await waitFor(() => expect(update).toHaveBeenCalledOnce());

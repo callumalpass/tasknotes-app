@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { taskDatePart, taskTimePart } from "./task";
-import { shiftTaskDate } from "./task-date-actions";
+import { rescheduleInput, shiftTaskDate } from "./task-date-actions";
 
 describe("shiftTaskDate", () => {
   it("moves dates across month and year boundaries", () => {
@@ -19,5 +19,38 @@ describe("shiftTaskDate", () => {
   it("leaves invalid or nonportable values unchanged", () => {
     expect(shiftTaskDate("2026-02-30", 1)).toBe("2026-02-30");
     expect(shiftTaskDate("tomorrow", 1)).toBe("tomorrow");
+  });
+});
+
+describe("rescheduleInput", () => {
+  it("preserves a missed deadline when scheduling, keeping the plan's time", () => {
+    expect(
+      rescheduleInput(
+        { scheduled: "2026-07-20T09:30", due: "2026-07-22T17:00" },
+        "2026-07-27",
+        "2026-07-26",
+      ),
+    ).toEqual({ scheduled: "2026-07-27T09:30" });
+  });
+
+  it("moves a missed deadline only after an explicit decision", () => {
+    expect(
+      rescheduleInput(
+        { scheduled: "2026-07-20T09:30", due: "2026-07-22T17:00" },
+        "2026-07-27",
+        "2026-07-26",
+        true,
+      ),
+    ).toEqual({ scheduled: "2026-07-27T09:30", due: "2026-07-27T17:00" });
+  });
+
+  it("leaves a future deadline alone", () => {
+    expect(
+      rescheduleInput(
+        { scheduled: "2026-07-20", due: "2026-07-30" },
+        "2026-07-27",
+        "2026-07-26",
+      ),
+    ).toEqual({ scheduled: "2026-07-27" });
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TaskNotesApp } from "../app/tasknotes-app";
 import { DemoApp } from "../demo/demo-app";
+import { manyOptionsDefinition } from "./many-options-definition";
 
 /** Original demo semantics, retained solely for local browser assertions.
  * This entry is unreachable and omitted outside the exact e2e build mode;
@@ -15,5 +16,13 @@ export function DemoEntryFixture() {
   const [count] = useState(() =>
     Number(new URL(location.href).searchParams.get("demo") ?? 0),
   );
-  return count > 0 ? <DemoApp count={count} /> : <TaskNotesApp />;
+  const many = new URL(location.href).searchParams.has("many-options");
+  return count > 0 ? (
+    <DemoApp
+      adjustDefinition={many ? manyOptionsDefinition : undefined}
+      count={count}
+    />
+  ) : (
+    <TaskNotesApp />
+  );
 }

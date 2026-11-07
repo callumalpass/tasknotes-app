@@ -1,3 +1,4 @@
+import { formatTaskDate } from "../i18n/presentation";
 import { countLabel } from "../i18n/default-labels";
 import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -8,11 +9,14 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  CalendarDays,
+  CalendarOff,
   ChevronRight,
   Circle,
   Clipboard,
   Copy,
   FileText,
+  FolderInput,
   FolderTree,
   Link2,
   MoreHorizontal,
@@ -23,11 +27,22 @@ import {
   Repeat2,
   SkipForward,
   Square,
-  Star,
+  ChevronsUp,
+  Sun,
+  Sunrise,
   Tags,
   Trash2,
+  type LucideProps,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { rememberTaskEdit } from "../app/task-edit-undo";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { completionKey } from "../application/task-mutations";
@@ -36,21 +51,30 @@ import { useOverlay } from "./overlays/use-overlay";
 import { useExitingValue, usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
 import { linkLabel, linkTarget } from "../domain/completion";
-import { activeTimeEntry, todayString } from "../domain/task";
-import { shiftTaskDate } from "../domain/task-date-actions";
+import { activeTimeEntry, taskDatePart } from "../domain/task";
+import { rescheduleInput, shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
 import { taskRecordLink } from "../domain/task-links";
+import {
+  TASK_MENU_PANEL_EVENT,
+  returnFocusToList,
+  shortcutSchedule,
+} from "../app/keyboard-shortcuts";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { MultiValueField } from "./multi-value-field";
+import { ChoiceOptions } from "./choice-options";
 
-import type { TaskSummary } from "../domain/task";
+import type { TaskSummary, UpdateTaskInput } from "../domain/task";
+import { TaskDatePanel } from "./task-date-panel";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 interface MenuPosition {
   x: number;
   y: number;
 }
+
+const MAX_QUICK_PRIORITIES = 5;
 
 type MenuPanel =
   | "actions"
@@ -59,6 +83,7 @@ type MenuPanel =
   | "priority"
   | "dates"
   | "organize"
+  | "move"
   | "projects"
   | "contexts"
   | "tags"
@@ -128,6 +153,8 @@ export function TaskActions({
   const panelHeadingId = `${menuId}-panel-heading`;
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // A row key opens the menu without touching "…", so focus goes back to the row.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const panel = panels.at(-1) ?? "actions";
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
   const virtualOccurrence = Boolean(
@@ -187,13 +214,36 @@ export function TaskActions({
   useEffect(() => {
     if (!position || panel === "subtask") return;
     queueMicrotask(() => {
+      const finePointer = !window.matchMedia?.("(pointer: coarse)").matches;
       const selector =
         panel === "delete"
           ? "[data-safe-action]"
-          : isOrganizeEditor(panel)
-            ? "[data-panel-back]"
-            : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)";
-      menuRef.current?.querySelector<HTMLButtonElement>(selector)?.focus();
+          : isFieldEditor(panel)
+            ? finePointer
+              ? ".multi-value-control input"
+              : "[data-panel-back]"
+            : panel === "dates"
+              ? finePointer
+                ? ".task-date-presets button"
+                : "[data-panel-focus]"
+              : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *)";
+      const menu = menuRef.current;
+      if (menu) {
+        menu.scrollTop = 0;
+        const body = menu.querySelector<HTMLElement>(".task-actions-items");
+        if (body) body.scrollTop = 0;
+      }
+      const current =
+        panel === "status" || panel === "priority"
+          ? menu?.querySelector<HTMLButtonElement>(
+              "[role='menuitemradio'][aria-checked='true']:not(:disabled)",
+            )
+          : null;
+      (
+        menu?.querySelector<HTMLInputElement>(".choice-options input") ??
+        current ??
+        menu?.querySelector<HTMLButtonElement>(selector)
+      )?.focus({ preventScroll: !finePointer });
     });
   }, [panel, position]);
 
@@ -214,7 +264,32 @@ export function TaskActions({
     openMenu(x, y + 4);
   }
 
+  function openDates() {
+    openFromTrigger();
+    setPanels(["dates"]);
+  }
+
+  const openPanel = useEffectEvent((event: Event) => {
+    const panel = (event as CustomEvent<string>).detail;
+    openFromTrigger();
+    returnFocusRef.current =
+      triggerRef.current
+        ?.closest(".task-row")
+        ?.querySelector<HTMLElement>(".task-row-title") ?? triggerRef.current;
+    setPanels([
+      panel === "project" ? "move" : panel === "status" ? "status" : "priority",
+    ]);
+  });
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const listener = (event: Event) => openPanel(event);
+    trigger.addEventListener(TASK_MENU_PANEL_EVENT, listener);
+    return () => trigger.removeEventListener(TASK_MENU_PANEL_EVENT, listener);
+  }, []);
+
   function openMenu(x: number, y: number) {
+    returnFocusRef.current = triggerRef.current;
     const width = 304;
     const estimatedHeight = 640;
     setError("");
@@ -242,7 +317,7 @@ export function TaskActions({
   function closeMenu(restoreFocus = false) {
     setPosition(null);
     subtaskIntent.current = null;
-    if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
+    if (restoreFocus) queueMicrotask(() => returnFocusRef.current?.focus());
   }
 
   function navigate(next: MenuPanel) {
@@ -255,6 +330,48 @@ export function TaskActions({
     );
   }
 
+  /** Saves an edit and keeps the fields it replaced for the Undo shortcut. */
+  async function change(input: UpdateTaskInput, notice?: string) {
+    const saved = await updateTask(task.id, input);
+    const title = task.title;
+    rememberTaskEdit({
+      before: task,
+      saved,
+      input,
+      notice: notice ?? fieldNotice(input) ?? t`Updated “${title}”`,
+      getSummary: (id) => repository.getSummary(id),
+      updateTask,
+    });
+  }
+
+  function movedDueNotice(input: UpdateTaskInput) {
+    if (!input.due || typeof input.scheduled !== "string") return undefined;
+    const { title } = task;
+    const when = formatTaskDate(input.scheduled);
+    return t`Moved “${title}” and its due date to ${when}`;
+  }
+
+  function fieldNotice({ priority, status }: UpdateTaskInput) {
+    const { title } = task;
+    const value =
+      configuration.priorities.find(({ value }) => value === priority)?.label ??
+      configuration.statuses.find(({ value }) => value === status)?.label;
+    return value ? t`Set “${title}” to ${value}` : undefined;
+  }
+
+  function dateNotice({ scheduled, due }: UpdateTaskInput) {
+    const { title } = task;
+    if (typeof scheduled === "string") {
+      const date = formatTaskDate(scheduled);
+      return t`Scheduled “${title}” for ${date}`;
+    }
+    if (typeof due === "string") {
+      const date = formatTaskDate(due);
+      return t`“${title}” is due ${date}`;
+    }
+    return undefined;
+  }
+
   async function run(action: () => Promise<unknown>, after?: () => void) {
     if (busy) return;
     setBusy(true);
@@ -263,8 +380,10 @@ export function TaskActions({
       await beforeAction?.();
       await action();
       actionFeedback();
-      closeMenu();
+      closeMenu(true);
       after?.();
+      // The edit can move this row out of the list along with its menu.
+      window.setTimeout(() => returnFocusToList(), 200);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -281,25 +400,27 @@ export function TaskActions({
     await onToggle(task, occurrenceDate);
   }
 
-  const today = todayString();
-  const tomorrow = shiftTaskDate(today, 1);
   const projectLink = taskRecordLink(task, configuration.linkWriteFormat);
   const rootRole =
     panel === "delete"
       ? "alertdialog"
-      : mobile || panel === "subtask" || isOrganizeEditor(panel)
+      : mobile ||
+          panel === "subtask" ||
+          panel === "dates" ||
+          isFieldEditor(panel)
         ? "dialog"
         : "menu";
   const actionMenuRole =
     mobile &&
     panel !== "subtask" &&
     panel !== "delete" &&
-    !isOrganizeEditor(panel);
+    panel !== "dates" &&
+    !isFieldEditor(panel);
   useOverlay({
     open: Boolean(position),
     rootRef: menuRef,
     modal: rootRole !== "menu",
-    returnFocusRef: triggerRef,
+    returnFocusRef,
     onDismiss: (reason) => {
       if (reason === "escape" && panels.length > 1) goBack();
       else closeMenu();
@@ -313,6 +434,18 @@ export function TaskActions({
 
   return (
     <>
+      {!contextMenuRequest && context === "row" && !virtualOccurrence ? (
+        <button
+          aria-label={t`Change dates for ${task.title}`}
+          className="task-row-quick-date"
+          tabIndex={-1}
+          title={t({ message: "Dates" })}
+          type="button"
+          onClick={openDates}
+        >
+          <CalendarDays aria-hidden="true" size={16} strokeWidth={1.7} />
+        </button>
+      ) : null}
       {!contextMenuRequest ? (
         <button
           aria-controls={position ? menuId : undefined}
@@ -370,20 +503,20 @@ export function TaskActions({
                 }
                 aria-labelledby={
                   rootRole !== "menu"
-                    ? isOrganizeEditor(panel)
+                    ? isFieldEditor(panel)
                       ? panelHeadingId
                       : headingId
                     : undefined
                 }
                 aria-modal={rootRole !== "menu" ? true : undefined}
                 className={`task-actions-menu${
-                  isOrganizeEditor(panel) ? " is-organize-editor" : ""
+                  isFieldEditor(panel) ? " is-organize-editor" : ""
                 }`}
                 id={menuId}
                 ref={menuRef}
                 role={rootRole}
                 style={{
-                  left: isOrganizeEditor(panel)
+                  left: isFieldEditor(panel)
                     ? Math.max(8, Math.min(shownPosition.x, innerWidth - 428))
                     : shownPosition.x,
                   top: shownPosition.y,
@@ -398,16 +531,20 @@ export function TaskActions({
                 </div>
                 {panel !== "actions" ? (
                   <div className="task-actions-subheading">
-                    <button
-                      aria-label={t({ message: "Back to previous actions" })}
-                      data-panel-back
-                      role={rootRole === "menu" ? "menuitem" : undefined}
-                      type="button"
-                      onClick={goBack}
-                    >
-                      <ChevronLeft aria-hidden="true" size={18} />
-                    </button>
-                    <strong id={panelHeadingId}>{panelTitle(panel)}</strong>
+                    {panels.length > 1 ? (
+                      <button
+                        aria-label={t({ message: "Back to previous actions" })}
+                        data-panel-back
+                        role={rootRole === "menu" ? "menuitem" : undefined}
+                        type="button"
+                        onClick={goBack}
+                      >
+                        <ChevronLeft aria-hidden="true" size={18} />
+                      </button>
+                    ) : null}
+                    <strong id={panelHeadingId} data-panel-focus tabIndex={-1}>
+                      {panelTitle(panel)}
+                    </strong>
                   </div>
                 ) : null}
                 <div
@@ -473,87 +610,46 @@ export function TaskActions({
                     )
                   ) : null}
                   {panel === "series" ? <TaskActionList series /> : null}
-                  {panel === "status"
-                    ? configuration.statuses.map((option) => (
-                        <MenuAction
-                          checked={option.value === task.status}
-                          disabled={busy}
-                          icon={option.value === task.status ? Check : Circle}
-                          key={option.value}
-                          label={option.label}
-                          iconColor={option.color}
-                          radio
-                          onClick={() =>
-                            void run(() =>
-                              updateTask(task.id, { status: option.value }),
-                            )
-                          }
-                        />
-                      ))
-                    : null}
-                  {panel === "priority"
-                    ? configuration.priorities.map((option) => (
-                        <MenuAction
-                          checked={option.value === task.priority}
-                          disabled={busy}
-                          icon={option.value === task.priority ? Check : Star}
-                          key={option.value}
-                          label={option.label}
-                          labelColor={option.color}
-                          radio
-                          onClick={() =>
-                            void run(() =>
-                              updateTask(task.id, { priority: option.value }),
-                            )
-                          }
-                        />
-                      ))
-                    : null}
+                  {panel === "status" ? (
+                    <ChoiceOptions
+                      options={configuration.statuses}
+                      value={task.status}
+                      label={t`Status`}
+                      disabled={busy}
+                      role="menuitemradio"
+                      onChoose={(status) => void run(() => change({ status }))}
+                    />
+                  ) : null}
+                  {panel === "priority" ? (
+                    <ChoiceOptions
+                      options={configuration.priorities}
+                      value={task.priority}
+                      label={t`Priority`}
+                      disabled={busy}
+                      role="menuitemradio"
+                      onChoose={(priority) =>
+                        void run(() => change({ priority }))
+                      }
+                    />
+                  ) : null}
                   {panel === "dates" ? (
                     <>
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Due today" })}
-                        onClick={() =>
-                          void run(() => updateTask(task.id, { due: today }))
+                      <TaskDatePanel
+                        busy={busy}
+                        task={task}
+                        onApply={(input) =>
+                          void run(() => change(input, dateNotice(input)))
                         }
                       />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Due tomorrow" })}
-                        onClick={() =>
-                          void run(() => updateTask(task.id, { due: tomorrow }))
-                        }
-                      />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Schedule today" })}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { scheduled: today }),
-                          )
-                        }
-                      />
-                      <MenuAction
-                        disabled={busy}
-                        icon={CalendarClock}
-                        label={t({ message: "Schedule tomorrow" })}
-                        onClick={() =>
-                          void run(() =>
-                            updateTask(task.id, { scheduled: tomorrow }),
-                          )
-                        }
-                      />
+                      <MenuSeparator />
                       <MenuAction
                         disabled={busy || (!task.due && !task.scheduled)}
                         icon={ChevronRight}
                         label={t({ message: "Move dates one day later" })}
+                        plain
                         onClick={() =>
                           void run(() =>
-                            updateTask(task.id, {
+                            change({
                               ...(task.due
                                 ? { due: shiftTaskDate(task.due, 1) }
                                 : {}),
@@ -566,29 +662,6 @@ export function TaskActions({
                           )
                         }
                       />
-                      <MenuSeparator />
-                      {task.due ? (
-                        <MenuAction
-                          disabled={busy}
-                          icon={Trash2}
-                          label={t({ message: "Clear due date" })}
-                          onClick={() =>
-                            void run(() => updateTask(task.id, { due: null }))
-                          }
-                        />
-                      ) : null}
-                      {task.scheduled ? (
-                        <MenuAction
-                          disabled={busy}
-                          icon={Trash2}
-                          label={t({ message: "Clear scheduled date" })}
-                          onClick={() =>
-                            void run(() =>
-                              updateTask(task.id, { scheduled: null }),
-                            )
-                          }
-                        />
-                      ) : null}
                       {onOpen ? (
                         <MenuAction
                           icon={Pencil}
@@ -600,6 +673,12 @@ export function TaskActions({
                   ) : null}
                   {panel === "organize" ? (
                     <>
+                      <MenuAction
+                        icon={FolderInput}
+                        label={t({ message: "Move to project" })}
+                        next
+                        onClick={() => navigate("move")}
+                      />
                       <MenuAction
                         detail={valueSummary(
                           task.projects.map(organizeValueLabel),
@@ -644,7 +723,9 @@ export function TaskActions({
                       ) : null}
                     </>
                   ) : null}
-                  {isOrganizeEditor(panel) ? (
+                  {panel === "move" ? (
+                    <ProjectMoveEditor />
+                  ) : isOrganizeEditor(panel) ? (
                     <OrganizeFieldEditor field={panel} />
                   ) : null}
                   {panel === "subtask" ? (
@@ -772,8 +853,74 @@ export function TaskActions({
 
   function TaskActionList({ series = false }: { series?: boolean }) {
     const { t } = useLingui();
+    const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
+      const input = rescheduleInput(
+        task,
+        taskDatePart(shortcutSchedule(action, task.scheduled)),
+      );
+      void run(() => change(input, movedDueNotice(input)));
+    };
+    // A collection can define any number of priorities; only a short list fits
+    // a row of icons, and the Priority panel always offers all of them.
+    const quickPriorities =
+      configuration.priorities.length <= MAX_QUICK_PRIORITIES
+        ? configuration.priorities
+        : [];
     return (
       <>
+        {!series && !task.completed ? (
+          <div className="task-actions-quick">
+            <p className="task-actions-quick-label">
+              <Trans>Schedule</Trans>
+            </p>
+            <div className="task-actions-quick-row">
+              <QuickAction
+                disabled={busy}
+                icon={Sun}
+                label={t({ message: "Schedule today" })}
+                onClick={() => scheduleTo("today")}
+              />
+              <QuickAction
+                disabled={busy}
+                icon={Sunrise}
+                label={t({ message: "Schedule tomorrow" })}
+                onClick={() => scheduleTo("tomorrow")}
+              />
+              <QuickAction
+                disabled={busy}
+                icon={CalendarDays}
+                label={t({ message: "Schedule next week" })}
+                onClick={() => scheduleTo("next-week")}
+              />
+              <QuickAction
+                disabled={busy || !task.scheduled}
+                icon={CalendarOff}
+                label={t({ message: "Clear scheduled date" })}
+                onClick={() => void run(() => change({ scheduled: null }))}
+              />
+            </div>
+            {quickPriorities.length ? (
+              <p className="task-actions-quick-label task-actions-quick-priority">
+                <Trans>Priority</Trans>
+              </p>
+            ) : null}
+            <div className="task-actions-quick-row task-actions-quick-priority">
+              {quickPriorities.map((option) => (
+                <QuickAction
+                  checked={option.value === task.priority}
+                  color={option.color}
+                  disabled={busy}
+                  icon={Circle}
+                  key={option.value}
+                  label={t`Priority: ${option.label}`}
+                  onClick={() =>
+                    void run(() => change({ priority: option.value }))
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
         <MenuAction
           disabled={busy}
           icon={task.completed ? Circle : Check}
@@ -793,7 +940,7 @@ export function TaskActions({
         />
         <MenuAction
           detail={task.priority === "none" ? undefined : priority}
-          icon={Star}
+          icon={ChevronsUp}
           label={t({ message: "Priority" })}
           next
           onClick={() => navigate("priority")}
@@ -892,9 +1039,7 @@ export function TaskActions({
         className="task-actions-organize-editor"
         onSubmit={(event) => {
           event.preventDefault();
-          void run(() =>
-            updateTask(task.id, { [field]: organizeDraft[field] }),
-          );
+          void run(() => change({ [field]: organizeDraft[field] }));
         }}
       >
         <MultiValueField
@@ -921,6 +1066,47 @@ export function TaskActions({
     );
   }
 
+  function ProjectMoveEditor() {
+    const { t } = useLingui();
+    const field = configuration.fieldMapping.projects;
+    return (
+      <div
+        className="task-actions-organize-editor"
+        onKeyDownCapture={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          closeMenu(true);
+        }}
+      >
+        <MultiValueField
+          completion={
+            configuration.fieldCompletions[field] ?? { kind: "records" }
+          }
+          completeField={(request) => repository.completeField(request)}
+          field={field}
+          label={t({ message: "Project" })}
+          placeholder={t`Find a project`}
+          usedFirst
+          values={task.projects}
+          onPick={(value, project) => {
+            const title = task.title;
+            void run(() =>
+              change({ projects: [value] }, t`Moved “${title}” to ${project}`),
+            );
+          }}
+        />
+        <button
+          className="task-actions-organize-more"
+          type="button"
+          onClick={() => navigate("projects")}
+        >
+          <Trans>Keep it in several projects</Trans>
+        </button>
+      </div>
+    );
+  }
+
   function handleMenuKeys(event: React.KeyboardEvent<HTMLDivElement>) {
     if (
       event.target instanceof HTMLInputElement ||
@@ -932,17 +1118,46 @@ export function TaskActions({
       goBack();
       return;
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const quickRow =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement.closest(".task-actions-quick-row")
+        : null;
+    if (quickRow && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      const cells = [
+        ...quickRow.querySelectorAll<HTMLButtonElement>(
+          "button:not(:disabled)",
+        ),
+      ];
+      const current = cells.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      event.preventDefault();
+      cells[(current + step + cells.length) % cells.length]?.focus();
+      return;
+    }
+    const typing =
+      event.key.length === 1 &&
+      event.key !== " " &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey;
+    if (!typing && !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+      return;
     const items = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
         panel === "subtask" || panel === "delete"
           ? "button:not(:disabled)"
-          : "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)",
+          : "[role='menuitem']:not(:disabled):not(.task-actions-quick *), [role='menuitemradio']:not(:disabled):not(.task-actions-quick *), .task-actions-quick-row > button:not(:disabled):first-child",
       ) ?? []),
     ];
     if (!items.length) return;
     event.preventDefault();
     const current = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (typing) {
+      typeAheadMatch(items, current, event.key)?.focus();
+      return;
+    }
     const target =
       event.key === "Home"
         ? 0
@@ -955,6 +1170,95 @@ export function TaskActions({
   }
 }
 
+/** The next menu item starting with a typed letter, cycling past the current one. */
+function typeAheadMatch(
+  items: HTMLButtonElement[],
+  current: number,
+  key: string,
+) {
+  const letter = key.toLocaleLowerCase();
+  return [...items.slice(current + 1), ...items.slice(0, current + 1)].find(
+    (item) => item.textContent?.trim().toLocaleLowerCase().startsWith(letter),
+  );
+}
+
+function QuickAction({
+  checked,
+  color,
+  disabled = false,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  checked?: boolean;
+  color?: string;
+  disabled?: boolean;
+  icon: React.ComponentType<LucideProps>;
+  label: string;
+  onClick(): void;
+}) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  const tooltip = useRef<HTMLSpanElement>(null);
+  const tooltipId = useId();
+  useLayoutEffect(() => {
+    const element = tooltip.current;
+    if (!element || !anchor) return;
+    const bounds = element.getBoundingClientRect();
+    element.style.left = `${Math.max(8, Math.min(anchor.left, window.innerWidth - bounds.width - 8))}px`;
+    element.style.top = `${Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - bounds.height - 8))}px`;
+  }, [anchor]);
+  useEffect(() => {
+    if (!anchor) return;
+    const hide = () => setAnchor(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("resize", hide);
+    };
+  }, [anchor]);
+  return (
+    <button
+      aria-checked={checked}
+      aria-label={label}
+      aria-describedby={anchor ? tooltipId : undefined}
+      disabled={disabled}
+      role={checked === undefined ? "menuitem" : "menuitemradio"}
+      type="button"
+      onClick={onClick}
+      onMouseEnter={(event) =>
+        setAnchor(event.currentTarget.getBoundingClientRect())
+      }
+      onMouseLeave={() => setAnchor(null)}
+      onFocus={(event) =>
+        setAnchor(event.currentTarget.getBoundingClientRect())
+      }
+      onBlur={() => setAnchor(null)}
+    >
+      <Icon
+        aria-hidden="true"
+        fill={checked ? "currentColor" : "none"}
+        size={18}
+        strokeWidth={1.7}
+        style={color ? { color } : undefined}
+      />
+      {anchor
+        ? createPortal(
+            <span
+              className="quick-action-tooltip"
+              id={tooltipId}
+              ref={tooltip}
+              role="tooltip"
+            >
+              {label}
+            </span>,
+            document.body,
+          )
+        : null}
+    </button>
+  );
+}
+
 function MenuAction({
   checked = false,
   danger = false,
@@ -965,6 +1269,7 @@ function MenuAction({
   next = false,
   iconColor,
   labelColor,
+  plain = false,
   radio = false,
   onClick,
 }: {
@@ -977,6 +1282,8 @@ function MenuAction({
   next?: boolean;
   iconColor?: string;
   labelColor?: string;
+  /** Inside a dialog panel, where a menu role has no menu around it. */
+  plain?: boolean;
   radio?: boolean;
   onClick(): void;
 }) {
@@ -986,7 +1293,7 @@ function MenuAction({
       aria-checked={radio ? checked : undefined}
       className={danger ? "danger" : undefined}
       disabled={disabled}
-      role={radio ? "menuitemradio" : "menuitem"}
+      role={plain ? undefined : radio ? "menuitemradio" : "menuitem"}
       type="button"
       onClick={onClick}
     >
@@ -1025,12 +1332,17 @@ function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
   if (panel === "priority") return t({ message: "Priority" });
   if (panel === "dates") return t({ message: "Dates" });
   if (panel === "organize") return t({ message: "Organize" });
+  if (panel === "move") return t({ message: "Move to project" });
   if (panel === "projects") return t({ message: "Projects" });
   if (panel === "contexts") return t({ message: "Contexts" });
   if (panel === "tags") return t({ message: "Tags" });
   if (panel === "subtask") return t({ message: "New subtask" });
   if (panel === "copy") return t({ message: "Copy" });
   return t({ message: "Delete task" });
+}
+
+function isFieldEditor(panel: MenuPanel): boolean {
+  return panel === "move" || isOrganizeEditor(panel);
 }
 
 function isOrganizeEditor(

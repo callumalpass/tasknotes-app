@@ -19,6 +19,31 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 describe("ViewEditor", () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it.each(["layout", "view-filter", "view-group-sort", "view-fields"] as const)(
+    "opens the existing editor directly at %s",
+    async (initialSection) => {
+      renderEditor({
+        repository: repository(),
+        view: savedView(),
+        initialSection,
+      });
+      const dialog = await screen.findByRole("dialog", { name: "Work" });
+      await screen.findByLabelText("View name");
+      if (initialSection === "layout") {
+        const layout = dialog.querySelector(".view-layout-disclosure")!;
+        expect(layout).toHaveAttribute("open");
+        expect(layout.querySelector("summary")).toHaveFocus();
+      } else {
+        const title = dialog.querySelector(`#${initialSection}-title`)!;
+        expect(title.closest("button")).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        );
+        expect(title.closest("button")).toHaveFocus();
+      }
+    },
+  );
+
   it("uses one complete editor for an existing view and saves organization changes", async () => {
     const source = baseSource(`views:
   - type: tasknotesTaskList
@@ -44,9 +69,10 @@ describe("ViewEditor", () => {
     const dialog = await screen.findByRole("dialog", { name: "Work" });
     expect(dialog).toBeVisible();
     await waitFor(() => expect(dialog).toHaveFocus());
-    await screen.findByRole("heading", { name: "View details" });
+    await screen.findByLabelText("View name");
+    expect(screen.queryByText("Edit saved view")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "View details" })).toBeNull();
     for (const name of [
-      "View details",
       "Advanced",
       "Filter",
       "Group & sort",
@@ -70,7 +96,12 @@ describe("ViewEditor", () => {
       screen.getByRole("combobox", { name: "Sort property 1" }),
     ).toHaveValue("Priority");
 
+    const layout = dialog.querySelector(".view-layout-disclosure")!;
+    expect(layout).not.toHaveAttribute("open");
+    fireEvent.click(layout.querySelector("summary")!);
+    expect(layout).toHaveAttribute("open");
     fireEvent.click(screen.getByRole("radio", { name: "Board" }));
+    expect(layout).not.toHaveAttribute("open");
     expect(screen.getByRole("combobox", { name: "Board column" })).toHaveValue(
       "Status",
     );
@@ -113,7 +144,7 @@ describe("ViewEditor", () => {
     });
 
     await screen.findByRole("dialog", { name: "Work copy" });
-    expect(screen.getByText("Duplicate saved view")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Work copy" })).toBeVisible();
     expect(screen.getByLabelText("View name")).toHaveValue("Work copy");
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
 
@@ -178,6 +209,47 @@ describe("ViewEditor", () => {
         direction: "DESC",
       },
     ]);
+  });
+
+  it.each(["tasknotesTaskList", "tasknotesKanban", "tasknotesCalendar"])(
+    "resolves default fields in the %s editor and preview",
+    async (type) => {
+      renderEditor({
+        repository: repository({
+          source: baseSource(`views: [{ type: ${type}, name: Work }]\n`),
+        }),
+        view: savedView(),
+        initialSection: "view-fields",
+      });
+      await screen.findByLabelText("View name");
+      expect(
+        screen.getByRole("button", { name: /Fields shown Default fields/ }),
+      ).toBeVisible();
+      const fields = document.querySelector(".selected-view-properties")!;
+      expect(
+        [...fields.querySelectorAll("strong")].map(
+          (element) => element.textContent,
+        ),
+      ).toEqual(["Scheduled", "Due", "Priority", "Status", "Projects"]);
+      expect(screen.queryByText("Only the task title is shown.")).toBeNull();
+      fireEvent.click(
+        screen.getByText("Preview", { selector: "summary", exact: false }),
+      );
+      expect(document.querySelector(".view-preview-fields")).toHaveTextContent(
+        "Default fields: Scheduled, Due, Priority, Status, Projects",
+      );
+    },
+  );
+
+  it("closes an untouched new view without asking", async () => {
+    const onClose = vi.fn();
+    renderEditor({ repository: repository({}), onClose });
+    await screen.findByLabelText("View name");
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Close view editor" }).at(-1)!,
+    );
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("guards unsaved changes but closes an untouched existing view directly", async () => {
@@ -416,6 +488,7 @@ views:
 });
 
 function renderEditor({
+  initialSection,
   repository: supplied,
   view,
   duplicate,
@@ -423,6 +496,7 @@ function renderEditor({
   onClose = vi.fn(),
   onChanged = vi.fn(async () => undefined),
 }: {
+  initialSection?: import("./view-editor-form").ViewEditorSection;
   repository: TaskRepository;
   view?: TaskView;
   duplicate?: boolean;
@@ -436,6 +510,7 @@ function renderEditor({
       repository={supplied}
     >
       <ViewEditor
+        initialSection={initialSection}
         confirmDelete={confirmDelete}
         duplicate={duplicate}
         view={view}

@@ -18,7 +18,7 @@
   overflow: hidden;
   font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.015em;
   line-height: 1.15;
   background: transparent;
   border: 0;
@@ -302,9 +302,20 @@
 }
 
 .date-time-field > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 6.2rem;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.date-time-field > div > .tasknotes-date-picker {
+  flex: 1 1 124px;
+  min-inline-size: min(124px, 100%);
+}
+
+.date-time-field > div > .tasknotes-time-picker {
+  flex: 0 0 124px;
+  min-inline-size: min(124px, 100%);
+  max-inline-size: 100%;
 }
 
 .form-field input {
@@ -338,14 +349,13 @@
   width: 100%;
   min-width: 0;
   min-height: var(--control-min-size);
-  padding: var(--space-sm) 0;
+  padding: 8px 12px;
   font-size: var(--type-field);
   color: var(--ink);
   text-align: left;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: 0;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
   cursor: pointer;
 }
 
@@ -372,8 +382,20 @@
   opacity: 0.42;
 }
 
+.date-time-field .tasknotes-control-trigger:disabled {
+  opacity: 1;
+}
+
 .tasknotes-control-trigger:focus-visible {
   border-bottom-color: var(--line-strong);
+}
+.tasknotes-combobox > input,
+.task-actions-filter input {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
 }
 
 .tasknotes-popover-scrim {
@@ -510,6 +532,10 @@
   padding: 9px;
 }
 
+.tasknotes-calendar-sheet-heading {
+  display: none;
+}
+
 .tasknotes-calendar-heading,
 .tasknotes-time-heading {
   display: flex;
@@ -610,7 +636,7 @@
 }
 
 .tasknotes-calendar-grid [role="gridcell"].is-outside {
-  color: color-mix(in srgb, var(--ink-muted), transparent 45%);
+  color: var(--ink-muted);
 }
 
 .tasknotes-calendar-grid [role="gridcell"].is-today::after {
@@ -642,19 +668,32 @@
 }
 
 .tasknotes-time-heading {
-  padding: 0 9px;
+  padding-inline-start: 4px;
+  margin-bottom: 6px;
   border-bottom: 1px solid var(--line);
 }
 
-.tasknotes-time-heading > span {
-  color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-mono-micro);
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
+.tasknotes-time-heading > strong {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
 }
 
-.tasknotes-time-heading > strong {
+.tasknotes-time-heading > button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.tasknotes-time-value {
+  padding: 0 4px;
   font-size: var(--type-control);
 }
 
@@ -667,34 +706,43 @@
 
 .tasknotes-time-columns > div {
   min-width: 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .tasknotes-time-columns > div > span {
   display: block;
   padding: 2px 9px 5px;
   color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
   font-size: var(--type-label);
 }
 
 .tasknotes-time-list {
-  height: 210px;
+  --time-list-height: 210px;
+  position: relative;
+  height: var(--time-list-height);
+  padding-block: calc((var(--time-list-height) - 44px) / 2);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  scrollbar-width: thin;
+  mask-image: linear-gradient(
+    transparent,
+    black 16px,
+    black calc(100% - 16px),
+    transparent
+  );
 }
 
 .tasknotes-time-list > button {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 9px;
   color: var(--ink-soft);
   text-align: center;
   background: transparent;
   border: 0;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 .tasknotes-time-list > button:hover {
@@ -704,6 +752,28 @@
 .tasknotes-time-list > button[aria-selected="true"] {
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions {
+  gap: 8px;
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button {
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: 12px;
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button:first-child {
+  margin-inline-end: auto;
+  color: var(--ink-muted);
+}
+
+.tasknotes-time-popover .tasknotes-picker-actions > button:last-child {
+  color: var(--color-on-accent);
+  background: var(--accent);
+  border-radius: var(--radius-control);
+  font-weight: 600;
 }
 
 .view-editor-control-field {
@@ -1360,9 +1430,9 @@
 
 .notes-field-heading h2 {
   margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--type-body);
-  font-weight: 400;
+  color: var(--ink);
+  font-size: var(--task-section-size, 15px);
+  font-weight: 600;
 }
 
 .notes-field-heading > div {
@@ -1436,9 +1506,9 @@
 }
 
 .task-attachments-heading h2 {
-  color: var(--ink-muted);
-  font-size: var(--type-body);
-  font-weight: 400;
+  color: var(--ink);
+  font-size: var(--task-section-size, 15px);
+  font-weight: 600;
 }
 
 .task-attachments-heading p {
@@ -1575,6 +1645,7 @@
 
 .attachment-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
@@ -1791,7 +1862,7 @@
 }
 
 .task-form-section > summary strong {
-  font-size: var(--type-body);
+  font-size: var(--task-section-size, 15px);
   font-weight: 600;
 }
 
@@ -2036,7 +2107,288 @@
   font: inherit;
   cursor: pointer;
 }
-.task-form > .task-form-section:first-of-type > summary small {
-  white-space: normal;
-  overflow: visible;
+
+/* Primary task properties read as a quiet list, with editors on their values. */
+.task-pane-navigation {
+  display: flex;
+  align-items: center;
+  margin-inline-end: auto;
+}
+
+.task-core-properties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 4px 8px;
+  padding-block: 16px;
+}
+
+.task-core-properties > .form-field,
+.task-core-properties > .task-inline-property {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0;
+}
+
+.task-core-properties > .form-field > span,
+.task-core-properties > .task-inline-property > span {
+  display: none;
+}
+
+.task-core-properties > .form-field > .tasknotes-select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.task-core-properties > .field-help {
+  flex-basis: 100%;
+}
+
+.task-inline-property {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 0.32fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.task-inline-property > span {
+  margin: 0;
+  padding: 8px 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.task-property-value {
+  min-height: 44px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.task-core-properties .tasknotes-control-trigger,
+.task-core-properties .task-property-value {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.task-core-properties .tasknotes-control-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-core-properties .tasknotes-control-trigger:hover,
+.task-property-value:hover {
+  background: var(--paper-soft);
+}
+
+.task-core-properties .date-time-field > div {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0 4px;
+  min-width: 0;
+}
+
+.task-core-properties .date-time-field > div > * {
+  min-width: 0;
+}
+
+/* A time is short and exact, so the date gives way before the time clips. */
+.task-core-properties .date-time-field > div > .tasknotes-time-picker {
+  flex: none;
+}
+
+.task-core-properties .tasknotes-date-trigger,
+.task-core-properties .tasknotes-time-trigger {
+  gap: 6px;
+  font-size: inherit;
+}
+
+.task-property-value[hidden] {
+  display: none;
+}
+.task-property-empty {
+  color: var(--ink-muted);
+}
+.task-inline-property-editor {
+  min-width: 0;
+  padding-inline-start: 8px;
+}
+.task-inline-property-editor .multi-value-field > label {
+  display: none;
+}
+.task-inline-property-editor .text-action {
+  font-size: var(--type-supporting);
+}
+
+.task-screen .title-field {
+  border-bottom: 0;
+  field-sizing: content;
+  padding-bottom: 2px;
+}
+.task-screen .notes-field {
+  padding-block: 16px;
+}
+.task-screen .notes-field-heading {
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.task-screen .notes-field-heading > div {
+  border: 0;
+}
+.task-screen .notes-field-heading button {
+  font-size: var(--type-supporting);
+}
+.task-screen .notes-field textarea {
+  min-height: 64px;
+}
+
+.task-screen .markdown-preview-empty {
+  min-height: 64px;
+}
+/* Notes grow with what is written, so a short note leaves Subtasks in reach. */
+@supports (field-sizing: content) {
+  .task-screen .notes-field textarea {
+    field-sizing: content;
+    resize: none;
+  }
+}
+
+.task-subtasks {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.task-subtasks > header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.task-subtasks h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--task-section-size, 15px);
+  font-weight: 600;
+}
+.task-subtasks > header > span {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+.task-subtasks ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.task-subtask-row {
+  display: flex;
+  align-items: start;
+}
+.task-subtask-title {
+  min-height: 44px;
+  padding: 10px 0;
+  text-align: start;
+  overflow-wrap: anywhere;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.task-subtask-row > span {
+  min-width: 0;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+.task-subtask-row:has([aria-pressed="true"]) .task-subtask-title {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+}
+.task-subtasks form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ink-muted);
+}
+.task-subtasks form > svg {
+  flex: 0 0 auto;
+  margin-inline: 13px 5px;
+}
+.task-subtasks input {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+.task-subtasks form > button {
+  flex: 0 0 auto;
+  font-size: var(--type-supporting);
+}
+
+@media (max-width: 839px) {
+  .task-inline-property {
+    min-height: 44px;
+  }
+  .task-core-properties .tasknotes-control-trigger,
+  .task-property-value {
+    min-height: 44px;
+  }
+  .task-inline-property > span {
+    padding-block: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .task-inline-property {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .task-inline-property > span {
+    padding-block: 6px 0;
+  }
+  .task-subtasks form {
+    flex-wrap: wrap;
+  }
+  .task-subtasks input {
+    flex: 1 1 50%;
+  }
+  .task-subtasks form > button {
+    margin-inline-start: auto;
+  }
+}
+
+.task-screen .task-toolbar {
+  grid-template-columns: 44px minmax(88px, 1fr) minmax(0, auto) auto;
+}
+
+.task-screen .task-toolbar .save-state {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.task-subtask-row > .completion-control {
+  flex: 0 0 44px;
+  min-width: 44px;
+  align-self: start;
 }

@@ -31,7 +31,7 @@ async function captureWith(suggestions: FieldCompletion[]) {
       completeField={complete}
     />,
   );
-  const input = screen.getByLabelText<HTMLInputElement>("New task title");
+  const input = screen.getByLabelText<HTMLTextAreaElement>("New task title");
   const text = "Review launch +Work";
   await act(async () => {
     fireEvent.change(input, {
@@ -46,23 +46,24 @@ async function captureWith(suggestions: FieldCompletion[]) {
 
 describe("quick-add project Enter (real capture parser)", () => {
   it.each([
-    { name: "only a substring note matches", suggestions: [onboarding] },
-    { name: "an exact project also matches", suggestions: [onboarding, work] },
-  ])("submits +Work unchanged when $name", async ({ suggestions }) => {
+    {
+      name: "keeps +Work as typed when only a substring note matches",
+      suggestions: [onboarding],
+      projects: ["Work"],
+    },
+    {
+      name: "joins the project called Work when one exists",
+      suggestions: [onboarding, work],
+      projects: [work.value],
+    },
+  ])("$name", async ({ suggestions, projects }) => {
     const { input, create } = await captureWith(suggestions);
-    // jsdom does not perform Enter's native form submission; first prove that
-    // the handler leaves Enter unconsumed, then dispatch that default action.
     expect(fireEvent.keyDown(input, { key: "Enter", code: "Enter" })).toBe(
-      true,
+      false,
     );
-    expect(input).toHaveValue("Review launch +Work");
-    fireEvent.submit(input.closest("form")!);
     await waitFor(() => expect(create).toHaveBeenCalledOnce());
     expect(create.mock.calls[0]![0]).toEqual(
-      expect.objectContaining({
-        title: "Review launch",
-        projects: ["Work"],
-      }),
+      expect.objectContaining({ title: "Review launch", projects }),
     );
   });
 
@@ -70,7 +71,126 @@ describe("quick-add project Enter (real capture parser)", () => {
     const { input, create } = await captureWith([onboarding]);
     fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
-    expect(input).toHaveValue(`Review launch +${onboarding.value} `);
+    expect(input).toHaveValue("Review launch +[[How collections work]] ");
     expect(create).not.toHaveBeenCalled();
   });
+});
+
+it("edits only the project field, focuses it, and returns to its chip on Escape", async () => {
+  const complete = vi.fn(async () => [work]);
+  const create = vi.fn();
+  const { container } = render(
+    <TaskCapture
+      configuration={defaultTaskCollectionConfiguration()}
+      createTask={create}
+      completeField={complete}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: "Review launch +Work" },
+  });
+  const chip = await screen.findByRole("button", { name: "Edit +Work" });
+  fireEvent.click(chip);
+  const project = screen.getByRole("combobox", { name: "Projects" });
+  expect(project).toHaveFocus();
+  expect(container.querySelector(".capture-details")).toBeNull();
+  expect(screen.queryByRole("combobox", { name: "Status" })).toBeNull();
+  fireEvent.keyDown(project, { key: "Escape" });
+  fireEvent.keyDown(project, { key: "Escape" });
+  expect(chip).toHaveFocus();
+  expect(create).not.toHaveBeenCalled();
+});
+
+it("highlights ranked shorthand with an editable, removable priority chip and swatch", async () => {
+  const configuration = defaultTaskCollectionConfiguration();
+  const highest = [...configuration.priorities].sort(
+    (a, b) => b.weight - a.weight,
+  )[0];
+  const { container } = render(
+    <TaskCapture configuration={configuration} createTask={vi.fn()} />,
+  );
+  fireEvent.change(screen.getByLabelText("New task title"), {
+    target: { value: `Call Rowan !${highest.value}` },
+  });
+  const chip = await screen.findByRole("button", {
+    name: `Edit ${highest.label}`,
+  });
+  expect(chip).toHaveTextContent(`Priority: ${highest.label}`);
+  expect(chip.querySelector(".value-color")).toHaveStyle({
+    backgroundColor: highest.color,
+  });
+  expect(container.querySelector("mark")).toHaveTextContent(
+    `!${highest.value}`,
+  );
+  fireEvent.click(chip);
+  expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
+  fireEvent.click(
+    screen.getByRole("button", { name: `Remove ${highest.label}` }),
+  );
+  expect(container.querySelector("mark")).toBeNull();
+});
+
+it.each(["#", "@", "+"])(
+  "offers keyboard completions for %s, with a selected option and Tab acceptance",
+  async (trigger) => {
+    const complete = vi.fn(async () => [
+      { kind: "value" as const, value: "first", label: "First" },
+      { kind: "value" as const, value: "second", label: "Second" },
+    ]);
+    const create = vi.fn();
+    render(
+      <TaskCapture
+        configuration={defaultTaskCollectionConfiguration()}
+        createTask={create}
+        completeField={complete}
+      />,
+    );
+    const input = screen.getByRole("combobox", { name: "New task title" });
+    const text = `Call Rowan ${trigger}`;
+    fireEvent.change(input, {
+      target: { value: text, selectionStart: text.length },
+    });
+    const first = await screen.findByRole("option", { name: "First" });
+    expect(input).toHaveAttribute("aria-expanded", "true");
+    expect(input).toHaveAttribute("aria-controls", first.parentElement!.id);
+    expect(first).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const second = screen.getByRole("option", { name: "Second" });
+    expect(input).toHaveAttribute("aria-activedescendant", second.id);
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(first).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(input, { key: "Tab" });
+    expect(input).toHaveValue(`${text}first `);
+    expect(input).toHaveAttribute("aria-expanded", "false");
+    expect(create).not.toHaveBeenCalled();
+  },
+);
+
+it("lists a collection's priorities by label and rank, however many there are", async () => {
+  const priorities = Array.from({ length: 12 }, (_, index) => ({
+    id: `rank-${index}`,
+    value: `rank-${index}`,
+    label: `Rank ${index}`,
+    color: "#336699",
+    weight: index,
+  }));
+  const complete = vi.fn(async () => []);
+  render(
+    <TaskCapture
+      configuration={{
+        ...defaultTaskCollectionConfiguration(),
+        priorities,
+      }}
+      createTask={vi.fn()}
+      completeField={complete}
+    />,
+  );
+  const input = screen.getByRole("combobox", { name: "New task title" });
+  fireEvent.change(input, {
+    target: { value: "Call Rowan !", selectionStart: 12 },
+  });
+  const options = await screen.findAllByRole("option");
+  expect(options).toHaveLength(12);
+  expect(options[0]).toHaveTextContent("Rank 11");
+  expect(complete).not.toHaveBeenCalled();
 });

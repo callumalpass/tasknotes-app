@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { setOpenTask } from "./open-task";
 import { nativeBackAction } from "../native/navigation";
 import { isSettingsSection, type SettingsSection } from "./settings-sections";
 import {
@@ -19,6 +20,7 @@ export type Route =
   | { page: "more"; section?: SettingsSection }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
+export type TaskNavigationTarget = { id: string; occurrence?: string };
 export type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
 // Screens that cannot be left yet (an unsaveable or refused draft) veto
@@ -54,6 +56,9 @@ export function useWorkspaceNavigation(
     const initial = parseRoute();
     return initial.page === "task" ? { page: "home" } : initial;
   });
+  const [taskOrder, setTaskOrder] = useState<readonly TaskNavigationTarget[]>(
+    [],
+  );
   const taskReturn = useRef<{
     element: HTMLElement | null;
     scrollY: number;
@@ -63,23 +68,34 @@ export function useWorkspaceNavigation(
   const routeRef = useRef(route);
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
+  const lastTaskId = useRef<string | null>(null);
+  const openTaskId = route.page === "task" ? route.id : null;
   // Restore before paint so a route's view transition captures the result.
   useLayoutEffect(() => {
     const wasTask = previousPage.current === "task";
     previousPage.current = route.page;
-    if (route.page === "task" && !wasTask)
+    setOpenTask(openTaskId);
+    if (route.page === "task") {
+      lastTaskId.current = openTaskId;
       detailRef.current?.focus({ preventScroll: true });
-    else if (wasTask && route.page !== "task" && taskReturn.current) {
+    } else if (wasTask && taskReturn.current) {
       const target = taskReturn.current;
       taskReturn.current = null;
       if (target.workspaceUrl !== currentRouteUrl) return;
       window.scrollTo({ top: target.scrollY, left: 0 });
-      if (target.element?.isConnected)
+      // Stepping through tasks moves the reader on: return to where they got to.
+      const reached = document.querySelector<HTMLElement>(
+        `#main-content .task-row[data-task-id="${CSS.escape(lastTaskId.current ?? "")}"] .task-row-title`,
+      );
+      if (reached) {
+        reached.focus({ preventScroll: true });
+        reached.scrollIntoView?.({ block: "nearest" });
+      } else if (target.element?.isConnected)
         target.element.focus({ preventScroll: true });
       else
         document.getElementById("main-content")?.focus({ preventScroll: true });
     }
-  }, [route.page, currentRouteUrl]);
+  }, [route.page, openTaskId, currentRouteUrl]);
 
   useEffect(() => {
     const pop = (event: PopStateEvent) => {
@@ -109,7 +125,33 @@ export function useWorkspaceNavigation(
   }, []);
 
   const navigate = useCallback(
-    (next: Route, replace = false) => {
+    (next: Route, replace = false, order?: readonly TaskNavigationTarget[]) => {
+      if (next.page === "task" && (route.page !== "task" || order)) {
+        // Presentations may supply their full order, including virtual rows.
+        // Search and other small lists use their rendered reading order.
+        const rows =
+          order ??
+          Array.from(
+            document.querySelectorAll<HTMLElement>(
+              "#main-content .task-row[data-task-id]",
+            ),
+          )
+            .filter((row) => !row.closest("[hidden], [inert], .is-departing"))
+            .map((row) => ({
+              id: row.dataset.taskId!,
+              occurrence: row.dataset.occurrence,
+            }));
+        const seen = new Set<string>();
+        setTaskOrder(
+          rows.filter((target) => {
+            const key = JSON.stringify([target.id, target.occurrence]);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          }),
+        );
+      }
+      if (next.page !== "task") setTaskOrder([]);
       const url = routeUrl(next);
       // Choosing another task swaps the open panel's entry, so Back closes the
       // panel instead of revisiting earlier selections. `taskPanel` marks an
@@ -173,7 +215,7 @@ export function useWorkspaceNavigation(
     };
   }, []);
 
-  return { route, workspaceRoute, navigate, detailRef };
+  return { route, workspaceRoute, navigate, detailRef, taskOrder };
 }
 
 function parseRoute(): Route {

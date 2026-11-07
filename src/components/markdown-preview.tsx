@@ -2,6 +2,7 @@ import { useLingui, Trans } from "@lingui/react/macro";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useEffect, useState } from "react";
+import { inlineImageMediaType } from "../domain/attachment-media";
 
 export function MarkdownPreview({
   source,
@@ -36,6 +37,15 @@ export function MarkdownPreview({
             );
           },
           img: ({ alt, src }) => {
+            if (
+              /^data:image\/(?:avif|gif|heic|heif|jpeg|png|webp)[;,]/i.test(
+                src ?? "",
+              )
+            )
+              return <img alt={alt ?? ""} src={src} />;
+            const path = markdownImagePath(src ?? "");
+            if (!path || !inlineImageMediaType(path))
+              return <span>{alt ?? t`Attached image`}</span>;
             if (!src || !resolveImage || /^(?:https?:|data:|blob:)/i.test(src))
               return <img alt={alt ?? ""} src={src} />;
             return (
@@ -44,6 +54,7 @@ export function MarkdownPreview({
                 key={attachmentImageSource(src)}
                 resolveImage={resolveImage}
                 source={attachmentImageSource(src)}
+                path={path}
               />
             );
           },
@@ -59,10 +70,12 @@ function ResolvedMarkdownImage({
   alt,
   source,
   resolveImage,
+  path,
 }: {
   alt: string;
   source: string;
   resolveImage(source: string): Promise<Blob | null>;
+  path: string;
 }) {
   const { t } = useLingui();
   const [url, setUrl] = useState<string | null>(null);
@@ -78,7 +91,15 @@ function ResolvedMarkdownImage({
           setMissing(true);
           return;
         }
-        objectUrl = URL.createObjectURL(blob);
+        const mediaType = inlineImageMediaType(
+          path,
+          blob.type === "application/octet-stream" ? undefined : blob.type,
+        );
+        if (!mediaType) {
+          setFailed(true);
+          return;
+        }
+        objectUrl = URL.createObjectURL(new Blob([blob], { type: mediaType }));
         setFailed(false);
         setUrl(objectUrl);
       })
@@ -89,7 +110,7 @@ function ResolvedMarkdownImage({
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [resolveImage, source]);
+  }, [path, resolveImage, source]);
   if (url && !failed)
     return <img alt={alt} src={url} onError={() => setFailed(true)} />;
   return (
@@ -121,4 +142,16 @@ function attachmentImageSource(source: string): string {
   return source.startsWith(prefix)
     ? `[[${decodeURIComponent(source.slice(prefix.length))}]]`
     : `[image](${source})`;
+}
+
+function markdownImagePath(source: string): string | null {
+  if (/^(?:data:|blob:)/i.test(source)) return null;
+  const prefix = "/__tasknotes_attachment__/";
+  try {
+    return source.startsWith(prefix)
+      ? decodeURIComponent(source.slice(prefix.length))
+      : source.split(/[?#]/, 1)[0];
+  } catch {
+    return null;
+  }
 }

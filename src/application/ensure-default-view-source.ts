@@ -44,6 +44,14 @@ export function hasTaskNotesStarterViews(
   );
 }
 
+export function hasAllTaskNotesStarterViews(
+  documents: readonly TaskViewDocument[],
+): boolean {
+  return TASKNOTES_DEFAULT_VIEW_SOURCES.every((source) =>
+    hasSource(documents, source.path),
+  );
+}
+
 async function createMissingStarterSources(
   repository: TaskRepository,
   documents: TaskViewDocument[],

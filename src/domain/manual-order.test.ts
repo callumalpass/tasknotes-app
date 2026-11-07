@@ -5,6 +5,7 @@ import {
   disableManualOrderSort,
   enableManualOrderSort,
   isTaskNotesSortRank,
+  leadSortWith,
   manualOrderConfiguration,
   planManualOrder,
   sortTasksByManualOrder,
@@ -13,6 +14,19 @@ import {
 import type { Task } from "./task";
 
 describe("TaskNotes manual order", () => {
+  it("leads with a chosen sort, and reverses it when chosen again", () => {
+    const first = leadSortWith(
+      [{ property: "note.title", direction: "asc" }],
+      "note.priority",
+      "tasknotes_manual_order",
+    );
+    expect(first[0]).toEqual({ property: "note.priority", direction: "asc" });
+    expect(first[1]).toEqual({ property: "note.title", direction: "asc" });
+    expect(
+      leadSortWith(first, "note.priority", "tasknotes_manual_order")[0],
+    ).toEqual({ property: "note.priority", direction: "desc" });
+  });
+
   it("recognizes the configured TaskNotes field only as the primary sort", () => {
     expect(
       manualOrderConfiguration(

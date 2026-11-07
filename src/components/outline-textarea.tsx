@@ -1,5 +1,13 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode, TextareaHTMLAttributes } from "react";
+import { useLingui } from "@lingui/react/macro";
+import { Code2 } from "lucide-react";
+import {
+  editOutlineDisplay,
+  outlineReferences,
+} from "../domain/outline-references";
+import { outlineSelection, setOutlineSelection } from "./outline-selection";
+import "./outline-references.css";
 
 import { linkDisplayLabel } from "../domain/completion";
 
@@ -7,9 +15,28 @@ const WIKILINK = /\[\[[^\]\n]+\]\]/g;
 
 /** Wrap visually without introducing newlines into an outline node. */
 export function OutlineTextarea(
-  props: TextareaHTMLAttributes<HTMLTextAreaElement>,
+  props: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    onValueChange?(
+      text: string,
+      start: number,
+      end: number,
+      direction: "forward" | "backward" | "none",
+    ): void;
+  },
 ) {
+  const { t } = useLingui();
+  const { onValueChange, ...textareaProps } = props;
   const ref = useRef<HTMLTextAreaElement>(null);
+  const pendingCursor = useRef<number | null>(null);
+  const [raw, setRaw] = useState(false);
+  const source = typeof props.value === "string" ? props.value : "";
+  const display = outlineReferences(source).display;
+  const rich = !raw && display !== source;
+  useLayoutEffect(() => {
+    if (pendingCursor.current === null || !ref.current) return;
+    setOutlineSelection(ref.current, pendingCursor.current);
+    pendingCursor.current = null;
+  }, [source, raw]);
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -31,28 +58,62 @@ export function OutlineTextarea(
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [props.value]);
+  }, [props.value, raw]);
   const rendered =
     typeof props.value === "string" ? renderedLinks(props.value) : null;
-  // While unfocused, show link labels over the exact source; focusing the
-  // row reveals the stored wikilink text. The wrapper is constant so typing
-  // a link never remounts the focused textarea.
   return (
-    <span className="outline-text-shell">
+    <span className={`outline-text-shell${rich ? " is-rich-reference" : ""}`}>
       <textarea
-        {...props}
+        {...textareaProps}
+        data-outline-source={rich ? source : undefined}
+        value={rich ? display : props.value}
         className={
-          rendered
+          rendered && !raw
             ? `${props.className ?? ""} has-rendered-links`.trim()
             : props.className
         }
         rows={1}
         ref={ref}
+        onChange={(event) => {
+          if (!onValueChange) {
+            props.onChange?.(event);
+            return;
+          }
+          const input = event.currentTarget;
+          const edit = rich
+            ? editOutlineDisplay(source, input.value)
+            : { text: input.value, cursor: input.selectionStart };
+          if (rich) pendingCursor.current = edit.cursor;
+          onValueChange(
+            edit.text,
+            edit.cursor,
+            rich ? edit.cursor : input.selectionEnd,
+            input.selectionDirection,
+          );
+        }}
       />
-      {rendered ? (
+      {rendered && !raw ? (
         <span aria-hidden="true" className="outline-rendered-text">
           {rendered}
         </span>
+      ) : null}
+      {rendered ? (
+        <button
+          className="outline-source-toggle"
+          aria-label={t`Edit reference Markdown`}
+          aria-pressed={raw}
+          type="button"
+          onClick={() => {
+            if (ref.current)
+              pendingCursor.current = outlineSelection(ref.current);
+            setRaw(!raw);
+            requestAnimationFrame(() =>
+              ref.current?.focus({ preventScroll: true }),
+            );
+          }}
+        >
+          <Code2 aria-hidden="true" size={15} />
+        </button>
       ) : null}
     </span>
   );

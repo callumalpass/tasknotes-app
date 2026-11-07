@@ -6,13 +6,16 @@ test("Search offers recent searches and recently opened tasks", async ({
   await page.goto("search?demo=50");
   const search = page.getByRole("searchbox", { name: "Search tasks" });
   await expect(
-    page.getByRole("button", { name: "Field research" }),
+    page.getByRole("button", { name: "Field research", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Recent searches")).toHaveCount(0);
   await expect(page.getByText("Recently opened")).toHaveCount(0);
 
   await search.fill("planning");
-  const result = page.getByText("Prepare quarterly planning session");
+  const result = page.getByRole("button", {
+    name: "Prepare quarterly planning session",
+    exact: true,
+  });
   await expect(result).toBeVisible();
   await result.click();
   await expect(

@@ -160,7 +160,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
   ): Promise<Blob> {
     if (file.size > MAX_CONVENIENCE_BYTES)
       throw new Error(
-        "This file is too large to open here. Use streaming download.",
+        "This file is too large to open here. The download limit is 64 MiB.",
       );
     const reader = (await this.downloadStream(file, options)).getReader();
     const chunks: ArrayBuffer[] = [];

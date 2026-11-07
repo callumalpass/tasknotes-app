@@ -4,6 +4,7 @@ import { registerOverlay } from "../components/overlays/overlay-stack";
 import {
   announceShortcut,
   focusAdjacentTaskRow,
+  focusRestoredTaskRow,
   keyboardShortcutGroups,
   nextWeekStart,
   plainShortcutsSuspended,
@@ -15,6 +16,16 @@ import {
 
 afterEach(() => {
   document.body.innerHTML = "";
+});
+
+it("restores task focus after a delayed list refresh brings the row back", async () => {
+  const main = rows(["First", "Restored"]);
+  const restored = main.lastElementChild!;
+  restored.remove();
+  focusRestoredTaskRow("t1");
+  main.append(restored);
+  await Promise.resolve();
+  expect(document.activeElement).toBe(restored.querySelector("button"));
 });
 
 function keydown(key: string, init: KeyboardEventInit = {}, target?: Element) {
@@ -49,7 +60,8 @@ describe("plain shortcut guards", () => {
     expect(taskRowShortcut(keydown("m"))).toBe("tomorrow");
     expect(taskRowShortcut(keydown("w"))).toBe("next-week");
     expect(taskRowShortcut(keydown("X", { shiftKey: true }))).toBeNull();
-    expect(taskRowShortcut(keydown("d"))).toBeNull();
+    expect(taskRowShortcut(keydown("d"))).toBe("dates");
+    expect(taskRowShortcut(keydown("y"))).toBeNull();
     expect(taskRowShortcut(keydown("Delete"))).toBeNull();
   });
 
@@ -197,7 +209,7 @@ it("lists the global and row shortcuts, including new task and undo", () => {
     expect.arrayContaining([
       "Command palette",
       "New task",
-      "Undo a deleted task",
+      "Undo last action",
       "Keyboard shortcuts",
       "Next task",
       "Complete or reopen",

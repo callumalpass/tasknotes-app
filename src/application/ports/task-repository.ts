@@ -122,7 +122,11 @@ export interface TaskRepository {
   relationships(id: string): Promise<TaskRelationships>;
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
-  update(id: string, input: UpdateTaskInput): Promise<Task>;
+  update(
+    id: string,
+    input: UpdateTaskInput,
+    options?: { expectedRevision?: number },
+  ): Promise<Task>;
   /** Apply an exact calendar plan with normal authority/revision safeguards. */
   editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
   updateMany(
@@ -145,7 +149,19 @@ export interface TaskRepository {
   replaceTimeEntries(id: string, entries: TaskTimeEntry[]): Promise<Task>;
   removeTimeEntry(id: string, index: number): Promise<Task>;
   setArchived(id: string, archived: boolean): Promise<Task>;
-  delete(id: string, options?: { authorityRequestId?: string }): Promise<void>;
+  delete(
+    id: string,
+    options?: { authorityRequestId?: string; expectedRevision?: number },
+  ): Promise<void>;
+  /** Session metadata only; null until the existing index is complete. Never starts a read. */
+  todayTaskCounts?(
+    today: string,
+  ): import("../../domain/today-summary").TodayTaskCounts | null;
+  navigationTaskCounts?(
+    today: string,
+  ): { inbox: number; upcoming: number } | null;
+  /** Session metadata only, like todayTaskCounts. Never starts a read. */
+  projectShortcuts?(): import("../../domain/project-shortcuts").ProjectShortcut[];
   stats(): Promise<TaskStats>;
   /** Intent policy only, never evidence of READ readiness or write authority.
    * Explicit-only repositories must not seed view sources during navigation.
@@ -281,3 +297,5 @@ export interface RefreshResult {
 
 /** The repository cancelled deletion before creating or submitting a write. */
 export class TaskDeletionNotStartedError extends Error {}
+
+export class TaskRevisionChangedError extends Error {}

@@ -1,3 +1,5 @@
+import type { TaskNavigationTarget } from "./use-workspace-navigation";
+import { TaskSelectionList, SelectTasksOption } from "./task-selection";
 import { useLingui } from "@lingui/react/macro";
 import { countLabel } from "../i18n/default-labels";
 import { Trans } from "@lingui/react/macro";
@@ -38,10 +40,11 @@ export function SearchScreen({
   onOpen,
 }: {
   onBack?: () => void;
-  onOpen(task: TaskSummary): void;
+  onOpen(task: TaskSummary, order?: readonly TaskNavigationTarget[]): void;
 }) {
   const { t } = useLingui();
   const [query, setQuery] = useState("");
+  const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const [assignedToMe, setAssignedToMe] = useState(false);
   const people = usePeople(assignedToMe);
   const personPath =
@@ -65,7 +68,31 @@ export function SearchScreen({
     limit: peopleBlocked ? 0 : limit + 1,
     ...(personPath ? { assignedTo: personPath } : {}),
   });
-  const tasks = results.slice(0, limit).map((result) => result.task);
+  const searchKey = JSON.stringify([deferred, personPath ?? null]);
+  const [resultOrder, setResultOrder] = useState<{
+    key: string;
+    ids: string[];
+  }>({ key: searchKey, ids: [] });
+  const previousIds = resultOrder.key === searchKey ? resultOrder.ids : [];
+  const known = new Set(previousIds);
+  const added = results
+    .map(({ task }) => task.id)
+    .filter((id) => !known.has(id));
+  if (resultOrder.key !== searchKey || added.length) {
+    setResultOrder({ key: searchKey, ids: [...previousIds, ...added] });
+  }
+  const ranks = new Map(
+    resultOrder.key === searchKey
+      ? resultOrder.ids.map((id, index) => [id, index])
+      : [],
+  );
+  const tasks = results
+    .slice(0, limit)
+    .map((result) => result.task)
+    .sort(
+      (left, right) =>
+        (ranks.get(left.id) ?? Infinity) - (ranks.get(right.id) ?? Infinity),
+    );
   const bodyMatches = new Map(
     results.map((result) => [result.task.id, result.bodyMatches]),
   );
@@ -96,7 +123,10 @@ export function SearchScreen({
   );
   const openResult = (task: TaskSummary) => {
     if (deferred.trim()) rememberSearch(deferred);
-    onOpen(task);
+    onOpen(
+      task,
+      tasks.map((task) => ({ id: task.id })),
+    );
   };
   const renderTask = (task: TaskSummary) => (
     <TaskRow
@@ -136,6 +166,7 @@ export function SearchScreen({
             <Trans>Across this collection</Trans>
           </p>
         </div>
+        <SelectTasksOption />
       </header>
       <div className="search-field">
         <Search aria-hidden="true" size={19} strokeWidth={1.7} />
@@ -150,11 +181,39 @@ export function SearchScreen({
           autoCorrect="off"
           placeholder={t({ message: "Tasks, tags, projects" })}
           type="search"
+          aria-describedby={
+            tasks.length && searching && keyboardNavigation
+              ? "search-navigation-hint"
+              : undefined
+          }
           value={query}
           onChange={(event) => chooseQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.nativeEvent.isComposing)
+            if (["Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key))
+              setKeyboardNavigation(true);
+            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
               rememberSearch(query);
+              const first = document.querySelector<HTMLElement>(
+                ".search-results .task-row-title",
+              );
+              if (first) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
+            // Hands the keyboard back so shortcuts work again; the search stays.
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+            if (event.key === "ArrowDown") {
+              const first = document.querySelector<HTMLElement>(
+                "#main-content .task-row-title",
+              );
+              if (!first) return;
+              event.preventDefault();
+              first.focus();
+            }
           }}
         />
         {query ? (
@@ -263,17 +322,30 @@ export function SearchScreen({
               ? t({ message: "Refreshing results…" })
               : `${hasMore ? t`${tasks.length}+ tasks` : countLabel(tasks.length, "task")}${stale ? t({ message: " — previously loaded" }) : ""}`}
           </p>
-          <div className="task-list search-results">
-            {tasks.length > 100 ? (
-              <BoundedList
-                items={tasks}
-                getKey={(task) => task.id}
-                renderItem={renderTask}
-              />
-            ) : (
-              tasks.map(renderTask)
-            )}
-          </div>
+          <p
+            className={`search-navigation-hint${keyboardNavigation ? " is-keyboard-navigation" : ""}`}
+            id="search-navigation-hint"
+            role="status"
+          >
+            <Trans>
+              Enter or ↓ to focus the first result. j / k to move, Enter to
+              open.
+            </Trans>
+          </p>
+          <TaskSelectionList tasks={tasks}>
+            <div className="task-list search-results">
+              {tasks.length > 100 ? (
+                <BoundedList
+                  items={tasks}
+                  taskId={(task) => task.id}
+                  getKey={(task) => task.id}
+                  renderItem={renderTask}
+                />
+              ) : (
+                tasks.map(renderTask)
+              )}
+            </div>
+          </TaskSelectionList>
           {hasMore || refreshing ? (
             <button
               className="text-action view-pagination-action"

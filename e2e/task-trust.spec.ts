@@ -1,0 +1,92 @@
+import { expect, test } from "@playwright/test";
+
+test.skip(
+  ({ isMobile }) => isMobile,
+  "Row keys and selection need a keyboard.",
+);
+
+test("Undo of a completion puts the status back", async ({ page }) => {
+  await page.goto("?demo=60");
+  const row = page
+    .locator(".task-row")
+    .filter({ hasText: "Book the project room" });
+  await expect(row).toContainText("In progress");
+  await row.locator(".task-row-title").focus();
+  await page.keyboard.press("x");
+  await expect(row).toHaveCount(0);
+  await page.keyboard.press("Control+z");
+  await expect(row).toContainText("In progress");
+});
+
+test("bulk Pick date takes typing and asks before moving due dates", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  await page
+    .locator(".task-row")
+    .filter({ hasText: "Confirm next week" })
+    .locator(".task-row-title")
+    .focus();
+  await page.keyboard.press("v");
+  await page.keyboard.press("d");
+  await page.getByRole("option", { name: "Pick date" }).click();
+  await page.getByText("Date options", { exact: true }).click();
+  const field = page
+    .getByRole("dialog", { name: "Schedule date" })
+    .getByRole("textbox")
+    .first();
+  await field.focus();
+  await expect(field).toBeFocused();
+  await page.keyboard.type("nov 30");
+  await expect(field).toHaveValue("nov 30");
+  await expect(page.locator(".task-date-hint")).toContainText("Nov 30");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".bulk-update-notice")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Move due dates too", exact: true })
+    .click();
+  await expect(
+    page.getByText(/Scheduled 1 task for .* and moved 1 missed due date/),
+  ).toBeVisible();
+});
+
+test("a priority key returns focus to the row and names the change", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const title = page
+    .locator(".task-row")
+    .filter({ hasText: "Book the project room" })
+    .locator(".task-row-title");
+  await title.focus();
+  await page.keyboard.press("p");
+  await page.getByRole("menuitemradio", { name: "High" }).first().click();
+  await expect(title).toBeFocused();
+});
+
+test("Ctrl+A from blank page space selects the list", async ({ page }) => {
+  await page.goto("?demo=60");
+  await expect(page.locator(".task-row").first()).toBeVisible();
+  await page.mouse.click(1000, 40);
+  await page.keyboard.press("Control+a");
+  await expect(page.locator(".bulk-actions")).toContainText("selected");
+});
+
+test("Escape hands the keyboard back from Search and keeps a capture draft", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const capture = page.getByRole("combobox", { name: "New task title" });
+  await capture.fill("Half a thought");
+  await capture.press("Escape");
+  await expect(capture).not.toBeFocused();
+  await expect(capture).toHaveValue("Half a thought");
+  await page.keyboard.press("/");
+  const search = page.getByRole("searchbox", { name: "Search tasks" });
+  await expect(search).toBeFocused();
+  await search.press("Escape");
+  await expect(search).not.toBeFocused();
+  await page.keyboard.press("g");
+  await page.keyboard.press("u");
+  await expect(page).toHaveURL(/upcoming/);
+});

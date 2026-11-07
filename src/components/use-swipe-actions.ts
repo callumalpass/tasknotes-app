@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -19,9 +20,13 @@ export type SwipeDirection = "complete" | "actions";
 export function useSwipeActions({
   disabled,
   onSwipe,
+  onLongPress,
+  selectionActive,
 }: {
   disabled: boolean;
   onSwipe(direction: SwipeDirection): void;
+  onLongPress?: () => void;
+  selectionActive?: () => boolean;
 }) {
   const start = useRef<{
     id: number;
@@ -32,7 +37,20 @@ export function useSwipeActions({
   const suppressClick = useRef(false);
   const [offset, setOffset] = useState(0);
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+  };
+  useEffect(
+    () => () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    },
+    [],
+  );
+
   function reset() {
+    clearLongPress();
     start.current = null;
     setOffset(0);
   }
@@ -50,23 +68,39 @@ export function useSwipeActions({
         if (
           disabled ||
           event.pointerType !== "touch" ||
+          selectionActive?.() ||
           (event.target as HTMLElement).closest(
             ".kanban-board, button.manual-order-handle, input, textarea",
           )
         )
           return;
+        suppressClick.current = false;
         start.current = {
           id: event.pointerId,
           x: event.clientX,
           y: event.clientY,
           swiping: false,
         };
+        if (
+          onLongPress &&
+          !(event.target as HTMLElement).closest(
+            "button:not(.task-row-title), a, select, [contenteditable]",
+          )
+        ) {
+          clearLongPress();
+          longPressTimer.current = setTimeout(() => {
+            reset();
+            suppressClick.current = true;
+            onLongPress();
+          }, 500);
+        }
       },
       onPointerMove(event: ReactPointerEvent<HTMLElement>) {
         const current = start.current;
         if (!current || current.id !== event.pointerId) return;
         const dx = event.clientX - current.x;
         const dy = event.clientY - current.y;
+        if (Math.hypot(dx, dy) > DECIDE_DISTANCE) clearLongPress();
         if (!current.swiping) {
           if (Math.abs(dy) > DECIDE_DISTANCE) return reset();
           if (
@@ -85,7 +119,11 @@ export function useSwipeActions({
       },
       onPointerUp(event: ReactPointerEvent<HTMLElement>) {
         const current = start.current;
-        if (!current || current.id !== event.pointerId) return;
+        if (!current || current.id !== event.pointerId) {
+          if (suppressClick.current)
+            window.setTimeout(() => (suppressClick.current = false), 400);
+          return;
+        }
         const dx = event.clientX - current.x;
         const swiped = current.swiping;
         reset();
@@ -97,10 +135,31 @@ export function useSwipeActions({
         window.setTimeout(() => (suppressClick.current = false), 0);
       },
       onPointerCancel: reset,
+      onContextMenu(event: ReactMouseEvent<HTMLElement>) {
+        // Some touch browsers deliver contextmenu before the long-press timer.
+        // It belongs to the same selection gesture, not the row's action menu.
+        if (
+          onLongPress &&
+          start.current &&
+          !start.current.swiping &&
+          !(event.target as HTMLElement).closest(
+            "button:not(.task-row-title), a, input, textarea, select, [contenteditable]",
+          )
+        ) {
+          reset();
+          suppressClick.current = true;
+          onLongPress();
+        }
+        if (suppressClick.current) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
       onClickCapture(event: ReactMouseEvent<HTMLElement>) {
         if (!suppressClick.current) return;
         event.preventDefault();
         event.stopPropagation();
+        suppressClick.current = false;
       },
     },
   };

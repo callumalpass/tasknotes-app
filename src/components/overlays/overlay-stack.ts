@@ -41,7 +41,7 @@ function focusable(roots: HTMLElement[]) {
     ...new Set(
       roots.flatMap((root) => [
         ...root.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), [href], [tabindex]',
+          'button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), summary, [href], [tabindex]',
         ),
       ]),
     ),
@@ -222,6 +222,7 @@ export function registerOverlay(
     }
     if (wasTop && layer.restore)
       queueMicrotask(() => {
+        if (layers.some((current) => current.root === layer.root)) return;
         const target = layer.returnFocus;
         if (target?.isConnected && available(target))
           target.focus({ preventScroll: true });

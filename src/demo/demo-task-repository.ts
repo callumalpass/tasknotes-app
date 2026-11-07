@@ -1,3 +1,6 @@
+import { projectShortcuts } from "../domain/project-shortcuts";
+import { TaskRevisionChangedError } from "../application/ports/task-repository";
+import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -13,7 +16,7 @@ import {
 } from "@tasknotes/model/settings";
 import { parse } from "yaml";
 
-import { completeTaskValues } from "../storage/completions";
+import { completeTaskValues, usedValuesFirst } from "../storage/completions";
 import { appendViewPage } from "../application/view-query-session";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
@@ -39,6 +42,7 @@ import {
   taskNotesDefaultBaseSources,
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
+import { todayTaskContribution } from "../domain/today-summary";
 import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
@@ -131,7 +135,18 @@ export class DemoTaskRepository implements TaskRepository {
   private readonly scratchImages = new Map<string, ScratchImage>();
   private sourceRevision = 1;
 
-  constructor(requestedCount = 50) {
+  constructor(
+    requestedCount = 50,
+    adjustDefinition?: (
+      definition: Record<string, unknown>,
+    ) => Record<string, unknown>,
+  ) {
+    if (adjustDefinition) {
+      this.modelDefinition = adjustDefinition(this.modelDefinition);
+      this.model = new TaskNotesTaskModel(
+        resolveTaskCollectionConfiguration(this.modelDefinition),
+      );
+    }
     const count = Math.max(
       1,
       Math.min(
@@ -299,7 +314,7 @@ export class DemoTaskRepository implements TaskRepository {
     if (request.kind === "values")
       return completeTaskValues([...this.tasks.values()], request);
     const query = request.query?.trim().toLocaleLowerCase() ?? "";
-    return [...this.tasks.values()]
+    const records = [...this.tasks.values()]
       .filter(
         (task) =>
           !query ||
@@ -315,6 +330,7 @@ export class DemoTaskRepository implements TaskRepository {
         path: task.path,
         taskId: task.id,
       }));
+    return usedValuesFirst(this.tasks.values(), request, records);
   }
 
   async create(
@@ -338,8 +354,17 @@ export class DemoTaskRepository implements TaskRepository {
     return this.persist(this.model.editCalendar(this.requireTask(id), edit));
   }
 
-  async update(id: string, input: UpdateTaskInput): Promise<Task> {
+  async update(
+    id: string,
+    input: UpdateTaskInput,
+    options: { expectedRevision?: number } = {},
+  ): Promise<Task> {
     const current = this.requireTask(id);
+    if (
+      options.expectedRevision !== undefined &&
+      current.revision !== options.expectedRevision
+    )
+      throw new TaskRevisionChangedError("The task changed after creation.");
     const task = this.model.update(current, input, {
       now: new Date().toISOString(),
     });
@@ -498,8 +523,34 @@ export class DemoTaskRepository implements TaskRepository {
     return this.persist(destination ? { ...task, path: destination } : task);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(
+    id: string,
+    options: { expectedRevision?: number } = {},
+  ): Promise<void> {
+    if (
+      options.expectedRevision !== undefined &&
+      this.tasks.get(id)?.revision !== options.expectedRevision
+    )
+      throw new TaskRevisionChangedError("The task changed after creation.");
     if (this.tasks.delete(id)) this.changed();
+  }
+
+  todayTaskCounts(today: string) {
+    const counts = { total: 0, overdue: 0 };
+    for (const task of this.tasks.values()) {
+      const part = todayTaskContribution(task, today);
+      counts.total += part.total;
+      counts.overdue += part.overdue;
+    }
+    return counts;
+  }
+
+  projectShortcuts() {
+    return projectShortcuts(this.tasks.values());
+  }
+
+  navigationTaskCounts(today: string) {
+    return navigationTaskCounts(this.tasks.values(), today);
   }
 
   async stats(): Promise<TaskStats> {
@@ -573,6 +624,20 @@ export class DemoTaskRepository implements TaskRepository {
           }),
         )
       : [];
+    // Configured columns keep their order when a move empties or fills one.
+    const { fieldMapping, statuses, priorities } = this.model.configuration();
+    const configuredOrder = (
+      groupProperty === fieldMapping.status
+        ? statuses
+        : groupProperty === fieldMapping.priority
+          ? priorities
+          : []
+    ).map((option) => option.value as unknown);
+    const position = (value: unknown) => {
+      const index = configuredOrder.indexOf(value);
+      return index < 0 ? configuredOrder.length : index;
+    };
+    groupValues.sort((left, right) => position(left) - position(right));
     const execution: TaskViewExecution = {
       view,
       rows: clone(rows),
@@ -1090,6 +1155,12 @@ function demoViewDocuments(
       type: "tasknotes.task-list",
       options: { create: false },
     },
+    {
+      id: "inbox",
+      name: "Inbox",
+      type: "tasknotes.task-list",
+      options: {},
+    },
   ];
   const defaults = definitions.map((definition) => {
     const path = taskNotesViewSourcePath(definition.name);
@@ -1157,15 +1228,18 @@ function demoViewDocuments(
 function fallbackTasksForView(view: TaskView, tasks: Task[]): Task[] {
   const active = tasks.filter((task) => !task.archived && !task.completed);
   if (view.id === "archive") return tasks.filter((task) => task.archived);
+  if (view.id === "inbox")
+    return active.filter((task) => !task.scheduled && !task.due);
   if (view.id === "projects")
     return active.filter((task) => task.projects.length);
   if (view.id === "work-board") return tasks.filter((task) => !task.archived);
   if (view.id === "today") {
     const today = todayString();
-    return active.filter((task) => {
-      const value = task.scheduled ?? task.due;
-      return !value || value.slice(0, 10) <= today;
-    });
+    return active.filter((task) =>
+      [task.scheduled, task.due].some(
+        (value) => value && value.slice(0, 10) <= today,
+      ),
+    );
   }
   return active;
 }

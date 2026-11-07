@@ -15,7 +15,13 @@ import { materializedOccurrenceKeys } from "./task-occurrence";
 import { TaskNotesTaskModel } from "./tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { TaskSummary, TaskTimeEntry } from "./task";
+import {
+  taskDatePart,
+  taskDayStanding,
+  todayString,
+  type TaskSummary,
+  type TaskTimeEntry,
+} from "./task";
 import type { TaskOccurrence } from "./task-occurrence";
 import type { TaskViewExecution, TaskViewRow } from "./view";
 
@@ -106,6 +112,7 @@ export class AppCalendarEntryIndex {
     range: CalendarRange,
     identityTasks: readonly TaskSummary[],
     context: CalendarContext,
+    { showMissedRepeats = false }: { showMissedRepeats?: boolean } = {},
   ): Map<string, CalendarEntry[]> {
     const materializedOccurrences: Record<string, string[]> = {};
     for (const key of materializedOccurrenceKeys(identityTasks)) {
@@ -160,6 +167,7 @@ export class AppCalendarEntryIndex {
       rows,
       context.timezone,
       range,
+      showMissedRepeats ? todayString(new Date(context.now)) : undefined,
     );
   }
 
@@ -195,6 +203,7 @@ export function calendarEvents(
       ...context,
       settings: calendarSettings(execution, configuration, display),
     },
+    { showMissedRepeats: true },
   );
 }
 
@@ -207,9 +216,17 @@ function groupCalendarEntries(
   rows: Map<string, TaskViewRow>,
   timezone: string,
   range: CalendarRange,
+  today?: string,
 ): Map<string, CalendarEntry[]> {
   const result = new Map<string, CalendarEntry[]>();
-  for (const modelEntry of entries) {
+  const inRange =
+    today &&
+    today >= range.start.slice(0, 10) &&
+    today < range.end.slice(0, 10);
+  for (const modelEntry of [
+    ...entries,
+    ...(inRange ? missedRepeats(entries, rows, today) : []),
+  ]) {
     const row = rows.get(modelEntry.taskId);
     if (!row) continue;
     const entry: CalendarEntry = {
@@ -266,6 +283,51 @@ function groupCalendarEntries(
     }
   }
   return result;
+}
+
+/**
+ * The model leaves repeating tasks out of its overdue reading. Today lists a
+ * missed one, so Upcoming gets the same row, on the same terms as other
+ * overdue entries: drawn today and carrying the occurrence it stands for.
+ */
+function missedRepeats(
+  entries: ModelCalendarEntry[],
+  rows: Map<string, TaskViewRow>,
+  today: string,
+): ModelCalendarEntry[] {
+  const overdue = new Set(
+    entries
+      .filter((entry) => entry.isOverdueOnToday)
+      .map(({ taskId }) => taskId),
+  );
+  return [...rows].flatMap(([taskId, { task }]) => {
+    const instanceDate = taskDatePart(task.scheduled);
+    return task.recurrence &&
+      instanceDate &&
+      !task.completed &&
+      !task.archived &&
+      !overdue.has(taskId) &&
+      taskDayStanding(task, today) === "overdue"
+      ? [
+          {
+            id: `${taskId}-missed-repeat`,
+            taskId,
+            title: task.title,
+            type: "scheduled" as const,
+            start: today,
+            allDay: true,
+            durationMinutes: 1440,
+            isCompleted: false,
+            isSkipped: false,
+            isOverdueOnToday: true,
+            startEditable: false,
+            durationEditable: false,
+            editReason: "next-occurrence" as const,
+            instanceDate,
+          },
+        ]
+      : [];
+  });
 }
 
 function shiftCalendarDay(day: string, days: number): string {

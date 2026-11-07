@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { TaskNotesTaskModel } from "../../domain/tasknotes-model";
-import { kanbanRowValue, orderedKanbanColumns } from "./kanban-columns";
+import {
+  columnLabel,
+  kanbanRowValue,
+  orderedKanbanColumns,
+} from "./kanban-columns";
 
 // Pure provider-neutral helper fixtures; no DOM/native/authority proof.
 const task = new TaskNotesTaskModel().create(
@@ -43,6 +47,7 @@ describe("Kanban authoritative values and group order", () => {
     expect(
       kanbanRowValue({ ...row, values: { status: value } }, "status"),
     ).toBe(value);
+    expect(columnLabel(value)).toBe("No value");
   });
   it("uses supplied group order ahead of configured columns without reordering row arrays", () => {
     const columns = [

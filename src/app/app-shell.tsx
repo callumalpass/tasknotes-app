@@ -1,8 +1,12 @@
+import { TaskSelectionProvider } from "./task-selection";
 import { useLingui as useI18n } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
 import {
+  ClockAlert,
+  PanelLeftClose,
+  PanelLeftOpen,
   Columns3,
   Command,
   Ellipsis,
@@ -34,6 +38,21 @@ import {
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
 import {
+  onProjectJump,
+  requestProjectJump,
+  setFocusedProject,
+  useFocusedProject,
+} from "./project-jump";
+import { useProjectShortcuts } from "./use-project-shortcuts";
+import {
+  clearUndoHistory,
+  forgetUndo,
+  onUndoNotice,
+  rememberUndo,
+  takeUndo,
+  type UndoEntry,
+} from "./undo-history";
+import {
   TaskCompletionReportContext,
   type TaskCompletion,
 } from "../components/task-completion-motion";
@@ -62,8 +81,19 @@ import {
   type CollectionUiOptions,
 } from "@mdbase-dev/ui/collections";
 import { useCollectionGate } from "./collection-context";
+import { countLabel } from "../i18n/default-labels";
+import type { TodayTaskCounts } from "../domain/today-summary";
+import { useTodayTaskCounts } from "./use-today-task-counts";
+import { useNavigationTaskCounts } from "./use-navigation-task-counts";
+import {
+  readSidebarCollapsed,
+  saveSidebarCollapsed,
+} from "./sidebar-preferences";
+import { starterViewKind } from "../domain/default-view-source";
+import { viewNavigationShortcut } from "./palette-commands";
 import { KeyboardLayer } from "./keyboard-layer";
 import {
+  focusRestoredTaskRow,
   isApplePlatform,
   isEditableTarget,
   shortcutLabel,
@@ -88,12 +118,26 @@ import {
   type CalendarPreferences,
 } from "./calendar-preferences";
 
+import type { ProjectShortcut } from "../domain/project-shortcuts";
 import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
 
 export function AppShell() {
   const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
+  const todayCounts = useTodayTaskCounts();
+  const navigationCounts = useNavigationTaskCounts();
+  const projectLinks = useProjectShortcuts();
+  const [sidebarCollapsed, setSidebarCollapsed] =
+    useState(readSidebarCollapsed);
+  const toggleSidebar = useCallback(
+    () =>
+      setSidebarCollapsed((current) => {
+        saveSidebarCollapsed(!current);
+        return !current;
+      }),
+    [],
+  );
   const {
     repository,
     connection,
@@ -105,6 +149,7 @@ export function AppShell() {
     deletionError,
     undoTaskDeletion,
     retryTaskDeletion,
+    deleteTask,
     setTaskCompletion,
     updateTask,
   } = useRepository();
@@ -123,7 +168,7 @@ export function AppShell() {
     toggleNavigationView,
     moveNavigationView,
   } = useNavigationViews();
-  const { route, workspaceRoute, navigate, detailRef } =
+  const { route, workspaceRoute, navigate, detailRef, taskOrder } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [paletteRequest, setPaletteRequest] = useState(0);
@@ -159,14 +204,63 @@ export function AppShell() {
   useEffect(() => {
     routeRef.current = route;
   });
+  useEffect(
+    () =>
+      onProjectJump(() => {
+        const key = views?.find(
+          (view) => starterViewKind(view) === "projects",
+        )?.key;
+        const current = routeRef.current;
+        if (key && !(current.page === "views" && current.key === key))
+          navigate({ page: "views", key });
+      }),
+    [navigate, views],
+  );
+  const completionUndo = useRef<UndoEntry | undefined>(undefined);
+  const undoCompletion = useCallback(
+    async ({ task, occurrenceDate, advanced, completed }: TaskCompletion) => {
+      const origin = routeRef.current;
+      const reopened = await setTaskCompletion({
+        id: task.id,
+        occurrenceDate,
+        completed: completed === false,
+      });
+      const { status } = task;
+      if (advanced || reopened.status !== status)
+        await updateTask(task.id, {
+          ...advanced,
+          ...(reopened.status !== status ? { status } : {}),
+        });
+      setCompletedNotice(undefined);
+      if (routeRef.current === origin) focusRestoredTaskRow(task.id);
+    },
+    [setTaskCompletion, updateTask],
+  );
   const reportCompleted = useCallback(
     (completion: TaskCompletion) => {
       setAddedNotice(undefined);
       setCompletedNotice({ completion, repository, route: routeRef.current });
+      completionUndo.current = {
+        label: completion.task.title,
+        undoNotice:
+          completion.completed === false
+            ? translate`Completed “${completion.task.title}”`
+            : translate`Reopened “${completion.task.title}”`,
+        run: () => undoCompletion(completion),
+      };
+      rememberUndo(completionUndo.current);
     },
-    [repository],
+    [repository, undoCompletion],
   );
   const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
+  useEffect(
+    () =>
+      onUndoNotice(() => {
+        setAddedNotice(undefined);
+        setCompletedNotice(undefined);
+      }),
+    [],
+  );
   if (
     completedNotice &&
     (completedNotice.repository !== repository ||
@@ -283,11 +377,7 @@ export function AppShell() {
       workspacePage === "view" ||
       Boolean(workspacePage === "views" && workspaceViewKey));
   const showBottomNavigation =
-    route.page !== "task" &&
-    !(workspace.page === "home" && viewsLoading) &&
-    (workspacePage !== "views" ||
-      !workspaceViewKey ||
-      workspaceIsNavigationView);
+    route.page !== "task" && !(workspace.page === "home" && viewsLoading);
   const activePage =
     workspaceViewKey && workspaceIsNavigationView
       ? `view:${workspaceViewKey}`
@@ -308,20 +398,45 @@ export function AppShell() {
   );
   const shell = (
     <div
-      className={`app-shell${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
+      className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
       <a className="skip-link" href="#main-content">
         <Trans>Skip to content</Trans>
       </a>
       <aside className="navigation-rail" aria-label={t({ message: "Primary" })}>
-        <button
-          className="wordmark"
-          type="button"
-          onClick={() => navigate({ page: "home" })}
-        >
-          <img alt="" src={tasknotesMarkUrl} />
-          <span>TaskNotes</span>
-        </button>
+        <div className="rail-heading">
+          <button
+            aria-label="TaskNotes"
+            title="TaskNotes"
+            className="wordmark"
+            type="button"
+            onClick={() => navigate({ page: "home" })}
+          >
+            <img alt="" src={tasknotesMarkUrl} />
+            <span>TaskNotes</span>
+          </button>
+          <button
+            className="sidebar-toggle icon-action"
+            type="button"
+            aria-expanded={!sidebarCollapsed}
+            aria-label={
+              sidebarCollapsed
+                ? t({ message: "Expand sidebar" })
+                : t({ message: "Collapse sidebar" })
+            }
+            title={
+              sidebarCollapsed ? t`Expand sidebar (M)` : t`Collapse sidebar (M)`
+            }
+            aria-keyshortcuts="Shift+M"
+            onClick={toggleSidebar}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen aria-hidden="true" size={20} />
+            ) : (
+              <PanelLeftClose aria-hidden="true" size={20} />
+            )}
+          </button>
+        </div>
         {collectionUi ? (
           <CollectionSwitcher
             {...collectionUi}
@@ -334,7 +449,7 @@ export function AppShell() {
           aria-keyshortcuts="Control+N Meta+N"
           aria-label={t({ message: "New task" })}
           className="global-capture-navigation"
-          title={translate`New task (${shortcutLabel("N")})`}
+          title={translate`New task (Q / N / ${shortcutLabel("N")})`}
           type="button"
           onClick={() => setCaptureOpen(true)}
         >
@@ -348,6 +463,9 @@ export function AppShell() {
           active={activePage}
           homeKey={homeKey}
           onMove={moveNavigationView}
+          todayCounts={todayCounts}
+          navigationCounts={navigationCounts}
+          projects={projectLinks}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -375,7 +493,9 @@ export function AppShell() {
                 ? undefined
                 : () => navigate({ page: "home" }, true)
             }
-            onOpen={(task) => navigate({ page: "task", id: task.id })}
+            onOpen={(task, order) =>
+              navigate({ page: "task", id: task.id }, false, order)
+            }
           />
         ) : workspacePage === "scratchpad" ? (
           <ScratchpadScreen
@@ -397,6 +517,7 @@ export function AppShell() {
           <HomeViewLoading />
         ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
+            onManageViews={() => navigate({ page: "views" })}
             onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}
             documents={documents}
@@ -411,8 +532,8 @@ export function AppShell() {
                 true,
               )
             }
-            onOpenTask={(task, occurrence) =>
-              navigate({ page: "task", id: task.id, occurrence })
+            onOpenTask={(task, occurrence, order) =>
+              navigate({ page: "task", id: task.id, occurrence }, false, order)
             }
             onSearch={() =>
               navigate(
@@ -455,6 +576,10 @@ export function AppShell() {
           <TaskScreen
             id={route.id}
             occurrenceDate={route.occurrence}
+            taskOrder={taskOrder}
+            onNavigate={(target, order) =>
+              navigate({ page: "task", ...target }, true, order)
+            }
             onBack={() => {
               if (window.history.state?.taskPanel) window.history.back();
               else navigate(workspaceRoute, true);
@@ -493,6 +618,7 @@ export function AppShell() {
         navigate={navigate}
         navigationKeys={navigationKeys}
         newTask={openCapture}
+        toggleSidebar={toggleSidebar}
         paletteRequest={paletteRequest}
         route={route}
         views={views ?? []}
@@ -505,6 +631,7 @@ export function AppShell() {
       />
       <TaskAddedNotice
         repository={repository}
+        onUndo={(task) => deleteTask(task.id)}
         task={!pendingDeletion && !deletionError ? addedTask : undefined}
         onDismiss={() => setAddedNotice(undefined)}
         onOpen={(task) => navigate({ page: "task", id: task.id })}
@@ -513,6 +640,15 @@ export function AppShell() {
           (showBottomNavigation || showGlobalCaptureFab)
         }
       />
+      <UndoFeedback
+        aboveMobileControls={
+          route.page !== "task" &&
+          (showBottomNavigation || showGlobalCaptureFab)
+        }
+        hidden={Boolean(addedTask || completedNotice)}
+        paused={Boolean(pendingDeletion)}
+        repository={repository}
+      />
       <TaskCompletedNotice
         completion={completedNotice?.completion}
         aboveMobileControls={
@@ -520,13 +656,9 @@ export function AppShell() {
           (showBottomNavigation || showGlobalCaptureFab)
         }
         onDismiss={dismissCompleted}
-        onUndo={async ({ task, occurrenceDate, advanced }) => {
-          await setTaskCompletion({
-            id: task.id,
-            occurrenceDate,
-            completed: false,
-          });
-          if (advanced) await updateTask(task.id, advanced);
+        onUndo={async (completion) => {
+          await undoCompletion(completion);
+          if (completionUndo.current) forgetUndo(completionUndo.current);
         }}
       />
       <FeedbackNotice>
@@ -565,7 +697,9 @@ export function AppShell() {
         }}
       >
         <TaskCompletionReportContext.Provider value={reportCompleted}>
-          {shell}
+          <TaskSelectionProvider navigationKey={JSON.stringify(route)}>
+            {shell}
+          </TaskSelectionProvider>
         </TaskCompletionReportContext.Provider>
       </CollectionWriteStatus>
     </WorkspaceFeedback>
@@ -667,6 +801,178 @@ function EmptyViewsNotice({
   );
 }
 
+function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
+  const { t } = useLingui();
+  const focused = useFocusedProject();
+  const tooltipId = useId();
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    text: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  if (!projects.length) return null;
+  return (
+    <div
+      aria-label={t`Busiest projects`}
+      className="navigation-project-section"
+      role="group"
+    >
+      {projects.map(({ label, count }) => {
+        const accessibleLabel = t`${label}, ${countLabel(count, "task")}`;
+        const words = label.trim().split(/\s+/u);
+        const monogram = (
+          words.length > 1
+            ? words
+                .slice(0, 2)
+                .map((word) => Array.from(word)[0])
+                .join("")
+            : Array.from(label.trim()).slice(0, 2).join("")
+        ).toLocaleUpperCase();
+        const showTooltip = (button: HTMLButtonElement) => {
+          const bounds = button.getBoundingClientRect();
+          setTooltip({
+            label,
+            text: accessibleLabel,
+            left: bounds.right + 8,
+            top: bounds.top + bounds.height / 2,
+          });
+        };
+        return (
+          <button
+            aria-label={accessibleLabel}
+            aria-describedby={tooltip?.label === label ? tooltipId : undefined}
+            aria-current={focused === label ? "page" : undefined}
+            className={focused === label ? "is-active" : undefined}
+            key={label}
+            type="button"
+            onFocus={(event) => showTooltip(event.currentTarget)}
+            onBlur={() => setTooltip(null)}
+            onMouseEnter={(event) => showTooltip(event.currentTarget)}
+            onMouseLeave={(event) => {
+              if (document.activeElement !== event.currentTarget)
+                setTooltip(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setTooltip(null);
+            }}
+            onClick={() => requestProjectJump(label)}
+          >
+            <strong aria-hidden="true" className="project-monogram">
+              {monogram}
+            </strong>
+            <span>{label}</span>
+            <small aria-hidden="true">{count}</small>
+          </button>
+        );
+      })}
+      {tooltip
+        ? createPortal(
+            <div
+              className="project-shortcut-tooltip"
+              id={tooltipId}
+              role="tooltip"
+              style={{ left: tooltip.left, top: tooltip.top }}
+            >
+              {tooltip.text}
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+const UNDO_NOTICE_MS = 10000;
+
+/** Confirms a quiet edit with Undo; Ctrl or Cmd+Z reverses it at any time. */
+function UndoFeedback({
+  aboveMobileControls,
+  hidden,
+  paused,
+  repository,
+}: {
+  aboveMobileControls: boolean;
+  hidden: boolean;
+  paused: boolean;
+  repository: unknown;
+}) {
+  const { t } = useLingui();
+  const [notice, setNotice] = useState<{
+    message: string;
+    entry?: UndoEntry;
+  }>();
+  useEffect(() => clearUndoHistory, [repository]);
+  useEffect(
+    () =>
+      onUndoNotice((entry) =>
+        setNotice({ message: entry.notice ?? entry.label, entry }),
+      ),
+    [],
+  );
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(undefined), UNDO_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  const undo = useCallback(
+    (entry: UndoEntry) => {
+      const { label } = entry;
+      void entry.run().then(
+        () =>
+          setNotice({
+            message: entry.undoNotice ?? t`Undid change to “${label}”`,
+          }),
+        () => setNotice({ message: t`Couldn’t undo. Try again.` }),
+      );
+    },
+    [t],
+  );
+  useEffect(() => {
+    if (paused) return;
+    const undoShortcut = (event: KeyboardEvent) => {
+      if (
+        event.key.toLocaleLowerCase() !== "z" ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.shiftKey ||
+        event.defaultPrevented ||
+        isEditableTarget(event.target)
+      )
+        return;
+      const entry = takeUndo();
+      if (!entry) return;
+      event.preventDefault();
+      undo(entry);
+    };
+    window.addEventListener("keydown", undoShortcut);
+    return () => window.removeEventListener("keydown", undoShortcut);
+  }, [paused, undo]);
+  if (!notice || hidden) return null;
+  const { entry, message } = notice;
+  return (
+    <FeedbackNotice>
+      <div
+        className={`undo-toast${aboveMobileControls ? " is-above-mobile-controls" : ""}`}
+        role="status"
+      >
+        <span>{message}</span>
+        {entry ? (
+          <button
+            type="button"
+            onClick={() => {
+              forgetUndo(entry);
+              undo(entry);
+            }}
+          >
+            {t`Undo`}
+          </button>
+        ) : null}
+      </div>
+    </FeedbackNotice>
+  );
+}
+
 export function DeletionFeedback({
   aboveMobileControls = false,
   error,
@@ -679,6 +985,7 @@ export function DeletionFeedback({
   pendingDeletion: {
     id: string;
     title: string;
+    ids?: string[];
     outcomeUnknown?: boolean;
   } | null;
   onRetry(): Promise<void>;
@@ -719,10 +1026,16 @@ export function DeletionFeedback({
   return (
     <>
       <p aria-atomic="true" className="visually-hidden" role="status">
-        {t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
+        {pendingDeletion.ids && pendingDeletion.ids.length > 1
+          ? t`${pendingDeletion.ids.length} tasks scheduled for deletion. Undo is available for 30 seconds.`
+          : t`Deleted “${pendingDeletion.title}”. Undo is available for 30 seconds.`}
       </p>
       <div className={`undo-toast${positionClass}`}>
-        <span>{t`Deleted “${pendingDeletion.title}”`}</span>
+        <span>
+          {pendingDeletion.ids && pendingDeletion.ids.length > 1
+            ? t`${pendingDeletion.ids.length} tasks scheduled for deletion`
+            : t`Deleted “${pendingDeletion.title}”`}
+        </span>
         <button
           aria-keyshortcuts="Control+Z Meta+Z"
           type="button"
@@ -952,6 +1265,9 @@ export function Navigation({
   onNavigate,
   onMove,
   onCommands,
+  todayCounts,
+  navigationCounts,
+  projects = [],
 }: {
   active: string;
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
@@ -963,6 +1279,9 @@ export function Navigation({
   onNavigate(route: Route): void;
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
+  todayCounts?: TodayTaskCounts | null;
+  navigationCounts?: { inbox: number; upcoming: number } | null;
+  projects?: ProjectShortcut[];
 }) {
   const { t } = useLingui();
   const navigationEntries: {
@@ -971,10 +1290,14 @@ export function Navigation({
     label: string;
     icon: LucideIcon;
     route: Route;
+    shortcut?: string;
+    today?: boolean;
+    kind?: ReturnType<typeof starterViewKind>;
   }[] = [];
   for (const key of navigationKeys) {
     if (key === SCRATCHPAD_NAVIGATION_KEY) {
       navigationEntries.push({
+        shortcut: "g s",
         key: "scratchpad",
         navigationKey: key,
         label: t({ message: "Scratchpad" }),
@@ -985,6 +1308,7 @@ export function Navigation({
     }
     if (key === SEARCH_NAVIGATION_KEY) {
       navigationEntries.push({
+        shortcut: "/",
         key: "search",
         navigationKey: key,
         label: t({ message: "Search" }),
@@ -996,6 +1320,9 @@ export function Navigation({
     const view = views.find((candidate) => candidate.key === key);
     if (view)
       navigationEntries.push({
+        shortcut: viewNavigationShortcut(view),
+        today: starterViewKind(view) === "today",
+        kind: starterViewKind(view),
         key: `view:${view.key}`,
         navigationKey: key,
         label: view.name,
@@ -1086,48 +1413,83 @@ export function Navigation({
     onNavigate(route);
   }
 
+  function renderDestination(entry: (typeof navigationEntries)[number]) {
+    const {
+      key,
+      navigationKey,
+      label,
+      icon: Icon,
+      route,
+      shortcut,
+      today,
+    } = entry;
+    const countKind = entry.kind;
+    const counts =
+      mode !== "desktop"
+        ? null
+        : today
+          ? todayCounts
+          : navigationCounts &&
+              (countKind === "inbox" || countKind === "upcoming")
+            ? { total: navigationCounts[countKind], overdue: 0 }
+            : null;
+    const accessibleLabel = counts
+      ? counts.overdue
+        ? t`${label}, ${countLabel(counts.total, "task")}, ${counts.overdue} overdue`
+        : t`${label}, ${countLabel(counts.total, "task")}`
+      : label;
+    return (
+      <button
+        {...reorder.itemProps(navigationKey, label)}
+        aria-label={accessibleLabel}
+        aria-current={active === key ? "page" : undefined}
+        className={active === key ? "is-active" : undefined}
+        key={key}
+        title={
+          mode === "desktop"
+            ? shortcut
+              ? `${accessibleLabel} (${shortcut})`
+              : accessibleLabel
+            : undefined
+        }
+        type="button"
+        onClick={() => {
+          setFocusedProject(null);
+          onNavigate(route);
+        }}
+      >
+        <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
+        <span>{label}</span>
+        {mode === "desktop" && (today || counts) ? (
+          <small
+            aria-hidden="true"
+            className={`navigation-count${counts ? "" : " is-unknown"}`}
+          >
+            {counts?.overdue ? <ClockAlert size={13} /> : null}
+            {counts?.total ?? "0"}
+          </small>
+        ) : null}
+      </button>
+    );
+  }
+
   return (
     <>
-      {items.map(({ key, navigationKey, label, icon: Icon, route }) => (
-        <button
-          {...reorder.itemProps(navigationKey, label)}
-          aria-current={active === key ? "page" : undefined}
-          className={active === key ? "is-active" : undefined}
-          key={key}
-          title={mode === "desktop" ? label : undefined}
-          type="button"
-          onClick={() => onNavigate(route)}
-        >
-          <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-          <span>{label}</span>
-        </button>
-      ))}
       {mode === "desktop" ? (
-        <div
-          aria-label={t({ message: "Views" })}
-          className="navigation-view-section"
-          role="group"
-        >
-          {additionalViews.map((view) => {
-            const Icon = view.icon;
-            return (
-              <button
-                {...reorder.itemProps(view.navigationKey, view.label)}
-                aria-current={active === view.key ? "page" : undefined}
-                className={active === view.key ? "is-active" : undefined}
-                key={view.key}
-                title={view.label}
-                type="button"
-                onClick={() => onNavigate(view.route)}
-              >
-                <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-                <span>{view.label}</span>
-              </button>
-            );
-          })}
+        <div className="navigation-destinations">
+          {items.map(renderDestination)}
+          <div
+            aria-label={t({ message: "Views" })}
+            className="navigation-view-section"
+            role="group"
+          >
+            {additionalViews.map(renderDestination)}
+          </div>
+          <SidebarProjects projects={projects} />
         </div>
       ) : (
         <>
+          {items.map(renderDestination)}
           <button
             aria-controls={menuPosition ? menuId : undefined}
             aria-current={
@@ -1203,7 +1565,7 @@ export function Navigation({
                   >
                     <Columns3 aria-hidden="true" size={19} strokeWidth={1.7} />
                     <span>
-                      <Trans>Manage views</Trans>
+                      <Trans>Views</Trans>
                     </span>
                   </button>
                   <button
@@ -1233,35 +1595,44 @@ export function Navigation({
           className="navigation-utility"
           role="group"
         >
-          {onCommands ? (
-            <button
-              aria-keyshortcuts="Control+K Meta+K"
-              className="navigation-commands"
-              title={translate`Commands (${shortcutLabel("K")})`}
-              type="button"
-              onClick={onCommands}
-            >
-              <Command aria-hidden="true" size={20} strokeWidth={1.7} />
-              <span>
-                <Trans>Commands</Trans>
-              </span>
-              {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
-            </button>
-          ) : null}
           <button
             aria-current={active === "views" ? "page" : undefined}
-            className={active === "views" ? "is-active" : undefined}
+            className={
+              active === "views"
+                ? "navigation-views is-active"
+                : "navigation-views"
+            }
+            aria-label={t({ message: "Views" })}
+            title={t({ message: "Views" })}
             type="button"
             onClick={() => onNavigate({ page: "views" })}
           >
             <Columns3 aria-hidden="true" size={20} strokeWidth={1.7} />
             <span>
-              <Trans>Manage views</Trans>
+              <Trans>Views</Trans>
             </span>
           </button>
+          {onCommands ? (
+            <button
+              aria-label={t({ message: "Quick actions" })}
+              aria-keyshortcuts="Control+K Meta+K"
+              className="navigation-commands"
+              title={translate`Quick actions (${shortcutLabel("K")})`}
+              type="button"
+              onClick={onCommands}
+            >
+              <Command aria-hidden="true" size={20} strokeWidth={1.7} />
+              <span>
+                <Trans>Quick actions</Trans>
+              </span>
+              {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
+            </button>
+          ) : null}
           <button
             aria-current={active === "more" ? "page" : undefined}
             className={active === "more" ? "is-active" : undefined}
+            aria-label={t({ message: "Settings" })}
+            title={t({ message: "Settings" })}
             type="button"
             onClick={() => onNavigate({ page: "more" })}
           >

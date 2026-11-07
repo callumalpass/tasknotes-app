@@ -1,3 +1,6 @@
+import { projectShortcuts } from "../domain/project-shortcuts";
+import { materializeDefaultViewOrder } from "../domain/view-document";
+import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -25,7 +28,10 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
-import { TaskDeletionNotStartedError } from "../application/ports/task-repository";
+import {
+  TaskDeletionNotStartedError,
+  TaskRevisionChangedError,
+} from "../application/ports/task-repository";
 import type {
   TaskRepository,
   TaskCreateIntent,
@@ -158,6 +164,7 @@ import {
   completeTaskValues,
   completeRecords,
   completionLimit,
+  usedValuesFirst,
 } from "./completions";
 
 function createRecordOp(
@@ -718,6 +725,7 @@ export class NextTaskRepository implements TaskRepository {
           this.cache.set(id, value);
         }
       this.indexReady = true;
+      if (!this.hasLoadedIndex) this.emit("status");
       this.hasLoadedIndex = true;
       this.reached();
     })().finally(() => {
@@ -1844,7 +1852,7 @@ export class NextTaskRepository implements TaskRepository {
             }
           : {}),
         limit: Math.max(completionLimit(request) * 4, 48),
-        order_by: ["file.path"],
+        order_by: [{ field: "file.path", direction: "asc" }],
       },
       { effective: true },
       signal,
@@ -1856,16 +1864,20 @@ export class NextTaskRepository implements TaskRepository {
       frontmatter: plainFields(r.effective ?? r.frontmatter),
       types: r.types,
     }));
-    return completeRecords(
-      records,
+    return usedValuesFirst(
+      [...this.cache.values()].map((r) => r.task),
       request,
-      this.providers[0]!.model.config.linkWriteFormat,
-    ).map((completion) => {
-      const task = completion.path
-        ? this.cache.atPath(completion.path)?.task
-        : undefined;
-      return task ? { ...completion, taskId: task.id } : completion;
-    });
+      completeRecords(
+        records,
+        request,
+        this.providers[0]!.model.config.linkWriteFormat,
+      ).map((completion) => {
+        const task = completion.path
+          ? this.cache.atPath(completion.path)?.task
+          : undefined;
+        return task ? { ...completion, taskId: task.id } : completion;
+      }),
+    );
   }
 
   async create(
@@ -2150,12 +2162,31 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
-  update(id: string, input: UpdateTaskInput) {
+  update(
+    id: string,
+    input: UpdateTaskInput,
+    options: { expectedRevision?: number } = {},
+  ) {
     return this.mutateTask(
       id,
-      JSON.stringify(["task:update", id, input]),
-      (task, model) =>
-        model.update(task, input, { now: new Date().toISOString() }),
+      JSON.stringify([
+        "task:update",
+        id,
+        input,
+        ...(options.expectedRevision === undefined
+          ? []
+          : [options.expectedRevision]),
+      ]),
+      (task, model) => {
+        if (
+          options.expectedRevision !== undefined &&
+          task.revision !== options.expectedRevision
+        )
+          throw new TaskRevisionChangedError(
+            "The task changed after creation.",
+          );
+        return model.update(task, input, { now: new Date().toISOString() });
+      },
     );
   }
   async updateMany(updates: readonly { id: string; input: UpdateTaskInput }[]) {
@@ -2505,7 +2536,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   async delete(
     id: string,
-    options: { authorityRequestId?: string } = {},
+    options: { authorityRequestId?: string; expectedRevision?: number } = {},
   ): Promise<void> {
     const owner = this.scope.signal;
     try {
@@ -2542,6 +2573,13 @@ export class NextTaskRepository implements TaskRepository {
         requestId: options.authorityRequestId,
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
+          if (
+            options.expectedRevision !== undefined &&
+            current.task.revision !== options.expectedRevision
+          )
+            throw new TaskRevisionChangedError(
+              "The task changed after creation.",
+            );
           recordId = current.record.id;
           return () =>
             this.client.delete(current.record, {
@@ -2569,6 +2607,25 @@ export class NextTaskRepository implements TaskRepository {
       },
       this.scope.signal,
     );
+  }
+
+  todayTaskCounts(today: string) {
+    return this.indexReady ? this.cache.todayCounts(today) : null;
+  }
+
+  projectShortcuts() {
+    return this.indexReady
+      ? projectShortcuts([...this.cache.values()].map(({ task }) => task))
+      : [];
+  }
+
+  navigationTaskCounts(today: string) {
+    return this.indexReady
+      ? navigationTaskCounts(
+          [...this.cache.values()].map(({ task }) => task),
+          today,
+        )
+      : null;
   }
 
   async stats() {
@@ -2895,6 +2952,7 @@ export class NextTaskRepository implements TaskRepository {
     view: TaskView,
     signal: AbortSignal,
     window?: AppBasesWindow,
+    repairDefaults = true,
   ): Promise<TaskViewExecution> {
     return this.readCurrentGeneration(signal, async () => {
       await this.initializeModel(signal);
@@ -2931,7 +2989,43 @@ export class NextTaskRepository implements TaskRepository {
         },
         signal,
       );
-      if (result.kind === "refusal") throw new MdbaseError(result.problem);
+      if (result.kind === "refusal") {
+        if (
+          repairDefaults &&
+          result.problem.reason === "view_unsupported_construct" &&
+          result.problem.message === "base_display_order_missing" &&
+          view.presentation?.type.startsWith("tasknotes.") &&
+          this.hasViewSourceGrant("records.edit") &&
+          view.declaration
+        ) {
+          const document = materializeDefaultViewOrder(
+            {
+              ...view.source,
+              recordId: descriptor.record,
+              format: "obsidian.base",
+              document: selected.source,
+            },
+            view.declaration,
+          );
+          if (document !== null) {
+            await this.updateViewSource(
+              {
+                path: descriptor.path,
+                document,
+                ifRevision: descriptor.sourceRevision,
+              },
+              true,
+            );
+            const documents = await this.discoverNativeViews(signal);
+            const refreshed = documents
+              .flatMap((document) => document.views)
+              .find((candidate) => candidate.key === view.key);
+            if (refreshed)
+              return this.executeNativeView(refreshed, signal, window, false);
+          }
+        }
+        throw new MdbaseError(result.problem);
+      }
       if (
         result.view.record !== descriptor.record ||
         result.view.sourceRevision !== descriptor.sourceRevision ||
@@ -3108,6 +3202,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   async updateViewSource(
     input: UpdateTaskViewSourceInput,
+    waitForConfirmation = false,
   ): Promise<TaskViewSourceDocument> {
     let target: wire.RecordView | undefined;
     const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
@@ -3178,18 +3273,26 @@ export class NextTaskRepository implements TaskRepository {
               include: { document: true, body: true },
             });
         },
-        local: async (receipt, signal) => {
-          const source = await read(receipt, signal);
-          if (source.document !== input.document)
-            throw new Error(
-              "The native source capture did not retain the submitted document.",
-            );
-          this.forgetNativeSource(source.recordId!);
-          return source;
-        },
+        ...(waitForConfirmation
+          ? {}
+          : {
+              local: async (receipt: wire.Receipt, signal: AbortSignal) => {
+                const source = await read(receipt, signal);
+                if (source.document !== input.document)
+                  throw new Error(
+                    "The native source capture did not retain the submitted document.",
+                  );
+                this.forgetNativeSource(source.recordId!);
+                return source;
+              },
+            }),
         // A late ACK reads the CURRENT layer, never relabels the earlier
         // receipt's document or overwrites a newer pending source edit.
-        confirmed: read,
+        confirmed: async (receipt, signal) => {
+          const source = await read(receipt, signal);
+          if (waitForConfirmation) this.forgetNativeSource(source.recordId!);
+          return source;
+        },
       },
       this.scope.signal,
     );

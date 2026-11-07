@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { fireEvent, render, screen, waitFor } from "../test/render";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
@@ -11,6 +11,7 @@ import { nextTaskFixture } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 import { TaskActions } from "./task-actions";
+import { clearUndoHistory, onUndoNotice, takeUndo } from "../app/undo-history";
 
 import type { Task } from "../domain/task";
 
@@ -42,6 +43,26 @@ describe("TaskActions", () => {
       }),
     );
   }
+
+  it("mounts quick-action tooltips outside the scrolling menu only while active", async () => {
+    task = await repository.update(task.id, { scheduled: todayString() });
+    renderRow();
+    await openMenu();
+    const action = screen.getByRole("menuitem", {
+      name: "Clear scheduled date",
+    });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.mouseEnter(action);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.parentElement).toBe(document.body);
+    expect(tooltip).toHaveTextContent("Clear scheduled date");
+    fireEvent.mouseLeave(action);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.focus(action);
+    expect(screen.getByRole("tooltip")).toBeVisible();
+    fireEvent.blur(action);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
 
   it("copies the task's wikilink and path from the Copy submenu", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -100,7 +121,9 @@ describe("TaskActions", () => {
 
     await openMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Due tomorrow" }));
+    fireEvent.click(screen.getByText("Date options"));
+    fireEvent.click(screen.getByRole("radio", { name: "Due" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tomorrow" }));
 
     await waitFor(async () =>
       expect(await repository.get(task.id)).toMatchObject({
@@ -133,6 +156,9 @@ describe("TaskActions", () => {
   });
 
   it("edits a displayed property without opening the task", async () => {
+    clearUndoHistory();
+    const notice = vi.fn();
+    const unsubscribe = onUndoNotice(notice);
     task = await repository.update(task.id, { priority: "high" });
     const onOpen = vi.fn();
     render(
@@ -144,16 +170,13 @@ describe("TaskActions", () => {
       </RepositoryProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "high" }));
+    fireEvent.click(screen.getByRole("button", { name: "Priority: High" }));
     const editor = screen.getByRole("dialog", { name: "Edit Priority" });
     expect(editor).toBeVisible();
     expect(editor).not.toHaveAttribute("aria-modal");
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Close property editor" }),
-      ).toHaveFocus(),
+      expect(screen.getByRole("option", { name: "High" })).toHaveFocus(),
     );
-    fireEvent.click(screen.getByRole("combobox", { name: "Priority" }));
     fireEvent.click(screen.getByRole("option", { name: "Low" }));
 
     await waitFor(async () =>
@@ -163,13 +186,20 @@ describe("TaskActions", () => {
       screen.queryByRole("dialog", { name: "Edit Priority" }),
     ).not.toBeInTheDocument();
     expect(onOpen).not.toHaveBeenCalled();
+    expect(notice).toHaveBeenCalledOnce();
+    await act(async () => {
+      await takeUndo()!.run();
+    });
+    expect(await repository.get(task.id)).toMatchObject({ priority: "high" });
+    unsubscribe();
+    clearUndoHistory();
   });
 
   it("persists date choices without an apply step", async () => {
     task = await repository.update(task.id, { due: "2030-08-05" });
     renderRow();
 
-    fireEvent.click(screen.getByRole("button", { name: /Due .*Aug 5/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Due: .*Aug 5/ }));
     fireEvent.click(screen.getByRole("button", { name: "Due date" }));
     fireEvent.click(screen.getByRole("gridcell", { name: /August 6, 2030/ }));
 
@@ -258,6 +288,14 @@ describe("TaskActions", () => {
 
     expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
     expect(screen.getByRole("menuitem", { name: "Dates" })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "Home" });
+    expect(
+      screen.getByRole("menuitem", { name: "Schedule today" }),
+    ).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "ArrowRight" });
+    expect(
+      screen.getByRole("menuitem", { name: "Schedule tomorrow" }),
+    ).toHaveFocus();
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByText("Status", { selector: "strong" })).toBeVisible();
     fireEvent.keyDown(menu, { key: "ArrowLeft" });
@@ -281,6 +319,38 @@ describe("TaskActions", () => {
     ).not.toBeInTheDocument();
     expect(confirmation).toHaveAttribute("aria-modal", "true");
     expect(confirmation).toBeVisible();
+  });
+
+  it("opens touch Dates at the top with focus on its own heading", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("coarse") || query.includes("max-width"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    try {
+      renderRow();
+      await openMenu();
+      const menu = screen.getByRole("dialog");
+      const body = menu.querySelector<HTMLElement>(".task-actions-items")!;
+      menu.scrollTop = 228;
+      body.scrollTop = 228;
+      fireEvent.click(screen.getByRole("menuitem", { name: /Dates/ }));
+      const heading = screen.getByText("Dates", { selector: "strong" });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(menu.scrollTop).toBe(0);
+      expect(body.scrollTop).toBe(0);
+      expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Back to previous actions" }),
+      ).toBeVisible();
+      fireEvent.keyDown(heading, { key: "Escape" });
+      await waitFor(() =>
+        expect(screen.getByRole("menuitem", { name: /Dates/ })).toBeVisible(),
+      );
+      expect(body.scrollTop).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("keeps occurrence actions separate from series-wide changes", async () => {

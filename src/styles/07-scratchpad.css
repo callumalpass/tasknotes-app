@@ -13,7 +13,7 @@ html.scratchpad-route .page-surface {
 
 /* Scratchpad: the Markdown outline is the surface, not a stack of cards. */
 .scratchpad-screen {
-  --scratch-indent: 24px;
+  --scratch-indent: 16px;
   --scratch-feed-width: 980px;
   position: relative;
   display: flex;
@@ -329,21 +329,28 @@ html.scratchpad-route .page-surface {
 .scratchpad-title-row {
   display: flex;
   min-height: 46px;
-  align-items: center;
+  align-items: baseline;
   gap: 16px;
 }
 
 .scratchpad-title-row input {
   min-width: 0;
+  min-height: 44px;
   flex: 1;
   padding: 8px 0;
   color: var(--ink);
   font: inherit;
-  font-size: 1.03rem;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
   border: 0;
   outline: 0;
   background: transparent;
+}
+
+.scratchpad-title-row input.is-empty {
+  font-size: 16px;
+  font-weight: 400;
 }
 
 .scratchpad-title-row input::placeholder {
@@ -354,7 +361,8 @@ html.scratchpad-route .page-surface {
 .scratchpad-title-meta {
   display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: 9px;
 }
 
@@ -444,6 +452,26 @@ html.scratchpad-route .page-surface {
   justify-content: center;
   gap: 8px;
   color: var(--ink-muted);
+}
+
+.scratch-image-frame.is-unavailable,
+.scratch-image-frame.is-unavailable .scratch-image-placeholder {
+  min-height: 88px;
+  max-height: none;
+}
+
+.scratch-image-frame.is-unavailable .scratch-image-placeholder {
+  padding: 8px;
+}
+
+.scratchpad-linked-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 .scratch-image-card footer {
@@ -596,7 +624,6 @@ html.scratchpad-route .page-surface {
   max-height: min(320px, 42vh);
   background: transparent;
   font-family: "Atkinson Hyperlegible", sans-serif;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 .markdown-source-editor .cm-tooltip-autocomplete > ul > li {
@@ -807,6 +834,7 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-row {
+  --scratch-disclosure-track: 44px;
   position: relative;
   margin-left: min(calc(var(--scratch-depth) * var(--scratch-indent)), 42%);
   transition:
@@ -828,7 +856,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   min-height: 48px;
   align-items: start;
   /* Rows are told apart by their leading control, not by rules. */
@@ -897,8 +925,7 @@ html.scratchpad-route .page-surface {
   color: var(--ink-soft);
 }
 
-.scratchpad-collapse,
-.scratchpad-collapse-spacer {
+.scratchpad-collapse {
   display: inline-flex;
   width: 44px;
   min-width: 44px;
@@ -909,6 +936,35 @@ html.scratchpad-route .page-surface {
   color: var(--ink-muted);
   background: transparent;
   border: 0;
+  grid-column: 1;
+  margin-left: 0;
+}
+
+.scratchpad-row-main > .scratchpad-drag-handle {
+  display: none;
+}
+
+.scratchpad-row-main > .scratchpad-kind-controls,
+.scratchpad-row-main > .scratchpad-kind-label {
+  grid-column: 1;
+}
+
+.scratchpad-row.has-children > .scratchpad-row-main > .scratchpad-kind-controls,
+.scratchpad-row.has-children > .scratchpad-row-main > .scratchpad-kind-label,
+.scratchpad-disclosure-space {
+  display: none;
+}
+
+.scratchpad-row-main > .outline-text-shell,
+.scratchpad-row-main > .scratchpad-task-link {
+  grid-column: 2;
+  grid-row: 1;
+  margin-left: 0;
+  width: 100%;
+}
+
+.scratchpad-row-main > .scratchpad-convert-line {
+  display: none;
 }
 
 .scratchpad-drag-handle {
@@ -1000,7 +1056,8 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-row-main > .task-actions-trigger,
 .scratchpad-row-main > .scratchpad-row-menu-trigger {
-  grid-column: 6;
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .scratchpad-row .task-actions-trigger > svg {
@@ -1033,7 +1090,7 @@ html.scratchpad-route .page-surface {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 8px 7px 7px 3px;
+  padding: 8px 7px 7px 0;
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -1069,7 +1126,7 @@ html.scratchpad-route .page-surface {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  padding: 8px 7px 7px 3px;
+  padding: 8px 7px 7px 0;
   color: var(--ink);
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1127,20 +1184,45 @@ html.scratchpad-route .page-surface {
 }
 
 .scratchpad-mobile-depth-actions {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 44px;
+  padding: 5px 0 7px;
+}
+
+.scratchpad-mobile-depth-actions button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+.scratchpad-mobile-move {
+  touch-action: none;
+  cursor: grab;
 }
 
 .scratchpad-nlp-preview {
   display: grid;
-  grid-template-columns: 44px 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
 }
 
 .scratchpad-nlp-preview > div {
   display: flex;
   min-width: 0;
-  grid-column: 4 / -1;
+  grid-column: 2;
   flex-wrap: wrap;
   gap: 3px 14px;
+  margin-left: 0;
   padding: 4px 0 8px;
   color: var(--ink-muted);
   font-family: "Azeret Mono", ui-monospace, monospace;
@@ -1181,7 +1263,7 @@ html.scratchpad-route .page-surface {
 .scratchpad-row-menu button {
   display: flex;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   align-items: center;
   gap: 9px;
   padding: 7px 9px;
@@ -1221,8 +1303,16 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-suggestions button.is-selected,
 .scratchpad-suggestions button:hover,
-.scratchpad-row-menu button:hover {
+.scratchpad-row-menu button:hover:not(:disabled) {
   background: var(--accent-soft);
+}
+
+.scratchpad-row-menu button:disabled,
+.scratchpad-mobile-depth-actions button:disabled {
+  color: var(--ink-muted);
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
 }
 
 .scratchpad-suggestions small {
@@ -1276,19 +1366,6 @@ html.scratchpad-route .page-surface {
 }
 
 @media (min-width: 561px) {
-  .scratchpad-collapse,
-  .scratchpad-collapse-spacer,
-  .scratchpad-drag-handle {
-    width: 28px;
-    min-width: 28px;
-  }
-
-  .scratchpad-convert-line,
-  .scratchpad-row-menu-trigger {
-    width: 36px;
-    min-width: 36px;
-  }
-
   .scratchpad-row-menu-trigger {
     opacity: 0;
     transition: opacity 140ms var(--ease-out);
@@ -1351,20 +1428,20 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-review-toolbar {
   display: flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 8px;
-  color: var(--ink-muted);
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: var(--type-label);
+  color: var(--ink);
+  font-size: var(--type-body);
+  font-weight: 600;
   border-bottom: 1px solid var(--line-strong);
 }
 
 .scratchpad-review-toolbar button,
 .scratchpad-review-branch {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 8px;
   color: var(--accent);
   background: transparent;
@@ -1466,7 +1543,7 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-dialog-actions button {
   width: auto;
-  min-height: 42px;
+  min-height: 44px;
 }
 
 .scratchpad-notice {
@@ -1480,8 +1557,9 @@ html.scratchpad-route .page-surface {
   align-items: center;
   gap: 12px;
   padding: 4px 4px 4px 16px;
-  color: var(--paper-raised);
-  background: var(--ink);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow: 0 10px 28px var(--color-shadow);
 }
@@ -1501,9 +1579,8 @@ html.scratchpad-route .page-surface {
   width: auto;
   min-width: auto;
   padding: 0 9px;
-  color: var(--paper-raised);
+  color: var(--accent);
   font-weight: 700;
-  border: 1px solid color-mix(in srgb, var(--paper-raised), transparent 62%);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1514,7 +1591,7 @@ html.scratchpad-route .page-surface {
 
 @media (max-width: 560px) {
   .scratchpad-screen {
-    --scratch-indent: 17px;
+    --scratch-indent: 16px;
     height: min(
       calc(100dvh - var(--nav-height) - env(safe-area-inset-bottom)),
       var(--scratch-visual-viewport-bottom, 100dvh)
@@ -1590,7 +1667,17 @@ html.scratchpad-route .page-surface {
   }
 
   .scratchpad-row-main {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .scratchpad-row-main > .scratchpad-kind-controls,
+  .scratchpad-row-main > .scratchpad-kind-label {
+    grid-column: 1;
+  }
+
+  .scratchpad-row-main > .outline-text-shell,
+  .scratchpad-row-main > .scratchpad-task-link {
+    grid-column: 2;
   }
 
   .scratchpad-kind-controls {
@@ -1612,7 +1699,7 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-screen .scratchpad-row-menu-trigger,
   .scratchpad-row .task-actions-trigger {
-    grid-column: 4;
+    grid-column: 3;
     width: 44px;
     opacity: 1;
     pointer-events: auto;
@@ -1628,12 +1715,6 @@ html.scratchpad-route .page-surface {
 
   .scratchpad-kind-label {
     justify-content: center;
-  }
-
-  .scratchpad-collapse,
-  .scratchpad-collapse-spacer {
-    width: 44px;
-    min-width: 44px;
   }
 
   .scratchpad-mobile-depth-actions {
@@ -1655,21 +1736,21 @@ html.scratchpad-route .page-surface {
     gap: 4px;
     padding: 0 7px;
     color: var(--ink-soft);
-    font-size: var(--type-label);
+    font-size: 13px;
     background: var(--paper-soft);
     border: 0;
     border-radius: var(--radius-control);
   }
 
   .scratchpad-nlp-preview {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
   .scratchpad-nlp-preview > div {
-    grid-column: 3 / -1;
+    grid-column: 2;
   }
 
   .scratchpad-add-actions {
-    padding-left: 88px;
+    padding-left: 52px;
   }
 
   .scratchpad-dialog-backdrop {
@@ -1713,7 +1794,8 @@ html.scratchpad-route .page-surface {
   }
 }
 
-.undo-toast > button {
+.undo-toast > button,
+.undo-toast .task-added-actions > button {
   min-width: 64px;
   min-height: var(--control-min-size);
   padding: 0 4px 0 12px;
@@ -1737,4 +1819,9 @@ html.scratchpad-route
   > .scratchpad-screen {
   flex: 1;
   min-height: 0;
+}
+.scratchpad-wikilink-label {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

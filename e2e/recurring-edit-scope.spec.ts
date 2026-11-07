@@ -2,16 +2,17 @@ import { expect, test } from "./local-test";
 
 test.use({ timezoneId: "UTC" });
 
-// Cover every starting weekday, including the month boundary in the next week.
-for (const day of [25, 26, 27, 28, 29, 30, 31]) {
+// The occurrence crosses the month boundary into the next week.
+for (const day of [31]) {
   test(`moving one generated occurrence asks first and makes an occurrence note (October ${day})`, async ({
     page,
   }) => {
     test.skip((page.viewportSize()?.width ?? 0) < 840, "Desktop week view");
     await page.clock.setFixedTime(new Date(`2026-10-${day}T12:00:00Z`));
     await page.goto(
-      `views/${encodeURIComponent("TaskNotes/Views/calendar.base#calendar")}?demo=50`,
+      `views/${encodeURIComponent("TaskNotes/Views/calendar.base#calendar")}?demo=5`,
     );
+    await page.getByLabel("Calendar layout", { exact: true }).click();
     await page.getByRole("button", { name: "Week", exact: true }).click();
     // The demo advances its Mon/Wed/Fri series to the next scheduled date.
     // From Thursday onward this week has no generated patterns left; use

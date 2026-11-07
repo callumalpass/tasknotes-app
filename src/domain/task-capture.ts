@@ -1,10 +1,13 @@
+import type { NlpTriggerConfig } from "@tasknotes/model/types";
 import {
   combineTaskDateTime,
   formatTaskDate,
   recurrenceLabel,
+  todayString,
   type CreateTaskInput,
 } from "./task";
 import { captureTriggers } from "./capture-autosuggest";
+import { linkDisplayLabel } from "./completion";
 import {
   captureHighlightsFromSpans,
   type CaptureHighlight,
@@ -38,11 +41,50 @@ export async function parseTaskCapture(
   text: string,
   configuration: TaskCollectionConfiguration,
   locale = browserLocale(),
+  knownProjects: readonly string[] = [],
 ): Promise<TaskCaptureResult> {
   const parser = await captureParser(configuration, locale);
-  const parsed = parser.parseInputWithSpans(text);
+  const titleWords = [
+    ...dayPartsInTitle(text),
+    ...choiceWordsInTitle(text, configuration),
+  ].sort((left, right) => left.start - right.start);
+  const projectWords = knownProjectSpaces(
+    text,
+    knownProjects,
+    captureTriggers(configuration),
+  );
+  const readable = (value: string) =>
+    projectWords.reduce(
+      (current, space) =>
+        current.slice(0, space) + PROJECT_SPACE + current.slice(space + 1),
+      titleWords.reduce(
+        (current, { start, end }) =>
+          current.slice(0, start) +
+          titleWordMask(end - start) +
+          current.slice(end),
+        value,
+      ),
+    );
+  // The portable parser has no phrase for a day of the month.
+  const monthly = monthlyPhrase(text, locale);
+  const source = monthly
+    ? text.slice(0, monthly.start) +
+      " ".repeat(monthly.end - monthly.start) +
+      text.slice(monthly.end)
+    : text;
+  const parsed = parser.parseInputWithSpans(readable(source));
   const { data } = parsed;
+  if (monthly) data.title = data.title.replace(/[ \t]+/gu, " ").trim();
+  if (monthly) {
+    data.recurrence = `FREQ=MONTHLY;BYMONTHDAY=${monthly.day}`;
+    if (!data.scheduledDate && !data.dueDate)
+      data.scheduledDate = nextMonthDay(monthly.day);
+  }
   let { spans } = parsed;
+  data.projects = data.projects?.map((project) =>
+    project.replaceAll(PROJECT_SPACE, " "),
+  );
+  data.title = restoreTitleWords(data.title, titleWords, text);
   // A frequency that stays in the title names the task ("weekly review");
   // only a command such as "every week" makes it repeat.
   if (spans.some((span) => span.kind === "recurrence" && span.inTitle)) {
@@ -53,10 +95,178 @@ export async function parseTaskCapture(
     spans,
     captureTriggers(configuration),
   );
+  if (monthly)
+    highlights.push({
+      start: monthly.start,
+      end: monthly.end,
+      kind: "recurrence" as const,
+    });
+  highlights.sort((left, right) => left.start - right.start);
   return {
     ...mapParsedCapture(data, configuration),
     ...(highlights.length ? { highlights } : {}),
   };
+}
+
+/** "every 1st", "every month on the 15th": a repeating day of the month. */
+function monthlyPhrase(text: string, locale: string) {
+  if (!locale.toLowerCase().startsWith("en")) return null;
+  const match =
+    /(?:^|\s)(every\s+(?:month\s+on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th))(?=[\s.,;:!?]|$)/iu.exec(
+      text,
+    );
+  const day = Number(match?.[2]);
+  if (!match || day < 1 || day > 31) return null;
+  const start = match.index + match[0].length - match[1].length;
+  return { day, start, end: start + match[1].length };
+}
+
+/** The next date with this day, skipping months too short to have it. */
+function nextMonthDay(day: number): string {
+  const today = todayString();
+  const [year, month] = today.split("-").map(Number);
+  for (let offset = 0; ; offset++) {
+    const date = new Date(Date.UTC(year, month - 1 + offset, day));
+    const value = date.toISOString().slice(0, 10);
+    if (date.getUTCDate() === day && value >= today) return value;
+  }
+}
+
+/** Stands in for a space inside a project name, keeping every offset. */
+const PROJECT_SPACE = "\u01C2";
+
+/**
+ * Finds the spaces inside a known project typed after its trigger, so
+ * `+Product refresh` reads as that project, not `Product` and a stray word.
+ * The longest name wins, and only whole words match.
+ */
+function knownProjectSpaces(
+  text: string,
+  projects: readonly string[],
+  triggers: readonly NlpTriggerConfig[],
+): number[] {
+  const trigger = triggers.find(
+    ({ propertyId }) => propertyId === "projects",
+  )?.trigger;
+  if (!trigger) return [];
+  const names = projects
+    .filter((name) => /\s/u.test(name))
+    .sort((left, right) => right.length - left.length);
+  const lowered = text.toLocaleLowerCase();
+  const spaces: number[] = [];
+  let index = lowered.indexOf(trigger);
+  while (index >= 0) {
+    const start = index + trigger.length;
+    if (index === 0 || /\s/u.test(text[index - 1])) {
+      const name = names.find((candidate) => {
+        const end = start + candidate.length;
+        return (
+          lowered.startsWith(candidate.toLocaleLowerCase(), start) &&
+          (end === text.length || /[\s.,;:!?]/u.test(text[end]))
+        );
+      });
+      for (let offset = 0; name && offset < name.length; offset++)
+        if (/\s/u.test(name[offset])) spaces.push(start + offset);
+    }
+    index = lowered.indexOf(trigger, start);
+  }
+  return spaces;
+}
+
+/** The parser drops symbols, so a stand-in has to read as a word of equal length. */
+function titleWordMask(length: number): string {
+  return "zqxj".repeat(length).slice(0, length);
+}
+
+const DATE_WORD_BEFORE =
+  /(?:^|[\s,])(?:at|by|in the|last|next|on|this|today|tomorrow|tonight|yesterday|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\s+$/iu;
+
+/**
+ * Finds "morning" and the like where they name the task ("Morning appointment
+ * tomorrow 9am") instead of the time ("tomorrow morning"). Left in, the date
+ * parser reads them as a date and ignores the one the person typed.
+ */
+function dayPartsInTitle(text: string): { start: number; end: number }[] {
+  return [
+    ...text.matchAll(
+      /(?<![\p{L}\p{N}])(?:morning|afternoon|evening|night)(?![\p{L}\p{N}])/giu,
+    ),
+  ]
+    .filter((match) => !DATE_WORD_BEFORE.test(text.slice(0, match.index)))
+    .map((match) => ({
+      start: match.index,
+      end: match.index + match[0].length,
+    }));
+}
+
+/**
+ * Finds status and priority names typed as ordinary words, such as "Open the
+ * shop". They set a value only with a trigger ("*open", "!high") or beside the
+ * word "priority"; otherwise they would vanish from the title.
+ */
+function choiceWordsInTitle(
+  text: string,
+  configuration: TaskCollectionConfiguration,
+): { start: number; end: number }[] {
+  const triggers = captureTriggers(configuration);
+  const triggerOf = (propertyId: string) =>
+    triggers.find((entry) => entry.propertyId === propertyId)?.trigger ?? "";
+  const escape = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const words = [
+    ...configuration.statuses.flatMap(({ label, value }) =>
+      [label, value].map((name) => ({ name, property: "status" })),
+    ),
+    ...configuration.priorities.flatMap(({ label, value }) =>
+      [label, value].map((name) => ({ name, property: "priority" })),
+    ),
+  ];
+  // "!very-high" and "!Very high" are one choice; "high" inside them is no word.
+  const chosen = words
+    .filter(({ name }) => name.trim())
+    .flatMap(({ name, property }) =>
+      [
+        ...text.matchAll(
+          new RegExp(
+            `${escape(triggerOf(property))}${escape(name)}(?![\\p{L}\\p{N}_-])`,
+            "giu",
+          ),
+        ),
+      ].map((match) => ({
+        start: match.index,
+        end: match.index + match[0].length,
+      })),
+    );
+  const found = new Map<number, number>();
+  for (const { name, property } of words) {
+    if (!name.trim()) continue;
+    const pattern = new RegExp(
+      `(?<![\\p{L}\\p{N}_${escape(triggerOf(property))}])${escape(name)}(?![\\p{L}\\p{N}_])`,
+      "giu",
+    );
+    for (const match of text.matchAll(pattern)) {
+      const end = match.index + match[0].length;
+      if (chosen.some((span) => span.start < end && span.end > match.index))
+        continue;
+      const explicit =
+        property === "priority" &&
+        (/^\s*priority\b/iu.test(text.slice(end)) ||
+          /\bpriority\s*:?\s*$/iu.test(text.slice(0, match.index)));
+      if (!explicit)
+        found.set(match.index, Math.max(found.get(match.index) ?? 0, end));
+    }
+  }
+  return [...found].map(([start, end]) => ({ start, end }));
+}
+
+function restoreTitleWords(
+  title: string,
+  words: readonly { start: number; end: number }[],
+  text: string,
+): string {
+  return words.reduce((current, { start, end }) => {
+    return current.replace(titleWordMask(end - start), text.slice(start, end));
+  }, title);
 }
 
 export function preloadTaskCapture(): void {
@@ -183,9 +393,15 @@ export function taskCapturePreview(
   if (input.timeEstimate)
     preview.push({ key: "estimate", label: formatMinutes(input.timeEstimate) });
   for (const project of input.projects ?? [])
-    preview.push({ key: `project:${project}`, label: `+${project}` });
+    preview.push({
+      key: `project:${project}`,
+      label: `+${linkDisplayLabel(project)}`,
+    });
   for (const context of input.contexts ?? [])
-    preview.push({ key: `context:${context}`, label: `@${context}` });
+    preview.push({
+      key: `context:${context}`,
+      label: `@${linkDisplayLabel(context)}`,
+    });
   for (const tag of input.tags ?? [])
     preview.push({ key: `tag:${tag}`, label: `#${tag}` });
   return preview;

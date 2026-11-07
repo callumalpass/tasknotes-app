@@ -1,3 +1,4 @@
+import { editableProperty, type EditableProperty } from "./task-property-kind";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { X } from "lucide-react";
 import {
@@ -12,6 +13,9 @@ import { createPortal } from "react-dom";
 import { useOverlay } from "./overlays/use-overlay";
 import { usePresence } from "./overlays/use-presence";
 import { useRepository } from "../app/repository-context";
+import { rememberTaskEdit } from "../app/task-edit-undo";
+import { ChoiceOptions } from "./choice-options";
+import { MultiValueField } from "./multi-value-field";
 import {
   combineTaskDateTime,
   taskDatePart,
@@ -26,19 +30,13 @@ import {
   TaskNotesSelectField,
 } from "./tasknotes-controls";
 
-import type { UpdateTaskInput, TaskSummary } from "../domain/task";
+import type { TaskSummary } from "../domain/task";
+import { propertyValue, updateFor } from "./task-property-input";
 import type {
   TaskCollectionConfiguration,
   TaskUserMappedField,
 } from "../domain/task-configuration";
 import type { TaskPropertyEditorAnchor, TaskRowDetail } from "./task-row";
-
-type EditableProperty =
-  | {
-      kind: "status" | "priority" | "scheduled" | "due" | "recurrence";
-      key: string;
-    }
-  | { kind: "custom"; key: string; field: TaskUserMappedField };
 
 export function TaskPropertyEditor({
   task,
@@ -59,7 +57,7 @@ export function TaskPropertyEditor({
   onExited?(): void;
 }) {
   const { t } = useLingui();
-  const { configuration, updateTask } = useRepository();
+  const { configuration, repository, updateTask } = useRepository();
   const property = useMemo(
     () => editableProperty(detail.key, configuration),
     [configuration, detail.key],
@@ -118,15 +116,28 @@ export function TaskPropertyEditor({
     rootRef: editorRef,
     modal: window.innerWidth <= 600,
     onDismiss: onClose,
-    initialFocus: () => closeRef.current,
+    initialFocus: () =>
+      editorRef.current?.querySelector<HTMLElement>(
+        ".choice-options input, .choice-options .is-active, .multi-value-field input",
+      ) ?? closeRef.current,
   });
 
-  async function save(next: unknown = value, closeAfter = true) {
+  async function save(next: unknown, closeAfter = true) {
     if (!property || saving) return;
     setSaving(true);
     setError(null);
     try {
-      await updateTask(task.id, updateFor(task, property, next, anchor));
+      const input = updateFor(task, property, next, anchor);
+      const saved = await updateTask(task.id, input);
+      const title = task.title;
+      rememberTaskEdit({
+        before: task,
+        saved,
+        input,
+        notice: t`Updated “${title}”`,
+        getSummary: (id) => repository.getSummary(id),
+        updateTask,
+      });
       if (closeAfter) onClose();
       else setSaving(false);
     } catch (reason) {
@@ -156,6 +167,12 @@ export function TaskPropertyEditor({
         ref={editorRef}
         role="dialog"
         tabIndex={-1}
+        onKeyDownCapture={(event) => {
+          if (property?.kind !== "projects" || event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }}
         style={
           desktopPosition
             ? ({
@@ -165,13 +182,8 @@ export function TaskPropertyEditor({
             : undefined
         }
       >
-        <header>
-          <div>
-            <span>
-              <Trans>Edit property</Trans>
-            </span>
-            <h2>{detail.label}</h2>
-          </div>
+        <header className="choice-options-header">
+          <strong>{detail.label}</strong>
           <button
             aria-label={t({ message: "Close property editor" })}
             ref={closeRef}
@@ -256,14 +268,40 @@ export function TaskPropertyEditor({
             <Trans>Clear value</Trans>
           </button>
         ) : null}
-        {property?.kind === "recurrence" ? (
+        {property &&
+        ["recurrence", "projects", "tags", "contexts"].includes(
+          property.kind,
+        ) ? (
           <footer>
             <span />
             <button
               className="primary-action"
               disabled={saving}
               type="button"
-              onClick={() => void save()}
+              onClick={() => {
+                const pendingProject = [
+                  "projects",
+                  "tags",
+                  "contexts",
+                ].includes(property.kind)
+                  ? editorRef.current
+                      ?.querySelector<HTMLInputElement>(
+                        ".multi-value-field input",
+                      )
+                      ?.value.trim()
+                  : "";
+                const projects = Array.isArray(value) ? value : [];
+                const next =
+                  pendingProject &&
+                  !projects.some(
+                    (project: string) =>
+                      project.toLocaleLowerCase() ===
+                      pendingProject.toLocaleLowerCase(),
+                  )
+                    ? [...projects, pendingProject]
+                    : value;
+                void save(next);
+              }}
             >
               {saving ? t({ message: "Saving…" }) : t({ message: "Save" })}
             </button>
@@ -286,7 +324,7 @@ export function TaskPropertyEditor({
   );
 }
 
-function PropertyControl({
+export function PropertyControl({
   configuration,
   property,
   scheduled,
@@ -298,6 +336,7 @@ function PropertyControl({
   onCommit,
   onPersist,
   onAnchorChange,
+  compactChoices = false,
 }: {
   configuration: TaskCollectionConfiguration;
   property: EditableProperty;
@@ -310,27 +349,68 @@ function PropertyControl({
   onCommit(value: unknown): void;
   onPersist(value: unknown): void;
   onAnchorChange(value: "scheduled" | "completion"): void;
+  compactChoices?: boolean;
 }) {
   const { t } = useLingui();
+  const { repository } = useRepository();
+  if (
+    property.kind === "projects" ||
+    property.kind === "tags" ||
+    property.kind === "contexts"
+  )
+    return (
+      <MultiValueField
+        label={
+          property.kind === "projects"
+            ? t`Projects`
+            : property.kind === "tags"
+              ? t`Tags`
+              : t`Contexts`
+        }
+        field={
+          property.kind === "tags"
+            ? "tags"
+            : configuration.fieldMapping[property.kind]
+        }
+        placeholder={property.kind === "projects" ? t`Find a project` : t`Add`}
+        values={Array.isArray(value) ? value : []}
+        completion={
+          configuration.fieldCompletions[
+            property.kind === "tags"
+              ? "tags"
+              : configuration.fieldMapping[property.kind]
+          ] ?? { kind: property.kind === "projects" ? "records" : "values" }
+        }
+        completeField={(request) => repository.completeField(request)}
+        onChange={onChange}
+      />
+    );
   if (property.kind === "status" || property.kind === "priority") {
     const options =
       property.kind === "status"
         ? configuration.statuses
         : configuration.priorities;
+    if (compactChoices)
+      return (
+        <TaskNotesSelectField
+          label={property.kind === "status" ? t`Status` : t`Priority`}
+          options={options}
+          value={typeof value === "string" ? value : ""}
+          disabled={disabled}
+          onChange={onCommit}
+        />
+      );
     return (
-      <TaskNotesSelectField
-        disabled={disabled}
+      <ChoiceOptions
         label={
           property.kind === "status"
             ? t({ message: "Status" })
             : t({ message: "Priority" })
         }
-        options={options.map((option) => ({
-          value: option.value,
-          label: option.label,
-        }))}
+        options={options}
         value={typeof value === "string" ? value : ""}
-        onChange={(next) => {
+        disabled={disabled}
+        onChoose={(next) => {
           onChange(next);
           onCommit(next);
         }}
@@ -411,7 +491,10 @@ function PropertyControl({
         disabled={disabled}
         label={label}
         value={typeof value === "string" ? value : undefined}
-        onChange={onChange}
+        onChange={(next) => {
+          onChange(next);
+          onPersist(next);
+        }}
       />
     );
   if (field.type === "boolean")
@@ -472,78 +555,14 @@ function customInputValue(
   return value;
 }
 
-function editableProperty(
-  key: string,
-  configuration: TaskCollectionConfiguration,
-): EditableProperty | null {
-  if (key.startsWith("file.")) return null;
-  const normalized = notePropertyName(key);
-  const semantic = (
-    ["status", "priority", "scheduled", "due", "recurrence"] as const
-  ).find(
-    (kind) =>
-      normalized === kind || normalized === configuration.fieldMapping[kind],
-  );
-  if (semantic) return { kind: semantic, key: normalized };
-  const field = configuration.userFields.find(
-    (candidate) => candidate.key === normalized,
-  );
-  return field && !field.readOnly
-    ? { kind: "custom", key: normalized, field }
-    : null;
-}
-
-function notePropertyName(key: string): string {
-  if (key.startsWith("note.")) return key.slice(5);
-  return /^note\[(["'])(.+)\1\]$/.exec(key)?.[2] ?? key;
-}
-
-function propertyValue(
-  task: TaskSummary,
-  property: EditableProperty | null,
-): unknown {
-  if (!property) return undefined;
-  return property.kind === "custom"
-    ? task.customProperties[property.key]
-    : task[property.kind];
-}
-
-function updateFor(
-  task: TaskSummary,
-  property: EditableProperty,
-  value: unknown,
-  anchor?: "scheduled" | "completion",
-): UpdateTaskInput {
-  if (property.kind === "custom") {
-    const customProperties = { ...task.customProperties };
-    if (
-      value === undefined ||
-      value === "" ||
-      (Array.isArray(value) && !value.length)
-    )
-      delete customProperties[property.key];
-    else customProperties[property.key] = value;
-    return { customProperties };
-  }
-  if (
-    property.kind === "scheduled" ||
-    property.kind === "due" ||
-    property.kind === "recurrence"
-  )
-    return {
-      [property.kind]: typeof value === "string" && value ? value : null,
-      ...(property.kind === "recurrence" && anchor
-        ? { recurrenceAnchor: anchor }
-        : {}),
-    };
-  return { [property.kind]: String(value) };
-}
-
 function canClear(property: EditableProperty): boolean {
   return (
     property.kind === "scheduled" ||
     property.kind === "due" ||
     property.kind === "recurrence" ||
+    property.kind === "projects" ||
+    property.kind === "tags" ||
+    property.kind === "contexts" ||
     (property.kind === "custom" && !property.field.required)
   );
 }

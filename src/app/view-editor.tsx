@@ -1,7 +1,7 @@
 import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { registerReloadParticipant } from "../pwa/reload";
 import {
   lazy,
@@ -30,12 +30,15 @@ import {
   type ViewDraftPreview,
 } from "../domain/view-preview";
 import { loadViewEditorForm } from "./view-editor-loader";
+import type { ViewEditorSection } from "./view-editor-form";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { useRepository } from "./repository-context";
 
 import type { TaskView, TaskViewSourceDocument } from "../domain/view";
 import type { TaskSummary } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import { resolvedViewProperties } from "../domain/view-values";
+import { propertyLabel } from "../i18n/view-presentation";
 
 const ViewEditorForm = lazy(async () => ({
   default: (await loadViewEditorForm()).ViewEditorForm,
@@ -45,12 +48,14 @@ export function ViewEditor({
   view,
   duplicate = false,
   confirmDelete = false,
+  initialSection,
   onClose,
   onChanged,
 }: {
   view?: TaskView;
   duplicate?: boolean;
   confirmDelete?: boolean;
+  initialSection?: ViewEditorSection;
   onClose(): void;
   onChanged(): Promise<void>;
 }) {
@@ -101,8 +106,9 @@ export function ViewEditor({
   );
   const preview =
     livePreview.kind === "live" ? livePreview : (currentPreview ?? livePreview);
-  const dirty =
-    draft !== null && (source === null || fingerprint !== initialFingerprint);
+  const changed = draft !== null && fingerprint !== initialFingerprint;
+  // A new view can be saved as it stands; only an edit is worth guarding.
+  const dirty = changed || (draft !== null && source === null);
 
   useEffect(() => {
     let active = true;
@@ -161,27 +167,28 @@ export function ViewEditor({
   }, [repository, view]);
 
   useEffect(() => {
-    if (!draft || !view || focusedInitialEditor.current) return;
+    if (!draft || !view || initialSection || focusedInitialEditor.current)
+      return;
     focusedInitialEditor.current = true;
     editorRef.current?.focus();
-  }, [draft, view]);
+  }, [draft, initialSection, view]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!changed) return;
     const beforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
     };
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [dirty]);
+  }, [changed]);
 
   const requestClose = useCallback(() => {
-    if (dirty) {
+    if (changed) {
       setConfirmation("discard");
       return;
     }
     onClose();
-  }, [dirty, onClose]);
+  }, [changed, onClose]);
 
   useOverlay({
     open: true,
@@ -291,13 +298,6 @@ export function ViewEditor({
       >
         <header className="view-editor-header">
           <div>
-            <p className="eyebrow">
-              {duplicate
-                ? t({ message: "Duplicate saved view" })
-                : view
-                  ? t({ message: "Edit saved view" })
-                  : t({ message: "Create saved view" })}
-            </p>
             <h1 id="view-editor-title">{title}</h1>
           </div>
           <button
@@ -321,8 +321,9 @@ export function ViewEditor({
             <ViewEditorLoading />
           ) : (
             <Suspense fallback={<ViewEditorLoading />}>
-              <ViewPreview preview={preview} />
+              <ViewPreview preview={preview} draft={draft} />
               <ViewEditorForm
+                initialSection={initialSection}
                 autoFocusName={!view || duplicate}
                 configuration={configuration}
                 draft={draft}
@@ -389,14 +390,27 @@ export function ViewEditor({
   );
 }
 
-function ViewPreview({ preview }: { preview: ViewDraftPreview }) {
+function ViewPreview({
+  preview,
+  draft,
+}: {
+  preview: ViewDraftPreview;
+  draft: EditableViewDraft;
+}) {
   const { t } = useLingui();
   return (
     <details className="view-draft-preview">
       <summary>
         <Trans>Preview </Trans>
         <span aria-live="polite">{previewLabel(preview)}</span>
+        <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </summary>
+      <p className="view-preview-fields">
+        {draft.properties.length ? t`Fields shown` : t`Default fields`}:{" "}
+        {resolvedViewProperties(draft.properties.map((key) => ({ key })))
+          .map(({ key }) => propertyLabel(key))
+          .join(", ")}
+      </p>
       {preview.tasks.length ? (
         <ol aria-label={t({ message: "Preview tasks" })}>
           {preview.tasks.map((task) => (

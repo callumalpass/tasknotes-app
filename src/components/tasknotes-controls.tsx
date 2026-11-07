@@ -4,31 +4,39 @@ import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
+  X,
 } from "lucide-react";
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type Dispatch,
   type KeyboardEvent,
   type RefObject,
+  type ReactNode,
   type SetStateAction,
 } from "react";
 
 import { useOverlay } from "./overlays/use-overlay";
 import { usePresence } from "./overlays/use-presence";
+import { ChoiceOptions } from "./choice-options";
+import {
+  calendarEventTimeFormat,
+  loadCalendarPreferences,
+} from "../app/calendar-preferences";
 
 export interface TaskNotesOption {
   value: string;
   label: string;
   description?: string;
+  color?: string;
   disabled?: boolean;
 }
 
@@ -42,6 +50,10 @@ export function TaskNotesSelect({
   disabled = false,
   placeholder = translate({ message: "Choose" }),
   className,
+  triggerLabel,
+  triggerIcon,
+  actions = [],
+  help,
 }: {
   value: string;
   options: readonly TaskNotesOption[];
@@ -52,16 +64,56 @@ export function TaskNotesSelect({
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  triggerLabel?: string;
+  triggerIcon?: ReactNode;
+  actions?: readonly { label: string; onChoose(): void }[];
+  help?: string;
 }) {
   const { t } = useLingui();
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const position = () => {
+      const popover = popoverRef.current;
+      const trigger = triggerRef.current;
+      const list = popover?.querySelector<HTMLElement>(
+        ".tasknotes-option-list",
+      );
+      if (!popover || !trigger || !list) return;
+      popover.style.removeProperty("top");
+      popover.style.removeProperty("bottom");
+      list.style.removeProperty("max-height");
+      if (window.innerWidth < 840) return;
+      const bounds = trigger.getBoundingClientRect();
+      const below = window.innerHeight - bounds.bottom - 14;
+      const above = bounds.top - 14;
+      const flipped = below < popover.offsetHeight && above > below;
+      const available = flipped ? above : below;
+      if (flipped) {
+        popover.style.top = "auto";
+        popover.style.bottom = "calc(100% + 6px)";
+      }
+      const chrome = popover.offsetHeight - list.offsetHeight;
+      list.style.maxHeight = `${Math.max(44, Math.min(308, available - chrome))}px`;
+      list
+        .querySelector<HTMLElement>(".is-active")
+        ?.scrollIntoView?.({ block: "nearest" });
+    };
+    position();
+    window.addEventListener("resize", position);
+    return () => window.removeEventListener("resize", position);
+  }, [open, present]);
   const selectedIndex = options.findIndex((option) => option.value === value);
   const [activeIndex, setActiveIndex] = useState(
     Math.max(selectedIndex, firstEnabledIndex(options)),
   );
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const typed = useRef<{ text: string; timer?: number }>({ text: "" });
+
+  useActiveOptionInView(id, open, activeIndex);
 
   function openOptions() {
     setActiveIndex(
@@ -100,18 +152,48 @@ export function TaskNotesSelect({
       );
       return;
     }
+    if (event.key === " " && open && typed.current.text) {
+      event.preventDefault();
+      typeAhead(event.key);
+      return;
+    }
     if ((event.key === "Enter" || event.key === " ") && open) {
       event.preventDefault();
       choose(activeIndex);
+      return;
     }
+    if (
+      open &&
+      event.key.length === 1 &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      typeAhead(event.key);
+    }
+  }
+
+  // Letters jump within a long list, as they do in a native select.
+  function typeAhead(key: string) {
+    window.clearTimeout(typed.current.timer);
+    const text = `${typed.current.text}${key}`.toLocaleLowerCase();
+    typed.current = {
+      text,
+      timer: window.setTimeout(() => {
+        typed.current.text = "";
+      }, 700),
+    };
+    const match = options.findIndex(
+      (option) =>
+        !option.disabled && option.label.toLocaleLowerCase().startsWith(text),
+    );
+    if (match >= 0) setActiveIndex(match);
   }
 
   return (
     <div className={classes("tasknotes-select", className)} ref={rootRef}>
       <button
-        aria-activedescendant={
-          open && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined
-        }
         aria-controls={`${id}-options`}
         aria-describedby={ariaDescribedBy}
         aria-expanded={open}
@@ -127,8 +209,9 @@ export function TaskNotesSelect({
         onClick={() => (open ? setOpen(false) : openOptions())}
         onKeyDown={keyDown}
       >
+        {triggerIcon}
         <span className={selected ? undefined : "is-placeholder"}>
-          {selected?.label ?? placeholder}
+          {triggerLabel ?? selected?.label ?? placeholder}
         </span>
         <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </button>
@@ -143,39 +226,50 @@ export function TaskNotesSelect({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             className="tasknotes-popover tasknotes-select-popover"
+            ref={popoverRef}
             data-state={open ? "open" : "closed"}
             inert={!open}
             id={`${id}-options`}
-            role="listbox"
           >
-            {ariaLabel ? (
-              <span className="tasknotes-popover-title">{ariaLabel}</span>
+            <ChoiceOptions
+              options={options}
+              disabled={disabled}
+              value={value}
+              label={ariaLabel}
+              labelledBy={ariaLabelledBy}
+              onClose={() => {
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+              onChoose={(next) => {
+                onChange(next);
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+            />
+            {actions.length ? (
+              <div
+                className="tasknotes-select-actions"
+                role="group"
+                aria-label={t`View actions`}
+              >
+                <p className="tasknotes-select-group-label">{t`View actions`}</p>
+                {actions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      triggerRef.current?.focus();
+                      action.onChoose();
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
             ) : null}
-            <div className="tasknotes-option-list">
-              {options.map((option, index) => (
-                <button
-                  aria-selected={option.value === value}
-                  className={index === activeIndex ? "is-active" : undefined}
-                  disabled={option.disabled}
-                  id={`${id}-option-${index}`}
-                  key={option.value}
-                  role="option"
-                  type="button"
-                  onClick={() => choose(index)}
-                  onMouseEnter={() => setActiveIndex(index)}
-                >
-                  <span>
-                    <strong>{option.label}</strong>
-                    {option.description ? (
-                      <small>{option.description}</small>
-                    ) : null}
-                  </span>
-                  {option.value === value ? (
-                    <Check aria-hidden="true" size={16} strokeWidth={1.8} />
-                  ) : null}
-                </button>
-              ))}
-            </div>
+            {help ? <p className="tasknotes-select-help">{help}</p> : null}
           </div>
         </>
       ) : null}
@@ -200,6 +294,7 @@ export function TaskNotesSelectField({
       <span id={`${id}-label`}>{label}</span>
       <TaskNotesSelect
         {...select}
+        ariaLabel={label}
         ariaLabelledBy={`${id}-label`}
         className="tasknotes-field-control"
       />
@@ -236,6 +331,8 @@ export function TaskNotesCombobox({
       ? (options.find((option) => option.value === value)?.label ?? value)
       : value;
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useActiveOptionInView(id, open, activeIndex);
 
   function choose(index: number) {
     const option = filtered[index];
@@ -319,6 +416,16 @@ export function TaskNotesCombobox({
       ) : null}
     </div>
   );
+}
+
+/** Long option lists scroll, so the keyboard's place must stay on screen. */
+function useActiveOptionInView(id: string, open: boolean, activeIndex: number) {
+  useLayoutEffect(() => {
+    if (!open) return;
+    document
+      .getElementById(`${id}-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, id, open]);
 }
 
 export function TaskNotesDateTimeField({
@@ -425,8 +532,6 @@ export function TaskNotesDatePicker({
     dateRefs.current.get(dateValue(focusedDate))?.focus();
   }, [focusedDate, open, visibleMonth]);
 
-  const days = calendarDays(visibleMonth);
-
   function choose(date: Date) {
     onChange(dateValue(date));
     setOpen(false);
@@ -481,106 +586,34 @@ export function TaskNotesDatePicker({
             inert={!open}
             role="dialog"
           >
-            <div className="tasknotes-calendar-heading">
+            <div className="tasknotes-calendar-sheet-heading">
+              <strong>{accessibleName}</strong>
               <button
-                aria-label={t({ message: "Previous month" })}
+                aria-label={t`Close ${accessibleName} calendar`}
                 type="button"
-                onClick={() =>
-                  setVisibleMonth(
-                    new Date(
-                      visibleMonth.getFullYear(),
-                      visibleMonth.getMonth() - 1,
-                      1,
-                    ),
-                  )
-                }
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
               >
-                <ChevronLeft aria-hidden="true" size={18} />
-              </button>
-              <strong>{monthLabel(visibleMonth)}</strong>
-              <button
-                aria-label={t({ message: "Next month" })}
-                type="button"
-                onClick={() =>
-                  setVisibleMonth(
-                    new Date(
-                      visibleMonth.getFullYear(),
-                      visibleMonth.getMonth() + 1,
-                      1,
-                    ),
-                  )
-                }
-              >
-                <ChevronRight aria-hidden="true" size={18} />
+                <X aria-hidden="true" size={18} />
               </button>
             </div>
-            <div className="tasknotes-calendar-weekdays" aria-hidden="true">
-              {weekdayLabels().map((label, index) => (
-                <span key={`${label}-${index}`}>{label}</span>
-              ))}
-            </div>
-            <div className="tasknotes-calendar-grid" role="grid">
-              {Array.from({ length: 6 }, (_, week) => (
-                <div key={week} role="row">
-                  {days.slice(week * 7, week * 7 + 7).map((day) => {
-                    const key = dateValue(day);
-                    const inMonth =
-                      day.getMonth() === visibleMonth.getMonth() &&
-                      day.getFullYear() === visibleMonth.getFullYear();
-                    return (
-                      <button
-                        aria-label={longDate(day)}
-                        aria-selected={value === key}
-                        className={classes(
-                          !inMonth && "is-outside",
-                          sameDay(day, today) && "is-today",
-                        )}
-                        key={key}
-                        data-date={key}
-                        ref={(element) => {
-                          if (element) dateRefs.current.set(key, element);
-                          else dateRefs.current.delete(key);
-                        }}
-                        role="gridcell"
-                        tabIndex={sameDay(day, focusedDate) ? 0 : -1}
-                        type="button"
-                        onClick={() => choose(day)}
-                        onKeyDown={(event) => {
-                          const movement = {
-                            ArrowLeft: -1,
-                            ArrowRight: 1,
-                            ArrowUp: -7,
-                            ArrowDown: 7,
-                          }[event.key];
-                          if (movement !== undefined) {
-                            event.preventDefault();
-                            moveFocus(addDays(day, movement));
-                          } else if (event.key === "Home") {
-                            event.preventDefault();
-                            moveFocus(addDays(day, -day.getDay()));
-                          } else if (event.key === "End") {
-                            event.preventDefault();
-                            moveFocus(addDays(day, 6 - day.getDay()));
-                          } else if (event.key === "PageUp") {
-                            event.preventDefault();
-                            moveFocus(addMonths(day, -1));
-                          } else if (event.key === "PageDown") {
-                            event.preventDefault();
-                            moveFocus(addMonths(day, 1));
-                          } else if (event.key === "Escape") {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setOpen(false);
-                            triggerRef.current?.focus();
-                          }
-                        }}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+            <div className="tasknotes-calendar-content">
+              <CalendarBody
+                dateRefs={dateRefs}
+                focusedDate={focusedDate}
+                today={today}
+                value={value}
+                visibleMonth={visibleMonth}
+                onChoose={choose}
+                onClose={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+                onMoveFocus={moveFocus}
+                onVisibleMonth={setVisibleMonth}
+              />
             </div>
             <div className="tasknotes-picker-actions">
               <button
@@ -609,6 +642,177 @@ export function TaskNotesDatePicker({
   );
 }
 
+function CalendarBody({
+  dateRefs,
+  focusedDate,
+  today,
+  value,
+  visibleMonth,
+  onChoose,
+  onClose,
+  onMoveFocus,
+  onVisibleMonth,
+}: {
+  dateRefs: { current: Map<string, HTMLButtonElement> };
+  focusedDate: Date;
+  today: Date;
+  value?: string;
+  visibleMonth: Date;
+  onChoose(date: Date): void;
+  onClose(): void;
+  onMoveFocus(date: Date): void;
+  onVisibleMonth(date: Date): void;
+}) {
+  const { t } = useLingui();
+  const days = calendarDays(visibleMonth);
+  return (
+    <>
+      <div className="tasknotes-calendar-heading">
+        <button
+          aria-label={t({ message: "Previous month" })}
+          type="button"
+          onClick={() =>
+            onVisibleMonth(
+              new Date(
+                visibleMonth.getFullYear(),
+                visibleMonth.getMonth() - 1,
+                1,
+              ),
+            )
+          }
+        >
+          <ChevronLeft aria-hidden="true" size={18} />
+        </button>
+        <strong>{monthLabel(visibleMonth)}</strong>
+        <button
+          aria-label={t({ message: "Next month" })}
+          type="button"
+          onClick={() =>
+            onVisibleMonth(
+              new Date(
+                visibleMonth.getFullYear(),
+                visibleMonth.getMonth() + 1,
+                1,
+              ),
+            )
+          }
+        >
+          <ChevronRight aria-hidden="true" size={18} />
+        </button>
+      </div>
+      <div className="tasknotes-calendar-weekdays" aria-hidden="true">
+        {weekdayLabels().map((label, index) => (
+          <span key={`${label}-${index}`}>{label}</span>
+        ))}
+      </div>
+      <div className="tasknotes-calendar-grid" role="grid">
+        {Array.from({ length: 6 }, (_, week) => (
+          <div key={week} role="row">
+            {days.slice(week * 7, week * 7 + 7).map((day) => {
+              const key = dateValue(day);
+              const inMonth =
+                day.getMonth() === visibleMonth.getMonth() &&
+                day.getFullYear() === visibleMonth.getFullYear();
+              return (
+                <button
+                  aria-label={longDate(day)}
+                  aria-selected={value === key}
+                  className={classes(
+                    !inMonth && "is-outside",
+                    sameDay(day, today) && "is-today",
+                  )}
+                  key={key}
+                  data-date={key}
+                  ref={(element) => {
+                    if (element) dateRefs.current.set(key, element);
+                    else dateRefs.current.delete(key);
+                  }}
+                  role="gridcell"
+                  tabIndex={sameDay(day, focusedDate) ? 0 : -1}
+                  type="button"
+                  onClick={() => onChoose(day)}
+                  onKeyDown={(event) => {
+                    // Arrows move through the grid here, not through a surrounding menu.
+                    if (event.key.startsWith("Arrow")) event.stopPropagation();
+                    const movement = {
+                      ArrowLeft: -1,
+                      ArrowRight: 1,
+                      ArrowUp: -7,
+                      ArrowDown: 7,
+                    }[event.key];
+                    if (movement !== undefined) {
+                      event.preventDefault();
+                      onMoveFocus(addDays(day, movement));
+                    } else if (event.key === "Home") {
+                      event.preventDefault();
+                      onMoveFocus(addDays(day, -day.getDay()));
+                    } else if (event.key === "End") {
+                      event.preventDefault();
+                      onMoveFocus(addDays(day, 6 - day.getDay()));
+                    } else if (event.key === "PageUp") {
+                      event.preventDefault();
+                      onMoveFocus(addMonths(day, -1));
+                    } else if (event.key === "PageDown") {
+                      event.preventDefault();
+                      onMoveFocus(addMonths(day, 1));
+                    } else if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onClose();
+                    }
+                  }}
+                >
+                  {day.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** The calendar on its own, for a surface that is already open. */
+export function StandaloneCalendar({
+  value,
+  onChoose,
+}: {
+  value?: string;
+  onChoose(date: string): void;
+}) {
+  const selected = parseDateValue(value);
+  const today = startOfDay(new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    startOfMonth(selected ?? today),
+  );
+  const [focusedDate, setFocusedDate] = useState(() => selected ?? today);
+  const moved = useRef(false);
+  const dateRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (moved.current) dateRefs.current.get(dateValue(focusedDate))?.focus();
+  }, [focusedDate, visibleMonth]);
+  return (
+    <div className="tasknotes-inline-calendar">
+      <CalendarBody
+        dateRefs={dateRefs}
+        focusedDate={focusedDate}
+        today={today}
+        value={value}
+        visibleMonth={visibleMonth}
+        onChoose={(date) => onChoose(dateValue(date))}
+        onClose={() => undefined}
+        onMoveFocus={(date) => {
+          moved.current = true;
+          setFocusedDate(date);
+          setVisibleMonth(startOfMonth(date));
+        }}
+        onVisibleMonth={setVisibleMonth}
+      />
+    </div>
+  );
+}
+
 export function TaskNotesTimePicker({
   value,
   onChange,
@@ -631,6 +835,12 @@ export function TaskNotesTimePicker({
   const [minute, setMinute] = useState(parsed?.minute ?? now.getMinutes());
   const hourRefs = useRef(new Map<number, HTMLButtonElement>());
   const minuteRefs = useRef(new Map<number, HTMLButtonElement>());
+  const timeFormat = pickerTimeFormat();
+  const hourLabel = (selectedHour: number) =>
+    new Intl.DateTimeFormat(appLocale(), {
+      hour: "numeric",
+      hourCycle: timeFormat.hourCycle,
+    }).format(new Date(2000, 0, 1, selectedHour));
 
   function openTimePicker() {
     const next = parseTimeValue(value);
@@ -641,11 +851,13 @@ export function TaskNotesTimePicker({
 
   useEffect(() => {
     if (!open) return;
-    window.requestAnimationFrame(() => {
-      hourRefs.current.get(hour)?.scrollIntoView({ block: "center" });
-      minuteRefs.current.get(minute)?.scrollIntoView({ block: "center" });
+    const frame = window.requestAnimationFrame(() => {
+      [...hourRefs.current.values()]
+        .find((option) => option.getAttribute("aria-selected") === "true")
+        ?.focus({ preventScroll: true });
     });
-  }, [hour, minute, open]);
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   function updateSelection(nextHour: number, nextMinute: number) {
     setHour(nextHour);
@@ -655,6 +867,9 @@ export function TaskNotesTimePicker({
   return (
     <div className="tasknotes-time-picker" ref={rootRef}>
       <button
+        aria-description={
+          parsed ? timeLabel(parsed.hour, parsed.minute) : placeholder
+        }
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={ariaLabel}
@@ -690,11 +905,24 @@ export function TaskNotesTimePicker({
             inert={!open}
             role="dialog"
           >
-            <div className="tasknotes-time-heading">
-              <span>
+            <header className="tasknotes-time-heading">
+              <strong>
                 <Trans>Time</Trans>
-              </span>
-              <strong>{timeLabel(hour, minute)}</strong>
+              </strong>
+              <button
+                aria-label={t`Close`}
+                className="icon-action"
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+              >
+                <X aria-hidden="true" size={20} />
+              </button>
+            </header>
+            <div className="tasknotes-time-value">
+              {timeLabel(hour, minute)}
             </div>
             <div className="tasknotes-time-columns">
               <TimeColumn
@@ -702,6 +930,7 @@ export function TaskNotesTimePicker({
                 max={23}
                 refs={hourRefs}
                 value={hour}
+                formatValue={hourLabel}
                 onChange={(next) => updateSelection(next, minute)}
               />
               <TimeColumn
@@ -759,13 +988,23 @@ function TimeColumn({
   max,
   refs,
   onChange,
+  formatValue,
 }: {
   label: string;
   value: number;
   max: number;
   refs: RefObject<Map<number, HTMLButtonElement>>;
   onChange(value: number): void;
+  formatValue?(value: number): string;
 }) {
+  useEffect(() => {
+    const option = refs.current.get(value);
+    const list = option?.parentElement;
+    if (option && list)
+      list.scrollTop =
+        option.offsetTop - (list.clientHeight - option.offsetHeight) / 2;
+  }, [refs, value]);
+
   return (
     <div>
       <span>{label}</span>
@@ -783,16 +1022,22 @@ function TimeColumn({
             type="button"
             onClick={() => onChange(index)}
             onKeyDown={(event) => {
-              if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+              if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+                return;
               event.preventDefault();
+              event.stopPropagation();
               const next =
-                (index + (event.key === "ArrowDown" ? 1 : -1) + max + 1) %
-                (max + 1);
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? max
+                    : (index + (event.key === "ArrowDown" ? 1 : -1) + max + 1) %
+                      (max + 1);
               onChange(next);
-              refs.current?.get(next)?.focus();
+              refs.current?.get(next)?.focus({ preventScroll: true });
             }}
           >
-            {String(index).padStart(2, "0")}
+            {formatValue ? formatValue(index) : String(index).padStart(2, "0")}
           </button>
         ))}
       </div>
@@ -907,10 +1152,21 @@ function timeValue(hour: number, minute: number): string {
 }
 
 function timeLabel(hour: number, minute: number): string {
-  return new Intl.DateTimeFormat(appLocale(), {
+  return new Intl.DateTimeFormat(appLocale(), pickerTimeFormat()).format(
+    new Date(2000, 0, 1, hour, minute),
+  );
+}
+
+function pickerTimeFormat(): Intl.DateTimeFormatOptions {
+  const hour12 = new Intl.DateTimeFormat(
+    appLocale(),
+    calendarEventTimeFormat(loadCalendarPreferences().hourFormat),
+  ).resolvedOptions().hour12;
+  return {
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(2000, 0, 1, hour, minute));
+    hourCycle: hour12 ? "h12" : "h23",
+  };
 }
 
 function calendarDays(month: Date): Date[] {

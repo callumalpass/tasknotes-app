@@ -14,7 +14,10 @@ export const ViewTaskRow = memo(function ViewTaskRow({
   properties,
   titleProperty,
   omittedProperties = [],
+  ensurePriority = omittedProperties.length === 0,
   occurrence,
+  sectionDay,
+  contextProperties,
   onOpen,
   onToggle,
 }: {
@@ -22,7 +25,11 @@ export const ViewTaskRow = memo(function ViewTaskRow({
   properties: TaskViewProperty[];
   titleProperty?: string;
   omittedProperties?: string[];
+  ensurePriority?: boolean;
   occurrence?: TaskOccurrence;
+  /** The day this row's section already names. */
+  sectionDay?: string;
+  contextProperties?: Record<string, unknown>;
   onOpen(task: TaskSummary): void;
   onToggle(task: TaskSummary): void;
 }) {
@@ -35,7 +42,11 @@ export const ViewTaskRow = memo(function ViewTaskRow({
     <TaskRow
       task={row.task}
       details={details}
+      ensurePriority={ensurePriority}
       occurrence={occurrence}
+      sectionDay={sectionDay}
+      contextProperties={contextProperties}
+      omittedProperties={omittedProperties}
       onOpen={onOpen}
       onToggle={onToggle}
     />

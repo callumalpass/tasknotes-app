@@ -14,7 +14,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ExpressionBuilder,
@@ -31,6 +31,7 @@ import {
   suggestedFilterAndSortFields,
 } from "../domain/view-document";
 import { isManualOrderProperty } from "../domain/manual-order";
+import { resolvedViewProperties } from "../domain/view-values";
 import {
   field,
   fieldOptions,
@@ -48,6 +49,7 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskRepository } from "../application/ports/task-repository";
 
 interface ViewEditorFormProps {
+  initialSection?: ViewEditorSection;
   autoFocusName: boolean;
   draft: EditableViewDraft;
   configuration: TaskCollectionConfiguration;
@@ -58,8 +60,12 @@ interface ViewEditorFormProps {
   onComputedValidityChange(valid: boolean): void;
 }
 
+export type ViewEditorSection =
+  "layout" | "view-filter" | "view-group-sort" | "view-fields";
+
 export function ViewEditorForm({
   autoFocusName,
+  initialSection,
   draft,
   configuration,
   repository,
@@ -71,7 +77,20 @@ export function ViewEditorForm({
   const { t } = useLingui();
   const [propertyInput, setPropertyInput] = useState("");
   const [sortPropertyInput, setSortPropertyInput] = useState("");
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>(
+    initialSection ?? null,
+  );
+  const formRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!initialSection) return;
+    const target = formRef.current?.querySelector<HTMLElement>(
+      initialSection === "layout"
+        ? ".view-layout-disclosure > summary"
+        : `#${initialSection}-title`,
+    );
+    target?.closest<HTMLElement>("button, summary")?.focus();
+    target?.scrollIntoView?.({ block: "start" });
+  }, [initialSection]);
   const fields = useMemo(
     () =>
       viewFields(configuration, [
@@ -98,8 +117,11 @@ export function ViewEditorForm({
   useEffect(() => {
     onComputedValidityChange(!computedError);
   }, [computedError, onComputedValidityChange]);
-  const selectedFields = draft.properties.map(
-    (key) =>
+  const displayedProperties = resolvedViewProperties(
+    draft.properties.map((key) => ({ key })),
+  );
+  const selectedFields = displayedProperties.map(
+    ({ key }) =>
       fields.find((candidate) => candidate.key === key) ??
       field(key, humanize(key)),
   );
@@ -109,8 +131,9 @@ export function ViewEditorForm({
   }
 
   return (
-    <div className="view-editor-form">
+    <div className="view-editor-form" ref={formRef}>
       <ViewIdentitySection
+        initialLayoutOpen={initialSection === "layout"}
         autoFocusName={autoFocusName}
         draft={draft}
         onChange={onChange}
@@ -296,18 +319,24 @@ export function ViewEditorForm({
                 <Trans>Shown in this order below each item.</Trans>
               </p>
             </div>
-            <span className="view-editor-count">{draft.properties.length}</span>
+            <span className="view-editor-count">{selectedFields.length}</span>
           </div>
           <PropertyOrder
             fields={selectedFields}
             onMove={(from, to) =>
-              patch({ properties: move(draft.properties, from, to) })
+              patch({
+                properties: move(
+                  displayedProperties.map(({ key }) => key),
+                  from,
+                  to,
+                ),
+              })
             }
             onRemove={(index) =>
               patch({
-                properties: draft.properties.filter(
-                  (_, candidate) => candidate !== index,
-                ),
+                properties: displayedProperties
+                  .map(({ key }) => key)
+                  .filter((_, candidate) => candidate !== index),
               })
             }
           />
@@ -322,12 +351,17 @@ export function ViewEditorForm({
             <button
               disabled={
                 !propertyInput.trim() ||
-                draft.properties.includes(propertyInput.trim())
+                displayedProperties.some(
+                  ({ key }) => key === propertyInput.trim(),
+                )
               }
               type="button"
               onClick={() => {
                 patch({
-                  properties: [...draft.properties, propertyInput.trim()],
+                  properties: [
+                    ...displayedProperties.map(({ key }) => key),
+                    propertyInput.trim(),
+                  ],
                 });
                 setPropertyInput("");
               }}
@@ -589,31 +623,23 @@ function ComputedPropertiesSection({
 }
 
 function ViewIdentitySection({
+  initialLayoutOpen = false,
   autoFocusName,
   draft,
   onChange,
 }: {
+  initialLayoutOpen?: boolean;
   autoFocusName: boolean;
   draft: EditableViewDraft;
   onChange(draft: EditableViewDraft): void;
 }) {
   const { t } = useLingui();
-  const [layoutOpen, setLayoutOpen] = useState(
-    () => !window.matchMedia?.("(max-width: 839px)").matches,
-  );
+  const [layoutOpen, setLayoutOpen] = useState(initialLayoutOpen);
   const layoutLabel =
     layouts.find((layout) => layout.value === draft.renderer)?.label ??
     draft.renderer;
   return (
-    <section className="view-identity" aria-labelledby="view-identity-title">
-      <div className="view-identity-heading">
-        <h2 id="view-identity-title">
-          <Trans>View details</Trans>
-        </h2>
-        <p>
-          <Trans>Name this view and choose its layout.</Trans>
-        </p>
-      </div>
+    <section className="view-identity">
       <label className="view-name-field">
         <span>
           <Trans>View name</Trans>
@@ -625,18 +651,20 @@ function ViewIdentitySection({
           onChange={(event) => onChange({ ...draft, name: event.target.value })}
         />
       </label>
-      <details
-        className="view-layout-disclosure"
-        open={layoutOpen}
-        onToggle={(event) => setLayoutOpen(event.currentTarget.open)}
-      >
-        <summary>
+      <details className="view-layout-disclosure" open={layoutOpen}>
+        <summary
+          onClick={(event) => {
+            event.preventDefault();
+            setLayoutOpen((open) => !open);
+          }}
+        >
           <Trans>
             Layout: {layoutLabel}
             {draft.renderer === "tasknotes.planner"
               ? t({ message: " (external app)" })
               : ""}
           </Trans>
+          <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
         </summary>
         <fieldset className="view-kind-field">
           <legend className="visually-hidden">
@@ -656,7 +684,10 @@ function ViewIdentitySection({
                   name="view-layout"
                   type="radio"
                   value={value}
-                  onChange={() => onChange(changeRenderer(draft, value))}
+                  onChange={() => {
+                    onChange(changeRenderer(draft, value));
+                    setLayoutOpen(false);
+                  }}
                 />
               </label>
             ))}
@@ -1084,9 +1115,9 @@ function EditorSection({
       >
         <div>
           <h2 id={`${id}-title`}>{title}</h2>
-          <p>{summary}</p>
+          {summary ? <p>{summary}</p> : null}
         </div>
-        <ChevronDown aria-hidden="true" size={18} strokeWidth={1.7} />
+        <ChevronDown aria-hidden="true" size={16} strokeWidth={1.7} />
       </button>
       {open ? (
         <div className="view-editor-section-content" id={`${id}-content`}>
@@ -1199,7 +1230,7 @@ function groupSortSummary(draft: EditableViewDraft): string {
 function fieldsSummary(draft: EditableViewDraft): string {
   return draft.properties.length
     ? countLabel(draft.properties.length, "field")
-    : t({ message: "Title only" });
+    : t({ message: "Default fields" });
 }
 
 function calendarSummary(draft: EditableViewDraft): string {

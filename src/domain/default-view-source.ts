@@ -5,13 +5,14 @@ import {
 import { parse, stringify } from "yaml";
 
 import type { TaskCollectionConfiguration } from "./task-configuration";
-import type { TaskViewDocument } from "./view";
+import type { TaskView, TaskViewDocument } from "./view";
 
 export const TASKNOTES_DEFAULT_VIEW_SOURCE_NAME = "tasknotes-app";
 export const TASKNOTES_VIEW_SOURCE_FOLDER = "TaskNotes/Views";
 export const TASKNOTES_DEFAULT_VIEW_NAMES = [
   "Today",
   "Upcoming",
+  "Inbox",
   "Calendar",
   "Projects",
   "Archive",
@@ -78,8 +79,9 @@ export function taskNotesDefaultBaseDocument(
   const priority = note(fields.priority);
   const projects = note(fields.projects);
   const title = note(fields.title);
+  const tags = note("tags");
   const manualOrder = basesProperty(fields.sortOrder);
-  const todayFilter = effectiveTaskDayFilter(scheduled, due);
+  const todayFilter = todayTaskFilter(scheduled, due);
 
   return stringify(
     {
@@ -96,7 +98,7 @@ export function taskNotesDefaultBaseDocument(
           filters: {
             and: [...activeTaskFilters(configuration), todayFilter],
           },
-          order: [title, scheduled, due, projects],
+          order: [title, scheduled, due, projects, tags],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: priority, direction: "ASC" },
@@ -166,6 +168,22 @@ export function taskNotesDefaultBaseDocument(
           ],
           options: { create: false },
         },
+        {
+          type: "tasknotesTaskList",
+          name: "Inbox",
+          filters: {
+            and: [
+              ...activeTaskFilters(configuration),
+              `${scheduled}.isEmpty()`,
+              `${due}.isEmpty()`,
+            ],
+          },
+          order: [title, priority, projects, tags],
+          sort: [
+            { property: manualOrder, direction: "DESC" },
+            { property: title, direction: "ASC" },
+          ],
+        },
       ],
     },
     { lineWidth: 0 },
@@ -179,7 +197,7 @@ export function taskNotesDefaultCanonicalDocument(
   const scheduled = note(fields.scheduled);
   const due = note(fields.due);
   const sharedWhere = activeTaskFilters(configuration).join(" && ");
-  const todayWhere = canonicalFilter(effectiveTaskDayFilter(scheduled, due));
+  const todayWhere = canonicalFilter(todayTaskFilter(scheduled, due));
   const selection = [fields.title, fields.scheduled, fields.due];
 
   return serializeMarkdownDocument(
@@ -204,6 +222,18 @@ export function taskNotesDefaultCanonicalDocument(
             type: "tasknotes.task-list",
             fallback: "mdbase.table",
             options: { sections: "day" },
+          },
+        },
+        {
+          id: "inbox",
+          name: "Inbox",
+          where: `(${sharedWhere}) && ${scheduled}.isEmpty() && ${due}.isEmpty()`,
+          select: [...selection, fields.projects],
+          order_by: [{ field: fields.sortOrder, direction: "desc" }],
+          presentation: {
+            type: "tasknotes.task-list",
+            fallback: "mdbase.table",
+            options: {},
           },
         },
         calendarCanonicalView(
@@ -273,6 +303,34 @@ export function isTaskNotesDefaultViewDocument(
   );
 }
 
+export type StarterViewKind =
+  "today" | "upcoming" | "inbox" | "calendar" | "projects" | "archive";
+
+/**
+ * Which starter view this is, if any. Base views are identified by their
+ * ordinal, not a name, so a starter Base is recognized by its source and name.
+ */
+export function starterViewKind(
+  view: Pick<
+    TaskView,
+    "id" | "name" | "documentId" | "documentName" | "source"
+  >,
+): StarterViewKind | null {
+  const isStarter = (value: string): value is StarterViewKind =>
+    TASKNOTES_DEFAULT_VIEW_NAMES.some((name) => name.toLowerCase() === value);
+  if (isStarter(view.id)) return view.id;
+  const name = view.name.toLowerCase();
+  return isStarter(name) &&
+    isTaskNotesDefaultViewDocument({
+      id: view.documentId,
+      name: view.documentName,
+      source: view.source,
+      views: [],
+    })
+    ? name
+    : null;
+}
+
 export function defaultNavigationViewKeys(
   documents: readonly TaskViewDocument[],
 ): string[] {
@@ -323,7 +381,8 @@ function calendarCanonicalView(
   };
 }
 
-function effectiveTaskDayFilter(
+/** Today is what is due now. Tasks with no date live in Inbox. */
+function todayTaskFilter(
   scheduled: string,
   due: string,
 ): Record<string, unknown> {
@@ -332,17 +391,11 @@ function effectiveTaskDayFilter(
       {
         and: [
           `${scheduled}.isEmpty() == false`,
-          // `.date()` drops the time, so 09:00 today still counts as today.
           `date(${scheduled}).date() <= today()`,
         ],
       },
       {
-        and: [
-          `${scheduled}.isEmpty()`,
-          {
-            or: [`${due}.isEmpty()`, `date(${due}).date() <= today()`],
-          },
-        ],
+        and: [`${due}.isEmpty() == false`, `date(${due}).date() <= today()`],
       },
     ],
   };

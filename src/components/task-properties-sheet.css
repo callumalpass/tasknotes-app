@@ -1,0 +1,37 @@
+.task-property-editor.task-properties-sheet > header {
+  display: block;
+}
+
+.task-properties-sheet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.task-properties-sheet .task-properties-sheet-heading h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.task-properties-sheet-heading button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+.task-property-editor.task-properties-sheet > header p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}

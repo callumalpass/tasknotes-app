@@ -610,3 +610,20 @@ function humanize(value: string): string {
     .trim();
   return words ? `${words[0].toUpperCase()}${words.slice(1)}` : value;
 }
+
+/** The stored colour of a priority other than the collection's default. */
+export function markedPriorityColorOf(
+  value: string | undefined,
+  configuration: Pick<TaskCollectionConfiguration, "priorities" | "defaults">,
+): string | undefined {
+  const priority = configuration.priorities.find(
+    (option) => option.value === value,
+  );
+  if (
+    !priority ||
+    priority.value === configuration.defaults.priority ||
+    priority.value === "none"
+  )
+    return undefined;
+  return priority.color;
+}

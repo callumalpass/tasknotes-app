@@ -1,3 +1,4 @@
+import { formatTaskDate } from "../i18n/presentation";
 import {
   act,
   fireEvent,
@@ -19,6 +20,53 @@ import { ViewsScreen } from "./views-screen";
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskView } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
+
+it("puts Today first and links directly to the expanded overdue section", async () => {
+  renderToday(
+    repository([
+      task("late", "Late", { scheduled: shiftTaskDate(todayString(), -1) }),
+      task("current", "Current", { scheduled: todayString() }),
+    ]),
+  );
+  const link = await screen.findByRole("link", { name: "1 overdue" });
+  const sections = document.querySelectorAll(".task-section");
+  expect(sections[0]).toHaveAttribute("data-list-lane", "section:today");
+  expect(sections[1]).toHaveAttribute("data-list-lane", "section:overdue");
+  const overdue = screen.getByRole("button", { name: "Overdue 1" });
+  fireEvent.click(overdue);
+  expect(overdue).toHaveAttribute("aria-expanded", "false");
+  const scroll = vi.fn();
+  sections[1]!.scrollIntoView = scroll;
+  fireEvent.click(link);
+  expect(overdue).toHaveAttribute("aria-expanded", "true");
+  expect(overdue).toHaveFocus();
+  expect(scroll).toHaveBeenCalled();
+});
+
+it("links to the real overdue section when discovery has no presentation options", async () => {
+  renderToday(
+    repository([
+      task("late", "Late saved task", {
+        due: shiftTaskDate(todayString(), -1),
+      }),
+      task("current", "Current saved task", { scheduled: todayString() }),
+    ]),
+    {},
+    { ...todayView, presentation: { ...todayView.presentation!, options: {} } },
+  );
+  const link = await screen.findByRole("link", { name: "1 overdue" });
+  const section = document.querySelector(link.getAttribute("href")!)!;
+  expect(section).toHaveAttribute("data-list-lane", "section:overdue");
+  const toggle = within(section as HTMLElement).getByRole("button", {
+    name: "Overdue 1",
+  });
+  fireEvent.click(toggle);
+  section.scrollIntoView = vi.fn();
+  fireEvent.click(link);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(toggle).toHaveFocus();
+  expect(section.scrollIntoView).toHaveBeenCalled();
+});
 
 it("moves every overdue task to today in one batch and offers Undo", async () => {
   const today = todayString();
@@ -45,6 +93,7 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
     screen.getByRole("button", { name: "Overdue 2" }).closest("h2"),
   ).not.toBeNull();
   fireEvent.click(action);
+  fireEvent.click(screen.getByRole("button", { name: "Move due dates too" }));
 
   // Rows move before the batch is accepted.
   const todaySection = () =>
@@ -55,16 +104,16 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
   await waitFor(() =>
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late-scheduled", input: { scheduled: `${today}T09:30` } },
-      { id: "late-due", input: { scheduled: today } },
+      { id: "late-due", input: { scheduled: today, due: today } },
     ]),
   );
 
   await act(async () => write.resolve());
   const undo = await screen.findByRole("button", { name: "Undo" });
-  expect(screen.getByText("Moved 2 tasks to today")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Moved 2 tasks to today, 1 deadline moved too",
+  );
   await waitFor(() => expect(undo).toHaveFocus());
-  // Due-only tasks keep their deadline; only Scheduled changed.
-  expect(tasks[1].due).toBe(shiftTaskDate(today, -1));
 
   fireEvent.click(undo);
   await waitFor(() =>
@@ -73,14 +122,57 @@ it("moves every overdue task to today in one batch and offers Undo", async () =>
         id: "late-scheduled",
         input: { scheduled: `${shiftTaskDate(today, -3)}T09:30` },
       },
-      { id: "late-due", input: { scheduled: null } },
+      {
+        id: "late-due",
+        input: { scheduled: null, due: shiftTaskDate(today, -1) },
+      },
     ]),
   );
   const overdue = await screen.findByRole("button", { name: "Overdue 2" });
   expect(
     within(overdue.closest("section")!).getByText("Late due"),
   ).toBeVisible();
-  expect(screen.queryByText("Moved 2 tasks to today")).toBeNull();
+  expect(screen.queryByText(/^Moved 2 tasks to today/)).toBeNull();
+});
+
+it("schedules overdue work for another day and names moved deadlines in its undoable summary", async () => {
+  const today = todayString();
+  const date = shiftTaskDate(today, 3);
+  const tasks = [
+    task("late", "Late task", {
+      scheduled: `${shiftTaskDate(today, -2)}T09:30`,
+      due: shiftTaskDate(today, -1),
+    }),
+  ];
+  const updateMany = vi.fn<TaskRepository["updateMany"]>(async (updates) =>
+    updates.map(({ id, input }) => apply(tasks, id, input)),
+  );
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+  renderToday(repository(tasks, { updateMany }));
+  fireEvent.click(await screen.findByRole("button", { name: "Choose date" }));
+  const typed = screen.getByLabelText("Type a date");
+  fireEvent.change(typed, { target: { value: date } });
+  await screen.findByText(/^Enter to set/);
+  fireEvent.keyDown(typed, { key: "Enter" });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Move due dates too" }),
+  );
+  await waitFor(() =>
+    expect(updateMany).toHaveBeenCalledWith([
+      { id: "late", input: { scheduled: `${date}T09:30`, due: date } },
+    ]),
+  );
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    `Moved 1 task to ${formatTaskDate(date)}, 1 deadline moved too`,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(updateMany).toHaveBeenCalledTimes(2));
 });
 
 it("returns rows to Overdue when the batch is rejected", async () => {
@@ -129,8 +221,6 @@ it("says Today is clear and points to what comes next", async () => {
   expect(next.parentElement).toHaveTextContent(
     "Next: Plan the offsite · Tomorrow",
   );
-  // Anytime work stays listed beneath the clear line.
-  expect(screen.getByText("Read the field guide")).toBeVisible();
   fireEvent.click(next);
   expect(onOpenTask).toHaveBeenCalledWith(later, undefined);
   fireEvent.click(screen.getByRole("button", { name: "See Upcoming" }));
@@ -276,6 +366,7 @@ function renderToday(
     onOpenView?: (view: TaskView) => void;
     onOpenTask?: (task: Task, occurrence?: string) => void;
   } = {},
+  catalogView = todayView,
 ) {
   return render(
     <RepositoryProvider
@@ -283,7 +374,7 @@ function renderToday(
       repository={repository}
     >
       <ViewsScreen
-        documents={[todayView, upcomingView].map((view) => ({
+        documents={[catalogView, upcomingView].map((view) => ({
           id: view.documentId,
           name: view.documentName,
           source: view.source,
@@ -292,7 +383,7 @@ function renderToday(
         navigationViewKeys={[todayView.key, upcomingView.key]}
         operational
         viewKey={todayView.key}
-        views={[todayView, upcomingView]}
+        views={[catalogView, upcomingView]}
         onBack={() => undefined}
         onOpenTask={handlers.onOpenTask ?? (() => undefined)}
         onOpenView={handlers.onOpenView ?? (() => undefined)}
@@ -339,3 +430,29 @@ function task(id: string, title: string, patch: Partial<Task> = {}): Task {
     ...patch,
   };
 }
+
+it("keeps missed deadlines when asked to move only the plan", async () => {
+  const today = todayString();
+  const tasks = [
+    task("late", "Late task", {
+      scheduled: `${shiftTaskDate(today, -2)}T09:30`,
+      due: shiftTaskDate(today, -1),
+    }),
+  ];
+  const updateMany = vi.fn<TaskRepository["updateMany"]>(async (updates) =>
+    updates.map(({ id, input }) => apply(tasks, id, input)),
+  );
+  renderToday(repository(tasks, { updateMany }));
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Move all to today, 1 overdue task",
+    }),
+  );
+  expect(updateMany).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Keep due dates" }));
+  await waitFor(() =>
+    expect(updateMany).toHaveBeenCalledWith([
+      { id: "late", input: { scheduled: `${today}T09:30` } },
+    ]),
+  );
+});

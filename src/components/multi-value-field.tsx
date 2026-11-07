@@ -19,7 +19,9 @@ export function MultiValueField({
   completeField,
   valueLabels,
   valueLabel = linkDisplayLabel,
+  usedFirst = false,
   onChange,
+  onPick,
 }: {
   label: string;
   field: string;
@@ -29,7 +31,11 @@ export function MultiValueField({
   completeField(request: FieldCompletionRequest): Promise<FieldCompletion[]>;
   valueLabels?: ReadonlyMap<string, string>;
   valueLabel?(value: string): string;
-  onChange(values: string[]): void;
+  /** Before anything is typed, list only values the collection already uses. */
+  usedFirst?: boolean;
+  onChange?(values: string[]): void;
+  /** Makes this a single choice: a pick commits at once instead of adding a chip. */
+  onPick?(value: string, label: string): void;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -39,11 +45,17 @@ export function MultiValueField({
   const [options, setOptions] = useState<FieldCompletion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [answeredQuery, setAnsweredQuery] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
     {},
   );
+  useEffect(() => {
+    document
+      .getElementById(`${id}-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, id, options]);
 
   const labelFor = (value: string) =>
     selectedLabels[value] ?? valueLabels?.get(value) ?? valueLabel(value);
@@ -67,12 +79,15 @@ export function MultiValueField({
             const selected = new Set(
               values.map((value) => value.toLocaleLowerCase()),
             );
+            const available = next.filter(
+              (option) => !selected.has(option.value.toLocaleLowerCase()),
+            );
+            const used = available.filter(({ kind }) => kind === "value");
             setOptions(
-              next.filter(
-                (option) => !selected.has(option.value.toLocaleLowerCase()),
-              ),
+              usedFirst && !query.trim() && used.length ? used : available,
             );
             setActiveIndex(0);
+            setAnsweredQuery(query);
           })
           .catch(() => {
             if (active) setOptions([]);
@@ -87,7 +102,7 @@ export function MultiValueField({
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [completeField, completion, field, open, query, values]);
+  }, [completeField, completion, field, open, query, usedFirst, values]);
 
   useEffect(
     () => () => {
@@ -99,13 +114,18 @@ export function MultiValueField({
   function add(value: string, label?: string) {
     const next = value.trim();
     if (!next) return;
+    if (onPick) {
+      setQuery("");
+      onPick(next, label ?? labelFor(next));
+      return;
+    }
     if (
       !values.some(
         (candidate) =>
           candidate.toLocaleLowerCase() === next.toLocaleLowerCase(),
       )
     ) {
-      onChange([...values, next]);
+      onChange?.([...values, next]);
       if (label)
         setSelectedLabels((current) => ({ ...current, [next]: label }));
       setAnnouncement(t`${label ?? labelFor(next)} added`);
@@ -116,6 +136,8 @@ export function MultiValueField({
   }
 
   function addQuery() {
+    // A single choice never commits what was typed in place of a match still loading.
+    if (onPick && answeredQuery !== query) return;
     const option = options[activeIndex];
     if (option) add(option.value, option.label);
     else add(query.replace(/,$/, ""));
@@ -141,16 +163,17 @@ export function MultiValueField({
       addQuery();
       return;
     }
-    if (event.key === "Backspace" && !query && values.length) {
+    if (event.key === "Backspace" && !query && values.length && !onPick) {
       const removed = values.at(-1);
-      onChange(values.slice(0, -1));
+      onChange?.(values.slice(0, -1));
       if (removed) setAnnouncement(t`${labelFor(removed)} removed`);
       return;
     }
-    if (event.key === "Escape" && open) {
+    if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      setOpen(false);
+      if (open) setOpen(false);
+      else event.currentTarget.blur();
     }
   }
 
@@ -163,7 +186,7 @@ export function MultiValueField({
         className="multi-value-control"
         onClick={() => inputRef.current?.focus()}
       >
-        {values.map((value) => (
+        {(onPick ? [] : values).map((value) => (
           <span className="field-token" key={value}>
             <span>{labelFor(value)}</span>
             <button
@@ -171,7 +194,7 @@ export function MultiValueField({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                onChange(values.filter((candidate) => candidate !== value));
+                onChange?.(values.filter((candidate) => candidate !== value));
                 setAnnouncement(t`${labelFor(value)} removed`);
               }}
             >
@@ -190,13 +213,13 @@ export function MultiValueField({
           aria-expanded={showOptions}
           autoComplete="off"
           id={`${id}-input`}
-          placeholder={values.length ? "" : placeholder}
+          placeholder={values.length && !onPick ? "" : placeholder}
           ref={inputRef}
           role="combobox"
           value={query}
           onBlur={() => {
             blurTimer.current = window.setTimeout(() => {
-              if (query.trim()) add(query);
+              if (query.trim() && !onPick) add(query);
               setOpen(false);
             }, 120);
           }}

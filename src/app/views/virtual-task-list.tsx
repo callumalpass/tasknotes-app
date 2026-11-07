@@ -1,3 +1,4 @@
+import { TaskSelectionList } from "../task-selection";
 import { t as translate } from "@lingui/core/macro";
 import {
   useCallback,
@@ -10,16 +11,19 @@ import { sectionCollapsed } from "../../application/section-preferences";
 import { BoundedList } from "../../components/bounded-list";
 import { TaskListSection } from "../../components/task-list-section";
 import { ViewTaskRow } from "./view-task-row";
+import { todayString } from "../../domain/task";
 import { TaskDeparturesContext } from "../../components/task-completion-motion";
 import { settledRowCount } from "../optimistic-view-reconciliation";
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewProperty, TaskViewRow } from "../../domain/view";
+import type { TaskListLane } from "../optimistic-view-reconciliation";
 
 type Lane = {
   key: string;
   label?: string;
   className?: string;
   rows: TaskViewRow[];
+  mutation?: TaskListLane["mutation"];
 };
 type Entry = {
   key: string;
@@ -30,6 +34,7 @@ type Entry = {
 const getKey = (entry: Entry) => entry.key;
 const estimate = (entry: Entry) => (entry.row ? 84 : 52);
 export function VirtualTaskList({
+  selectionEnabled = true,
   lanes,
   grouped,
   daySections,
@@ -42,6 +47,7 @@ export function VirtualTaskList({
   sectionAction,
   showEmpty = false,
 }: {
+  selectionEnabled?: boolean;
   renderRow?(row: TaskViewRow, lane: Lane): ReactNode;
   sectionAction?(lane: Lane): ReactNode;
   showEmpty?: boolean;
@@ -92,46 +98,62 @@ export function VirtualTaskList({
     [entries],
   );
   return (
-    <BoundedList
-      items={entries}
-      getKey={getKey}
-      estimateSize={estimate}
-      relatedIndices={relatedIndices}
-      className={`task-list-view${daySections ? " day-task-sections" : ""}`}
-      renderItem={(entry) =>
-        entry.row ? (
-          renderRow ? (
-            renderRow(entry.row, entry.lane)
+    <TaskSelectionList
+      enabled={selectionEnabled}
+      tasks={entries.flatMap((entry) =>
+        entry.row && !departing.has(entry.row.task.id) ? [entry.row.task] : [],
+      )}
+    >
+      <BoundedList
+        taskId={(entry) => entry.row?.task.id}
+        items={entries}
+        getKey={getKey}
+        estimateSize={estimate}
+        relatedIndices={relatedIndices}
+        className={`task-list-view${daySections ? " day-task-sections" : ""}`}
+        renderItem={(entry) =>
+          entry.row ? (
+            renderRow ? (
+              renderRow(entry.row, entry.lane)
+            ) : (
+              <ViewTaskRow
+                row={entry.row}
+                properties={properties}
+                contextProperties={
+                  entry.lane.mutation?.type === "group"
+                    ? entry.lane.mutation.values
+                    : undefined
+                }
+                sectionDay={
+                  entry.lane.key === "section:today" ? todayString() : undefined
+                }
+                titleProperty={titleProperty}
+                onOpen={onOpen}
+                onToggle={onToggle}
+              />
+            )
           ) : (
-            <ViewTaskRow
-              row={entry.row}
-              properties={properties}
-              titleProperty={titleProperty}
-              onOpen={onOpen}
-              onToggle={onToggle}
-            />
+            <TaskListSection
+              showEmpty={showEmpty || entry.lane.rows.length > 0}
+              headingOnly
+              className={entry.lane.className}
+              laneKey={entry.lane.key}
+              label={entry.lane.label ?? translate({ message: "Other" })}
+              count={settledRowCount(entry.lane.rows, departing)}
+              action={sectionAction?.(entry.lane)}
+              preferenceKey={preferenceKey(entry.lane)}
+              collapsed={isCollapsed(entry.lane)}
+              onCollapsedChange={(value) =>
+                setChoices((previous) =>
+                  new Map(previous).set(entry.lane.key, value),
+                )
+              }
+            >
+              {null}
+            </TaskListSection>
           )
-        ) : (
-          <TaskListSection
-            showEmpty={showEmpty || entry.lane.rows.length > 0}
-            headingOnly
-            className={entry.lane.className}
-            laneKey={entry.lane.key}
-            label={entry.lane.label ?? translate({ message: "Other" })}
-            count={settledRowCount(entry.lane.rows, departing)}
-            action={sectionAction?.(entry.lane)}
-            preferenceKey={preferenceKey(entry.lane)}
-            collapsed={isCollapsed(entry.lane)}
-            onCollapsedChange={(value) =>
-              setChoices((previous) =>
-                new Map(previous).set(entry.lane.key, value),
-              )
-            }
-          >
-            {null}
-          </TaskListSection>
-        )
-      }
-    />
+        }
+      />
+    </TaskSelectionList>
   );
 }

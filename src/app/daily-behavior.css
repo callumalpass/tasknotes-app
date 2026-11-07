@@ -1,0 +1,43 @@
+.task-row-parent {
+  display: none;
+}
+.has-parent-context .task-row-parent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+.tnc-list-lead-head:has(.task-section) {
+  display: block;
+  padding: 0;
+}
+.tnc-list-lead-head:has(.task-section)
+  > :is(.tnc-list-lead-title, .agenda-day-count) {
+  display: none;
+}
+.tnc-list-lead-head:has(.task-section) .tnc-list-lead-slot {
+  display: block;
+  margin: 0;
+  width: 100%;
+}
+.tnc-list-lead:has(.task-section-toggle[aria-expanded="false"])
+  > .tnc-list-rows {
+  display: none;
+}
+@media (max-width: 839px) {
+  .app-shell:has(.global-capture-fab) .page-surface:not(:has(.is-kanban-view)) {
+    padding-bottom: calc(
+      var(--nav-height) + env(safe-area-inset-bottom) + 88px
+    );
+    scroll-padding-bottom: 88px;
+  }
+  .view-detail.is-agenda-default > .view-header {
+    margin-bottom: 4px;
+  }
+  .view-detail.is-agenda-default .tnc-strip {
+    z-index: 4;
+    top: 0;
+    background: var(--paper);
+  }
+}

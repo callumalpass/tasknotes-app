@@ -14,7 +14,6 @@ export default defineConfig({
   testDir: "./e2e",
   testIgnore,
   fullyParallel: false,
-  // Desktop and mobile exercise the same direct mdbase application path.
   workers: 1,
   use: {
     baseURL,
@@ -26,7 +25,15 @@ export default defineConfig({
     reuseExistingServer: false,
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    {
+      name: "desktop",
+      testIgnore: [...testIgnore, "**/phone.spec.ts"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "mobile",
+      testMatch: "**/phone.spec.ts",
+      use: { ...devices["Pixel 7"] },
+    },
   ],
 });

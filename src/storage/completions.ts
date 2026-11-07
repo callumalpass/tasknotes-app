@@ -1,5 +1,7 @@
 import {
   completionMatches,
+  linkDisplayLabel,
+  linkTarget,
   recordCompletion,
   type CollectionRecord,
   type FieldCompletion,
@@ -71,6 +73,45 @@ export function completeRecords(
   return [...values.values()]
     .sort(compareCompletions)
     .slice(0, completionLimit(request));
+}
+
+/**
+ * Values the collection already uses come before other linkable records, so a
+ * project reads as a project even when it was never given a note of its own.
+ */
+export function usedValuesFirst(
+  tasks: Iterable<TaskSummary>,
+  request: FieldCompletionRequest,
+  records: FieldCompletion[],
+): FieldCompletion[] {
+  const used = completeTaskValues(tasks, {
+    ...request,
+    configuredValues: undefined,
+  }).map((completion) => ({
+    ...completion,
+    label: linkDisplayLabel(completion.value),
+  }));
+  const linked = new Set(
+    used
+      .filter(({ value }) => linkTarget(value) !== value)
+      .map(({ label }) => label.toLocaleLowerCase()),
+  );
+  // Text left over from before a link existed is the same project by another spelling.
+  const distinct = used.filter(
+    ({ value, label }) =>
+      linkTarget(value) !== value || !linked.has(label.toLocaleLowerCase()),
+  );
+  const seen = new Set(distinct.map(({ value }) => value));
+  const labels = new Set(
+    distinct.map(({ label }) => label.toLocaleLowerCase()),
+  );
+  return [
+    ...distinct,
+    ...records.filter(
+      ({ value, label }) =>
+        !seen.has(value) && !labels.has(label.toLocaleLowerCase()),
+    ),
+  ].slice(0, completionLimit(request));
 }
 
 export function completionLimit(request: FieldCompletionRequest): number {

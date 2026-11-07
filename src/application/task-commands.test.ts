@@ -40,6 +40,101 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
+  it("gives a bulk deletion one durable Undo window, including after restart", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.getSummary.mockImplementation(
+      async (id) => ({ id, title: id }) as Task,
+    );
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion(["a", "b", "c"]);
+    expect(journal.commands).toHaveLength(1);
+    expect(service.snapshot().pendingDeletion).toMatchObject({
+      taskId: "a",
+      additionalTasks: [{ taskId: "b" }, { taskId: "c" }],
+    });
+    expect(repository.delete).not.toHaveBeenCalled();
+    service.dispose();
+    const restarted = new TaskCommandService({ repository, journal });
+    await restarted.initialize();
+    await restarted.undoDeletion();
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(journal.commands).toEqual([]);
+    restarted.dispose();
+  });
+
+  it("commits all bulk rows only after the window and retains uncommitted rows on a conflict", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.getSummary.mockImplementation(
+      async (id) => ({ id, title: id }) as Task,
+    );
+    repository.delete.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === "b") throw new Error("conflict");
+    });
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion(["a", "b", "c"]);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(repository.delete).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(repository.delete.mock.calls).toEqual([["a"], ["b"]]);
+    expect(service.snapshot().pendingDeletion).toMatchObject({
+      taskId: "b",
+      additionalTasks: [{ taskId: "c" }],
+    });
+    expect(service.snapshot().deletionError).not.toBeNull();
+    expect(journal.commands[0]).toMatchObject({
+      taskId: "b",
+      additionalTasks: [{ taskId: "c" }],
+    });
+    await service.undoDeletion();
+    expect(journal.commands).toEqual([]);
+    expect(repository.delete).toHaveBeenCalledTimes(2);
+    service.dispose();
+  });
+
+  it("retains in-memory progress when persisting the next deletion fails", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.getSummary.mockImplementation(
+      async (id) => ({ id, title: id }) as Task,
+    );
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion(["a", "b"]);
+    const put = vi
+      .spyOn(journal, "put")
+      .mockRejectedValueOnce(new Error("Journal failed"));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(repository.delete.mock.calls).toEqual([["a"]]);
+    expect(service.snapshot().pendingDeletion?.taskId).toBe("b");
+    expect(service.snapshot().deletionError).not.toBeNull();
+    put.mockRestore();
+    await service.retryDeletion();
+    expect(repository.delete.mock.calls).toEqual([["a"], ["b"]]);
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("commits an accepted bulk intent in order and clears its journal", async () => {
+    const journal = new MemoryMutationJournal();
+    const repository = taskRepository();
+    repository.getSummary.mockImplementation(
+      async (id) => ({ id, title: id }) as Task,
+    );
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion(["a", "b", "c"]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(repository.delete.mock.calls).toEqual([["a"], ["b"], ["c"]]);
+    expect(journal.commands).toEqual([]);
+    expect(service.snapshot().pendingDeletion).toBeNull();
+    service.dispose();
+  });
+
   it("commits the durable deletion after the undo window", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();

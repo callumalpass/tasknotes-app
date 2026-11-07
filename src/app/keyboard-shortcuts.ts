@@ -9,14 +9,27 @@ import {
 
 /** Actions a focused task row (or the command palette) can run on its task. */
 export type TaskShortcutAction =
-  "open" | "toggle" | "today" | "tomorrow" | "next-week";
+  | "open"
+  | "toggle"
+  | "dates"
+  | "priority"
+  | "status"
+  | "project"
+  | "today"
+  | "tomorrow"
+  | "next-week";
 
 export const TASK_SHORTCUT_EVENT = "tasknotes:task-shortcut";
+/** Asks a row's action menu to open on one panel. */
+export const TASK_MENU_PANEL_EVENT = "tasknotes:task-menu-panel";
 
 /** Single-letter keys for a focused task row. Enter also opens (native button). */
 const rowKeys: Record<string, TaskShortcutAction> = {
   o: "open",
   x: "toggle",
+  d: "dates",
+  p: "priority",
+  s: "status",
   t: "today",
   m: "tomorrow",
   w: "next-week",
@@ -40,11 +53,16 @@ export function hasCommandModifier(event: KeyboardEvent): boolean {
  * Plain-key shortcuts yield to typing, IME composition, other handlers, and
  * any open menu, sheet, or dialog, which owns the keyboard while it is open.
  */
-export function plainShortcutsSuspended(event: KeyboardEvent): boolean {
+export function plainShortcutsSuspended(
+  event: KeyboardEvent,
+  allowAlt = false,
+): boolean {
   return (
     event.defaultPrevented ||
     event.isComposing ||
-    hasCommandModifier(event) ||
+    event.metaKey ||
+    event.ctrlKey ||
+    (event.altKey && !allowAlt) ||
     isEditableTarget(event.target) ||
     hasOpenOverlay()
   );
@@ -53,6 +71,9 @@ export function plainShortcutsSuspended(event: KeyboardEvent): boolean {
 export function taskRowShortcut(
   event: KeyboardEvent,
 ): TaskShortcutAction | null {
+  // "+" needs Shift on many layouts, and matches the capture syntax.
+  if (event.key === "+")
+    return plainShortcutsSuspended(event) ? null : "project";
   if (event.shiftKey || plainShortcutsSuspended(event)) return null;
   return rowKeys[event.key.toLocaleLowerCase()] ?? null;
 }
@@ -138,7 +159,66 @@ function focusRow(row: HTMLElement) {
   const title = rowTitle(row);
   if (!title) return;
   title.focus({ preventScroll: true });
-  title.scrollIntoView?.({ block: "nearest" });
+  row.scrollIntoView?.({ block: "nearest" });
+}
+
+export function focusRestoredTaskRow(taskId: string) {
+  const main = document.getElementById("main-content");
+  if (!main) return;
+  const href = location.href;
+  const restore = () => {
+    const row = main.querySelector<HTMLElement>(
+      `.task-row[data-task-id="${CSS.escape(taskId)}"]`,
+    );
+    if (!row || location.href !== href) return false;
+    focusRow(row);
+    return true;
+  };
+  if (restore()) return;
+  const observer = new MutationObserver(() => {
+    if (location.href !== href || restore()) {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+    }
+  });
+  const timeout = window.setTimeout(() => observer.disconnect(), 5_000);
+  observer.observe(main, { childList: true, subtree: true });
+}
+
+let rowPlace: { id: string; index: number; href: string } | undefined;
+
+/** Keeps the keyboard's place in a list after focus leaves it. */
+export function rememberRowPlace(target: EventTarget | null) {
+  if (!(target instanceof Element)) return;
+  const row = target.closest<HTMLElement>(ROW_SELECTOR);
+  const region = row?.closest("#main-content");
+  if (!row || !region) return;
+  rowPlace = {
+    id: row.dataset.taskId!,
+    index: taskRowsIn(region).indexOf(row),
+    href: location.href,
+  };
+}
+
+function placedRow(rows: HTMLElement[]): {
+  row: HTMLElement;
+  stillThere: boolean;
+} | null {
+  if (!rowPlace || rowPlace.href !== location.href) return null;
+  const { id, index } = rowPlace;
+  const same = rows.find((row) => row.dataset.taskId === id);
+  const row = same ?? rows[Math.min(index, rows.length - 1)];
+  return row ? { row, stillThere: Boolean(same) } : null;
+}
+
+/** Returns focus to the list after a menu or edit has taken it away. */
+export function returnFocusToList(
+  main: ParentNode | null = document.getElementById("main-content"),
+) {
+  const active = document.activeElement;
+  if (active && active !== document.body && active !== main) return;
+  const place = main && placedRow(taskRowsIn(main));
+  if (place) focusRow(place.row);
 }
 
 /**
@@ -156,6 +236,14 @@ export function focusAdjacentTaskRow(
   const rows = taskRowsIn(region);
   if (!rows.length) return false;
   if (!current || !rows.includes(current)) {
+    const place = placedRow(rows);
+    if (place) {
+      const next = place.stillThere
+        ? (rows[rows.indexOf(place.row) + direction] ?? place.row)
+        : place.row;
+      focusRow(next);
+      return true;
+    }
     const inView = rows.filter((row) => {
       const bounds = row.getBoundingClientRect();
       return bounds.bottom > 0 && bounds.top < window.innerHeight;
@@ -237,12 +325,36 @@ export function keyboardShortcutGroups(): {
           keys: [shortcutLabel("K")],
           description: t({ message: "Command palette" }),
         },
-        { keys: [shortcutLabel("N")], description: t({ message: "New task" }) },
+        {
+          keys: ["q", "n", shortcutLabel("N")],
+          description: t({ message: "New task" }),
+        },
         {
           keys: [shortcutLabel("Z")],
-          description: t({ message: "Undo a deleted task" }),
+          description: t({ message: "Undo last action" }),
         },
         { keys: ["?"], description: t({ message: "Keyboard shortcuts" }) },
+      ],
+    },
+    {
+      title: t({ message: "Navigation" }),
+      shortcuts: [
+        { keys: ["/"], description: t({ message: "Search" }) },
+        { keys: ["g → t"], description: t({ message: "Today" }) },
+        { keys: ["g → u"], description: t({ message: "Upcoming" }) },
+        { keys: ["g → i"], description: t({ message: "Inbox" }) },
+        { keys: ["g → s"], description: t({ message: "Scratchpad" }) },
+        { keys: ["g → c"], description: t({ message: "Calendar" }) },
+        { keys: ["g → p"], description: t({ message: "Projects" }) },
+        { keys: ["Shift M"], description: t({ message: "Toggle sidebar" }) },
+      ],
+    },
+    {
+      title: t({ message: "Task details" }),
+      shortcuts: [
+        { keys: ["j", "Alt+↓"], description: t({ message: "Next task" }) },
+        { keys: ["k", "Alt+↑"], description: t({ message: "Previous task" }) },
+        { keys: ["Esc"], description: t({ message: "Back to the list" }) },
       ],
     },
     {
@@ -252,6 +364,20 @@ export function keyboardShortcutGroups(): {
         { keys: ["k", "↑"], description: t({ message: "Previous task" }) },
         { keys: ["o", "Enter"], description: t({ message: "Open task" }) },
         { keys: ["x"], description: t({ message: "Complete or reopen" }) },
+        { keys: ["v"], description: t({ message: "Select focused task" }) },
+        {
+          keys: ["Shift+j", "Shift+k"],
+          description: t({ message: "Extend task selection" }),
+        },
+        {
+          keys: [shortcutLabel("A")],
+          description: t({ message: "Select all visible tasks" }),
+        },
+        { keys: ["Esc"], description: t({ message: "Clear task selection" }) },
+        { keys: ["d"], description: t({ message: "Change dates" }) },
+        { keys: ["p"], description: t({ message: "Set priority" }) },
+        { keys: ["s"], description: t({ message: "Set status" }) },
+        { keys: ["+"], description: t({ message: "Move to project" }) },
         { keys: ["t"], description: t({ message: "Schedule today" }) },
         { keys: ["m"], description: t({ message: "Schedule tomorrow" }) },
         { keys: ["w"], description: t({ message: "Schedule next week" }) },

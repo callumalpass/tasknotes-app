@@ -2,6 +2,7 @@ import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
 import { nestedItemCount } from "../i18n/default-labels";
 import { appLocale } from "../i18n/app";
+import { formatTaskDate } from "../i18n/presentation";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import {
@@ -46,6 +47,7 @@ import {
 } from "react";
 
 import { useOverlay } from "../components/overlays/use-overlay";
+import { useScratchpadMenu } from "./use-scratchpad-menu";
 import {
   activeCaptureToken,
   applyCaptureSuggestion,
@@ -91,8 +93,16 @@ import {
 import { selectionFeedback, successFeedback } from "../native/feedback";
 import { useRepository } from "./repository-context";
 import { OutlineTextarea } from "../components/outline-textarea";
+import {
+  outlineSelection,
+  setOutlineSelection,
+} from "../components/outline-selection";
 import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
 import { initialScratchpadMode } from "./scratchpad-preferences";
+import {
+  undoScratchpadConversion,
+  type ScratchpadConversion,
+} from "../application/scratchpad-conversion";
 
 import type {
   FieldCompletion,
@@ -137,6 +147,7 @@ interface ReviewResult {
 interface ScratchpadNotice {
   message: string;
   tasks?: TaskSummary[];
+  conversions?: ScratchpadConversion[];
 }
 
 /** Matches the recovery window of deleted tasks. */
@@ -177,6 +188,7 @@ export function ScratchpadScreen({
   const deletionUndoRef = useRef<HTMLButtonElement | null>(null);
   const flushers = useRef(new Map<string, () => Promise<unknown>>());
   const imageActionRef = useRef<HTMLButtonElement | null>(null);
+  const imageCaptureRef = useRef<HTMLElement | null>(null);
   const screenRef = useRef<HTMLElement | null>(null);
   const historyRef = useRef<HTMLDivElement | null>(null);
   const currentCardRef = useRef<HTMLElement | null>(null);
@@ -668,13 +680,19 @@ export function ScratchpadScreen({
 
   useEffect(() => {
     if (!imageCaptureOpen) return;
+    const frame = requestAnimationFrame(() =>
+      imageCaptureRef.current?.scrollIntoView?.({ block: "center" }),
+    );
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setImageCaptureOpen(false);
       imageActionRef.current?.focus();
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
   }, [imageCaptureOpen]);
 
   useEffect(() => {
@@ -1104,7 +1122,13 @@ export function ScratchpadScreen({
                 ref={imageActionRef}
                 title={t({ message: "Add image" })}
                 type="button"
-                onClick={() => setImageCaptureOpen((open) => !open)}
+                onClick={() => {
+                  if (!imageCaptureOpen) {
+                    stickToBottom.current = false;
+                    revealBottom.current = false;
+                  }
+                  setImageCaptureOpen((open) => !open);
+                }}
               >
                 <ImagePlus aria-hidden="true" size={18} />
                 <span>
@@ -1137,6 +1161,7 @@ export function ScratchpadScreen({
               aria-labelledby="scratchpad-image-capture-title"
               className="scratchpad-image-capture"
               id="scratchpad-image-capture"
+              ref={imageCaptureRef}
             >
               <header>
                 <div>
@@ -1236,20 +1261,9 @@ function ScratchNoteActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const outside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !menuRef.current?.contains(event.target) &&
-        !menuTriggerRef.current?.contains(event.target)
-      )
-        setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    return () => document.removeEventListener("pointerdown", outside);
-  }, [menuOpen]);
+  useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
+    setMenuOpen(false),
+  );
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -1336,20 +1350,9 @@ function ScratchImageCard({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const outside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !menuRef.current?.contains(event.target) &&
-        !menuTriggerRef.current?.contains(event.target)
-      )
-        setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    return () => document.removeEventListener("pointerdown", outside);
-  }, [menuOpen]);
+  useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
+    setMenuOpen(false),
+  );
 
   useEffect(() => {
     const store = repository.files;
@@ -1418,9 +1421,11 @@ function ScratchImageCard({
       />
       {!collapsed ? (
         <div
-          className="scratch-image-frame"
+          className={`scratch-image-frame${state === "missing" || state === "error" ? " is-unavailable" : ""}`}
           style={
-            image.width && image.height
+            (state === "loading" || state === "ready") &&
+            image.width &&
+            image.height
               ? { aspectRatio: `${image.width} / ${image.height}` }
               : undefined
           }
@@ -1598,6 +1603,7 @@ function ScratchpadDocumentEditor({
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [convertingId, setConvertingId] = useState<string>();
   const [notice, setNotice] = useState<ScratchpadNotice | null>(null);
+  const [undoingConversion, setUndoingConversion] = useState(false);
   const initialDocumentRef = useRef(initialDocument);
   const documentRef = useRef<ScratchpadDocument | null>(null);
   const nodesRef = useRef<ScratchNode[]>([]);
@@ -1605,6 +1611,10 @@ function ScratchpadDocumentEditor({
   const sourceEditVersion = useRef(0);
   const titleRef = useRef(initialDocument.title ?? "");
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
+  const rowMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useScratchpadMenu(menuId, rowMenuRef, rowMenuTriggerRef, () =>
+    setMenuId(undefined),
+  );
   const editorModeRef = useRef<"outline" | "markdown">(editorMode);
   const saveTail = useRef<Promise<unknown>>(Promise.resolve());
   const savesInFlight = useRef(0);
@@ -1809,6 +1819,42 @@ function ScratchpadDocumentEditor({
     };
   }, [hydrate, repository]);
 
+  useEffect(() => {
+    let live = true;
+    let latestRequest = 0;
+    const refreshLinkedTasks = async () => {
+      const documentId = documentRef.current?.id;
+      const request = ++latestRequest;
+      const ids = new Set(
+        nodesRef.current.flatMap((node) =>
+          node.kind === "task" && node.taskId ? [node.taskId] : [],
+        ),
+      );
+      if (!ids.size) return;
+      const tasks = await Promise.all(
+        [...ids].map((id) => repository.getSummary(id).catch(() => null)),
+      );
+      if (
+        !live ||
+        request !== latestRequest ||
+        documentRef.current?.id !== documentId
+      )
+        return;
+      setLinkedTasks((current) => {
+        const next = new Map(current);
+        for (const task of tasks) if (task) next.set(task.id, task);
+        return next;
+      });
+    };
+    const stop = repository.subscribe((change) => {
+      if (!change || change.kind === "data") void refreshLinkedTasks();
+    });
+    return () => {
+      live = false;
+      stop();
+    };
+  }, [repository]);
+
   const persist = useCallback(
     (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
     [persistBody],
@@ -1984,11 +2030,13 @@ function ScratchpadDocumentEditor({
     );
     input?.focus();
     const position = request.cursor ?? input?.value.length ?? 0;
-    input?.setSelectionRange(
-      position,
-      request.selectionEnd ?? position,
-      request.selectionDirection,
-    );
+    if (input)
+      setOutlineSelection(
+        input,
+        position,
+        request.selectionEnd ?? position,
+        request.selectionDirection,
+      );
   }, [nodes, reviewOpen]);
 
   const activeNode = nodes.find((node) => node.id === activeId);
@@ -2205,7 +2253,8 @@ function ScratchpadDocumentEditor({
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      const position = event.currentTarget.selectionStart ?? node.text.length;
+      const position =
+        outlineSelection(event.currentTarget) ?? node.text.length;
       const before = node.text.slice(0, position);
       const after = node.text.slice(position);
       const created = createScratchNode(
@@ -2275,6 +2324,7 @@ function ScratchpadDocumentEditor({
 
   async function convertNode(id: string) {
     if (convertingId || reviewProcessing) return;
+    autosaveSuspended.current = true;
     setConvertingId(id);
     setError("");
     try {
@@ -2282,15 +2332,28 @@ function ScratchpadDocumentEditor({
       focusAfterRender.current = { id: converted.continuationId, cursor: 0 };
       updateNodes(converted.nodes);
       await persist(converted.nodes);
-      await linkExistingChildren(converted.nodes, id, converted.task);
+      const children = await linkExistingChildren(
+        converted.nodes,
+        id,
+        converted.task,
+      );
       successFeedback();
       setNotice({
         message: t`Created “${converted.task.title}”`,
         tasks: [converted.task],
+        conversions: [
+          {
+            draft: converted.draft,
+            linked: converted.nodes.find((node) => node.id === id)!,
+            task: converted.task,
+            children,
+          },
+        ],
       });
     } catch (reason) {
       setError(message(reason));
     } finally {
+      autosaveSuspended.current = false;
       setConvertingId(undefined);
     }
   }
@@ -2346,6 +2409,7 @@ function ScratchpadDocumentEditor({
     ).value;
     return {
       task,
+      draft: node,
       ...ensureScratchContinuation(
         source.map((candidate) => {
           if (candidate.id !== id) return candidate;
@@ -2369,8 +2433,9 @@ function ScratchpadDocumentEditor({
     parentId: string,
     parentTask: TaskSummary,
   ) {
+    const children: ScratchpadConversion["children"] = [];
     const parentIndex = source.findIndex((node) => node.id === parentId);
-    if (parentIndex < 0) return;
+    if (parentIndex < 0) return children;
     const parentLink = recordCompletion(
       {
         path: parentTask.path,
@@ -2391,8 +2456,12 @@ function ScratchpadDocumentEditor({
       const task = await resolveLinkedTask(node);
       if (!task || task.projects.some((value) => value === parentLink))
         continue;
-      await updateTask(task.id, { projects: [...task.projects, parentLink] });
+      const after = await updateTask(task.id, {
+        projects: [...task.projects, parentLink],
+      });
+      children.push({ before: task, after });
     }
+    return children;
   }
 
   async function resolveLinkedTask(
@@ -2431,8 +2500,18 @@ function ScratchpadDocumentEditor({
     const items = nodesRef.current
       .filter((node) => node.kind === "draft" && node.text.trim())
       .map(({ id, text, depth }) => ({ id, text, depth }));
+    if (
+      items.length === 1 &&
+      nodesRef.current.every(
+        (node) => node.id === items[0]!.id || !node.text.trim(),
+      )
+    ) {
+      void convertNode(items[0]!.id);
+      return;
+    }
     setReviewItems(items);
-    setSelectedReviewIds(new Set(items.map((item) => item.id)));
+    const current = items.find((item) => item.id === activeId);
+    setSelectedReviewIds(new Set(current ? [current.id] : []));
     setReviewResults({});
     setReviewOpen(true);
   }
@@ -2468,6 +2547,7 @@ function ScratchpadDocumentEditor({
     setError("");
     const failedIds = new Set<string>();
     const completed = new Map<string, TaskSummary>();
+    const conversions: ScratchpadConversion[] = [];
     for (const result of Object.values(reviewResults))
       if (result.state === "created" && result.task)
         completed.set(result.task.id, result.task);
@@ -2479,6 +2559,7 @@ function ScratchpadDocumentEditor({
         [item.id]: { state: "creating", task: previous?.task },
       }));
       let createdTask = previous?.task;
+      let convertedDraft: ScratchNode | undefined;
       try {
         let working = nodesRef.current;
         const currentNode = working.find((node) => node.id === item.id);
@@ -2486,6 +2567,7 @@ function ScratchpadDocumentEditor({
           const converted = await createTaskForNode(working, item.id);
           working = converted.nodes;
           createdTask = converted.task;
+          convertedDraft = converted.draft;
           focusAfterRender.current = {
             id: converted.continuationId,
             cursor: 0,
@@ -2503,7 +2585,18 @@ function ScratchpadDocumentEditor({
             t({ message: "The created TaskNote could not be found." }),
           );
         await persist(working);
-        await linkExistingChildren(working, item.id, createdTask);
+        const children = await linkExistingChildren(
+          working,
+          item.id,
+          createdTask,
+        );
+        if (convertedDraft)
+          conversions.push({
+            draft: convertedDraft,
+            linked: working.find((node) => node.id === item.id)!,
+            task: createdTask,
+            children,
+          });
         completed.set(createdTask.id, createdTask);
         setReviewResults((current) => ({
           ...current,
@@ -2532,12 +2625,60 @@ function ScratchpadDocumentEditor({
     const tasks = [...completed.values()];
     setNotice({
       message: plural(tasks.length, {
-        one: "Created # task note",
-        other: "Created # task notes",
+        one: "Created # task",
+        other: "Created # tasks",
       }),
       tasks,
+      conversions,
     });
     successFeedback();
+  }
+
+  async function undoConversion() {
+    if (!notice?.conversions?.length || undoingConversion) return;
+    const conversions = notice.conversions;
+    setUndoingConversion(true);
+    autosaveSuspended.current = true;
+    let changed = false;
+    try {
+      await flush();
+      if (
+        editorModeRef.current === "markdown" &&
+        sourceRef.current !== scratchBody(nodesRef.current)
+      ) {
+        changed = true;
+      } else {
+        for (const conversion of [...conversions].reverse()) {
+          const result = await undoScratchpadConversion(
+            repository,
+            conversion,
+            () => nodesRef.current,
+          );
+          if (result === "changed") {
+            changed = true;
+            continue;
+          }
+          createIntents.current.delete(conversion.draft);
+          const next = nodesRef.current.map((node) =>
+            node.id === conversion.draft.id ? conversion.draft : node,
+          );
+          updateNodes(next);
+          if (editorModeRef.current === "markdown")
+            changeSource(scratchBody(next));
+          await persist(next);
+        }
+      }
+      setNotice({
+        message: changed
+          ? t`Some tasks or notes changed after conversion. They were kept; their drafts were not restored.`
+          : t`Conversion undone`,
+      });
+    } catch (reason) {
+      setError(message(reason));
+    } finally {
+      autosaveSuspended.current = false;
+      setUndoingConversion(false);
+    }
   }
 
   async function changeEditorMode(nextMode: "outline" | "markdown") {
@@ -2664,11 +2805,14 @@ function ScratchpadDocumentEditor({
   return (
     <section
       className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
+      inert={undoingConversion}
+      aria-busy={undoingConversion}
       aria-label={t`Editor for ${document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))}`}
     >
       <div className="scratchpad-title-row">
         <input
           aria-label={t({ message: "Note title" })}
+          className={title ? undefined : "is-empty"}
           maxLength={160}
           placeholder={t({ message: "Add title" })}
           type="text"
@@ -2752,19 +2896,21 @@ function ScratchpadDocumentEditor({
                 : t({ message: "Resume as current" })}
             </button>
           ) : null}
-          {editorMode === "outline" ? (
-            <button
-              aria-label={t({ message: "Create task notes" })}
-              className="text-action scratchpad-review-action"
-              disabled={!drafts}
-              type="button"
-              ref={reviewTriggerRef}
-              onClick={openReview}
-            >
-              <ListChecks aria-hidden="true" size={17} />{" "}
-              <Trans>Create task notes</Trans>
-            </button>
-          ) : null}
+          <button
+            aria-label={t({ message: "Create tasks" })}
+            className="text-action scratchpad-review-action"
+            disabled={editorMode === "outline" && !drafts}
+            type="button"
+            ref={reviewTriggerRef}
+            onClick={async () => {
+              if (editorMode === "markdown") await changeEditorMode("outline");
+              if (editorModeRef.current !== "outline") return;
+              openReview();
+            }}
+          >
+            <ListChecks aria-hidden="true" size={17} />{" "}
+            <Trans>Create tasks</Trans>
+          </button>
         </div>
       </header>
       {error ? (
@@ -2791,10 +2937,13 @@ function ScratchpadDocumentEditor({
           role="tree"
           aria-label={t({ message: "Scratchpad outline" })}
         >
-          {visibleNodes.map(({ node, descendantCount }) => {
-            const linkedTask = node.taskId
-              ? linkedTasks.get(node.taskId)
+          {visibleNodes.map(({ node: storedNode, descendantCount }) => {
+            const linkedTask = storedNode.taskId
+              ? linkedTasks.get(storedNode.taskId)
               : undefined;
+            const node = linkedTask
+              ? { ...storedNode, text: linkedTask.title }
+              : storedNode;
             const activePreview =
               preview?.id === node.id && preview.text === node.text
                 ? preview.result.preview
@@ -2806,7 +2955,7 @@ function ScratchpadDocumentEditor({
               activeId === node.id && suggestions.length > 0;
             return (
               <div
-                className={`scratchpad-row kind-${node.kind}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
+                className={`scratchpad-row kind-${node.kind}${descendantCount ? " has-children" : ""}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
                 data-scratch-row={node.id}
                 key={node.id}
                 role="treeitem"
@@ -2839,7 +2988,10 @@ function ScratchpadDocumentEditor({
                       )}
                     </button>
                   ) : (
-                    <span className="scratchpad-collapse-spacer" />
+                    <span
+                      aria-hidden="true"
+                      className="scratchpad-disclosure-space"
+                    />
                   )}
                   <button
                     aria-label={t`Move ${node.text || uiCopy("empty item")}`}
@@ -2915,11 +3067,30 @@ function ScratchpadDocumentEditor({
                   )}
                   {node.kind === "task" ? (
                     <button
+                      aria-label={node.text}
                       className="scratchpad-task-link"
                       type="button"
                       onClick={() => void openLinkedNode(node)}
                     >
                       {node.text}
+                      {linkedTask ? (
+                        <span className="scratchpad-linked-metadata">
+                          {linkedTask.scheduled || linkedTask.due ? (
+                            <span>
+                              {formatTaskDate(
+                                linkedTask.scheduled || linkedTask.due!,
+                              )}
+                            </span>
+                          ) : null}
+                          {linkedTask.priority ? (
+                            <span>
+                              {configuration.priorities.find(
+                                ({ value }) => value === linkedTask.priority,
+                              )?.label ?? linkedTask.priority}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </button>
                   ) : (
                     <OutlineTextarea
@@ -2941,23 +3112,25 @@ function ScratchpadDocumentEditor({
                           : t({ message: "Add context…" })
                       }
                       value={node.text}
-                      onChange={(event) => {
-                        const input = event.currentTarget;
-                        const raw = input.value;
+                      onValueChange={(
+                        raw,
+                        selectionStart,
+                        selectionEnd,
+                        selectionDirection,
+                      ) => {
                         const normalize = (value: string) =>
                           value.replace(/[\r\n]+/g, " ");
                         const text = normalize(raw);
                         const position = normalize(
-                          raw.slice(0, input.selectionStart),
+                          raw.slice(0, selectionStart),
                         ).length;
                         if (text !== raw) {
                           focusAfterRender.current = {
                             id: node.id,
                             cursor: position,
-                            selectionEnd: normalize(
-                              raw.slice(0, input.selectionEnd),
-                            ).length,
-                            selectionDirection: input.selectionDirection,
+                            selectionEnd: normalize(raw.slice(0, selectionEnd))
+                              .length,
+                            selectionDirection,
                           };
                         }
                         changeNode(node.id, { text });
@@ -2966,20 +3139,20 @@ function ScratchpadDocumentEditor({
                       onFocus={(event) => {
                         setActiveId(node.id);
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         );
                       }}
                       onClick={(event) =>
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         )
                       }
                       onKeyDown={(event) => handleKeyDown(event, node)}
                       onSelect={(event) =>
                         setCursor(
-                          event.currentTarget.selectionStart ??
+                          outlineSelection(event.currentTarget) ??
                             node.text.length,
                         )
                       }
@@ -3022,11 +3195,12 @@ function ScratchpadDocumentEditor({
                       aria-label={t`Actions for ${node.text || uiCopy("empty item")}`}
                       className="scratchpad-row-menu-trigger"
                       type="button"
-                      onClick={() =>
+                      onClick={(event) => {
+                        rowMenuTriggerRef.current = event.currentTarget;
                         setMenuId((current) =>
                           current === node.id ? undefined : node.id,
-                        )
-                      }
+                        );
+                      }}
                     >
                       <MoreHorizontal aria-hidden="true" size={18} />
                     </button>
@@ -3123,6 +3297,21 @@ function ScratchpadDocumentEditor({
                     role="menu"
                     aria-label={t`Actions for ${node.text || uiCopy("item")}`}
                   >
+                    {node.kind === "draft" ? (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => {
+                          changeNode(node.id, { completed: !node.completed });
+                          setMenuId(undefined);
+                        }}
+                      >
+                        <SquareCheckBig aria-hidden="true" size={17} />
+                        {node.completed
+                          ? t({ message: "Mark incomplete" })
+                          : t({ message: "Mark complete" })}
+                      </button>
+                    ) : null}
                     {node.kind === "draft" && node.text.trim() ? (
                       <button
                         role="menuitem"
@@ -3230,7 +3419,7 @@ function ScratchpadDocumentEditor({
                   <Trans>Choose what becomes a task</Trans>
                 </p>
                 <h2 id="review-scratchpad-title">
-                  <Trans>Create task notes</Trans>
+                  <Trans>Create tasks</Trans>
                 </h2>
               </div>
               <button
@@ -3245,8 +3434,9 @@ function ScratchpadDocumentEditor({
             </header>
             <p>
               <Trans>
-                Selected drafts become linked TaskNotes in place. Everything
-                else stays in this scratchpad so you can keep working.
+                Selected drafts become tasks linked to their Markdown notes.
+                Everything else stays in this scratchpad so you can keep
+                working.
               </Trans>
             </p>
             <div className="scratchpad-review-toolbar">
@@ -3382,8 +3572,14 @@ function ScratchpadDocumentEditor({
                 {reviewProcessing
                   ? t({ message: "Creating…" })
                   : failedReviewCount
-                    ? t`Retry ${selectedReviewCount} task notes`
-                    : t`Create ${selectedReviewCount} task notes`}
+                    ? plural(selectedReviewCount, {
+                        one: "Retry # task",
+                        other: "Retry # tasks",
+                      })
+                    : plural(selectedReviewCount, {
+                        one: "Create # task",
+                        other: "Create # tasks",
+                      })}
               </button>
             </div>
           </section>
@@ -3392,6 +3588,15 @@ function ScratchpadDocumentEditor({
       {notice ? (
         <div className="scratchpad-notice" role="status">
           <span>{notice.message}</span>
+          {notice.conversions?.length ? (
+            <button
+              className="scratchpad-notice-action"
+              type="button"
+              onClick={() => void undoConversion()}
+            >
+              <Trans>Undo</Trans>
+            </button>
+          ) : null}
           {notice.tasks?.length ? (
             <button
               className="scratchpad-notice-action"

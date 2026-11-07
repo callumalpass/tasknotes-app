@@ -1,6 +1,7 @@
 import { LanguagePicker } from "@mdbase-dev/i18n/react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export function LanguageSettings() {
   const { t } = useLingui();
@@ -14,12 +15,15 @@ export function LanguageSettings() {
         <span>
           <Trans>App language</Trans>
         </span>
-        <LanguagePicker
-          className="language-picker"
-          label={t`App language`}
-          onChangeCapture={() => setFailed(false)}
-          onError={() => setFailed(true)}
-        />
+        <div className="settings-select-shell">
+          <LanguagePicker
+            className="language-picker"
+            label={t`App language`}
+            onChangeCapture={() => setFailed(false)}
+            onError={() => setFailed(true)}
+          />
+          <ChevronDown aria-hidden="true" size={16} strokeWidth={1.65} />
+        </div>
       </div>
       {failed ? (
         <p className="inline-error" role="alert">

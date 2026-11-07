@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import {
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -16,6 +17,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { KanbanColumnJump } from "../../components/kanban-column-jump";
+import { kanbanPreviewContent } from "./kanban-preview";
 import {
   columnLabel,
   kanbanColumnLabel,
@@ -187,6 +189,7 @@ export function KanbanView({
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
+  const moveHelpId = useId();
   useFlipMotion(boardRef, "data-kanban-card-id");
   const draggingRef = useRef<{
     row: TaskViewRow;
@@ -439,6 +442,31 @@ export function KanbanView({
     clientY: number,
   ): typeof overDropRef.current {
     const board = boardRef.current;
+    const jump = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-kanban-jump-key]");
+    if (jump?.dataset.kanbanJumpKey && draggingRef.current) {
+      const strip = jump.parentElement;
+      if (strip) {
+        const bounds = strip.getBoundingClientRect();
+        strip.scrollLeft += edgeScrollDistance(
+          clientX,
+          bounds.left,
+          bounds.right,
+          44,
+          12,
+        );
+      }
+      const columnKey = jump.dataset.kanbanJumpKey;
+      const target = board?.querySelector<HTMLElement>(
+        `[data-kanban-column-key="${CSS.escape(columnKey)}"]`,
+      );
+      if (board && target)
+        board.scrollLeft +=
+          target.getBoundingClientRect().left -
+          board.getBoundingClientRect().left;
+      return { columnKey, placement: "after" };
+    }
     const bounds = board?.getBoundingClientRect();
     if (
       bounds &&
@@ -714,6 +742,7 @@ export function KanbanView({
         </p>
       ) : null}
       <KanbanColumnJump
+        key={execution.view.key}
         boardRef={boardRef}
         columns={orderedColumns.map((column) => ({
           key: valueKey(column.value),
@@ -734,6 +763,11 @@ export function KanbanView({
         }}
         ref={boardRef}
       >
+        <p id={moveHelpId} className="visually-hidden">
+          {manualOrder
+            ? t`Drag to move. Use arrow keys to arrange.`
+            : t`Drag to move between columns. Use left and right arrow keys.`}
+        </p>
         {shownColumns.map((shown, columnIndex) => {
           const column = orderedColumns[columnIndex]!;
           const key = valueKey(column.value);
@@ -786,13 +820,8 @@ export function KanbanView({
                     dragging?.row.task.id === row.task.id;
                   return (
                     <div
-                      aria-label={
-                        movable
-                          ? manualOrder
-                            ? t`${row.task.title}. Drag to move. Use arrow keys to arrange.`
-                            : t`${row.task.title}. Drag to move between columns. Use left and right arrow keys.`
-                          : undefined
-                      }
+                      aria-label={movable ? row.task.title : undefined}
+                      aria-describedby={movable ? moveHelpId : undefined}
                       aria-busy={pending}
                       className={`kanban-card${movable ? " is-movable" : ""}${pending ? " is-pending" : ""}${draggingThisCard ? " is-dragging" : ""}${manualOrder && !dragging?.reflow && overDrop?.targetId === row.task.id ? ` is-drop-${overDrop.placement}` : ""}`}
                       data-kanban-card-id={row.task.id}
@@ -839,7 +868,8 @@ export function KanbanView({
                         row={row}
                         properties={execution.view.properties}
                         titleProperty={fieldMapping.title}
-                        omittedProperties={[property]}
+                        ensurePriority={false}
+                        contextProperties={{ [property]: column.value }}
                         onOpen={onOpen}
                         onToggle={onToggle}
                       />
@@ -917,33 +947,6 @@ function kanbanPreviewTransform(
     Math.max(inset, window.innerHeight - height - inset),
   );
   return `translate3d(${x}px, ${y}px, 0)`;
-}
-
-/**
- * A still, inert copy of the card for the drag preview. Cloning the rendered
- * card keeps it identical (wrapped title, chips, colours) without mounting a
- * second live task row with its own shortcuts and subscriptions; identity
- * and accessibility attributes are dropped so the copy is never found.
- */
-function kanbanPreviewContent(card: HTMLElement): HTMLElement {
-  const copy = card.cloneNode(true) as HTMLElement;
-  copy.classList.remove("is-dragging", "is-pending", "is-movable");
-  for (const name of [...copy.classList])
-    if (name.startsWith("is-drop-")) copy.classList.remove(name);
-  for (const element of [copy, ...copy.querySelectorAll("*")]) {
-    for (const { name } of [...element.attributes])
-      if (
-        name === "id" ||
-        name === "role" ||
-        name === "tabindex" ||
-        name === "for" ||
-        name.startsWith("aria-") ||
-        name.startsWith("data-")
-      )
-        element.removeAttribute(name);
-  }
-  copy.inert = true;
-  return copy;
 }
 
 function edgeScrollDistance(

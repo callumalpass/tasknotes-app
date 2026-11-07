@@ -1,4 +1,7 @@
 /* Manual ordering, Projects, and kanban boards. */
+.kanban-column-jump[hidden] {
+  display: none;
+}
 
 .manual-order-row {
   position: relative;
@@ -82,7 +85,7 @@
   color: var(--accent);
 }
 
-/* Handles recede until a fine pointer reaches the row or keyboard focus lands. */
+/* The first handle quietly signals ordering without repeating along the list. */
 @media (pointer: fine) {
   .manual-order-handle {
     opacity: 0;
@@ -90,6 +93,7 @@
   }
 
   .manual-order-row:hover .manual-order-handle,
+  .manual-order-row:first-child .manual-order-handle,
   .manual-order-row.is-dragging .manual-order-handle,
   .manual-order-handle:focus-visible {
     opacity: 1;
@@ -142,6 +146,11 @@
   min-width: 0;
 }
 
+.task-row-properties .task-row-context {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .task-row-context {
   color: var(--ink-muted);
   font-size: var(--type-label);
@@ -173,6 +182,32 @@
 }
 .project-group {
   scroll-margin-top: 16px;
+}
+.project-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 8px 0 0;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.project-back:hover {
+  color: var(--ink);
+}
+.projects-view.is-focused {
+  gap: 8px;
+}
+.projects-view.is-focused .project-group > header h2 {
+  font-size: var(--type-section);
+}
+.projects-view.is-focused .project-toggle {
+  cursor: default;
 }
 .project-group > header .project-toggle {
   color: var(--ink);
@@ -254,7 +289,7 @@
 
 .kanban-board {
   display: flex;
-  gap: var(--space-xl);
+  gap: 10px;
   padding-bottom: 18px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -267,12 +302,44 @@
 
 .kanban-column {
   flex: 0 0 min(82vw, 310px);
+  padding: 0 4px 6px;
   scroll-snap-align: start;
+  background: var(--paper-soft);
+  border-radius: var(--radius-sheet);
   transition: background-color 140ms var(--ease-out);
 }
 
 .kanban-column-jump {
-  display: none;
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.kanban-column-jump button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--type-supporting);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.kanban-column-jump button[aria-current="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+.kanban-column-jump small {
+  color: var(--ink-muted);
+  font-size: var(--type-label);
 }
 
 /*
@@ -309,7 +376,7 @@
     white-space: nowrap;
     background: transparent;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: 6px;
     cursor: pointer;
   }
 
@@ -328,7 +395,7 @@
 /* Desktop columns share the available width before the board scrolls. */
 @media (min-width: 840px) {
   .kanban-column {
-    flex: 1 0 250px;
+    flex: 1 0 232px;
     max-width: 360px;
   }
 }
@@ -342,7 +409,7 @@
   align-items: baseline;
   justify-content: space-between;
   min-height: 42px;
-  border-bottom: 1px solid var(--line-strong);
+  padding-inline: 8px 2px;
 }
 
 .kanban-column > header h2 {
@@ -369,8 +436,8 @@
 .kanban-column-add {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   color: var(--ink-muted);
   background: transparent;
@@ -388,10 +455,26 @@
 .kanban-card {
   position: relative;
   min-width: 0;
-  border-bottom: 1px solid var(--line);
+  margin-top: 6px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
   transition:
     opacity 140ms var(--ease-out),
-    background-color 140ms var(--ease-out);
+    background-color 140ms var(--ease-out),
+    border-color 140ms var(--ease-out),
+    box-shadow 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card.is-movable {
+    cursor: grab;
+  }
+
+  .kanban-card:hover {
+    border-color: var(--line-strong);
+    box-shadow: 0 2px 8px var(--color-shadow);
+  }
 }
 
 .kanban-card.is-drop-before::before,
@@ -439,10 +522,10 @@
   top: 0;
   left: 0;
   z-index: 80;
-  overflow: hidden;
+  box-sizing: border-box;
   color: var(--ink);
   background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
+  outline: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow:
     0 2px 6px var(--color-shadow-soft),
@@ -454,7 +537,7 @@
 }
 
 .kanban-drag-preview > .kanban-card {
-  border-bottom: 0;
+  margin-top: 0;
   opacity: 0.86;
 }
 
@@ -464,10 +547,56 @@
   border-bottom: 0;
 }
 
+/* A pointer reveals "…" over the card, so the title keeps that column. */
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card .task-row {
+    position: relative;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding-inline: 0;
+  }
+
+  .kanban-card .task-actions-trigger {
+    position: absolute;
+    top: 4px;
+    right: 0;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}
+
+.kanban-card .task-row-property > strong {
+  white-space: normal;
+  line-height: 20px;
+}
+
 .kanban-card .task-row-content {
-  padding-left: 0;
+  container-type: inline-size;
+  width: calc(100% + 32px);
+  margin-left: -32px;
+  padding: 6px 0;
   cursor: pointer;
   -webkit-user-drag: none;
+}
+
+.kanban-card .task-row-reading {
+  margin-left: 32px;
+}
+
+.kanban-card .task-row-title {
+  padding-block: 2px;
+}
+
+@media (pointer: coarse) {
+  .kanban-card .task-row-content {
+    width: auto;
+    margin-left: 0;
+    padding: 0;
+  }
+  .kanban-card .task-row-reading {
+    margin-left: 0;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -7,6 +7,7 @@ import {
   developmentDeploymentFor,
   developmentDeployments,
   developmentDeploymentEnvironment,
+  requireBundledTrust,
 } from "./deploy-pages-dev.mjs";
 
 describe("TaskNotes development deployment", () => {
@@ -122,9 +123,14 @@ describe("TaskNotes development deployment", () => {
     await deployDevelopmentTaskNotes({}, { run, verifyBuild });
 
     expect(verifyBuild).toHaveBeenCalledOnce();
-    expect(run).toHaveBeenCalledTimes(3);
-    expect(run.mock.calls[0][1]).toEqual(["build:assets"]);
-    expect(run.mock.calls[1][1]).toEqual(
+    expect(run).toHaveBeenCalledTimes(4);
+    expect(run.mock.calls[0][1]).toEqual([
+      "add",
+      "--ignore-scripts",
+      "@mdbase-dev/sdk@file:vendor/sdk-4443fd15-lab-beta149.tgz",
+    ]);
+    expect(run.mock.calls[1][1]).toEqual(["build:assets"]);
+    expect(run.mock.calls[2][1]).toEqual(
       expect.arrayContaining([
         `wrangler@${developmentDeployment.wranglerVersion}`,
         "pages",
@@ -134,7 +140,7 @@ describe("TaskNotes development deployment", () => {
         "--branch=lab",
       ]),
     );
-    expect(run.mock.calls[2]).toEqual([
+    expect(run.mock.calls[3]).toEqual([
       "node",
       ["scripts/production-smoke.mjs"],
       expect.objectContaining({
@@ -142,5 +148,19 @@ describe("TaskNotes development deployment", () => {
         MDBASE_CONNECT_ORIGIN: developmentDeployment.connectOrigin,
       }),
     ]);
+  });
+
+  it("refuses a bundle whose SDK trusts another environment", () => {
+    const lab = developmentDeployments.lab;
+    const trust = (environment) =>
+      `N={schema:\`mdbn-app-trust/release/1\`,environment:\`${environment}\`}`;
+
+    expect(() => requireBundledTrust([trust("lab")], lab)).not.toThrow();
+    expect(() => requireBundledTrust([trust("production")], lab)).toThrow(
+      "carries SDK trust for production",
+    );
+    expect(() => requireBundledTrust(["no trust here"], lab)).toThrow(
+      "for no environment",
+    );
   });
 });

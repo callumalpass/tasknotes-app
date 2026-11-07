@@ -121,7 +121,7 @@ describe("shared calendar contract through app mapping and exact repository pers
           startEditable: expected.startEditable,
           durationEditable: expected.durationEditable,
           completed: expected.isCompleted,
-          ...(expected.type === "timeEntry" ? { lane: "actual" } : {}),
+          ...(expected.type === "timeEntry" ? { lane: "plan" } : {}),
         });
       }
       for (const edit of fixture.edits) {

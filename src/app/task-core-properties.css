@@ -1,0 +1,31 @@
+.task-detail-properties .form-field > span,
+.task-detail-properties .task-inline-property > span {
+  font-size: 14px;
+}
+.task-inline-property-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+}
+.task-inline-property-editor .multi-value-field {
+  flex: 1;
+  min-width: 0;
+}
+.task-inline-property-editor .multi-value-control {
+  min-height: 44px;
+  max-height: 44px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.task-inline-property-editor .multi-value-control input {
+  min-width: 4rem;
+}
+.task-inline-property-editor .field-token {
+  flex: 0 0 auto;
+  max-width: 70%;
+}
+.task-inline-property-editor > button {
+  flex: none;
+  min-height: 44px;
+}

@@ -73,9 +73,9 @@ jobs:
           TASKNOTES_PRODUCTION_URL: http://127.0.0.1:4173/tasknotes-app
           TASKNOTES_REQUIRE_CONNECT_MANIFEST_VALIDATION: "0"
 
-      - name: Run desktop browser integration
+      - name: Run core and phone browser integration
         if: github.event_name == 'pull_request'
-        run: pnpm test:e2e --project=desktop
+        run: pnpm test:e2e
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/tasknotes-app/
           PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm preview --host 127.0.0.1 --port 4173

@@ -167,9 +167,10 @@ Today             Search       More
 ## Components
 
 - Task rows use a 48-point minimum height and a conventional completion circle.
-  Lists use 32px title and 24px metadata minimum targets on phones and desktop,
-  keeping a single-line title plus one metadata line near 60px without reducing
-  typography. Completion and overflow retain independent 44px targets. Dates
+  Lists use 32px title targets on fine pointers and 44px on coarse pointers,
+  with 44px metadata targets throughout. A single-line title plus one metadata
+  line stays near 80px on desktop and 92px on touch without reducing typography.
+  Completion and overflow retain independent 44px targets. Dates
   and other properties remain directly editable, with no overlapping hit areas.
   Wrapped titles, metadata, and enlarged text grow the row naturally. Plain rows
   retain the 48px minimum; board cards use the same compact property targets as
@@ -178,8 +179,7 @@ Today             Search       More
   "Tomorrow", "Sat") and use a short date beyond it; past dates omit their
   time so overdue rows stay compact. Only a past due date is overdue and takes
   the danger color beside its visible label; a missed scheduled date is a plan,
-  not lateness, and stays muted. Inside the Overdue section the heading label
-  alone carries the danger color, and row dates read as ordinary metadata. A
+  not lateness, and stays muted. A
   coloured non-default status draws the completion ring in that color and names
   the status in the control's label and tooltip. On list rows, wrapped
   metadata keeps an even 24px rhythm, and a project, status, or priority value
@@ -230,11 +230,14 @@ Today             Search       More
   the plain list layout, are distinguished by name. The sidebar, phone tab
   bar, More menu, and Manage views use the same mapping.
 - The desktop sidebar leads with the collection switcher and a filled New
-  task action, lists navigation destinations, and groups Manage views and Settings at its foot. Destinations
-  reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
+  task action, lists navigation destinations, and keeps one row at its foot: labelled Views
+  beside icon-only Quick actions and Settings. Destinations scroll between the
+  fixed head and foot with no scrollbar, fading into the foot when more follows;
+  they reorder in place by dragging or with Alt+Up/Down; moving one to the top makes
   it Home. Because the
-  sidebar already shows navigation order, desktop Manage views shows the ordered
-  list only while Reorder is active.
+  sidebar already shows navigation order, desktop Views shows the ordered
+  list only while Reorder is active. Views leads with search and saved views,
+  unpinned ones first, and shows a view's file path as a tooltip.
 - Mobile bottom navigation shows the first three configured destinations beside
   More. Tab labels scale with system text until the tab width is reached and
   never split a word across lines. Editable focus alone never hides navigation; keyboard-aware changes
@@ -269,7 +272,9 @@ Today             Search       More
   appears once as a dismissible banner and remains under About. Settings has
   no capture control of its own.
 - Projects shows a project count beside a compact native "Jump to project"
-  picker rather than a full-width field.
+  picker rather than a full-width field. A sidebar project opens its own page,
+  with All projects as the way back. Parents of subtasks are not sidebar
+  projects.
 - Scratchpad separates task creation from outline lifecycle. A compact contextual
   header leaves most of the viewport to the notes. The current capture target is
   the final card in the same fixed-height scrolling feed as older items. The
@@ -295,8 +300,13 @@ Today             Search       More
   Row kind is shown by the checkbox or note icon alone; switching kinds lives
   in the row menu on every layout. Unfocused rows render `[[path|alias]]` links
   as their label; focusing the row shows the exact source.
-  Create task notes converts only chosen drafts in place; New note preserves the
-  exact current outline without creating tasks. An expanded historical note can
+  Create task notes converts only chosen drafts in place; New note saves the
+  exact current note into history and opens an empty current note without a
+  warning or creating tasks. A single simple draft converts
+  without review; multiple drafts retain review. Conversion Undo restores the
+  draft only while its linked note and created task revision remain unchanged,
+  preserving later edits with an explicit notice instead of deleting them.
+  An expanded historical note can
   Resume as current: pending edits to both notes save first, the selected note
   retains its identity and contents, and the displaced current note becomes the
   newest history entry.
@@ -343,10 +353,17 @@ Today             Search       More
   to typing, IME composition, modifiers, and any open overlay. Cmd/Ctrl+K opens
   a command palette (navigation, actions, the focused or open task, task
   search) and `?` opens the shortcut sheet; both are modal overlays. Desktop
-  shows a quiet Commands ⌘K entry in the sidebar utilities.
+  shows a quiet Quick actions entry in the sidebar foot. Option lists keep the
+  active option in view, and typed letters jump within them. In capture, a
+  status or priority name counts only with its trigger, or beside the word
+  priority, so ordinary words stay in the title. Rows draw each priority in the
+  colour its collection gave it, however many there are.
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
+- Coarse-pointer phone rows put compact supporting metadata below the title.
+  Individual inline property controls recede behind one 44px properties trigger
+  and its editable sheet; completion remains a separate 44px control.
 - A recurring occurrence exposes only occurrence-safe actions first. Anything
   that changes the series sits behind an explicit “Repeating task actions”
   boundary.
@@ -366,7 +383,10 @@ Today             Search       More
   direct spatial arrangement.
 - Grouped lists have accessible collapsible sections, expanded by default.
   Day sections lead with Today, followed by Overdue, Anytime, and Later, so a
-  long overdue backlog never pushes today's work below the fold.
+  long overdue backlog never pushes today's work below the fold. Today itself
+  lists dated work only; undated tasks wait in the Inbox.
+  The overdue-count link beside Today's date expands the overdue section,
+  scrolls to it and focuses its heading control.
   Explicit collapse choices are local preferences scoped to collection, view,
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
@@ -383,14 +403,24 @@ Today             Search       More
 - Scheduled and Due retain visible labels, including when both dates occur on
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
-- Task detail leads with a title-level completion control and the note body.
-  The Schedule and status summary uses the same relative date labels as rows;
-  exact dates remain in its fields. Existing notes open as rendered Markdown; clicking the text or choosing
+- Task detail leads with a title-level completion control, then compact wrapping
+  chips for status, priority, Scheduled, Due, and project. Each chip opens its
+  existing editor; long values truncate without widening the pane. Notes follow
+  immediately, then Subtasks and Attachments. More properties starts collapsed
+  and retains every secondary and custom field. Existing notes open as rendered Markdown; clicking the text or choosing
   Write opens the source. Empty notes open ready for writing. Save status is
-  quiet proportional text beside the task actions. Without images,
+  quiet proportional text beside the task actions. Without attachments,
   Attachments collapses to one row holding its heading and add actions.
-  Schedule and status have a compact, wrapping disclosure summary; advanced
-  properties remain inspectable. The editor ends with the task's Markdown
+  Attach file accepts any file the collection can store. Non-image attachments
+  show a quiet file icon, a truncating filename, size and Download; they are
+  never embedded in Notes or opened as active content in the app. Raster image
+  attachments retain their preview and Insert actions. SVG is download-only.
+  Detach removes task membership, not the file from the collection.
+  Collection record extensions (normally `.md`) remain owned by the record API;
+  provider refusals stay visible. The model currently requires an explicit file
+  extension in attachment links, so extensionless names are rejected before upload,
+  not silently renamed or stored with a different link format.
+  The editor ends with the task's Markdown
   file: its collection-relative path in muted mono, with quiet Copy path and
   Copy wikilink actions (Copy Markdown link when the collection writes
   Markdown links). Copying confirms inline in a polite status that clears
@@ -429,20 +459,33 @@ Today             Search       More
   an accepted capture sheet announces Task added with an Open action, without
   moving the current view. This confirmation has no action timeout, yields to
   deletion recovery, and clears on navigation or replacement.
-- Desktop calendar month events use a 24px content minimum; timed events use
-  a 28px minimum. Phone months draw every task as a colored dot, with no More
+- Fine-pointer desktop Month uses single-line 26px bars with 18px title lines;
+  available height determines capacity and excess entries remain in More.
+  Toolbar and More controls retain 44px targets. Week and Day keep two-line
+  titles. Phone months reserve an unwrapped count slot before fitting priority
+  dots, with no More
   popover; the dots are indicators hidden from assistive technology, a tap
   selects the day (at least 44px), and the selected day's tasks are listed as
-  ordinary task rows beneath the grid.
+  ordinary task rows beneath the grid. Google events use their calendar tone
+  and open the event editor from grid or Agenda entries. On phone Month, they
+  also appear as separate controls in the selected-day list; they never become
+  task checkboxes or inflate task counts.
 - Agenda and calendar entries use proportional type and the same relative date
   labels as task rows. An entry on a task's due day, when the task is also
   scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".
-  Agenda day headings appear once. Phones stack the time above the title so
-  titles keep the full width. A calendar view with a capture row has no second
-  Add task button in its toolbar. Agenda content uses a 36px minimum with
-  4px vertical cell padding, keeping simple rows near 44px. Metadata and wrapped
-  content may grow naturally. Calendar toolbar, More links, and overflow-panel
-  events retain 44px targets; desktop grid events remain independently tappable.
+  Upcoming uses one agenda on desktop and phones, with the ordinary task row's
+  completion, properties and actions; timed entries name their time beneath
+  the title without a reserved time column. Its sticky week strip follows the
+  first-day-of-week preference, shows weekday/date/count, distinguishes today
+  and selection, and supports keyboard navigation and drag-to-day rescheduling.
+  Overdue work leads the agenda with a count and Move all to today (with Undo),
+  rather than being repeated in today's group. Sticky day headings name Today
+  and Tomorrow, show counts, and retain a quiet Add task even on empty days.
+  Empty days remain compact. All six calendar modes live in a compact layout
+  disclosure beside date navigation. A calendar view with a capture row has no
+  second Add task button in its toolbar. Metadata and wrapped content grow
+  naturally. Calendar toolbar, More links, and overflow-panel events retain
+  44px targets; desktop grid events remain independently tappable.
 - Desktop calendar More opens a readable, opaque panel with 44px controls, bounded to
   the calendar surface and viewport above navigation. The covered calendar grid
   is temporarily inert, not the whole application. Internal Tab stays within
@@ -451,12 +494,15 @@ Today             Search       More
   and transfers its return-focus target rather than leaving competing owners.
 - View editing has one compact Preview disclosure. On phones, Layout initially
   summarizes the chosen layout so filters are reachable without passing every
-  layout tile. Planner is explicitly an external app before saving. Ordinary
+  layout tile. An empty Fields shown configuration means Default fields, with
+  the same resolved fields listed in the editor and Preview for every layout.
+  The view switcher separates destinations from its labelled actions group.
+  Planner is explicitly an external app before saving. Ordinary
   pages and editors reflow at 320px with 200% root text; deliberate board and
   calendar scrolling stays local rather than widening the document.
 - Board columns holding the empty status or priority read "No status" or
-  "No priority". Desktop columns share the available width before the board
-  scrolls. Phones show one full-width column at a time with mandatory snapping;
+  "No priority". Desktop columns share the available width down to 216px
+  before the board scrolls. Phones show one full-width column at a time with mandatory snapping;
   a jump bar above the board names every column with its count and marks the
   visible one.
 - A kanban board consumes the remaining usable viewport. Its horizontal

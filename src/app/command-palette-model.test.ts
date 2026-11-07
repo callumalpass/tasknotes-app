@@ -90,7 +90,11 @@ describe("navigationCommands", () => {
     { key: "today", name: "Today" },
     { key: "board", name: "Work board" },
     { key: "archive", name: "Archive" },
-  ] as TaskView[];
+  ].map((view) => ({
+    ...view,
+    id: "0",
+    source: { path: `Views/${view.key}.base` },
+  })) as TaskView[];
 
   it("covers navigation views, utility screens, and actions once each", () => {
     const navigate = vi.fn();
@@ -153,8 +157,11 @@ describe("task commands", () => {
     );
     const commands = taskCommands(element);
     expect(commands.map((item) => item.label)).toEqual([
-      "Open “Write brief”",
+      "Open task",
       "Complete “Write brief”",
+      "Set priority",
+      "Set status",
+      "Move to project",
       "Schedule today",
       "Schedule tomorrow",
       "Schedule next week",
@@ -163,6 +170,9 @@ describe("task commands", () => {
     expect(requested.mock.calls.flat()).toEqual([
       "open",
       "toggle",
+      "priority",
+      "status",
+      "project",
       "today",
       "tomorrow",
       "next-week",
@@ -174,7 +184,7 @@ describe("task commands", () => {
       (item) => item.label,
     );
     expect(labels[0]).toBe("Reopen “Done”");
-    expect(labels).not.toContain("Open “Done”");
+    expect(labels).not.toContain("Open task");
     expect(taskCommands(null)).toEqual([]);
   });
 

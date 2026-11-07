@@ -1,4 +1,4 @@
-import { act, render, screen } from "../test/render";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { afterEach, expect, it, vi } from "vitest";
 import { activateAppLocale } from "../i18n/app";
 afterEach(async () => {
@@ -21,6 +21,7 @@ function fixture(
   const listeners = new Set<() => void>();
   const onOpen = vi.fn(),
     onDismiss = vi.fn();
+  const onUndo = vi.fn(async () => {});
   const task = new TaskNotesTaskModel().create(
     {
       title,
@@ -42,12 +43,14 @@ function fixture(
       repository={repository}
       onOpen={onOpen}
       onDismiss={onDismiss}
+      onUndo={onUndo}
       aboveMobileControls
     />,
   );
   return {
     onOpen,
     onDismiss,
+    onUndo,
     set: (next?: RecordWriteStatus) =>
       act(() => {
         state = next;
@@ -90,4 +93,71 @@ it("retains an unknown capture outcome", () => {
   const f = fixture("unknown");
   expect(screen.getByText("Save outcome unknown")).toBeVisible();
   expect(f.onDismiss).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
+
+it("undoes the captured task without navigating", async () => {
+  const f = fixture();
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(f.onDismiss).toHaveBeenCalledOnce());
+  expect(f.onUndo).toHaveBeenCalledWith(
+    expect.objectContaining({ title: "Captured outside the current filter" }),
+  );
+  expect(f.onOpen).not.toHaveBeenCalled();
+});
+
+it("keeps Open available for fifteen seconds, pausing while hovered or focused", async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  const open = screen.getByRole("button", { name: "Open" });
+  const toast = open.closest(".undo-toast")!;
+  await act(async () => vi.advanceTimersByTime(14_999));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  fireEvent.pointerEnter(toast);
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  await act(async () => open.focus());
+  fireEvent.pointerLeave(toast);
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  await act(async () => open.blur());
+  await act(async () => vi.advanceTimersByTime(15_000));
+  expect(f.onDismiss).toHaveBeenCalledOnce();
+});
+
+it("stays visible when focus leaves while the pointer remains over it", async () => {
+  vi.useFakeTimers();
+  const f = fixture();
+  const open = screen.getByRole("button", { name: "Open" });
+  const toast = open.closest(".undo-toast")!;
+  fireEvent.pointerEnter(toast);
+  await act(async () => open.focus());
+  await act(async () => open.blur());
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  fireEvent.pointerLeave(toast);
+  await act(async () => vi.advanceTimersByTime(15_000));
+  expect(f.onDismiss).toHaveBeenCalledOnce();
+});
+
+it("keeps a failed undo visible and permits retry", async () => {
+  const f = fixture();
+  f.onUndo.mockRejectedValueOnce(new Error("Journal unavailable"));
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() =>
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Couldn’t undo. Try again.",
+    ),
+  );
+  expect(f.onDismiss).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(f.onDismiss).toHaveBeenCalledOnce());
+});
+
+it.each(["pending", "failed", "conflicted"] as const)(
+  "does not undo a %s create before its write outcome is resolved",
+  (state) => {
+    fixture(state);
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  },
+);

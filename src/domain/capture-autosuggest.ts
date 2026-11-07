@@ -1,5 +1,6 @@
-import { completionMatches } from "./completion";
+import { completionMatches, linkDisplayLabel, linkTarget } from "./completion";
 
+import type { CreateTaskInput } from "./task";
 import type { FieldCompletion, FieldCompletionRequest } from "./completion";
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import type { NlpTriggerConfig } from "@tasknotes/model/types";
@@ -78,7 +79,9 @@ export function captureSuggestionRequest(
     token.propertyId === "status"
       ? configuration.statuses.map(({ value, label }) => ({ value, label }))
       : token.propertyId === "priority"
-        ? configuration.priorities.map(({ value, label }) => ({ value, label }))
+        ? [...configuration.priorities]
+            .sort((left, right) => (right.weight ?? 0) - (left.weight ?? 0))
+            .map(({ value, label }) => ({ value, label }))
         : userField?.options;
   const completion = configuration.fieldCompletions[field];
   return {
@@ -100,8 +103,7 @@ export function configuredCaptureSuggestions(
       value,
       label: label?.trim() || value,
     }))
-    .filter((entry) => completionMatches(entry, request.query ?? ""))
-    .slice(0, request.limit ?? 8);
+    .filter((entry) => completionMatches(entry, request.query ?? ""));
 }
 
 export function applyCaptureSuggestion(
@@ -120,4 +122,52 @@ export function applyCaptureSuggestion(
     text: next,
     cursor: token.start + replacement.length + separator.length,
   };
+}
+
+/** What a suggestion puts in the text: a link is written by name, not as markup. */
+export function captureSuggestionText({ value }: FieldCompletion): string {
+  if (linkTarget(value) === value) return value;
+  const label = linkDisplayLabel(value);
+  return /\s/u.test(label) ? `[[${label}]]` : label;
+}
+
+/**
+ * Points a project typed by name at the project already called that, so
+ * `+Operations` joins Operations rather than starting a second project with
+ * the same name. A name that is new or ambiguous is kept as typed.
+ */
+export async function linkCapturedProjects(
+  input: CreateTaskInput,
+  configuration: TaskCollectionConfiguration,
+  completeField: (
+    request: FieldCompletionRequest,
+  ) => Promise<FieldCompletion[]>,
+): Promise<CreateTaskInput> {
+  if (!input.projects?.length) return input;
+  const field = configuration.fieldMapping.projects;
+  const completion = configuration.fieldCompletions[field];
+  const projects = await Promise.all(
+    input.projects.map(async (project) => {
+      const query = linkDisplayLabel(project);
+      const name = query.toLocaleLowerCase();
+      const matches = await completeField({
+        field,
+        kind: completion?.kind ?? "records",
+        query,
+        limit: 12,
+        targetTypes: completion?.targetTypes,
+      }).catch(() => []);
+      const named = matches.filter(
+        ({ value, label }) =>
+          label.toLocaleLowerCase() === name ||
+          linkDisplayLabel(value).toLocaleLowerCase() === name,
+      );
+      const used = named.filter(({ kind }) => kind === "value");
+      const candidates = new Set(
+        (used.length ? used : named).map(({ value }) => value),
+      );
+      return candidates.size === 1 ? [...candidates][0] : project;
+    }),
+  );
+  return { ...input, projects };
 }

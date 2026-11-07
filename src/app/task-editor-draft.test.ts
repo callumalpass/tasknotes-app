@@ -6,6 +6,29 @@ import { scheduleSummary, toDraft } from "./task-editor-draft";
 afterEach(() => vi.useRealTimers());
 
 describe("task schedule summary", () => {
+  it("includes custom priority and resolved projects in the compact identity", () => {
+    const task = new TaskNotesTaskModel().create(
+      {
+        title: "Review",
+        priority: "urgent-custom",
+        projects: ["[[Projects/Long path|Brief]]"],
+      },
+      { id: "review", now: "2026-10-13T16:00:00Z" },
+    );
+    const configuration = defaultTaskCollectionConfiguration();
+    configuration.priorities = [
+      {
+        id: "urgent-custom",
+        value: "urgent-custom",
+        label: "Critical review",
+        color: "#123456",
+        weight: 42,
+      },
+    ];
+    expect(scheduleSummary(task, toDraft(task), configuration)).toBe(
+      "Critical review · Brief",
+    );
+  });
   it("shows the selected occurrence dates without changing the series draft", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 9, 14, 12));
@@ -26,11 +49,11 @@ describe("task schedule summary", () => {
         defaultTaskCollectionConfiguration(),
         "2026-10-21",
       ),
-    ).toBe("Scheduled Oct 21 · Due Oct 23");
+    ).toBe("Normal · Scheduled Oct 21 · Due Oct 23");
     expect(draft.scheduled).toBe("2026-10-14");
     expect(draft.due).toBe("2026-10-16");
     expect(
       scheduleSummary(task, draft, defaultTaskCollectionConfiguration()),
-    ).toBe("Scheduled Today · Due Fri");
+    ).toBe("Normal · Scheduled Today · Due Fri");
   });
 });

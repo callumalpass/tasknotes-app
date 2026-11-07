@@ -17,6 +17,7 @@ import {
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { stringify } from "yaml";
 import type { AppBasesDescriptor } from "@mdbase-dev/sdk/app-host";
 import type { TaskRepository } from "../application/ports/task-repository";
 import { NextTaskRepository } from "../storage/next-repository";
@@ -33,6 +34,8 @@ export interface NextSmokeInput {
   typeDefinition?: unknown;
   slowConfirmation?: boolean;
   holdBodyReadPath?: string;
+  viewProperties?: string[];
+  viewOptions?: Record<string, PlainValue>;
 }
 export interface NextSmokeControl {
   offline: boolean;
@@ -304,7 +307,16 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
       view,
       clock,
       collectionRevision: revision,
-      source: `views:\n  - name: ${view.name}\n    type: tasknotesTaskList\n`,
+      source: stringify({
+        views: [
+          {
+            name: view.name,
+            type: "tasknotesTaskList",
+            order: input.viewProperties ?? ["note.title"],
+            options: input.viewOptions ?? {},
+          },
+        ],
+      }),
     };
   };
   client.executeAppBases = async (selection) => {
@@ -324,7 +336,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     return {
       kind: "success",
       view,
-      columns: ["note.title"],
+      columns: input.viewProperties ?? ["note.title"],
       unavailableColumns: [],
       clock,
       collectionRevision: revision,
@@ -333,16 +345,18 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
         record: r.id,
         path: r.path,
         sourceRevision: r.revision,
-        cells: [
-          {
-            kind: "text" as const,
-            value: String(
-              toPlain(
-                r.frontmatter.get(impl.fields.title ?? "title") ?? null,
-              ) ?? "",
-            ),
-          },
-        ],
+        cells: (input.viewProperties ?? ["note.title"]).map((key) => ({
+          kind: "text" as const,
+          value: String(
+            toPlain(
+              r.frontmatter.get(
+                key === "note.title"
+                  ? (impl.fields.title ?? "title")
+                  : key.replace(/^note\./, ""),
+              ) ?? null,
+            ) ?? "",
+          ),
+        })),
       })),
     };
   };

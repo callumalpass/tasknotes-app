@@ -1,5 +1,11 @@
 import { shiftTaskDate } from "./task-date-actions";
-import { taskDatePart, todayString, type TaskSummary } from "./task";
+import {
+  isTaskPastDue,
+  taskDatePart,
+  taskDayStanding,
+  todayString,
+  type TaskSummary,
+} from "./task";
 import {
   materializedOccurrenceKeys,
   projectUpcomingTasks,
@@ -53,4 +59,23 @@ export function summarizeToday(
     1,
   ).groups[0]?.tasks[0];
   return { completedToday, ...(next ? { next } : {}) };
+}
+
+/** Metadata-only navigation badge. Undated tasks belong to Inbox, not the badge. */
+export interface TodayTaskCounts {
+  total: number;
+  overdue: number;
+}
+
+export function todayTaskContribution(
+  task: TaskSummary,
+  today: string,
+): TodayTaskCounts {
+  if (task.completed || task.archived || task.skipped)
+    return { total: 0, overdue: 0 };
+  const standing = taskDayStanding(task, today);
+  return {
+    total: Number(standing === "overdue" || standing === "today"),
+    overdue: Number(standing === "overdue" || isTaskPastDue(task, today)),
+  };
 }

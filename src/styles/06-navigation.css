@@ -52,7 +52,8 @@
 .bottom-navigation button,
 .navigation-rail nav button,
 .navigation-rail .navigation-view-section button,
-.navigation-rail > button:not(.wordmark) {
+.navigation-rail > button:not(.wordmark),
+.navigation-destinations > button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -110,11 +111,15 @@
   }
 
   .task-actions-menu {
+    display: flex;
+    flex-direction: column;
     top: auto !important;
     right: 0;
     bottom: 0;
     left: 0 !important;
     width: 100%;
+    max-width: none;
+    inset-inline: 0 !important;
     max-height: min(82dvh, 620px);
     padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
     border-right: 0;
@@ -123,6 +128,16 @@
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: 0 -16px 40px var(--color-shadow);
     animation: motion-sheet-in var(--motion-sheet-enter) var(--ease-sheet);
+    overflow: hidden;
+  }
+
+  .task-actions-menu > .task-actions-items {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .task-actions-menu > :not(.task-actions-items) {
+    flex-shrink: 0;
   }
 
   .task-actions-layer[data-state="closed"] .task-actions-menu {
@@ -131,7 +146,8 @@
 
   .task-actions-menu.is-organize-editor {
     width: 100%;
-    overflow-y: auto;
+    max-width: none;
+    overflow: hidden;
   }
 
   .task-actions-heading {
@@ -244,34 +260,16 @@
   cursor: pointer;
   transition:
     opacity 150ms ease,
-    transform 150ms ease,
-    padding 200ms var(--ease-out),
-    gap 200ms var(--ease-out);
+    transform 150ms ease;
   border-color: transparent;
 }
 
 .global-capture-fab span {
   min-width: 0;
-  max-width: 8em;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1;
   white-space: nowrap;
-  transition:
-    max-width 200ms var(--ease-out),
-    opacity 150ms var(--ease-out);
-}
-
-/* Scrolling down narrows the button to its icon; the label returns on
-   settle or reversal. The accessible name never changes. */
-.global-capture-fab.is-collapsed {
-  gap: 0;
-  padding: 0 13px;
-}
-
-.global-capture-fab.is-collapsed span {
-  max-width: 0;
-  opacity: 0;
 }
 
 .app-update-notice {
@@ -303,37 +301,23 @@
 
 .app-update-notice button {
   min-height: 44px;
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.app-update-notice {
-  position: fixed;
-  z-index: 25;
-  top: max(var(--page-inset), env(safe-area-inset-top));
-  right: max(var(--page-inset), env(safe-area-inset-right));
-  width: min(32rem, calc(100vw - (var(--page-inset) * 2)));
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  color: var(--ink);
-  background: var(--paper-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-control);
-  box-shadow: 0 10px 28px var(--color-shadow);
-  overflow-wrap: anywhere;
+.app-update-notice button:first-child {
+  color: var(--color-on-accent);
+  background: var(--accent);
 }
 
-.app-update-notice p {
-  margin: 0;
-}
-
-.app-update-notice > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-
-.app-update-notice button {
-  min-height: 44px;
+.app-update-notice button:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .undo-toast {
@@ -362,12 +346,9 @@
 }
 
 .undo-toast > span {
-  display: -webkit-box;
-  overflow: hidden;
+  min-width: 0;
   overflow-wrap: anywhere;
   line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 @keyframes deletion-feedback-enter {
@@ -541,6 +522,12 @@
   outline: 0;
 }
 
+.command-palette-close {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+}
+
 .command-palette-results {
   overflow-y: auto;
   padding: var(--space-xs) var(--space-sm) var(--space-sm);
@@ -570,10 +557,16 @@
 }
 
 .command-palette-label {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.command-palette-heading-detail {
+  color: var(--ink-soft);
+  font-weight: 400;
 }
 
 .command-palette-detail {
@@ -652,8 +645,18 @@
   font-size: var(--type-supporting);
 }
 
+.keyboard-shortcuts-sheet dt {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .keyboard-shortcuts-sheet dd {
+  flex: 0 1 auto;
   margin: 0;
+  text-align: end;
+}
+
+.keyboard-shortcuts-sheet dd > span {
   white-space: nowrap;
 }
 
@@ -852,5 +855,270 @@
   to {
     opacity: 0;
     transform: translateX(24px);
+  }
+}
+
+/* Desktop display preferences leave the phone navigation untouched. */
+@media (min-width: 840px) {
+  .app-shell:not(.sidebar-collapsed) {
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+
+  .navigation-rail .rail-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xl);
+  }
+
+  .navigation-rail .wordmark {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .navigation-rail .sidebar-toggle {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    color: var(--ink-muted);
+    background: transparent;
+  }
+
+  .navigation-rail button > svg {
+    flex: none;
+  }
+
+  .navigation-rail .navigation-count {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    width: 7ch;
+    margin-left: auto;
+    color: var(--ink-muted);
+    font-size: var(--type-label);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .navigation-count.is-unknown {
+    visibility: hidden;
+  }
+
+  .app-shell.sidebar-collapsed,
+  .app-shell.sidebar-collapsed:not(.has-detail) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .sidebar-collapsed .navigation-rail {
+    padding: 16px var(--space-sm) 0;
+    overflow-x: hidden;
+  }
+
+  .sidebar-collapsed .navigation-rail .rail-heading {
+    justify-content: center;
+  }
+
+  .sidebar-collapsed .navigation-rail .wordmark,
+  .sidebar-collapsed .rail-collection-switcher,
+  .sidebar-collapsed .navigation-rail button > span,
+  .sidebar-collapsed .navigation-rail button > kbd,
+  .sidebar-collapsed .navigation-rail .navigation-count {
+    display: none;
+  }
+
+  .app-shell.sidebar-collapsed .navigation-rail button {
+    justify-content: center;
+    min-width: 44px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .keyboard-shortcuts-column > section {
+    break-inside: avoid;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell.has-detail:not(.sidebar-collapsed) {
+    grid-template-columns: 232px minmax(400px, 1fr) minmax(380px, 440px);
+  }
+
+  .app-shell.sidebar-collapsed.has-detail {
+    grid-template-columns: 72px minmax(400px, 1fr) minmax(380px, 440px);
+  }
+
+  .keyboard-shortcuts-sheet {
+    width: min(960px, calc(100vw - 48px));
+    max-height: calc(100dvh - 48px);
+    padding-block: 16px;
+  }
+
+  .command-palette-scrim:has(.keyboard-shortcuts-sheet) {
+    padding-top: 24px;
+  }
+  .keyboard-shortcuts-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-xl);
+    margin-top: 24px;
+  }
+  .keyboard-shortcuts-column {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+  .keyboard-shortcuts-column h3 {
+    margin-top: 0;
+  }
+  .keyboard-shortcuts-sheet dl > div {
+    min-height: 32px;
+    gap: 8px;
+  }
+
+  .keyboard-shortcuts-column > section {
+    min-width: 0;
+  }
+
+  .keyboard-shortcuts-sheet > header,
+  .keyboard-shortcuts-sheet > p {
+    grid-column: 1 / -1;
+  }
+}
+
+.navigation-project-section {
+  display: none;
+}
+
+.project-shortcut-tooltip {
+  position: fixed;
+  z-index: 50;
+  max-width: min(280px, 50vw);
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: var(--type-supporting);
+  overflow-wrap: anywhere;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+@media (min-width: 840px) {
+  .navigation-project-section {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .navigation-rail .navigation-project-section button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--type-supporting);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+  }
+
+  .navigation-rail .navigation-project-section button.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .navigation-rail .navigation-project-section button:hover {
+    color: var(--ink);
+    background: var(--paper-soft);
+  }
+
+  .navigation-project-section span {
+    overflow: hidden;
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .navigation-project-section small {
+    flex: none;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .navigation-project-section .project-monogram {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    place-items: center;
+    font-size: var(--type-label);
+    font-weight: 700;
+    background: var(--paper-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+  }
+
+  .sidebar-collapsed .navigation-project-section small {
+    display: none;
+  }
+}
+
+@media (min-width: 840px) {
+  /* Destinations scroll between the fixed head and foot of the rail. */
+  .navigation-rail {
+    height: 100dvh;
+    padding-block: 16px 0;
+    overflow: hidden;
+  }
+  .navigation-rail > * {
+    flex-shrink: 0;
+  }
+  .navigation-destinations {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: 16px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scroll-padding-block: 8px 16px;
+  }
+  .navigation-destinations > * {
+    flex-shrink: 0;
+  }
+  .navigation-rail .rail-heading {
+    margin-bottom: 12px;
+  }
+  .navigation-rail .navigation-utility {
+    flex: 0 0 auto;
+    padding-block: 8px 16px;
+  }
+}
+
+@media (max-width: 839px) {
+  .page-surface:has(.global-capture-fab),
+  .app-shell:has(.global-capture-fab) .page-surface {
+    padding-bottom: calc(
+      var(--nav-height) + env(safe-area-inset-bottom) + 80px
+    );
+  }
+  .global-capture-fab {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 16px;
   }
 }

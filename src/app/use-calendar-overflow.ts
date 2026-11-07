@@ -57,6 +57,30 @@ export function useCalendarOverflow(rootRef: RefObject<HTMLElement | null>) {
         "aria-label",
         t({ message: "Close additional tasks" }),
       );
+      if (closeButton) {
+        const icon = root.ownerDocument.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg",
+        );
+        for (const [name, value] of Object.entries({
+          width: "19",
+          height: "19",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          "stroke-width": "1.7",
+          "stroke-linecap": "round",
+          "aria-hidden": "true",
+        }))
+          icon.setAttribute(name, value);
+        const path = root.ownerDocument.createElementNS(
+          icon.namespaceURI,
+          "path",
+        );
+        path.setAttribute("d", "M18 6 6 18M6 6l12 12");
+        icon.append(path);
+        closeButton.replaceChildren(icon);
+      }
       closeButton?.addEventListener("keydown", activateClose);
       fitCalendarPopup(popup);
       release = registerOverlay({
@@ -123,6 +147,7 @@ function fitCalendarPopup(popup: HTMLElement) {
     surface?.right ?? window.innerWidth - 12,
   );
   popup.style.maxWidth = `${Math.max(44, right - left)}px`;
+  popup.style.width = `${Math.min(320, Math.max(44, right - left))}px`;
   popup.style.maxHeight = `${Math.max(44, Math.min(height * 0.7, bottom - upper))}px`;
   const bounds = popup.getBoundingClientRect();
   const desiredTop = Math.max(

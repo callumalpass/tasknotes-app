@@ -1,5 +1,10 @@
-import { setTaskDate, shiftTaskDate } from "./task-date-actions";
-import { taskDatePart, todayString } from "./task";
+import {
+  rescheduleInput,
+  setTaskDate,
+  shiftTaskDate,
+} from "./task-date-actions";
+import { taskDatePart, taskDayStanding, todayString } from "./task";
+import { compareOverdueTasks } from "./overdue-order";
 
 import type { CreateTaskInput, TaskSummary, UpdateTaskInput } from "./task";
 import type { TaskViewRow } from "./view";
@@ -16,17 +21,15 @@ export interface TaskListSection {
 
 /**
  * Apply optional presentation hierarchy without changing provider query
- * semantics. Row order inside each section remains provider-owned.
+ * semantics. Overdue is chronological unless a saved sort owns the order.
  */
 export function sectionTaskViewRows(
   rows: readonly TaskViewRow[],
   mode: unknown,
   today = todayString(),
-  options: { includeEmpty?: boolean } = {},
+  options: { includeEmpty?: boolean; preserveOrder?: boolean } = {},
 ): TaskListSection[] {
   if (mode !== "day") return [];
-  // Today leads so a long overdue backlog cannot push today's work below
-  // the fold; overdue work stays expanded directly beneath it.
   const sections: TaskListSection[] = [
     { key: "today", label: "Today", rows: [] },
     { key: "overdue", label: "Overdue", rows: [] },
@@ -35,15 +38,12 @@ export function sectionTaskViewRows(
   ];
   const byKey = new Map(sections.map((section) => [section.key, section]));
   for (const row of rows) {
-    const date = taskDatePart(row.task.scheduled ?? row.task.due);
-    const key = !date
-      ? "anytime"
-      : date < today
-        ? "overdue"
-        : date === today
-          ? "today"
-          : "later";
-    byKey.get(key)?.rows.push(row);
+    byKey.get(taskDayStanding(row.task, today))?.rows.push(row);
+  }
+  if (!options.preserveOrder) {
+    byKey
+      .get("overdue")
+      ?.rows.sort((left, right) => compareOverdueTasks(left.task, right.task));
   }
   return options.includeEmpty
     ? sections
@@ -69,8 +69,23 @@ export function taskListSectionMoveInput(
       ? today
       : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
   const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
-  const current = task[field];
-  return { [field]: setTaskDate(current, targetDate) };
+  const input = { [field]: setTaskDate(task[field], targetDate) };
+  // A missed deadline would keep the task overdue wherever it was dropped.
+  const due = taskDatePart(task.due);
+  return destination !== "overdue" && due && due < today
+    ? { ...input, due: setTaskDate(task.due, targetDate) }
+    : input;
+}
+
+/** How many rows would have a missed deadline moved along with their plan. */
+export function missedDeadlineCount(
+  rows: readonly TaskViewRow[],
+  today = todayString(),
+): number {
+  return rows.filter(({ task }) => {
+    const due = taskDatePart(task.due);
+    return !task.completed && due && due < today;
+  }).length;
 }
 
 function isSectionKey(value: string): value is TaskListSectionKey {
@@ -80,21 +95,35 @@ function isSectionKey(value: string): value is TaskListSectionKey {
 /**
  * Updates that bring rows onto today with the same meaning as the `t`
  * shortcut and the Schedule today action: Scheduled moves to today, keeping
- * any time, and Due stays the deadline the person recorded. A row overdue
- * only by Due therefore gains today's Scheduled date and keeps its overdue
- * Due label. Each update carries the input that restores it.
+ * any time, and a missed Due moves with it unless `keepDeadlines` is set.
+ * Each update carries the input that restores it.
  */
 export function scheduleRowsTodayUpdates(
   rows: readonly TaskViewRow[],
-  today = todayString(),
+  date = todayString(),
+  today = date,
+  keepDeadlines = false,
 ): { id: string; input: UpdateTaskInput; undo: UpdateTaskInput }[] {
   return rows
     .filter(({ task }) => !task.completed)
-    .map(({ task }) => ({
-      id: task.id,
-      input: { scheduled: setTaskDate(task.scheduled, today) },
-      undo: { scheduled: task.scheduled ?? null },
-    }));
+    .map(({ task }) => {
+      const { due, ...scheduled } = rescheduleInput(
+        task,
+        date,
+        today,
+        !keepDeadlines,
+      );
+      const input =
+        due === undefined || keepDeadlines ? scheduled : { ...scheduled, due };
+      return {
+        id: task.id,
+        input,
+        undo: {
+          scheduled: task.scheduled ?? null,
+          ...("due" in input ? { due: task.due ?? null } : {}),
+        },
+      };
+    });
 }
 
 /**

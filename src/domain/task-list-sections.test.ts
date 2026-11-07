@@ -12,6 +12,22 @@ import type { Task } from "./task";
 import type { TaskViewRow } from "./view";
 
 describe("sectionTaskViewRows", () => {
+  it("orders overdue by their oldest effective date unless an explicit order wins", () => {
+    const rows = [
+      row("newer", { scheduled: "2026-07-24" }),
+      row("oldest", { scheduled: "2026-07-25", due: "2026-07-10" }),
+      row("middle", { due: "2026-07-20" }),
+    ];
+    expect(
+      sectionTaskViewRows(rows, "day", "2026-07-26")[0]?.rows.map(
+        ({ task }) => task.id,
+      ),
+    ).toEqual(["oldest", "middle", "newer"]);
+    expect(
+      sectionTaskViewRows(rows, "day", "2026-07-26", { preserveOrder: true })[0]
+        ?.rows,
+    ).toEqual(rows);
+  });
   it("adds a presentation hierarchy while preserving row order", () => {
     const rows = [
       row("anytime-1"),
@@ -99,7 +115,7 @@ describe("sectionTaskViewRows", () => {
 });
 
 describe("scheduleRowsTodayUpdates", () => {
-  it("schedules overdue rows today like the t shortcut, keeping Due", () => {
+  it("schedules overdue rows today like the t shortcut, moving only a missed Due", () => {
     const rows = [
       row("scheduled", { scheduled: "2026-07-20T09:30", due: "2026-07-30" }),
       row("due-only", { due: "2026-07-24" }),
@@ -118,8 +134,8 @@ describe("scheduleRowsTodayUpdates", () => {
       },
       {
         id: "due-only",
-        input: { scheduled: "2026-07-26" },
-        undo: { scheduled: null },
+        input: { scheduled: "2026-07-26", due: "2026-07-26" },
+        undo: { scheduled: null, due: "2026-07-24" },
       },
       {
         id: "repeating",
@@ -197,5 +213,31 @@ describe("todayCaptureDefaults", () => {
     expect(todayCaptureDefaults({ due: "2026-07-30" }, "2026-07-26")).toEqual({
       due: "2026-07-30",
     });
+  });
+
+  it("agrees with Upcoming about a missed deadline behind a later date", () => {
+    const today = "2026-07-26";
+    const sections = sectionTaskViewRows(
+      [
+        row("deferred", { scheduled: "2026-07-30", due: "2026-07-25" }),
+        row("answered", { scheduled: today, due: "2026-07-25" }),
+        row("slipped", { scheduled: "2026-07-25", due: "2026-07-30" }),
+      ],
+      "day",
+      today,
+    );
+    expect(
+      sections.map(({ key, rows }) => [key, rows.map(({ task }) => task.id)]),
+    ).toEqual([
+      ["today", ["answered"]],
+      ["overdue", ["deferred", "slipped"]],
+    ]);
+  });
+
+  it("clears a missed deadline when a task is dropped on Later", () => {
+    const task = row("late", { scheduled: "2026-07-20", due: "2026-07-25" });
+    expect(
+      taskListSectionMoveInput(task.task, "day", "later", "2026-07-26"),
+    ).toEqual({ scheduled: "2026-07-27", due: "2026-07-27" });
   });
 });

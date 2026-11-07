@@ -1,23 +1,30 @@
 import "@tasknotes/calendar/calendar.css";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
+import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
+import { TaskListSection } from "../components/task-list-section";
+import { missedDeadlineCount } from "../domain/task-list-sections";
 import { appLocale } from "../i18n/app";
 import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
 
 import { TaskCalendar } from "@tasknotes/calendar/react";
+import { formatDay } from "@tasknotes/calendar";
 import {
   Check,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
   LayoutGrid,
   Plus,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
   calendarItems,
+  calendarAgendaOrder,
   type CalendarEventData,
   type CalendarEventMetadata,
   type TaskCalendarItem,
@@ -27,16 +34,19 @@ import { calendarServiceFailureMessage } from "../calendar-service/failure-messa
 import { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
+import { useCalendarPosition } from "./use-calendar-position";
+import { useCalendarPreviews } from "./use-calendar-previews";
+import { useCalendarAgenda } from "./use-calendar-agenda";
+import { useCalendarMonthLayout } from "./use-calendar-month-layout";
 import {
   calendarEntryKind,
   calendarPriorityLegend,
-  calendarPriorityMarker,
   withPendingMoves,
-  withPriorityDetail,
   withoutSupersededMoves,
   type PendingCalendarMove,
 } from "./calendar-event-presentation";
 import { TaskRow } from "../components/task-row";
+import { calendarRowDetails } from "./calendar-row-details";
 import { ViewOptions } from "../components/view-options";
 import {
   calendarEntryKey,
@@ -56,9 +66,7 @@ import {
   type RecurringEditScopeRequest,
 } from "../components/recurring-edit-scope-dialog";
 import { formatOccurrenceDate } from "./task-editor-draft";
-import { occurrenceTask } from "../domain/task-occurrence";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
-import { viewPropertyDetails } from "../i18n/view-presentation";
 import { useRepository } from "./repository-context";
 import type {
   CalendarHourFormat,
@@ -121,7 +129,11 @@ export function TaskCalendarView({
   onOpen(task: TaskSummary, occurrenceDate?: string): void;
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
   onEdit(task: TaskSummary, edit: CalendarTaskEdit): Promise<void>;
-  onMoveOverdueToToday?(rows: readonly TaskViewRow[]): void;
+  onMoveOverdueToToday?(
+    rows: readonly TaskViewRow[],
+    date: string,
+    keepDeadlines: boolean,
+  ): Promise<void>;
   movingOverdue?: boolean;
 }) {
   const { t } = useLingui();
@@ -133,20 +145,68 @@ export function TaskCalendarView({
     onOpenTask(task, occurrenceDate);
   }
   const calendarRef = useRef<Calendar<CalendarEventData> | null>(null);
+  const inspectorRef = useRef<HTMLElement>(null);
   const [initialDate] = useState(selected);
   const [mode, setMode] = useState<CalendarMode>(() =>
     calendarMode(execution.view.presentation?.options.calendarView),
   );
+  const [inspectingDay, setInspectingDay] = useState(false);
+  useEffect(() => {
+    if (mode.startsWith("timeGrid"))
+      calendarRef.current?.scrollToTime("08:00:00");
+  }, [mode]);
   const phone = useMediaQuery(PHONE_QUERY);
   const phoneMonth = phone && mode === "dayGridMonth";
-  // Phones get a date strip above a list that keeps loading days, and above
-  // day grids; the strip replaces the date row there.
-  const agenda = phone && mode === "listWeek";
+  const fineMonth =
+    useMediaQuery("(min-width: 840px) and (pointer: fine)") &&
+    mode === "dayGridMonth";
+  // One agenda on every screen: keep the calendar's date navigation, lazy
+  // day loading and drag semantics, with ordinary task rows inside it.
+  const agenda = mode === "listWeek";
   const stripped =
     agenda ||
     (phone && (mode === "timeGridThreeDay" || mode === "timeGridDay"));
-  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
   const [leadSlot, setLeadSlot] = useState<HTMLElement | null>(null);
+  const [inspection, setInspection] = useState<{
+    label: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  const inspectingDrag = useRef(false);
+  const selectedTouchDay = useRef(false);
+  const stripGestureStart = useRef<string | undefined>(undefined);
+  function revealStripStart() {
+    requestAnimationFrame(() => {
+      rootRef.current
+        ?.querySelector<HTMLButtonElement>(".tnc-strip-day")
+        ?.click();
+    });
+  }
+  useEffect(() => {
+    const release = () => {
+      inspectingDrag.current = false;
+      setInspection(null);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    return () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+  }, []);
+  function inspectEvent(target: EventTarget | null) {
+    const event = (target as Element | null)?.closest?.<HTMLElement>(
+      '.tnc-item[role="button"]:not(.tnc-item--list)',
+    );
+    const label = event?.getAttribute("aria-label");
+    if (!event || !label) return;
+    const bounds = event.getBoundingClientRect();
+    setInspection({
+      label,
+      left: Math.max(12, Math.min(bounds.left, window.innerWidth - 332)),
+      top: Math.max(12, Math.min(bounds.bottom + 8, window.innerHeight - 104)),
+    });
+  }
   const [title, setTitle] = useState("");
   // The external calendar updates its title on a language change without
   // emitting onRangeChange when the visible dates stay the same.
@@ -155,6 +215,16 @@ export function TaskCalendarView({
     if (view) setTitle(view.title);
   }, [locale]);
   const [range, setRange] = useState(() => initialRange(selected, mode));
+  const visibleDays = useCalendarPosition(
+    rootRef,
+    mode,
+    phone,
+    selected,
+    range.start.getTime(),
+  );
+  useCalendarPreviews(rootRef, (day) => {
+    inspectDate(day);
+  });
   const [mutationError, setMutationError] = useState("");
   const [contextAction, setContextAction] = useState<{
     id: number;
@@ -213,10 +283,28 @@ export function TaskCalendarView({
   const items = useMemo(
     () =>
       [
-        ...withPendingMoves(built.items, pendingMoves, execution),
+        ...withPendingMoves(built.items, pendingMoves, execution).filter(
+          (item) => !repeatsToday(item),
+        ),
         ...google.items,
       ].map(withRevision),
     [built, execution, pendingMoves, google.items],
+  );
+  const agendaRows = useCalendarAgenda({
+    root: rootRef,
+    calendar: calendarRef,
+    enabled: agenda,
+    items,
+    locale,
+    execution,
+    identityTasks,
+    configuration,
+    display,
+  });
+  const monthLayout = useCalendarMonthLayout(
+    rootRef,
+    mode === "dayGridMonth",
+    items.length,
   );
   const legend = useMemo(
     () =>
@@ -227,25 +315,47 @@ export function TaskCalendarView({
     [built, configuration],
   );
   const selectedEntries = (entries.get(selected) ?? []).filter(
-    (entry) => !entry.timeEntry,
+    (entry) => !entry.timeEntry && !entry.modelEntry.isOverdueOnToday,
   );
+  const selectedGoogleItems = google.items.filter((item) => {
+    const dayStart = dateFromStorage(selected)!;
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const start = item.allDay
+      ? dateFromStorage(calendarDay(item.start))!
+      : new Date(item.start);
+    const end = item.end
+      ? item.allDay
+        ? dateFromStorage(calendarDay(item.end))!
+        : new Date(item.end)
+      : start;
+    return start < dayEnd && (end > dayStart || start >= dayStart);
+  });
   const listMode = mode === "listWeek";
+  const markers =
+    legend.length && !listMode && mode !== "multiMonthYear" ? (
+      <ul className="full-calendar-legend" aria-label={t`Calendar markers`}>
+        {legend.map((marker) => (
+          <li
+            key={marker.value}
+            style={{ "--event-tone": marker.color } as React.CSSProperties}
+          >
+            <i aria-hidden="true" />
+            {marker.label}
+          </li>
+        ))}
+      </ul>
+    ) : null;
 
   // Rows name an elevated priority so the grid's coloured marks read the
   // same here; without view properties the row's defaults already do.
-  function inspectorDetails(entry: CalendarEntry) {
-    const details = viewPropertyDetails(entry.row, execution.view.properties, {
-      identityProperty: titleProperty,
-      occurrence: entry.occurrence,
-    });
-    if (!details) return undefined;
-    const displayed = entry.occurrence
-      ? occurrenceTask(entry.occurrence)
-      : entry.task;
-    return withPriorityDetail(
-      details,
-      calendarPriorityMarker(displayed, configuration),
+  function inspectorDetails(entry: CalendarEntry, day?: string) {
+    return calendarRowDetails(
+      entry,
+      execution,
+      titleProperty,
       configuration,
+      day,
     );
   }
 
@@ -423,9 +533,36 @@ export function TaskCalendarView({
     );
   }
 
-  function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+  function inspectDate(dateStr: string, startStr?: string) {
+    setInspectingDay(true);
+    requestAnimationFrame(() => {
+      inspectorRef.current?.focus({ preventScroll: true });
+      // Below the side-by-side width the day's tasks open under the grid.
+      if (!window.matchMedia?.(DAY_LIST_BESIDE_QUERY).matches)
+        inspectorRef.current?.scrollIntoView?.({ block: "nearest" });
+    });
     // A slot names its time, so the day's Add task starts there.
     onSelect(dateStr, startStr);
+  }
+
+  function selectDate({ dateStr, startStr, allDay, jsEvent }: DateClickArg) {
+    if (allDay && "pointerType" in jsEvent && jsEvent.pointerType === "touch")
+      selectedTouchDay.current = true;
+    if (agenda) {
+      onSelect(dateStr, startStr);
+      if (
+        jsEvent.target instanceof Element &&
+        jsEvent.target.closest(".tnc-strip")
+      )
+        requestAnimationFrame(() => {
+          rootRef.current
+            ?.querySelector(`.tnc-list-day[data-date="${dateStr}"]`)
+            ?.closest(".tnc-list-section")
+            ?.scrollIntoView({ block: "start" });
+        });
+      return;
+    }
+    inspectDate(dateStr, startStr);
     // Below twelve months the day's tasks would be out of sight, so a year
     // day opens its month, as phone calendars do.
     if (
@@ -442,6 +579,15 @@ export function TaskCalendarView({
   }
 
   function createFromSelection(info: SelectArg) {
+    // Agenda days have their own Add task; a click on a heading only reads it.
+    if (
+      agenda ||
+      (info.jsEvent?.target instanceof Element &&
+        info.jsEvent.target.closest(".tnc-dh"))
+    ) {
+      calendarRef.current?.unselect();
+      return;
+    }
     const date = info.startStr.slice(0, 10);
     const timeEstimate = info.allDay
       ? undefined
@@ -480,24 +626,120 @@ export function TaskCalendarView({
   }
 
   // The Overdue section moves to today as the Today view's Overdue lane
-  // does: Scheduled becomes today and Due stays the deadline, so rows overdue
-  // only by Due stay listed. Rows already scheduled today have nothing to move.
+  // does: Scheduled becomes today and Due stays the deadline.
   const overdueRows = useMemo(() => {
-    const today = todayString();
     const rows = new Map<string, TaskViewRow>();
     for (const item of items) {
       const entry = item.data?.metadata?.entry;
       if (!entry?.modelEntry.isOverdueOnToday) continue;
-      if (taskDatePart(entry.row.task.scheduled) === today) continue;
       rows.set(entry.row.task.id, entry.row);
     }
     return [...rows.values()];
   }, [items]);
 
+  const layoutSwitcher = (
+    <ViewOptions
+      label={t`Calendar layout`}
+      icon={
+        <>
+          <LayoutGrid aria-hidden="true" size={16} />
+          <span>
+            {calendarModes.find(({ value }) => value === mode)?.label}
+          </span>
+        </>
+      }
+    >
+      {calendarModes.map(({ value, label }) => (
+        <button
+          aria-pressed={mode === value}
+          key={value}
+          type="button"
+          onClick={() => {
+            setInspectingDay(false);
+            setMode(value);
+          }}
+        >
+          {mode === value ? (
+            <Check aria-hidden="true" size={18} />
+          ) : (
+            <span aria-hidden="true" className="layout-option-space" />
+          )}
+          {label}
+        </button>
+      ))}
+    </ViewOptions>
+  );
+
   return (
     <div
       ref={rootRef}
-      className={`full-calendar-view${listMode ? " is-agenda" : ""}`}
+      onPointerOver={(event) => inspectEvent(event.target)}
+      onFocusCapture={(event) => inspectEvent(event.target)}
+      onPointerDownCapture={(event) => {
+        selectedTouchDay.current = false;
+        stripGestureStart.current = (event.target as Element).closest(
+          ".tnc-strip",
+        )
+          ? rootRef.current?.querySelector<HTMLElement>(".tnc-strip-day")
+              ?.dataset.date
+          : undefined;
+        if ((event.target as Element).closest(".tnc-item--timed")) {
+          inspectingDrag.current = true;
+          inspectEvent(event.target);
+        }
+      }}
+      onClickCapture={(event) => {
+        if (!selectedTouchDay.current || event.detail === 0) return;
+        selectedTouchDay.current = false;
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        if (agenda && (event.target as Element).closest(".tnc-strip-nav"))
+          revealStripStart();
+      }}
+      onPointerUp={() => {
+        if (
+          agenda &&
+          stripGestureStart.current &&
+          stripGestureStart.current !==
+            rootRef.current?.querySelector<HTMLElement>(".tnc-strip-day")
+              ?.dataset.date
+        )
+          revealStripStart();
+      }}
+      onPointerOut={(event) => {
+        if (
+          !inspectingDrag.current &&
+          !(event.relatedTarget as Element | null)?.closest?.(
+            '.tnc-item[role="button"]:not(.tnc-item--list)',
+          )
+        )
+          setInspection(null);
+      }}
+      onBlurCapture={() => {
+        if (!inspectingDrag.current) setInspection(null);
+      }}
+      onKeyDownCapture={(event) => {
+        if (event.key === "Escape") setInspection(null);
+      }}
+      onKeyDown={(event) => {
+        if (
+          agenda &&
+          event.key.startsWith("Arrow") &&
+          (event.target as Element).closest(".tnc-strip-day")
+        )
+          requestAnimationFrame(() => {
+            const focused = document.activeElement;
+            if (
+              focused instanceof HTMLButtonElement &&
+              focused.matches(".tnc-strip-day")
+            )
+              focused.click();
+          });
+      }}
+      data-calendar-mode={mode}
+      className={`full-calendar-view${listMode ? " is-agenda" : ""}${mode === "timeGridDay" ? " is-day" : ""}${inspectingDay || phoneMonth ? " has-day-inspector" : ""}`}
     >
       <div className="full-calendar-workspace">
         {/* The layout switcher belongs to the calendar it changes, so it sits
@@ -505,57 +747,40 @@ export function TaskCalendarView({
         <div className="full-calendar-main">
           {agenda && leadSlot && onMoveOverdueToToday && overdueRows.length
             ? createPortal(
-                <button
-                  aria-label={plural(overdueRows.length, {
-                    one: "Move all to today, # overdue task",
-                    other: "Move all to today, # overdue tasks",
-                  })}
-                  className="full-calendar-reschedule"
-                  disabled={movingOverdue}
-                  type="button"
-                  onClick={() => onMoveOverdueToToday(overdueRows)}
+                <TaskListSection
+                  label={t`Overdue`}
+                  count={overdueRows.length}
+                  laneKey="section:overdue"
+                  preferenceKey={`tasknotes:agenda-overdue:${execution.view.key}`}
+                  headingOnly
+                  action={
+                    <OverdueScheduleActions
+                      count={overdueRows.length}
+                      deadlines={missedDeadlineCount(overdueRows)}
+                      pending={Boolean(movingOverdue)}
+                      onSchedule={(date, keepDeadlines) =>
+                        onMoveOverdueToToday(overdueRows, date, keepDeadlines)
+                      }
+                    />
+                  }
                 >
-                  <Trans>Move all to today</Trans>
-                </button>,
+                  {null}
+                </TaskListSection>,
                 leadSlot,
               )
             : null}
-          {stripped && stripSlot
-            ? createPortal(
-                <ViewOptions
-                  label={t`Calendar layout`}
-                  icon={<LayoutGrid aria-hidden="true" size={18} />}
-                >
-                  {calendarModes
-                    .filter(({ compact }) => compact)
-                    .map(({ value, label }) => (
-                      <button
-                        aria-pressed={mode === value}
-                        key={value}
-                        type="button"
-                        onClick={() => setMode(value)}
-                      >
-                        {mode === value ? (
-                          <Check aria-hidden="true" size={18} />
-                        ) : (
-                          <span
-                            aria-hidden="true"
-                            className="layout-option-space"
-                          />
-                        )}{" "}
-                        {label}
-                      </button>
-                    ))}
-                </ViewOptions>,
-                stripSlot,
-              )
-            : null}
-          <div className="full-calendar-commandbar" hidden={stripped}>
+          <div className="full-calendar-commandbar">
             <div className="full-calendar-navigation">
               <button
-                aria-label={t`Previous period`}
+                aria-label={agenda ? t`Previous week` : t`Previous period`}
                 type="button"
-                onClick={() => calendarRef.current?.prev()}
+                onClick={() =>
+                  agenda
+                    ? rootRef.current
+                        ?.querySelector<HTMLButtonElement>(".tnc-strip-prev")
+                        ?.click()
+                    : calendarRef.current?.prev()
+                }
               >
                 <ChevronLeft aria-hidden="true" size={19} />
               </button>
@@ -577,36 +802,68 @@ export function TaskCalendarView({
               ) : null}
               <button
                 type="button"
-                onClick={() => calendarRef.current?.goToday()}
+                onClick={() =>
+                  agenda
+                    ? rootRef.current
+                        ?.querySelector<HTMLButtonElement>(".tnc-strip-today")
+                        ?.click()
+                    : calendarRef.current?.goToday()
+                }
               >
                 <Trans>Today</Trans>
               </button>
               <button
-                aria-label={t`Next period`}
+                aria-label={agenda ? t`Next week` : t`Next period`}
                 type="button"
-                onClick={() => calendarRef.current?.next()}
+                onClick={() =>
+                  agenda
+                    ? rootRef.current
+                        ?.querySelector<HTMLButtonElement>(".tnc-strip-next")
+                        ?.click()
+                    : calendarRef.current?.next()
+                }
               >
                 <ChevronRight aria-hidden="true" size={19} />
               </button>
             </div>
-            <h2 aria-live="polite">{title}</h2>
-            <div
-              className="full-calendar-modes"
-              aria-label={t`Calendar layout`}
-            >
-              {calendarModes.map(({ value, label, compact }) => (
+            <h2 aria-live="polite" hidden={stripped && !agenda}>
+              {agenda ? (
                 <button
-                  aria-pressed={mode === value}
-                  className={compact ? undefined : "wide-mode"}
-                  key={value}
+                  className="agenda-range-toggle"
                   type="button"
-                  onClick={() => setMode(value)}
+                  aria-expanded={agendaRows.expanded}
+                  onClick={() =>
+                    rootRef.current
+                      ?.querySelector<HTMLButtonElement>(".tnc-strip-title")
+                      ?.click()
+                  }
                 >
-                  {label}
+                  {agendaRows.stripTitle}
+                  <ChevronDown aria-hidden="true" size={14} />
                 </button>
-              ))}
-            </div>
+              ) : (
+                title
+              )}
+            </h2>
+            {layoutSwitcher}
           </div>
+          {phone && mode === "timeGridWeek" ? (
+            <p className="full-calendar-visible-days" aria-live="polite">
+              {visibleDays}
+            </p>
+          ) : null}
+          {inspection
+            ? createPortal(
+                <div
+                  className="calendar-event-inspection"
+                  role="tooltip"
+                  style={{ left: inspection.left, top: inspection.top }}
+                >
+                  {inspection.label}
+                </div>,
+                document.body,
+              )
+            : null}
           {historyRequest ? (
             <ClearRecurringHistoryDialog
               request={historyRequest}
@@ -676,7 +933,9 @@ export function TaskCalendarView({
               timeZone={timezone}
               locale={locale}
               // Selected day and imperative entry labels follow app language.
-              renderKey={`${selected}|${built.locale}`}
+              // Agenda selection belongs to the date strip. Rebuilding its
+              // whole list here would lose the position just scrolled to.
+              renderKey={`${agenda ? "agenda" : selected}|${built.locale}`}
               view={calendarView(mode)}
               date={initialDate}
               dayCount={numberOption(
@@ -688,6 +947,7 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
+              eventOrder={calendarAgendaOrder(execution)}
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>
@@ -702,12 +962,9 @@ export function TaskCalendarView({
                 onSelect(dateStr);
                 onCreate(dateStr);
               }}
-              stripSlotDidMount={({ el }) => setStripSlot(el)}
-              stripSlotWillUnmount={({ el }) =>
-                setStripSlot((current) => (current === el ? null : current))
-              }
               toolbar={false}
-              height="auto"
+              height={fineMonth ? "fill" : "auto"}
+              style={fineMonth ? { height: monthLayout.height } : undefined}
               navLinks={false}
               editable
               selectable
@@ -724,13 +981,26 @@ export function TaskCalendarView({
               nowIndicator={preferences.nowIndicator}
               hour12={hour12(preferences.hourFormat)}
               slotDuration={preferences.slotDuration}
+              slotHeight={36}
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
-              eventMinHeight={28}
+              scrollTime="08:00:00"
+              eventMinHeight={fineMonth ? 26 : 44}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}
-              dayMaxEvents={phoneMonth ? true : 3}
+              dayMaxEvents={
+                phoneMonth ? monthLayout.dots : fineMonth ? true : 2
+              }
+              dayMaxEventRows={
+                phoneMonth || fineMonth
+                  ? 0
+                  : mode === "timeGridDay"
+                    ? 7
+                    : mode.startsWith("timeGrid")
+                      ? 2
+                      : 3
+              }
               text={calendarText()}
               dayClassNames={({ dateStr }) =>
                 dateStr === selected ? ["is-selected-day"] : []
@@ -743,16 +1013,30 @@ export function TaskCalendarView({
               }
               itemContent={(arg) => calendarEventContent(arg, configuration)}
               listItemContent={(arg) =>
-                calendarEventContent(arg, configuration)
+                agenda && !arg.isMirror && arg.item.data?.metadata
+                  ? Object.assign(document.createElement("div"), {
+                      className: "agenda-task-slot",
+                    })
+                  : calendarEventContent(arg, configuration)
               }
-              itemDidMount={(arg) => describeEvent(arg, configuration)}
+              itemDidMount={(arg) => {
+                describeEvent(arg, configuration);
+                if (agenda) agendaRows.mount(arg);
+              }}
+              itemWillUnmount={agendaRows.unmount}
               onItemClick={({ item }) => {
-                if (item.data?.google) google.open(item.data.google);
+                if (item.data?.google) {
+                  google.open(item.data.google);
+                  return;
+                }
+                if (agenda) return;
                 const metadata = item.data?.metadata;
                 if (metadata)
                   onOpen(metadata.entry.task, metadata.occurrence?.date);
               }}
-              onItemContextMenu={(arg) => openContextActions(arg)}
+              onItemContextMenu={(arg) => {
+                if (!agenda) openContextActions(arg);
+              }}
               onItemDrop={(info) =>
                 void (info.item.data?.google
                   ? google.move(info)
@@ -774,34 +1058,78 @@ export function TaskCalendarView({
                 });
               }}
             />
-          </div>
-          {legend.length && !listMode ? (
-            <ul
-              className="full-calendar-legend"
-              aria-label={t`Calendar markers`}
-            >
-              {legend.map((marker) => (
-                <li
-                  key={marker.value}
-                  style={
-                    { "--event-tone": marker.color } as React.CSSProperties
-                  }
+            {[...agendaRows.slots].map(([slot, arg]) => {
+              const item = items.find(({ id }) => id === arg.item.id);
+              const entry = item?.data?.metadata?.entry;
+              if (!item || !entry || !agenda) return null;
+              const kind = localizedEntryKind(
+                calendarEntryKind(
+                  item.data?.kind,
+                  item.data?.details ?? [],
+                  true,
+                  configuration,
+                ),
+              );
+              return createPortal(
+                <div
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => {
+                    // Row buttons act normally; dragging the title or row space
+                    // still reaches the calendar's existing move gesture.
+                    if (
+                      (event.target as HTMLElement).closest(
+                        "button:not(.task-row-title), input, select, textarea",
+                      )
+                    )
+                      event.stopPropagation();
+                  }}
                 >
-                  <i aria-hidden="true" />
-                  {marker.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+                  <TaskRow
+                    details={inspectorDetails(
+                      entry,
+                      entry.modelEntry.isOverdueOnToday
+                        ? undefined
+                        : formatDay(arg.day),
+                    )}
+                    occurrence={entry.occurrence}
+                    supportingInline
+                    supportingText={
+                      [kind, agendaTime(arg.timeText, entry.task)]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
+                    }
+                    task={entry.task}
+                    onOpen={onOpen}
+                    onToggle={onToggle}
+                  />
+                </div>,
+                slot,
+                `${arg.item.id}:${arg.day}`,
+              );
+            })}
+          </div>
+          {!phoneMonth ? markers : null}
         </div>
-        {!listMode ? (
+        {!listMode && (inspectingDay || phoneMonth) ? (
           <aside
+            ref={inspectorRef}
+            tabIndex={-1}
             className="full-calendar-inspector"
             aria-label={t`Selected day`}
           >
             <header>
               <h2>{agendaLabel(selected)}</h2>
               <span>{countLabel(selectedEntries.length, "task")}</span>
+              {!phoneMonth ? (
+                <button
+                  aria-label={t`Close day details`}
+                  className="icon-action"
+                  type="button"
+                  onClick={() => setInspectingDay(false)}
+                >
+                  <X aria-hidden="true" size={18} />
+                </button>
+              ) : null}
             </header>
             {selectedEntries.length ? (
               <div className="full-calendar-day-tasks">
@@ -823,8 +1151,34 @@ export function TaskCalendarView({
                 </Trans>
               </p>
             )}
+            {selectedGoogleItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="full-calendar-google-event"
+                aria-label={calendarEventLabel(item)}
+                style={{ "--c": item.color } as React.CSSProperties}
+                onClick={() => google.open(item.data!.google!)}
+              >
+                <span>{item.title || t`(No title)`}</span>
+                <small>
+                  {[
+                    !item.allDay
+                      ? new Intl.DateTimeFormat(locale, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        }).format(new Date(item.start))
+                      : null,
+                    item.data!.google!.calendar.name,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </small>
+              </button>
+            ))}
           </aside>
         ) : null}
+        {phoneMonth ? markers : null}
       </div>
       {contextAction ? (
         <TaskActions
@@ -845,7 +1199,6 @@ const calendarModes: Array<{
   value: CalendarMode;
   view: ViewType;
   label: string;
-  compact: boolean;
 }> = [
   {
     value: "dayGridMonth",
@@ -853,7 +1206,6 @@ const calendarModes: Array<{
     get label() {
       return t`Month`;
     },
-    compact: true,
   },
   {
     value: "timeGridWeek",
@@ -861,7 +1213,6 @@ const calendarModes: Array<{
     get label() {
       return t`Week`;
     },
-    compact: false,
   },
   {
     value: "timeGridThreeDay",
@@ -869,7 +1220,6 @@ const calendarModes: Array<{
     get label() {
       return t`3 days`;
     },
-    compact: true,
   },
   {
     value: "timeGridDay",
@@ -877,7 +1227,6 @@ const calendarModes: Array<{
     get label() {
       return t`Day`;
     },
-    compact: false,
   },
   {
     value: "listWeek",
@@ -885,7 +1234,6 @@ const calendarModes: Array<{
     get label() {
       return t`Agenda`;
     },
-    compact: true,
   },
   {
     value: "multiMonthYear",
@@ -893,7 +1241,6 @@ const calendarModes: Array<{
     get label() {
       return t`Year`;
     },
-    compact: true,
   },
 ];
 
@@ -902,11 +1249,25 @@ function calendarView(mode: CalendarMode): ViewType {
 }
 
 /** Stamps what an item draws as its `rev`, leaving the task records out. */
+/** A task scheduled today already has its row; a missed Due date adds no other. */
+function repeatsToday(item: TaskCalendarItem): boolean {
+  const entry = item.data?.metadata?.entry;
+  return (
+    !!entry?.modelEntry.isOverdueOnToday &&
+    taskDatePart(entry.row.task.scheduled) === todayString()
+  );
+}
+
 function withRevision(item: TaskCalendarItem): TaskCalendarItem {
   const data = { ...item.data! } as Partial<CalendarEventData>;
   delete data.metadata;
   delete data.google;
   return { ...item, rev: JSON.stringify({ ...item, data }) };
+}
+
+/** A task with no estimate has a start, not an end this list should invent. */
+function agendaTime(timeText: string, task: TaskSummary) {
+  return task.timeEstimate ? timeText : timeText.split(" – ")[0];
 }
 
 function calendarEventContent(
@@ -926,6 +1287,7 @@ function calendarEventContent(
     "span",
     [
       "full-calendar-event-content",
+      presentation?.kind === "Due" ? "is-due" : "",
       presentation?.recurring ? "is-recurring" : "",
       marker ? "has-marker" : "",
     ]
@@ -942,9 +1304,22 @@ function calendarEventContent(
   );
   // Agenda rows name the priority in their details instead.
   if (marker && !listView) primary.append(node("i"));
-  if (timeText && !listView) primary.append(node("time", undefined, timeText));
-  if (kind) primary.append(node("em", "full-calendar-event-kind", kind));
-  primary.append(node("span", undefined, item.title || t`(No title)`));
+  const monthEntry = variant === "bar";
+  const title = item.title || t`(No title)`;
+  primary.append(
+    node(
+      "span",
+      undefined,
+      monthEntry ? [timeText, kind, title].filter(Boolean).join(" · ") : title,
+    ),
+  );
+  if (!listView && !monthEntry && (timeText || kind)) {
+    const secondary = node("span", "full-calendar-event-secondary");
+    if (timeText) secondary.append(node("time", undefined, timeText));
+    if (kind) secondary.append(node("em", "full-calendar-event-kind", kind));
+    content.append(secondary);
+  } else if (kind && listView)
+    primary.append(node("em", "full-calendar-event-kind", kind));
   if (details.length) {
     const properties = node("span", "full-calendar-event-properties");
     for (const detail of details) {
@@ -992,7 +1367,7 @@ function describeEvent(
     "aria-label",
     `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
-  if (marker) el.title = marker.label;
+  el.removeAttribute("title");
 }
 
 function localizedEntryKind(kind: string | undefined): string | undefined {
@@ -1008,8 +1383,7 @@ function hour12(preference: CalendarHourFormat): boolean | undefined {
 }
 
 function calendarDay(value: TaskCalendarItem["start"]): string {
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value))
-    return value.slice(0, 10);
+  if (typeof value === "string") return taskDatePart(value);
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : todayString(date);
 }
@@ -1039,11 +1413,19 @@ function calendarEventLabel(item: TaskCalendarItem): string {
 }
 
 function listDayLabel(date: Date): string {
-  return new Intl.DateTimeFormat(appLocale(), {
+  const label = new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     month: "long",
     day: "numeric",
   }).format(date);
+  const day = todayString(date);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return day === todayString()
+    ? t`Today · ${label}`
+    : day === todayString(tomorrow)
+      ? t`Tomorrow · ${label}`
+      : label;
 }
 
 function useMediaQuery(query: string): boolean {

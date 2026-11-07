@@ -251,3 +251,77 @@ function navigationView(id: string, name: string): TaskView {
     },
   };
 }
+
+it("names Today counts, reserves unknown badges, and preserves custom navigation order", () => {
+  const today = { ...navigationView("today", "Today"), id: "today" };
+  const custom = navigationView("custom", "My work");
+  const hidden = navigationView("hidden", "Hidden work");
+  const onNavigate = vi.fn();
+  const component = (counts: { total: number; overdue: number } | null) => (
+    <Navigation
+      active="view:today"
+      mode="desktop"
+      homeKey={custom.key}
+      navigationKeys={[custom.key, today.key]}
+      views={[today, hidden, custom]}
+      todayCounts={counts}
+      onNavigate={onNavigate}
+    />
+  );
+  const { rerender } = render(component(null));
+  expect(
+    screen
+      .getByRole("button", { name: "Today" })
+      .querySelector(".navigation-count"),
+  ).toHaveClass("is-unknown");
+  expect(screen.queryByRole("button", { name: "Hidden work" })).toBeNull();
+  expect(
+    screen
+      .getAllByRole("button")
+      .slice(0, 2)
+      .map((button) => button.textContent),
+  ).toEqual(["My work", "Today0"]);
+  rerender(component({ total: 14, overdue: 12 }));
+  const badge = screen.getByRole("button", {
+    name: "Today, 14 tasks, 12 overdue",
+  });
+  expect(badge).toHaveAttribute("title", "Today, 14 tasks, 12 overdue (g t)");
+  fireEvent.click(badge);
+  expect(onNavigate).toHaveBeenCalledWith({ page: "views", key: today.key });
+});
+
+it("keeps project identity and task counts accessible in the rail with focus tooltips", () => {
+  render(
+    <Navigation
+      active="views"
+      mode="desktop"
+      navigationKeys={[]}
+      views={[]}
+      projects={[
+        { label: "Product refresh", count: 10 },
+        { label: "Field research", count: 1 },
+      ]}
+      onNavigate={vi.fn()}
+    />,
+  );
+  const project = screen.getByRole("button", {
+    name: "Product refresh, 10 tasks",
+  });
+  expect(project.querySelector(".project-monogram")).toHaveTextContent("PR");
+  expect(
+    screen
+      .getByRole("button", { name: "Field research, 1 task" })
+      .querySelector(".project-monogram"),
+  ).toHaveTextContent("FR");
+  fireEvent.focus(project);
+  expect(screen.getByRole("tooltip")).toHaveTextContent(
+    "Product refresh, 10 tasks",
+  );
+  expect(project).toHaveAccessibleDescription("Product refresh, 10 tasks");
+  fireEvent.keyDown(project, { key: "Escape" });
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.mouseEnter(project);
+  expect(screen.getByRole("tooltip")).toBeVisible();
+  fireEvent.blur(project);
+  expect(screen.queryByRole("tooltip")).toBeNull();
+});

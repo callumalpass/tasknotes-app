@@ -30,6 +30,8 @@ export interface CaptureSubmitOptions {
   create(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   onAccepted?(task: Task, version: number): void;
   refresh?(task: Task): Promise<CaptureFollowUp | void>;
+  /** Last step before saving, for what only the collection can answer. */
+  finalizeInput?(input: CreateTaskInput): Promise<CreateTaskInput>;
 }
 
 /** A collection-scoped, in-memory UI draft, not a task replica.
@@ -48,6 +50,8 @@ export class CaptureSession {
     accepted: null,
   };
   private fields: Partial<CreateTaskInput> = {};
+  /** Lets a project with spaces in its name be typed without link markup. */
+  knownProjects: readonly string[] = [];
   private parseGeneration = 0;
   private submission: {
     intent: TaskCreateIntent;
@@ -182,7 +186,9 @@ export class CaptureSession {
         this.publish({ pendingTitle: result.input.title.trim() });
         this.submission ??= {
           intent: { id: crypto.randomUUID() },
-          input: result.input,
+          input: options.finalizeInput
+            ? await options.finalizeInput(result.input)
+            : result.input,
         };
         created = await options.create(
           this.submission.input,
@@ -319,7 +325,12 @@ export class CaptureSession {
     let input: CreateTaskInput;
     let highlights: TaskCaptureResult["highlights"];
     try {
-      ({ input, highlights } = await parseTaskCapture(text, configuration));
+      ({ input, highlights } = await parseTaskCapture(
+        text,
+        configuration,
+        undefined,
+        this.knownProjects,
+      ));
     } catch {
       input = { title: text };
     }
