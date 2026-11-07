@@ -84,8 +84,24 @@ jobs:
             android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           if-no-files-found: error
 
+  native-kvm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Require hardware acceleration
+        run: |
+          test -c /dev/kvm
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo udevadm settle
+          ls -l /dev/kvm
+          id
+          "$ANDROID_HOME/emulator/emulator" -accel-check
+          test -r /dev/kvm && test -w /dev/kvm
+
   native-emulator-preflight:
-    needs: build
+    needs: [build, native-kvm]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -110,6 +126,8 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          sudo udevadm settle
+          ls -l /dev/kvm
           test -r /dev/kvm && test -w /dev/kvm
       - name: Exercise real Chrome and application WebView without credentials
         uses: reactivecircus/android-emulator-runner@v2
