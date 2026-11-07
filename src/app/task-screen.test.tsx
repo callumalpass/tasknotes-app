@@ -352,7 +352,7 @@ describe("TaskScreen", () => {
       type: "image/png",
     });
 
-    fireEvent.change(await screen.findByLabelText("Attach image"), {
+    fireEvent.change(await screen.findByLabelText("Attach file"), {
       target: { files: [file] },
     });
 
@@ -375,7 +375,7 @@ describe("TaskScreen", () => {
     );
 
     expect(
-      screen.getByText("Detaching keeps the image file in your collection."),
+      screen.getByText("Detaching keeps the file in your collection."),
     ).toBeVisible();
     expect(
       screen.queryByRole("button", { name: /Delete receipt\.png file/ }),
@@ -397,11 +397,13 @@ describe("TaskScreen", () => {
     renderTask();
     await screen.findByLabelText("Task title", { exact: true });
     await waitFor(() =>
-      expect(screen.queryByText("Loading images…")).not.toBeInTheDocument(),
+      expect(
+        screen.queryByText("Loading attachments…"),
+      ).not.toBeInTheDocument(),
     );
     const flashed = vi.fn();
     const observer = new MutationObserver(() => {
-      if (screen.queryByText("Loading images…")) flashed();
+      if (screen.queryByText("Loading attachments…")) flashed();
     });
     observer.observe(document.body, { subtree: true, childList: true });
     await act(async () => {
@@ -454,7 +456,7 @@ describe("TaskScreen", () => {
     const file = new File([Uint8Array.of(137, 80, 78, 71)], "existing.png", {
       type: "image/png",
     });
-    fireEvent.change(await screen.findByLabelText("Attach image"), {
+    fireEvent.change(await screen.findByLabelText("Attach file"), {
       target: { files: [file] },
     });
     expect(await screen.findByText("existing.png")).toBeVisible();
@@ -489,7 +491,7 @@ describe("TaskScreen", () => {
     const file = new File([Uint8Array.of(137, 80, 78, 71)], "open.png", {
       type: "image/png",
     });
-    fireEvent.change(await screen.findByLabelText("Attach image"), {
+    fireEvent.change(await screen.findByLabelText("Attach file"), {
       target: { files: [file] },
     });
     expect(await screen.findByText("open.png")).toBeVisible();
@@ -523,7 +525,7 @@ describe("TaskScreen", () => {
     const file = new File([Uint8Array.of(137, 80, 78, 71)], "delayed.png", {
       type: "image/png",
     });
-    fireEvent.change(await screen.findByLabelText("Attach image"), {
+    fireEvent.change(await screen.findByLabelText("Attach file"), {
       target: { files: [file] },
     });
     expect(await screen.findByText("delayed.png")).toBeVisible();

@@ -399,8 +399,17 @@ Today             Search       More
   immediately, then Subtasks and Attachments. More properties starts collapsed
   and retains every secondary and custom field. Existing notes open as rendered Markdown; clicking the text or choosing
   Write opens the source. Empty notes open ready for writing. Save status is
-  quiet proportional text beside the task actions. Without images,
+  quiet proportional text beside the task actions. Without attachments,
   Attachments collapses to one row holding its heading and add actions.
+  Attach file accepts any file the collection can store. Non-image attachments
+  show a quiet file icon, a truncating filename, size and Download; they are
+  never embedded in Notes or opened as active content in the app. Raster image
+  attachments retain their preview and Insert actions. SVG is download-only.
+  Detach removes task membership, not the file from the collection.
+  Collection record extensions (normally `.md`) remain owned by the record API;
+  provider refusals stay visible. The model currently requires an explicit file
+  extension in attachment links, so extensionless names are rejected before upload,
+  not silently renamed or stored with a different link format.
   The editor ends with the task's Markdown
   file: its collection-relative path in muted mono, with quiet Copy path and
   Copy wikilink actions (Copy Markdown link when the collection writes

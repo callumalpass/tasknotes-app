@@ -1111,8 +1111,8 @@ msgid "Assignments use your linked person record."
 msgstr "Le assegnazioni usano il record persona collegato."
 
 #: src/components/task-attachments.tsx
-msgid "Attach image"
-msgstr "Allega immagine"
+msgid "Attach file"
+msgstr "Allega file"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
@@ -2119,8 +2119,8 @@ msgid "Detach from task"
 msgstr "Scollega dall'attività"
 
 #: src/components/task-attachments.tsx
-msgid "Detaching keeps the image file in your collection."
-msgstr "Scollegando l'immagine, il file rimane nella raccolta."
+msgid "Detaching keeps the file in your collection."
+msgstr "Rimuovendo l’allegato, il file rimane nella raccolta."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
@@ -2220,6 +2220,15 @@ msgstr "Concludi la scelta degli assegnatari"
 #: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "giù"
+
+#: src/components/task-attachments.tsx
+msgid "Download"
+msgstr "Scarica"
+
+#. placeholder {0}: displayName(item.file.path)
+#: src/components/task-attachments.tsx
+msgid "Download {0}"
+msgstr "Scarica {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
@@ -3044,14 +3053,14 @@ msgstr "Carica le attività rimanenti per modificare l'ordine manuale."
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 msgstr "Caricate {0} di {1} attività corrispondenti. I conteggi delle sezioni riguardano le attività caricate. {2}"
 
+#: src/components/task-attachments.tsx
+msgid "Loading attachments…"
+msgstr "Caricamento degli allegati…"
+
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
 msgstr "Caricamento dell'immagine…"
-
-#: src/components/task-attachments.tsx
-msgid "Loading images…"
-msgstr "Caricamento delle immagini…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
@@ -5411,6 +5420,10 @@ msgstr "Impossibile completare l'azione di recupero dell'account. Verifica la co
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "L'azione è stata completata, ma non è stato possibile aggiornare lo stato dell'account. Verifica di nuovo lo stato."
+
+#: src/components/task-attachments.tsx
+msgid "The attachment is not a supported image."
+msgstr "L’allegato non è un’immagine supportata."
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."

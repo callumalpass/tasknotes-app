@@ -1111,8 +1111,8 @@ msgid "Assignments use your linked person record."
 msgstr "负责人使用你关联的人员记录。"
 
 #: src/components/task-attachments.tsx
-msgid "Attach image"
-msgstr "附加图片"
+msgid "Attach file"
+msgstr "添加附件"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
@@ -2119,8 +2119,8 @@ msgid "Detach from task"
 msgstr "从任务中分离"
 
 #: src/components/task-attachments.tsx
-msgid "Detaching keeps the image file in your collection."
-msgstr "分离后，图片文件仍会保留在你的集合中。"
+msgid "Detaching keeps the file in your collection."
+msgstr "取消关联后，文件仍保留在集合中。"
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
@@ -2220,6 +2220,15 @@ msgstr "完成负责人选择"
 #: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "向下"
+
+#: src/components/task-attachments.tsx
+msgid "Download"
+msgstr "下载"
+
+#. placeholder {0}: displayName(item.file.path)
+#: src/components/task-attachments.tsx
+msgid "Download {0}"
+msgstr "下载 {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
@@ -3044,13 +3053,13 @@ msgstr "加载剩余任务以更改手动顺序。"
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 msgstr "已加载 {1} 个匹配任务中的 {0} 个。分区计数仅包括已加载的任务。{2}"
 
+#: src/components/task-attachments.tsx
+msgid "Loading attachments…"
+msgstr "正在加载附件…"
+
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr "正在加载图片…"
-
-#: src/components/task-attachments.tsx
-msgid "Loading images…"
 msgstr "正在加载图片…"
 
 #: src/app/search-screen.tsx
@@ -5411,6 +5420,10 @@ msgstr "无法完成账户恢复操作。请检查连接和账户状态后重试
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "操作已完成，但无法刷新账户状态。请再次检查状态。"
+
+#: src/components/task-attachments.tsx
+msgid "The attachment is not a supported image."
+msgstr "附件不是受支持的图片格式。"
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."

@@ -55,4 +55,42 @@ describe("MarkdownPreview", () => {
     );
     expect(screen.getByRole("img", { name: "Receipt" })).toBeVisible();
   });
+
+  it.each(["html", "svg", "pdf", "txt"])(
+    "never renders a %s attachment inline, including Obsidian embeds",
+    (extension) => {
+      const resolveImage = vi.fn(
+        async () => new Blob(["untrusted"], { type: "image/png" }),
+      );
+      const { container } = render(
+        <MarkdownPreview
+          resolveImage={resolveImage}
+          source={`![[Attachments/file.${extension}|Unsafe]]\n\n![Also unsafe](Attachments/file.${extension})`}
+        />,
+      );
+      expect(container.querySelector("img, iframe, object, embed")).toBeNull();
+      expect(resolveImage).not.toHaveBeenCalled();
+    },
+  );
+
+  it("refuses active content returned for a raster filename", async () => {
+    const resolveImage = vi.fn(
+      async () => new Blob(["<svg/>"], { type: "image/svg+xml" }),
+    );
+    const { container } = render(
+      <MarkdownPreview
+        resolveImage={resolveImage}
+        source="![[Attachments/disguised.png]]"
+      />,
+    );
+    expect(await screen.findByText("Image preview unavailable")).toBeVisible();
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("does not treat active data URLs or malformed encoded paths as images", () => {
+    const { container } = render(
+      <MarkdownPreview source="![Unsafe](data:text/html,payload.png)\n\n![Broken](/__tasknotes_attachment__/%zz.png)" />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+  });
 });

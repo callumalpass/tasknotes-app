@@ -1111,8 +1111,8 @@ msgid "Assignments use your linked person record."
 msgstr "Assignments use your linked person record."
 
 #: src/components/task-attachments.tsx
-msgid "Attach image"
-msgstr "Attach image"
+msgid "Attach file"
+msgstr "Attach file"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
@@ -2119,8 +2119,8 @@ msgid "Detach from task"
 msgstr "Detach from task"
 
 #: src/components/task-attachments.tsx
-msgid "Detaching keeps the image file in your collection."
-msgstr "Detaching keeps the image file in your collection."
+msgid "Detaching keeps the file in your collection."
+msgstr "Detaching keeps the file in your collection."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
@@ -2220,6 +2220,15 @@ msgstr "Done choosing assignees"
 #: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "down"
+
+#: src/components/task-attachments.tsx
+msgid "Download"
+msgstr "Download"
+
+#. placeholder {0}: displayName(item.file.path)
+#: src/components/task-attachments.tsx
+msgid "Download {0}"
+msgstr "Download {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
@@ -3044,14 +3053,14 @@ msgstr "Load remaining tasks to change manual order."
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 msgstr "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 
+#: src/components/task-attachments.tsx
+msgid "Loading attachments…"
+msgstr "Loading attachments…"
+
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
 msgstr "Loading image…"
-
-#: src/components/task-attachments.tsx
-msgid "Loading images…"
-msgstr "Loading images…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
@@ -5411,6 +5420,10 @@ msgstr "The account recovery action could not be completed. Check the connection
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "The action finished, but account status could not be refreshed. Check status again."
+
+#: src/components/task-attachments.tsx
+msgid "The attachment is not a supported image."
+msgstr "The attachment is not a supported image."
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."

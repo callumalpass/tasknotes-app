@@ -10,6 +10,7 @@ import type {
 } from "../ports/collection-file-store";
 import type { TaskRepository } from "../ports/task-repository";
 import type { Task, TaskSummary } from "../../domain/task";
+import { inlineImageMediaType } from "../../domain/attachment-media";
 
 interface AttachmentJournalEntry {
   id: string;
@@ -96,6 +97,13 @@ export class AttachmentService {
     taskId: string,
     source: File | Blob,
   ): Promise<AttachImageResult> {
+    const name = source instanceof File ? source.name : "image.png";
+    if (!inlineImageMediaType(name, source.type))
+      throw new Error("Choose an AVIF, GIF, HEIC, JPEG, PNG, or WebP image.");
+    return this.attach(taskId, source);
+  }
+
+  async attachFile(taskId: string, source: File): Promise<AttachImageResult> {
     return this.attach(taskId, source);
   }
 
@@ -109,8 +117,11 @@ export class AttachmentService {
       throw new Error(
         "Attach this image to the task before inserting it in Notes.",
       );
-    if (!(await this.findFile(task, reference)))
+    const file = await this.findFile(task, reference);
+    if (!file)
       throw new Error("The attachment file is missing and cannot be inserted.");
+    if (!inlineImageMediaType(file.path, file.mediaType))
+      throw new Error("Only supported images can be inserted inline in Notes.");
   }
 
   async resolve(task: TaskSummary): Promise<ResolvedTaskAttachment[]> {
@@ -143,7 +154,6 @@ export class AttachmentService {
     const name =
       source instanceof File ? source.name : `image-${Date.now()}.png`;
     const path = attachmentPath(name);
-    assertImage(source.type, path);
     const reference = canonicalAttachmentReference(path);
     const expectedSize = source.size;
     const expectedDigest = await sha256(source);
@@ -237,36 +247,23 @@ export class AttachmentService {
 }
 
 function attachmentPath(name: string): string {
+  name = name.replace(/^.*[/\\]/, "").normalize("NFKC");
   const dot = name.lastIndexOf(".");
-  const extension = dot > 0 ? name.slice(dot).toLowerCase() : "";
+  const extension =
+    dot > 0
+      ? `.${name
+          .slice(dot + 1)
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}_-]/gu, "-")
+          .slice(0, 32)}`
+      : "";
   const stem =
     (dot > 0 ? name.slice(0, dot) : name)
       .normalize("NFKC")
       .replace(/[^\p{L}\p{N}_-]+/gu, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 72) || "image";
+      .slice(0, 72) || "file";
   return `Attachments/${crypto.randomUUID()}-${stem}${extension}`;
-}
-
-function assertImage(mediaType: string, path: string): void {
-  const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
-  const supportedMediaTypes: Record<string, readonly string[]> = {
-    ".avif": ["image/avif"],
-    ".gif": ["image/gif"],
-    ".heic": ["image/heic", "image/heif"],
-    ".heif": ["image/heic", "image/heif"],
-    ".jpeg": ["image/jpeg"],
-    ".jpg": ["image/jpeg"],
-    ".png": ["image/png"],
-    ".webp": ["image/webp"],
-  };
-  const normalizedMediaType = mediaType.toLowerCase().split(";", 1)[0].trim();
-  if (
-    !supportedMediaTypes[extension] ||
-    (normalizedMediaType &&
-      !supportedMediaTypes[extension].includes(normalizedMediaType))
-  )
-    throw new Error("Choose an AVIF, GIF, HEIC, JPEG, PNG, or WebP image.");
 }
 
 function withoutReference(task: Task, reference: string): string[] {

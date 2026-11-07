@@ -1111,8 +1111,8 @@ msgid "Assignments use your linked person record."
 msgstr "Для назначений используется связанная с вами запись участника."
 
 #: src/components/task-attachments.tsx
-msgid "Attach image"
-msgstr "Прикрепить изображение"
+msgid "Attach file"
+msgstr "Прикрепить файл"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
@@ -2119,8 +2119,8 @@ msgid "Detach from task"
 msgstr "Отвязать от задачи"
 
 #: src/components/task-attachments.tsx
-msgid "Detaching keeps the image file in your collection."
-msgstr "При отвязке файл изображения остаётся в коллекции."
+msgid "Detaching keeps the file in your collection."
+msgstr "При откреплении файл остаётся в вашей коллекции."
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
@@ -2220,6 +2220,15 @@ msgstr "Выбор исполнителей завершён"
 #: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "вниз"
+
+#: src/components/task-attachments.tsx
+msgid "Download"
+msgstr "Скачать"
+
+#. placeholder {0}: displayName(item.file.path)
+#: src/components/task-attachments.tsx
+msgid "Download {0}"
+msgstr "Скачать {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
@@ -3044,14 +3053,14 @@ msgstr "Загрузите остальные задачи, чтобы изме�
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 msgstr "Загружено подходящих задач: {0} из {1}. В счётчиках разделов учитываются только загруженные задачи. {2}"
 
+#: src/components/task-attachments.tsx
+msgid "Loading attachments…"
+msgstr "Загрузка вложений…"
+
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
 msgstr "Загрузка изображения…"
-
-#: src/components/task-attachments.tsx
-msgid "Loading images…"
-msgstr "Загрузка изображений…"
 
 #: src/app/search-screen.tsx
 msgid "Loading more…"
@@ -5411,6 +5420,10 @@ msgstr "Не удалось выполнить действие по восст�
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "Действие завершено, но не удалось обновить состояние учётной записи. Проверьте состояние ещё раз."
+
+#: src/components/task-attachments.tsx
+msgid "The attachment is not a supported image."
+msgstr "Вложение не является изображением поддерживаемого формата."
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."

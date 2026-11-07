@@ -2,8 +2,10 @@ import { t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
   ExternalLink,
+  Download,
+  File as FileIcon,
   FileImage,
-  ImagePlus,
+  Paperclip,
   LoaderCircle,
   NotebookPen,
   Unlink,
@@ -17,6 +19,8 @@ import {
 
 import type { TaskSummary } from "../domain/task";
 import type { CollectionFileStore } from "../application/ports/collection-file-store";
+import { inlineImageMediaType } from "../domain/attachment-media";
+import { downloadAttachment } from "./attachment-download";
 
 export function TaskAttachments({
   task,
@@ -38,6 +42,7 @@ export function TaskAttachments({
   const [loading, setLoading] = useState(service.available());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const mounted = useRef(true);
   const loadGeneration = useRef(0);
 
@@ -53,11 +58,11 @@ export function TaskAttachments({
       );
       if (mounted.current && generation === loadGeneration.current) {
         setItems(resolved);
-        setError(null);
+        setLoadError(null);
       }
     } catch (reason) {
       if (mounted.current && generation === loadGeneration.current)
-        setError(reason instanceof Error ? reason.message : String(reason));
+        setLoadError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       if (mounted.current && generation === loadGeneration.current)
         setLoading(false);
@@ -91,10 +96,12 @@ export function TaskAttachments({
     }
   }
 
-  function selectImage(file: File | undefined, inline: boolean): void {
+  function selectFile(file: File | undefined, inline: boolean): void {
     if (!file) return;
     void run(async () => {
-      const result = await service.attachImage(task.id, file);
+      const result = inline
+        ? await service.attachImage(task.id, file)
+        : await service.attachFile(task.id, file);
       if (inline) await onInsertInline(result.reference);
     });
   }
@@ -129,11 +136,25 @@ export function TaskAttachments({
       });
   }
 
+  async function downloadFile(item: ResolvedTaskAttachment): Promise<void> {
+    if (!item.file || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await downloadAttachment(store, item.file, displayName(item.file.path));
+    } catch (reason) {
+      if (mounted.current)
+        setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  }
+
   if (!service.available()) return null;
 
   return (
     <section
-      className={`task-attachments${!items.length && !loading && !error ? " is-empty" : ""}`}
+      className={`task-attachments${!items.length && !loading && !error && !loadError ? " is-empty" : ""}`}
       aria-labelledby="task-attachments-title"
     >
       <header className="task-attachments-heading">
@@ -144,18 +165,17 @@ export function TaskAttachments({
         </div>
         <div className="task-attachment-add-actions">
           <input
-            accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
             disabled={busy}
             id={attachInputId}
             type="file"
             onChange={(event) => {
-              selectImage(event.target.files?.[0], false);
+              selectFile(event.target.files?.[0], false);
               event.currentTarget.value = "";
             }}
           />
           <label className="text-action" htmlFor={attachInputId}>
-            <ImagePlus aria-hidden="true" size={16} />{" "}
-            <Trans>Attach image</Trans>
+            <Paperclip aria-hidden="true" size={16} />{" "}
+            <Trans>Attach file</Trans>
           </label>
           <input
             accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
@@ -163,7 +183,7 @@ export function TaskAttachments({
             id={insertInputId}
             type="file"
             onChange={(event) => {
-              selectImage(event.target.files?.[0], true);
+              selectFile(event.target.files?.[0], true);
               event.currentTarget.value = "";
             }}
           />
@@ -174,20 +194,20 @@ export function TaskAttachments({
         </div>
       </header>
 
-      {error ? (
+      {error || loadError ? (
         <p className="attachment-error" role="alert">
-          {error}
+          {error ?? loadError}
         </p>
       ) : null}
       {items.length ? (
         <p className="attachment-policy">
-          <Trans>Detaching keeps the image file in your collection.</Trans>
+          <Trans>Detaching keeps the file in your collection.</Trans>
         </p>
       ) : null}
       {loading && !items.length ? (
         <p className="attachment-status" role="status">
           <LoaderCircle aria-hidden="true" className="spin" size={17} />{" "}
-          <Trans>Loading images…</Trans>
+          <Trans>Loading attachments…</Trans>
         </p>
       ) : items.length ? (
         <ul className="attachment-list">
@@ -195,11 +215,13 @@ export function TaskAttachments({
             <li key={item.reference}>
               <AttachmentThumbnail item={item} store={store} />
               <div className="attachment-identity">
-                <strong>{displayName(item.path ?? item.reference)}</strong>
+                <strong title={displayName(item.path ?? item.reference)}>
+                  {displayName(item.path ?? item.reference)}
+                </strong>
                 <small>{attachmentState(item)}</small>
               </div>
               <div className="attachment-actions">
-                {item.file ? (
+                {item.file && isInlineImage(item) ? (
                   <button
                     aria-label={t`Open ${displayName(item.path ?? item.reference)}`}
                     disabled={busy}
@@ -209,22 +231,34 @@ export function TaskAttachments({
                   >
                     <ExternalLink aria-hidden="true" size={17} />
                   </button>
+                ) : item.file ? (
+                  <button
+                    aria-label={t`Download ${displayName(item.file.path)}`}
+                    disabled={busy}
+                    type="button"
+                    onClick={() => void downloadFile(item)}
+                  >
+                    <Download aria-hidden="true" size={17} />
+                    <Trans>Download</Trans>
+                  </button>
                 ) : null}
-                <button
-                  disabled={busy || !item.file}
-                  type="button"
-                  onClick={() =>
-                    void run(async () => {
-                      await service.assertInlineInsertable(
-                        task.id,
-                        item.reference,
-                      );
-                      await onInsertInline(item.reference);
-                    })
-                  }
-                >
-                  <Trans>Insert</Trans>
-                </button>
+                {isInlineImage(item) ? (
+                  <button
+                    disabled={busy || !item.file}
+                    type="button"
+                    onClick={() =>
+                      void run(async () => {
+                        await service.assertInlineInsertable(
+                          task.id,
+                          item.reference,
+                        );
+                        await onInsertInline(item.reference);
+                      })
+                    }
+                  >
+                    <Trans>Insert</Trans>
+                  </button>
+                ) : null}
                 <button
                   aria-label={t`Detach ${displayName(item.path ?? item.reference)}`}
                   disabled={busy}
@@ -255,6 +289,22 @@ function AttachmentThumbnail({
   item: ResolvedTaskAttachment;
   store?: CollectionFileStore;
 }) {
+  if (!isInlineImage(item))
+    return (
+      <span className="attachment-thumbnail is-placeholder" aria-hidden="true">
+        <FileIcon size={20} />
+      </span>
+    );
+  return <ImageThumbnail item={item} store={store} />;
+}
+
+function ImageThumbnail({
+  item,
+  store,
+}: {
+  item: ResolvedTaskAttachment;
+  store?: CollectionFileStore;
+}) {
   const [source, setSource] = useState<string | null>(null);
   useEffect(() => {
     if (!store || !item.file) return;
@@ -264,7 +314,14 @@ function AttachmentThumbnail({
       .download(item.file)
       .then((blob) => {
         if (!active) return;
-        url = URL.createObjectURL(blob);
+        const mediaType = inlineImageMediaType(
+          item.path ?? item.reference,
+          blob.type === "application/octet-stream" && !item.file?.mediaType
+            ? undefined
+            : blob.type,
+        );
+        if (!mediaType) return;
+        url = URL.createObjectURL(new Blob([blob], { type: mediaType }));
         setSource(url);
       })
       .catch(() => undefined);
@@ -272,7 +329,7 @@ function AttachmentThumbnail({
       active = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [item.file, store]);
+  }, [item.file, item.path, item.reference, store]);
   return source ? (
     <img
       alt=""
@@ -284,6 +341,12 @@ function AttachmentThumbnail({
     <span className="attachment-thumbnail is-placeholder" aria-hidden="true">
       <FileImage size={20} />
     </span>
+  );
+}
+
+function isInlineImage(item: ResolvedTaskAttachment): boolean {
+  return Boolean(
+    inlineImageMediaType(item.path ?? item.reference, item.file?.mediaType),
   );
 }
 
@@ -307,7 +370,15 @@ async function openAttachment(
   file: NonNullable<ResolvedTaskAttachment["file"]>,
   target: Window,
 ): Promise<void> {
-  const url = URL.createObjectURL(await store.download(file));
+  const blob = await store.download(file);
+  const mediaType = inlineImageMediaType(
+    file.path,
+    blob.type === "application/octet-stream" && !file.mediaType
+      ? undefined
+      : blob.type,
+  );
+  if (!mediaType) throw new Error(t`The attachment is not a supported image.`);
+  const url = URL.createObjectURL(new Blob([blob], { type: mediaType }));
   target.location.href = url;
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

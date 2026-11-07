@@ -241,7 +241,7 @@ describe("original SDK collection files adapter", () => {
     const [file] = await store.list();
     await expect(
       store.download({ ...file, size: 64 * 1024 * 1024 + 1 }),
-    ).rejects.toThrow("too large");
+    ).rejects.toThrow("The download limit is 64 MiB.");
     expect(api.downloadStream).not.toHaveBeenCalled();
   });
 

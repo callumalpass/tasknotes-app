@@ -1111,8 +1111,8 @@ msgid "Assignments use your linked person record."
 msgstr "割り当てにはリンク済みの人物レコードを使用します。"
 
 #: src/components/task-attachments.tsx
-msgid "Attach image"
-msgstr "画像を添付"
+msgid "Attach file"
+msgstr "ファイルを添付"
 
 #: src/components/markdown-preview.tsx
 msgid "Attached image"
@@ -2119,8 +2119,8 @@ msgid "Detach from task"
 msgstr "タスクから切り離す"
 
 #: src/components/task-attachments.tsx
-msgid "Detaching keeps the image file in your collection."
-msgstr "切り離しても画像ファイルはコレクションに残ります。"
+msgid "Detaching keeps the file in your collection."
+msgstr "添付を解除しても、ファイルはコレクションに残ります。"
 
 #: src/components/calendar-preferences.tsx
 msgid "Device setting"
@@ -2220,6 +2220,15 @@ msgstr "担当者の選択を完了"
 #: src/i18n/ui-copy.ts
 msgid "down"
 msgstr "下へ"
+
+#: src/components/task-attachments.tsx
+msgid "Download"
+msgstr "ダウンロード"
+
+#. placeholder {0}: displayName(item.file.path)
+#: src/components/task-attachments.tsx
+msgid "Download {0}"
+msgstr "{0}をダウンロード"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Draft task"
@@ -3044,13 +3053,13 @@ msgstr "手動順序を変更するには、残りのタスクを読み込んで
 msgid "Loaded {0} of {1} matching tasks. Section counts cover loaded tasks. {2}"
 msgstr "一致するタスク{1}件中{0}件を読み込みました。セクション数は読み込み済みタスクを対象とします。{2}"
 
+#: src/components/task-attachments.tsx
+msgid "Loading attachments…"
+msgstr "添付ファイルを読み込み中…"
+
 #: src/app/scratchpad-screen.tsx
 #: src/components/markdown-preview.tsx
 msgid "Loading image…"
-msgstr "画像を読み込み中…"
-
-#: src/components/task-attachments.tsx
-msgid "Loading images…"
 msgstr "画像を読み込み中…"
 
 #: src/app/search-screen.tsx
@@ -5411,6 +5420,10 @@ msgstr "アカウントの復元操作を完了できませんでした。接続
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "操作は完了しましたが、アカウント状態を更新できませんでした。もう一度状態を確認してください。"
+
+#: src/components/task-attachments.tsx
+msgid "The attachment is not a supported image."
+msgstr "この添付ファイルは対応している画像形式ではありません。"
 
 #: src/components/expression-builder.tsx
 msgid "The builder cannot represent every condition in this filter. Use Advanced to preserve its expressions; changing other view settings keeps the filter intact."
