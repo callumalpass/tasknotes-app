@@ -92,7 +92,13 @@ export default defineConfig(({ mode }) => ({
       },
     },
     environment: "jsdom",
-    exclude: ["**/.claude/**", "**/e2e/**", "**/node_modules/**"],
+    // Publisher node:test suites run separately via test:publisher (with crypto).
+    exclude: [
+      "**/.claude/**",
+      "**/e2e/**",
+      "**/node_modules/**",
+      "**/scripts/publisher/**",
+    ],
     globals: true,
     maxWorkers: 4,
     setupFiles: "./src/test/setup.ts",

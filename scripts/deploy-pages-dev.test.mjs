@@ -44,61 +44,15 @@ describe("TaskNotes development deployment", () => {
     ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN is required/);
   });
 
-  it("selects staging only when explicitly requested", () => {
-    const environment = { MDBASE_ENV: "staging" };
-
-    expect(developmentDeploymentFor(environment)).toBe(
-      developmentDeployments.staging,
-    );
-    expect(developmentDeploymentEnvironment(environment)).toMatchObject({
-      TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
-      VITE_MDBASE_CONNECT_URL: "https://connect-staging.mdbase.dev",
-      VITE_TASKNOTES_ENVIRONMENT: "staging",
-      VITE_TASKNOTES_LAB_ORIGIN: "",
-      VITE_TASKNOTES_EDITOR_ORIGIN: "https://editor-staging.mdbase.dev",
-    });
-  });
-
-  it("never includes a Connect loopback URL in native staging targets", () => {
-    expect(developmentDeployments.staging).not.toHaveProperty("loopbackOrigin");
-    expect(
-      developmentDeploymentEnvironment({ MDBASE_ENV: "staging" }),
-    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
-    expect(() =>
-      developmentDeploymentFor({
-        MDBASE_ENV: "staging",
-        VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28486",
-      }),
-    ).toThrow(/VITE_MDBASE_CONNECT_LOOPBACK_URL/);
-    // A caller passing an already-selected target cannot leak an inherited
-    // loopback setting into the native build environment either.
-    expect(
-      developmentDeploymentEnvironment(
-        { VITE_MDBASE_CONNECT_LOOPBACK_URL: "http://127.0.0.1:28487" },
-        developmentDeployments.staging,
-      ),
-    ).not.toHaveProperty("VITE_MDBASE_CONNECT_LOOPBACK_URL");
-  });
-
-  it("refuses LAB or cross-environment input on the staging target", () => {
-    expect(() =>
-      developmentDeploymentFor({
-        MDBASE_ENV: "staging",
-        VITE_TASKNOTES_LAB_ORIGIN: "https://lab.tasknotes-app.pages.dev",
-      }),
-    ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
-    expect(() =>
-      developmentDeploymentFor({
-        MDBASE_ENV: "staging",
-        VITE_TASKNOTES_EDITOR_ORIGIN: "https://lab.mdbase-editor-lab.pages.dev",
-      }),
-    ).toThrow(/VITE_TASKNOTES_EDITOR_ORIGIN/);
-    expect(() =>
-      developmentDeploymentFor({
-        MDBASE_ENV: "staging",
-        MDBASE_CONNECT_URL: "https://connect-lab.mdbase.dev",
-      }),
-    ).toThrow("staging TaskNotes requires MDBASE_CONNECT_URL");
+  it("refuses staging and production: only shared App CD may publish those targets", () => {
+    for (const MDBASE_ENV of ["staging", "production"]) {
+      expect(() => developmentDeploymentFor({ MDBASE_ENV })).toThrow(
+        "Unsupported TaskNotes development deployment target",
+      );
+      expect(() => developmentDeploymentEnvironment({ MDBASE_ENV })).toThrow(
+        "Unsupported TaskNotes development deployment target",
+      );
+    }
   });
 
   it("selects Candidate B only with its isolated authority", () => {
@@ -148,25 +102,17 @@ describe("TaskNotes development deployment", () => {
     ).toThrow("Candidate B TaskNotes requires");
   });
 
-  it("builds staging assets without the production-only wrapper", async () => {
+  it("cannot upload staging through the retired native development route", async () => {
     const run = vi.fn(async () => undefined);
     const verifyBuild = vi.fn(async () => undefined);
-    await deployDevelopmentTaskNotes(
-      { MDBASE_ENV: "staging" },
-      { run, verifyBuild },
-    );
-    expect(run.mock.calls[0][1]).toEqual([
-      "add",
-      "--ignore-scripts",
-      "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
-    ]);
-    expect(run.mock.calls[1]).toEqual([
-      expect.stringMatching(/^pnpm/),
-      ["build:assets"],
-      expect.objectContaining({ VITE_TASKNOTES_ENVIRONMENT: "staging" }),
-    ]);
-    expect(verifyBuild).toHaveBeenCalledWith(developmentDeployments.staging);
-    expect(run.mock.calls[2][1]).toContain("--branch=staging");
+    await expect(
+      deployDevelopmentTaskNotes(
+        { MDBASE_ENV: "staging" },
+        { run, verifyBuild },
+      ),
+    ).rejects.toThrow("Unsupported TaskNotes development deployment target");
+    expect(run).not.toHaveBeenCalled();
+    expect(verifyBuild).not.toHaveBeenCalled();
   });
 
   it("deploys only the LAB branch and smokes the same origins by default", async () => {
