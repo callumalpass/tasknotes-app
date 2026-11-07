@@ -112,7 +112,7 @@ async function deleteOwnedTask(page, title, edited) {
   await page
     .getByRole("button", { name: "More task actions", exact: true })
     .click();
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete task", exact: true }).click();
   await expect(page.locator(".undo-toast")).toBeVisible();
   await expect(page.locator(".undo-toast")).toBeHidden({ timeout: 45_000 });
