@@ -11,6 +11,18 @@ import {
 } from "./mobile-release-policy.mjs";
 
 const HOUR = 3_600_000;
+// A promotion from before this monitor succeeded without a result artifact, so
+// it owns nothing here. Anything rolling, or any unfinished or failed dispatch,
+// still needs its evidence.
+export function hasNoOwnedRollout({ run, artifacts, live }) {
+  if (live.some((r) => r.status === "inProgress")) return false;
+  if (!run) return true;
+  return (
+    run.status === "completed" &&
+    run.conclusion === "success" &&
+    !artifacts.some((a) => a.name === "mobile-production-result")
+  );
+}
 export async function checkMobileBoundaries(fetchImpl = fetch) {
   for (const [url, valid] of [
     [
@@ -184,7 +196,10 @@ async function main() {
       r.event === "workflow_dispatch" &&
       r.path === ".github/workflows/google-play-production.yml",
   );
-  if (!run && !status.live.some((r) => r.status === "inProgress")) {
+  const artifacts = run
+    ? gh(`repos/${REPO}/actions/runs/${run.id}/artifacts`).artifacts
+    : [];
+  if (hasNoOwnedRollout({ run, artifacts, live: status.live })) {
     await writeFile(
       "mobile-post-release.json",
       JSON.stringify({ outcome: "no-owned-rollout" }) + "\n",
@@ -258,7 +273,10 @@ async function main() {
   );
 }
 if (process.argv[1]?.endsWith("/mobile-post-release.mjs"))
-  main().catch(async () => {
+  main().catch(async (error) => {
+    const reason = /^[a-z0-9-]{1,64}$/.test(error?.message)
+      ? error.message
+      : "unclassified";
     let holdWriteFailed = false;
     try {
       await storeLine("android", "stop", "app-outcome-unknown");
@@ -267,7 +285,11 @@ if (process.argv[1]?.endsWith("/mobile-post-release.mjs"))
     }
     await writeFile(
       "mobile-post-release.json",
-      JSON.stringify({ outcome: "stopped-unverified", holdWriteFailed }) + "\n",
+      JSON.stringify({
+        outcome: "stopped-unverified",
+        reason,
+        holdWriteFailed,
+      }) + "\n",
     );
     console.error(
       "Mobile post-release verification refused; reconcile the bounded report.",
