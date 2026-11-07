@@ -490,6 +490,9 @@ Today             Search       More
   Overlapping timed tasks keep separate titles and drag targets, side by side
   when space permits and cascading in narrow lanes. Hover or keyboard focus
   brings a cascaded item forward; full titles remain available in its tooltip.
+  Back strips too narrow for a meaningful title show only the card edge until
+  hover or focus. Quiet agenda Add task controls overlay the day heading and
+  never reserve an empty row or move the list when revealed.
   Short or narrow entries omit their time before compromising their title;
   titles wrap at word boundaries or ellipsize, never through words. Tracked
   time uses its own lane beside planned tasks. Only the all-day row and month

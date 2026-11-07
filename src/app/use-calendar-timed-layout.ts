@@ -13,6 +13,30 @@ export function readableTimedPlacement(
   return { left, width: laneWidth - left - 1 };
 }
 
+interface TimedTitleBounds {
+  left: number;
+  width: number;
+  top: number;
+  bottom: number;
+  titleBottom: number;
+}
+
+export function isTimedCascadeSliver(
+  item: TimedTitleBounds,
+  siblings: readonly TimedTitleBounds[],
+) {
+  const visibleWidth = siblings.reduce(
+    (width, sibling) =>
+      sibling.left > item.left &&
+      sibling.top < item.titleBottom &&
+      sibling.bottom > item.top
+        ? Math.min(width, sibling.left - item.left)
+        : width,
+    item.width,
+  );
+  return visibleWidth < 48;
+}
+
 export function useCalendarTimedLayout(
   root: RefObject<HTMLElement | null>,
   enabled: boolean,
@@ -22,6 +46,12 @@ export function useCalendarTimedLayout(
     if (!host || !enabled) return;
     const measure = () => {
       mutation.disconnect();
+      const lanes = new Map<HTMLElement, TimedTitleBounds[]>();
+      const cascades: Array<{
+        element: HTMLElement;
+        bounds: TimedTitleBounds;
+        lane: HTMLElement;
+      }> = [];
       for (const item of host.querySelectorAll<HTMLElement>(
         ".tnc-item--timed",
       )) {
@@ -32,6 +62,7 @@ export function useCalendarTimedLayout(
           Number(width?.[1] ?? 100) / 100,
         );
         item.toggleAttribute("data-readable-cascade", Boolean(placement));
+        item.removeAttribute("data-cascade-sliver");
         if (placement) {
           item.style.setProperty(
             "--calendar-timed-left",
@@ -41,11 +72,27 @@ export function useCalendarTimedLayout(
             "--calendar-timed-width",
             `${placement.width}px`,
           );
+          const lane = item.parentElement!;
+          const bounds = {
+            ...placement,
+            top: item.offsetTop,
+            bottom: item.offsetTop + item.offsetHeight,
+            titleBottom: item.offsetTop + Math.min(40, item.offsetHeight),
+          };
+          const siblings = lanes.get(lane) ?? [];
+          siblings.push(bounds);
+          lanes.set(lane, siblings);
+          cascades.push({ element: item, bounds, lane });
         } else {
           item.style.removeProperty("--calendar-timed-left");
           item.style.removeProperty("--calendar-timed-width");
         }
       }
+      for (const { element, bounds, lane } of cascades)
+        element.toggleAttribute(
+          "data-cascade-sliver",
+          isTimedCascadeSliver(bounds, lanes.get(lane)!),
+        );
       mutation.observe(host, {
         childList: true,
         subtree: true,

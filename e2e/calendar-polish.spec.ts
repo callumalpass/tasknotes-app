@@ -213,6 +213,34 @@ test("one to five simultaneous tasks keep readable titles and keyboard access", 
     }
     await page.getByLabel("Calendar layout", { exact: true }).focus();
     await page.mouse.move(0, 0);
+    const exposed = await items.evaluateAll((elements) =>
+      elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const visibleWidth = elements.reduce((width, sibling) => {
+          const other = sibling.getBoundingClientRect();
+          return other.left > bounds.left && other.top < bounds.top + 40
+            ? Math.min(width, other.left - bounds.left)
+            : width;
+        }, bounds.width);
+        return {
+          visibleWidth,
+          visibility: getComputedStyle(
+            element.querySelector(".full-calendar-event-content")!,
+          ).visibility,
+          label: element.getAttribute("aria-label"),
+        };
+      }),
+    );
+    for (const entry of exposed) {
+      expect(entry.label).toBeTruthy();
+      expect(entry.visibility).toBe(
+        entry.visibleWidth < 48 ? "hidden" : "visible",
+      );
+    }
+    if (count >= 4)
+      expect(
+        exposed.filter((entry) => entry.visibility === "hidden"),
+      ).toHaveLength(count - 1);
     await page.screenshot({
       path: test.info().outputPath(`week-${count}-overlaps.png`),
     });
@@ -276,33 +304,74 @@ test("one to five simultaneous tasks keep readable titles and keyboard access", 
   await expect(scheduled).toContainText("2:00 PM");
 });
 
-test("agenda add controls recede except on today or selection and return on keyboard focus", async ({
-  page,
-}) => {
-  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
-  await page.goto(upcoming);
-  await page.mouse.move(0, 0);
-  const today = page.locator(
-    '.tnc-list-section[data-date="2026-11-04"] .tnc-list-add',
-  );
-  await expect(today).toHaveCSS("opacity", "1");
-  const tomorrow = page.locator(
-    '.tnc-list-section[data-date="2026-11-05"] .tnc-list-add',
-  );
-  await expect(tomorrow).toHaveCSS("opacity", "0");
-  await tomorrow.focus();
-  await expect(tomorrow).toHaveCSS("opacity", "1");
-  await page.keyboard.press("Enter");
-  const input = page.getByRole("combobox", { name: "New task title" });
-  await expect(input).toBeFocused();
-  await input.fill("Keyboard agenda addition");
-  await input.press("Enter");
-  await expect(
-    page
-      .locator('.tnc-list-section[data-date="2026-11-05"]')
-      .getByRole("button", { name: "Keyboard agenda addition", exact: true }),
-  ).toBeVisible();
-});
+for (const width of [1440, 390]) {
+  test(`agenda add controls take no extra height and remain keyboard reachable at ${width}px`, async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(upcoming);
+    await page.mouse.move(0, 0);
+    const today = page.locator(
+      '.tnc-list-section[data-date="2026-11-04"] .tnc-list-add',
+    );
+    await expect(today).toHaveCSS("opacity", "1");
+    const tomorrow = page.locator(
+      '.tnc-list-section[data-date="2026-11-05"] .tnc-list-add',
+    );
+    await expect(tomorrow).toHaveCSS("opacity", "0");
+    await expect(tomorrow).toHaveCSS("position", "absolute");
+    const sections = page.locator(
+      ".tnc-list-section[data-date]:not(.is-add-day):not([hidden]):not(.is-empty-range)",
+    );
+    expect(await sections.count()).toBeGreaterThan(0);
+    for (const section of await sections.all()) {
+      const extraHeight = await section.evaluate((element) => {
+        const button = element.querySelector<HTMLElement>(".tnc-list-add")!;
+        const before = element.getBoundingClientRect().height;
+        button.style.display = "none";
+        const without = element.getBoundingClientRect().height;
+        button.style.removeProperty("display");
+        return before - without;
+      });
+      expect(extraHeight).toBe(0);
+    }
+    const section = tomorrow.locator("xpath=..");
+    await section.scrollIntoViewIfNeeded();
+    const before = (await section.boundingBox())!;
+    await section.hover();
+    await expect(tomorrow).toHaveCSS("opacity", "1");
+    expect((await section.boundingBox())!.height).toBe(before.height);
+    await page.mouse.move(0, 0);
+    await tomorrow.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(tomorrow).toBeFocused();
+    await expect(tomorrow).toHaveCSS("opacity", "1");
+    expect((await section.boundingBox())!.height).toBe(before.height);
+    await expect(tomorrow).toHaveAccessibleName(/Add task/);
+    if (width === 390) {
+      expect((await tomorrow.boundingBox())!.width).toBe(44);
+      expect((await tomorrow.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(
+        (await section.locator(".tnc-list-day").boundingBox())!.height,
+      ).toBeLessThanOrEqual(60);
+    }
+    await page.screenshot({
+      path: test.info().outputPath(`agenda-add-focus-${width}.png`),
+    });
+    await page.keyboard.press("Enter");
+    const input = page.getByRole("combobox", { name: "New task title" });
+    await expect(input).toBeFocused();
+    await input.fill("Keyboard agenda addition");
+    await input.press("Enter");
+    await expect(
+      page
+        .locator('.tnc-list-section[data-date="2026-11-05"]')
+        .getByRole("button", { name: "Keyboard agenda addition", exact: true }),
+    ).toBeVisible();
+  });
+}
 
 test("an initially absent empty day section accepts a real pointer drop and Undo", async ({
   page,

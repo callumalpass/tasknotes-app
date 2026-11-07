@@ -654,6 +654,12 @@
   display: none;
 }
 
+.full-calendar-view
+  .tnc-item--timed[data-cascade-sliver]:not(:hover, :focus-visible)
+  .full-calendar-event-content {
+  visibility: hidden;
+}
+
 .full-calendar-view .tnc-item--timed:is(:hover, :focus-visible) {
   z-index: 25 !important;
 }
@@ -2325,7 +2331,20 @@
 }
 
 .full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) .tnc-list-add {
+  position: absolute;
+  inset-block-start: var(--space-md);
+  inset-inline-end: 0;
+  z-index: 3;
+  width: auto;
   opacity: 0;
+}
+
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) {
+  position: relative;
+}
+
+.full-calendar-view.is-agenda .tnc-list-section:not(.is-add-day) .tnc-list-day {
+  padding-inline-end: 110px;
 }
 
 .full-calendar-view.is-agenda
@@ -2393,6 +2412,29 @@
 }
 
 @media (max-width: 839px) {
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-day {
+    padding-inline-end: 48px;
+  }
+
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-add {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+    text-align: center;
+  }
+
+  .full-calendar-view.is-agenda
+    .tnc-list-section:not(.is-add-day)
+    .tnc-list-add::before {
+    width: auto;
+    margin: 0;
+    font-size: var(--type-supporting);
+  }
+
   .full-calendar-view.is-agenda .tnc-strip-day {
     min-height: 44px;
     padding-inline: 0;
