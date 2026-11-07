@@ -294,6 +294,7 @@ export function TaskCalendarView({
     root: rootRef,
     calendar: calendarRef,
     enabled: agenda,
+    selected,
     items,
     locale,
     execution,
@@ -986,6 +987,8 @@ export function TaskCalendarView({
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"
               eventMinHeight={fineMonth ? 26 : 44}
+              eventMaxStack={0}
+              slotEventOverlap={false}
               // Phone months draw every task as a dot (the day cell is the
               // target) and list the selected day below.
               monthDisplay={phoneMonth ? "dots" : "full"}

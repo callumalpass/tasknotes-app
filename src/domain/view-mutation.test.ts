@@ -6,6 +6,25 @@ import { viewGroupMoveInput } from "./view-mutation";
 import type { Task } from "./task";
 
 describe("view property moves", () => {
+  it.each(["scheduled", "due"])(
+    "moves only the grouped %s day and keeps its time",
+    (field) => {
+      expect(
+        viewGroupMoveInput(
+          task({
+            scheduled: "2026-11-07T09:30",
+            due: "2026-11-08T17:00",
+            priority: "high",
+          }),
+          { [`note.${field}`]: "2026-11-07" },
+          { [`note.${field}`]: "2026-11-09" },
+          defaultTaskCollectionConfiguration(),
+        ),
+      ).toEqual({
+        [field]: `2026-11-09T${field === "scheduled" ? "09:30" : "17:00"}`,
+      });
+    },
+  );
   it("moves list group membership while preserving unrelated values", () => {
     expect(
       viewGroupMoveInput(

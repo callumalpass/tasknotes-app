@@ -24,7 +24,6 @@ export function groupTaskViewRows(
       if (matches) assigned.add(row.task.id);
       return matches;
     });
-    if (!rows.length) return [];
     return [
       {
         key: `${index}:${valueKey(group.values)}`,

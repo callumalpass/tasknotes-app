@@ -80,13 +80,13 @@ test("an empty agenda day creates a saved task on that day", async ({
     await page.getByRole("button", { name: "Next week", exact: true }).click();
   const day = strip
     .locator(".tnc-strip-day")
-    .filter({ has: page.locator(".agenda-strip-count", { hasText: /^0$/ }) })
+    .filter({ has: page.locator(".agenda-strip-count[hidden]") })
     .first();
   const date = await day.getAttribute("data-date");
   await day.click();
   const section = page.locator(`.tnc-list-section[data-date="${date}"]`);
   await expect(section).toHaveClass(/is-empty/);
-  await expect(section.locator(".agenda-day-count")).toHaveText("0");
+  await expect(section.locator(".agenda-day-count")).toBeHidden();
   await section.getByRole("button", { name: /^Add task,/ }).click();
   const capture = isMobile
     ? page.getByRole("dialog", { name: "New task" })

@@ -879,27 +879,6 @@
   }
 }
 
-.full-calendar-view .tnc-collision-hidden {
-  visibility: hidden;
-  pointer-events: none;
-}
-.calendar-collision-trigger {
-  position: absolute;
-  inset-inline: 2px;
-  z-index: 4;
-  min-height: 44px;
-  padding: 4px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-control);
-  color: var(--ink);
-  background: var(--paper-raised);
-  font: inherit;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
 @media (min-width: 840px) {
   :root {
     --page-inset: 32px;
@@ -2063,11 +2042,18 @@
   gap: var(--space-xs);
 }
 
+.full-calendar-view.is-agenda :is(.tnc-strip-grid, .tnc-strip-dows) {
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
 .full-calendar-view.is-agenda .tnc-strip-day {
   gap: 2px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 16px 20px;
+  grid-template-columns: 28px auto;
+  grid-template-rows: 16px 28px;
+  justify-content: center;
+  align-items: center;
   min-height: 44px;
   height: auto;
   padding: 2px;
@@ -2085,11 +2071,12 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip-num {
-  width: auto;
-  height: 20px;
-  aspect-ratio: auto;
+  width: 28px;
+  height: 28px;
+  aspect-ratio: 1;
+  border-radius: 50%;
   font-size: 14px;
-  line-height: 20px;
+  line-height: 28px;
   font-weight: 500;
 }
 
@@ -2177,11 +2164,6 @@
   line-height: 16px;
 }
 
-.agenda-strip-count.is-zero {
-  color: var(--ink-faint);
-  font-weight: 400;
-}
-
 .full-calendar-view.is-agenda .tnc-strip-day.is-other-month,
 .full-calendar-view.is-agenda
   .tnc-strip-day.is-other-month
@@ -2191,6 +2173,7 @@
 
 .agenda-strip-count {
   color: var(--ink-muted);
+  font-family: inherit;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2296,6 +2279,31 @@
   padding-top: var(--space-xs);
 }
 
+.full-calendar-view.is-agenda .tnc-list-section[hidden],
+.full-calendar-view.is-agenda .is-empty-range > :not(.agenda-empty-range),
+.full-calendar-view.is-agenda .tnc-list-more {
+  display: none;
+}
+
+.agenda-empty-range,
+.agenda-load-more {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-sm) 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.agenda-load-more {
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 /* Keeps the open row clear of the sticky calendar strip and section heading. */
 .full-calendar-view.is-agenda .task-row {
   scroll-margin-block: 230px 24px;
@@ -2314,13 +2322,14 @@
 }
 
 .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-grid {
-  max-height: 176px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  max-height: none;
+  overflow: visible;
 }
 
 .full-calendar-view.is-agenda .tnc-strip.is-expanded .tnc-strip-day {
   min-height: 44px;
+  height: 44px;
+  grid-template-rows: 28px;
   padding-block: 2px;
 }
 
