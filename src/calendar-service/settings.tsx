@@ -4,7 +4,7 @@ import { calendarServiceClient, MAX_SELECTED_CALENDARS } from "./client";
 import { calendarServiceFailureMessage } from "./failure-message";
 import { useCalendarService } from "./use-calendar-service";
 
-/** Connects Google Calendar for this page; loaded only in LAB builds. */
+/** Connects Google Calendar for this page; loaded only when a service origin is built in. */
 export function CalendarServiceSettings() {
   const { t } = useLingui();
   const state = useCalendarService();
@@ -177,8 +177,8 @@ export function CalendarServiceSettings() {
       ) : null}
       <small>
         <Trans>
-          You stay signed in on this browser until you sign out. Deleting the
-          account removes the connection, not your Google events or tasks.
+          You stay signed in here until you sign out. Deleting the account
+          removes the connection, not your Google events or tasks.
         </Trans>
       </small>
     </section>

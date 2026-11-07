@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { currentHost, webHost, type CalendarServiceHost } from "./host";
 
-/** LAB-only: production builds set no origin, so nothing here runs or renders. */
+/** Builds without an origin run and render none of this. */
 const SERVICE_ORIGIN = import.meta.env.VITE_TASKNOTES_CALENDAR_ORIGIN;
 const SELECTION_KEY = "tasknotes:google-calendars:v1";
 // Holds no credential: it only spares everyone else a service call on load.
@@ -60,6 +61,14 @@ const statusSchema = z.object({
 const sessionSchema = z.object({
   session: z.object({
     session_id: z.string().min(1),
+  }),
+});
+const nativeSessionSchema: z.ZodType<{
+  session: { session_id: string; credential?: string };
+}> = z.object({
+  session: z.object({
+    session_id: z.string().min(1),
+    credential: z.string().min(1),
   }),
 });
 const currentSessionSchema = z.object({ session_id: z.string().min(1) });
@@ -160,12 +169,14 @@ function delay(milliseconds: number, signal: AbortSignal): Promise<void> {
 
 /**
  * Owns the polling secret and PKCE verifier in private memory: they never
- * reach React state, browser storage, logs, URLs or mdbase. The session lives
- * in the service's HttpOnly cookie, which no script here can read, and Google
- * tokens never reach this client.
+ * reach React state, browser storage, logs, URLs or mdbase. A web session lives
+ * in the service's HttpOnly cookie, which no script here can read; a native one
+ * is a bearer credential held here and in the host's sealed store. Google tokens
+ * never reach this client.
  */
 export class CalendarServiceClient {
   #session = new AbortController();
+  #credential: string | null = null;
   #attempt: AbortController | null = null;
   #submitCode: ((code: string) => void) | null = null;
   #listeners = new Set<() => void>();
@@ -180,6 +191,7 @@ export class CalendarServiceClient {
       Storage,
       "getItem" | "setItem" | "removeItem"
     > = window.localStorage,
+    private readonly host: CalendarServiceHost = webHost,
   ) {
     this.#snapshot = this.#signedOut();
   }
@@ -215,6 +227,8 @@ export class CalendarServiceClient {
     this.#session.abort();
     this.#session = new AbortController();
     this.storage.removeItem(SIGNED_IN_KEY);
+    this.#credential = null;
+    void this.host.credentials?.clear();
     this.#snapshot = this.#signedOut();
     this.#listeners.forEach((listener) => listener());
   };
@@ -233,7 +247,7 @@ export class CalendarServiceClient {
     const { body, etag, signal } = options;
     const response = await this.transport(`${this.origin}${path}`, {
       method: options.method ?? (body === undefined ? "GET" : "POST"),
-      credentials: "include",
+      credentials: this.host.credentials ? "omit" : "include",
       cache: "no-store",
       redirect: "error",
       referrerPolicy: "no-referrer",
@@ -243,6 +257,9 @@ export class CalendarServiceClient {
         ...(signal ? [signal] : []),
       ]),
       headers: {
+        ...(this.#credential
+          ? { Authorization: `Bearer ${this.#credential}` }
+          : {}),
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         ...(etag ? { "If-Match": etag } : {}),
       },
@@ -279,10 +296,17 @@ export class CalendarServiceClient {
     }
   }
 
-  /** Resumes the cookie session after a reload; a 401 just signs out. */
+  /** Resumes the session after a reload; a 401 just signs out. */
   restore = async () => {
     if (!this.storage.getItem(SIGNED_IN_KEY)) return;
     await this.#run(async () => {
+      if (this.host.credentials) {
+        this.#credential = await this.host.credentials.load();
+        if (!this.#credential) {
+          this.forget();
+          return;
+        }
+      }
       const { session_id } = await this.#request(
         "/v1/session",
         currentSessionSchema,
@@ -297,21 +321,15 @@ export class CalendarServiceClient {
 
   #authorize(base: "/v1/sign-in" | "/v1/connections/google") {
     if (this.#snapshot.busy) return Promise.resolve();
-    // Open during the user gesture, and sever the opener before navigating.
-    const popup = window.open(
-      "about:blank",
-      "_blank",
-      "popup,width=520,height=720",
-    );
-    if (!popup) {
+    // Open during the user gesture, before any request can lose it.
+    const authorizationWindow = this.host.openWindow();
+    if (!authorizationWindow) {
       this.#publish({ failure: "popup_blocked" });
       return Promise.resolve();
     }
-    popup.opener = null;
     const attempt = new AbortController();
     this.#attempt = attempt;
     const { signal } = attempt;
-    let navigated = false;
     return this.#run(async () => {
       try {
         const verifier = base64Url(crypto.getRandomValues(new Uint8Array(32)));
@@ -325,18 +343,19 @@ export class CalendarServiceClient {
         );
         const transaction = await this.#request(`${base}/start`, startSchema, {
           body: {
-            client_kind: "web",
-            device_name: "TaskNotes web",
+            client_kind: this.host.clientKind,
+            device_name: this.host.deviceName,
             code_challenge: challenge,
           },
           signal,
         });
-        popup.location.replace(authorizationUrl(transaction.authorization_url));
-        navigated = true;
+        await authorizationWindow.show(
+          authorizationUrl(transaction.authorization_url),
+        );
         const path = `${base}/${transaction.transaction_id}`;
         const secret = { polling_secret: transaction.polling_secret };
-        // popup.closed proves nothing: Google's COOP severs the handle while
-        // consent is still in progress. The transaction's expiry ends this.
+        // The window's state proves nothing: Google's COOP severs a popup's
+        // handle while consent is in progress. The transaction's expiry ends this.
         for (;;) {
           await delay(1500, signal);
           const { status } = await this.#request(
@@ -361,11 +380,11 @@ export class CalendarServiceClient {
             },
           );
         } else {
-          // The popup keeps showing the code until this attempt finishes.
+          // The window keeps showing the code until this attempt finishes.
           const code = await this.#confirmationCode(signal);
           const { session } = await this.#request(
             `${path}/redeem`,
-            sessionSchema,
+            this.host.credentials ? nativeSessionSchema : sessionSchema,
             { body: { ...proof, confirmation_code: code }, signal },
           ).catch((reason: unknown) => {
             // One wrong attempt ends the transaction on the service.
@@ -377,13 +396,16 @@ export class CalendarServiceClient {
               throw new CalendarServiceError("code_rejected");
             throw reason;
           });
+          if (session.credential) {
+            await this.host.credentials?.save(session.credential);
+            this.#credential = session.credential;
+          }
           this.storage.setItem(SIGNED_IN_KEY, "1");
           this.#publish({ sessionId: session.session_id });
         }
         await this.#discover();
       } finally {
-        // Once navigated, COOP has severed the handle; the page says to close.
-        if (!navigated) popup.close();
+        authorizationWindow.close();
         this.#attempt = null;
         this.#submitCode = null;
         if (this.#snapshot.awaitingCode) this.#publish({ awaitingCode: false });
@@ -550,6 +572,11 @@ function isAbort(reason: unknown): boolean {
 }
 
 export const calendarServiceClient = SERVICE_ORIGIN
-  ? new CalendarServiceClient(SERVICE_ORIGIN)
+  ? new CalendarServiceClient(
+      SERVICE_ORIGIN,
+      undefined,
+      undefined,
+      currentHost(),
+    )
   : null;
 void calendarServiceClient?.restore();

@@ -5,6 +5,7 @@ import {
   CalendarServiceError,
   type GoogleEvent,
 } from "./client";
+import type { CalendarServiceHost } from "./host";
 
 const ORIGIN = "https://calendar.test";
 const CALENDAR = "6f0e9a52-3a55-4c5e-9d1c-3d8c6d6c3f11";
@@ -45,6 +46,7 @@ function memoryStorage() {
 function harness(
   handlers: Record<string, (call: Call) => [number, unknown?]>,
   storage = memoryStorage(),
+  host?: CalendarServiceHost,
 ) {
   const calls: Call[] = [];
   const transport = vi.fn(
@@ -68,7 +70,7 @@ function harness(
   ) as unknown as typeof fetch;
   return {
     calls,
-    client: new CalendarServiceClient(ORIGIN, transport, storage),
+    client: new CalendarServiceClient(ORIGIN, transport, storage, host),
     storage,
   };
 }
@@ -523,5 +525,117 @@ describe("CalendarServiceClient", () => {
       selected: [],
     });
     expect(storage.getItem("tasknotes:google-calendars:v1")).toBeNull();
+  });
+});
+
+describe("CalendarServiceClient on a native host", () => {
+  const CREDENTIAL = "v1.native-credential";
+  const SIGNED_IN = "tasknotes:google-calendar-signed-in:v1";
+  const nativeRoutes = {
+    ...signInRoutes,
+    "POST /v1/sign-in/tx/redeem": (): [number, unknown] => [
+      200,
+      { session: { session_id: "session-1", credential: CREDENTIAL } },
+    ],
+  };
+
+  function nativeHost(stored: string | null = null) {
+    const credentials = {
+      value: stored,
+      load: vi.fn(async () => credentials.value),
+      save: vi.fn(async (value: string) => {
+        credentials.value = value;
+      }),
+      clear: vi.fn(async () => {
+        credentials.value = null;
+      }),
+    };
+    const authorizationWindow = { show: vi.fn(), close: vi.fn() };
+    const host: CalendarServiceHost = {
+      clientKind: "ios",
+      deviceName: "TaskNotes iOS",
+      credentials,
+      openWindow: () => authorizationWindow,
+    };
+    return { host, credentials, authorizationWindow };
+  }
+
+  it("signs in through the system browser and sends only a bearer", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const open = vi.spyOn(window, "open");
+      const storage = memoryStorage();
+      const { host, credentials, authorizationWindow } = nativeHost();
+      const { client, calls } = harness(nativeRoutes, storage, host);
+      const signIn = client.signIn();
+      await vi.waitFor(() =>
+        expect(client.getSnapshot().awaitingCode).toBe(true),
+      );
+      client.submitCode("abcd1234");
+      await signIn;
+
+      expect(open).not.toHaveBeenCalled();
+      expect(authorizationWindow.show).toHaveBeenCalledWith(
+        "https://accounts.google.com/o/oauth2/v2/auth?x=1",
+      );
+      expect(authorizationWindow.close).toHaveBeenCalled();
+      expect(calls[0]!.body).toMatchObject({
+        client_kind: "ios",
+        device_name: "TaskNotes iOS",
+      });
+      expect(credentials.save).toHaveBeenCalledWith(CREDENTIAL);
+      expect(storage.getItem(SIGNED_IN)).toBe("1");
+      expect(JSON.stringify(client.getSnapshot())).not.toContain(CREDENTIAL);
+      const connections = calls.find((call) => call.path === "/v1/connections");
+      expect(connections!.headers.Authorization).toBe(`Bearer ${CREDENTIAL}`);
+      expect(calls.every((call) => call.credentials === "omit")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("restores from the sealed store with its bearer", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SIGNED_IN, "1");
+    const { host } = nativeHost(CREDENTIAL);
+    const { client, calls } = harness(
+      {
+        ...signInRoutes,
+        "GET /v1/session": () => [200, { session_id: "session-1" }],
+      },
+      storage,
+      host,
+    );
+    await client.restore();
+
+    expect(client.getSnapshot().sessionId).toBe("session-1");
+    expect(calls[0]!.headers.Authorization).toBe(`Bearer ${CREDENTIAL}`);
+  });
+
+  it("signs out without a request when the store was evicted", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SIGNED_IN, "1");
+    const { client, calls } = harness({}, storage, nativeHost().host);
+    await client.restore();
+
+    expect(calls).toEqual([]);
+    expect(storage.getItem(SIGNED_IN)).toBeNull();
+    expect(client.getSnapshot().sessionId).toBeNull();
+  });
+
+  it("wipes the sealed credential when the session has ended", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SIGNED_IN, "1");
+    const { host, credentials } = nativeHost(CREDENTIAL);
+    const { client } = harness(
+      { "GET /v1/session": () => [401] },
+      storage,
+      host,
+    );
+    await client.restore();
+
+    expect(credentials.clear).toHaveBeenCalled();
+    expect(credentials.value).toBeNull();
+    expect(client.getSnapshot().failure).toBeNull();
   });
 });
