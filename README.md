@@ -114,7 +114,7 @@ Deploying the separate staging surface remains explicit:
 MDBASE_ENV=staging pnpm deploy:dev
 ```
 
-That command targets <https://staging.tasknotes-app.pages.dev>, staging Connect,
+That command targets <https://staging.tasknotes.dev>, staging Connect,
 and the Cloudflare `staging` branch.
 
 To update the native projects, run `pnpm cap:sync`. Android builds require Java 21. On macOS, open the iOS project with `pnpm exec cap open ios`.

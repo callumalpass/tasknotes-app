@@ -49,7 +49,7 @@ compatibility, production smoke and predecessor recovery remain mandatory.
 
 - Existing Pages project `tasknotes-app`, UUID
   `8f377e88-f1d0-4a5a-8928-2daa3e7c527a`, production channel `main`.
-- Staging `https://staging.tasknotes-app.pages.dev`; production
+- Staging `https://staging.tasknotes.dev`; production
   `https://app.tasknotes.dev`. Keep Cloudflare Git deployments disabled.
 - Existing protected `staging` and `production` environments admit only main,
   with no tags, reviewers or wait timer for web App CD.

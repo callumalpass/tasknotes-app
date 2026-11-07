@@ -324,6 +324,6 @@ export async function loadOriginals({
     appOrigin:
       target === "production"
         ? "https://app.tasknotes.dev"
-        : "https://staging.tasknotes-app.pages.dev",
+        : "https://staging.tasknotes.dev",
   };
 }

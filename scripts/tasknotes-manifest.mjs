@@ -15,7 +15,7 @@ export const TASKNOTES_INSTALLATION_ORIGINS = Object.freeze({
     "app-runtime": Object.freeze(["https://lab.tasknotes-app.pages.dev"]),
   }),
   staging: Object.freeze({
-    "app-runtime": Object.freeze(["https://staging.tasknotes-app.pages.dev"]),
+    "app-runtime": Object.freeze(["https://staging.tasknotes.dev"]),
   }),
   production: Object.freeze({
     "app-runtime": Object.freeze(["https://app.tasknotes.dev"]),

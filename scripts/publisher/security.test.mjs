@@ -337,7 +337,7 @@ it("smoke checks a fresh source-bound entry and sign-in, ignores beacon CSP cons
   );
   assert.doesNotThrow(() =>
     assertEntryAsset(
-      `https://staging.tasknotes-app.pages.dev/assets/index-x-${source.slice(0, 12)}.js`,
+      `https://staging.tasknotes.dev/assets/index-x-${source.slice(0, 12)}.js`,
       source,
       "staging",
     ),

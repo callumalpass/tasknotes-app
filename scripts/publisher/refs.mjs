@@ -9,7 +9,7 @@ export function deploymentFor(target) {
     project: "tasknotes-app",
     origin:
       target === "staging"
-        ? "https://staging.tasknotes-app.pages.dev"
+        ? "https://staging.tasknotes.dev"
         : "https://app.tasknotes.dev",
     connectOrigin:
       target === "staging"

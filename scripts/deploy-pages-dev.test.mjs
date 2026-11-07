@@ -33,7 +33,7 @@ describe("TaskNotes development deployment", () => {
   it("refuses a mismatched LAB app origin and a missing Editor origin", () => {
     expect(() =>
       developmentDeploymentFor({
-        VITE_TASKNOTES_LAB_ORIGIN: "https://staging.tasknotes-app.pages.dev",
+        VITE_TASKNOTES_LAB_ORIGIN: "https://staging.tasknotes.dev",
       }),
     ).toThrow(/VITE_TASKNOTES_LAB_ORIGIN/);
     // Candidate B has no documented Editor origin, so it stays explicit.
@@ -90,7 +90,7 @@ describe("TaskNotes development deployment", () => {
     expect(() =>
       developmentDeploymentFor({
         MDBASE_ENV: "lab",
-        TASKNOTES_APP_URL: "https://staging.tasknotes-app.pages.dev",
+        TASKNOTES_APP_URL: "https://staging.tasknotes.dev",
       }),
     ).toThrow("lab TaskNotes requires TASKNOTES_APP_URL");
   });
