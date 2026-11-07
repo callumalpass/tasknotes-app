@@ -3725,6 +3725,10 @@ msgstr "无状态"
 msgid "No tasks"
 msgstr "没有任务"
 
+#: src/app/calendar-agenda-days.ts
+msgid "No tasks · {range}"
+msgstr "无任务 · {range}"
+
 #: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "此时段没有任务。"
@@ -5129,6 +5133,10 @@ msgstr "显示未来的虚拟重复项。"
 #: src/calendar-service/settings.tsx
 msgid "Show in the calendar"
 msgstr "在日历中显示"
+
+#: src/app/use-calendar-agenda.ts
+msgid "Show more days"
+msgstr "显示更多日期"
 
 #: src/app/search-screen.tsx
 msgid "Show more results"

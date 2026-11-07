@@ -51,6 +51,7 @@ it("counts other-day planned deadlines in the strip, excluding tracked time and 
       root: { current: root },
       calendar,
       enabled: true,
+      selected: "2026-11-04",
       items: [],
       locale: "en",
       execution: {} as TaskViewExecution,

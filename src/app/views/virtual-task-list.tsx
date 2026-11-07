@@ -46,11 +46,13 @@ export function VirtualTaskList({
   renderRow,
   sectionAction,
   showEmpty = false,
+  arranging = false,
 }: {
   selectionEnabled?: boolean;
   renderRow?(row: TaskViewRow, lane: Lane): ReactNode;
   sectionAction?(lane: Lane): ReactNode;
   showEmpty?: boolean;
+  arranging?: boolean;
   lanes: Lane[];
   grouped: boolean;
   daySections: boolean;
@@ -81,7 +83,7 @@ export function VirtualTaskList({
       const headerIndex = grouped ? result.length : -1;
       if (grouped)
         result.push({ key: `heading:${lane.key}`, lane, headerIndex });
-      if (grouped && isCollapsed(lane)) continue;
+      if (grouped && !arranging && isCollapsed(lane)) continue;
       for (const row of lane.rows)
         result.push({
           key: JSON.stringify([lane.key, row.task.id]),
@@ -91,7 +93,7 @@ export function VirtualTaskList({
         });
     }
     return result;
-  }, [grouped, isCollapsed, lanes, showEmpty]);
+  }, [arranging, grouped, isCollapsed, lanes, showEmpty]);
   const relatedIndices = useCallback(
     (index: number) =>
       entries[index]?.headerIndex >= 0 ? [entries[index].headerIndex] : [],
@@ -135,6 +137,7 @@ export function VirtualTaskList({
           ) : (
             <TaskListSection
               showEmpty={showEmpty || entry.lane.rows.length > 0}
+              arranging={arranging}
               headingOnly
               className={entry.lane.className}
               laneKey={entry.lane.key}

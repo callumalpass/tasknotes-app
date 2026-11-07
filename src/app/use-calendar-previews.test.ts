@@ -1,8 +1,11 @@
-import { expect, it, vi } from "vitest";
+import { cleanup, renderHook } from "../test/render";
+import { afterEach, expect, it, vi } from "vitest";
 import {
   boundCalendarPreviews,
-  boundCalendarCollisions,
+  useCalendarPreviews,
 } from "./use-calendar-previews";
+
+afterEach(cleanup);
 
 it.each(["all-day", "month"])(
   "bounds exactly three %s events to two rows plus day details",
@@ -38,7 +41,7 @@ it.each(["all-day", "month"])(
   },
 );
 
-it("replaces overlapping fragments with a keyboard-operable day expansion", () => {
+it("keeps overlapping timed tasks independently interactive in both lanes", () => {
   const root = document.createElement("div");
   root.innerHTML = `<div class="tnc-col" data-date="2026-11-07"><div class="tnc-col-plan">${[0, 1, 2].map((index) => `<div class="tnc-item--timed" style="top: ${index === 2 ? 200 : 100}px" aria-label="Task ${index}"></div>`).join("")}</div></div>`;
   root
@@ -48,18 +51,15 @@ it("replaces overlapping fragments with a keyboard-operable day expansion", () =
         new DOMRect(index * 40, index === 2 ? 200 : 100, 40, 60),
       );
     });
-  const inspect = vi.fn();
-  boundCalendarCollisions(root, inspect, (count) => `${count} tasks`);
-  expect(root.querySelectorAll(".tnc-collision-hidden[inert]")).toHaveLength(2);
-  const trigger = root.querySelector<HTMLButtonElement>(
-    ".calendar-collision-trigger",
-  )!;
-  expect(trigger).toHaveTextContent("2 tasks");
-  expect(trigger.type).toBe("button");
-  boundCalendarCollisions(root, inspect, (count) => `${count} tasks`);
-  expect(root.querySelector(".calendar-collision-trigger")).toBe(trigger);
-  trigger.click();
-  expect(inspect).toHaveBeenCalledWith("2026-11-07");
+  const actual = root
+    .querySelector(".tnc-col-plan")!
+    .cloneNode(true) as HTMLElement;
+  actual.className = "tnc-col-actual";
+  root.querySelector(".tnc-col")!.append(actual);
+  renderHook(() => useCalendarPreviews({ current: root }, vi.fn()));
+  expect(root.querySelectorAll(".tnc-item--timed")).toHaveLength(6);
+  expect(root.querySelector("[inert]")).toBeNull();
+  expect(root.querySelector(".calendar-collision-trigger")).toBeNull();
 });
 
 it("leaves Day's wrapping all-day cards and library overflow count intact", () => {

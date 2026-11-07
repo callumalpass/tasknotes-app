@@ -118,7 +118,7 @@ export function TaskListView({
       sectionMode,
       todayString(),
       {
-        includeEmpty: Boolean(manualOrder) || moves.size > 0,
+        includeEmpty: true,
         preserveOrder: Boolean(manualOrder || execution.view.sort?.length),
       },
     );
@@ -168,7 +168,8 @@ export function TaskListView({
     )
       ? daySectionsClear
       : null;
-  if (!manualOrder && execution.rows.length > 100)
+  const hasMoveTargets = lanes.some((lane) => lane.mutation);
+  if (!manualOrder && !hasMoveTargets && execution.rows.length > 100)
     return (
       <>
         {clear}
@@ -316,6 +317,7 @@ function ManualTaskRows({
         taskListLaneMoveInput(firstTask, lane, lane, configuration) !== null,
     ),
   );
+  const movable = Boolean(manualOrder) || canMoveAcrossLanes;
 
   function clearDrag() {
     windowListeners.current?.();
@@ -460,9 +462,9 @@ function ManualTaskRows({
     );
   }
 
-  const live = useRef({ updateDrop, finish, clearDrag });
+  const live = useRef({ updateDrop, finish, clearDrag, measureLayout });
   useLayoutEffect(() => {
-    live.current = { updateDrop, finish, clearDrag };
+    live.current = { updateDrop, finish, clearDrag, measureLayout };
   });
 
   function moveWithKeyboard(
@@ -478,7 +480,9 @@ function ManualTaskRows({
     const rowIndex = sourceLane.rows.findIndex(
       (candidate) => candidate.task.id === row.task.id,
     );
-    const adjacent = sourceLane.rows[rowIndex + direction];
+    const adjacent = manualOrder
+      ? sourceLane.rows[rowIndex + direction]
+      : undefined;
     const destinationLane = adjacent
       ? sourceLane
       : lanes[laneIndex + direction];
@@ -537,7 +541,8 @@ function ManualTaskRows({
       taskId: row.task.id,
       sourceLaneKey: lane.key,
       pointerId,
-      preview: layout !== null && !prefersReducedMotion(),
+      preview:
+        Boolean(manualOrder) && layout !== null && !prefersReducedMotion(),
     };
     draggingRef.current = active;
     setDragging(active);
@@ -582,7 +587,7 @@ function ManualTaskRows({
   // a drag past a few pixels, so clicks on the title and properties still
   // land; touch keeps native scrolling and swipes, and drags by the handle.
   const dragHandlers = (row: TaskViewRow, lane: TaskListLane) =>
-    manualOrder
+    movable
       ? {
           onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
             suppressedClickTaskId.current = null;
@@ -687,6 +692,9 @@ function ManualTaskRows({
           (lane) => lane.rows.length || lane.key === "section:today",
         )
       : previewLanes;
+  useLayoutEffect(() => {
+    if (draggingRef.current) layoutRef.current = live.current.measureLayout();
+  }, [dragging?.taskId]);
   const laneOfTask = new Map(
     lanes.flatMap((lane) =>
       lane.rows.map((row) => [row.task.id, lane] as const),
@@ -698,12 +706,12 @@ function ManualTaskRows({
     return (
       <div
         {...dragHandlers(row, lane)}
-        className={`manual-order-row${manualOrder && !orderPending && !orderUnavailable ? " is-movable" : ""}${dragging?.taskId === row.task.id ? " is-dragging" : ""}${!dragging?.preview && drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
+        className={`manual-order-row${movable && !orderPending && !orderUnavailable ? " is-movable" : ""}${dragging?.taskId === row.task.id ? " is-dragging" : ""}${!dragging?.preview && drop?.targetId === row.task.id ? ` is-drop-${drop.placement}` : ""}`}
         data-manual-order-task={row.task.id}
         data-list-lane={shownLane.key}
         key={row.task.id}
       >
-        {manualOrder ? (
+        {movable ? (
           <button
             aria-label={translate`Reorder ${row.task.title}. Drag, or use up and down arrow keys.`}
             className="manual-order-handle"
@@ -763,7 +771,10 @@ function ManualTaskRows({
           <div className={manualOrder ? "manual-order-list" : undefined}>
             <VirtualTaskList
               selectionEnabled={selectionEnabled}
-              lanes={shownLanes}
+              lanes={shownLanes.map((lane) => ({
+                ...lane,
+                className: `${lane.className ?? ""}${drop?.laneKey === lane.key ? " is-drop-target" : ""}`,
+              }))}
               grouped={grouped}
               daySections={daySections}
               preferenceScope={preferenceScope}
@@ -774,7 +785,8 @@ function ManualTaskRows({
               sectionAction={(lane) =>
                 sectionAction?.(laneByKey.get(lane.key)!)
               }
-              showEmpty={Boolean(manualOrder)}
+              showEmpty={movable}
+              arranging={Boolean(dragging)}
               renderRow={(row, lane) =>
                 renderRow(row, laneByKey.get(lane.key)!)
               }
@@ -792,7 +804,7 @@ function ManualTaskRows({
                 lane.key === "section:today" &&
                 !lane.rows.length ? (
                   daySectionsClear
-                ) : grouped && manualOrder && !lane.rows.length ? (
+                ) : grouped && movable && !lane.rows.length ? (
                   <div className="task-list-empty-drop-zone">
                     {dragging && canMoveAcrossLanes
                       ? translate({ message: "Drop here" })
@@ -827,7 +839,8 @@ function ManualTaskRows({
                     [lane.key]: value,
                   }))
                 }
-                showEmpty={Boolean(manualOrder) || lane.rows.length > 0}
+                showEmpty={movable || lane.rows.length > 0}
+                arranging={Boolean(dragging)}
               >
                 {rows}
               </TaskListSection>

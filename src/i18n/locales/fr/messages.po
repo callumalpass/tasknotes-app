@@ -3726,6 +3726,10 @@ msgstr "Sans statut"
 msgid "No tasks"
 msgstr "Aucune tâche"
 
+#: src/app/calendar-agenda-days.ts
+msgid "No tasks · {range}"
+msgstr "Aucune tâche · {range}"
+
 #: src/i18n/calendar-locale.ts
 msgid "No tasks in this period."
 msgstr "Aucune tâche sur cette période."
@@ -5130,6 +5134,10 @@ msgstr "Afficher les occurrences virtuelles futures."
 #: src/calendar-service/settings.tsx
 msgid "Show in the calendar"
 msgstr "Afficher dans le calendrier"
+
+#: src/app/use-calendar-agenda.ts
+msgid "Show more days"
+msgstr "Afficher plus de jours"
 
 #: src/app/search-screen.tsx
 msgid "Show more results"

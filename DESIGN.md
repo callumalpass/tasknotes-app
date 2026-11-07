@@ -378,7 +378,8 @@ Today             Search       More
   handles so titles keep their width; a pressed-state Arrange tasks option,
   available only while Manual order is active, reveals them. Switching it off restores the other sort rules without
   deleting stored task ranks. Selecting a different primary sort in the editor
-  also hides handles. Partial results expose Load remaining tasks before ordering
+  hides rank-ordering handles; writable grouped lists retain cross-section moves
+  without changing that sort. Partial results expose Load remaining tasks before ordering
   is enabled; stale or incomplete reads never permit rank writes. Boards retain
   direct spatial arrangement.
 - Grouped lists have accessible collapsible sections, expanded by default.
@@ -388,9 +389,11 @@ Today             Search       More
   The overdue-count link beside Today's date expands the overdue section,
   scrolls to it and focuses its heading control.
   Explicit collapse choices are local preferences scoped to collection, view,
-  and section. Manual sorting keeps sections collapsible and reveals empty drop
-  destinations. Moving into a collapsed section expands that destination. Large
-  manually sorted lists keep measured windowing rather than rendering every row. There is no special
+  and section. Writable grouped lists reveal empty drop destinations while
+  dragging, including under a non-manual sort. Custom date groups change only
+  their grouped date, retaining its time and other task fields, with Undo.
+  Moving into a collapsed section expands that destination. Large
+  movable lists keep measured windowing rather than rendering every row. There is no special
   overdue-review workflow or automatic hiding of overdue work; the Overdue
   heading carries one quiet Move all to today action that schedules each row
   for today exactly as `t` does (Scheduled moves, keeping its time; Due stays)
@@ -476,12 +479,25 @@ Today             Search       More
   Upcoming uses one agenda on desktop and phones, with the ordinary task row's
   completion, properties and actions; timed entries name their time beneath
   the title without a reserved time column. Its sticky week strip follows the
-  first-day-of-week preference, shows weekday/date/count, distinguishes today
+  first-day-of-week preference, shows weekday/date and nonzero counts together, distinguishes today
   and selection, and supports keyboard navigation and drag-to-day rescheduling.
   Overdue work leads the agenda with a count and Move all to today (with Undo),
   rather than being repeated in today's group. Sticky day headings name Today
-  and Tomorrow, show counts, and retain a quiet Add task even on empty days.
-  Empty days remain compact. All six calendar modes live in a compact layout
+  and Tomorrow, show nonzero counts, and retain a quiet Add task on the selected
+  day and today; other populated days reveal it on hover or keyboard focus.
+  Other consecutive empty days share a quiet date-range row;
+  Show more days extends the agenda without unbounded empty-day loading.
+  Overlapping timed tasks keep separate titles and drag targets, side by side
+  when space permits and cascading in narrow lanes. Hover or keyboard focus
+  brings a cascaded item forward; full titles remain available in its tooltip.
+  Back strips too narrow for a meaningful title show only the card edge until
+  hover or focus. Quiet agenda Add task controls overlay the day heading and
+  never reserve an empty row or move the list when revealed.
+  Short or narrow entries omit their time before compromising their title;
+  titles wrap at word boundaries or ellipsize, never through words. Tracked
+  time uses its own lane beside planned tasks. Only the all-day row and month
+  grid use overflow summaries.
+  All six calendar modes live in a compact layout
   disclosure beside date navigation. A calendar view with a capture row has no
   second Add task button in its toolbar. Metadata and wrapped content grow
   naturally. Calendar toolbar, More links, and overflow-panel events retain
