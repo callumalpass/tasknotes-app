@@ -300,8 +300,9 @@ Today             Search       More
   Row kind is shown by the checkbox or note icon alone; switching kinds lives
   in the row menu on every layout. Unfocused rows render `[[path|alias]]` links
   as their label; focusing the row shows the exact source.
-  Create task notes converts only chosen drafts in place; New note preserves the
-  exact current outline without creating tasks. A single simple draft converts
+  Create task notes converts only chosen drafts in place; New note saves the
+  exact current note into history and opens an empty current note without a
+  warning or creating tasks. A single simple draft converts
   without review; multiple drafts retain review. Conversion Undo restores the
   draft only while its linked note and created task revision remain unchanged,
   preserving later edits with an explicit notice instead of deleting them.
@@ -360,6 +361,9 @@ Today             Search       More
 - Task actions use one vocabulary in lists and detail. On phones they appear in
   a modal bottom sheet; wider layouts use an anchored keyboard menu. Ordinary
   tasks expose the complete action set without a generic “More” layer.
+- Coarse-pointer phone rows put compact supporting metadata below the title.
+  Individual inline property controls recede behind one 44px properties trigger
+  and its editable sheet; completion remains a separate 44px control.
 - A recurring occurrence exposes only occurrence-safe actions first. Anything
   that changes the series sits behind an explicit “Repeating task actions”
   boundary.
@@ -381,6 +385,8 @@ Today             Search       More
   Day sections lead with Today, followed by Overdue, Anytime, and Later, so a
   long overdue backlog never pushes today's work below the fold. Today itself
   lists dated work only; undated tasks wait in the Inbox.
+  The overdue-count link beside Today's date expands the overdue section,
+  scrolls to it and focuses its heading control.
   Explicit collapse choices are local preferences scoped to collection, view,
   and section. Manual sorting keeps sections collapsible and reveals empty drop
   destinations. Moving into a collapsed section expands that destination. Large
@@ -460,7 +466,10 @@ Today             Search       More
   dots, with no More
   popover; the dots are indicators hidden from assistive technology, a tap
   selects the day (at least 44px), and the selected day's tasks are listed as
-  ordinary task rows beneath the grid.
+  ordinary task rows beneath the grid. Google events use their calendar tone
+  and open the event editor from grid or Agenda entries. On phone Month, they
+  also appear as separate controls in the selected-day list; they never become
+  task checkboxes or inflate task counts.
 - Agenda and calendar entries use proportional type and the same relative date
   labels as task rows. An entry on a task's due day, when the task is also
   scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".

@@ -4,6 +4,11 @@ Compared side by side on 2026-11-04: Todoist's web app on a real account, and
 TaskNotes running the demo collection, both in Chrome at 1280×800 in dark mode.
 TaskNotes phone layouts were also checked at Pixel 7 size. Scores are out of 10.
 
+The scored review loop continued through round 19 and ended in a near tie.
+Round 20 was an implementation follow-up and was not scored. The tables below
+retain the earlier round 0–10 evidence, not a final assessment of the shipped
+interface or permission to release it.
+
 ## Round 0: baseline (lead assessment)
 
 | #   | Category                    | What it covers                                       | TaskNotes | Todoist |
@@ -48,7 +53,7 @@ A higher total did not always win a round: members weighed categories by daily
 use, so Opus (rounds 2 and 4) and Muse (rounds 2 and 6) gave Todoist the verdict
 while scoring TaskNotes higher.
 
-## Round 10: final scores
+## Round 10: historical checkpoint
 
 Commit 25ed485. All three members chose TaskNotes, and none called any category
 materially behind Todoist.
@@ -75,11 +80,11 @@ Todoist was read-only and its native phone app was not observed, so its drag,
 bulk and phone scores rest partly on product knowledge. TaskNotes ran in the
 demo collection, so real sync, conflict and error states were not reviewed.
 
-## Rules for finishing
+## Historical review criteria
 
-TaskNotes passes only when every council member (Claude Opus, GPT Sol, Muse)
-independently scores it higher overall after using both apps, and no category
-falls behind Todoist in a way the member calls material.
+The scored loop required every council member (Claude Opus, GPT Sol, Muse) to
+independently prefer TaskNotes overall after using both apps, with no category
+materially behind Todoist. The near-tie ending does not establish that result.
 
 Native strengths are not traded away: Base-compatible views, Scratchpad, the
 calendar, Markdown portability, and explicit sync and authority state.

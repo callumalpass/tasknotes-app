@@ -8,6 +8,9 @@ The browser suite is the small trust core, not a substitute for exercising the a
 - Pin the build/commit and record the URL, browser/device, viewport and locale.
 - During development, use a loopback app with `?demo=60`. For arbitrary collection
   options, use `?demo=60&many-options` (12 statuses and priorities).
+- Demo servers regenerate the app manifest with loopback URLs. Restore the
+  tracked production manifest before unit/release checks or syncing their source
+  to the remote builder; do not commit development-generated manifests.
 - After deployment, use only the explicitly selected LAB and its disposable test
   collection. Demo mode alone does not validate LAB storage or synchronization.
 - Never cross into production or staging. Do not put credentials in notes,
@@ -21,6 +24,11 @@ The browser suite is the small trust core, not a substitute for exercising the a
   decisions, inspect Scheduled and Due separately, and Undo the change.
 - **Plan the week:** change calendar layouts, select a day, schedule a task and
   confirm it remains on that civil day. Check recurrence before moving one occurrence.
+- **Google Calendar:** with a disposable connected calendar, open and edit an
+  event from Month, Week, Agenda and the phone Month day list; create an event,
+  drag/resize a writable event, and check read-only calendars and failure states.
+  Check spanning events and exclusive end dates without counting events as tasks.
+  Demo task-calendar checks and mocked event tests do not prove real Google writes.
 - **Open and edit:** change title, notes and a custom property; switch adjacent
   tasks, close/reopen, and confirm the saved values. In LAB, check real confirmation
   and any held/conflicted edit review instead of assuming a toast means synced.
