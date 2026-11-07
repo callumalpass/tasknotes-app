@@ -6,6 +6,20 @@ const exec = promisify(execFile);
 const PACKAGE = "dev.tasknotes.app";
 const ORIGIN = "https://connect.mdbase.dev";
 const WAIT = 90_000;
+const APP_ORIGIN = "https://app.tasknotes.dev";
+
+// AndroidWebView.page() caches its first Page, even after Activity recreation.
+// Retain the CDP context, not that Page. Never retry a write on a new target.
+export function liveApplicationPage(context, retired = null) {
+  return context.pages().find((candidate) => {
+    if (candidate === retired || candidate.isClosed()) return false;
+    try {
+      return new URL(candidate.url()).origin === APP_ORIGIN;
+    } catch {
+      return false;
+    }
+  });
+}
 
 async function until(read, timeout = WAIT) {
   const deadline = Date.now() + timeout;
@@ -17,6 +31,130 @@ async function until(read, timeout = WAIT) {
   throw new Error("native-journey-deadline");
 }
 
+// Playwright's Android launchBrowser has no timeout option. A missing Chrome
+// debugging socket must fail preflight, not leave the host/credential lane hung.
+export async function launchNativeBrowser(device, timeout = WAIT) {
+  let timer;
+  try {
+    return await Promise.race([
+      device.launchBrowser({ args: ["--no-first-run"] }),
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("native-browser-start-deadline")),
+          timeout,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function openNativeWorkspace(page) {
+  const setup = page.getByRole("button", { name: "Set up", exact: true });
+  const ready = page.getByRole("button", { name: "New task", exact: true });
+  const state = await until(async () => {
+    if (await ready.isVisible()) return "ready";
+    if (await setup.isVisible()) return "setup";
+    return null;
+  });
+  if (state === "setup") await setup.click();
+  await ready.waitFor({ state: "visible" });
+}
+
+async function readAccountAccess(page) {
+  return page.evaluate(async () => {
+    const response = await fetch("/v1/me", {
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("account-access-read-failed");
+    const data = await response.json();
+    if (!Array.isArray(data.installation_access) || !Array.isArray(data.grants))
+      throw new Error("account-access-shape-invalid");
+    return { installations: data.installation_access, grants: data.grants };
+  });
+}
+
+export function ownedFixtureInstallations(before, after, collectionName) {
+  const previous = new Set(before.installations.map((i) => i.connector_id));
+  const owned = after.installations.filter(
+    (i) =>
+      !previous.has(i.connector_id) && i.collection_name === collectionName,
+  );
+  const connectors = [...new Set(owned.map((i) => i.connector_id))];
+  for (const connector of connectors) {
+    const scopes = after.installations.filter(
+      (i) => i.connector_id === connector,
+    );
+    if (
+      scopes.some(
+        (i) =>
+          i.collection_name !== collectionName ||
+          i.application_name !== "TaskNotes" ||
+          i.application_origin !== APP_ORIGIN,
+      )
+    )
+      throw new Error("installation-cleanup-ownership-ambiguous");
+  }
+  return connectors;
+}
+
+async function deleteOwnedTask(page, title, edited) {
+  const input = page.getByLabel("Task title", { exact: true });
+  if (!(await input.isVisible())) {
+    await page
+      .getByRole("button", { name: title, exact: true })
+      .or(page.getByRole("button", { name: edited, exact: true }))
+      .click();
+  }
+  if (![title, edited].includes(await input.inputValue()))
+    throw new Error("owned-task-required");
+  await page
+    .getByRole("button", { name: "More task actions", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete task", exact: true }).click();
+  await expect(page.locator(".undo-toast")).toBeVisible();
+  await expect(page.locator(".undo-toast")).toBeHidden({ timeout: 45_000 });
+  await expect(page.getByTestId("collection-write-status")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: title, exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: edited, exact: true }),
+  ).toHaveCount(0);
+}
+
+async function revokeOwnedFixtureAccess(browser, before, collectionName) {
+  const management = await browser.contexts()[0].newPage();
+  try {
+    await management.goto(ORIGIN);
+    const current = await readAccountAccess(management);
+    const owned = ownedFixtureInstallations(before, current, collectionName);
+    for (const connector of owned) {
+      const ok = await management.evaluate(async (connector) => {
+        const response = await fetch(
+          `/v1/account/installations/${encodeURIComponent(connector)}`,
+          { method: "DELETE", headers: { accept: "application/json" } },
+        );
+        return response.ok;
+      }, connector);
+      if (!ok) throw new Error("installation-revoke-failed");
+    }
+    const after = await readAccountAccess(management);
+    if (after.installations.some((i) => owned.includes(i.connector_id)))
+      throw new Error("installation-cleanup-not-verified");
+    if (
+      after.grants.some(
+        (g) => g.collection_name === collectionName && !g.revoked_at,
+      )
+    )
+      throw new Error("fixture-grant-cleanup-not-verified");
+  } finally {
+    await management.close().catch(() => {});
+  }
+}
+
 /** Runs against an already installed APK and the test-APK-only native host.
  * Never substitutes SDK clients, runtime loaders, protocol replies or auth.
  * Errors escaping this function must be reduced to fixed phase enums by CI.
@@ -26,7 +164,6 @@ export async function exerciseAndroidWasm({
   password,
   collectionName,
   runId,
-  setupFixture = false,
   serial,
   phase = () => {},
 }) {
@@ -47,16 +184,22 @@ export async function exerciseAndroidWasm({
   let browser;
   let forwardedPort;
   let page;
+  let accessBefore;
+  let connect;
   let taskCreated = false;
   let taskDeleted = false;
+  let deleteAttempted = false;
   const title = `[test] ${runId} wasm`;
   const edited = `${title} edited`;
   const checks = {};
+  let result;
+  let failure;
+  let cleanupFailed = false;
   try {
     phase("browser-start");
     await device.shell(`am force-stop ${PACKAGE}`);
     await device.shell("am force-stop com.android.chrome");
-    chrome = await device.launchBrowser({ args: ["--no-first-run"] });
+    chrome = await launchNativeBrowser(device);
     // Android Custom Tabs belong to Chrome's default profile, not the isolated
     // context returned by launchBrowser. Observe that actual native return flow.
     const unix = (await device.shell("cat /proc/net/unix")).toString();
@@ -98,8 +241,12 @@ export async function exerciseAndroidWasm({
       ],
       { stdio: "ignore" },
     );
-    const connect = async () =>
-      (await device.webView({ pkg: PACKAGE }, { timeout: WAIT })).page();
+    const initialPage = await (
+      await device.webView({ pkg: PACKAGE }, { timeout: WAIT })
+    ).page();
+    const context = initialPage.context();
+    connect = (retired = null) =>
+      until(async () => liveApplicationPage(context, retired));
     page = await connect();
     page.setDefaultTimeout(WAIT);
     phase("native-sign-in");
@@ -143,25 +290,17 @@ export async function exerciseAndroidWasm({
     await portal
       .getByRole("button", { name: "Open TaskNotes", exact: true })
       .waitFor();
-    if (setupFixture) {
-      await portal
-        .getByRole("button", { name: "Create a new collection…", exact: true })
-        .click();
-      await portal
-        .locator("#installation-collection-name")
-        .fill(collectionName);
-    } else {
-      phase("fixture-filter");
-      await portal
-        .getByRole("combobox", { name: "Open in TaskNotes", exact: true })
-        .fill(collectionName);
-      phase("fixture-select");
-      const option = portal
-        .getByRole("option")
-        .filter({ hasText: collectionName });
-      await expect(option).toHaveCount(1);
-      await option.click();
-    }
+    accessBefore = await readAccountAccess(portal);
+    phase("fixture-filter");
+    await portal
+      .getByRole("combobox", { name: "Open in TaskNotes", exact: true })
+      .fill(collectionName);
+    phase("fixture-select");
+    const option = portal
+      .getByRole("option")
+      .filter({ hasText: collectionName });
+    await expect(option).toHaveCount(1);
+    await option.click();
     phase("fixture-approve");
     await portal
       .getByRole("button", { name: "Open TaskNotes", exact: true })
@@ -174,19 +313,10 @@ export async function exerciseAndroidWasm({
     );
     page = await connect();
     page.setDefaultTimeout(WAIT);
-    await until(async () => {
-      if (
-        setupFixture &&
-        (await page
-          .getByRole("button", { name: "Set up", exact: true })
-          .isVisible())
-      ) {
-        await page.getByRole("button", { name: "Set up", exact: true }).click();
-      }
-      return await page
-        .getByRole("button", { name: "New task", exact: true })
-        .isVisible();
-    });
+    // A retained collection may still need its first TaskNotes model setup.
+    // Creating the collection and initializing its model are independent. Do
+    // not put the setup write in a polling callback: submit exactly once.
+    await openNativeWorkspace(page);
     // These are the real application's Workers, not a separately built probe.
     phase("wasm-worker-observation");
     const worker = await until(async () => page.workers()[0]);
@@ -207,12 +337,14 @@ export async function exerciseAndroidWasm({
         ? paths
         : null;
     });
-    checks["runtime-initialized"] = true;
+    // Resource loading is not exercised runtime proof. Flags are set only
+    // after the real task write and reopened-database read below have passed.
     phase("task-create");
     await page.getByRole("button", { name: "New task", exact: true }).click();
     await page.getByRole("combobox", { name: "New task title" }).fill(title);
-    await page.getByRole("button", { name: "Add", exact: true }).click();
+    // Once submitted, an error is an unknown write, not proof of absence.
     taskCreated = true;
+    await page.getByRole("button", { name: "Add", exact: true }).click();
     await page.getByRole("button", { name: title, exact: true }).click();
     phase("task-edit");
     const input = page.getByLabel("Task title", { exact: true });
@@ -230,8 +362,12 @@ export async function exerciseAndroidWasm({
       "am broadcast -a dev.tasknotes.test.REOPEN -p dev.tasknotes.app",
     );
     await until(async () => workerClosed);
-    page = await connect();
+    page = await connect(page);
     page.setDefaultTimeout(WAIT);
+    // A new document does not retain the old route or its task-detail dialog.
+    // Query the reopened database through the normal task list first.
+    if (!(await page.getByLabel("Task title", { exact: true }).isVisible()))
+      await page.getByRole("button", { name: edited, exact: true }).click();
     await expect(page.getByLabel("Task title", { exact: true })).toHaveValue(
       edited,
     );
@@ -241,24 +377,49 @@ export async function exerciseAndroidWasm({
       const paths = await loadedWasm(reopened);
       return beforeWasm.every((p) => paths.includes(p)) ? paths : null;
     });
+    checks["runtime-initialized"] = true;
     checks["sqlite-open-query-write-reopen"] = true;
     checks["task-create-edit-reload"] = true;
     phase("owned-task-cleanup");
-    await page
-      .getByRole("button", { name: "Delete task", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Delete task", exact: true })
-      .click();
-    await expect(page.locator(".undo-toast")).toBeVisible();
-    await expect(page.locator(".undo-toast")).toBeHidden({ timeout: 30_000 });
-    await expect(page.getByTestId("collection-write-status")).toBeHidden();
+    deleteAttempted = true;
+    await deleteOwnedTask(page, title, edited);
     taskDeleted = true;
-    return { checks, wasmPaths: afterWasm, cleanup: "owned-task-deleted" };
+    result = {
+      checks,
+      wasmPaths: afterWasm,
+      cleanup: "owned-task-deleted-and-installation-access-revoked",
+    };
+  } catch (error) {
+    failure = error;
   } finally {
-    phase(
-      taskCreated && !taskDeleted ? "cleanup-required" : "native-host-close",
-    );
+    // Keep the original host alive until owned data is removed, including when
+    // an assertion fails after creation. Never retry an unknown delete write.
+    if (taskCreated && !taskDeleted) {
+      phase("failure-task-cleanup");
+      if (deleteAttempted) {
+        cleanupFailed = true;
+      } else {
+        try {
+          deleteAttempted = true;
+          page = await connect();
+          await deleteOwnedTask(page, title, edited);
+          taskDeleted = true;
+        } catch {
+          cleanupFailed = true;
+        }
+      }
+    }
+    if (accessBefore && browser?.isConnected() && !cleanupFailed) {
+      phase("owned-installation-cleanup");
+      try {
+        await revokeOwnedFixtureAccess(browser, accessBefore, collectionName);
+      } catch {
+        cleanupFailed = true;
+      }
+    } else if (accessBefore) {
+      cleanupFailed = true;
+    }
+    phase(cleanupFailed ? "cleanup-required" : "native-host-close");
     // Stop the test-only native host. Never log credentials, portal URLs, DOM,
     // SDK errors or raw Playwright assertions (they can include private values).
     await device
@@ -277,4 +438,7 @@ export async function exerciseAndroidWasm({
       ]).catch(() => {});
     await device.close().catch(() => {});
   }
+  if (cleanupFailed) throw new Error("native-fixture-cleanup-required");
+  if (failure) throw failure;
+  return result;
 }

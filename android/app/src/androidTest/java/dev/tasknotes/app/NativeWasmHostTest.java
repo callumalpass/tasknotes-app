@@ -30,11 +30,11 @@ public class NativeWasmHostTest {
         var receiver = new BroadcastReceiver() {
             @Override public void onReceive(Context ignored, Intent intent) {
                 if ("dev.tasknotes.test.REOPEN".equals(intent.getAction())) {
-                    // Finishing BridgeActivity destroys its WebView and Workers.
-                    // The replacement must reopen the original persisted SQL store.
-                    activity[0].finish();
-                    context.startActivity(new Intent(context, MainActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    // BridgeActivity.onDestroy() stops plugins but does not call
+                    // WebView.destroy(). Retire the real Worker explicitly before
+                    // Android recreates the Activity and reopens persisted SQL.
+                    ((MainActivity) activity[0]).getBridge().getWebView().destroy();
+                    activity[0].recreate();
                 } else if ("dev.tasknotes.test.FINISH".equals(intent.getAction())) {
                     done.countDown();
                 }
