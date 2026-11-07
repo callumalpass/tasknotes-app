@@ -20,5 +20,7 @@ vendor/native-publish/staging-eaa4e697/
 vendor/native-publish/production/
 # Canonical signed production trust bytes; formatting would change its digest.
 vendor/production-trust.json
+# Byte-verbatim protected target trust; never format signed release inputs.
+config/next-trust/*.json
 # Deterministic Lingui compile output; formatting is owned by the compiler.
 src/i18n/locales/*/messages.json

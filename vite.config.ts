@@ -58,7 +58,10 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : "assets/[name]-[hash].js",
+            : chunk.name === "app" &&
+                /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
+              ? `assets/index-tasknotes-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}.js`
+              : "assets/[name]-[hash].js",
       },
     },
   },

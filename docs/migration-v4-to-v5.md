@@ -38,9 +38,9 @@ ordinary approval and editing against the matching deployed App; a local model
 or mocked browser test does not establish remote authorization compatibility.
 
 App deployments are separate from mdbase Connect server releases. The App's
-`pnpm deploy:dev` targets LAB by default (or staging with `MDBASE_ENV=staging`),
-while `.github/workflows/deploy-pages.yml` owns GitHub Pages and the optional
-Cloudflare production deployment. See the repository [README](../README.md).
+`pnpm deploy:dev` targets LAB; staging and production use the shared exact-source
+App CD through `.github/workflows/deploy-tasknotes.yml`. Production stays disabled
+until the dedicated #1223 Cloud-copy and wasm qualification. See [deployment](deployment.md). See the repository [README](../README.md).
 Connect releases use their guarded signed-bundle staging, acceptance and
 production process; neither changing the App manifest nor passing tests deploys
 or authorizes a backend release.

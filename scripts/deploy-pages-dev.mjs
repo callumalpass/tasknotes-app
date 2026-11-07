@@ -14,16 +14,6 @@ export const developmentDeployments = Object.freeze({
     branch: "lab",
     wranglerVersion: "4.114.0",
   }),
-  staging: Object.freeze({
-    environment: "staging",
-    appOrigin: "https://staging.tasknotes-app.pages.dev",
-    editorOrigin: "https://editor-staging.mdbase.dev",
-    connectOrigin: "https://connect-staging.mdbase.dev",
-    // Native staging has no local Connect loopback authority.
-    project: "tasknotes-app",
-    branch: "staging",
-    wranglerVersion: "4.114.0",
-  }),
   // Candidate B is a LAB-environment build served from its own preview
   // origin against its isolated Connect. It has no documented Editor
   // origin, so that one input stays caller-supplied and explicit.
@@ -192,15 +182,7 @@ export async function deployDevelopmentTaskNotes(
     environment,
     deployment,
   );
-  const restoreTargets = [
-    ...manifestTargets,
-    ...(deployment.environment === "staging"
-      ? [
-          resolve(projectRoot, "package.json"),
-          resolve(projectRoot, "pnpm-lock.yaml"),
-        ]
-      : []),
-  ];
+  const restoreTargets = manifestTargets;
   const previousManifests = await Promise.all(
     restoreTargets.map(async (target) => {
       try {
@@ -213,18 +195,6 @@ export async function deployDevelopmentTaskNotes(
   );
 
   try {
-    if (deployment.environment === "staging") {
-      // Only this deployment uses staging trust; keep the production/iOS pin.
-      await dependencies.run(
-        pnpm,
-        [
-          "add",
-          "--ignore-scripts",
-          "@mdbase-dev/sdk@file:vendor/sdk-dev-eaa4e697-staging.tgz",
-        ],
-        deploymentEnvironment,
-      );
-    }
     await dependencies.run(pnpm, ["build:assets"], deploymentEnvironment);
     await dependencies.verifyBuild(deployment);
   } finally {
