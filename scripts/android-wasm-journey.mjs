@@ -83,12 +83,37 @@ export function nativeApprovalButton(portal, collectionName) {
   );
 }
 
-export async function approveNativePortal(portal, collectionName) {
+export function actionabilityObservation(error) {
+  // Playwright action logs can contain private DOM and URLs. Recognize only
+  // literal actionability causes; never retain or echo the exception itself.
+  const message = typeof error?.message === "string" ? error.message : "";
+  for (const [pattern, state] of [
+    [/intercepts pointer events/, "approval-pointer-intercepted"],
+    [/outside of the viewport/, "approval-outside-viewport"],
+    [/element is not stable/, "approval-element-unstable"],
+    [
+      /element is not visible|Element is not visible/,
+      "approval-element-hidden",
+    ],
+    [/strict mode violation/, "approval-locator-ambiguous"],
+  ])
+    if (pattern.test(message)) return state;
+  return error?.name === "TimeoutError"
+    ? "approval-timeout-unclassified"
+    : "approval-error-unclassified";
+}
+
+export async function approveNativePortal(
+  portal,
+  collectionName,
+  observe = () => {},
+) {
   try {
     await nativeApprovalButton(portal, collectionName).click({
       noWaitAfter: true,
     });
   } catch (error) {
+    observe(actionabilityObservation(error));
     if (!portal.isClosed()) throw error;
   }
 }
@@ -116,8 +141,11 @@ async function observePairing(portal, collectionName, observe) {
   if (portal.isClosed()) return observe("portal-closed");
   const state = await portal
     .evaluate(async (collectionName) => {
-      const id = location.pathname.match(/^\/pair\/([0-9a-f-]+)$/i)?.[1];
-      if (!id || location.origin !== "https://connect.mdbase.dev") return null;
+      const id = globalThis.location.pathname.match(
+        /^\/pair\/([0-9a-f-]+)$/i,
+      )?.[1];
+      if (!id || globalThis.location.origin !== "https://connect.mdbase.dev")
+        return null;
       const r = await fetch(`/v1/pairing-requests/${id}`, {
         headers: { accept: "application/json" },
         signal: AbortSignal.timeout(5000),
@@ -420,7 +448,7 @@ export async function exerciseAndroidWasm({
     });
     phase("fixture-approval-dispatch");
     await observePairing(portal, collectionName, observe);
-    await approveNativePortal(portal, collectionName);
+    await approveNativePortal(portal, collectionName, observe);
     await observePairing(portal, collectionName, observe);
     phase("runtime-open");
     // Resume the installed app as a user can from Android's app switcher. Only

@@ -7,6 +7,7 @@ import {
   ownedFixtureInstallations,
   approveNativePortal,
   pairingObservation,
+  actionabilityObservation,
 } from "./android-wasm-journey.mjs";
 
 const page = (url, closed = false) => ({
@@ -69,6 +70,27 @@ for (const closed of [false, true]) {
     assert.deepEqual(labels, ["Open TaskNotes", `Open TaskNotes with ${name}`]);
   });
 }
+
+test("actionability diagnostics never retain error text or private values", () => {
+  for (const [message, expected] of [
+    ["private-token intercepts pointer events", "approval-pointer-intercepted"],
+    ["private-token outside of the viewport", "approval-outside-viewport"],
+    ["private-token element is not stable", "approval-element-unstable"],
+    ["private-token element is not visible", "approval-element-hidden"],
+    ["private-token strict mode violation", "approval-locator-ambiguous"],
+    ["private-token", "approval-error-unclassified"],
+  ]) {
+    assert.equal(actionabilityObservation(new Error(message)), expected);
+  }
+  assert.equal(
+    actionabilityObservation({
+      name: "TimeoutError",
+      message: "private-token",
+    }),
+    "approval-timeout-unclassified",
+  );
+  assert.equal(actionabilityObservation(null), "approval-error-unclassified");
+});
 
 test("a missing Chrome debugging socket has a bounded preflight deadline", async () => {
   await assert.rejects(

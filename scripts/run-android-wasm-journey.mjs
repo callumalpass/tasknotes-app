@@ -31,6 +31,13 @@ export async function runNativeJourney({
   let report = { status: "failed", phase: "fixture-preflight" };
   const observations = [];
   const allowed = new Set([
+    "approval-pointer-intercepted",
+    "approval-outside-viewport",
+    "approval-element-unstable",
+    "approval-element-hidden",
+    "approval-locator-ambiguous",
+    "approval-timeout-unclassified",
+    "approval-error-unclassified",
     "pairing-observation-unavailable",
     "pairing-approved-owned",
     "pairing-approved-target-unverified",
