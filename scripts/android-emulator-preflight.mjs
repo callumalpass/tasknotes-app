@@ -44,7 +44,16 @@ try {
   // from a fresh emulator. A public startup screenshot cannot contain test
   // credentials or collection data. Never capture this in the signed journey.
   try {
-    if (device)
+    if (
+      page &&
+      (await page
+        .getByRole("button", { name: "Restart TaskNotes", exact: true })
+        .isVisible())
+    )
+      await page.locator("details.technical-details summary").click();
+    if (page)
+      await page.screenshot({ path: "native-preflight.png", fullPage: true });
+    else if (device)
       await writeFile("native-preflight.png", await device.screenshot());
     if (page)
       console.log(

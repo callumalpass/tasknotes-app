@@ -72,6 +72,7 @@ test("failure diagnostics retain phase but never credential-bearing errors", asy
     save: (r) => saved.push(r),
     journey: async ({ phase }) => {
       phase("registered-account-login");
+      phase("native-host-close");
       throw new Error(
         `${fixture.email} ${fixture.password} https://private.invalid/?token=secret`,
       );
@@ -79,6 +80,7 @@ test("failure diagnostics retain phase but never credential-bearing errors", asy
   });
   assert.equal(report.status, "failed");
   assert.equal(report.phase, "registered-account-login");
+  assert.equal(report.cleanupPhase, "native-host-close");
   assert.doesNotMatch(
     JSON.stringify(saved),
     /registered@example|not-a-real|private.invalid|token=/,

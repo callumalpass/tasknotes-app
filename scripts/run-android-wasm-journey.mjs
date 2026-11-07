@@ -30,7 +30,15 @@ export async function runNativeJourney({
 }) {
   let report = { status: "failed", phase: "fixture-preflight" };
   const phase = (phase) => {
-    report = { ...report, phase };
+    const cleanup = [
+      "failure-task-cleanup",
+      "owned-installation-cleanup",
+      "native-host-close",
+      "cleanup-required",
+    ].includes(phase);
+    report = cleanup
+      ? { ...report, cleanupPhase: phase }
+      : { ...report, phase };
     save(report);
     console.log(`android-native-journey: ${phase}`);
   };

@@ -71,7 +71,14 @@ jobs:
         run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
       - name: Verify web application and committed catalogues
+        if: github.event_name != 'workflow_dispatch' || !inputs.native_qualification
         run: pnpm verify && git diff --exit-code -- src/i18n/locales
+
+      - name: Build assets for manual debug-only harness iteration
+        if: github.event_name == 'workflow_dispatch' && inputs.native_qualification
+        run: |
+          test "$GITHUB_REF" = refs/heads/draft/android-native-wasm-host
+          pnpm build
 
       - name: Sync native project
         run: pnpm exec cap sync android
@@ -79,6 +86,12 @@ jobs:
       - name: Test, lint, and build debug APK
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+
+      - name: Compile release test-host variant without release credentials
+        working-directory: android
+        env:
+          TASKNOTES_ANDROID_TEST_BUILD_TYPE: release
+        run: ./gradlew :app:assembleReleaseAndroidTest --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v6
@@ -211,8 +224,13 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/android-v')
-    needs: build
+    needs: [build, native-emulator-preflight]
     runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.signed_artifact.outputs.artifact-id }}
+      artifact_digest: ${{ steps.signed_artifact.outputs.artifact-digest }}
+      host_id: ${{ steps.test_host.outputs.artifact-id }}
+      host_digest: ${{ steps.test_host.outputs.artifact-digest }}
     permissions:
       contents: read
     env:
@@ -301,11 +319,14 @@ jobs:
           pnpm build
           pnpm exec cap sync android
 
-      - name: Build signed Android release
+      - name: Build signed Android release and same-identity test host
         working-directory: android
-        run: ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
+        env:
+          TASKNOTES_ANDROID_TEST_BUILD_TYPE: release
+        run: ./gradlew :app:assembleRelease :app:bundleRelease :app:assembleReleaseAndroidTest --stacktrace
 
       - name: Upload signed artifacts
+        id: signed_artifact
         uses: actions/upload-artifact@v6
         with:
           name: tasknotes-android-${{ github.ref_name }}
@@ -314,8 +335,77 @@ jobs:
             android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
+      - name: Retain same-source signed test host (not shipping application)
+        id: test_host
+        uses: actions/upload-artifact@v6
+        with:
+          name: tasknotes-android-test-host-${{ github.sha }}
+          path: android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
+          if-no-files-found: error
+
       - name: Remove temporary signing material
         if: always()
         run: |
           rm -f "$RUNNER_TEMP/tasknotes-release.jks"
           rm -f android/app/google-services.json
+
+  native-signed-qualification:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: android-native-qualification
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: pnpm install --frozen-lockfile
+      - name: Require hardware acceleration
+        run: |
+          test -c /dev/kvm
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo udevadm settle
+          test -r /dev/kvm && test -w /dev/kvm
+      - name: Qualify retained same-run signed artifact bytes
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED_ARTIFACT_ID: ${{ needs.release.outputs.artifact_id }}
+          SIGNED_ARTIFACT_DIGEST: ${{ needs.release.outputs.artifact_digest }}
+          TEST_HOST_ARTIFACT_ID: ${{ needs.release.outputs.host_id }}
+          TEST_HOST_ARTIFACT_DIGEST: ${{ needs.release.outputs.host_digest }}
+          TASKNOTES_NATIVE_ACCOUNT: ${{ secrets.TASKNOTES_NATIVE_ACCOUNT }}
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: true
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -accel on
+          script: |
+            "$ANDROID_HOME/emulator/emulator" -accel-check
+            timeout 900s node scripts/qualify-android-signed-artifact.mjs
+      - name: Retain passing artifact-bound wasm qualification
+        uses: actions/upload-artifact@v6
+        with:
+          name: tasknotes-mobile-wasm-android
+          path: qualification.json
+          if-no-files-found: error
+      - name: Retain bounded qualification failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tasknotes-android-native-failure
+          path: native-qualification-failure.json
+          if-no-files-found: warn
