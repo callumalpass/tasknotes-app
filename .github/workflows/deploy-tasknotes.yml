@@ -172,7 +172,7 @@ jobs:
     # External environment policy admits main without per-publish approval.
     environment:
       name: ${{ inputs.target }}
-      url: ${{ inputs.target == 'production' && 'https://app.tasknotes.dev/' || 'https://staging.tasknotes-app.pages.dev/' }}
+      url: ${{ inputs.target == 'production' && 'https://app.tasknotes.dev/' || 'https://staging.tasknotes.dev/' }}
     env:
       TARGET: ${{ inputs.target }}
       SOURCE_SHA: ${{ inputs.source_sha }}

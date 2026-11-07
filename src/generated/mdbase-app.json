@@ -10,7 +10,7 @@
   ],
   "installation_origins": {
     "lab": { "app-runtime": ["https://lab.tasknotes-app.pages.dev"] },
-    "staging": { "app-runtime": ["https://staging.tasknotes-app.pages.dev"] },
+    "staging": { "app-runtime": ["https://staging.tasknotes.dev"] },
     "production": {
       "app-runtime": ["https://app.tasknotes.dev"],
       "mobile": ["capacitor://app.tasknotes.dev"]

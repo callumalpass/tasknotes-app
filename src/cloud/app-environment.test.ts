@@ -29,9 +29,7 @@ describe("explicit next-only replace-at-cutover build environment", () => {
     ).toBe(true);
   });
   it("targets the exact staging address without a second-origin input", () => {
-    expect(TASKNOTES_STAGING_ORIGIN).toBe(
-      "https://staging.tasknotes-app.pages.dev",
-    );
+    expect(TASKNOTES_STAGING_ORIGIN).toBe("https://staging.tasknotes.dev");
     const environment = requireTaskNotesAppEnvironment(
       "staging",
       undefined,

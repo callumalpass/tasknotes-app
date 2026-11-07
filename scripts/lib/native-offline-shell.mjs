@@ -81,9 +81,9 @@ export function parseEmbeddedOfflineShell(bytes) {
       )
     )
       fail();
-    const url = new URL(path, "https://staging.tasknotes-app.pages.dev/");
+    const url = new URL(path, "https://staging.tasknotes.dev/");
     if (
-      url.origin !== "https://staging.tasknotes-app.pages.dev" ||
+      url.origin !== "https://staging.tasknotes.dev" ||
       url.pathname !== "/" + path ||
       url.search ||
       url.hash ||

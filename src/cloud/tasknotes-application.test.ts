@@ -50,10 +50,10 @@ it("passes exact generated manifest and original compatibility storage data to t
 it("declares the exact staging environment and origin to the SDK", () => {
   const declaration = taskNotesApplicationDeclaration({
     environment: "staging",
-    appOrigin: "https://staging.tasknotes-app.pages.dev",
+    appOrigin: "https://staging.tasknotes.dev",
   });
   expect(declaration.environment).toBe("staging");
-  expect(declaration.origin).toBe("https://staging.tasknotes-app.pages.dev");
+  expect(declaration.origin).toBe("https://staging.tasknotes.dev");
   expect(declaration.id).toBe(manifest.id);
   expect(declaration.manifest).toBe(manifest);
 });

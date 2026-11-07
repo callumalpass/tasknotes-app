@@ -22,6 +22,9 @@ const env = {
     plan.target === "production"
       ? "https://editor.mdbase.dev"
       : "https://editor-staging.mdbase.dev",
+  ...(plan.target === "staging" && {
+    VITE_TASKNOTES_CALENDAR_ORIGIN: "https://calendar-staging.tasknotes.dev",
+  }),
 };
 delete env.GITHUB_TOKEN;
 delete env.GH_TOKEN;

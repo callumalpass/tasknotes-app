@@ -33,7 +33,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.installation_origins).toEqual({
       lab: { "app-runtime": ["https://lab.tasknotes-app.pages.dev"] },
       staging: {
-        "app-runtime": ["https://staging.tasknotes-app.pages.dev"],
+        "app-runtime": ["https://staging.tasknotes.dev"],
       },
       production: {
         "app-runtime": ["https://app.tasknotes.dev"],

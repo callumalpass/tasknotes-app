@@ -68,10 +68,9 @@ export async function verifyHosting({
   ...options
 }) {
   if (
-    ![
-      "https://staging.tasknotes-app.pages.dev",
-      "https://app.tasknotes.dev",
-    ].includes(origin) &&
+    !["https://staging.tasknotes.dev", "https://app.tasknotes.dev"].includes(
+      origin,
+    ) &&
     !(
       origin === deployment?.url &&
       /^https:\/\/[a-f0-9]{8,32}\.tasknotes-app\.pages\.dev$/.test(origin)

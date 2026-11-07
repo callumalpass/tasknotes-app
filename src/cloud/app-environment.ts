@@ -3,8 +3,7 @@
  * port or a public HTTPS preview (e.g. Pages). App loopback is LAB-only. */
 export const TASKNOTES_PRODUCTION_ORIGIN = "https://app.tasknotes.dev";
 export const TASKNOTES_IOS_ORIGIN = "capacitor://app.tasknotes.dev";
-export const TASKNOTES_STAGING_ORIGIN =
-  "https://staging.tasknotes-app.pages.dev";
+export const TASKNOTES_STAGING_ORIGIN = "https://staging.tasknotes.dev";
 export const TASKNOTES_LAB_ORIGIN = "http://127.0.0.1:48218";
 export const APP_ENVIRONMENT_CONFIG_KEY = "VITE_TASKNOTES_ENVIRONMENT";
 export const LAB_ORIGIN_CONFIG_KEY = "VITE_TASKNOTES_LAB_ORIGIN";
@@ -47,9 +46,7 @@ export function requireTaskNotesAppEnvironment(
     if (configuredLabOrigin !== undefined && configuredLabOrigin !== "")
       throw new Error("Staging cannot include a LAB app origin.");
     if (currentOrigin !== TASKNOTES_STAGING_ORIGIN)
-      throw new Error(
-        "TaskNotes staging must open at staging.tasknotes-app.pages.dev.",
-      );
+      throw new Error("TaskNotes staging must open at staging.tasknotes.dev.");
     return Object.freeze({
       environment: "staging",
       appOrigin: TASKNOTES_STAGING_ORIGIN,

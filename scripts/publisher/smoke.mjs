@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 const origins = {
   production: "https://app.tasknotes.dev",
-  staging: "https://staging.tasknotes-app.pages.dev",
+  staging: "https://staging.tasknotes.dev",
 };
 const need = (ok, reason) => {
   if (!ok) throw Error(reason);

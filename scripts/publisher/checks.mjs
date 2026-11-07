@@ -33,7 +33,7 @@ export function assertInventoryCoverage(inventory, sdkTrust) {
 }
 export function assertBuiltTarget({ target, manifest }) {
   const origin = {
-    staging: "https://staging.tasknotes-app.pages.dev",
+    staging: "https://staging.tasknotes.dev",
     production: "https://app.tasknotes.dev",
   }[target];
   if (

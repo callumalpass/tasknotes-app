@@ -43,10 +43,9 @@ export async function verifyTrustedHostingPolicy({
   )
     throw new Error("Trusted hosting headers remain unverified.");
   if (
-    ![
-      "https://staging.tasknotes-app.pages.dev",
-      "https://app.tasknotes.dev",
-    ].includes(origin)
+    !["https://staging.tasknotes.dev", "https://app.tasknotes.dev"].includes(
+      origin,
+    )
   )
     throw new Error("Wrong hosting policy target.");
   const index = assets.find((a) => a.path === "index.html");

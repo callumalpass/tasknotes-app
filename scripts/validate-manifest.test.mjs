@@ -6,7 +6,7 @@ import { validateManifestValue } from "./validate-manifest.mjs";
 describe("TaskNotes manifest validation", () => {
   it("accepts the builder output with per-environment installation origins", async () => {
     const manifest = await buildTaskNotesManifest({
-      appUrl: "https://staging.tasknotes-app.pages.dev",
+      appUrl: "https://staging.tasknotes.dev",
       webOnly: true,
     });
     expect(validateManifestValue(manifest)).toEqual({
@@ -17,14 +17,14 @@ describe("TaskNotes manifest validation", () => {
 
   it("refuses a non-exact staging installation origin", async () => {
     const manifest = await buildTaskNotesManifest({
-      appUrl: "https://staging.tasknotes-app.pages.dev",
+      appUrl: "https://staging.tasknotes.dev",
       webOnly: true,
     });
     const broken = {
       ...manifest,
       installation_origins: {
         staging: {
-          "app-runtime": ["https://staging.tasknotes-app.pages.dev/"],
+          "app-runtime": ["https://staging.tasknotes.dev/"],
         },
       },
     };
