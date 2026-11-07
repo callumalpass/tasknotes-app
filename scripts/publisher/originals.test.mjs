@@ -18,6 +18,13 @@ it("authenticates production npm provenance, protected raw trust and ALL install
       TASKNOTES_TRUST_ASSET_SHA256: policy.environments.production.sha256,
     },
     installed: true,
+    // Crypto/byte verification is real. Ancestry transport is tested separately;
+    // shared-builder anonymous GitHub quota must not make this unit suite flaky.
+    // Live guard/rehearsals still perform the actual authenticated comparison.
+    fetchImpl: (url, options) =>
+      url.includes("/compare/")
+        ? Promise.resolve(Response.json({ status: "ahead" }))
+        : fetch(url, options),
   });
   const { pin } = await productionPin(root);
   assert.equal(trust.authentication.source, pin.sourceCommit);

@@ -83,6 +83,16 @@ it("protected jobs only execute workflow-owned helpers, with ancestry checks bef
   const { jobs } = parse(
     await readFile(root + ".github/workflows/deploy-tasknotes.yml", "utf8"),
   );
+  const setup = jobs.build.steps.find((s) =>
+    s.uses?.startsWith("pnpm/action-setup@"),
+  );
+  const pkg = JSON.parse(await readFile(root + "package.json", "utf8"));
+  assert.equal(
+    "pnpm@" + setup.with.version,
+    pkg.packageManager,
+    "split checkout has no root package.json: bootstrap version must be explicit and equal the candidate pin",
+  );
+  assert.equal(setup.with.run_install, false);
   for (const name of ["inputs", "publish", "production-recovery"]) {
     const job = jobs[name],
       checkout = job.steps.filter((s) =>
