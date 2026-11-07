@@ -96,8 +96,14 @@ test("a browser startup error is preserved, never retried", async () => {
 
 test("initializes a retained empty fixture, not just a newly created one", async () => {
   const page = workspace(false);
-  await openNativeWorkspace(page);
+  const phases = [];
+  await openNativeWorkspace(page, (phase) => phases.push(phase));
   assert.equal(page.clicks(), 1);
+  assert.deepEqual(phases, [
+    "native-workspace-state",
+    "model-setup-submit",
+    "model-setup-confirm",
+  ]);
 });
 
 test("does not submit setup when the fixture is already initialized", async () => {

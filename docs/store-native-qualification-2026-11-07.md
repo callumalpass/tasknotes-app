@@ -1,5 +1,10 @@
 # Native qualification follow-up — 2026-11-07
 
+**Later continuation:** [hosted KVM attempt and completed fixture reconciliation](store-native-hosted-kvm-2026-11-07.md).
+The historical attempt below is unchanged. Hosted KVM now works; native
+qualification is still blocked at post-approval runtime open, and the retained
+fixture described below has since been content-checked and deleted.
+
 ## Outcome: blocked, not qualification and not a release
 
 PR [#348](https://github.com/callumalpass/tasknotes-app/pull/348) remains a draft.

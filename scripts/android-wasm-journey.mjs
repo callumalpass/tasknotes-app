@@ -50,7 +50,8 @@ export async function launchNativeBrowser(device, timeout = WAIT) {
   }
 }
 
-export async function openNativeWorkspace(page) {
+export async function openNativeWorkspace(page, phase = () => {}) {
+  phase("native-workspace-state");
   const setup = page.getByRole("button", { name: "Set up", exact: true });
   const ready = page.getByRole("button", { name: "New task", exact: true });
   const state = await until(async () => {
@@ -58,7 +59,11 @@ export async function openNativeWorkspace(page) {
     if (await setup.isVisible()) return "setup";
     return null;
   });
-  if (state === "setup") await setup.click();
+  if (state === "setup") {
+    phase("model-setup-submit");
+    await setup.click();
+    phase("model-setup-confirm");
+  }
   await ready.waitFor({ state: "visible" });
 }
 
@@ -327,6 +332,14 @@ export async function exerciseAndroidWasm({
       .filter({ hasText: collectionName });
     await expect(option).toHaveCount(1);
     await option.click();
+    phase("fixture-selection-confirm");
+    // Typing filters the picker but is not selection. Before any approval,
+    // require the selected receipt to name exactly this run's owned fixture.
+    await expect(
+      portal
+        .locator(".approval-receipt")
+        .getByText(collectionName, { exact: true }),
+    ).toBeVisible();
     phase("fixture-approval-ready");
     await expect(nativeApprovalButton(portal, collectionName)).toBeEnabled({
       timeout: WAIT,
@@ -336,15 +349,17 @@ export async function exerciseAndroidWasm({
     phase("runtime-open");
     // Resume the installed app as a user can from Android's app switcher. Only
     // its original authenticated poll completes the grant; no URL/code injection.
+    phase("native-return-resume");
     await device.shell(
       "am start -n dev.tasknotes.app/dev.tasknotes.app.MainActivity",
     );
+    phase("native-target-reacquire");
     page = await connect();
     page.setDefaultTimeout(WAIT);
     // A retained collection may still need its first TaskNotes model setup.
     // Creating the collection and initializing its model are independent. Do
     // not put the setup write in a polling callback: submit exactly once.
-    await openNativeWorkspace(page);
+    await openNativeWorkspace(page, phase);
     // These are the real application's Workers, not a separately built probe.
     phase("wasm-worker-observation");
     const worker = await until(async () => page.workers()[0]);
