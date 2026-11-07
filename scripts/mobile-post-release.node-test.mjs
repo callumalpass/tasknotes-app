@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   monitorOwnedRollout,
   checkMobileBoundaries,
+  hasNoOwnedRollout,
 } from "./mobile-post-release.mjs";
 const hour = 3_600_000,
   now = Date.UTC(2026, 10, 7, 12);
@@ -199,4 +200,28 @@ test("readiness checks are strict", async () => {
     checkMobileBoundaries(async () => Response.json({ ok: false })),
     /health-failed/,
   );
+});
+
+test("a promotion from before this monitor owns nothing, unless something is rolling", () => {
+  const run = { status: "completed", conclusion: "success" };
+  const live = [{ status: "completed" }];
+  const result = [{ name: "mobile-production-result" }];
+  assert.equal(hasNoOwnedRollout({ run, artifacts: [], live }), true);
+  assert.equal(
+    hasNoOwnedRollout({ run: undefined, artifacts: [], live }),
+    true,
+  );
+  assert.equal(hasNoOwnedRollout({ run, artifacts: result, live }), false);
+  assert.equal(
+    hasNoOwnedRollout({ run, artifacts: [], live: [{ status: "inProgress" }] }),
+    false,
+  );
+  for (const unfinished of [
+    { status: "in_progress", conclusion: null },
+    { status: "completed", conclusion: "failure" },
+  ])
+    assert.equal(
+      hasNoOwnedRollout({ run: unfinished, artifacts: [], live }),
+      false,
+    );
 });

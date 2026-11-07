@@ -69,6 +69,18 @@ export default defineConfig(({ mode }) => ({
     host: process.env.TASKNOTES_DEV_HOST ?? "127.0.0.1",
     port: Number(process.env.TASKNOTES_DEV_PORT ?? 4173),
     strictPort: true,
+    // A service on another site can't set the same-site session cookie, so LAB
+    // reaches it same-origin. Set VITE_TASKNOTES_CALENDAR_ORIGIN to this path.
+    proxy: process.env.TASKNOTES_CALENDAR_PROXY
+      ? {
+          "/calendar-service": {
+            target: process.env.TASKNOTES_CALENDAR_PROXY,
+            changeOrigin: true,
+            headers: { origin: "http://localhost:4173" },
+            rewrite: (path) => path.replace(/^\/calendar-service/, ""),
+          },
+        }
+      : undefined,
     https:
       process.env.TASKNOTES_HTTPS_KEY && process.env.TASKNOTES_HTTPS_CERT
         ? {

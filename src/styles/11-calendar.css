@@ -326,20 +326,9 @@
   color: var(--ink-muted);
 }
 
-.full-calendar-view
-  .task-calendar-event.is-recurring-next
-  .full-calendar-event-content,
-.full-calendar-view
-  .task-calendar-event.is-recurring-pattern
-  .full-calendar-event-content {
-  padding-inline-start: var(--space-xs);
-  border-inline-start: 2px solid var(--event-tone);
-}
-
-.full-calendar-view
-  .task-calendar-event.is-recurring-pattern
-  .full-calendar-event-content {
-  border-inline-start-style: dashed;
+/* Both recurring kinds carry the glyph; a pattern is drawn in full, not yet real. */
+.full-calendar-view .task-calendar-event.is-recurring-pattern {
+  border: 1px dashed var(--line-strong);
 }
 
 .full-calendar-event-properties {
@@ -621,12 +610,27 @@
   }
 
   /* Drop position while dragging a destination in the sidebar. */
-  .navigation-rail button[data-drop="before"] {
-    box-shadow: inset 0 2px 0 var(--accent);
+  .navigation-rail button[data-drop] {
+    position: relative;
   }
 
-  .navigation-rail button[data-drop="after"] {
-    box-shadow: inset 0 -2px 0 var(--accent);
+  .navigation-rail button[data-drop="before"]::before,
+  .navigation-rail button[data-drop="after"]::after {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 2px;
+    content: "";
+    background: var(--accent);
+    border-radius: var(--radius-control);
+  }
+
+  .navigation-rail button[data-drop="before"]::before {
+    top: -1px;
+  }
+
+  .navigation-rail button[data-drop="after"]::after {
+    bottom: -1px;
   }
 
   .navigation-utility {
@@ -1419,4 +1423,211 @@
 .full-calendar-view .full-calendar-reschedule:disabled {
   color: var(--ink-soft);
   cursor: default;
+}
+
+/* Google Calendar sends no colours through the service, so calendars take one
+   of these in discovery order. */
+:root {
+  --google-calendar-tone-0: oklch(55% 0.13 250);
+  --google-calendar-tone-1: oklch(55% 0.12 155);
+  --google-calendar-tone-2: oklch(58% 0.14 60);
+  --google-calendar-tone-3: oklch(55% 0.14 330);
+  --google-calendar-tone-4: oklch(55% 0.12 200);
+  --google-calendar-tone-5: oklch(52% 0.13 290);
+}
+
+/* Task chips stay quiet; a Google event fills with its calendar's tone. */
+.full-calendar-view .tnc-item.google-calendar-event {
+  background: color-mix(in srgb, var(--c), transparent 86%);
+  border-color: color-mix(in srgb, var(--c), var(--line) 72%);
+}
+
+.full-calendar-view .tnc-item.google-calendar-event:hover {
+  background: color-mix(in srgb, var(--c), transparent 76%);
+}
+
+.full-calendar-view .google-calendar-event.is-tentative {
+  opacity: 0.72;
+}
+
+.google-event-dialog {
+  position: relative;
+  display: grid;
+  gap: var(--space-lg);
+  width: min(100%, 480px);
+  max-height: calc(100dvh - 40px);
+  padding: var(--space-xl);
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 18px 52px var(--color-shadow);
+}
+
+.google-event-dialog header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.google-event-dialog h2,
+.google-event-dialog p {
+  margin: 0;
+}
+
+.google-event-dialog h2 {
+  font-size: var(--type-control);
+}
+
+.google-event-dialog small,
+.google-event-dialog p {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.google-event-dialog form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.google-event-dialog form > label,
+.google-event-times label {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.google-event-dialog form label > span {
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+
+.google-event-dialog input:not([type="checkbox"]),
+.google-event-dialog textarea,
+.google-calendar-code input {
+  width: 100%;
+  min-height: var(--control-min-size);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+}
+
+.google-event-dialog .google-event-all-day {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-min-size);
+}
+
+.google-event-times {
+  display: grid;
+  /* A date-time control needs more room than half this dialog gives it. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.google-event-dialog footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 14px;
+  margin-top: var(--space-sm);
+}
+
+.google-event-delete {
+  margin-right: auto;
+  color: var(--danger);
+}
+
+.google-calendar-settings {
+  display: grid;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.google-calendar-settings small {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.google-calendar-settings-status,
+.google-calendar-settings-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.google-calendar-settings-status div {
+  display: grid;
+}
+
+.google-calendar-settings p {
+  margin: 0;
+}
+
+.google-calendar-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-md);
+}
+
+.google-calendar-code label {
+  display: grid;
+  flex: 1 1 240px;
+  gap: var(--space-xs);
+}
+
+.google-calendar-code input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.google-calendar-choices {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.google-calendar-choices legend {
+  margin-bottom: var(--space-xs);
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+}
+
+.google-calendar-choices label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-min-size);
+}
+
+.google-calendar-choices i {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.google-calendar-choices small {
+  margin-left: auto;
+}
+
+.google-calendar-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.google-calendar-settings-actions .google-event-delete {
+  margin-right: 0;
 }

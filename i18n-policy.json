@@ -66,6 +66,7 @@
       "CDo193"
     ],
     "es": [
+      "ebIDwV",
       "pZ4VIt",
       "fHSAmz",
       "xDsmP9",
@@ -93,6 +94,7 @@
     "ru": ["pZ4VIt", "fHSAmz", "JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
     "zh": ["JE2anO", "gBtOfg", "3-s08M", "mXS2YG"],
     "it": [
+      "ebIDwV",
       "AeXO77",
       "xDsmP9",
       "i0qMbr",
@@ -108,6 +110,6 @@
     ]
   },
   "source": {
-    "include": ["src/app", "src/components", "src/i18n"]
+    "include": ["src/app", "src/components", "src/i18n", "src/calendar-service"]
   }
 }
