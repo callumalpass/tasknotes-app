@@ -75,6 +75,10 @@ msgstr "“{title}”은(는) 아직 컬렉션에 있습니다."
 msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 msgstr "\"{title}\"은(는) 반복됩니다. 이 반복 항목만 변경하면 {date} 반복 항목 노트가 만들어집니다."
 
+#: src/app/task-calendar-view.tsx
+msgid "(No title)"
+msgstr "(제목 없음)"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(저장되지 않은 변경 사항)"
@@ -88,6 +92,11 @@ msgstr "{0, plural, =1 {이미지 추가 중…} other {이미지 #개 추가 �
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {이미지를 추가했습니다} other {이미지 #개를 추가했습니다}}"
+
+#. placeholder {0}: google.omitted
+#: src/app/task-calendar-view.tsx
+msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
+msgstr "{0, plural, other {Google 일정 #개를 표시할 수 없습니다.}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -846,6 +855,7 @@ msgstr "전체"
 msgid "All conditions match"
 msgstr "모든 조건 일치"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "종일"
@@ -861,6 +871,10 @@ msgstr "모든 작업"
 #: src/app/views/view-catalog.tsx
 msgid "All views"
 msgstr "모든 뷰"
+
+#: src/calendar-service/failure-message.ts
+msgid "Allow popups for TaskNotes to sign in with Google."
+msgstr "Google로 로그인하려면 TaskNotes의 팝업을 허용하세요."
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
@@ -1037,6 +1051,7 @@ msgstr "기본 작업 공간"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
+#: src/calendar-service/event-dialog.tsx
 msgid "Calendar"
 msgstr "캘린더"
 
@@ -1054,6 +1069,7 @@ msgstr "나중에 컬렉션을 변경할 수 있나요?"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/held-edits.tsx
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
@@ -1108,6 +1124,10 @@ msgstr "모든 반복 항목의 시간 변경"
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "변경됨: "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Changes apply to this occurrence only."
+msgstr "변경 사항은 이번 일정에만 적용됩니다."
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
@@ -1256,6 +1276,7 @@ msgstr "값 지우기"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1475,9 +1496,17 @@ msgstr "컴퓨터, 볼일"
 msgid "Condition"
 msgstr "조건"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm"
+msgstr "확인"
+
 #: src/components/held-edits.tsx
 msgid "Confirm "
 msgstr "확인 "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Confirm delete"
+msgstr "삭제 확인"
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
@@ -1491,6 +1520,10 @@ msgstr "새 복구 비밀번호 확인"
 msgid "Confirm protected-version replacement"
 msgstr "보호된 버전 교체 확인"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm: delete account"
+msgstr "확인: 계정 삭제"
+
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
 msgstr "확인 중: “"
@@ -1499,7 +1532,12 @@ msgstr "확인 중: “"
 msgid "Conflicting changes"
 msgstr "충돌하는 변경 사항"
 
+#: src/calendar-service/settings.tsx
+msgid "Connect calendars"
+msgstr "캘린더 연결"
+
 #: src/app/more-screen.tsx
+#: src/calendar-service/settings.tsx
 msgid "Connected"
 msgstr "연결됨"
 
@@ -1766,6 +1804,7 @@ msgid "Defaults inferred from simple filter conditions are added when the task i
 msgstr "간단한 필터 조건에서 추론한 기본값은 작업을 만들 때 추가됩니다."
 
 #: src/app/views/view-catalog.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
 msgstr "삭제"
@@ -1773,6 +1812,10 @@ msgstr "삭제"
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
 msgstr "“{name}”을(를) 삭제할까요?"
+
+#: src/calendar-service/settings.tsx
+msgid "Delete calendar account"
+msgstr "캘린더 계정 삭제"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
@@ -1831,6 +1874,7 @@ msgstr "의존성"
 msgid "Descending"
 msgstr "내림차순"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/reminder-editor.tsx
 msgid "Description"
 msgstr "설명"
@@ -1899,6 +1943,10 @@ msgstr "복구 정보 폐기"
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "폐기하면 저장된 복구 정보가 모두 제거되고 이 컬렉션의 연결이 해제됩니다. 이미 완료되었을 수 있는 삭제는 되돌리지 않습니다."
+
+#: src/calendar-service/settings.tsx
+msgid "Disconnect calendars"
+msgstr "캘린더 연결 해제"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
@@ -2047,6 +2095,10 @@ msgstr "날짜 및 리마인더 편집"
 msgid "Edit details"
 msgstr "세부정보 편집"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Edit Google event"
+msgstr "Google 일정 수정"
+
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
 msgstr "편집 내용이 저장되지 않음"
@@ -2102,6 +2154,7 @@ msgstr "빈 작업"
 msgid "Enable strict mode"
 msgstr "엄격 모드 활성화"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/recurrence-field.tsx
 msgid "Ends"
 msgstr "종료"
@@ -2109,6 +2162,10 @@ msgstr "종료"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "CEL 표현식을 입력하세요."
+
+#: src/calendar-service/settings.tsx
+msgid "Enter the code shown in the Google window"
+msgstr "Google 창에 표시된 코드를 입력하세요"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
@@ -2216,6 +2273,10 @@ msgstr "작업을 찾으세요."
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
 msgstr "컬렉션 전체에서 작업 검색"
+
+#: src/calendar-service/settings.tsx
+msgid "Finish in the Google window."
+msgstr "Google 창에서 완료하세요."
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
@@ -2329,6 +2390,30 @@ msgstr "이동"
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
 msgstr "이동, 작업 실행 또는 작업 찾기…"
+
+#: src/calendar-service/settings.tsx
+msgid "Google Calendar"
+msgstr "Google 캘린더"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar didn’t accept this change."
+msgstr "Google 캘린더에서 이 변경 사항을 받아들이지 않았습니다."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is busy. Try again shortly."
+msgstr "Google 캘린더가 사용 중입니다. 잠시 후 다시 시도하세요."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is unavailable right now. Try again."
+msgstr "지금은 Google 캘린더를 사용할 수 없습니다. 다시 시도하세요."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google didn’t complete the authorization. Try again."
+msgstr "Google 인증이 완료되지 않았습니다. 다시 시도하세요."
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Google event"
+msgstr "Google 일정"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
@@ -2726,6 +2811,10 @@ msgstr "사용자 사람 정보 불러오는 중…"
 msgid "Loading…"
 msgstr "불러오는 중…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Location"
+msgstr "위치"
+
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
 msgstr "이 기기에서 복구 키 잠그기"
@@ -3018,6 +3107,10 @@ msgstr "이름"
 msgid "Name this view and choose its layout."
 msgstr "이 뷰의 이름과 레이아웃을 선택하세요."
 
+#: src/calendar-service/settings.tsx
+msgid "Needs reconnecting"
+msgstr "다시 연결 필요"
+
 #: src/components/expression-builder.tsx
 msgid "Nested group"
 msgstr "중첩 그룹"
@@ -3033,6 +3126,14 @@ msgstr "안 함"
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
 msgstr "새 기기는 기존 기기의 승인을 받아야 합니다. 비밀번호와 복구 키를 통한 잠금 해제는 중단됩니다. 컬렉션에서 권한 취소와 키 재설정을 적용할 때까지 이전 비밀번호와 키 자료를 가진 사람이 이전 콘텐츠를 읽을 수 있습니다."
+
+#: src/app/task-calendar-view.tsx
+msgid "New event"
+msgstr "새 일정"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "New Google event"
+msgstr "새 Google 일정"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3246,6 +3347,10 @@ msgstr "사용할 수 없음"
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
 msgstr "이 브라우저에서는 사용할 수 없음"
+
+#: src/calendar-service/settings.tsx
+msgid "Not connected"
+msgstr "연결되지 않음"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
@@ -3688,6 +3793,10 @@ msgstr "빠른 리마인더"
 msgid "Quote"
 msgstr "인용"
 
+#: src/calendar-service/settings.tsx
+msgid "Read-only"
+msgstr "읽기 전용"
+
 #: src/app/search-screen.tsx
 msgid "Recent searches"
 msgstr "최근 검색"
@@ -3699,6 +3808,10 @@ msgstr "최근에 연 항목"
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
 msgstr "인식된 작업 세부정보"
+
+#: src/calendar-service/settings.tsx
+msgid "Reconnect"
+msgstr "다시 연결"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
@@ -4088,6 +4201,7 @@ msgstr "다른 변경을 하기 전에 작업을 검토하세요."
 msgid "Review your protected edits before reloading."
 msgstr "새로고침하기 전에 보호된 편집 내용을 검토하세요."
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
 msgstr "저장"
@@ -4418,6 +4532,10 @@ msgstr "간략히 표시"
 msgid "Show future virtual occurrences."
 msgstr "향후 가상 반복 항목을 표시합니다."
 
+#: src/calendar-service/settings.tsx
+msgid "Show in the calendar"
+msgstr "캘린더에 표시"
+
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "결과 더 보기"
@@ -4447,6 +4565,22 @@ msgstr "탐색 메뉴에 표시"
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
 msgstr "각 항목 아래에 이 순서로 표시됩니다."
+
+#: src/app/task-calendar-view.tsx
+msgid "Sign in to Google Calendar in Settings to see events."
+msgstr "일정을 보려면 설정에서 Google 캘린더에 로그인하세요."
+
+#: src/calendar-service/settings.tsx
+msgid "Sign in with Google"
+msgstr "Google로 로그인"
+
+#: src/calendar-service/settings.tsx
+msgid "Sign out"
+msgstr "로그아웃"
+
+#: src/calendar-service/settings.tsx
+msgid "Signed in. Connect your calendars next."
+msgstr "로그인했습니다. 이제 캘린더를 연결하세요."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
@@ -4522,6 +4656,10 @@ msgstr "기본 뷰"
 msgid "Starting…"
 msgstr "시작 중…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Starts"
+msgstr "시작"
+
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4547,6 +4685,10 @@ msgstr "작업이 완료되면 실행 중인 타이머 중지"
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "타이머 중지"
+
+#: src/calendar-service/settings.tsx
+msgid "Stop waiting"
+msgstr "기다리기 중단"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
@@ -4787,6 +4929,10 @@ msgstr "Templates/Occurrence.md"
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
 
+#: src/calendar-service/failure-message.ts
+msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
+msgstr "이 확인 코드가 받아들여지지 않았거나 만료되었습니다. 처음부터 다시 시작해 새 코드를 받으세요."
+
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
 msgstr "비밀번호 또는 복구 키로 이 계정의 잠금을 해제하지 못했습니다. 확인한 후 다시 시도하세요."
@@ -4802,6 +4948,10 @@ msgstr "계정 복구 작업을 완료하지 못했습니다. 다시 시도하�
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "작업이 완료되었지만 계정 상태를 새로고침하지 못했습니다. 상태를 다시 확인하세요."
+
+#: src/calendar-service/failure-message.ts
+msgid "The authorization link wasn’t valid, so it wasn’t opened."
+msgstr "인증 링크가 유효하지 않아 열지 않았습니다."
 
 #: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
@@ -4835,9 +4985,17 @@ msgstr "삭제"
 msgid "the destination section"
 msgstr "대상 섹션"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "The event must end after it starts."
+msgstr "일정 종료 시간은 시작 시간보다 뒤여야 합니다."
+
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
 msgstr "첫 번째 뷰가 홈입니다. 순서와 표시 여부는 이 기기의 이 컬렉션에 저장됩니다."
+
+#: src/calendar-service/failure-message.ts
+msgid "The Google authorization expired. Try again."
+msgstr "Google 인증이 만료되었습니다. 다시 시도하세요."
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
@@ -4950,6 +5108,10 @@ msgstr "이 날짜가 패턴의 기준이 됩니다. 예정일은 작업을 다�
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "이 보드는 계산된 속성으로 그룹화되어 카드 간 열 이동이 불가능합니다."
 
+#: src/calendar-service/event-dialog.tsx
+msgid "This calendar is read-only."
+msgstr "이 캘린더는 읽기 전용입니다."
+
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "이 컬렉션에는 완료된 작업 상태가 정의되어 있지 않습니다."
@@ -4970,6 +5132,14 @@ msgstr "이 초안은 더 이상 스크래치패드에 없습니다."
 msgid "This edits the repeating task, including future occurrences."
 msgstr "향후 반복 항목을 포함해 반복 작업을 편집합니다."
 
+#: src/calendar-service/failure-message.ts
+msgid "This event changed in Google. The latest version has been loaded; review it and try again."
+msgstr "이 일정이 Google에서 변경되었습니다. 최신 버전을 불러왔으니 확인한 후 다시 시도하세요."
+
+#: src/calendar-service/failure-message.ts
+msgid "This event no longer exists in Google Calendar."
+msgstr "이 일정은 Google 캘린더에 더 이상 없습니다."
+
 #: src/components/expression-builder.tsx
 msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
 msgstr "이 필터는 고급 구문을 사용합니다. 구문을 그대로 유지하려면 여기서 편집하세요."
@@ -4989,6 +5159,10 @@ msgstr "이 Markdown에는 개요에서 표현할 수 없는 블록이 포함되
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "이 반복 항목만"
+
+#: src/calendar-service/failure-message.ts
+msgid "This period has too many events. Choose a shorter one."
+msgstr "이 기간에는 일정이 너무 많습니다. 더 짧은 기간을 선택하세요."
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
@@ -5073,6 +5247,7 @@ msgid "Timing"
 msgstr "시간 설정"
 
 #: src/app/view-editor-fields.ts
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "제목"
@@ -5451,6 +5626,10 @@ msgstr "어제"
 msgid "You can close this window."
 msgstr "이 창을 닫아도 됩니다."
 
+#: src/calendar-service/settings.tsx
+msgid "You stay signed in here until you sign out. Deleting the account removes the connection, not your Google events or tasks."
+msgstr "로그아웃할 때까지 여기에서 로그인 상태가 유지됩니다. 계정을 삭제하면 연결만 제거되며 Google 일정이나 작업은 삭제되지 않습니다."
+
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
 msgstr "오늘 할 일을 모두 마쳤습니다."
@@ -5482,6 +5661,10 @@ msgstr "이 기기에서 편집 내용을 더 이상 사용할 수 없습니다.
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "편집 내용이 저장되지 않았습니다."
+
+#: src/calendar-service/failure-message.ts
+msgid "Your Google Calendar session ended. Sign in again in Settings."
+msgstr "Google 캘린더 세션이 종료되었습니다. 설정에서 다시 로그인하세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

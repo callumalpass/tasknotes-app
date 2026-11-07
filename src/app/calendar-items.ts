@@ -1,4 +1,5 @@
 import type { CalendarItem } from "@tasknotes/calendar";
+import type { GoogleCalendar, GoogleEvent } from "../calendar-service/client";
 import { calendarItem, type CalendarEntry } from "../domain/calendar-events";
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
@@ -35,7 +36,9 @@ interface CalendarEventPresentation {
  * redraw; handlers still see the latest item passed to the calendar.
  */
 export interface CalendarEventData extends CalendarEventPresentation {
-  metadata: CalendarEventMetadata;
+  /** Task entries only; Google events carry `google` instead. */
+  metadata?: CalendarEventMetadata;
+  google?: { event: GoogleEvent; calendar: GoogleCalendar };
 }
 
 export type TaskCalendarItem = CalendarItem<CalendarEventData>;

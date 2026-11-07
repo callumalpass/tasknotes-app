@@ -75,6 +75,10 @@ msgstr "“{title}” is still in the collection."
 msgid "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 msgstr "“{title}” repeats. Changing only this occurrence creates an occurrence note for {date}."
 
+#: src/app/task-calendar-view.tsx
+msgid "(No title)"
+msgstr "(No title)"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(unsaved changes)"
@@ -88,6 +92,11 @@ msgstr "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {Image added} other {# images added}}"
+
+#. placeholder {0}: google.omitted
+#: src/app/task-calendar-view.tsx
+msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
+msgstr "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -846,6 +855,7 @@ msgstr "All"
 msgid "All conditions match"
 msgstr "All conditions match"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "All day"
@@ -861,6 +871,10 @@ msgstr "All tasks"
 #: src/app/views/view-catalog.tsx
 msgid "All views"
 msgstr "All views"
+
+#: src/calendar-service/failure-message.ts
+msgid "Allow popups for TaskNotes to sign in with Google."
+msgstr "Allow popups for TaskNotes to sign in with Google."
 
 #: src/app/view-editor-form.tsx
 msgid "Allow task creation"
@@ -1037,6 +1051,7 @@ msgstr "Built-in working spaces"
 
 #: src/app/more-screen.tsx
 #: src/app/view-editor-form.tsx
+#: src/calendar-service/event-dialog.tsx
 msgid "Calendar"
 msgstr "Calendar"
 
@@ -1054,6 +1069,7 @@ msgstr "Can I change collections later?"
 
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/held-edits.tsx
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Cancel"
@@ -1108,6 +1124,10 @@ msgstr "Change the time of every occurrence"
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "Changed: "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Changes apply to this occurrence only."
+msgstr "Changes apply to this occurrence only."
 
 #: src/components/app-update-notice.tsx
 msgid "Changes could not be saved. Keep this page open and try again."
@@ -1256,6 +1276,7 @@ msgstr "Clear value"
 
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-property-editor.tsx
 msgid "Close"
@@ -1475,9 +1496,17 @@ msgstr "Computer, Errands"
 msgid "Condition"
 msgstr "Condition"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm"
+msgstr "Confirm"
+
 #: src/components/held-edits.tsx
 msgid "Confirm "
 msgstr "Confirm "
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Confirm delete"
+msgstr "Confirm delete"
 
 #: src/app/app-shell.tsx
 msgid "Confirm discard and disconnect"
@@ -1491,6 +1520,10 @@ msgstr "Confirm new recovery password"
 msgid "Confirm protected-version replacement"
 msgstr "Confirm protected-version replacement"
 
+#: src/calendar-service/settings.tsx
+msgid "Confirm: delete account"
+msgstr "Confirm: delete account"
+
 #: src/components/task-capture.tsx
 msgid "Confirming that “"
 msgstr "Confirming that “"
@@ -1499,7 +1532,12 @@ msgstr "Confirming that “"
 msgid "Conflicting changes"
 msgstr "Conflicting changes"
 
+#: src/calendar-service/settings.tsx
+msgid "Connect calendars"
+msgstr "Connect calendars"
+
 #: src/app/more-screen.tsx
+#: src/calendar-service/settings.tsx
 msgid "Connected"
 msgstr "Connected"
 
@@ -1766,6 +1804,7 @@ msgid "Defaults inferred from simple filter conditions are added when the task i
 msgstr "Defaults inferred from simple filter conditions are added when the task is created."
 
 #: src/app/views/view-catalog.tsx
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-actions.tsx
 msgid "Delete"
 msgstr "Delete"
@@ -1773,6 +1812,10 @@ msgstr "Delete"
 #: src/app/view-editor.tsx
 msgid "Delete “{name}”?"
 msgstr "Delete “{name}”?"
+
+#: src/calendar-service/settings.tsx
+msgid "Delete calendar account"
+msgstr "Delete calendar account"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Delete item"
@@ -1831,6 +1874,7 @@ msgstr "Dependencies"
 msgid "Descending"
 msgstr "Descending"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/reminder-editor.tsx
 msgid "Description"
 msgstr "Description"
@@ -1899,6 +1943,10 @@ msgstr "Discard recovery"
 #: src/app/app-shell.tsx
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
+
+#: src/calendar-service/settings.tsx
+msgid "Disconnect calendars"
+msgstr "Disconnect calendars"
 
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
@@ -2047,6 +2095,10 @@ msgstr "Edit dates and reminders"
 msgid "Edit details"
 msgstr "Edit details"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Edit Google event"
+msgstr "Edit Google event"
+
 #: src/components/write-rejection-notice.tsx
 msgid "Edit not saved"
 msgstr "Edit not saved"
@@ -2102,6 +2154,7 @@ msgstr "empty task"
 msgid "Enable strict mode"
 msgstr "Enable strict mode"
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/recurrence-field.tsx
 msgid "Ends"
 msgstr "Ends"
@@ -2109,6 +2162,10 @@ msgstr "Ends"
 #: src/components/expression-builder.tsx
 msgid "Enter a CEL expression."
 msgstr "Enter a CEL expression."
+
+#: src/calendar-service/settings.tsx
+msgid "Enter the code shown in the Google window"
+msgstr "Enter the code shown in the Google window"
 
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
@@ -2216,6 +2273,10 @@ msgstr "Find a task."
 #: src/app/views/view-catalog.tsx
 msgid "Find tasks across your collection"
 msgstr "Find tasks across your collection"
+
+#: src/calendar-service/settings.tsx
+msgid "Finish in the Google window."
+msgstr "Finish in the Google window."
 
 #: src/app/view-editor.tsx
 msgid "Finish or close the view editor before reloading."
@@ -2329,6 +2390,30 @@ msgstr "Go to"
 #: src/components/command-palette.tsx
 msgid "Go to, run an action, or find a task…"
 msgstr "Go to, run an action, or find a task…"
+
+#: src/calendar-service/settings.tsx
+msgid "Google Calendar"
+msgstr "Google Calendar"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar didn’t accept this change."
+msgstr "Google Calendar didn’t accept this change."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is busy. Try again shortly."
+msgstr "Google Calendar is busy. Try again shortly."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar is unavailable right now. Try again."
+msgstr "Google Calendar is unavailable right now. Try again."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google didn’t complete the authorization. Try again."
+msgstr "Google didn’t complete the authorization. Try again."
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Google event"
+msgstr "Google event"
 
 #: src/components/expression-builder.tsx
 msgid "Group"
@@ -2726,6 +2811,10 @@ msgstr "Loading your person identity…"
 msgid "Loading…"
 msgstr "Loading…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Location"
+msgstr "Location"
+
 #: src/components/private-account-settings.tsx
 msgid "Lock recovery key on this device"
 msgstr "Lock recovery key on this device"
@@ -3018,6 +3107,10 @@ msgstr "Name"
 msgid "Name this view and choose its layout."
 msgstr "Name this view and choose its layout."
 
+#: src/calendar-service/settings.tsx
+msgid "Needs reconnecting"
+msgstr "Needs reconnecting"
+
 #: src/components/expression-builder.tsx
 msgid "Nested group"
 msgstr "Nested group"
@@ -3033,6 +3126,14 @@ msgstr "Never"
 #: src/components/private-account-settings.tsx
 msgid "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
 msgstr "New devices will need approval from an existing device. Password and recovery-key unlock will stop. Earlier content can remain readable to someone with the old password and bundle until collections apply the revocations and rekey."
+
+#: src/app/task-calendar-view.tsx
+msgid "New event"
+msgstr "New event"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "New Google event"
+msgstr "New Google event"
 
 #: src/app/scratchpad-screen.tsx
 msgid "New note"
@@ -3246,6 +3347,10 @@ msgstr "Not available"
 #: src/app/notification-label.ts
 msgid "Not available in this browser"
 msgstr "Not available in this browser"
+
+#: src/calendar-service/settings.tsx
+msgid "Not connected"
+msgstr "Not connected"
 
 #: src/app/more-screen.tsx
 #: src/app/views/project-property-offer.tsx
@@ -3688,6 +3793,10 @@ msgstr "Quick reminders"
 msgid "Quote"
 msgstr "Quote"
 
+#: src/calendar-service/settings.tsx
+msgid "Read-only"
+msgstr "Read-only"
+
 #: src/app/search-screen.tsx
 msgid "Recent searches"
 msgstr "Recent searches"
@@ -3699,6 +3808,10 @@ msgstr "Recently opened"
 #: src/app/scratchpad-screen.tsx
 msgid "Recognized task details"
 msgstr "Recognized task details"
+
+#: src/calendar-service/settings.tsx
+msgid "Reconnect"
+msgstr "Reconnect"
 
 #: src/app/connection-notice.ts
 msgid "Reconnecting"
@@ -4088,6 +4201,7 @@ msgstr "Review the task before making another change."
 msgid "Review your protected edits before reloading."
 msgstr "Review your protected edits before reloading."
 
+#: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
 msgstr "Save"
@@ -4418,6 +4532,10 @@ msgstr "Show fewer"
 msgid "Show future virtual occurrences."
 msgstr "Show future virtual occurrences."
 
+#: src/calendar-service/settings.tsx
+msgid "Show in the calendar"
+msgstr "Show in the calendar"
+
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "Show more results"
@@ -4447,6 +4565,22 @@ msgstr "Shown in navigation"
 #: src/app/view-editor-form.tsx
 msgid "Shown in this order below each item."
 msgstr "Shown in this order below each item."
+
+#: src/app/task-calendar-view.tsx
+msgid "Sign in to Google Calendar in Settings to see events."
+msgstr "Sign in to Google Calendar in Settings to see events."
+
+#: src/calendar-service/settings.tsx
+msgid "Sign in with Google"
+msgstr "Sign in with Google"
+
+#: src/calendar-service/settings.tsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/calendar-service/settings.tsx
+msgid "Signed in. Connect your calendars next."
+msgstr "Signed in. Connect your calendars next."
 
 #: src/app/task-screen.tsx
 msgid "Skip"
@@ -4522,6 +4656,10 @@ msgstr "Starter views"
 msgid "Starting…"
 msgstr "Starting…"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Starts"
+msgstr "Starts"
+
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4547,6 +4685,10 @@ msgstr "Stop a running timer when its task is completed"
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "Stop timer"
+
+#: src/calendar-service/settings.tsx
+msgid "Stop waiting"
+msgstr "Stop waiting"
 
 #: src/components/private-account-settings.tsx
 msgid "Strict mode"
@@ -4787,6 +4929,10 @@ msgstr "Templates/Occurrence.md"
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
 
+#: src/calendar-service/failure-message.ts
+msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
+msgstr "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
+
 #: src/components/private-account-settings.tsx
 msgid "That password or recovery key did not unlock this account. Check it and try again."
 msgstr "That password or recovery key did not unlock this account. Check it and try again."
@@ -4802,6 +4948,10 @@ msgstr "The account recovery action could not be completed. Check the connection
 #: src/components/private-account-settings.tsx
 msgid "The action finished, but account status could not be refreshed. Check status again."
 msgstr "The action finished, but account status could not be refreshed. Check status again."
+
+#: src/calendar-service/failure-message.ts
+msgid "The authorization link wasn’t valid, so it wasn’t opened."
+msgstr "The authorization link wasn’t valid, so it wasn’t opened."
 
 #: src/app/task-calendar-view.tsx
 msgid "The calendar change could not be saved. "
@@ -4835,9 +4985,17 @@ msgstr "The deletion"
 msgid "the destination section"
 msgstr "the destination section"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "The event must end after it starts."
+msgstr "The event must end after it starts."
+
 #: src/app/views/navigation-view-order.tsx
 msgid "The first view is Home. Order and visibility are saved for this collection on this device."
 msgstr "The first view is Home. Order and visibility are saved for this collection on this device."
+
+#: src/calendar-service/failure-message.ts
+msgid "The Google authorization expired. Try again."
+msgstr "The Google authorization expired. Try again."
 
 #: src/i18n/language-settings.tsx
 msgid "The language could not be loaded. Check your connection and try again."
@@ -4950,6 +5108,10 @@ msgstr "This anchors the pattern. Scheduled remains the next date you plan to do
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "This board groups by a calculated property, so cards cannot move between columns."
 
+#: src/calendar-service/event-dialog.tsx
+msgid "This calendar is read-only."
+msgstr "This calendar is read-only."
+
 #: src/app/scratchpad-screen.tsx
 msgid "This collection does not define a completed task status."
 msgstr "This collection does not define a completed task status."
@@ -4970,6 +5132,14 @@ msgstr "This draft is no longer in the scratchpad."
 msgid "This edits the repeating task, including future occurrences."
 msgstr "This edits the repeating task, including future occurrences."
 
+#: src/calendar-service/failure-message.ts
+msgid "This event changed in Google. The latest version has been loaded; review it and try again."
+msgstr "This event changed in Google. The latest version has been loaded; review it and try again."
+
+#: src/calendar-service/failure-message.ts
+msgid "This event no longer exists in Google Calendar."
+msgstr "This event no longer exists in Google Calendar."
+
 #: src/components/expression-builder.tsx
 msgid "This filter uses advanced syntax. Edit it here to preserve it exactly."
 msgstr "This filter uses advanced syntax. Edit it here to preserve it exactly."
@@ -4989,6 +5159,10 @@ msgstr "This Markdown contains blocks the outline cannot represent. It is saved;
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "This occurrence"
+
+#: src/calendar-service/failure-message.ts
+msgid "This period has too many events. Choose a shorter one."
+msgstr "This period has too many events. Choose a shorter one."
 
 #: src/app/view-editor.tsx
 msgid "This removes the saved view only. Your tasks won’t be deleted."
@@ -5073,6 +5247,7 @@ msgid "Timing"
 msgstr "Timing"
 
 #: src/app/view-editor-fields.ts
+#: src/calendar-service/event-dialog.tsx
 #: src/i18n/default-labels.ts
 msgid "Title"
 msgstr "Title"
@@ -5451,6 +5626,10 @@ msgstr "Yesterday"
 msgid "You can close this window."
 msgstr "You can close this window."
 
+#: src/calendar-service/settings.tsx
+msgid "You stay signed in here until you sign out. Deleting the account removes the connection, not your Google events or tasks."
+msgstr "You stay signed in here until you sign out. Deleting the account removes the connection, not your Google events or tasks."
+
 #: src/app/view-empty-state.tsx
 msgid "You’re done for today."
 msgstr "You’re done for today."
@@ -5482,6 +5661,10 @@ msgstr "Your edit is no longer available on this device. Discard it to load the 
 #: src/components/write-rejection-notice.tsx
 msgid "Your edit wasn't saved."
 msgstr "Your edit wasn't saved."
+
+#: src/calendar-service/failure-message.ts
+msgid "Your Google Calendar session ended. Sign in again in Settings."
+msgstr "Your Google Calendar session ended. Sign in again in Settings."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
