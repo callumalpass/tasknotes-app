@@ -16,12 +16,14 @@ import {
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import {
+  lazy,
+  type ReactNode,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { LanguageSettings } from "../i18n/language-settings";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
@@ -68,6 +70,13 @@ const sectionIcons: Record<SettingsSection, LucideIcon> = {
   behavior: ListChecks,
   about: Info,
 };
+
+const CalendarServiceSettings = import.meta.env.VITE_TASKNOTES_CALENDAR_ORIGIN
+  ? lazy(async () => ({
+      default: (await import("../calendar-service/settings"))
+        .CalendarServiceSettings,
+    }))
+  : null;
 
 export function MoreScreen({
   calendarPreferences,
@@ -735,6 +744,11 @@ function DeviceSettings({
         <h3>
           <Trans>Calendar</Trans>
         </h3>
+        {CalendarServiceSettings ? (
+          <Suspense fallback={null}>
+            <CalendarServiceSettings />
+          </Suspense>
+        ) : null}
         <CalendarPreferencesEditor
           value={calendarPreferences}
           onChange={onCalendarPreferencesChange}
