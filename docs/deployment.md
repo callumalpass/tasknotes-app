@@ -20,20 +20,30 @@ The served entry `assets/index-tasknotes-<12-hex-source>.js` identifies the buil
 The dashboard reads that entry, never main's desired SDK pin. Old content hash
 `app-BS9YgI2X.js` is explicitly unknown source, not an inferred commit.
 
-## #1223: production is initially disabled
+## #1223: qualified, permanent SDK floor remains
 
-The actual SDK pin now names beta.158, producer
-`373c4a4e78e821e45a330e156a019a7aa635cfe8`, which contains Connect
+The actual SDK pin names beta.158, producer
+`373c4a4e78e821e45a330e156a019a7aa635cfe8`, containing Connect
 `c42d004e3e4985df2cf54829c693f0e864972d2e`. TaskNotes #338 is merged.
 The publisher independently checks beta.158+ and authenticated producer ancestry;
-ops enforces the same producer floor.
+ops enforces the same permanent producer floor.
 
-`scripts/publisher/release-gates.mjs` and ops `production_enabled: false`
-independently refuse production until a normally reviewed staging report proves
-an upgraded plugin type in **Cloud copy** on this SDK/wasm, preservation of custom
-field mappings, completion/reopen, and actual exercise of the post-repin wasm
-route. Signed-out smoke does not cover those checks. Enable only through reviewed
-PRs after this evidence; there is no production dispatch override.
+Production was initially disabled in both repositories. The distinct GCP staging
+qualification at app `15d919011a5ae743618517d03a60acf4ed7fa91e` and server
+`4af641695de2e6de0d5674f715dd1eccb8d03aa6` passed: released beta.7-upgraded custom
+type in **Cloud copy**, preserved mappings and task bytes through Setup,
+mapped completion/reopen and reload with native daemon off, and actual pinned
+runtime/SQLite wasm routes. The previewed automatic type update 4→5 preserved
+every mapping; no replacement was accepted. Full cleanup is retained in
+[ops #1576](https://github.com/mdbase-dev/mdbase-cloud-ops/pull/1576) and
+`docs/deployment-reports/2026-11-07-tasknotes-web-enrollment-and-staging-hold.md`
+there. Signed-out smoke was not used as that evidence.
+
+App production admission is enabled only after this qualification; the central
+ops production flag must also be enabled through its normal reviewed PR. No UI,
+SDK, wasm, trust or mobile behavior changes with this publisher-only enablement.
+There is no dispatch override. Exact-source CI, fresh staging/smoke, production
+compatibility, production smoke and predecessor recovery remain mandatory.
 
 ## Targets, settings and identity
 

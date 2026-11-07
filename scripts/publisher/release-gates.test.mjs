@@ -6,12 +6,9 @@ import {
   assertSdkFloor,
   minimumSdkCommit,
 } from "./release-gates.mjs";
-it("production is disabled until distinct #1223 Cloud-copy/wasm staging qualification, never inferred from smoke", () => {
+it("admits production after separately retained #1223 Cloud-copy/wasm qualification", () => {
   assert.doesNotThrow(() => assertProductionEnabled("staging"));
-  assert.throws(
-    () => assertProductionEnabled("production"),
-    /production disabled/,
-  );
+  assert.doesNotThrow(() => assertProductionEnabled("production"));
 });
 it("requires actual beta.158+ pinned authenticated producer to contain the setup fix", async () => {
   const pin = { version: "0.1.0-beta.158", sourceCommit: "a".repeat(40) };
