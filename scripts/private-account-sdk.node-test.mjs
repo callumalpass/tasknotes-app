@@ -131,7 +131,7 @@ test("production dependency replaces STAGING while its original custody remains 
   assert.equal(facts.archive, "sdk-dev-eaa4e697-staging.tgz");
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
-    "file:vendor/sdk-89548fc7-production-beta160.tgz",
+    "file:vendor/sdk-b7856f3d-production-beta161.tgz",
   );
   assert.equal(
     facts.dependencies[0].file,
