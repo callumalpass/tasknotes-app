@@ -82,6 +82,7 @@ const signInRoutes = {
       transaction_id: "tx",
       polling_secret: "polling-secret",
       authorization_url: "https://accounts.google.com/o/oauth2/v2/auth?x=1",
+      expires_at: new Date(Date.now() + 600_000).toISOString(),
     },
   ],
   "POST /v1/sign-in/tx/status": (): [number, unknown] => [
@@ -184,6 +185,7 @@ describe("CalendarServiceClient", () => {
           polling_secret: "polling-secret",
           authorization_url:
             "https://accounts.google.com.evil.test/o/oauth2/v2/auth",
+          expires_at: new Date(Date.now() + 600_000).toISOString(),
         },
       ],
     });
@@ -232,6 +234,7 @@ describe("CalendarServiceClient", () => {
           transaction_id: "connect",
           polling_secret: "polling-secret",
           authorization_url: "https://accounts.google.com/o/oauth2/v2/auth",
+          expires_at: new Date(Date.now() + 600_000).toISOString(),
         },
       ],
       "POST /v1/connections/google/connect/status": () => [
@@ -589,6 +592,91 @@ describe("CalendarServiceClient on a native host", () => {
       const connections = calls.find((call) => call.path === "/v1/connections");
       expect(connections!.headers.Authorization).toBe(`Bearer ${CREDENTIAL}`);
       expect(calls.every((call) => call.credentials === "omit")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps waiting through a stalled poll and leaves the browser open", async () => {
+    vi.useFakeTimers();
+    try {
+      const storage = memoryStorage();
+      const { host, authorizationWindow } = nativeHost();
+      const failures = [
+        new DOMException("Timed out", "TimeoutError"),
+        new TypeError("Failed to fetch"),
+      ];
+      const { client, calls } = harness(
+        {
+          ...nativeRoutes,
+          "POST /v1/sign-in/tx/status": () => {
+            const failure = failures.shift();
+            if (failure) throw failure;
+            return [200, { status: "authorized" }];
+          },
+        },
+        storage,
+        host,
+      );
+      const signIn = client.signIn();
+      await vi.waitFor(async () => {
+        await vi.advanceTimersByTimeAsync(1_500);
+        expect(client.getSnapshot().awaitingCode).toBe(true);
+      });
+
+      expect(client.getSnapshot().failure).toBeNull();
+      expect(authorizationWindow.close).not.toHaveBeenCalled();
+      expect(calls.filter((call) => call.path.endsWith("/status")).length).toBe(
+        3,
+      );
+      client.submitCode("abcd1234");
+      await signIn;
+      expect(client.getSnapshot().sessionId).toBe("session-1");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops polling once the transaction's lifetime has passed", async () => {
+    vi.useFakeTimers();
+    try {
+      const { client } = harness(
+        {
+          ...nativeRoutes,
+          "POST /v1/sign-in/tx/status": () => {
+            throw new TypeError("Failed to fetch");
+          },
+        },
+        memoryStorage(),
+        nativeHost().host,
+      );
+      const signIn = client.signIn();
+      await vi.waitFor(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(client.getSnapshot().failure).toBe("authorization_expired");
+      });
+      await signIn;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not wait out a service refusal", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { client, calls } = harness(
+        {
+          ...nativeRoutes,
+          "POST /v1/sign-in/tx/status": () => [400],
+        },
+        memoryStorage(),
+        nativeHost().host,
+      );
+      await client.signIn();
+      expect(client.getSnapshot().failure).toBe("invalid_request");
+      expect(calls.filter((call) => call.path.endsWith("/status")).length).toBe(
+        1,
+      );
     } finally {
       vi.useRealTimers();
     }

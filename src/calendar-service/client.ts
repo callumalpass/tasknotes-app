@@ -54,6 +54,7 @@ const startSchema = z.object({
   transaction_id: z.string().min(1),
   polling_secret: z.string().min(1),
   authorization_url: z.url(),
+  expires_at: z.iso.datetime({ offset: true }),
 });
 const statusSchema = z.object({
   status: z.enum(["pending", "authorized", "failed", "expired"]),
@@ -356,13 +357,12 @@ export class CalendarServiceClient {
         const secret = { polling_secret: transaction.polling_secret };
         // The window's state proves nothing: Google's COOP severs a popup's
         // handle while consent is in progress. The transaction's expiry ends this.
+        const deadline = Date.parse(transaction.expires_at);
         for (;;) {
           await delay(1500, signal);
-          const { status } = await this.#request(
-            `${path}/status`,
-            statusSchema,
-            { body: secret, signal },
-          );
+          if (Date.now() > deadline)
+            throw new CalendarServiceError("authorization_expired");
+          const status = await this.#authorizationStatus(path, secret, signal);
           if (status === "authorized") break;
           if (status === "failed")
             throw new CalendarServiceError("authorization_failed");
@@ -411,6 +411,25 @@ export class CalendarServiceClient {
         if (this.#snapshot.awaitingCode) this.#publish({ awaitingCode: false });
       }
     });
+  }
+
+  /** A native WebView freezes behind the system browser, stalling requests until
+   * they time out, so only the service's own answer can end the attempt. */
+  async #authorizationStatus(
+    path: string,
+    secret: { polling_secret: string },
+    signal: AbortSignal,
+  ) {
+    try {
+      const { status } = await this.#request(`${path}/status`, statusSchema, {
+        body: secret,
+        signal,
+      });
+      return status;
+    } catch (reason) {
+      if (signal.aborted || !isTransient(reason)) throw reason;
+      return "pending";
+    }
   }
 
   #confirmationCode(signal: AbortSignal): Promise<string> {
@@ -565,6 +584,17 @@ const scheduledEventSchema = eventSchema.transform((event, context) => {
 
 function eventPath(event: GoogleEvent): string {
   return `/v1/calendars/${id.parse(event.calendar_id)}/events/${eventId.parse(event.id)}`;
+}
+
+function isTransient(reason: unknown): boolean {
+  if (reason instanceof CalendarServiceError)
+    return (
+      reason.failure === "unavailable" || reason.failure === "rate_limited"
+    );
+  return (
+    reason instanceof TypeError ||
+    (reason instanceof DOMException && reason.name === "TimeoutError")
+  );
 }
 
 function isAbort(reason: unknown): boolean {
