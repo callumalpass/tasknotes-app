@@ -153,7 +153,7 @@ test("opens the original held client without relay traffic and preserves navigat
   await page
     .getByRole("button", { name: "Open synced fixture collection" })
     .click();
-  await page.getByRole("button", { name: /^Today(,|$)/ }).click();
+  await page.getByRole("button", { name: /^Today(?: \d+)?$/ }).click();
   await expect(
     page.getByText("Task from the held client", { exact: true }),
   ).toBeVisible();

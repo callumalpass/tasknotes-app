@@ -155,7 +155,7 @@ test("French capture, accepted-write notice and task actions", async ({
   });
   await expect(dialog).toContainText("Continuer à ajouter des tâches");
   await dialog
-    .getByRole("combobox", { name: "Titre de la nouvelle tâche" })
+    .getByRole("textbox", { name: "Titre de la nouvelle tâche" })
     .fill("Une tâche française #work");
   await dialog.getByRole("button", { name: "Ajouter", exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -355,7 +355,8 @@ test("a failed locale chunk retains English, the explicit preference and a retry
 async function openNavigationItem(page: Page, name: string): Promise<void> {
   await page
     .getByRole("button", {
-      name: new RegExp(`^${name}(?:,|$)`),
+      // Sidebar names are the visible label, then its count if shown.
+      name: new RegExp(`^${name}(?: \\d+)?$`),
     })
     .click();
 }
