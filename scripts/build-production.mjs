@@ -14,6 +14,7 @@ export function productionBuildEnvironment(environment = process.env) {
     ...environment,
     VITE_TASKNOTES_ENVIRONMENT: "production",
     VITE_TASKNOTES_EDITOR_ORIGIN: "https://editor.mdbase.dev",
+    VITE_TASKNOTES_CALENDAR_ORIGIN: "https://calendar.tasknotes.dev",
   };
 }
 
