@@ -128,7 +128,7 @@ test("phone navigation and capture save without leaving the current view", async
   await trigger.tap();
   const dialog = page.getByRole("dialog", { name: "New task", exact: true });
   await dialog
-    .getByRole("combobox", { name: "New task title" })
+    .getByRole("textbox", { name: "New task title" })
     .fill("Phone capture regression");
   await dialog.getByRole("button", { name: "Add", exact: true }).tap();
   await expect(dialog).toHaveCount(0);

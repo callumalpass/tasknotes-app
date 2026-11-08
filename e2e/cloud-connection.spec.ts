@@ -298,7 +298,7 @@ test("acknowledges local capture before confirmation and prefetches actual recor
     // Phone capture closes after local acceptance. Reopening must offer an
     // empty, editable composer even while the original record awaits its ACK.
     await expect(input).toHaveCount(0);
-    await page.getByRole("button", { name: "New task", exact: true }).click();
+    await page.getByRole("button", { name: "Add task", exact: true }).click();
   }
   await expect(input).toHaveValue("");
   await expect(input).toBeEditable();

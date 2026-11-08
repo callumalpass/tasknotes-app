@@ -51,7 +51,7 @@ it("opens Notes directly without revealing unrelated capture sections", async ()
       createTask={vi.fn()}
     />,
   );
-  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "New task title" }), {
     target: { value: "Draft with context" },
   });
   const notes = await screen.findByRole("button", {
@@ -80,7 +80,7 @@ it("shows every shorthand kind only while an empty capture is focused", () => {
       createTask={vi.fn()}
     />,
   );
-  const input = screen.getByRole("combobox", { name: "New task title" });
+  const input = screen.getByRole("textbox", { name: "New task title" });
   expect(screen.queryByRole("button", { name: "Priority" })).toBeNull();
   fireEvent.focus(input);
   expect(screen.getByText(/Try tomorrow/)).toHaveTextContent(
@@ -113,7 +113,7 @@ it("keeps empty capture guidance in place until an outside pointer action finish
       <button onClick={activate}>Outside action</button>
     </>,
   );
-  const input = screen.getByRole("combobox", { name: "New task title" });
+  const input = screen.getByRole("textbox", { name: "New task title" });
   const outside = screen.getByRole("button", { name: "Outside action" });
   fireEvent.focus(input);
   fireEvent.pointerDown(outside);
@@ -142,7 +142,7 @@ it.each(["priority", "status"] as const)(
       configuration.priorities = choices as typeof configuration.priorities;
     else configuration.statuses = choices as typeof configuration.statuses;
     render(<TaskCapture configuration={configuration} createTask={vi.fn()} />);
-    const input = screen.getByRole("combobox", { name: "New task title" });
+    const input = screen.getByRole("textbox", { name: "New task title" });
     fireEvent.focus(input);
     fireEvent.click(
       screen.getByRole("button", {
@@ -165,7 +165,7 @@ it("caps capture at five lines, adapts to a constrained viewport and reveals the
         createTask={vi.fn()}
       />,
     );
-    const input = screen.getByRole("combobox", {
+    const input = screen.getByRole("textbox", {
       name: "New task title",
     }) as HTMLTextAreaElement;
     Object.defineProperties(input, {

@@ -76,7 +76,7 @@ test("Escape hands the keyboard back from Search and keeps a capture draft", asy
   page,
 }) => {
   await page.goto("?demo=60");
-  const capture = page.getByRole("combobox", { name: "New task title" });
+  const capture = page.getByRole("textbox", { name: "New task title" });
   await capture.fill("Half a thought");
   await capture.press("Escape");
   await expect(capture).not.toBeFocused();

@@ -884,7 +884,7 @@ it("loads the complete manual-order scope before appending a captured task", asy
   }));
   renderListView(repository, view);
   await screen.findByText(/Loaded 1 of 2 matching tasks/);
-  fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "New task title" }), {
     target: { value: "New last task" },
   });
   await waitFor(() =>

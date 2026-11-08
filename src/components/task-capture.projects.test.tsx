@@ -145,13 +145,15 @@ it.each(["#", "@", "+"])(
         completeField={complete}
       />,
     );
-    const input = screen.getByRole("combobox", { name: "New task title" });
+    const input = screen.getByRole("textbox", { name: "New task title" });
     const text = `Call Rowan ${trigger}`;
     fireEvent.change(input, {
       target: { value: text, selectionStart: text.length },
     });
     const first = await screen.findByRole("option", { name: "First" });
-    expect(input).toHaveAttribute("aria-expanded", "true");
+    // A textarea may not take role="combobox"; the textbox points at its
+    // open list instead (aria-expanded is not valid on a textbox).
+    expect(input).not.toHaveAttribute("aria-expanded");
     expect(input).toHaveAttribute("aria-controls", first.parentElement!.id);
     expect(first).toHaveAttribute("aria-selected", "true");
     fireEvent.keyDown(input, { key: "ArrowDown" });
@@ -161,7 +163,7 @@ it.each(["#", "@", "+"])(
     expect(first).toHaveAttribute("aria-selected", "true");
     fireEvent.keyDown(input, { key: "Tab" });
     expect(input).toHaveValue(`${text}first `);
-    expect(input).toHaveAttribute("aria-expanded", "false");
+    expect(input).not.toHaveAttribute("aria-controls");
     expect(create).not.toHaveBeenCalled();
   },
 );
@@ -185,7 +187,7 @@ it("lists a collection's priorities by label and rank, however many there are", 
       completeField={complete}
     />,
   );
-  const input = screen.getByRole("combobox", { name: "New task title" });
+  const input = screen.getByRole("textbox", { name: "New task title" });
   fireEvent.change(input, {
     target: { value: "Call Rowan !", selectionStart: 12 },
   });

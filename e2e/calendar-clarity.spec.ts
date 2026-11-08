@@ -92,7 +92,7 @@ test("an empty agenda day creates a saved task on that day", async ({
   const capture = isMobile
     ? page.getByRole("dialog", { name: "New task" })
     : page.locator(".view-detail > .capture-composer");
-  const input = capture.getByRole("combobox", { name: "New task title" });
+  const input = capture.getByRole("textbox", { name: "New task title" });
   await expect(input).toBeFocused();
   await input.fill("Empty day capture regression");
   if (isMobile)

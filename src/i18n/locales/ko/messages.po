@@ -3564,7 +3564,6 @@ msgstr "새 하위 작업"
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
 msgstr "새 작업"

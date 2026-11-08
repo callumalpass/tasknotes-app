@@ -75,7 +75,7 @@ test("nested Escape preserves capture and dismissing preserves its draft", async
   await page.goto("?demo=50");
   await page.locator(".view-context-capture").click();
   const dialog = page.getByRole("dialog", { name: "New task" });
-  const input = dialog.getByRole("combobox", { name: "New task title" });
+  const input = dialog.getByRole("textbox", { name: "New task title" });
   await input.fill("Important task #wo");
   await expect(
     page.getByRole("listbox", { name: "Task field suggestions" }),

@@ -14,7 +14,7 @@ async function openCapture(page: import("@playwright/test").Page) {
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "New task", exact: true });
   await expect(
-    dialog.getByRole("combobox", { name: "New task title" }),
+    dialog.getByRole("textbox", { name: "New task title" }),
   ).toBeFocused();
   return dialog;
 }
@@ -29,7 +29,7 @@ test("capture parsing, priority and nested keyboard completion", async ({
   );
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
-  const input = dialog.getByRole("combobox", { name: "New task title" });
+  const input = dialog.getByRole("textbox", { name: "New task title" });
   await input.fill("Call Rowan tomorrow 3pm #work every week !high");
   await expect(dialog.locator(".capture-title-preview")).toHaveText(
     "Task: Call Rowan",
@@ -79,8 +79,10 @@ test("Enter captures without navigation and Undo removes that task through the n
 }) => {
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
-  await dialog.getByRole("combobox").fill("Capture to undo !high");
-  await dialog.getByRole("combobox").press("Enter");
+  await dialog
+    .getByRole("textbox", { name: "New task title" })
+    .fill("Capture to undo !high");
+  await dialog.getByRole("textbox", { name: "New task title" }).press("Enter");
   await expect(dialog).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),
@@ -108,7 +110,7 @@ test("Enter captures without navigation and Undo removes that task through the n
 test("keep adding retains focus", async ({ page }) => {
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
-  const input = dialog.getByRole("combobox");
+  const input = dialog.getByRole("textbox", { name: "New task title" });
   await dialog.getByRole("checkbox", { name: "Keep adding tasks" }).check();
   await input.fill("First quick task p2");
   await input.press("Enter");
@@ -127,24 +129,30 @@ test("inline Today and Project capture share priority parsing", async ({
   );
   await page.goto("?demo=60");
   const inline = page.locator(".view-detail > .capture-composer");
-  await inline.getByRole("combobox").fill("Today inline !high");
+  await inline
+    .getByRole("textbox", { name: "New task title" })
+    .fill("Today inline !high");
   await expect(
     inline.getByRole("button", { name: "Edit High", exact: true }),
   ).toBeVisible();
-  await inline.getByRole("combobox").press("Enter");
-  await expect(inline.getByRole("combobox")).toHaveValue("");
+  await inline.getByRole("textbox", { name: "New task title" }).press("Enter");
+  await expect(
+    inline.getByRole("textbox", { name: "New task title" }),
+  ).toHaveValue("");
   await page.getByRole("button", { name: "Projects", exact: true }).click();
   await page
     .getByRole("button", { name: "Add task to Field research" })
     .click();
-  await inline.getByRole("combobox").fill("Project inline !high");
+  await inline
+    .getByRole("textbox", { name: "New task title" })
+    .fill("Project inline !high");
   await expect(
     inline.getByRole("button", { name: "Edit +Field research", exact: true }),
   ).toBeVisible();
   await expect(
     inline.getByRole("button", { name: "Edit High", exact: true }),
   ).toBeVisible();
-  await inline.getByRole("combobox").press("Enter");
+  await inline.getByRole("textbox", { name: "New task title" }).press("Enter");
   await expect(
     page.getByRole("button", { name: "Project inline", exact: true }),
   ).toBeVisible();
@@ -155,7 +163,7 @@ test("capture names a two-week repeat and Discard keeps the caret", async ({
 }) => {
   await page.goto("?demo=60");
   const dialog = await openCapture(page);
-  const input = dialog.getByRole("combobox", { name: "New task title" });
+  const input = dialog.getByRole("textbox", { name: "New task title" });
   await input.fill("Pay supplier next tuesday every 2 weeks");
   await expect(dialog.locator(".capture-interpretation")).toContainText(
     "Every 2 weeks",

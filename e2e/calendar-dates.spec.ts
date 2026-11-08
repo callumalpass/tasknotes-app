@@ -13,7 +13,7 @@ test.beforeEach(async ({ page, isMobile }) => {
 async function capture(page: Page, text: string) {
   if ((page.viewportSize()?.width ?? 0) < 840)
     await page.locator(".view-context-capture").click();
-  const input = page.getByRole("combobox", { name: "New task title" });
+  const input = page.getByRole("textbox", { name: "New task title" });
   await input.fill(text);
   await expect(
     page.getByRole("button", { name: "Remove scheduled" }),

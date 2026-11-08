@@ -88,7 +88,7 @@ test("overlapping Week and Day tasks stay readable, openable and draggable", asy
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(upcoming);
   for (const title of ["Overlap alpha", "Overlap bravo", "Overlap charlie"]) {
-    const input = page.getByRole("combobox", { name: "New task title" });
+    const input = page.getByRole("textbox", { name: "New task title" });
     await input.fill(`${title} tomorrow 9am`);
     await input.press("Enter");
     await expect(input).toHaveValue("");
@@ -173,7 +173,7 @@ test("one to five simultaneous tasks keep readable titles and keyboard access", 
       await page.getByLabel("Calendar layout", { exact: true }).click();
       await page.getByRole("button", { name: "Agenda", exact: true }).click();
     }
-    const input = page.getByRole("combobox", { name: "New task title" });
+    const input = page.getByRole("textbox", { name: "New task title" });
     await input.fill(
       `${titles[count - 1]} tomorrow 1pm ${count === 1 ? "45m" : count === 5 ? "30m" : "60m"}`,
     );
@@ -361,7 +361,7 @@ for (const width of [1440, 390]) {
       path: test.info().outputPath(`agenda-add-focus-${width}.png`),
     });
     await page.keyboard.press("Enter");
-    const input = page.getByRole("combobox", { name: "New task title" });
+    const input = page.getByRole("textbox", { name: "New task title" });
     await expect(input).toBeFocused();
     await input.fill("Keyboard agenda addition");
     await input.press("Enter");
