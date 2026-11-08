@@ -10,6 +10,7 @@ import {
   authenticateProduction,
   stagingArchive,
   publicBytes,
+  archiveBytes,
 } from "./authentication.mjs";
 import { assertSdkFloor } from "./release-gates.mjs";
 import { originalOfflineRuntime } from "../lib/native-offline-shell.mjs";
@@ -132,7 +133,7 @@ export async function compareInstalled(
   const spaces = [{ path: ".", pkg: await json(join(root, "package.json")) }];
   for (const archive of Object.values(archives)) {
     const bytes = archive.path.startsWith("https:")
-      ? await publicBytes(archive.path, fetchImpl)
+      ? await archiveBytes(archive.path, fetchImpl)
       : await regular(root, archive.path);
     assert.equal(hash(bytes), archive.sha256, "comparison archive changed");
     const members = originalMembers(bytes),

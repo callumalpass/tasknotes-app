@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { publicBytes } from "./authentication.mjs";
+import { archiveBytes } from "./authentication.mjs";
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export async function prepareInstall(
   plan,
@@ -13,7 +13,7 @@ export async function prepareInstall(
   if (plan.target === "production") return;
   if (plan.target !== "staging") throw Error("Unknown install target");
   const original = plan.sdkTrust.archives.sdk,
-    bytes = await publicBytes(original.path, fetchImpl);
+    bytes = await archiveBytes(original.path, fetchImpl);
   if (hash(bytes) !== original.sha256) throw Error("Staging original changed");
   const path = join(root, "package.json"),
     pkg = JSON.parse(await readFile(path, "utf8"));

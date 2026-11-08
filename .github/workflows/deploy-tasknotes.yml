@@ -128,6 +128,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/tasknotes-build"
           node ../publisher/scripts/publisher/publisher.mjs guard > "$RUNNER_TEMP/tasknotes-build/plan.json"
       - run: node ../publisher/scripts/publisher/install-inputs.mjs "$RUNNER_TEMP/tasknotes-build/plan.json"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
         with:
           # Workspace root has only publisher/ and candidate/, no package.json.
@@ -135,6 +137,8 @@ jobs:
           run_install: false
       - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
       - name: ALL installed original members, then unprivileged build once
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node ../publisher/scripts/publisher/build.mjs "$RUNNER_TEMP/tasknotes-build"
       - run: node ../publisher/scripts/publisher/envelope.mjs "$RUNNER_TEMP/tasknotes-build"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -211,7 +215,7 @@ jobs:
           node-version: 22
         timeout-minutes: 2
       - name: Workflow-owned guard; candidate is data only
-        timeout-minutes: 4
+        timeout-minutes: 7
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |

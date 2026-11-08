@@ -16,18 +16,16 @@ const retryable = (status) =>
 export async function publicBytes(
   url,
   fetchImpl = fetch,
-  delays = [5000, 20000],
+  delays = [5000, 20000, 60000, 120000],
+  headers = {},
 ) {
   for (const delay of [...delays, null]) {
     let status = "no response";
     try {
-      const token = url.startsWith("https://api.github.com/")
-        ? process.env.GITHUB_TOKEN
-        : undefined;
       const response = await fetchImpl(url, {
-        redirect: token ? "error" : "follow",
+        redirect: "follow",
         signal: AbortSignal.timeout(30000),
-        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+        headers,
       });
       if (response.ok) return Buffer.from(await response.arrayBuffer());
       status = response.status;
@@ -39,6 +37,62 @@ export async function publicBytes(
     need(delay !== null, `public artifact unavailable (${status})`);
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
+}
+function releaseAsset(release, tag, name) {
+  const matches = release.assets?.filter((asset) => asset.name === name) ?? [];
+  need(
+    matches.length === 1 &&
+      /^sha256:[a-f0-9]{64}$/.test(matches[0].digest ?? ""),
+    "release asset digest required",
+  );
+  need(
+    matches[0].browser_download_url ===
+      `https://github.com/${repository}/releases/download/${tag}/${name}`,
+    "release asset URL mismatch",
+  );
+  return matches[0];
+}
+async function assetBytes(asset, fetchImpl, token) {
+  if (!token) return publicBytes(asset.browser_download_url, fetchImpl);
+  need(
+    Number.isSafeInteger(asset.id) && asset.id > 0,
+    "release asset URL mismatch",
+  );
+  return publicBytes(
+    `https://api.github.com/repos/${repository}/releases/assets/${asset.id}`,
+    fetchImpl,
+    undefined,
+    { accept: "application/octet-stream", authorization: `Bearer ${token}` },
+  );
+}
+export async function archiveBytes(
+  url,
+  fetchImpl = fetch,
+  token = process.env.GITHUB_TOKEN,
+) {
+  const prefix = `https://github.com/${repository}/releases/download/`;
+  if (!token || !url.startsWith(prefix)) return publicBytes(url, fetchImpl);
+  const match =
+    /^(sdk-v[\w.-]+)\/(sdk-staging\.tgz(?:\.sigstore\.json)?)$/.exec(
+      url.slice(prefix.length),
+    );
+  need(match, "release asset URL mismatch");
+  const [, tag, name] = match;
+  const release = JSON.parse(
+    await publicBytes(
+      `https://api.github.com/repos/${repository}/releases/tags/${tag}`,
+      fetchImpl,
+      undefined,
+      { authorization: `Bearer ${token}` },
+    ),
+  );
+  need(
+    release.tag_name === tag &&
+      release.prerelease === true &&
+      release.draft === false,
+    "exact SDK prerelease required",
+  );
+  return assetBytes(releaseAsset(release, tag, name), fetchImpl, token);
 }
 export async function authenticateProduction(
   pin,
@@ -74,13 +128,20 @@ export async function authenticateProduction(
 }
 export async function stagingArchive(
   pin,
-  { fetchImpl = fetch, run = execFileSync } = {},
+  {
+    fetchImpl = fetch,
+    run = execFileSync,
+    token = process.env.GITHUB_TOKEN,
+  } = {},
 ) {
   const tag = `sdk-v${pin.version}`;
+  const api = token ? { authorization: `Bearer ${token}` } : {};
   const release = JSON.parse(
     await publicBytes(
       `https://api.github.com/repos/${repository}/releases/tags/${tag}`,
       fetchImpl,
+      undefined,
+      api,
     ),
   );
   need(
@@ -89,24 +150,10 @@ export async function stagingArchive(
       release.draft === false,
     "exact SDK prerelease required",
   );
-  const asset = (name) => {
-    const matches = release.assets?.filter((a) => a.name === name) ?? [];
-    need(
-      matches.length === 1 &&
-        /^sha256:[a-f0-9]{64}$/.test(matches[0].digest ?? ""),
-      "release asset digest required",
-    );
-    need(
-      matches[0].browser_download_url ===
-        `https://github.com/${repository}/releases/download/${tag}/${name}`,
-      "release asset URL mismatch",
-    );
-    return matches[0];
-  };
-  const archive = asset("sdk-staging.tgz"),
-    bundle = asset("sdk-staging.tgz.sigstore.json");
+  const archive = releaseAsset(release, tag, "sdk-staging.tgz"),
+    bundle = releaseAsset(release, tag, "sdk-staging.tgz.sigstore.json");
   const download = async (a) => {
-    const bytes = await publicBytes(a.browser_download_url, fetchImpl);
+    const bytes = await assetBytes(a, fetchImpl, token);
     need(
       "sha256:" + createHash("sha256").update(bytes).digest("hex") === a.digest,
       "staging release archive/bundle digest mismatch",

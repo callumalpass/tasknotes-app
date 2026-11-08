@@ -8,6 +8,7 @@ const root = process.cwd(),
   output = process.argv[2];
 const plan = JSON.parse(await readFile(join(output, "plan.json"), "utf8"));
 await compareInstalled(root, plan.sdkTrust.archives);
+delete process.env.GITHUB_TOKEN;
 const { buildCandidate } = await import(
   pathToFileURL(join(root, "scripts/publisher/candidate-build.mjs")).href
 );
