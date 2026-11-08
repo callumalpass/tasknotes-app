@@ -18,6 +18,9 @@ def hasReleaseSigning = [
 android {
     namespace = "dev.tasknotes.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Only the test APK selects release instrumentation. The application is
+    // unchanged, non-debuggable, and signed with the existing release identity.
+    testBuildType = System.getenv('TASKNOTES_ANDROID_TEST_BUILD_TYPE') ?: 'debug'
     defaultConfig {
         applicationId tasknotesApplicationId ?: "dev.tasknotes.app"
         minSdkVersion rootProject.ext.minSdkVersion
