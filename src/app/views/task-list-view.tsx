@@ -849,7 +849,7 @@ function ManualTaskRows({
         )}
       </div>
       {manualOrder && grouped && !canMoveAcrossLanes ? (
-        <p className="view-note">
+        <p className="view-note view-footnote">
           <Trans>
             These sections are calculated, so tasks can only be reordered within
             them.

@@ -514,7 +514,7 @@
 .kanban-card.is-movable:focus-visible {
   z-index: 1;
   outline: 0;
-  box-shadow: inset 0 -1px var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--ink-muted);
 }
 
 .kanban-drag-preview {
@@ -672,6 +672,13 @@
   margin: -8px 0 18px;
   color: var(--ink-muted);
   font-size: var(--type-supporting);
+}
+
+/* Follows the last section, so it needs clear separation from task rows. */
+.view-note.view-footnote {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--line);
 }
 
 .mini-calendar-toolbar {

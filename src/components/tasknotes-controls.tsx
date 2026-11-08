@@ -74,38 +74,15 @@ export function TaskNotesSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
-  useLayoutEffect(() => {
-    if (!open) return;
-    const position = () => {
-      const popover = popoverRef.current;
-      const trigger = triggerRef.current;
-      const list = popover?.querySelector<HTMLElement>(
-        ".tasknotes-option-list",
-      );
-      if (!popover || !trigger || !list) return;
-      popover.style.removeProperty("top");
-      popover.style.removeProperty("bottom");
-      list.style.removeProperty("max-height");
-      if (window.innerWidth < 840) return;
-      const bounds = trigger.getBoundingClientRect();
-      const below = window.innerHeight - bounds.bottom - 14;
-      const above = bounds.top - 14;
-      const flipped = below < popover.offsetHeight && above > below;
-      const available = flipped ? above : below;
-      if (flipped) {
-        popover.style.top = "auto";
-        popover.style.bottom = "calc(100% + 6px)";
-      }
-      const chrome = popover.offsetHeight - list.offsetHeight;
-      list.style.maxHeight = `${Math.max(44, Math.min(308, available - chrome))}px`;
-      list
-        .querySelector<HTMLElement>(".is-active")
-        ?.scrollIntoView?.({ block: "nearest" });
-    };
-    position();
-    window.addEventListener("resize", position);
-    return () => window.removeEventListener("resize", position);
-  }, [open, present]);
+  useAnchoredPopover({
+    open,
+    present,
+    anchorRef: triggerRef,
+    popoverRef,
+    scrollSelector: ".tasknotes-option-list",
+    maxScrollHeight: 308,
+    sheetOnPhone: true,
+  });
   const selectedIndex = options.findIndex((option) => option.value === value);
   const [activeIndex, setActiveIndex] = useState(
     Math.max(selectedIndex, firstEnabledIndex(options)),
@@ -318,6 +295,7 @@ export function TaskNotesCombobox({
   const { t } = useLingui();
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { open, rootRef, setOpen } = useDismissablePopover(inputRef);
   const filtered = useMemo(() => {
     const query = value.trim().toLocaleLowerCase();
@@ -326,6 +304,12 @@ export function TaskNotesCombobox({
       `${option.label}\n${option.value}`.toLocaleLowerCase().includes(query),
     );
   }, [options, value]);
+  useAnchoredPopover({
+    open: open && filtered.length > 0,
+    present: filtered.length,
+    anchorRef: inputRef,
+    popoverRef,
+  });
   const displayValue =
     !open && value
       ? (options.find((option) => option.value === value)?.label ?? value)
@@ -394,6 +378,7 @@ export function TaskNotesCombobox({
           aria-label={t`${ariaLabel} suggestions`}
           className="tasknotes-popover tasknotes-combobox-popover"
           id={`${id}-options`}
+          ref={popoverRef}
           role="listbox"
         >
           {filtered.map((option, index) => (
@@ -510,7 +495,15 @@ export function TaskNotesDatePicker({
 }) {
   const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  useAnchoredPopover({
+    open,
+    present,
+    anchorRef: triggerRef,
+    popoverRef,
+    sheetOnPhone: true,
+  });
   const selected = parseDateValue(value);
   const today = startOfDay(new Date());
   const [visibleMonth, setVisibleMonth] = useState(() =>
@@ -582,6 +575,7 @@ export function TaskNotesDatePicker({
           <div
             aria-label={t`${accessibleName} calendar`}
             className="tasknotes-popover tasknotes-calendar-popover"
+            ref={popoverRef}
             data-state={open ? "open" : "closed"}
             inert={!open}
             role="dialog"
@@ -828,7 +822,16 @@ export function TaskNotesTimePicker({
 }) {
   const { t } = useLingui();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { open, present, rootRef, setOpen } = useDismissablePopover(triggerRef);
+  useAnchoredPopover({
+    open,
+    present,
+    anchorRef: triggerRef,
+    popoverRef,
+    align: "end",
+    sheetOnPhone: true,
+  });
   const parsed = parseTimeValue(value);
   const now = new Date();
   const [hour, setHour] = useState(parsed?.hour ?? now.getHours());
@@ -901,6 +904,7 @@ export function TaskNotesTimePicker({
           <div
             aria-label={ariaLabel}
             className="tasknotes-popover tasknotes-time-popover"
+            ref={popoverRef}
             data-state={open ? "open" : "closed"}
             inert={!open}
             role="dialog"
@@ -1043,6 +1047,200 @@ function TimeColumn({
       </div>
     </div>
   );
+}
+
+const POPOVER_GAP = 6;
+const POPOVER_MARGIN = 12;
+const ANCHORED_PROPERTIES = [
+  "position",
+  "top",
+  "right",
+  "bottom",
+  "left",
+  "max-height",
+  "overflow-y",
+  "transform-origin",
+  "--anchor-width",
+] as const;
+
+/**
+ * Pins a popover to its anchor in viewport coordinates, so a scrolling or
+ * clipped ancestor such as a modal body never crops it. The popover opens
+ * below the anchor, flips above when that side has more room, and stays
+ * inside the visual viewport. Phone sheets keep their stylesheet placement.
+ */
+function useAnchoredPopover({
+  open,
+  present,
+  anchorRef,
+  popoverRef,
+  align = "start",
+  scrollSelector,
+  maxScrollHeight = Infinity,
+  sheetOnPhone = false,
+}: {
+  open: boolean;
+  present: unknown;
+  anchorRef: RefObject<HTMLElement | null>;
+  popoverRef: RefObject<HTMLElement | null>;
+  align?: "start" | "end";
+  scrollSelector?: string;
+  maxScrollHeight?: number;
+  sheetOnPhone?: boolean;
+}) {
+  useLayoutEffect(() => {
+    const popover = popoverRef.current;
+    const anchor = anchorRef.current;
+    if (!open || !popover || !anchor) return;
+    const scroller = scrollSelector
+      ? popover.querySelector<HTMLElement>(scrollSelector)
+      : null;
+    let positioning = false;
+    const position = () => {
+      if (positioning) return;
+      positioning = true;
+      for (const property of ANCHORED_PROPERTIES)
+        popover.style.removeProperty(property);
+      scroller?.style.removeProperty("max-height");
+      try {
+        if (sheetOnPhone && window.innerWidth < 840) return;
+        const viewport = window.visualViewport;
+        const viewLeft = viewport?.offsetLeft ?? 0;
+        const viewTop = viewport?.offsetTop ?? 0;
+        const viewWidth = viewport?.width ?? window.innerWidth;
+        const viewHeight = viewport?.height ?? window.innerHeight;
+        const bounds = anchor.getBoundingClientRect();
+        popover.style.setProperty(
+          "--anchor-width",
+          `${Math.min(bounds.width, viewWidth - 2 * POPOVER_MARGIN)}px`,
+        );
+        popover.style.position = "fixed";
+        popover.style.top = "0px";
+        popover.style.right = "auto";
+        popover.style.bottom = "auto";
+        popover.style.left = "0px";
+        const below =
+          viewTop + viewHeight - bounds.bottom - POPOVER_GAP - POPOVER_MARGIN;
+        const above = bounds.top - viewTop - POPOVER_GAP - POPOVER_MARGIN;
+        const natural = popover.offsetHeight;
+        const flipped = natural > below && above > below;
+        const available = Math.max(0, flipped ? above : below);
+        // A list can shrink to the room beside its anchor. Fixed-content
+        // panels (calendar, time) instead slide along the viewport, covering
+        // the anchor rather than hiding their own actions.
+        const sliding = !scroller && natural > available;
+        if (scroller && natural > available) {
+          const chrome = natural - scroller.offsetHeight;
+          scroller.style.maxHeight = `${Math.max(44, Math.min(maxScrollHeight, available - chrome))}px`;
+        } else if (scroller && Number.isFinite(maxScrollHeight)) {
+          scroller.style.maxHeight = `${maxScrollHeight}px`;
+        }
+        const room = sliding ? viewHeight - 2 * POPOVER_MARGIN : available;
+        if (popover.offsetHeight > room) {
+          popover.style.maxHeight = `${Math.max(88, room)}px`;
+          popover.style.overflowY = "auto";
+        }
+        const width = popover.offsetWidth;
+        const height = popover.offsetHeight;
+        const preferredLeft =
+          align === "end" ? bounds.right - width : bounds.left;
+        const left = Math.max(
+          viewLeft + POPOVER_MARGIN,
+          Math.min(
+            preferredLeft,
+            viewLeft + viewWidth - width - POPOVER_MARGIN,
+          ),
+        );
+        const top = sliding
+          ? Math.max(
+              viewTop + POPOVER_MARGIN,
+              Math.min(
+                bounds.bottom + POPOVER_GAP,
+                viewTop + viewHeight - POPOVER_MARGIN - height,
+              ),
+            )
+          : flipped
+            ? bounds.top - POPOVER_GAP - height
+            : bounds.bottom + POPOVER_GAP;
+        // A transformed or contained ancestor becomes the containing block
+        // for fixed elements; offset from it instead of the viewport.
+        const origin = fixedContainingBlockOrigin(popover);
+        popover.style.left = `${left - origin.left}px`;
+        popover.style.top = `${top - origin.top}px`;
+        popover.style.transformOrigin = `${flipped && !sliding ? "bottom" : "top"} ${align === "end" ? "right" : "left"}`;
+      } finally {
+        positioning = false;
+      }
+    };
+    position();
+    scroller
+      ?.querySelector<HTMLElement>(".is-active")
+      ?.scrollIntoView?.({ block: "nearest" });
+    const frame = { id: 0 };
+    const schedule = (event?: Event) => {
+      if (event?.type === "scroll" && popover.contains(event.target as Node))
+        return;
+      window.cancelAnimationFrame(frame.id);
+      frame.id = window.requestAnimationFrame(position);
+    };
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, {
+      capture: true,
+      passive: true,
+    });
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("scroll", schedule);
+    const observer =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => schedule())
+        : undefined;
+    observer?.observe(anchor);
+    for (const child of popover.children) observer?.observe(child);
+    return () => {
+      window.cancelAnimationFrame(frame.id);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, { capture: true });
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("scroll", schedule);
+      observer?.disconnect();
+    };
+  }, [
+    open,
+    present,
+    anchorRef,
+    popoverRef,
+    align,
+    scrollSelector,
+    maxScrollHeight,
+    sheetOnPhone,
+  ]);
+}
+
+function fixedContainingBlockOrigin(element: HTMLElement): {
+  left: number;
+  top: number;
+} {
+  for (
+    let ancestor = element.parentElement;
+    ancestor && ancestor !== document.documentElement;
+    ancestor = ancestor.parentElement
+  ) {
+    const style = getComputedStyle(ancestor);
+    if (
+      (style.transform && style.transform !== "none") ||
+      (style.filter && style.filter !== "none") ||
+      (style.perspective && style.perspective !== "none") ||
+      /paint|layout|strict|content/.test(style.contain ?? "") ||
+      /transform|filter|perspective/.test(style.willChange ?? "")
+    ) {
+      const bounds = ancestor.getBoundingClientRect();
+      return {
+        left: bounds.left + ancestor.clientLeft,
+        top: bounds.top + ancestor.clientTop,
+      };
+    }
+  }
+  return { left: 0, top: 0 };
 }
 
 function PopoverScrim({
