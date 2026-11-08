@@ -12,6 +12,8 @@ import {
   Ellipsis,
   FilePenLine,
   Library,
+  Link2,
+  Import,
   Plus,
   Search,
   Settings,
@@ -124,6 +126,7 @@ import type { OperationalError } from "../application/operational-error";
 
 export function AppShell() {
   const { t } = useLingui();
+  const localScopeDescriptionId = useId();
   const keyboardOccluded = useKeyboardOcclusion();
   const todayCounts = useTodayTaskCounts();
   const navigationCounts = useNavigationTaskCounts();
@@ -450,18 +453,29 @@ export function AppShell() {
           />
         ) : localCollection?.active ? (
           <div className="local-collection-control">
-            <p>
+            <p id={localScopeDescriptionId}>
               <Trans>
                 Saved in this browser. Clearing browser data removes local
                 tasks.
               </Trans>
             </p>
             <button
-              className="secondary-action"
+              className="secondary-action local-collection-connect"
               type="button"
+              aria-label={t`Connect collection`}
+              aria-describedby={localScopeDescriptionId}
+              title={t`Connect collection`}
               onClick={changeCollection}
             >
-              <Trans>Connect collection</Trans>
+              <Link2
+                className="local-collection-connect-icon"
+                aria-hidden="true"
+                size={20}
+                strokeWidth={1.8}
+              />
+              <span>
+                <Trans>Connect collection</Trans>
+              </span>
             </button>
           </div>
         ) : null}
@@ -469,9 +483,14 @@ export function AppShell() {
           <button
             className="text-action"
             type="button"
+            aria-label={t`Review local tasks`}
+            title={t`Review local tasks`}
             onClick={localCollection.review}
           >
-            <Trans>Review local tasks</Trans>
+            <Import aria-hidden="true" size={20} strokeWidth={1.8} />
+            <span>
+              <Trans>Review local tasks</Trans>
+            </span>
           </button>
         ) : null}
         <button

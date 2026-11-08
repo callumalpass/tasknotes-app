@@ -167,3 +167,45 @@ test("local attachment bytes survive a full page restart", async ({ page }) => {
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   expect(Buffer.concat(chunks)).toEqual(bytes);
 });
+
+test("collapsed local navigation keeps connection controls compact and usable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.goto("/e2e/local-first.fixture.html");
+  const rail = page.getByRole("complementary", { name: "Primary" });
+  const connect = rail.getByRole("button", {
+    name: "Connect collection",
+    exact: true,
+  });
+  const notice = rail.getByText(
+    "Saved in this browser. Clearing browser data removes local tasks.",
+    { exact: true },
+  );
+  await expect(notice).toBeVisible();
+  await rail.getByRole("button", { name: "Collapse sidebar" }).click();
+  await expect(notice).toBeHidden();
+  await expect(connect).toHaveAccessibleDescription(
+    "Saved in this browser. Clearing browser data removes local tasks.",
+  );
+  const railBounds = await rail.boundingBox();
+  const connectBounds = await connect.boundingBox();
+  expect(railBounds!.width).toBe(72);
+  expect(connectBounds!.height).toBe(44);
+  expect(connectBounds!.x).toBeGreaterThanOrEqual(railBounds!.x);
+  expect(connectBounds!.x + connectBounds!.width).toBeLessThanOrEqual(
+    railBounds!.x + railBounds!.width,
+  );
+  await expect(connect.locator("span")).toBeHidden();
+  await connect.focus();
+  await page.keyboard.press("Enter");
+  await page
+    .getByRole("button", { name: "Keep working locally", exact: true })
+    .click();
+  await expect(
+    rail.getByRole("button", { name: "Expand sidebar" }),
+  ).toBeVisible();
+  await rail.getByRole("button", { name: "Expand sidebar" }).click();
+  await expect(notice).toBeVisible();
+  await expect(connect.locator("span")).toBeVisible();
+});

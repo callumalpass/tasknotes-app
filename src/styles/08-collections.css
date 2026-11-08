@@ -296,6 +296,27 @@
 .local-collection-control p {
   margin: 0 0 8px;
 }
+.local-collection-connect-icon {
+  display: none;
+}
+@media (min-width: 840px) {
+  .sidebar-collapsed .local-collection-control {
+    padding: 0;
+    margin-bottom: var(--space-sm);
+  }
+  .sidebar-collapsed .local-collection-control p {
+    display: none;
+  }
+  .sidebar-collapsed .local-collection-connect {
+    width: 100%;
+    height: 44px;
+    color: var(--ink-muted);
+    border: 0;
+  }
+  .sidebar-collapsed .local-collection-connect-icon {
+    display: block;
+  }
+}
 .local-transfer-dialog {
   width: min(640px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
