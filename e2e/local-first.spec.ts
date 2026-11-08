@@ -168,6 +168,40 @@ test("local attachment bytes survive a full page restart", async ({ page }) => {
   expect(Buffer.concat(chunks)).toEqual(bytes);
 });
 
+test("phone More names local work and leads to an honest Connect page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/e2e/local-first.fixture.html");
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  const more = page.getByRole("button", { name: "More", exact: true });
+  await more.click();
+  const menu = page.getByRole("menu", { name: "More", exact: true });
+  await expect(menu).toBeVisible();
+  await expect
+    .poll(async () => {
+      const menuBounds = await menu.boundingBox();
+      const triggerBounds = await more.boundingBox();
+      return menuBounds!.y + menuBounds!.height <= triggerBounds!.y - 4;
+    })
+    .toBe(true);
+  const local = page.getByRole("menuitem", { name: /Local tasks/ });
+  await expect(local).toContainText("Saved in this browser");
+  await local.click();
+  await expect(page.getByText("Not connected", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Refresh now", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Connect collection", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Keep working locally", exact: true }),
+  ).toBeVisible();
+});
+
 test("collapsed local navigation keeps connection controls compact and usable", async ({
   page,
 }) => {

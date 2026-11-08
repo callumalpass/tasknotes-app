@@ -94,6 +94,7 @@ export function MoreScreen({
   const { info, stats, loading } = useCollectionSummary();
   const { connection, repository, privateAccount } = useRepository();
   const notice = useContext(ConnectionNoticeContext);
+  const { localCollection } = useCollectionGate();
   const reminders = useReminderSettings();
   const install = useInstallPrompt();
   const unsavedBehavior = useUnsavedTaskModelDraft(repository);
@@ -121,7 +122,9 @@ export function MoreScreen({
   const summaries: Record<SettingsSection, ReactNode> = {
     collection: [
       info?.name ?? translate({ message: "mdbase collection" }),
-      connectionLabel(connection, notice),
+      localCollection?.active
+        ? localConnectionLabel()
+        : connectionLabel(connection, notice),
       loading || !stats
         ? null
         : plural(stats.open, {
@@ -392,11 +395,15 @@ function CollectionSettings() {
             {info?.name ?? translate({ message: "mdbase collection" })}
           </strong>
           <span
-            className={`settings-connection is-${connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
+            className={`settings-connection is-${localCollection?.active ? "local" : connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
             role="status"
           >
             <span aria-hidden="true" className="settings-connection-dot" />
-            <span>{connectionLabel(connection, notice)}</span>
+            <span>
+              {localCollection?.active
+                ? localConnectionLabel()
+                : connectionLabel(connection, notice)}
+            </span>
             {loading ? (
               <span>
                 <Trans>· Opening</Trans>
@@ -443,7 +450,7 @@ function CollectionSettings() {
           </>
         ) : null}
         {localCollection?.active ? (
-          <p>
+          <p className="section-copy settings-collection-note">
             <Trans>
               Saved in this browser. Clearing browser data removes local tasks.
             </Trans>
@@ -468,16 +475,18 @@ function CollectionSettings() {
               <Trans>Review local tasks</Trans>
             </button>
           ) : null}
-          <button
-            className="secondary-action"
-            disabled={refreshing}
-            type="button"
-            onClick={() => void refresh().catch(() => undefined)}
-          >
-            {refreshing
-              ? translate({ message: "Refreshing" })
-              : translate({ message: "Refresh now" })}
-          </button>
+          {localCollection?.active ? null : (
+            <button
+              className="secondary-action"
+              disabled={refreshing}
+              type="button"
+              onClick={() => void refresh().catch(() => undefined)}
+            >
+              {refreshing
+                ? translate({ message: "Refreshing" })
+                : translate({ message: "Refresh now" })}
+            </button>
+          )}
           {collectionUi ? (
             <CollectionSwitcher {...collectionUi} variant="full" />
           ) : (
@@ -520,16 +529,9 @@ function CollectionSettings() {
       </button>
       {showStorage ? (
         <div className="collection-storage-detail">
-          <p className="section-copy">
-            {localCollection?.active ? (
-              <Trans>
-                Saved in this browser. Clearing browser data removes local
-                tasks.
-              </Trans>
-            ) : (
-              storageExplanation()
-            )}
-          </p>
+          {localCollection?.active ? null : (
+            <p className="section-copy">{storageExplanation()}</p>
+          )}
           <p className="section-copy">
             <Trans>
               Tasks are portable Markdown records in the mdbase v0.3 format.
@@ -999,6 +1001,14 @@ function ThemeSelect() {
       }}
     />
   );
+}
+
+function localConnectionLabel(): string {
+  return translate({
+    message: "Not connected",
+    comment:
+      "Status of local tasks kept in this browser before a collection is connected",
+  });
 }
 
 function connectionLabel(

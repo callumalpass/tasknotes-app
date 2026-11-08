@@ -112,6 +112,11 @@ msgstr "{0, plural, =1 {正在添加图片…} other {正在添加 # 张图片�
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {已添加图片} other {已添加 # 张图片}}"
 
+#. placeholder {0}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, other {# 个文件}}"
+
 #. placeholder {0}: google.omitted
 #: src/app/task-calendar-view.tsx
 msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
@@ -132,7 +137,9 @@ msgstr "{0, plural, other {# 个未完成}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {有 # 个任务无法更新。请打开查看后再试。}}"
 
+#. placeholder {0}: source.tasks.length
 #. placeholder {0}: updates.length
+#: src/app/local-transfer.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, other {# 个任务}}"
@@ -563,6 +570,10 @@ msgstr "{name}（不是人员记录）"
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
 msgstr "添加其他视图前，必须保留 {name} 在导航中"
+
+#: src/app/local-transfer.tsx
+msgid "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
+msgstr "{noteCount, plural, other {# 条随手记笔记}}"
 
 #: src/app/views-screen.tsx
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
@@ -1302,10 +1313,6 @@ msgstr "更改每个重复项的时长"
 msgid "Change the time of every occurrence"
 msgstr "更改每个重复项的时间"
 
-#: src/app/local-transfer.tsx
-msgid "Changed local items are imported as new copies."
-msgstr "修改后的本地项目将作为新副本导入。"
-
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "已更改： "
@@ -1341,6 +1348,10 @@ msgstr "请确认集合已连接，然后重试。"
 #: src/app/local-transfer.tsx
 msgid "Check transfer"
 msgstr "检查传输"
+
+#: src/app/local-transfer.tsx
+msgid "Check transfer confirms what was already copied, then copies the rest."
+msgstr "“检查传输”会确认已复制的内容，然后复制其余内容。"
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1382,6 +1393,10 @@ msgstr "选择属性"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "选择值"
+
+#: src/app/local-transfer.tsx
+msgid "Choose a value for each field to continue."
+msgstr "请为每个字段选择一个值以继续。"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1826,6 +1841,10 @@ msgstr "将 {0} 转换为笔记"
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
 msgstr "转换为笔记"
+
+#: src/app/local-transfer.tsx
+msgid "Copied {confirmed} of {total}"
+msgstr "已复制 {confirmed}/{total}"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
@@ -2278,6 +2297,7 @@ msgstr "TaskNotes 可以离线使用吗？"
 msgid "done"
 msgstr "已完成"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2977,6 +2997,10 @@ msgstr "斜体"
 msgid "item"
 msgstr "项目"
 
+#: src/app/local-transfer.tsx
+msgid "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+msgstr "之前导入的项目不会再次复制。此后更改过的本地项目会作为单独的副本加入，因此在此集合中所做的编辑会保留。"
+
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
 msgstr "跳转到项目"
@@ -3207,6 +3231,11 @@ msgstr "正在加载你的人物身份…"
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
 msgstr "正在加载…"
+
+#. Name of the collection kept in this browser before connecting
+#: src/app/app-shell.tsx
+msgid "Local tasks"
+msgstr "本地任务"
 
 #: src/app/more-screen.tsx
 msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
@@ -3817,6 +3846,8 @@ msgstr "不可用"
 msgid "Not available in this browser"
 msgstr "此浏览器中不可用"
 
+#. Status of local tasks kept in this browser before a collection is connected
+#: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Not connected"
 msgstr "未连接"
@@ -4825,6 +4856,10 @@ msgid "Saved"
 msgstr "已保存"
 
 #: src/app/app-shell.tsx
+msgid "Saved in this browser"
+msgstr "已保存在此浏览器中"
+
+#: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 msgid "Saved in this browser. Clearing browser data removes local tasks."
 msgstr "已保存在此浏览器中。清除浏览器数据会删除本地任务。"
@@ -5583,13 +5618,6 @@ msgstr "没有日期的任务会出现在这里。"
 msgid "Tasks, tags, projects"
 msgstr "任务、标签、项目"
 
-#. placeholder {0}: source.tasks.length
-#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
-#. placeholder {2}: source.files.length
-#: src/app/local-transfer.tsx
-msgid "Tasks: {0}. Notes: {1}. Files: {2}."
-msgstr "任务：{0}。笔记：{1}。文件：{2}。"
-
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -5762,6 +5790,10 @@ msgstr "无法更新视图。{error}"
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
 msgstr "主题、随手记和日历"
+
+#: src/app/local-transfer.tsx
+msgid "There’s no new local work to bring in."
+msgstr "没有可导入的新本地内容。"
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
@@ -6032,8 +6064,8 @@ msgid "Transfer details"
 msgstr "传输详情"
 
 #: src/app/local-transfer.tsx
-msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
-msgstr "传输已暂停。本地内容已妥善保留。请检查原始写入结果以继续。"
+msgid "Transfer paused. Your local work is safe."
+msgstr "传输已暂停。你的本地内容是安全的。"
 
 #: src/app/local-transfer.tsx
 msgid "Transfer work"
@@ -6072,10 +6104,6 @@ msgstr "在任务标题中输入 {example}。"
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "输入日期"
-
-#: src/app/local-transfer.tsx
-msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
-msgstr "类型定义和集合设置保持不变。本地内容将予以保留，以便恢复。之前导入的任务和笔记是独立副本，之后的本地编辑不会同步。"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6433,6 +6461,10 @@ msgstr "你的 Google 日历会话已结束。请在设置中重新登录。"
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."
 msgstr "收件箱已清空。"
+
+#: src/app/local-transfer.tsx
+msgid "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
+msgstr "你的本地任务、随手记笔记和文件会作为新项目复制进来。此集合的任务类型和设置不会改变。本地副本保持独立，可从集合设置中打开。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

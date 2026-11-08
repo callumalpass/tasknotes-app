@@ -82,6 +82,7 @@ it("reviews required custom values, retains failed writes, and checks the origin
   expect(transfer).toBeEnabled();
   fireEvent.click(transfer);
   expect(await screen.findByRole("alert")).toHaveTextContent("Transfer paused");
+  expect(screen.getByRole("status")).toHaveTextContent("Copied 0 of 1");
   expect(
     write,
     screen.getByRole("alert").textContent ?? "transfer paused",
@@ -91,11 +92,12 @@ it("reviews required custom values, retains failed writes, and checks the origin
   expect(retained?.prepared[0]?.frontmatter.client).toBe("Example");
   expect(await local.list()).toHaveLength(1);
   view.unmount();
+  const onClose = vi.fn();
   render(
     <LocalTransferDialog
       local={local}
       destination={Object.assign(destination, { imports })}
-      onClose={() => {}}
+      onClose={onClose}
     />,
   );
   fireEvent.click(
@@ -110,4 +112,78 @@ it("reviews required custom values, retains failed writes, and checks the origin
   );
   expect(write.mock.calls[1]?.[2]).toBe(true);
   expect((await local.transferHistory(info.id!))[0]?.completed).toBe(true);
+  // The completed state keeps one primary action, which closes the review.
+  expect(
+    screen.queryByRole("button", { name: "Close" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+it("explains an empty review instead of offering a disabled transfer", async () => {
+  const name = `local-review-${crypto.randomUUID()}`;
+  const local = new LocalTaskRepository(name);
+  owned.push({ local, name });
+  await local.initialize();
+  const destination = new SnapshotTaskRepository();
+  const configuration = await destination.taskConfiguration();
+  const target = { typeName: "task", configuration, fingerprint: "current" };
+  render(
+    <LocalTransferDialog
+      local={local}
+      destination={Object.assign(destination, {
+        imports: {
+          targets: async () => [target],
+          prepareTask: vi.fn(),
+          write: vi.fn(),
+        },
+      })}
+      onClose={() => {}}
+    />,
+  );
+  expect(
+    await screen.findByText("There’s no new local work to bring in."),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Transfer work" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+});
+
+it("counts file confirmation in transfer progress, including a files-only import", async () => {
+  const name = `local-review-files-${crypto.randomUUID()}`;
+  const local = new LocalTaskRepository(name);
+  owned.push({ local, name });
+  await local.initialize();
+  await local.files!.upload("Attachments/proof.txt", new Blob(["proof"]));
+  Object.defineProperty(local, "exclusiveTransfer", {
+    configurable: true,
+    value: async (_destination: string, run: () => Promise<void>) => run(),
+  });
+  const destination = new SnapshotTaskRepository();
+  const configuration = await destination.taskConfiguration();
+  vi.spyOn(destination.files!, "upload").mockRejectedValueOnce(
+    new Error("connection interrupted"),
+  );
+  render(
+    <LocalTransferDialog
+      local={local}
+      destination={Object.assign(destination, {
+        imports: {
+          targets: async () => [
+            { typeName: "task", configuration, fingerprint: "current" },
+          ],
+          prepareTask: vi.fn(),
+          write: vi.fn(),
+        },
+      })}
+      onClose={() => {}}
+    />,
+  );
+  const transfer = await screen.findByRole("button", { name: "Transfer work" });
+  await waitFor(() => expect(transfer).toBeEnabled());
+  fireEvent.click(transfer);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Transfer paused");
+  expect(screen.getByRole("status")).toHaveTextContent("Copied 0 of 1");
 });

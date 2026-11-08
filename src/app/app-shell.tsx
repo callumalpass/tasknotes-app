@@ -646,6 +646,7 @@ export function AppShell() {
           <Navigation
             active={activePage}
             collectionUi={collectionUi}
+            localCollection={!!localCollection?.active}
             homeKey={homeKey}
             mode="mobile"
             navigationKeys={navigationKeys}
@@ -857,7 +858,9 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
     label: string;
     text: string;
     left: number;
-    top: number;
+    top?: number;
+    bottom?: number;
+    maxHeight?: number;
   } | null>(null);
   if (!projects.length) return null;
   return (
@@ -1276,6 +1279,29 @@ function HomeViewLoading() {
   );
 }
 
+function MenuLocalCollectionItem({ onChoose }: { onChoose(): void }) {
+  return (
+    <button
+      className="navigation-menu-collection"
+      role="menuitem"
+      type="button"
+      onClick={onChoose}
+    >
+      <Library aria-hidden="true" size={19} strokeWidth={1.7} />
+      <span>
+        <strong>
+          <Trans comment="Name of the collection kept in this browser before connecting">
+            Local tasks
+          </Trans>
+        </strong>
+        <small>
+          <Trans>Saved in this browser</Trans>
+        </small>
+      </span>
+    </button>
+  );
+}
+
 function MenuCollectionItem({
   collectionUi,
   onChoose,
@@ -1306,6 +1332,7 @@ function MenuCollectionItem({
 export function Navigation({
   active,
   collectionUi,
+  localCollection = false,
   homeKey,
   mode,
   navigationKeys,
@@ -1320,6 +1347,8 @@ export function Navigation({
   active: string;
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
   collectionUi?: CollectionUiOptions | null;
+  /** Local work before connecting: More names it and leads to Collection settings. */
+  localCollection?: boolean;
   homeKey?: string;
   mode: "desktop" | "mobile";
   navigationKeys: string[];
@@ -1393,7 +1422,9 @@ export function Navigation({
   const items = visibleViews;
   const [menuPosition, setMenuPosition] = useState<{
     left: number;
-    top: number;
+    top?: number;
+    bottom?: number;
+    maxHeight?: number;
   } | null>(null);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -1430,7 +1461,9 @@ export function Navigation({
     const rect = triggerRef.current?.getBoundingClientRect();
     const width = Math.min(236, innerWidth - 16);
     const height = Math.min(
-      (additionalViews.length + (collectionUi ? 3 : 2)) * 46 + 16,
+      (additionalViews.length + (collectionUi || localCollection ? 3 : 2)) *
+        46 +
+        16,
       innerHeight - 96,
     );
     const left =
@@ -1445,11 +1478,22 @@ export function Navigation({
             ),
           )
         : Math.min((rect?.right ?? 190) + 8, innerWidth - width - 8);
-    const top =
-      mode === "mobile"
-        ? Math.max(8, (rect?.top ?? innerHeight) - height - 8)
-        : Math.max(8, Math.min(rect?.top ?? 80, innerHeight - height - 8));
-    setMenuPosition({ left, top });
+    if (mode === "mobile") {
+      // Anchor the actual menu above More. Collection labels and enlarged text
+      // can wrap, so an estimated row height cannot determine its top edge.
+      const bottom = innerHeight - (rect?.top ?? innerHeight) + 8;
+      setMenuPosition({
+        left,
+        bottom,
+        maxHeight: Math.max(44, Math.min(520, innerHeight - bottom - 8)),
+      });
+    } else {
+      const top = Math.max(
+        8,
+        Math.min(rect?.top ?? 80, innerHeight - height - 8),
+      );
+      setMenuPosition({ left, top });
+    }
   }
 
   function closeMenu() {
@@ -1583,6 +1627,15 @@ export function Navigation({
                     <>
                       <MenuCollectionItem
                         collectionUi={collectionUi}
+                        onChoose={() =>
+                          choose({ page: "more", section: "collection" })
+                        }
+                      />
+                      <hr />
+                    </>
+                  ) : localCollection ? (
+                    <>
+                      <MenuLocalCollectionItem
                         onChoose={() =>
                           choose({ page: "more", section: "collection" })
                         }

@@ -112,6 +112,11 @@ msgstr "{0, plural, =1 {Adicionando imagem…} one {Adicionando # imagem…} oth
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {Imagem adicionada} one {# imagem adicionada} other {# imagens adicionadas}}"
 
+#. placeholder {0}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, one {# arquivo} many {# arquivos} other {# arquivos}}"
+
 #. placeholder {0}: google.omitted
 #: src/app/task-calendar-view.tsx
 msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
@@ -132,7 +137,9 @@ msgstr "{0, plural, one {# aberta} other {# abertas}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, one {Não foi possível atualizar # tarefa. Abra-a para revisar antes de tentar novamente.} many {Não foi possível atualizar # tarefas. Abra-as para revisar antes de tentar novamente.} other {Não foi possível atualizar # tarefas. Abra-as para revisar antes de tentar novamente.}}"
 
+#. placeholder {0}: source.tasks.length
 #. placeholder {0}: updates.length
+#: src/app/local-transfer.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, one {# tarefa} many {# tarefas} other {# tarefas}}"
@@ -563,6 +570,10 @@ msgstr "{name} (não é um registro de pessoa)"
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} precisa permanecer na navegação até que outra visualização seja adicionada"
+
+#: src/app/local-transfer.tsx
+msgid "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
+msgstr "{noteCount, plural, one {# nota do bloco de notas} many {# notas do bloco de notas} other {# notas do bloco de notas}}"
 
 #: src/app/views-screen.tsx
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
@@ -1302,10 +1313,6 @@ msgstr "Alterar a duração de cada ocorrência"
 msgid "Change the time of every occurrence"
 msgstr "Alterar o horário de cada ocorrência"
 
-#: src/app/local-transfer.tsx
-msgid "Changed local items are imported as new copies."
-msgstr "Os itens locais alterados são importados como novas cópias."
-
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "Alterado: "
@@ -1341,6 +1348,10 @@ msgstr "Verifique se a coleção está conectada e tente novamente."
 #: src/app/local-transfer.tsx
 msgid "Check transfer"
 msgstr "Verificar transferência"
+
+#: src/app/local-transfer.tsx
+msgid "Check transfer confirms what was already copied, then copies the rest."
+msgstr "Verificar transferência confirma o que já foi copiado e depois copia o restante."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1382,6 +1393,10 @@ msgstr "Escolher uma propriedade"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Escolher um valor"
+
+#: src/app/local-transfer.tsx
+msgid "Choose a value for each field to continue."
+msgstr "Escolha um valor para cada campo para continuar."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1826,6 +1841,10 @@ msgstr "Converter {0} em nota"
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
 msgstr "Converter em nota"
+
+#: src/app/local-transfer.tsx
+msgid "Copied {confirmed} of {total}"
+msgstr "{confirmed} de {total} copiados"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
@@ -2278,6 +2297,7 @@ msgstr "O TaskNotes funciona offline?"
 msgid "done"
 msgstr "concluído"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2977,6 +2997,10 @@ msgstr "Itálico"
 msgid "item"
 msgstr "elemento"
 
+#: src/app/local-transfer.tsx
+msgid "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+msgstr "Itens já importados não são copiados de novo. Itens locais alterados desde então chegam como cópias separadas, para que as edições feitas nesta coleção sejam mantidas."
+
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
 msgstr "Ir para o projeto"
@@ -3207,6 +3231,11 @@ msgstr "Carregando sua identidade de pessoa…"
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
 msgstr "Carregando…"
+
+#. Name of the collection kept in this browser before connecting
+#: src/app/app-shell.tsx
+msgid "Local tasks"
+msgstr "Tarefas locais"
 
 #: src/app/more-screen.tsx
 msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
@@ -3817,6 +3846,8 @@ msgstr "Indisponível"
 msgid "Not available in this browser"
 msgstr "Indisponível neste navegador"
 
+#. Status of local tasks kept in this browser before a collection is connected
+#: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Not connected"
 msgstr "Não conectado"
@@ -4825,6 +4856,10 @@ msgid "Saved"
 msgstr "Salvo"
 
 #: src/app/app-shell.tsx
+msgid "Saved in this browser"
+msgstr "Salvo neste navegador"
+
+#: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 msgid "Saved in this browser. Clearing browser data removes local tasks."
 msgstr "Salvo neste navegador. Limpar os dados do navegador remove as tarefas locais."
@@ -5583,13 +5618,6 @@ msgstr "Tarefas sem data chegam aqui."
 msgid "Tasks, tags, projects"
 msgstr "Tarefas, etiquetas, projetos"
 
-#. placeholder {0}: source.tasks.length
-#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
-#. placeholder {2}: source.files.length
-#: src/app/local-transfer.tsx
-msgid "Tasks: {0}. Notes: {1}. Files: {2}."
-msgstr "Tarefas: {0}. Notas: {1}. Arquivos: {2}."
-
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -5762,6 +5790,10 @@ msgstr "Não foi possível atualizar a visualização. {error}"
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
 msgstr "Tema, Bloco de notas e calendário"
+
+#: src/app/local-transfer.tsx
+msgid "There’s no new local work to bring in."
+msgstr "Não há trabalho local novo para importar."
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
@@ -6032,8 +6064,8 @@ msgid "Transfer details"
 msgstr "Detalhes da transferência"
 
 #: src/app/local-transfer.tsx
-msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
-msgstr "Transferência pausada. Seu trabalho local está seguro. Verifique as gravações originais para continuar."
+msgid "Transfer paused. Your local work is safe."
+msgstr "Transferência pausada. Seu trabalho local está seguro."
 
 #: src/app/local-transfer.tsx
 msgid "Transfer work"
@@ -6072,10 +6104,6 @@ msgstr "Escreva {example} no título da tarefa."
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "Digite uma data"
-
-#: src/app/local-transfer.tsx
-msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
-msgstr "As definições de tipos e as configurações da coleção são mantidas. O trabalho local é preservado para recuperação. Tarefas e notas já importadas são independentes; alterações locais posteriores não são sincronizadas."
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6433,6 +6461,10 @@ msgstr "Sua sessão do Google Agenda terminou. Entre novamente em Configuraçõe
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."
 msgstr "Sua caixa de entrada está vazia."
+
+#: src/app/local-transfer.tsx
+msgid "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
+msgstr "Suas tarefas locais, notas do bloco de notas e arquivos são copiados como novos itens. Os tipos de tarefa e as configurações desta coleção não mudam. Sua cópia local continua separada e pode ser aberta em Configurações da coleção."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

@@ -112,6 +112,11 @@ msgstr "{0, plural, =1 {이미지 추가 중…} other {이미지 #개 추가 �
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {이미지를 추가했습니다} other {이미지 #개를 추가했습니다}}"
 
+#. placeholder {0}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, other {파일 #개}}"
+
 #. placeholder {0}: google.omitted
 #: src/app/task-calendar-view.tsx
 msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
@@ -132,7 +137,9 @@ msgstr "{0, plural, other {미완료 #개}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {작업 #개를 업데이트하지 못했습니다. 열어서 검토한 후 다시 시도하세요.}}"
 
+#. placeholder {0}: source.tasks.length
 #. placeholder {0}: updates.length
+#: src/app/local-transfer.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, other {작업 #개}}"
@@ -563,6 +570,10 @@ msgstr "{name} (사람 레코드가 아님)"
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
 msgstr "다른 뷰를 추가할 때까지 {name}을(를) 탐색 메뉴에 유지해야 합니다."
+
+#: src/app/local-transfer.tsx
+msgid "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
+msgstr "{noteCount, plural, other {스크래치패드 노트 #개}}"
 
 #: src/app/views-screen.tsx
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
@@ -1302,10 +1313,6 @@ msgstr "모든 반복 항목의 소요 시간 변경"
 msgid "Change the time of every occurrence"
 msgstr "모든 반복 항목의 시간 변경"
 
-#: src/app/local-transfer.tsx
-msgid "Changed local items are imported as new copies."
-msgstr "변경된 로컬 항목은 새 복사본으로 가져옵니다."
-
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "변경됨: "
@@ -1341,6 +1348,10 @@ msgstr "컬렉션이 연결되어 있는지 확인한 후 다시 시도하세요
 #: src/app/local-transfer.tsx
 msgid "Check transfer"
 msgstr "전송 확인"
+
+#: src/app/local-transfer.tsx
+msgid "Check transfer confirms what was already copied, then copies the rest."
+msgstr "전송 확인은 이미 복사된 항목을 확인한 뒤 나머지를 복사합니다."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1382,6 +1393,10 @@ msgstr "속성 선택"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "값 선택"
+
+#: src/app/local-transfer.tsx
+msgid "Choose a value for each field to continue."
+msgstr "계속하려면 각 필드의 값을 선택하세요."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1826,6 +1841,10 @@ msgstr "{0}을(를) 노트로 변환"
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
 msgstr "노트로 변환"
+
+#: src/app/local-transfer.tsx
+msgid "Copied {confirmed} of {total}"
+msgstr "{total}개 중 {confirmed}개 복사됨"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
@@ -2278,6 +2297,7 @@ msgstr "TaskNotes는 오프라인에서도 작동하나요?"
 msgid "done"
 msgstr "완료"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2977,6 +2997,10 @@ msgstr "기울임꼴"
 msgid "item"
 msgstr "항목"
 
+#: src/app/local-transfer.tsx
+msgid "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+msgstr "이전에 가져온 항목은 다시 복사되지 않습니다. 그 이후 변경된 로컬 항목은 별도의 사본으로 추가되므로 이 컬렉션에서 한 편집이 유지됩니다."
+
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
 msgstr "프로젝트로 이동"
@@ -3207,6 +3231,11 @@ msgstr "사용자 사람 정보 불러오는 중…"
 #: src/app/scratchpad-screen.tsx
 msgid "Loading…"
 msgstr "불러오는 중…"
+
+#. Name of the collection kept in this browser before connecting
+#: src/app/app-shell.tsx
+msgid "Local tasks"
+msgstr "로컬 작업"
 
 #: src/app/more-screen.tsx
 msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
@@ -3817,6 +3846,8 @@ msgstr "사용할 수 없음"
 msgid "Not available in this browser"
 msgstr "이 브라우저에서는 사용할 수 없음"
 
+#. Status of local tasks kept in this browser before a collection is connected
+#: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Not connected"
 msgstr "연결되지 않음"
@@ -4825,6 +4856,10 @@ msgid "Saved"
 msgstr "저장됨"
 
 #: src/app/app-shell.tsx
+msgid "Saved in this browser"
+msgstr "이 브라우저에 저장됨"
+
+#: src/app/app-shell.tsx
 #: src/app/more-screen.tsx
 msgid "Saved in this browser. Clearing browser data removes local tasks."
 msgstr "이 브라우저에 저장됩니다. 브라우저 데이터를 지우면 로컬 작업이 삭제됩니다."
@@ -5583,13 +5618,6 @@ msgstr "날짜가 없는 작업은 여기에 표시됩니다."
 msgid "Tasks, tags, projects"
 msgstr "작업, 태그, 프로젝트"
 
-#. placeholder {0}: source.tasks.length
-#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
-#. placeholder {2}: source.files.length
-#: src/app/local-transfer.tsx
-msgid "Tasks: {0}. Notes: {1}. Files: {2}."
-msgstr "작업: {0}. 메모: {1}. 파일: {2}."
-
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -5762,6 +5790,10 @@ msgstr "뷰를 업데이트하지 못했습니다. {error}"
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
 msgstr "테마, 스크래치패드 및 캘린더"
+
+#: src/app/local-transfer.tsx
+msgid "There’s no new local work to bring in."
+msgstr "가져올 새 로컬 작업이 없습니다."
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
@@ -6032,8 +6064,8 @@ msgid "Transfer details"
 msgstr "전송 세부 정보"
 
 #: src/app/local-transfer.tsx
-msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
-msgstr "전송이 일시 중지되었습니다. 로컬 작업은 안전합니다. 계속하려면 원래 저장 결과를 확인하세요."
+msgid "Transfer paused. Your local work is safe."
+msgstr "전송이 일시 중지되었습니다. 로컬 작업은 안전합니다."
 
 #: src/app/local-transfer.tsx
 msgid "Transfer work"
@@ -6072,10 +6104,6 @@ msgstr "작업 제목에 {example}을(를) 입력하세요."
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "날짜 입력"
-
-#: src/app/local-transfer.tsx
-msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
-msgstr "유형 정의와 컬렉션 설정은 그대로 유지됩니다. 복구할 수 있도록 로컬 작업이 보관됩니다. 이미 가져온 작업과 메모는 독립된 사본이며, 이후 로컬에서 수정한 내용은 동기화되지 않습니다."
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6433,6 +6461,10 @@ msgstr "Google 캘린더 세션이 종료되었습니다. 설정에서 다시 �
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."
 msgstr "받은 편지함이 비어 있습니다."
+
+#: src/app/local-transfer.tsx
+msgid "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
+msgstr "로컬 작업, 스크래치패드 노트, 파일이 새 항목으로 복사됩니다. 이 컬렉션의 작업 유형과 설정은 바뀌지 않습니다. 로컬 사본은 별도로 유지되며 컬렉션 설정에서 열 수 있습니다."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."
