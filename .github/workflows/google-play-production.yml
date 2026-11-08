@@ -134,7 +134,7 @@ jobs:
           permission-contents: read
           permission-actions: write
 
-      - name: Enforce shared source, SDK, wasm, hold and 24-hour gates
+      - name: Enforce shared source, SDK, hold and 24-hour gates
         env:
           GH_TOKEN: ${{ github.token }}
           APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
