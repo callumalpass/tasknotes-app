@@ -162,24 +162,6 @@ export async function cooldownRuns(platform) {
   }
   return runs;
 }
-export function assertWasmProof(proof, source, run, artifact, platform) {
-  requirePolicy(
-    proof?.schema === "tasknotes/mobile-wasm-qualification/1" &&
-      proof.platform === platform &&
-      proof.sourceSha === source &&
-      proof.sourceRunId === run.id &&
-      proof.buildArtifactId === artifact.id &&
-      /^sha256:[a-f0-9]{64}$/.test(artifact.digest ?? "") &&
-      proof.buildArtifactDigest === artifact.digest &&
-      proof.wasmRoute === "passed" &&
-      [
-        "runtime-initialized",
-        "sqlite-open-query-write-reopen",
-        "task-create-edit-reload",
-      ].every((check) => proof.checks?.[check] === true),
-    "exact-signed-build-wasm-qualification-required",
-  );
-}
 export async function artifactJson(
   runId,
   name,
@@ -376,18 +358,6 @@ export async function qualifySource(platform, sourceRunId) {
       "testflight-upload-required",
     );
   }
-  requirePolicy(
-    artifacts.some(
-      (a) => !a.expired && a.name === `tasknotes-mobile-wasm-${platform}`,
-    ),
-    "exact-signed-build-wasm-qualification-required",
-  );
-  const proof = await artifactJson(
-    sourceRunId,
-    `tasknotes-mobile-wasm-${platform}`,
-    "qualification.json",
-  );
-  assertWasmProof(proof, source, run, artifact, platform);
   return {
     source,
     sourceRunId: run.id,

@@ -79,7 +79,7 @@ jobs:
           permission-contents: read
           permission-actions: write
 
-      - name: Enforce shared source, SDK, wasm, hold and 24-hour gates
+      - name: Enforce shared source, SDK, hold and 24-hour gates
         if: inputs.submit || inputs.release
         env:
           GH_TOKEN: ${{ github.token }}

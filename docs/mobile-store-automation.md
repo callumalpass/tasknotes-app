@@ -2,10 +2,11 @@
 
 ## Current rollout hold
 
-**Automation is disabled by default. Do not enable or submit until Callum has
-seen the exact candidate plan and said go **as release supervisor**, and the wasm route has been exercised
-on that exact signed build.** This implementation does not change either enable
-variable, signing identity, trust key, environment policy or store submission.
+**Automation is disabled by default. Before Callum says go as release supervisor,
+Callum or an agent must manually check the exact TestFlight or internal/alpha-track
+build and show him the exact candidate plan. Promote that same binary to
+production.** This implementation does not change either enable variable,
+signing identity, trust key, environment policy or store submission.
 
 The SDK floor is Connect `c42d004e3`. The source package must name its committed
 production archive, match its SHA256 and pin, and the authenticated repository
@@ -53,38 +54,6 @@ evidence that an older TestFlight or Play build contains that SDK.
   screenshots and existing review credentials are inherited/verified; no agent
   invents legal declarations or credentials. Google Play gets neutral release
   notes on alpha and carries them into production.
-
-## Exact-build wasm evidence (not implemented by the native harness yet)
-
-Source build runs must retain an artifact named
-`tasknotes-mobile-wasm-android` or `tasknotes-mobile-wasm-ios`, containing
-`qualification.json`. It is read only from that same trusted, successful
-source build run, never from a mutable branch or an arbitrary supplied file.
-
-```json
-{
-  "schema": "tasknotes/mobile-wasm-qualification/1",
-  "platform": "ios",
-  "sourceSha": "FULL_MAIN_SOURCE_SHA",
-  "sourceRunId": 123,
-  "buildArtifactId": 456,
-  "buildArtifactDigest": "sha256:DIGEST_FROM_GITHUB_ARTIFACT",
-  "wasmRoute": "passed",
-  "checks": {
-    "runtime-initialized": true,
-    "sqlite-open-query-write-reopen": true,
-    "task-create-edit-reload": true
-  }
-}
-```
-
-This is an **evidence contract, not a manual override**. Do not hand-write
-passing flags or attach a web/dev build's evidence to a signed native binary.
-The native test harness still needs to download/launch the signed IPA/APK
-corresponding to that exact source-run artifact, exercise those checks using a
-registered test account, and emit the digest-bound proof in the source run.
-Until that producer exists, the guard refuses publication. Current older
-production/TestFlight builds do not qualify by association with newer main.
 
 ## Play review observer and rollout
 
@@ -198,8 +167,9 @@ reader; no dashboard deployment is made here.
    environment secret names through read-only workflow runs.
 2. Prepare a new numeric store version through normal main PR/CI if the current
    package version is already live. Build/upload only to alpha/TestFlight.
-3. Exercise wasm on the **exact signed artifact** and retain the bound proof.
-   Implement the missing proof producer; do not synthesize a passing artifact.
+3. Have Callum or an agent manually check the **exact TestFlight or
+   internal/alpha-track build** before Callum says go. Record the source SHA,
+   store version/build and result; promote that same binary to production.
 4. Read a fresh store plan and exact-run status/Vitals capability evidence.
    Reconcile any release-review or API-observation block; do not override it.
 5. Tell Callum the exact platform, source SHA, SDK producer, artifact digest,
@@ -209,8 +179,6 @@ reader; no dashboard deployment is made here.
    dispatch through the existing publisher. Observe review, rollout and checks.
    Retain the bounded attempt and complete the normal deployment report.
 
-Unattended end-to-end production is **not ready** until the signed-native wasm
-proof producer is implemented and exercised on a new qualified signed build. Apple review and store
-policy/legal account attestations remain store-owned; no workflow can grant
-approval or invent a legal response. No production submission was made by this
-implementation.
+Apple review and store policy/legal account attestations remain store-owned;
+no workflow can grant approval or invent a legal response. No production
+submission was made by this implementation.

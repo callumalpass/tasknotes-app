@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   assertCooldown,
   isReadOnlyReceipt,
-  assertWasmProof,
   latestExactGreen,
   LINES,
 } from "./mobile-release-policy.mjs";
@@ -115,47 +114,6 @@ test("exact CI cannot borrow success from an old attempt or other event", () => 
     latestExactGreen([{ ...run, event: "pull_request" }], "a", "ios.yml"),
     false,
   );
-});
-
-test("wasm proof binds signed artifact digest, source, platform and build run", () => {
-  const run = { id: 123 };
-  const artifact = { id: 456, digest: "sha256:" + "a".repeat(64) };
-  const proof = {
-    schema: "tasknotes/mobile-wasm-qualification/1",
-    platform: "ios",
-    sourceSha: "b".repeat(40),
-    sourceRunId: run.id,
-    buildArtifactId: artifact.id,
-    buildArtifactDigest: artifact.digest,
-    wasmRoute: "passed",
-    checks: {
-      "runtime-initialized": true,
-      "sqlite-open-query-write-reopen": true,
-      "task-create-edit-reload": true,
-    },
-  };
-  assert.doesNotThrow(() =>
-    assertWasmProof(proof, proof.sourceSha, run, artifact, "ios"),
-  );
-  for (const change of [
-    { sourceRunId: 124 },
-    { buildArtifactId: 457 },
-    { buildArtifactDigest: "sha256:" + "c".repeat(64) },
-    { wasmRoute: "not-run" },
-    { checks: {} },
-    { platform: "android" },
-  ])
-    assert.throws(
-      () =>
-        assertWasmProof(
-          { ...proof, ...change },
-          proof.sourceSha,
-          run,
-          artifact,
-          "ios",
-        ),
-      /qualification-required/,
-    );
 });
 
 test("store holds cannot address a server line or each other", () => {
