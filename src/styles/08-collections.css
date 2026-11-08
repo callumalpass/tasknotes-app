@@ -287,3 +287,35 @@
   width: 100%;
   color: var(--ink-soft);
 }
+
+.local-collection-control {
+  padding: 8px 12px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+.local-collection-control p {
+  margin: 0 0 8px;
+}
+.local-transfer-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.local-transfer-dialog fieldset {
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.local-transfer-dialog label {
+  display: grid;
+  gap: 4px;
+}
+.local-transfer-dialog input,
+.local-transfer-dialog select {
+  min-height: 44px;
+  width: 100%;
+}
+.local-transfer-dialog code {
+  overflow-wrap: anywhere;
+}

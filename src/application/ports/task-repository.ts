@@ -77,10 +77,11 @@ export interface RecordWriteRejection {
  * implement this port; React and domain services never depend on an adapter.
  */
 export interface TaskRepository {
+  readonly imports?: import("./task-import").TaskImportPort;
   /** Explicit setup only when the original collection owns a durable recovery journal. */
   /** Present for connected collections whose authority implements mdbase files. */
   readonly files?: CollectionFileStore;
-  /** Local capture and authority confirmation are separate; no document replica. */
+  /** Local capture and authority confirmation are separate. */
   writeState?(target: RecordWriteTarget): RecordWriteStatus | undefined;
   /** The refusal behind a "failed" write state, when the receipt names one. */
   writeRejection?(target: RecordWriteTarget): RecordWriteRejection | undefined;

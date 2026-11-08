@@ -312,6 +312,65 @@ export class TaskNotesTaskModel {
     return this.toTask(withPath, frontmatter, 1);
   }
 
+  /** Import semantics bypass templates, recurrence generation and edit automations.
+   * Only the destination binding writes fields; historical timestamps stay exact. */
+  importTask(source: Task, id: string): Task {
+    const info: TaskInfo = {
+      id,
+      path: "",
+      title: requiredTitle(source.title),
+      status: source.status,
+      priority: source.priority,
+      due: source.due,
+      scheduled: source.scheduled,
+      details: source.body,
+      tags: source.tags,
+      contexts: source.contexts,
+      projects: source.projects,
+      attachments: source.attachments,
+      assignees: source.assignees,
+      blockedBy: source.blockedBy,
+      recurrence: source.recurrence,
+      recurrence_anchor: source.recurrenceAnchor,
+      recurrence_parent: source.recurrenceParent,
+      occurrence_date: source.occurrenceDate,
+      occurrence_materialization: source.occurrenceMaterialization,
+      occurrence_next_trigger: source.occurrenceNextTrigger,
+      occurrence_template: source.occurrenceTemplate,
+      occurrence_past_horizon: source.occurrencePastHorizon,
+      occurrence_future_horizon: source.occurrenceFutureHorizon,
+      complete_instances: source.completeInstances,
+      skipped_instances: source.skippedInstances,
+      completedDate: source.completedDate,
+      archived: source.archived,
+      timeEstimate: source.timeEstimate,
+      timeEntries: source.timeEntries,
+      reminders: source.reminders,
+      sortOrder: source.sortOrder,
+      dateCreated: source.createdAt,
+      dateModified: source.updatedAt,
+      customProperties: withUserFieldDefaults(
+        this.config,
+        source.customProperties,
+      ),
+    };
+    this.assertValid(info);
+    this.assertCustomFields(info.customProperties);
+    const frontmatter = this.writeFrontmatter(
+      { ...info.customProperties },
+      info,
+      id,
+      1,
+    );
+    info.path = this.taskPath(
+      frontmatter,
+      info.title,
+      id,
+      new Date(source.createdAt),
+    );
+    return this.toTask(info, frontmatter, 1);
+  }
+
   async createWithTemplate(
     input: CreateTaskInput,
     context: { id: string; now?: string; currentDate?: string },

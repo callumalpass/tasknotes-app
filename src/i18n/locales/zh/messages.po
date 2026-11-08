@@ -1200,6 +1200,10 @@ msgstr "看板列"
 msgid "Bold"
 msgstr "粗体"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "将本地内容导入此集合"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "浏览任务"
@@ -1330,6 +1334,10 @@ msgstr "检查严格模式完成状态"
 msgid "Check that the collection is connected, then try again."
 msgstr "请确认集合已连接，然后重试。"
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "检查传输"
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "正在检查"
@@ -1366,6 +1374,7 @@ msgstr "选择人员…"
 msgid "Choose a property"
 msgstr "选择属性"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "选择值"
@@ -1461,6 +1470,7 @@ msgstr "清除值"
 msgid "Click tasks to select them."
 msgstr "点击任务以选择。"
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1750,6 +1760,11 @@ msgstr "冲突的更改"
 #: src/calendar-service/settings.tsx
 msgid "Connect calendars"
 msgstr "连接日历"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "连接集合"
 
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
@@ -3030,6 +3045,10 @@ msgstr "即使你晚完成，也保留计划日期。"
 msgid "Keep the quick-add field on this view."
 msgstr "在此视图中保留快速添加字段。"
 
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "继续在本地使用"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "继续书写"
@@ -3185,6 +3204,10 @@ msgstr "正在加载你的人物身份…"
 msgid "Loading…"
 msgstr "正在加载…"
 
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "本地任务可离线使用，并保存在此浏览器中。已连接集合的可用内容取决于 mdbase 在此设备上保存的记录；同步需要连接。"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "地点"
@@ -3288,13 +3311,13 @@ msgstr "mdbase 已确认恢复目标已应用严格模式。"
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "即使 TaskNotes 已关闭，mdbase 也会发送提醒。通知不会包含任务内容。"
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase 是权威数据源。更改需要连接。"
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbase 将任务保存为可移植的 Markdown 文件，同时让兼容应用能够以统一方式理解这些任务。在 mdbase 中，你可以选择集合并批准 TaskNotes 的访问权限，无论集合由 mdbase 托管还是来自已连接的电脑。"
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase 管理本地记录和同步。同步需要连接到集合。"
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3631,6 +3654,7 @@ msgstr "下一项： "
 msgid "Next: {0}"
 msgstr "下一项：{0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "否"
@@ -3771,10 +3795,6 @@ msgstr "无值"
 #: src/app/app-shell.tsx
 msgid "No views yet."
 msgstr "还没有视图。"
-
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "不可以。TaskNotes 直接读取和写入权威 mdbase 集合。托管集合需要网络连接；电脑上的集合还需要该电脑可连接。"
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
@@ -3967,6 +3987,10 @@ msgstr "打开图片"
 msgid "Open in Planner"
 msgstr "在 Planner 中打开"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "打开本地任务"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4115,6 +4139,10 @@ msgstr "Planner 是一个独立应用。保存此视图，然后选择“在 Pla
 msgid "Planner will open this saved view."
 msgstr "Planner 将打开此已保存视图。"
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "正在准备传输"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "预览"
@@ -4174,6 +4202,7 @@ msgid "Primary"
 msgstr "主要"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4699,6 +4728,11 @@ msgstr "供分组和显示字段使用的可复用值。"
 msgid "Review access"
 msgstr "检查访问权限"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "查看本地任务"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "检查通知权限"
@@ -4785,6 +4819,11 @@ msgstr "保存恢复密钥"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "已保存"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "已保存在此浏览器中。清除浏览器数据会删除本地任务。"
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5274,6 +5313,7 @@ msgstr "正在启动…"
 msgid "Starts"
 msgstr "开始"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5474,6 +5514,10 @@ msgstr "任务提醒"
 msgid "Task title"
 msgstr "任务标题"
 
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "任务类型"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "任务： "
@@ -5534,6 +5578,13 @@ msgstr "没有日期的任务会出现在这里。"
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "任务、标签、项目"
+
+#. placeholder {0}: source.tasks.length
+#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
+#. placeholder {2}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "Tasks: {0}. Notes: {1}. Files: {2}."
+msgstr "任务：{0}。笔记：{1}。文件：{2}。"
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
@@ -5968,6 +6019,22 @@ msgstr "尝试次数过多。请稍后再试。"
 msgid "Tracked time"
 msgstr "已跟踪时间"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "传输已完成。本地副本仍然可用。"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "传输详情"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
+msgstr "传输已暂停。本地内容已妥善保留。请检查原始写入结果以继续。"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "传输内容"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6001,6 +6068,10 @@ msgstr "在任务标题中输入 {example}。"
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "输入日期"
+
+#: src/app/local-transfer.tsx
+msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
+msgstr "类型定义和集合设置保持不变。本地内容将予以保留，以便恢复。之前导入的任务和笔记是独立副本，之后的本地编辑不会同步。"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6143,6 +6214,10 @@ msgstr "TaskNotes 写入项目、人员和其他任务链接时会使用此格�
 #: src/components/expression-builder.tsx
 msgid "Value"
 msgstr "值"
+
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "导入任务使用的值"
 
 #: src/app/more-screen.tsx
 msgid "Version "
@@ -6294,6 +6369,7 @@ msgstr "年"
 msgid "Yearly"
 msgstr "每年"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "是"

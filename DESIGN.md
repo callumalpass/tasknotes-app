@@ -109,11 +109,15 @@ danger roles rather than fixed palette values.
 
 ## Storage trust contract
 
-Every collection choice names its mdbase authority in plain language. Hosted
-collections require connectivity; connected-computer collections require that
-computer to remain reachable. A completed write has been accepted by that
-authority. TaskNotes never presents browser or device storage as another copy
-of the collection, and it does not imply offline availability. Portability is
+Before sign-in, the local workspace names its browser scope and commits through
+`LocalTaskRepository`. It offers an explicit reviewed import when connecting;
+local source records remain available for recovery. In connected collections,
+every collection choice names its mdbase authority in plain language. Describe
+local capture, pending synchronization, and upstream confirmation according to
+the mdbase runtime's actual state. Browser and device storage may hold runtime
+collections or replicas; offline availability depends on that runtime's local
+data and capabilities. Synchronization requires the upstream authority to be
+reachable. Local capture does not imply upstream confirmation. Portability is
 visible through Markdown paths and collection information without exposing
 transport details in ordinary task flows. Routine refreshes, including refreshes
 on returning to the app, preserve the last known connection state and remain

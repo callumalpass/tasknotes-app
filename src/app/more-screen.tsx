@@ -378,7 +378,8 @@ function CollectionSettings() {
   } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
   const notice = useContext(ConnectionNoticeContext);
-  const { collectionUi, changeCollection } = useCollectionGate();
+  const { collectionUi, localCollection, changeCollection } =
+    useCollectionGate();
   const [showStorage, setShowStorage] = useStoredFlag(
     "tasknotes:settings-storage-open:v1",
     false,
@@ -441,7 +442,32 @@ function CollectionSettings() {
             </button>
           </>
         ) : null}
+        {localCollection?.active ? (
+          <p>
+            <Trans>
+              Saved in this browser. Clearing browser data removes local tasks.
+            </Trans>
+          </p>
+        ) : null}
         <div className="settings-collection-actions">
+          {localCollection && !localCollection.active ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={localCollection.open}
+            >
+              <Trans>Open local tasks</Trans>
+            </button>
+          ) : null}
+          {localCollection?.review ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={localCollection.review}
+            >
+              <Trans>Review local tasks</Trans>
+            </button>
+          ) : null}
           <button
             className="secondary-action"
             disabled={refreshing}
@@ -460,7 +486,11 @@ function CollectionSettings() {
               type="button"
               onClick={changeCollection}
             >
-              <Trans>Change collection</Trans>
+              {localCollection?.active ? (
+                <Trans>Connect collection</Trans>
+              ) : (
+                <Trans>Change collection</Trans>
+              )}
             </button>
           )}
         </div>
@@ -490,7 +520,16 @@ function CollectionSettings() {
       </button>
       {showStorage ? (
         <div className="collection-storage-detail">
-          <p className="section-copy">{storageExplanation()}</p>
+          <p className="section-copy">
+            {localCollection?.active ? (
+              <Trans>
+                Saved in this browser. Clearing browser data removes local
+                tasks.
+              </Trans>
+            ) : (
+              storageExplanation()
+            )}
+          </p>
           <p className="section-copy">
             <Trans>
               Tasks are portable Markdown records in the mdbase v0.3 format.
@@ -907,9 +946,9 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
           </summary>
           <p>
             <Trans>
-              No. TaskNotes reads and writes the authoritative mdbase collection
-              directly. Hosted collections need a network connection; a computer
-              collection also needs that computer to be reachable.
+              Local tasks work offline and are saved in this browser. Connected
+              collections depend on the records mdbase has available on this
+              device; syncing requires a connection.
             </Trans>
           </p>
         </details>

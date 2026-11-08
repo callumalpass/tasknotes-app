@@ -1200,6 +1200,10 @@ msgstr "Columnas del tablero"
 msgid "Bold"
 msgstr "Negrita"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "Importar el trabajo local a esta colección"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "Recorrer tareas"
@@ -1330,6 +1334,10 @@ msgstr "Comprobar que se completó el modo estricto"
 msgid "Check that the collection is connected, then try again."
 msgstr "Comprueba que la colección esté conectada e inténtalo de nuevo."
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "Comprobar transferencia"
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "Comprobando"
@@ -1366,6 +1374,7 @@ msgstr "Elige una persona…"
 msgid "Choose a property"
 msgstr "Elige una propiedad"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Elige un valor"
@@ -1461,6 +1470,7 @@ msgstr "Borrar valor"
 msgid "Click tasks to select them."
 msgstr "Haz clic en las tareas para seleccionarlas."
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1750,6 +1760,11 @@ msgstr "Cambios en conflicto"
 #: src/calendar-service/settings.tsx
 msgid "Connect calendars"
 msgstr "Conectar calendarios"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "Conectar colección"
 
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
@@ -3030,6 +3045,10 @@ msgstr "Mantén las fechas previstas, aunque termines tarde."
 msgid "Keep the quick-add field on this view."
 msgstr "Mantener el campo de adición rápida en esta vista."
 
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "Seguir trabajando localmente"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "Seguir escribiendo"
@@ -3185,6 +3204,10 @@ msgstr "Cargando tu identidad de persona…"
 msgid "Loading…"
 msgstr "Cargando…"
 
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "Las tareas locales funcionan sin conexión y se guardan en este navegador. Las colecciones conectadas dependen de los registros que mdbase tenga disponibles en este dispositivo; la sincronización requiere conexión."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "Ubicación"
@@ -3288,13 +3311,13 @@ msgstr "mdbase confirmó que los destinos de recuperación han aplicado el modo 
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase entrega recordatorios cuando TaskNotes está cerrado. Las notificaciones nunca incluyen el contenido de las tareas."
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase es la fuente de referencia. Los cambios requieren conexión."
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbase mantiene tus tareas en archivos Markdown portátiles y ofrece a las aplicaciones compatibles una forma común de comprender su estructura. En mdbase, eliges una colección y apruebas el acceso de TaskNotes, tanto si está alojada en mdbase como si está disponible desde un ordenador conectado."
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase gestiona los registros locales y la sincronización. Para sincronizar se necesita una conexión con la colección."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3631,6 +3654,7 @@ msgstr "Siguiente: "
 msgid "Next: {0}"
 msgstr "Siguiente: {0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "No"
@@ -3771,10 +3795,6 @@ msgstr "Sin valor"
 #: src/app/app-shell.tsx
 msgid "No views yet."
 msgstr "Todavía no hay vistas."
-
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "No. TaskNotes lee y escribe directamente en la colección mdbase autoritativa. Las colecciones alojadas necesitan conexión a Internet; para una colección de un ordenador, ese ordenador también debe estar accesible."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
@@ -3967,6 +3987,10 @@ msgstr "Abrir imagen"
 msgid "Open in Planner"
 msgstr "Abrir en Planner"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "Abrir tareas locales"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4115,6 +4139,10 @@ msgstr "Planner es una aplicación independiente. Guarda esta vista y luego elig
 msgid "Planner will open this saved view."
 msgstr "Planner abrirá esta vista guardada."
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "Preparando transferencia"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "Vista previa"
@@ -4174,6 +4202,7 @@ msgid "Primary"
 msgstr "Principal"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4699,6 +4728,11 @@ msgstr "Valores reutilizables para la agrupación y los campos mostrados."
 msgid "Review access"
 msgstr "Revisar el acceso"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "Revisar tareas locales"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "Revisar acceso a las notificaciones"
@@ -4785,6 +4819,11 @@ msgstr "Guarda tu clave de recuperación"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "Guardado"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "Guardado en este navegador. Borrar sus datos elimina las tareas locales."
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5274,6 +5313,7 @@ msgstr "Iniciando…"
 msgid "Starts"
 msgstr "Empieza"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5474,6 +5514,10 @@ msgstr "Recordatorios de tareas"
 msgid "Task title"
 msgstr "Título de la tarea"
 
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "Tipo de tarea"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "Tarea: "
@@ -5534,6 +5578,13 @@ msgstr "Las tareas sin fecha llegan aquí."
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "Tareas, etiquetas y proyectos"
+
+#. placeholder {0}: source.tasks.length
+#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
+#. placeholder {2}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "Tasks: {0}. Notes: {1}. Files: {2}."
+msgstr "Tareas: {0}. Notas: {1}. Archivos: {2}."
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
@@ -5968,6 +6019,22 @@ msgstr "Demasiados intentos. Espera antes de volver a intentarlo."
 msgid "Tracked time"
 msgstr "Tiempo registrado"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "Transferencia completada. Tu copia local sigue disponible."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "Detalles de la transferencia"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
+msgstr "Transferencia en pausa. Tu trabajo local está a salvo. Comprueba las escrituras originales para continuar."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "Transferir trabajo"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6001,6 +6068,10 @@ msgstr "Escribe {example} en el título de la tarea."
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "Escribe una fecha"
+
+#: src/app/local-transfer.tsx
+msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
+msgstr "Las definiciones de tipos y los ajustes de la colección se conservan. El trabajo local se guarda para poder recuperarlo. Las tareas y notas ya importadas son independientes; los cambios locales posteriores no se sincronizan."
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6143,6 +6214,10 @@ msgstr "Se usa cuando TaskNotes crea enlaces a proyectos, personas y otras tarea
 #: src/components/expression-builder.tsx
 msgid "Value"
 msgstr "Valor"
+
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "Valor para las tareas importadas"
 
 #: src/app/more-screen.tsx
 msgid "Version "
@@ -6294,6 +6369,7 @@ msgstr "Año"
 msgid "Yearly"
 msgstr "Anual"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "Sí"

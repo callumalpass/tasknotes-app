@@ -2,10 +2,12 @@
 
 ## Purpose
 
-TaskNotes runs one React application in browsers, Android, and iOS. mdbase is
-the sole durable collection boundary. The selected authority may be hosted or
-exposed by a connected computer; that topology is an mdbase concern, not a
-TaskNotes storage mode.
+TaskNotes runs one React application in browsers, Android, and iOS. Collection
+access stays behind `TaskRepository`. Anonymous first use has an application-owned
+local adapter; connected collections use the mdbase runtime for persistence and
+replication. Their upstream authority may be hosted or exposed by a
+connected computer; that topology is an mdbase concern, not a TaskNotes storage
+mode.
 
 ## Data flow
 
@@ -20,6 +22,8 @@ React screens and feature components
                  │
        @mdbase-dev/sdk client
                  │
+       mdbase runtime / local replica
+                 │
        hosted or computer authority
 ```
 
@@ -31,20 +35,26 @@ authority topology.
 
 ## State ownership
 
-- The mdbase authority owns task records, view sources, collection resources,
-  scratchpads, and attachment bytes.
+- Before sign-in, `LocalTaskRepository` owns atomic IndexedDB checkpoints behind
+  the same repository port. See [Local first use](local-first.md) for its
+  staged writes, recovery ledger and schema-aware import.
+- In connected collections, the mdbase runtime owns persistence and replication of task records, view
+  sources, collection resources, scratchpads, and attachment bytes.
 - `NextTaskRepository` borrows the selected SDK connection and keeps bounded
   in-memory read projections. The SDK owns captured writes, receipts and holds;
-  TaskNotes does not keep a second task replica or a legacy connection fallback.
-- IndexedDB does not contain a task or file replica. It may retain bounded UI
-  intent that is not collection data, currently the 30-second undo window for
-  a delayed deletion and attachment-operation coordination.
-- Normal creates and updates go directly to mdbase. There is no TaskNotes
-  outbox, reconciliation engine, or conflict resolver.
+  collection storage and lifetime also remain runtime-owned. There is no legacy
+  connection fallback.
+- Browser or device collection storage stays behind the repository boundary.
+  Application-owned storage may retain bounded UI intent, currently the
+  30-second undo window for a delayed deletion and attachment-operation
+  coordination.
+- Creates and updates go through `TaskRepository`. In connected collections,
+  the mdbase runtime owns synchronization and receipt recovery.
 
 ## Invariants
 
-1. A successful mutation means the mdbase authority accepted it.
+1. Local capture and upstream confirmation are distinct mutation outcomes,
+   reported from the mdbase runtime's actual results and receipts.
 2. Every persisted task passes through `@tasknotes/model` mapping and mutation
    semantics.
 3. `mdbase.yaml` and the type providing `tasknotes.task` are canonical

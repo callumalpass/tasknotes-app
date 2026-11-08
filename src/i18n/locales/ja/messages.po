@@ -1200,6 +1200,10 @@ msgstr "ボード列"
 msgid "Bold"
 msgstr "太字"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "ローカルの内容をこのコレクションに取り込む"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "タスクを移動"
@@ -1330,6 +1334,10 @@ msgstr "厳格モードの完了を確認"
 msgid "Check that the collection is connected, then try again."
 msgstr "コレクションが接続されていることを確認して、もう一度お試しください。"
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "転送を確認"
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "確認中"
@@ -1366,6 +1374,7 @@ msgstr "人物を選択…"
 msgid "Choose a property"
 msgstr "プロパティを選択"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "値を選択"
@@ -1461,6 +1470,7 @@ msgstr "値をクリア"
 msgid "Click tasks to select them."
 msgstr "タスクをクリックして選択します。"
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1750,6 +1760,11 @@ msgstr "競合する変更"
 #: src/calendar-service/settings.tsx
 msgid "Connect calendars"
 msgstr "カレンダーを接続"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "コレクションを接続"
 
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
@@ -3030,6 +3045,10 @@ msgstr "遅れて完了しても、予定した日付を維持します。"
 msgid "Keep the quick-add field on this view."
 msgstr "このビューにクイック追加欄を表示したままにする。"
 
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "ローカルで作業を続ける"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "書き続ける"
@@ -3185,6 +3204,10 @@ msgstr "人物の識別情報を読み込み中…"
 msgid "Loading…"
 msgstr "読み込み中…"
 
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "ローカルのタスクはオフラインで使用でき、このブラウザーに保存されます。接続済みコレクションで使用できる内容は、この端末で mdbase が利用できるレコードによって異なります。同期には接続が必要です。"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "場所"
@@ -3288,13 +3311,13 @@ msgstr "mdbaseにより、すべての復元対象で厳格モードが適用さ
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "TaskNotesを閉じていてもmdbaseがリマインダーを配信します。通知にタスクの内容は含まれません。"
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbaseが正本です。変更には接続が必要です。"
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbaseはタスクを持ち運び可能なMarkdownファイルとして保存し、互換アプリが共通の方法で理解できるようにします。mdbaseでは、コレクションを選択してTaskNotesのアクセスを承認します。コレクションはmdbaseがホストする場合も、接続済みのパソコンから利用する場合もあります。"
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase がローカルのレコードと同期を管理します。同期にはコレクションへの接続が必要です。"
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3631,6 +3654,7 @@ msgstr "次： "
 msgid "Next: {0}"
 msgstr "次：{0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "いいえ"
@@ -3771,10 +3795,6 @@ msgstr "値なし"
 #: src/app/app-shell.tsx
 msgid "No views yet."
 msgstr "ビューはまだありません。"
-
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "いいえ。TaskNotesは正本であるmdbaseコレクションを直接読み書きします。ホストされたコレクションにはネットワーク接続が必要です。パソコンのコレクションでは、そのパソコンにも接続できる必要があります。"
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
@@ -3967,6 +3987,10 @@ msgstr "画像を開く"
 msgid "Open in Planner"
 msgstr "Plannerで開く"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "ローカルのタスクを開く"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4115,6 +4139,10 @@ msgstr "Plannerは別のアプリです。このビューを保存してから�
 msgid "Planner will open this saved view."
 msgstr "保存済みビューをPlannerで開きます。"
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "転送を準備中"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "プレビュー"
@@ -4174,6 +4202,7 @@ msgid "Primary"
 msgstr "メイン"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4699,6 +4728,11 @@ msgstr "グループ化と表示フィールドに再利用できる値。"
 msgid "Review access"
 msgstr "アクセスを確認"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "ローカルのタスクを確認"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "通知へのアクセスを確認"
@@ -4785,6 +4819,11 @@ msgstr "復元キーを保存"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "保存済み"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "このブラウザーに保存されます。ブラウザーのデータを消去すると、ローカルのタスクも削除されます。"
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5274,6 +5313,7 @@ msgstr "開始中…"
 msgid "Starts"
 msgstr "開始"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5474,6 +5514,10 @@ msgstr "タスクのリマインダー"
 msgid "Task title"
 msgstr "タスク名"
 
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "タスクの種類"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "タスク："
@@ -5534,6 +5578,13 @@ msgstr "日付のないタスクはここに入ります。"
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "タスク、タグ、プロジェクト"
+
+#. placeholder {0}: source.tasks.length
+#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
+#. placeholder {2}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "Tasks: {0}. Notes: {1}. Files: {2}."
+msgstr "タスク：{0}。ノート：{1}。ファイル：{2}。"
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
@@ -5968,6 +6019,22 @@ msgstr "試行回数が多すぎます。しばらく待ってから、もう一
 msgid "Tracked time"
 msgstr "記録した時間"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "転送が完了しました。ローカルのコピーは引き続き利用できます。"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "転送の詳細"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
+msgstr "転送は一時停止しています。ローカルの内容は保護されています。元の書き込みを確認して続行してください。"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "内容を転送"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6001,6 +6068,10 @@ msgstr "タスクのタイトルに {example} と入力します。"
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "日付を入力"
+
+#: src/app/local-transfer.tsx
+msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
+msgstr "種類の定義とコレクションの設定はそのまま維持されます。復元できるようにローカルの内容も保持されます。取り込み済みのタスクとノートはそれぞれ独立しており、その後のローカルでの編集は同期されません。"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6143,6 +6214,10 @@ msgstr "TaskNotesがプロジェクト、人物、その他のタスクへのリ
 #: src/components/expression-builder.tsx
 msgid "Value"
 msgstr "値"
+
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "取り込むタスクの値"
 
 #: src/app/more-screen.tsx
 msgid "Version "
@@ -6294,6 +6369,7 @@ msgstr "年"
 msgid "Yearly"
 msgstr "毎年"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "はい"

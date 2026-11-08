@@ -12,6 +12,7 @@ import { Capacitor } from "@capacitor/core";
 import type { Mdbase, MdbaseApplicationConnection } from "@mdbase-dev/sdk";
 import {
   CollectionGate,
+  useAutoStart,
   CollectionProblem,
   type CollectionUiOptions,
   type CollectionView,
@@ -29,6 +30,9 @@ import {
   ConnectionNoticeContext,
   useConnectionNotice,
 } from "./connection-notice";
+import { saveBeforeReload } from "../pwa/reload";
+import { LocalTaskRepository } from "../storage/local-task-repository";
+import { LocalTransferDialog } from "./local-transfer";
 import { OpenedCollection } from "./opened-collection";
 import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
@@ -50,6 +54,36 @@ export function TaskNotesApp({
   Workspace?: Workspace;
 } = {}) {
   const [mdbase] = useState(() => supplied ?? taskNotesMdbase());
+  const [local] = useState(() => new LocalTaskRepository());
+  const [mode, setMode] = useState<"auto" | "connect" | "local">("auto");
+  const snapshot = useSyncExternalStore(
+    mdbase.subscribe,
+    mdbase.getSnapshot,
+    mdbase.getSnapshot,
+  );
+  const [hasOpened, setHasOpened] = useState(snapshot.phase?.kind === "ready");
+  useAutoStart(mdbase);
+  useEffect(() => {
+    const observe = () => {
+      if (mdbase.getSnapshot().phase.kind !== "ready") return;
+      setHasOpened(true);
+      setMode((current) => (current === "connect" ? "auto" : current));
+    };
+    const stop = mdbase.subscribe(observe);
+    queueMicrotask(observe);
+    return stop;
+  }, [mdbase]);
+  const localLifetime = useRef({ mounts: 0 });
+  useEffect(() => {
+    const lifetime = localLifetime.current;
+    lifetime.mounts++;
+    return () => {
+      lifetime.mounts--;
+      queueMicrotask(() => {
+        if (!lifetime.mounts) local.close();
+      });
+    };
+  }, [local]);
   const [arming] = useState(() => new StarterViewArming(mdbase.getSnapshot()));
   useEffect(() => arming.follow(mdbase), [arming, mdbase]);
   useEffect(() => followSignOutRoute(mdbase), [mdbase]);
@@ -62,17 +96,83 @@ export function TaskNotesApp({
   );
   useMdbaseLifetime(mdbase);
   const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
-  return (
-    <CollectionGate {...ui} extraActions={signedOutExplainer}>
-      {(connection) => (
-        <ReadyCollection
-          arming={arming}
-          connection={connection}
-          ui={ui}
-          Workspace={Workspace}
+  const [navigationProblem, setNavigationProblem] = useState<unknown>();
+  const changeWorkspace = (next: "connect" | "local") => {
+    setNavigationProblem(undefined);
+    void saveBeforeReload()
+      .then(() => setMode(next))
+      .catch(setNavigationProblem);
+  };
+  const connect = () => changeWorkspace("connect");
+  const openLocal = () => changeWorkspace("local");
+  if (
+    mode === "local" ||
+    (mode === "auto" &&
+      (snapshot.phase?.kind === "signed_out" ||
+        (snapshot.phase?.kind === "choosing" && !hasOpened) ||
+        (snapshot.phase?.kind === "problem" &&
+          !snapshot.phase.collectionId &&
+          !hasOpened) ||
+        (snapshot.phase?.kind === "unavailable" && !hasOpened)))
+  ) {
+    return (
+      <>
+        {navigationProblem !== undefined ? (
+          <p role="alert">
+            {navigationProblem instanceof Error
+              ? navigationProblem.message
+              : String(navigationProblem)}
+          </p>
+        ) : null}
+        <Workspace
+          repository={local}
+          discardPendingRecovery={preserveOriginalPending}
+          actions={{
+            collectionUi: null,
+            changeCollection: connect,
+            reauthorizeCurrentCollection: connect,
+            localCollection: { active: true, open: openLocal },
+          }}
         />
-      )}
-    </CollectionGate>
+      </>
+    );
+  }
+  return (
+    <>
+      {navigationProblem !== undefined ? (
+        <p role="alert">
+          {navigationProblem instanceof Error
+            ? navigationProblem.message
+            : String(navigationProblem)}
+        </p>
+      ) : null}
+      <CollectionGate
+        {...ui}
+        extraActions={(view) => (
+          <>
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={openLocal}
+            >
+              <Trans>Keep working locally</Trans>
+            </button>
+            {signedOutExplainer(view)}
+          </>
+        )}
+      >
+        {(connection) => (
+          <ReadyCollection
+            arming={arming}
+            local={local}
+            openLocal={openLocal}
+            connection={connection}
+            ui={ui}
+            Workspace={Workspace}
+          />
+        )}
+      </CollectionGate>
+    </>
   );
 }
 
@@ -103,6 +203,8 @@ async function preserveOriginalPending(): Promise<void> {
 
 function ReadyCollection(props: {
   arming: StarterViewArming;
+  local: LocalTaskRepository;
+  openLocal(): void;
   connection: MdbaseApplicationConnection;
   ui: CollectionUiOptions;
   Workspace: Workspace;
@@ -114,11 +216,15 @@ function ReadyCollection(props: {
 
 function HeldCollection({
   arming,
+  local,
+  openLocal,
   connection,
   ui,
   Workspace,
 }: {
   arming: StarterViewArming;
+  local: LocalTaskRepository;
+  openLocal(): void;
   connection: MdbaseApplicationConnection;
   ui: CollectionUiOptions;
   Workspace: Workspace;
@@ -139,6 +245,36 @@ function HeldCollection({
       .catch(() => undefined);
   }, [armed, arming, connection.id, repository]);
 
+  const [reviewLocal, setReviewLocal] = useState(false);
+  const [hasLocalWork, setHasLocalWork] = useState(false);
+  useEffect(() => {
+    if (!repository.imports) return;
+    let active = true;
+    const update = () => {
+      void Promise.all([local.exportSnapshot(), local.transfer(connection.id)])
+        .then(([source, pending]) => {
+          if (active)
+            setHasLocalWork(
+              Boolean(
+                pending ||
+                source.tasks.length ||
+                source.files.length ||
+                source.scratchImages.length ||
+                source.scratchpads.some(
+                  (note) => note.body.trim() || note.title?.trim(),
+                ),
+              ),
+            );
+        })
+        .catch(() => undefined);
+    };
+    const stop = local.subscribe(update);
+    update();
+    return () => {
+      active = false;
+      stop();
+    };
+  }, [local, repository, connection.id]);
   const [problem, setProblem] = useState<unknown>(undefined);
   const { mdbase } = ui;
   const collectionId = connection.id;
@@ -150,11 +286,16 @@ function HeldCollection({
     };
     return {
       collectionUi: ui,
+      localCollection: {
+        active: false,
+        open: openLocal,
+        ...(hasLocalWork ? { review: () => setReviewLocal(true) } : {}),
+      },
       changeCollection: () => run(() => mdbase.chooseAnother()),
       reauthorizeCurrentCollection: () =>
         run(() => mdbase.approve(collectionId)),
     };
-  }, [collectionId, mdbase, ui]);
+  }, [collectionId, mdbase, ui, openLocal, hasLocalWork]);
 
   const notice = useConnectionNotice(mdbase);
 
@@ -162,6 +303,13 @@ function HeldCollection({
     <ConnectionNoticeContext.Provider value={notice}>
       {problem !== undefined ? (
         <CollectionProblem {...ui} problem={problem} />
+      ) : null}
+      {reviewLocal ? (
+        <LocalTransferDialog
+          local={local}
+          destination={repository}
+          onClose={() => setReviewLocal(false)}
+        />
       ) : null}
       <Workspace
         actions={actions}

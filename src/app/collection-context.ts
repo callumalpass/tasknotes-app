@@ -2,8 +2,9 @@ import { createContext, useContext } from "react";
 import type { CollectionUiOptions } from "@mdbase-dev/ui/collections";
 
 export interface CollectionGateContextValue {
-  /** The shared collection UI's options; null outside mdbase (the demo). */
+  /** The shared collection UI's options; null for anonymous local work and the demo. */
   collectionUi: CollectionUiOptions | null;
+  localCollection?: { active: boolean; open(): void; review?(): void };
   /** Close this collection and show the list. */
   changeCollection(): void;
   /** Review this collection's access again (opens Connect; call from the click). */

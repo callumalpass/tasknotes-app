@@ -1200,6 +1200,10 @@ msgstr "보드 열"
 msgid "Bold"
 msgstr "굵게"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "로컬 작업을 이 컬렉션으로 가져오기"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "작업 탐색"
@@ -1330,6 +1334,10 @@ msgstr "엄격 모드 완료 상태 확인"
 msgid "Check that the collection is connected, then try again."
 msgstr "컬렉션이 연결되어 있는지 확인한 후 다시 시도하세요."
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "전송 확인"
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "확인 중"
@@ -1366,6 +1374,7 @@ msgstr "사람 선택…"
 msgid "Choose a property"
 msgstr "속성 선택"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "값 선택"
@@ -1461,6 +1470,7 @@ msgstr "값 지우기"
 msgid "Click tasks to select them."
 msgstr "작업을 클릭하여 선택하세요."
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1750,6 +1760,11 @@ msgstr "충돌하는 변경 사항"
 #: src/calendar-service/settings.tsx
 msgid "Connect calendars"
 msgstr "캘린더 연결"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "컬렉션 연결"
 
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
@@ -3030,6 +3045,10 @@ msgstr "늦게 완료하더라도 계획된 날짜를 유지합니다."
 msgid "Keep the quick-add field on this view."
 msgstr "이 뷰에 빠른 추가 입력란 유지"
 
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "로컬에서 계속 작업"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
 msgstr "계속 작성"
@@ -3185,6 +3204,10 @@ msgstr "사용자 사람 정보 불러오는 중…"
 msgid "Loading…"
 msgstr "불러오는 중…"
 
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "로컬 작업은 오프라인에서도 사용할 수 있으며 이 브라우저에 저장됩니다. 연결된 컬렉션의 사용 가능 여부는 이 기기에서 mdbase가 사용할 수 있는 레코드에 따라 달라집니다. 동기화하려면 연결이 필요합니다."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "위치"
@@ -3288,13 +3311,13 @@ msgstr "mdbase에서 복구 대상에 엄격 모드가 적용되었음을 확인
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "TaskNotes가 닫혀 있어도 mdbase가 리마인더를 전달합니다. 알림에는 작업 내용이 포함되지 않습니다."
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase가 권한 원본입니다. 변경하려면 연결이 필요합니다."
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbase는 작업을 이식 가능한 Markdown 파일로 보관하며 호환 앱이 이를 공통된 방식으로 이해하도록 합니다. mdbase에서 컬렉션을 선택하고 TaskNotes의 접근을 승인할 수 있습니다. 컬렉션은 mdbase에서 호스팅하거나 연결된 컴퓨터에서 제공될 수 있습니다."
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase가 로컬 레코드와 동기화를 관리합니다. 동기화하려면 컬렉션에 연결해야 합니다."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3631,6 +3654,7 @@ msgstr "다음: "
 msgid "Next: {0}"
 msgstr "다음: {0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "아니요"
@@ -3771,10 +3795,6 @@ msgstr "값 없음"
 #: src/app/app-shell.tsx
 msgid "No views yet."
 msgstr "아직 뷰가 없습니다."
-
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "아니요. TaskNotes는 권한 원본인 mdbase 컬렉션을 직접 읽고 씁니다. 호스팅된 컬렉션에는 네트워크 연결이 필요하며, 컴퓨터 컬렉션은 해당 컴퓨터에도 연결할 수 있어야 합니다."
 
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
@@ -3967,6 +3987,10 @@ msgstr "이미지 열기"
 msgid "Open in Planner"
 msgstr "Planner에서 열기"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "로컬 작업 열기"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4115,6 +4139,10 @@ msgstr "Planner는 별도 앱입니다. 이 뷰를 저장한 다음 Planner에�
 msgid "Planner will open this saved view."
 msgstr "Planner에서 이 저장된 뷰를 엽니다."
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "전송 준비 중"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "미리보기"
@@ -4174,6 +4202,7 @@ msgid "Primary"
 msgstr "기본"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4699,6 +4728,11 @@ msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 msgid "Review access"
 msgstr "접근 권한 검토"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "로컬 작업 검토"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "알림 접근 검토"
@@ -4785,6 +4819,11 @@ msgstr "복구 키 저장"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "저장됨"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "이 브라우저에 저장됩니다. 브라우저 데이터를 지우면 로컬 작업이 삭제됩니다."
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5274,6 +5313,7 @@ msgstr "시작 중…"
 msgid "Starts"
 msgstr "시작"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5474,6 +5514,10 @@ msgstr "작업 리마인더"
 msgid "Task title"
 msgstr "작업 제목"
 
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "작업 유형"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "작업: "
@@ -5534,6 +5578,13 @@ msgstr "날짜가 없는 작업은 여기에 표시됩니다."
 #: src/app/search-screen.tsx
 msgid "Tasks, tags, projects"
 msgstr "작업, 태그, 프로젝트"
+
+#. placeholder {0}: source.tasks.length
+#. placeholder {1}: source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length
+#. placeholder {2}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "Tasks: {0}. Notes: {1}. Files: {2}."
+msgstr "작업: {0}. 메모: {1}. 파일: {2}."
 
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
@@ -5968,6 +6019,22 @@ msgstr "시도 횟수가 너무 많습니다. 잠시 기다렸다가 다시 시�
 msgid "Tracked time"
 msgstr "기록된 시간"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "전송이 완료되었습니다. 로컬 사본은 계속 사용할 수 있습니다."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "전송 세부 정보"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe. Check the original writes to continue."
+msgstr "전송이 일시 중지되었습니다. 로컬 작업은 안전합니다. 계속하려면 원래 저장 결과를 확인하세요."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "작업 전송"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6001,6 +6068,10 @@ msgstr "작업 제목에 {example}을(를) 입력하세요."
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "날짜 입력"
+
+#: src/app/local-transfer.tsx
+msgid "Type definitions and collection settings stay as they are. Local work is kept for recovery. Previously imported tasks and notes stay independent; later local edits are not synchronized."
+msgstr "유형 정의와 컬렉션 설정은 그대로 유지됩니다. 복구할 수 있도록 로컬 작업이 보관됩니다. 이미 가져온 작업과 메모는 독립된 사본이며, 이후 로컬에서 수정한 내용은 동기화되지 않습니다."
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6143,6 +6214,10 @@ msgstr "TaskNotes가 프로젝트, 사람 및 다른 작업으로 연결되는 �
 #: src/components/expression-builder.tsx
 msgid "Value"
 msgstr "값"
+
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "가져올 작업에 적용할 값"
 
 #: src/app/more-screen.tsx
 msgid "Version "
@@ -6294,6 +6369,7 @@ msgstr "년"
 msgid "Yearly"
 msgstr "매년"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "예"

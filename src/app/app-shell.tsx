@@ -153,8 +153,12 @@ export function AppShell() {
     setTaskCompletion,
     updateTask,
   } = useRepository();
-  const { collectionUi, changeCollection, reauthorizeCurrentCollection } =
-    useCollectionGate();
+  const {
+    collectionUi,
+    localCollection,
+    changeCollection,
+    reauthorizeCurrentCollection,
+  } = useCollectionGate();
   const {
     documents,
     views,
@@ -444,6 +448,31 @@ export function AppShell() {
             icon="mark"
             variant="compact"
           />
+        ) : localCollection?.active ? (
+          <div className="local-collection-control">
+            <p>
+              <Trans>
+                Saved in this browser. Clearing browser data removes local
+                tasks.
+              </Trans>
+            </p>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={changeCollection}
+            >
+              <Trans>Connect collection</Trans>
+            </button>
+          </div>
+        ) : null}
+        {localCollection?.review ? (
+          <button
+            className="text-action"
+            type="button"
+            onClick={localCollection.review}
+          >
+            <Trans>Review local tasks</Trans>
+          </button>
         ) : null}
         <button
           aria-keyshortcuts="Control+N Meta+N"
