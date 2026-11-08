@@ -91,7 +91,6 @@
 }
 .choice-options .tasknotes-option-list > button.is-active {
   background: color-mix(in srgb, var(--accent) 16%, var(--paper-raised));
-  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .tasknotes-select-actions {

@@ -1083,7 +1083,7 @@
 
 .view-editor-section-heading:focus-visible {
   outline: 0;
-  box-shadow: inset 0 -1px var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--ink-muted);
 }
 
 .view-editor-section-heading h2,

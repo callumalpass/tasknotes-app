@@ -814,8 +814,9 @@
   overflow-wrap: anywhere;
 }
 
-/* Keyboard focus on a row's title marks the whole row: a soft fill with an
-   accent rule at its leading edge, rather than a box around the title text.
+/* Keyboard focus on a row's title marks the whole row: a soft fill inside a
+   rounded accent ring, rather than a box around the title text. Never a
+   leading-edge stripe: on a rounded row it bends around the corners.
    j/k and the arrow keys move this focus through the list. The extra class
    outranks the global keyboard outline. */
 .task-row .task-row-title:focus-visible {
@@ -824,7 +825,8 @@
 
 .task-row:has(.task-row-title:focus-visible) {
   background: var(--accent-soft);
-  box-shadow: inset 2px 0 var(--accent);
+  border-radius: var(--radius-control);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
 .task-row.is-complete .task-row-title {

@@ -317,9 +317,13 @@ html.scratchpad-route .page-surface {
 
 .scratchpad-load-older {
   display: block;
-  min-height: 44px;
   margin: 0 auto 10px;
-  color: var(--accent);
+  padding-inline: 12px;
+  font-weight: 600;
+}
+
+.scratchpad-load-older:hover:not(:disabled) {
+  background: var(--paper-soft);
 }
 
 .scratchpad-editor {

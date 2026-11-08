@@ -970,7 +970,7 @@ export function ScratchpadScreen({
         >
           {nextCursor ? (
             <button
-              className="scratchpad-load-older"
+              className="text-action scratchpad-load-older"
               disabled={loadingOlder}
               type="button"
               onClick={() => {
