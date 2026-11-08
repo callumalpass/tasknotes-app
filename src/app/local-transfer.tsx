@@ -6,6 +6,7 @@ import type { TaskImportTarget } from "../application/ports/task-import";
 import {
   suggestTransferPlan,
   pendingTransferSource,
+  hasTransferWork,
   prepareTransfer,
   executeTransfer,
   type TaskTransferPlan,
@@ -151,6 +152,9 @@ export function LocalTransferDialog({
             work is kept for recovery. Previously imported tasks and notes stay
             independent; later local edits are not synchronized.
           </Trans>
+        </p>
+        <p>
+          <Trans>Changed local items are imported as new copies.</Trans>
         </p>
         {source ? (
           <p>{t`Tasks: ${source.tasks.length}. Notes: ${source.scratchpads.filter((note) => note.body.trim() || note.title?.trim()).length}. Files: ${source.files.length}.`}</p>
@@ -387,14 +391,7 @@ export function LocalTransferDialog({
                 !plan ||
                 !!inputRequired ||
                 !source ||
-                !(
-                  source.tasks.length ||
-                  source.files.length ||
-                  source.scratchImages.length ||
-                  source.scratchpads.some(
-                    (note) => note.body.trim() || note.title?.trim(),
-                  )
-                )
+                !hasTransferWork(source)
               }
               onClick={() => void run()}
             >

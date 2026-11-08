@@ -1302,6 +1302,10 @@ msgstr "Alterar a duração de cada ocorrência"
 msgid "Change the time of every occurrence"
 msgstr "Alterar o horário de cada ocorrência"
 
+#: src/app/local-transfer.tsx
+msgid "Changed local items are imported as new copies."
+msgstr "Os itens locais alterados são importados como novas cópias."
+
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "Alterado: "

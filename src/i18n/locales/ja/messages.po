@@ -1302,6 +1302,10 @@ msgstr "すべての発生分の所要時間を変更"
 msgid "Change the time of every occurrence"
 msgstr "すべての発生分の時刻を変更"
 
+#: src/app/local-transfer.tsx
+msgid "Changed local items are imported as new copies."
+msgstr "変更されたローカルの項目は、新しいコピーとしてインポートされます。"
+
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "変更： "

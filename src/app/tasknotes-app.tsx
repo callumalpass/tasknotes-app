@@ -33,6 +33,7 @@ import {
 import { saveBeforeReload } from "../pwa/reload";
 import { LocalTaskRepository } from "../storage/local-task-repository";
 import { LocalTransferDialog } from "./local-transfer";
+import { useLocalTransferReview } from "./use-local-transfer-review";
 import { OpenedCollection } from "./opened-collection";
 import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
@@ -246,35 +247,10 @@ function HeldCollection({
   }, [armed, arming, connection.id, repository]);
 
   const [reviewLocal, setReviewLocal] = useState(false);
-  const [hasLocalWork, setHasLocalWork] = useState(false);
-  useEffect(() => {
-    if (!repository.imports) return;
-    let active = true;
-    const update = () => {
-      void Promise.all([local.exportSnapshot(), local.transfer(connection.id)])
-        .then(([source, pending]) => {
-          if (active)
-            setHasLocalWork(
-              Boolean(
-                pending ||
-                source.tasks.length ||
-                source.files.length ||
-                source.scratchImages.length ||
-                source.scratchpads.some(
-                  (note) => note.body.trim() || note.title?.trim(),
-                ),
-              ),
-            );
-        })
-        .catch(() => undefined);
-    };
-    const stop = local.subscribe(update);
-    update();
-    return () => {
-      active = false;
-      stop();
-    };
-  }, [local, repository, connection.id]);
+  const needsLocalReview = useLocalTransferReview(
+    local,
+    repository.imports ? connection.id : undefined,
+  );
   const [problem, setProblem] = useState<unknown>(undefined);
   const { mdbase } = ui;
   const collectionId = connection.id;
@@ -289,13 +265,13 @@ function HeldCollection({
       localCollection: {
         active: false,
         open: openLocal,
-        ...(hasLocalWork ? { review: () => setReviewLocal(true) } : {}),
+        ...(needsLocalReview ? { review: () => setReviewLocal(true) } : {}),
       },
       changeCollection: () => run(() => mdbase.chooseAnother()),
       reauthorizeCurrentCollection: () =>
         run(() => mdbase.approve(collectionId)),
     };
-  }, [collectionId, mdbase, ui, openLocal, hasLocalWork]);
+  }, [collectionId, mdbase, ui, openLocal, needsLocalReview]);
 
   const notice = useConnectionNotice(mdbase);
 

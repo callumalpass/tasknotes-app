@@ -1302,6 +1302,10 @@ msgstr "모든 반복 항목의 소요 시간 변경"
 msgid "Change the time of every occurrence"
 msgstr "모든 반복 항목의 시간 변경"
 
+#: src/app/local-transfer.tsx
+msgid "Changed local items are imported as new copies."
+msgstr "변경된 로컬 항목은 새 복사본으로 가져옵니다."
+
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "변경됨: "

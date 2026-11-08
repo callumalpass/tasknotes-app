@@ -1302,6 +1302,10 @@ msgstr "更改每个重复项的时长"
 msgid "Change the time of every occurrence"
 msgstr "更改每个重复项的时间"
 
+#: src/app/local-transfer.tsx
+msgid "Changed local items are imported as new copies."
+msgstr "修改后的本地项目将作为新副本导入。"
+
 #: src/components/recovered-edit-notice.tsx
 msgid "Changed: "
 msgstr "已更改： "

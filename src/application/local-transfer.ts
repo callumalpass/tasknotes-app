@@ -51,37 +51,93 @@ export function suggestTransferPlan(
   return { target, statuses, priorities, customValues: {} };
 }
 
-/** Completed transfers retain provenance. Local copies are independent after
- * import: later reviews offer new records, never overwrite destination edits. */
+/** Completed transfers retain provenance. Only new or changed local content
+ * needs review. Importing a changed item creates a separate destination copy. */
 export function pendingTransferSource(
   source: CollectionSnapshot,
   history: readonly TransferLedger[],
 ): CollectionSnapshot {
-  const completed = history.filter((ledger) => ledger.completed);
-  const keys = new Set(
-    completed.flatMap((ledger) => ledger.prepared.map((record) => record.key)),
-  );
-  const files = new Set(
-    completed.flatMap((ledger) =>
-      ledger.source.files.map((entry) =>
-        JSON.stringify([entry.file.path, entry.file.contentDigest]),
-      ),
-    ),
-  );
+  const completed = history
+    .filter((ledger) => ledger.completed && ledger.source.id === source.id)
+    .sort((a, b) => a.createdAt - b.createdAt);
+  const records = new Map<string, string>();
+  const files = new Map<string, string | undefined>();
+  for (const ledger of completed) {
+    const keys = new Set(ledger.prepared.map((record) => record.key));
+    for (const task of ledger.source.tasks)
+      if (keys.has(task.id)) records.set(task.id, taskContent(task));
+    for (const note of ledger.source.scratchpads)
+      if (keys.has(`note:${note.id}`))
+        records.set(`note:${note.id}`, noteContent(note));
+    for (const image of ledger.source.scratchImages)
+      if (keys.has(`image:${image.id}`))
+        records.set(`image:${image.id}`, imageContent(image));
+    for (const entry of ledger.source.files)
+      files.set(entry.file.path, entry.file.contentDigest);
+  }
   return {
     ...source,
-    tasks: source.tasks.filter((task) => !keys.has(task.id)),
+    tasks: source.tasks.filter(
+      (task) => records.get(task.id) !== taskContent(task),
+    ),
     scratchpads: source.scratchpads.filter(
-      (note) => !keys.has(`note:${note.id}`),
+      (note) => records.get(`note:${note.id}`) !== noteContent(note),
     ),
     scratchImages: source.scratchImages.filter(
-      (image) => !keys.has(`image:${image.id}`),
+      (image) => records.get(`image:${image.id}`) !== imageContent(image),
     ),
     files: source.files.filter(
       (entry) =>
-        !files.has(JSON.stringify([entry.file.path, entry.file.contentDigest])),
+        !files.has(entry.file.path) ||
+        files.get(entry.file.path) !== entry.file.contentDigest,
     ),
   };
+}
+
+export function hasTransferWork(source: CollectionSnapshot): boolean {
+  return Boolean(
+    source.tasks.length ||
+    source.files.length ||
+    source.scratchImages.length ||
+    source.scratchpads.some((note) => note.body.trim() || note.title?.trim()),
+  );
+}
+
+function taskContent(task: Task): string {
+  return contentKey({
+    ...task,
+    // Save bookkeeping and derived frontmatter do not constitute a content edit.
+    revision: undefined,
+    updatedAt: undefined,
+    operationWarnings: undefined,
+    frontmatter: undefined,
+  });
+}
+
+function noteContent(note: CollectionSnapshot["scratchpads"][number]): string {
+  // Moving a note into history or resuming it leaves its imported content intact.
+  return contentKey({
+    id: note.id,
+    path: note.path,
+    title: note.title ?? "",
+    body: note.body,
+  });
+}
+
+function imageContent(
+  image: CollectionSnapshot["scratchImages"][number],
+): string {
+  return contentKey({ ...image, revision: undefined, dateModified: undefined });
+}
+
+function contentKey(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.entries(item).sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : item,
+  );
 }
 
 /** Produces the full immutable payload before writing anything to the destination.

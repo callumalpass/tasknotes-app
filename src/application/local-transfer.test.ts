@@ -10,6 +10,7 @@ import {
   prepareTransfer,
   suggestTransferPlan,
   pendingTransferSource,
+  hasTransferWork,
 } from "./local-transfer";
 
 async function fixture() {
@@ -277,4 +278,138 @@ it("preserves historical timestamps and leaves destination computed custom field
   expect(imported.updatedAt).toBe(source.updatedAt);
   expect(imported.frontmatter.computed).toBeUndefined();
   expect(imported.frontmatter.portableExtra).toBe("Keep this");
+});
+
+it("hides retained imports, reviews changed content as separate copies, and compares with the latest import", async () => {
+  const f = await fixture();
+  f.plan.customValues.client = "Example";
+  const first = await prepareTransfer(
+    f.snapshot,
+    "destination",
+    f.plan,
+    f.port,
+  );
+  first.completed = true;
+  first.createdAt = 1;
+  expect(hasTransferWork(pendingTransferSource(f.snapshot, [first]))).toBe(
+    false,
+  );
+  const edited = structuredClone(f.snapshot);
+  edited.tasks[0]!.body = "Revised **notes**";
+  edited.tasks[0]!.tags = ["changed"];
+  const pending = pendingTransferSource(edited, [first]);
+  expect(pending.tasks.map((task) => task.id)).toEqual([f.first.id]);
+  expect(hasTransferWork(pending)).toBe(true);
+  const next = await prepareTransfer(pending, "destination", f.plan, f.port, [
+    first,
+  ]);
+  expect(next.prepared).toHaveLength(1);
+  expect(next.prepared[0]!.id).not.toBe(first.prepared[0]!.id);
+  expect(next.prepared[0]!.body).toBe("Revised **notes**");
+  expect(first.prepared[0]!.body).toBe("Original **body**");
+  next.completed = true;
+  next.createdAt = 2;
+  // History order and old matching versions cannot hide a change after the latest import.
+  expect(hasTransferWork(pendingTransferSource(edited, [next, first]))).toBe(
+    false,
+  );
+  expect(
+    pendingTransferSource(f.snapshot, [next, first]).tasks.map(
+      (task) => task.id,
+    ),
+  ).toEqual([f.first.id]);
+  // An incomplete import and another local collection's history cannot suppress work.
+  expect(
+    hasTransferWork(
+      pendingTransferSource(f.snapshot, [{ ...first, completed: false }]),
+    ),
+  ).toBe(true);
+  expect(
+    hasTransferWork(
+      pendingTransferSource(f.snapshot, [
+        { ...first, source: { ...first.source, id: "different-source" } },
+      ]),
+    ),
+  ).toBe(true);
+});
+
+it("reviews edited notes, images and files without treating Scratchpad history movement as new content", async () => {
+  const f = await fixture();
+  f.plan.customValues.client = "Example";
+  f.snapshot.tasks = [];
+  f.snapshot.scratchpads = [
+    {
+      id: "note",
+      path: "Scratchpad/note.md",
+      revision: "scratch-1",
+      state: "active",
+      dateCreated: "2026-11-08T01:00:00Z",
+      dateModified: "2026-11-08T01:00:00Z",
+      body: "Original note",
+    },
+  ];
+  f.snapshot.scratchImages = [
+    {
+      kind: "image",
+      id: "image",
+      path: "Scratchpad/image.md",
+      revision: "image-1",
+      dateCreated: "2026-11-08T01:00:00Z",
+      dateModified: "2026-11-08T01:00:00Z",
+      file: "Attachments/proof.txt",
+      digest: `sha256:${"a".repeat(64)}`,
+      size: 5,
+      mediaType: "image/png",
+    },
+  ];
+  const first = await prepareTransfer(
+    f.snapshot,
+    "destination",
+    f.plan,
+    f.port,
+  );
+  first.completed = true;
+  const current = structuredClone(f.snapshot);
+  Object.assign(current.scratchpads[0]!, {
+    state: "converted",
+    revision: "scratch-2",
+    dateModified: "2026-11-08T02:00:00Z",
+    dateConverted: "2026-11-08T02:00:00Z",
+  });
+  expect(hasTransferWork(pendingTransferSource(current, [first]))).toBe(false);
+  current.scratchpads[0]!.body = "Updated note";
+  current.scratchImages[0]!.caption = "New caption";
+  current.files[0]!.file.contentDigest = `sha256:${"b".repeat(64)}`;
+  const pending = pendingTransferSource(current, [first]);
+  expect(pending.scratchpads).toHaveLength(1);
+  expect(pending.scratchImages).toHaveLength(1);
+  expect(pending.files).toHaveLength(1);
+  expect(hasTransferWork(pending)).toBe(true);
+});
+
+it("ignores empty Scratchpad placeholders and task save bookkeeping", async () => {
+  const f = await fixture();
+  f.plan.customValues.client = "Example";
+  const first = await prepareTransfer(
+    f.snapshot,
+    "destination",
+    f.plan,
+    f.port,
+  );
+  first.completed = true;
+  const source = structuredClone(f.snapshot);
+  source.tasks[0]!.revision++;
+  source.tasks[0]!.updatedAt = "2026-11-09T01:00:00Z";
+  source.tasks[0]!.frontmatter = {
+    ...source.tasks[0]!.frontmatter,
+    revision: 2,
+  };
+  // Custom object insertion order does not change its meaning.
+  source.tasks[0]!.customProperties = Object.fromEntries(
+    Object.entries(source.tasks[0]!.customProperties).reverse(),
+  );
+  expect(hasTransferWork(pendingTransferSource(source, [first]))).toBe(false);
+  const empty = new SnapshotTaskRepository();
+  await empty.initialize();
+  expect(hasTransferWork(empty.snapshot())).toBe(false);
 });

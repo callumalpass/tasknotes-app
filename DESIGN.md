@@ -111,7 +111,11 @@ danger roles rather than fixed palette values.
 
 Before sign-in, the local workspace names its browser scope and commits through
 `LocalTaskRepository`. It offers an explicit reviewed import when connecting;
-local source records remain available for recovery. In connected collections,
+local source records remain available for recovery through Collection settings.
+The local-review action disappears after confirmed import and returns for new or
+changed local content or an unresolved import into the selected collection.
+Changed items import as separate copies without replacing destination edits.
+In connected collections,
 every collection choice names its mdbase authority in plain language. Describe
 local capture, pending synchronization, and upstream confirmation according to
 the mdbase runtime's actual state. Browser and device storage may hold runtime
