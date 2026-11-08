@@ -83,3 +83,92 @@ it("detects a destination source edit even when the resolved task settings are u
     f.close();
   }
 });
+
+it("round-trips a populated task's notes and metadata through transfer and destination readback", async () => {
+  const { prepareTransfer, executeTransfer, suggestTransferPlan } =
+    await import("../application/local-transfer");
+  const f = await nextTaskFixture();
+  try {
+    const source = new SnapshotTaskRepository();
+    const created = await source.create({
+      title: "Populated local import",
+      body: "# Notes\n\nKeep **all** supporting details.\n\n- First point\n- Second point\n",
+      priority: "high",
+      scheduled: "2026-11-12T10:00",
+      due: "2026-11-13T17:00",
+      tags: ["research", "planning"],
+      contexts: ["home"],
+      projects: ["[[Projects/Import check]]"],
+      assignees: ["[[People/Ada]]"],
+      attachments: ["Attachments/spec.pdf"],
+      recurrence: "FREQ=WEEKLY;BYDAY=TH",
+      recurrenceAnchor: "scheduled",
+      reminders: [
+        {
+          id: "before-due",
+          type: "relative",
+          relatedTo: "due",
+          offset: "-PT30M",
+        },
+      ],
+      timeEstimate: 45,
+      sortOrder: "a1",
+    });
+    const original = await source.replaceTimeEntries(created.id, [
+      {
+        startTime: "2026-11-08T09:00:00Z",
+        endTime: "2026-11-08T09:15:00Z",
+        description: "Research notes",
+      },
+    ]);
+    const target = (await f.repository.imports.targets())[0]!;
+    const snapshot = source.snapshot();
+    const ledger = await prepareTransfer(
+      snapshot,
+      "destination",
+      suggestTransferPlan(snapshot, target),
+      f.repository.imports,
+    );
+    await executeTransfer(
+      ledger,
+      f.repository.imports,
+      undefined,
+      async () => {},
+    );
+    const importedId = ledger.records[original.id]!.id;
+    const imported = (await f.repository.get(importedId))!;
+    for (const key of [
+      "title",
+      "body",
+      "status",
+      "priority",
+      "scheduled",
+      "due",
+      "tags",
+      "contexts",
+      "projects",
+      "assignees",
+      "attachments",
+      "recurrence",
+      "recurrenceAnchor",
+      "reminders",
+      "timeEstimate",
+      "timeEntries",
+      "sortOrder",
+      "createdAt",
+      "updatedAt",
+    ] as const) {
+      expect(imported[key], key).toEqual(original[key]);
+    }
+    const stored = await f.client.get(importedId, {
+      body: true,
+      document: true,
+      effective: true,
+    });
+    expect(stored.body).toBe(original.body);
+    expect(stored.document).toContain("# Notes");
+    expect(ledger.completed).toBe(true);
+  } finally {
+    f.close();
+  }
+});

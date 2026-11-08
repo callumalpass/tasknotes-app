@@ -209,3 +209,45 @@ test("collapsed local navigation keeps connection controls compact and usable", 
   await expect(notice).toBeVisible();
   await expect(connect.locator("span")).toBeVisible();
 });
+
+test("saves task notes before opening Connect, including an edit still awaiting autosave", async ({
+  page,
+}) => {
+  await page.goto("/e2e/local-first.fixture.html");
+  await page
+    .getByRole("button", { name: "New task", exact: true })
+    .filter({ visible: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "New task", exact: true });
+  const title = dialog.getByRole("combobox", { name: "New task title" });
+  await title.fill("Local notes before Connect today");
+  await title.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await page
+    .locator(".task-row-title")
+    .filter({ hasText: "Local notes before Connect" })
+    .click();
+  const body =
+    "# Notes\n\nKeep all supporting details, **formatting**, and links.";
+  await page.getByRole("textbox", { name: "Notes", exact: true }).fill(body);
+  // Leave before the debounce expires: Connect must await the editor's save.
+  await page
+    .getByRole("button", { name: "Connect collection", exact: true })
+    .filter({ visible: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Keep working locally", exact: true })
+    .click();
+  await page.goto("/e2e/local-first.fixture.html");
+  await page
+    .locator(".task-row-title")
+    .filter({ hasText: "Local notes before Connect" })
+    .click();
+  await page
+    .getByRole("group", { name: "Editor mode", exact: true })
+    .getByRole("button", { name: "Write", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Notes", exact: true }),
+  ).toHaveValue(body);
+});
