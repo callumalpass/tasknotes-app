@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  chmod,
   cp,
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -23,7 +24,9 @@ import { compareInstalled, productionPin } from "./originals.mjs";
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 it("authenticates staging installation without weakening original digest or installed-member gates", async (context) => {
-  const root = await mkdtemp(join(tmpdir(), "tasknotes-intake-"));
+  const root = await realpath(
+    await mkdtemp(join(repoRoot, "node_modules/tasknotes-intake-")),
+  );
   context.after(() => rm(root, { recursive: true, force: true }));
   const previous = process.env.GITHUB_TOKEN;
   process.env.GITHUB_TOKEN = "test-job-token";
@@ -117,6 +120,14 @@ it("authenticates staging installation without weakening original digest or inst
   await assert.rejects(
     compareInstalled(root, { sdk: original }, { fetchImpl }),
     /ALL installed original/,
+  );
+  const outside = await mkdtemp(join(tmpdir(), "tasknotes-intake-outside-"));
+  context.after(() => rm(outside, { recursive: true, force: true }));
+  await rm(installed, { recursive: true });
+  await symlink(outside, installed, "dir");
+  await assert.rejects(
+    compareInstalled(root, { sdk: original }, { fetchImpl }),
+    /installed originals outside checkout/,
   );
 });
 it("keeps every job token read-only and limits new token wiring to intake, installation and comparison", async () => {
