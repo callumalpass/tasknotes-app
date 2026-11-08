@@ -549,7 +549,6 @@ export function TaskCapture({
             rows={1}
             id={inputId}
             ref={inputRef}
-            role="combobox"
             aria-activedescendant={
               suggestions.length && activeSuggestion >= 0
                 ? `${suggestionsId}-option-${activeSuggestion}`
@@ -557,7 +556,6 @@ export function TaskCapture({
             }
             aria-autocomplete="list"
             aria-controls={suggestions.length ? suggestionsId : undefined}
-            aria-expanded={suggestions.length > 0}
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="done"

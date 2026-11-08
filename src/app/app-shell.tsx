@@ -609,7 +609,6 @@ export function AppShell() {
       {route.page !== "task" && showGlobalCaptureFab ? (
         <CaptureFab
           aria-keyshortcuts="Control+N Meta+N"
-          aria-label={translate({ message: "New task" })}
           onClick={() => setCaptureOpen(true)}
         />
       ) : null}
@@ -818,7 +817,7 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
       className="navigation-project-section"
       role="group"
     >
-      {projects.map(({ label, count }) => {
+      {projects.map(({ label, count }, index) => {
         const accessibleLabel = t`${label}, ${countLabel(count, "task")}`;
         const words = label.trim().split(/\s+/u);
         const monogram = (
@@ -840,8 +839,11 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
         };
         return (
           <button
-            aria-label={accessibleLabel}
-            aria-describedby={tooltip?.label === label ? tooltipId : undefined}
+            // Label in name: the visible "Field research 3", described in full.
+            aria-label={`${label} ${count}`}
+            aria-describedby={
+              tooltip?.label === label ? tooltipId : `${tooltipId}-${index}`
+            }
             aria-current={focused === label ? "page" : undefined}
             className={focused === label ? "is-active" : undefined}
             key={label}
@@ -858,11 +860,16 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
             }}
             onClick={() => requestProjectJump(label)}
           >
-            <strong aria-hidden="true" className="project-monogram">
-              {monogram}
-            </strong>
-            <span>{label}</span>
-            <small aria-hidden="true">{count}</small>
+            {/* Drawn by CSS so the monogram stays out of the visible label. */}
+            <strong
+              aria-hidden="true"
+              className="project-monogram"
+              data-monogram={monogram}
+            />
+            <span>{label}</span> <small aria-hidden="true">{count}</small>
+            <span hidden id={`${tooltipId}-${index}`}>
+              {accessibleLabel}
+            </span>
           </button>
         );
       })}
@@ -1441,7 +1448,9 @@ export function Navigation({
     return (
       <button
         {...reorder.itemProps(navigationKey, label)}
-        aria-label={accessibleLabel}
+        // The name starts with the visible "Today 5" (WCAG 2.5.3); the title
+        // still describes the full count. Collapsed, only the icon shows.
+        aria-label={counts ? `${label} ${counts.total}` : label}
         aria-current={active === key ? "page" : undefined}
         className={active === key ? "is-active" : undefined}
         key={key}
@@ -1459,7 +1468,7 @@ export function Navigation({
         }}
       >
         <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
-        <span>{label}</span>
+        <span>{label}</span>{" "}
         {mode === "desktop" && (today || counts) ? (
           <small
             aria-hidden="true"

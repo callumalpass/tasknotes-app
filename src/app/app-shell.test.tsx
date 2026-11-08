@@ -279,12 +279,11 @@ it("names Today counts, reserves unknown badges, and preserves custom navigation
     screen
       .getAllByRole("button")
       .slice(0, 2)
-      .map((button) => button.textContent),
-  ).toEqual(["My work", "Today0"]);
+      .map((button) => button.textContent?.trim()),
+  ).toEqual(["My work", "Today 0"]);
   rerender(component({ total: 14, overdue: 12 }));
-  const badge = screen.getByRole("button", {
-    name: "Today, 14 tasks, 12 overdue",
-  });
+  // Label in name (WCAG 2.5.3): the name is the visible "Today 14".
+  const badge = screen.getByRole("button", { name: "Today 14" });
   expect(badge).toHaveAttribute("title", "Today, 14 tasks, 12 overdue (g t)");
   fireEvent.click(badge);
   expect(onNavigate).toHaveBeenCalledWith({ page: "views", key: today.key });
@@ -304,15 +303,20 @@ it("keeps project identity and task counts accessible in the rail with focus too
       onNavigate={vi.fn()}
     />,
   );
-  const project = screen.getByRole("button", {
-    name: "Product refresh, 10 tasks",
+  const project = screen.getByRole("button", { name: "Product refresh 10" });
+  expect(project.querySelector(".project-monogram")).toHaveAttribute(
+    "data-monogram",
+    "PR",
+  );
+  expect(project).toHaveAccessibleDescription("Product refresh, 10 tasks");
+  const fieldResearch = screen.getByRole("button", {
+    name: "Field research 1",
   });
-  expect(project.querySelector(".project-monogram")).toHaveTextContent("PR");
-  expect(
-    screen
-      .getByRole("button", { name: "Field research, 1 task" })
-      .querySelector(".project-monogram"),
-  ).toHaveTextContent("FR");
+  expect(fieldResearch.querySelector(".project-monogram")).toHaveAttribute(
+    "data-monogram",
+    "FR",
+  );
+  expect(fieldResearch).toHaveAccessibleDescription("Field research, 1 task");
   fireEvent.focus(project);
   expect(screen.getByRole("tooltip")).toHaveTextContent(
     "Product refresh, 10 tasks",

@@ -148,3 +148,25 @@ test("demo sidebar and shortcut sheet remain accessible", async ({ page }) => {
   await scan();
   await page.keyboard.press("Escape");
 });
+
+for (const width of [375, 1280]) {
+  test(`demo work screen keeps label in name and allowed roles at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("?demo=12");
+    await expect(
+      page.getByText("Prepare quarterly planning session").first(),
+    ).toBeVisible();
+    // label-content-name-mismatch is experimental in axe, so the tag-based
+    // scans above skip it. Voice control needs the visible text in the name.
+    const results = await new AxeBuilder({ page })
+      .withRules(["label-content-name-mismatch", "aria-allowed-role"])
+      .analyze();
+    expect(
+      results.violations.flatMap(({ id, nodes }) =>
+        nodes.map(({ target }) => `${id} ${target.join(" ")}`),
+      ),
+    ).toEqual([]);
+  });
+}

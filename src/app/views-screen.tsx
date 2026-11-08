@@ -1714,7 +1714,6 @@ export function ViewsScreen({
           <>
             <CaptureFab
               className="view-context-capture"
-              aria-label={translate({ message: "New task" })}
               onClick={() => setMobileCaptureOpen(true)}
             />
             <GlobalTaskCapture

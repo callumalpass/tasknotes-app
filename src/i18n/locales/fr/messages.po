@@ -3565,7 +3565,6 @@ msgstr "Nouvelle sous-tâche"
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
-#: src/app/views-screen.tsx
 #: src/components/global-task-capture.tsx
 msgid "New task"
 msgstr "Nouvelle tâche"

@@ -45,7 +45,6 @@ export function TaskListSection({
     <button
       type="button"
       className="task-section-toggle"
-      aria-label={`${label} ${count}`}
       aria-expanded={expanded}
       aria-controls={headingOnly ? undefined : id}
       disabled={arranging}
@@ -57,8 +56,7 @@ export function TaskListSection({
       }}
     >
       <ChevronRight aria-hidden="true" size={14} />
-      <span>{label}</span>
-      <span className="task-section-count">{count}</span>
+      <span>{label}</span> <span className="task-section-count">{count}</span>
     </button>
   );
   return (

@@ -371,7 +371,7 @@ test("supports project capture and saved-view editing in the demo", async ({
   await page
     .getByRole("button", { name: "Add task to Field research" })
     .click();
-  const projectCapture = page.getByRole("combobox", {
+  const projectCapture = page.getByRole("textbox", {
     name: "New task title",
   });
   await projectCapture.fill("Draft the interview guide");

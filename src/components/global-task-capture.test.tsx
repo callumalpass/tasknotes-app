@@ -33,7 +33,7 @@ describe("GlobalTaskCapture", () => {
       </RepositoryProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "New task title" }), {
       target: { value: "First task" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
@@ -41,13 +41,13 @@ describe("GlobalTaskCapture", () => {
       expect(screen.queryByRole("dialog", { name: "New task" })).toBeNull(),
     );
     fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "New task title" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "New task title" }), {
       target: { value: "Second task" },
     });
     finish();
     await waitFor(() =>
       expect(
-        screen.getByRole("combobox", { name: "New task title" }),
+        screen.getByRole("textbox", { name: "New task title" }),
       ).toHaveValue("Second task"),
     );
   });
@@ -88,7 +88,7 @@ it("Escape closes only autocomplete first, then keeps the draft when closing cap
     </RepositoryProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
-  const input = screen.getByRole("combobox", { name: "New task title" });
+  const input = screen.getByRole("textbox", { name: "New task title" });
   fireEvent.change(input, {
     target: { value: "Call Rowan !", selectionStart: 12 },
   });
@@ -99,7 +99,7 @@ it("Escape closes only autocomplete first, then keeps the draft when closing cap
   fireEvent.keyDown(input, { key: "Escape" });
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
-  expect(screen.getByRole("combobox", { name: "New task title" })).toHaveValue(
+  expect(screen.getByRole("textbox", { name: "New task title" })).toHaveValue(
     "Call Rowan !",
   );
 });
@@ -117,7 +117,7 @@ it("Shift+Enter opens details without adding a task", async () => {
     </RepositoryProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Open capture" }));
-  const input = screen.getByRole("combobox", { name: "New task title" });
+  const input = screen.getByRole("textbox", { name: "New task title" });
   fireEvent.change(input, { target: { value: "Call Rowan" } });
   fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
   const date = await screen.findByRole("button", {

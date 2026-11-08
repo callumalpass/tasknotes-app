@@ -153,7 +153,7 @@ test("opens the original held client without relay traffic and preserves navigat
   await page
     .getByRole("button", { name: "Open synced fixture collection" })
     .click();
-  await page.getByRole("button", { name: /^Today(,|$)/ }).click();
+  await page.getByRole("button", { name: /^Today(?: \d+)?$/ }).click();
   await expect(
     page.getByText("Task from the held client", { exact: true }),
   ).toBeVisible();
@@ -298,7 +298,7 @@ test("acknowledges local capture before confirmation and prefetches actual recor
     // Phone capture closes after local acceptance. Reopening must offer an
     // empty, editable composer even while the original record awaits its ACK.
     await expect(input).toHaveCount(0);
-    await page.getByRole("button", { name: "New task", exact: true }).click();
+    await page.getByRole("button", { name: "Add task", exact: true }).click();
   }
   await expect(input).toHaveValue("");
   await expect(input).toBeEditable();

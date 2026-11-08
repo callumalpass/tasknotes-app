@@ -1072,6 +1072,11 @@
     border-radius: var(--radius-control);
   }
 
+  .navigation-project-section .project-monogram::before {
+    content: attr(data-monogram);
+    content: attr(data-monogram) / "";
+  }
+
   .sidebar-collapsed .navigation-project-section small {
     display: none;
   }

@@ -87,7 +87,7 @@ test("Archive capture acknowledges the accepted task without moving the view", a
   await page.getByRole("button", { name: "New task", exact: true }).click();
   const capture = page.getByRole("dialog", { name: "New task" });
   await capture
-    .getByRole("combobox", { name: "New task title" })
+    .getByRole("textbox", { name: "New task title" })
     .fill("Archive capture confirmation");
   await capture.getByRole("button", { name: "Add", exact: true }).click();
   await expect(capture).toHaveCount(0);
