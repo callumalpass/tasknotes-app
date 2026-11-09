@@ -287,3 +287,17 @@ it("keeps requiring a collection where work before connecting is off", async () 
     screen.queryByRole("button", { name: "Continue without connecting" }),
   ).toBeNull();
 });
+
+it("keeps the default signed-out web gate on Sign in until unsynced setup is fixed", async () => {
+  const mdbase = await createTestMdbase({ phase: "signed_out" });
+  render(<TaskNotesApp mdbase={mdbase} />);
+
+  expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Continue without connecting" }),
+  ).toBeNull();
+  expect(mdbase.getSnapshot().phase.kind).toBe("signed_out");
+  expect(
+    mdbase.fixture.controls.observedActions().map((call) => call.action),
+  ).not.toContain("openUnsynced");
+});

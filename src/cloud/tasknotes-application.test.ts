@@ -1,14 +1,31 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { Capacitor } from "@capacitor/core";
+import * as sdk from "@mdbase-dev/sdk";
+import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import manifest from "../generated/mdbase-app.json";
 import {
   taskNotesApplicationDeclaration,
   taskNotesMdbase,
+  taskNotesUnsyncedEnabled,
 } from "./tasknotes-application";
+
+vi.mock("@mdbase-dev/sdk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@mdbase-dev/sdk")>()),
+  createMdbase: vi.fn(),
+}));
 
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
+
+it.each([false, true])(
+  "keeps work before connecting disabled with native platform %s until SDK setup is fixed",
+  (native) => {
+    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(native);
+    expect(taskNotesUnsyncedEnabled()).toBe(false);
+  },
+);
 
 it.each([undefined, "", "https://editor.example.test/"])(
   "refuses next host startup with missing/invalid Editor configuration %s",
@@ -66,4 +83,25 @@ it("declares the exact production environment and origin to the SDK", () => {
   });
   expect(declaration.environment).toBe("production");
   expect(declaration.origin).toBe("https://app.tasknotes.dev");
+});
+
+it("starts the web SDK without automatically opening an unsynced collection", async () => {
+  const mdbase = await createTestMdbase({ phase: "signed_out" });
+  const createMdbase = vi.mocked(sdk.createMdbase).mockReturnValue(mdbase);
+  vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(false);
+  vi.stubEnv("VITE_TASKNOTES_ENVIRONMENT", "staging");
+  vi.stubEnv("VITE_TASKNOTES_LAB_ORIGIN", "");
+  vi.stubEnv(
+    "VITE_TASKNOTES_EDITOR_ORIGIN",
+    "https://editor-staging.mdbase.dev",
+  );
+  vi.stubGlobal("window", {
+    location: { origin: "https://staging.tasknotes.dev" },
+  });
+
+  expect(taskNotesMdbase()).toBe(mdbase);
+  expect(createMdbase).toHaveBeenCalledWith(
+    expect.objectContaining({ environment: "staging" }),
+    { followVisibility: true, unsynced: false },
+  );
 });
