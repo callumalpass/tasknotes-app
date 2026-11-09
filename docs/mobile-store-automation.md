@@ -96,6 +96,17 @@ but does not open an app-stop. Only no boundary or a successful read-only
 `store-status.yml` boundary proves that refusal. Write evidence is persisted
 before build/publisher dispatch, never inferred from a missing submission ID.
 
+For infrastructure reasons allowlisted by ops `bin/lib/cd_retry.py`, an explicit
+`write_started: false` refusal retains `outcome: stopped`, its reason and the
+nonzero exit status without opening an app-stop. App CD verifies the retained
+target/source/run binding, retries once after 90 seconds, and stops that store
+line if the retry fails or is refused. TaskNotes mirrors and test-pins the ops
+allowlist because there is no shared contract file; fetching policy while
+handling an evidence outage would add another failure dependency. Unknown
+outcomes/identities and `dispatch-unknown` / `waiting` boundaries still self-stop,
+even if an ops allowlist entry would otherwise match. A started or unknown write,
+non-allowlisted reason, or store rejection also keeps its existing stop behavior.
+
 A failed build, upload, signing/digest check, rejected review, or unknown dispatch stops the
 selected store through those existing `app-stop` records. Unknown child writes
 are never cancelled or redispatched automatically. Clear requires every
