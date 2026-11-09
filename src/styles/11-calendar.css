@@ -595,19 +595,6 @@
   pointer-events: none;
 }
 
-.full-calendar-visible-days {
-  position: sticky;
-  top: 44px;
-  z-index: 11;
-  min-height: 24px;
-  margin: 0;
-  padding-block: 4px;
-  color: var(--ink-soft);
-  font-size: var(--type-supporting);
-  font-weight: 600;
-  background: var(--paper);
-}
-
 .full-calendar-event-content.is-recurring
   .full-calendar-event-primary
   > span::after {

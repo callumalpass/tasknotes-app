@@ -220,13 +220,7 @@ export function TaskCalendarView({
     if (view) setTitle(view.title);
   }, [locale]);
   const [range, setRange] = useState(() => initialRange(selected, mode));
-  const visibleDays = useCalendarPosition(
-    rootRef,
-    mode,
-    phone,
-    selected,
-    range.start.getTime(),
-  );
+  useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
   useCalendarPreviews(rootRef, (day) => {
     inspectDate(day);
   });
@@ -854,11 +848,6 @@ export function TaskCalendarView({
             </h2>
             {layoutSwitcher}
           </div>
-          {phone && mode === "timeGridWeek" ? (
-            <p className="full-calendar-visible-days" aria-live="polite">
-              {visibleDays}
-            </p>
-          ) : null}
           {inspection
             ? createPortal(
                 <div
