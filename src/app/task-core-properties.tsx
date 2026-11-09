@@ -9,7 +9,10 @@ import type {
   FieldCompletion,
   FieldCompletionRequest,
 } from "../domain/completion";
-import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import {
+  statusChoices,
+  type TaskCollectionConfiguration,
+} from "../domain/task-configuration";
 import type { Draft } from "./task-editor-draft";
 import "./task-core-properties.css";
 
@@ -41,7 +44,10 @@ export function TaskCoreProperties({
         triggerIcon={<Circle aria-hidden="true" size={14} />}
         disabled={occurrenceNote}
         ariaDescribedBy={occurrenceNote ? "occurrence-status-help" : undefined}
-        options={[...configuration.statuses].sort((a, b) => a.order - b.order)}
+        options={statusChoices(
+          [...configuration.statuses].sort((a, b) => a.order - b.order),
+          draft.status,
+        )}
         value={draft.status}
         onChange={(status) => onChange({ status })}
       />

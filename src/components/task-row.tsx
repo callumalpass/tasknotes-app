@@ -144,9 +144,10 @@ export function TaskRow({
   const status = configuration.statuses.find(
     (candidate) => candidate.value === displayedTask.status,
   );
+  // A status the vocabulary doesn't list still shows, as its stored value.
   const distinctStatus =
     !displayedTask.completed &&
-    Boolean(status) &&
+    Boolean(displayedTask.status) &&
     displayedTask.status !== configuration.defaults.status &&
     displayedTask.status !== "none";
   const raisedPriorityColor = displayedTask.completed
@@ -402,7 +403,9 @@ export function TaskRow({
         aria-pressed={selecting ? selection.selected : displayedTask.completed}
         aria-busy={pending}
         disabled={pending}
-        title={distinctStatus ? status?.label : undefined}
+        title={
+          distinctStatus ? (status?.label ?? displayedTask.status) : undefined
+        }
         style={
           // Priority draws the tick beside the circle and status colours the
           // circle; the row's label names both.
@@ -910,9 +913,9 @@ function withDistinctStatus(
   if (
     !ensure ||
     task.completed ||
-    !status ||
-    status.value === "none" ||
-    status.value === configuration.defaults.status ||
+    !task.status ||
+    task.status === "none" ||
+    task.status === configuration.defaults.status ||
     details.some((detail) => {
       const key = propertyField(detail);
       return key === configuration.fieldMapping.status || key === "status";
@@ -923,8 +926,9 @@ function withDistinctStatus(
     {
       key: "status",
       label: t({ message: "Status" }),
-      value: status.label,
-      rawValue: status.value,
+      // An unlisted status reads as its stored value, without a colour.
+      value: status?.label ?? task.status,
+      rawValue: task.status,
     },
     ...details,
   ];

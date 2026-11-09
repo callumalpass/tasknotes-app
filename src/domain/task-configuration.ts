@@ -611,6 +611,21 @@ function humanize(value: string): string {
   return words ? `${words[0].toUpperCase()}${words.slice(1)}` : value;
 }
 
+/**
+ * The status choices for a task whose stored status is `current`. A status the
+ * collection's vocabulary doesn't list (one another client defined, say) is
+ * kept as its own choice, named by its stored value, so a picker shows it and
+ * never implies the task holds a different status.
+ */
+export function statusChoices<Option extends { value: string; label: string }>(
+  statuses: readonly Option[],
+  current: string | undefined,
+): Array<Option | { value: string; label: string }> {
+  if (!current || statuses.some((status) => status.value === current))
+    return [...statuses];
+  return [...statuses, { value: current, label: current }];
+}
+
 /** The stored colour of a priority other than the collection's default. */
 export function markedPriorityColorOf(
   value: string | undefined,

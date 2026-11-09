@@ -42,6 +42,37 @@ describe("TaskNotes task model app boundary", () => {
     expect(task.projects).toEqual([]);
   });
 
+  // mdbase-connect#1336: a collection's records can hold statuses another
+  // client defined (TaskNotes for Obsidian, say) that its type doesn't list.
+  it("reads, edits and completes a task whose status the vocabulary doesn't list", () => {
+    const created = model.create({ title: "Inbox item" }, { id: "inbox-item" });
+    const task = model.read({
+      path: created.path,
+      frontmatter: { ...created.frontmatter, status: "inbox" },
+      body: "",
+    });
+    expect(task.status).toBe("inbox");
+    expect(task.completed).toBe(false);
+    expect(
+      model.readSummary({
+        path: created.path,
+        frontmatter: { ...created.frontmatter, status: "Inbox" },
+      }).status,
+    ).toBe("Inbox");
+
+    const renamed = model.update(task, { title: "Renamed inbox item" });
+    expect(renamed.status).toBe("inbox");
+    expect(renamed.frontmatter.status).toBe("inbox");
+    expect(model.update(task, { status: "doing" }).status).toBe("doing");
+    expect(model.toggle(task).status).toBe("done");
+    expect(() => model.update(task, { status: "someday" })).toThrow(
+      'Unknown status "someday"',
+    );
+    expect(() =>
+      model.create({ title: "New", status: "someday" }, { id: "new" }),
+    ).toThrow('Unknown status "someday"');
+  });
+
   it("persists the first planned date for a due-only repeating task", () => {
     const task = model.create(
       {

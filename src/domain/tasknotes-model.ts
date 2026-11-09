@@ -241,7 +241,9 @@ export class TaskNotesTaskModel {
       this.config.priorities,
     );
     const task = this.completeTaskInfo(mapped, input.path, input.body);
-    this.assertValid(task);
+    // A record keeps a status the collection's vocabulary doesn't list, such
+    // as one another client defined. Reading it never fails; see assertValid.
+    this.assertValid(task, task.status);
     return task;
   }
 
@@ -481,7 +483,7 @@ export class TaskNotesTaskModel {
       plannedTask,
       now,
     );
-    this.assertValid(updatedTask);
+    this.assertValid(updatedTask, original.status);
     this.assertCustomFields(updatedTask.customProperties);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
@@ -514,7 +516,7 @@ export class TaskNotesTaskModel {
       edit.timezone,
       [this.config.fieldMapping.scheduled, this.config.fieldMapping.due],
     );
-    this.assertValid(plan.updatedTask);
+    this.assertValid(plan.updatedTask, current.status);
     this.assertCustomFields(plan.updatedTask.customProperties);
     const revision = current.revision + 1;
     // Apply the exact patch LAST: the generic mapper intentionally omits some
@@ -1010,10 +1012,24 @@ export class TaskNotesTaskModel {
     return result;
   }
 
-  private assertValid(task: Partial<TaskInfo>): void {
+  /**
+   * `keptStatus` is a stored status the vocabulary need not list: the record
+   * already holds it, so reading it or saving other fields beside it is
+   * allowed. Choosing an unlisted status is still refused.
+   */
+  private assertValid(task: Partial<TaskInfo>, keptStatus?: string): void {
     const validation = evaluateCoreValidation(task, this.config.statuses);
-    if (!validation.valid)
-      throw new TaskNotesValidationError(validation.issues);
+    const issues = validation.issues.filter(
+      (issue) =>
+        issue.severity !== "error" ||
+        !(
+          issue.code === "invalid_status" &&
+          keptStatus !== undefined &&
+          task.status === keptStatus
+        ),
+    );
+    if (issues.some((issue) => issue.severity === "error"))
+      throw new TaskNotesValidationError(issues);
   }
 
   private assertCustomFields(
@@ -1107,7 +1123,7 @@ export class TaskNotesTaskModel {
   }
 
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
-    this.assertValid(updated);
+    this.assertValid(updated, current.status);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
     if (updated.completedDate === undefined)
