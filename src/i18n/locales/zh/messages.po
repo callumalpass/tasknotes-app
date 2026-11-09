@@ -4096,6 +4096,10 @@ msgstr "无法加载人员。现有分配保持不变。{0}"
 msgid "Pick date"
 msgstr "选择日期"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "双指缩放时间段高度"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "计划日期"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "时间格式"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "时间段高度"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "时间段长度"
 
@@ -6159,6 +6167,11 @@ msgstr "{0}的版本"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "视图操作"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "跟随视图默认值"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

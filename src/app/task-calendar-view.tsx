@@ -69,9 +69,11 @@ import {
 import { formatOccurrenceDate } from "./task-editor-draft";
 import { dateFromStorage, taskDatePart, todayString } from "../domain/task";
 import { useRepository } from "./repository-context";
-import type {
-  CalendarHourFormat,
-  CalendarPreferences,
+import {
+  DEFAULT_CALENDAR_SLOT_HEIGHT,
+  validSlotHeight,
+  type CalendarHourFormat,
+  type CalendarPreferences,
 } from "./calendar-preferences";
 
 import type {
@@ -107,6 +109,7 @@ const HELD_MOVE_LIMIT_MS = 5000;
 export function TaskCalendarView({
   execution,
   preferences,
+  onSlotHeightChange,
   identityTasks,
   selected,
   selectedCreateValue,
@@ -121,6 +124,7 @@ export function TaskCalendarView({
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
+  onSlotHeightChange?(slotHeight: number): void;
   identityTasks: readonly TaskSummary[];
   selected: string;
   selectedCreateValue: string;
@@ -984,7 +988,20 @@ export function TaskCalendarView({
               nowIndicator={preferences.nowIndicator}
               hour12={hour12(preferences.hourFormat)}
               slotDuration={preferences.slotDuration}
-              slotHeight={36}
+              // A height chosen on this device, by pinching or in settings,
+              // wins over the view's; the view can turn pinching off.
+              slotHeight={
+                preferences.slotHeight ??
+                validSlotHeight(
+                  execution.view.presentation?.options.slotHeight,
+                ) ??
+                DEFAULT_CALENDAR_SLOT_HEIGHT
+              }
+              pinchZoom={
+                preferences.pinchZoom &&
+                execution.view.presentation?.options.pinchZoom !== false
+              }
+              onSlotHeightChange={onSlotHeightChange}
               slotMinTime={preferences.slotMinTime}
               slotMaxTime={preferences.slotMaxTime}
               scrollTime="08:00:00"

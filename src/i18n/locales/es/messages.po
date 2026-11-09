@@ -4096,6 +4096,10 @@ msgstr "No se pudieron cargar las personas. Las asignaciones existentes no han c
 msgid "Pick date"
 msgstr "Elegir fecha"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "Pellizcar para cambiar la altura de los intervalos"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "Fechas previstas"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "Formato de hora"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "Altura del intervalo"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "Duración del intervalo"
 
@@ -6159,6 +6167,11 @@ msgstr "Versiones de {0}"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "Acciones de la vista"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "Predeterminado de la vista"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

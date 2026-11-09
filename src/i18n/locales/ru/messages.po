@@ -4096,6 +4096,10 @@ msgstr "Не удалось загрузить список участников
 msgid "Pick date"
 msgstr "Выбрать дату"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "Менять высоту интервалов жестом щипка"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "Запланированные даты"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "Формат времени"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "Высота временного интервала"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "Размер временного интервала"
 
@@ -6159,6 +6167,11 @@ msgstr "Версии файла {0}"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "Действия с представлением"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "Как в представлении"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

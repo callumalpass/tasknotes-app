@@ -132,6 +132,7 @@ type ViewEditorRequest = {
 
 export function ViewsScreen({
   calendarPreferences = defaultCalendarPreferences(),
+  onCalendarSlotHeightChange,
   viewKey,
   documents,
   views,
@@ -151,6 +152,8 @@ export function ViewsScreen({
   onViewsChanged,
 }: {
   calendarPreferences?: CalendarPreferences;
+  /** A pinch on a time grid settled on a new slot height for this device. */
+  onCalendarSlotHeightChange?(slotHeight: number): void;
   viewKey?: string;
   documents: TaskViewDocument[] | null;
   views: TaskView[] | null;
@@ -1821,6 +1824,7 @@ export function ViewsScreen({
             key={`${presentedExecution.view.key}:${presentedExecution.view.source.revision}`}
             execution={presentedExecution}
             preferences={calendarPreferences}
+            onSlotHeightChange={onCalendarSlotHeightChange}
             identityTasks={identityTasks}
             selected={currentCalendarSelection}
             selectedCreateValue={currentCalendarCreateValue}

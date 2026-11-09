@@ -6,7 +6,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskCalendarView } from "./task-calendar-view";
 import type { CalendarEventData } from "./calendar-items";
-import { defaultCalendarPreferences } from "./calendar-preferences";
+import {
+  defaultCalendarPreferences,
+  type CalendarPreferences,
+} from "./calendar-preferences";
 import type { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 
 import { parseDay } from "@tasknotes/calendar";
@@ -86,6 +89,73 @@ it("keeps the time-grid overlap layout uncapped and non-obscuring", () => {
   expect(calendar.props).toMatchObject({
     eventMaxStack: 0,
     slotEventOverlap: false,
+  });
+});
+
+describe("time slot height", () => {
+  function renderWith(
+    options: Record<string, unknown>,
+    preferences: Partial<CalendarPreferences> = {},
+  ) {
+    const onSlotHeightChange = vi.fn();
+    const execution = {
+      view: {
+        key: "calendar",
+        properties: [],
+        presentation: {
+          type: "tasknotes.calendar",
+          options: { calendarView: "timeGridWeek", ...options },
+        },
+      },
+      rows: [],
+      groups: [],
+      totalCount: 0,
+      hasMore: false,
+    } as unknown as TaskViewExecution;
+    render(
+      <TaskCalendarView
+        execution={execution}
+        preferences={{ ...defaultCalendarPreferences("en-US"), ...preferences }}
+        onSlotHeightChange={onSlotHeightChange}
+        identityTasks={[]}
+        selected="2026-11-07"
+        selectedCreateValue="2026-11-07"
+        titleProperty={
+          new TaskNotesTaskModel().configuration().fieldMapping.title
+        }
+        onSelect={vi.fn()}
+        onCreate={vi.fn()}
+        onOpen={vi.fn()}
+        onToggle={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
+    return onSlotHeightChange;
+  }
+
+  it("uses the app default, then the view's height, then the device's", () => {
+    renderWith({});
+    expect(calendar.props).toMatchObject({ slotHeight: 36, pinchZoom: true });
+    cleanup();
+    renderWith({ slotHeight: 20 });
+    expect(calendar.props?.slotHeight).toBe(20);
+    cleanup();
+    renderWith({ slotHeight: 20 }, { slotHeight: 64 });
+    expect(calendar.props?.slotHeight).toBe(64);
+  });
+
+  it("lets the view or the device turn pinching off", () => {
+    renderWith({ pinchZoom: false });
+    expect(calendar.props?.pinchZoom).toBe(false);
+    cleanup();
+    renderWith({}, { pinchZoom: false });
+    expect(calendar.props?.pinchZoom).toBe(false);
+  });
+
+  it("reports pinched heights for the device", () => {
+    const onSlotHeightChange = renderWith({});
+    (calendar.props?.onSlotHeightChange as (height: number) => void)(52);
+    expect(onSlotHeightChange).toHaveBeenCalledWith(52);
   });
 });
 

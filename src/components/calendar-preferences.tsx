@@ -5,6 +5,9 @@ import {
   orderedWeekdays,
   type CalendarPreferences,
 } from "../app/calendar-preferences";
+
+/** Slot heights offered in settings; a pinched height joins them while chosen. */
+const SLOT_HEIGHTS = [24, 36, 56, 80];
 import { SettingsSwitch } from "./settings-controls";
 import { TaskNotesSelectField } from "./tasknotes-controls";
 
@@ -70,6 +73,33 @@ export function CalendarPreferencesEditor({
           value={value.slotDuration}
           onChange={(slotDuration) => change({ slotDuration })}
         />
+        <TaskNotesSelectField
+          label={t({ message: "Time slot height" })}
+          options={[
+            {
+              value: "",
+              label: t({
+                message: "View default",
+                comment: "Slot height option that follows the calendar view",
+              }),
+            },
+            ...[
+              ...new Set([
+                ...SLOT_HEIGHTS,
+                ...(value.slotHeight === undefined ? [] : [value.slotHeight]),
+              ]),
+            ]
+              .sort((a, b) => a - b)
+              .map((height) => ({
+                value: String(height),
+                label: `${new Intl.NumberFormat(appLocale()).format(height)} px`,
+              })),
+          ]}
+          value={value.slotHeight === undefined ? "" : String(value.slotHeight)}
+          onChange={(height) =>
+            change({ slotHeight: height ? Number(height) : undefined })
+          }
+        />
       </div>
       <div className="settings-switch-list">
         <SettingsSwitch
@@ -86,6 +116,11 @@ export function CalendarPreferencesEditor({
           checked={value.nowIndicator}
           label={t({ message: "Show current time" })}
           onChange={(nowIndicator) => change({ nowIndicator })}
+        />
+        <SettingsSwitch
+          checked={value.pinchZoom}
+          label={t({ message: "Pinch to resize time slots" })}
+          onChange={(pinchZoom) => change({ pinchZoom })}
         />
         <SettingsSwitch
           checked={value.showTimeEntries}
