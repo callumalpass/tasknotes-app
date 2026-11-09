@@ -1,0 +1,27 @@
+[
+  {
+    "path": "scripts/publisher/authentication.mjs",
+    "line": "matches[0].browser_download_url ===",
+    "reason": "Release URL identity check or returned provenance metadata; no network request."
+  },
+  {
+    "path": "scripts/publisher/authentication.mjs",
+    "line": "`https://github.com/${repository}/releases/download/${tag}/${name}`,",
+    "reason": "Release URL identity check or returned provenance metadata; no network request."
+  },
+  {
+    "path": "scripts/publisher/authentication.mjs",
+    "line": "if (!token) return publicBytes(asset.browser_download_url, fetchImpl);",
+    "reason": "Verbatim tasknotes-app #367 local-only no-token fallback; CI intake, install and comparison token wiring is mandatory in check-release-downloads.mjs."
+  },
+  {
+    "path": "scripts/publisher/authentication.mjs",
+    "line": "const prefix = `https://github.com/${repository}/releases/download/`;",
+    "reason": "Release URL identity check or returned provenance metadata; no network request."
+  },
+  {
+    "path": "scripts/publisher/authentication.mjs",
+    "line": "path: archive.browser_download_url,",
+    "reason": "Release URL identity check or returned provenance metadata; no network request."
+  }
+]

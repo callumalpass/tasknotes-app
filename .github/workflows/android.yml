@@ -42,10 +42,16 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Prefetch verified Temurin release through authenticated assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/prefetch-java.mjs
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: jdkfile
+          jdk-file: ${{ env.VERIFIED_JAVA_ARCHIVE }}
           java-version: "21"
           cache: gradle
 
@@ -152,10 +158,16 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Prefetch verified Temurin release through authenticated assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/prefetch-java.mjs
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: jdkfile
+          jdk-file: ${{ env.VERIFIED_JAVA_ARCHIVE }}
           java-version: "21"
           cache: gradle
 
