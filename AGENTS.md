@@ -18,3 +18,7 @@ Use the shared @mdbase-dev/i18n kit and preserve authored-PO completeness before
 fallback for every locale. Catalogue completeness does not authorize release.
 
 For user-facing development and after LAB deployment, follow `docs/live-testing.md`.
+
+Private feedback uses the shared `@mdbase-dev/ui/feedback` form; read
+`docs/shared-feedback.md` before adding an entry point, a failure hook or an
+environment.

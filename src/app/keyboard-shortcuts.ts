@@ -64,8 +64,14 @@ export function plainShortcutsSuspended(
     event.ctrlKey ||
     (event.altKey && !allowAlt) ||
     isEditableTarget(event.target) ||
-    hasOpenOverlay()
+    hasOpenOverlay() ||
+    inNativeDialog(event.target)
   );
+}
+
+/** Shared mdbase dialogs (feedback) are native and outside the overlay stack. */
+function inNativeDialog(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("dialog[open]") !== null;
 }
 
 export function taskRowShortcut(

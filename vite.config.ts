@@ -27,7 +27,14 @@ function e2eFixtureInputs(mode: string): Record<string, string> {
 }
 
 export default defineConfig(({ mode }) => ({
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __APP_BUILD_REVISION__: JSON.stringify(
+      /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
+        ? `${version}-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}`
+        : version,
+    ),
+  },
   base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [
     androidNotificationSmokeEntry(),

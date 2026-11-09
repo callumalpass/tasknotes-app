@@ -90,6 +90,17 @@ describe("plain shortcut guards", () => {
     expect(plainShortcutsSuspended(keydown("x"))).toBe(false);
   });
 
+  it("suspends inside an open native dialog, which the overlay stack does not own", () => {
+    const dialog = document.createElement("dialog");
+    const control = document.createElement("div");
+    dialog.append(control);
+    document.body.append(dialog);
+    expect(plainShortcutsSuspended(keydown("j", {}, control))).toBe(false);
+    dialog.setAttribute("open", "");
+    expect(plainShortcutsSuspended(keydown("j", {}, control))).toBe(true);
+    dialog.remove();
+  });
+
   it("yields while any overlay is open", () => {
     const layer = document.createElement("div");
     document.body.append(layer);
