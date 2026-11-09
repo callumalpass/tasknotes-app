@@ -2,6 +2,11 @@ name: Store status
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        options: [both, android, ios]
+        default: both
   schedule:
     - cron: "17 * * * *"
 
@@ -10,7 +15,7 @@ permissions:
 
 jobs:
   android:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.platform != 'ios'
     runs-on: ubuntu-latest
     environment: google-play-production
     timeout-minutes: 10
@@ -26,16 +31,6 @@ jobs:
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
         run: node scripts/store-status.mjs android
-      - name: Probe Android Vitals read access (no production mutation)
-        env:
-          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
-        run: node scripts/play-vitals.mjs
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: play-vitals-capability
-          path: play-vitals.json
-          retention-days: 90
-          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: store-status-android
@@ -44,7 +39,7 @@ jobs:
           if-no-files-found: error
 
   ios:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.platform != 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -66,7 +61,7 @@ jobs:
           if-no-files-found: error
 
   release-app-access:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.platform != 'android' && inputs.platform != 'ios'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

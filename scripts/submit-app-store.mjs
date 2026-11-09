@@ -1,5 +1,5 @@
 import { sign } from "node:crypto";
-import { readFile, appendFile, readdir } from "node:fs/promises";
+import { readFile, appendFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,10 +23,8 @@ function requireValue(value, label) {
   return value.trim();
 }
 
-/** AFTER_APPROVAL releases as soon as Apple approves. MANUAL holds the
- * approved version until a person releases it in App Store Connect. */
-export function releaseTypeOf(metadata) {
-  return metadata.releaseType ?? "AFTER_APPROVAL";
+export function releaseTypeOf() {
+  return "AFTER_APPROVAL";
 }
 
 export function validateMetadata(metadata, version) {
@@ -36,8 +34,11 @@ export function validateMetadata(metadata, version) {
     throw new Error("Release metadata version does not match the build");
   if (metadata.draft !== undefined)
     throw new Error("Release metadata is still marked as a draft");
-  if (!["AFTER_APPROVAL", "MANUAL"].includes(releaseTypeOf(metadata)))
-    throw new Error("releaseType must be AFTER_APPROVAL or MANUAL");
+  if (
+    metadata.releaseType !== undefined &&
+    metadata.releaseType !== "AFTER_APPROVAL"
+  )
+    throw new Error("releaseType must be AFTER_APPROVAL");
   requireValue(metadata.copyright, "copyright");
   const reviewNotes = requireValue(metadata.reviewNotes, "reviewNotes");
   if (reviewNotes.length > 4000)
@@ -326,9 +327,7 @@ export async function submitAppStore({
       (item) => item.id !== target?.id && !releasedStates.has(state(item)),
     )
   ) {
-    throw new Error(
-      "Another iOS store version is in flight; refusing to modify or cancel it",
-    );
+    throw new Error("earlier-store-version-in-flight");
   }
   const sourceId = target?.id ?? current.id;
   const localizations = await client.list(
@@ -357,9 +356,7 @@ export async function submitAppStore({
     active.length > 1 ||
     active.some((item) => item.attributes.state !== "READY_FOR_REVIEW")
   ) {
-    throw new Error(
-      "Another review submission is active or needs manual attention",
-    );
+    throw new Error("earlier-store-version-in-flight");
   }
   let submission = active[0];
   let items = submission
@@ -531,44 +528,6 @@ export async function submitAppStore({
   };
 }
 
-/** Release an Apple-approved MANUAL version to everyone. Only the exact
- * version and build in PENDING_DEVELOPER_RELEASE is released; a version that
- * is already releasing or live is a read-only success. */
-export async function releaseAppStore({ client, version, buildNumber }) {
-  const build = requireValue(buildNumber, "TASKNOTES_IOS_BUILD");
-  const versions = await client.list(
-    `apps/${APP_ID}/appStoreVersions?filter[platform]=IOS`,
-  );
-  const target = versions.find(
-    (item) => item.attributes.versionString === version,
-  );
-  if (!target) throw new Error(`No App Store version ${version}`);
-  const linked = (
-    await client.request(`appStoreVersions/${target.id}/relationships/build`)
-  ).data;
-  const attached = linked
-    ? (await client.request(`builds/${linked.id}`)).data
-    : null;
-  if (attached?.attributes?.version !== build)
-    throw new Error("Store version is not attached to the expected build");
-  const result = { version, buildNumber: build, versionId: target.id };
-  if (
-    releasedStates.has(state(target)) ||
-    state(target) === "PROCESSING_FOR_APP_STORE"
-  )
-    return { ...result, state: state(target), alreadyReleased: true };
-  if (state(target) !== "PENDING_DEVELOPER_RELEASE")
-    throw new Error(`Version is not awaiting release: ${state(target)}`);
-  await client.request("appStoreVersionReleaseRequests", "POST", {
-    type: "appStoreVersionReleaseRequests",
-    relationships: {
-      appStoreVersion: relation("appStoreVersions", target.id),
-    },
-  });
-  const after = (await client.request(`appStoreVersions/${target.id}`)).data;
-  return { ...result, state: state(after), alreadyReleased: false };
-}
-
 export function generatedMetadata(template, version) {
   // Reuse reviewed instructions/contact custody; never invent privacy,
   // export-compliance, account credentials or feature promises.
@@ -625,7 +584,10 @@ async function main() {
   );
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw new Error("Invalid public release version");
-  const metadata = await releaseMetadata(version);
+  const metadata = {
+    ...(await releaseMetadata(version)),
+    releaseType: "AFTER_APPROVAL",
+  };
   if (process.argv.includes("--validate")) return;
   const client = createClient({
     keyId: requireValue(
@@ -644,20 +606,6 @@ async function main() {
       "base64",
     ).toString("utf8"),
   });
-  if (process.argv.includes("--release")) {
-    const released = await releaseAppStore({
-      client,
-      version,
-      buildNumber: process.env.TASKNOTES_IOS_BUILD,
-    });
-    console.log(JSON.stringify(released));
-    if (process.env.GITHUB_STEP_SUMMARY)
-      await appendFile(
-        process.env.GITHUB_STEP_SUMMARY,
-        `## App Store release\n\nVersion **${released.version}**, build **${released.buildNumber}**: **${released.state}**.\n`,
-      );
-    return;
-  }
   const result = await submitAppStore({
     client,
     version,
@@ -665,6 +613,13 @@ async function main() {
     metadata,
     commit: process.argv.includes("--submit"),
   });
+  const qualified = JSON.parse(
+    await readFile("mobile-release-qualified.json", "utf8"),
+  );
+  await writeFile(
+    "store-target-result.json",
+    JSON.stringify({ outcome: "submitted", source: qualified.source }) + "\n",
+  );
   console.log(JSON.stringify(result));
   if (process.env.GITHUB_STEP_SUMMARY) {
     const verificationSummary = result.demoAccountNameVerified
@@ -683,8 +638,23 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
-  main().catch((error) => {
-    console.error(error.message);
-    process.exitCode = 1;
+  main().catch(async (error) => {
+    if (error.message === "earlier-store-version-in-flight") {
+      const qualified = JSON.parse(
+        await readFile("mobile-release-qualified.json", "utf8"),
+      );
+      await writeFile(
+        "store-target-result.json",
+        JSON.stringify({
+          outcome: "pending-review",
+          source: qualified.source,
+        }) + "\n",
+      );
+    } else {
+      console.error(
+        "App Store submission refused; inspect the target outcome.",
+      );
+      process.exitCode = 1;
+    }
   });
 }

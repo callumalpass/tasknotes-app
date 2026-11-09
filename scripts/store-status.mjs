@@ -171,7 +171,17 @@ export function playReviewBlock(status) {
     return "play-release-lifecycle-observer-unavailable";
   if (releases.some((r) => r.state === "RELEASE_LIFECYCLE_STATE_NOT_APPROVED"))
     return "store-rejected";
-  if (releases.some((r) => r.state !== "RELEASE_LIFECYCLE_STATE_PUBLISHED"))
+  if (
+    releases.some(
+      (r) =>
+        r.state !== "RELEASE_LIFECYCLE_STATE_PUBLISHED" &&
+        !(
+          r.state === "RELEASE_LIFECYCLE_STATE_DRAFT" &&
+          Array.isArray(r.versionCodes) &&
+          r.versionCodes.length === 0
+        ),
+    )
+  )
     return "earlier-store-version-in-flight";
   // A published production summary must corroborate the track snapshot.
   if (

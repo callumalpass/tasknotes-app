@@ -7,7 +7,6 @@ import {
   BUNDLE_ID,
   createClient,
   createToken,
-  releaseAppStore,
   submitAppStore,
   validateMetadata,
   waitForBuild,
@@ -174,56 +173,25 @@ test("requires version-specific complete release metadata", () => {
   assert.throws(() => validateMetadata(metadata, "../secret"));
 });
 
-test("approved 1.0.9 metadata holds MANUAL release and names the migrated review collection; drafts remain refused", async () => {
-  const approved = JSON.parse(
-    await readFile(
-      new URL("../docs/releases/ios/1.0.9.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  assert.equal(validateMetadata(approved, "1.0.9"), approved);
-  assert.equal(approved.releaseType, "MANUAL");
-  assert.ok(
-    approved.reviewNotes.includes('collection "[test] C hosted tasks"'),
-  );
-  assert.match(approved.reviewNotes, /review account has already moved/);
-  assert.throws(
-    () => validateMetadata({ ...approved, draft: "not approved" }, "1.0.9"),
-    /draft/,
-  );
+test("manual or scheduled release policy cannot replace automatic release", () => {
+  for (const releaseType of ["MANUAL", "SCHEDULED"])
+    assert.throws(
+      () => validateMetadata({ ...metadata, releaseType }, "1.0.4"),
+      /AFTER_APPROVAL/,
+    );
 });
 
-test("a MANUAL release is held after approval and checked on reruns", async () => {
-  const held = { ...metadata, releaseType: "MANUAL" };
-  const f = fixture();
-  const result = await f.run({ commit: true, metadata: held });
-  assert.equal(result.state, "WAITING_FOR_REVIEW");
-  assert.equal(result.releaseType, "MANUAL");
-  assert.equal(f.versions[1].attributes.releaseType, "MANUAL");
-  const rerun = await f.run({ commit: true, metadata: held });
-  assert.equal(rerun.alreadySubmitted, true);
-  assert.equal(rerun.releaseType, "MANUAL");
-  await assert.rejects(
-    f.run({ commit: true }),
-    /does not match the expected release policy/,
-  );
-  assert.throws(
-    () => validateMetadata({ ...metadata, releaseType: "SCHEDULED" }, "1.0.4"),
-    /releaseType/,
-  );
-});
-
-test("rechecks the MANUAL policy after Apple confirms submission", async () => {
-  const f = fixture();
-  const request = f.client.request;
-  f.client.request = async (path, method, data) => {
+test("rechecks automatic release policy after Apple confirms submission", async () => {
+  const fixtureValue = fixture();
+  const request = fixtureValue.client.request;
+  fixtureValue.client.request = async (path, method, data) => {
     const result = await request(path, method, data);
     if (path === "reviewSubmissions/submission" && method === "PATCH")
-      f.versions[1].attributes.releaseType = "AFTER_APPROVAL";
+      fixtureValue.versions[1].attributes.releaseType = "MANUAL";
     return result;
   };
   await assert.rejects(
-    f.run({ commit: true, metadata: { ...metadata, releaseType: "MANUAL" } }),
+    fixtureValue.run({ commit: true }),
     /Release policy changed during submission/,
   );
 });
@@ -379,25 +347,6 @@ test("already submitted same build verifies credentials read-only and rejects mi
       f.review.attributes.demoAccountRequired = true;
     }
   }
-  assert.equal(f.writes.length, 0);
-});
-
-test("approved MANUAL state is a verified read-only success on reruns", async () => {
-  const f = fixture();
-  const held = { ...metadata, releaseType: "MANUAL" };
-  await f.run({ commit: true, metadata: held, env: reviewEnv });
-  f.versions[1].attributes.appStoreState = "PENDING_DEVELOPER_RELEASE";
-  f.writes = [];
-  for (const commit of [false, true]) {
-    const result = await f.run({ commit, metadata: held, env: reviewEnv });
-    assert.equal(result.state, "PENDING_DEVELOPER_RELEASE");
-    assert.equal(result.releaseType, "MANUAL");
-    assert.equal(result.alreadySubmitted, true);
-    assert.equal(result.demoAccountNameVerified, true);
-    assert.equal(result.demoAccountRequired, true);
-    assertSafeResult(result);
-  }
-  await assert.rejects(f.run(), /expected release policy/);
   assert.equal(f.writes.length, 0);
 });
 
@@ -567,7 +516,7 @@ for (const [label, change, expected] of [
         attributes: { versionString: "2.0.0", appStoreState: "IN_REVIEW" },
       });
     },
-    /Another iOS/,
+    /earlier-store-version-in-flight/,
   ],
   [
     "unrelated draft item",
@@ -685,110 +634,4 @@ test("retries transient reads but not writes; redacts error details", async () =
   calls = 0;
   await assert.rejects(client.request("appStoreVersions", "POST", {}));
   assert.equal(calls, 1);
-});
-
-function releaseFixture(appStoreState, buildVersion = "27") {
-  const f = { writes: [], appStoreState };
-  f.client = {
-    async list(path) {
-      assert.match(path, /\/appStoreVersions\?/);
-      return [
-        {
-          id: "live",
-          attributes: {
-            versionString: "1.0.8",
-            appStoreState: "READY_FOR_SALE",
-          },
-        },
-        {
-          id: "v109",
-          attributes: {
-            versionString: "1.0.9",
-            appStoreState: f.appStoreState,
-          },
-        },
-      ];
-    },
-    async request(path, method = "GET", data) {
-      if (method !== "GET") {
-        f.writes.push({ path, method, data });
-        f.appStoreState = "PROCESSING_FOR_APP_STORE";
-        return { data: { id: "req" } };
-      }
-      if (path === "appStoreVersions/v109/relationships/build")
-        return { data: { type: "builds", id: "b27" } };
-      if (path === "builds/b27")
-        return { data: { id: "b27", attributes: { version: buildVersion } } };
-      if (path === "appStoreVersions/v109")
-        return {
-          data: {
-            id: "v109",
-            attributes: {
-              versionString: "1.0.9",
-              appStoreState: f.appStoreState,
-            },
-          },
-        };
-      throw new Error(`Unexpected ${method} ${path}`);
-    },
-  };
-  return f;
-}
-
-test("releases only the approved exact version and build", async () => {
-  const f = releaseFixture("PENDING_DEVELOPER_RELEASE");
-  const result = await releaseAppStore({
-    client: f.client,
-    version: "1.0.9",
-    buildNumber: "27",
-  });
-  assert.deepEqual(f.writes, [
-    {
-      path: "appStoreVersionReleaseRequests",
-      method: "POST",
-      data: {
-        type: "appStoreVersionReleaseRequests",
-        relationships: {
-          appStoreVersion: { data: { type: "appStoreVersions", id: "v109" } },
-        },
-      },
-    },
-  ]);
-  assert.equal(result.state, "PROCESSING_FOR_APP_STORE");
-  assert.equal(result.alreadyReleased, false);
-});
-
-test("release rerun after it started is a read-only success", async () => {
-  for (const state of ["PROCESSING_FOR_APP_STORE", "READY_FOR_SALE"]) {
-    const f = releaseFixture(state);
-    const result = await releaseAppStore({
-      client: f.client,
-      version: "1.0.9",
-      buildNumber: "27",
-    });
-    assert.equal(f.writes.length, 0);
-    assert.equal(result.alreadyReleased, true);
-  }
-});
-
-test("release refuses unapproved versions and mismatched builds", async () => {
-  const waiting = releaseFixture("WAITING_FOR_REVIEW");
-  await assert.rejects(
-    releaseAppStore({
-      client: waiting.client,
-      version: "1.0.9",
-      buildNumber: "27",
-    }),
-    /not awaiting release/,
-  );
-  const other = releaseFixture("PENDING_DEVELOPER_RELEASE", "26");
-  await assert.rejects(
-    releaseAppStore({
-      client: other.client,
-      version: "1.0.9",
-      buildNumber: "27",
-    }),
-    /expected build/,
-  );
-  assert.equal(waiting.writes.length + other.writes.length, 0);
 });

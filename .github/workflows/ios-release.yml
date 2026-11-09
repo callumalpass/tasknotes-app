@@ -4,20 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: App Store marketing version; leave blank to use package.json
-        required: false
-        default: ""
-        type: string
-      upload:
-        description: Upload the signed build to TestFlight
+        description: Monotonic store version allocated by App CD
         required: true
-        default: false
-        type: boolean
-  push:
-    tags: ["ios-v*"]
+        type: string
+      source_sha:
+        required: true
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ios-release-${{ github.ref }}
@@ -25,6 +21,7 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: macos-15
     outputs:
       version: ${{ steps.configuration.outputs.version }}
@@ -42,6 +39,42 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scope ops-line and Connect evidence access
+        id: evidence
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: mdbase-dev
+          repositories: mdbase-cloud-ops,mdbase-connect
+          permission-contents: read
+          permission-actions: write
+
+      - name: Qualify exact main source before dependency execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          STORE_VERSION: ${{ inputs.version }}
+        run: node scripts/store-cd.mjs build ios
+
+      - name: Retain immutable build source
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-build-source-ios
+          path: mobile-build-source.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Check out qualified build source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -50,9 +83,6 @@ jobs:
 
       - name: Validate Xcode and release configuration
         id: configuration
-        env:
-          REQUESTED_VERSION: ${{ inputs.version }}
-          REQUESTED_UPLOAD: ${{ inputs.upload }}
         run: |
           sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
           sdk_major="${sdk_version%%.*}"
@@ -61,13 +91,8 @@ jobs:
             exit 1
           fi
 
-          if [[ "$GITHUB_REF" == refs/tags/ios-v* ]]; then
-            version="${GITHUB_REF_NAME#ios-v}"
-            upload=true
-          else
-            version="${REQUESTED_VERSION:-$(node -p "require('./package.json').version")}"
-            upload="$REQUESTED_UPLOAD"
-          fi
+          version="$TASKNOTES_STORE_VERSION"
+          upload=true
           if [[ ! "$version" =~ ^[0-9]+([.][0-9]+){1,2}$ ]]; then
             echo "Invalid iOS marketing version: $version" >&2
             exit 1
