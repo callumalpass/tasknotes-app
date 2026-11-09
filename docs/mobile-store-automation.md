@@ -21,10 +21,19 @@ snapshot workflow shares the production edit lock, so a disposable edit cannot
 invalidate a publisher's edit. Builds run the existing `android.yml` or
 `ios-release.yml` from protected main with that exact candidate. Before executing
 candidate dependencies, workflow-owned policy rechecks main ancestry, exact
-main-push CI (CI, Android, iOS and production smoke), the committed SDK archive,
+main-push CI for that target, the committed SDK archive,
 production trust and producer floor, and both app and target stops. The SDK's
 existing digest/provenance/attestation checks and both signing identities are
 unchanged. No production trust asset may rotate through this path.
+
+The required commit checks have one definition: TaskNotes' `store_checks` in ops
+`config/client-apps.json`. Play requires `ci.yml` and `android.yml`; Apple requires
+`ci.yml` and `ios.yml`. The coordinator and protected builds read this ops policy
+on main with the existing evidence token. The newest run's newest `run_attempt`
+must be completed green for the exact source. The other platform and the
+scheduled live-web `production-smoke.yml` are not target commit gates.
+Each check is `{ "workflow": "ci.yml", "jobs": ["optional exact job name"] }`;
+when named jobs are configured, they must all succeed in that same attempt.
 
 The protected build retains an immutable source/version/build receipt. Signed
 APK/AAB and IPA artifacts remain bound to that exact run. Publication rechecks
@@ -71,7 +80,15 @@ Use the ops front door:
 - `bin/release app-line status|clear tasknotes-google-play` for Play only;
 - `bin/release app-line status|clear tasknotes-app-store` for Apple only.
 
-A failed check, build, upload, rejected review, or unknown dispatch stops the
+A pending, failed or missing target commit check is not selected by App CD; it
+does not stop the line. A check changing before any build/write records
+`store-unchanged` / `store-pre-submission-refused` in ops. TaskNotes retains its
+`stopped` / `exact-main-ci-required` refusal with explicit `write_started: false`
+but does not open an app-stop. Only no boundary or a successful read-only
+`store-status.yml` boundary proves that refusal. Write evidence is persisted
+before build/publisher dispatch, never inferred from a missing submission ID.
+
+A failed build, upload, signing/digest check, rejected review, or unknown dispatch stops the
 selected store through those existing `app-stop` records. Unknown child writes
 are never cancelled or redispatched automatically. Clear requires every
 potentially writing build/publisher to finish; reconcile the exact attempt and
@@ -80,13 +97,19 @@ failure. A review raced at the final publisher also returns `pending-review`.
 
 The coordinator retains `tasknotes-store-TARGET-RUN/store-cd-result.json`; ops
 retains `app-cd-tasknotes-publish-TARGET-RUN/tasknotes.json` with the exact source,
-child run and outcome (`submitted`, `pending-review`, `already-live`, `stopped`).
+child run and outcome (`submitted`, `pending-review`, `already-live`, `store-unchanged`, `stopped`).
 Submission is not proof of public availability. Daily summaries should report
 these outcomes, never relabel a pending review as a failed deployment.
 
 ## First live run and evidence limits
 
-Merge TaskNotes first, wait for exact merged-main CI, then merge ops enrollment.
+For the November 9 gate fix, merge the ops policy/selection fix first, then the
+TaskNotes policy reader/refusal fix, with existing store holds left in place.
+The supervisor owns reconciliation and clearing those holds after both land.
+Neither merge authorizes an implementation agent to dispatch or clear a line.
+
+The initial enrollment merged TaskNotes before ops; the gate fix uses the
+ops-first order above.
 The next eligible App CD tick (Actions fallback at minutes 7, 22, 37, 52; Worker
 change/follow-up or hourly sweep) checks both store targets. Check current stops,
 store review state, production access/managed publishing, existing signing
