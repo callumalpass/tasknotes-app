@@ -19,7 +19,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  # CI churn must not replace a pending store build. Keep store builds serialized
+  # for monotonic version codes; Play edits have a separate production lock.
+  group: android-${{ github.event_name == 'workflow_dispatch' && 'store' || 'ci' }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
