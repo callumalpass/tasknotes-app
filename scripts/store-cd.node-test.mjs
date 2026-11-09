@@ -845,6 +845,8 @@ test("retryable pre-write failures retain target, source and run without dispatc
         {},
         { boundary: "store-status.yml", boundary_outcome: "success" },
         { boundary: "store-status.yml", boundary_outcome: "failed" },
+        { boundary: "store-status.yml", boundary_outcome: "waiting" },
+        { boundary: "store-status.yml", boundary_outcome: "dispatch-unknown" },
       ]) {
         const receipt = {
           schema: "tasknotes/store-cd/1",
@@ -943,34 +945,124 @@ test("non-retryable and rejected pre-write failures still dispatch a hold", asyn
   }
 });
 
-test("retryable reasons never bypass an unknown or waiting dispatch boundary", async () => {
+test("retryable reasons never bypass an unknown or waiting write dispatch boundary", async () => {
   for (const target of ["google-play", "app-store"]) {
     for (const reason of storeInfrastructureReasons) {
-      for (const boundaryOutcome of ["dispatch-unknown", "waiting"]) {
-        const receipt = {
-          target,
-          write_started: false,
-          boundary: "store-status.yml",
-          boundary_outcome: boundaryOutcome,
-        };
-        const holds = [];
-        await recordFailure(
-          receipt,
-          new Error(reason),
-          async (record) => Object.assign(receipt, record),
-          async (...args) => holds.push(args),
-        );
-        assert.deepEqual(holds, [
-          [
-            target === "google-play" ? "android" : "ios",
-            "stop",
-            "app-outcome-unknown",
-          ],
-        ]);
+      for (const boundary of [
+        undefined,
+        "android.yml",
+        "ios-release.yml",
+        "google-play-production.yml",
+        "app-store-submit.yml",
+      ]) {
+        for (const boundaryOutcome of ["dispatch-unknown", "waiting"]) {
+          const receipt = {
+            target,
+            write_started: false,
+            boundary,
+            boundary_outcome: boundaryOutcome,
+          };
+          const holds = [];
+          await recordFailure(
+            receipt,
+            new Error(reason),
+            async (record) => Object.assign(receipt, record),
+            async (...args) => holds.push(args),
+          );
+          assert.deepEqual(holds, [
+            [
+              target === "google-play" ? "android" : "ios",
+              "stop",
+              "app-outcome-unknown",
+            ],
+          ]);
+        }
       }
     }
   }
 });
+
+test("an unresolved observer still stops for unknown reasons or unproven pre-write state", async () => {
+  for (const boundaryOutcome of ["waiting", "dispatch-unknown"]) {
+    for (const [reason, writeStarted] of [
+      ["store-outcome-unknown", false],
+      ["store-line-outcome-unknown", false],
+      ["store-dispatch-identity-unknown", false],
+      ["store-run-binding-required", false],
+      ["release-evidence-unavailable", true],
+      ["release-evidence-unavailable", undefined],
+      ["release-evidence-unavailable", null],
+    ]) {
+      const receipt = {
+        target: "google-play",
+        write_started: writeStarted,
+        boundary: "store-status.yml",
+        boundary_outcome: boundaryOutcome,
+      };
+      const holds = [];
+      await recordFailure(
+        receipt,
+        new Error(reason),
+        async (record) => Object.assign(receipt, record),
+        async (...args) => holds.push(args),
+      );
+      assert.deepEqual(holds, [["android", "stop", "app-outcome-unknown"]]);
+    }
+  }
+});
+
+for (const boundaryOutcome of ["waiting", "dispatch-unknown"]) {
+  test(`store-status ${boundaryOutcome} API failure retains the retry receipt without stopping`, async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), "tasknotes-store-observer-"),
+    );
+    try {
+      const receipt = {
+        schema: "tasknotes/store-cd/1",
+        target: "google-play",
+        source,
+        run_id: 42,
+        write_started: false,
+      };
+      const path = join(directory, "store-cd-result.json");
+      const save = async (record) => {
+        Object.assign(receipt, record);
+        await writeFile(path, JSON.stringify(receipt));
+      };
+      const holds = [];
+      let failure;
+      await assert.rejects(
+        dispatch("store-status.yml", { platform: "android" }, save, (path) => {
+          if (path.endsWith("/dispatches") && boundaryOutcome === "waiting")
+            return { workflow_run_id: 8 };
+          throw new Error("release-evidence-unavailable");
+        }),
+        (error) => {
+          failure = error;
+          return error.message === "release-evidence-unavailable";
+        },
+      );
+      await recordFailure(receipt, failure, save, async (...args) =>
+        holds.push(args),
+      );
+      assert.deepEqual(JSON.parse(await readFile(path, "utf8")), {
+        schema: "tasknotes/store-cd/1",
+        target: "google-play",
+        source,
+        run_id: 42,
+        write_started: false,
+        boundary: "store-status.yml",
+        boundary_outcome: boundaryOutcome,
+        child_run_id: boundaryOutcome === "waiting" ? 8 : null,
+        outcome: "stopped",
+        reason: "release-evidence-unavailable",
+      });
+      assert.deepEqual(holds, []);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+}
 
 test("retryable CLI failure retains its result and exits nonzero without stopping the line", async () => {
   const directory = await mkdtemp(join(tmpdir(), "tasknotes-store-cd-"));
