@@ -247,6 +247,7 @@ function browserDouble({
   csp = false,
   entrySource = source,
   missingSignIn = false,
+  bodyText = "",
 } = {}) {
   const listeners = {},
     events = [];
@@ -274,7 +275,7 @@ function browserDouble({
             },
           }
         : selector === "body"
-          ? { innerText: async () => "" }
+          ? { innerText: async () => bodyText }
           : {
               evaluateAll: async () => [
                 `https://app.tasknotes.dev/assets/index-a1-${entrySource.slice(0, 12)}.js`,
@@ -284,13 +285,18 @@ function browserDouble({
             },
     getByRole: (role, options) => {
       assert.equal(role, "button");
-      assert.equal(options.name, "Sign in");
+      assert.match("Sign in", options.name);
+      assert.match("Connect to sync your work", options.name);
+      assert.doesNotMatch("Sign in to another account", options.name);
       return {
-        waitFor: async () => {
-          if (missingSignIn) throw Error("not visible");
-        },
+        first: () => ({
+          waitFor: async () => {
+            if (missingSignIn) throw Error("not visible");
+          },
+        }),
       };
     },
+    waitForTimeout: async () => {},
   };
   const context = {
     newPage: async () => page,
@@ -322,9 +328,19 @@ function browserDouble({
     },
   };
 }
-it("smoke checks a fresh source-bound entry and sign-in, ignores beacon CSP console noise, but refuses page errors and fences", async () => {
+it("smoke checks a fresh source-bound entry and its first screen (sign-in or unsynced start), ignores beacon CSP console noise, but refuses page errors and fences", async () => {
   const good = browserDouble({ csp: true });
-  assert.equal((await smoke(good.chromium, source)).ok, true);
+  const signedOut = await smoke(good.chromium, source);
+  assert.equal(signedOut.ok, true);
+  assert.equal(signedOut.signIn, true);
+  const unsynced = await smoke(
+    browserDouble({
+      bodyText:
+        "Saved only in this browser\nConnect to sync your work\nNew task",
+    }).chromium,
+    source,
+  );
+  assert.deepEqual([unsynced.signIn, unsynced.unsynced], [false, true]);
   assert.ok(good.events.includes("Network.setCacheDisabled"));
   assert.ok(good.events.includes("closed"));
   assert.throws(
@@ -365,6 +381,8 @@ it("smoke checks a fresh source-bound entry and sign-in, ignores beacon CSP cons
     { fence: true },
     { missingSignIn: true },
     { entrySource: "1".repeat(40) },
+    { bodyText: "Can't continue\nSet up this collection" },
+    { bodyText: "Saved only in this browser\nCouldn't load your views." },
   ]) {
     const bad = browserDouble(options);
     await assert.rejects(smoke(bad.chromium, source));

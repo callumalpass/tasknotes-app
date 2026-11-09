@@ -47,11 +47,11 @@ export function taskNotesApplicationDeclaration(
   };
 }
 
-/** Keep work before connecting off until the SDK's unsynced setup and
- * signed-out entry flow are fixed. Preserve the feature and storage identity
- * for re-enablement; native shells still need device validation as well. */
+/** Work before connecting: on the web, a signed-out visitor starts in this
+ * browser's unsynced collection. Native shells stay off until validated on
+ * devices. */
 export function taskNotesUnsyncedEnabled(): boolean {
-  return false;
+  return !Capacitor.isNativePlatform();
 }
 
 let entry: Mdbase | null = null;

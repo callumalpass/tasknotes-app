@@ -5,10 +5,10 @@ import { parse } from "yaml";
 import { locales, localeNames, negotiateLocale } from "@mdbase-dev/i18n";
 
 const root = new URL("../", import.meta.url);
-const version = "0.1.0-beta.163";
+const version = "0.1.0-beta.166";
 const integrity = {
-  i18n: "sha512-/MKyiHIKuFE1CndtpAq1ujLnw/ctiLs4T7KzZOPwiwkILCWtWiDAk7nkL8dd+cnGbFi9tQIYocpvsZjUDpqUtQ==",
-  ui: "sha512-YfKxLy18ocvJfm42yUhTLvBy8LfboMpU8jR7qPKsGd1oi8z8lHGuuuCHgtkB6B+PehzHjlF6I3pYmwWs8mclJg==",
+  i18n: "sha512-Ny4M+yQFf1D9CiSjoDLRB9xrVTKBbbxw6FhbHuGV4PAsXvZPWH5Tlq+vb+MsSXwXeXFhPYJBl6wffvUN/SZQNw==",
+  ui: "sha512-Bv6WfY/tT7f8wlZBu+Ll7KyjmL/pSjGQiKcQidlW82OWUmtX+fxAXbOPu8/OINNxyYS+8mWLaB0lCjBRZK0Exg==",
 };
 
 for (const [name, expected] of Object.entries(integrity)) {

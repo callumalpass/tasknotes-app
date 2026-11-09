@@ -359,7 +359,7 @@ jobs:
           node scripts/publisher/tool.mjs "$RUNNER_TEMP/tasknotes-smoke-tool" smoke
           module=$(cat "$RUNNER_TEMP/tasknotes-smoke-tool")
           node "$(dirname "$module")/cli.js" install --with-deps chromium
-      - name: Fresh load, source entry asset, readiness and sign-in
+      - name: Fresh load, source entry asset, readiness and first screen
         timeout-minutes: 3
         run: node scripts/publisher/smoke.mjs "$RUNNER_TEMP/tasknotes-smoke-tool" "$RUNNER_TEMP/tasknotes-smoke.json"
       - name: Read this run's verified upload receipt for the manual drill

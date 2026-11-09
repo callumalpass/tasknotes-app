@@ -19,11 +19,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it.each([false, true])(
-  "keeps work before connecting disabled with native platform %s until SDK setup is fixed",
-  (native) => {
+it.each([
+  [false, true],
+  [true, false],
+])(
+  "turns work before connecting on for the web only (native %s → %s)",
+  (native, enabled) => {
     vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(native);
-    expect(taskNotesUnsyncedEnabled()).toBe(false);
+    expect(taskNotesUnsyncedEnabled()).toBe(enabled);
   },
 );
 
@@ -85,7 +88,7 @@ it("declares the exact production environment and origin to the SDK", () => {
   expect(declaration.origin).toBe("https://app.tasknotes.dev");
 });
 
-it("starts the web SDK without automatically opening an unsynced collection", async () => {
+it("starts the web SDK with work before connecting", async () => {
   const mdbase = await createTestMdbase({ phase: "signed_out" });
   const createMdbase = vi.mocked(sdk.createMdbase).mockReturnValue(mdbase);
   vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(false);
@@ -102,6 +105,6 @@ it("starts the web SDK without automatically opening an unsynced collection", as
   expect(taskNotesMdbase()).toBe(mdbase);
   expect(createMdbase).toHaveBeenCalledWith(
     expect.objectContaining({ environment: "staging" }),
-    { followVisibility: true, unsynced: false },
+    { followVisibility: true, unsynced: true },
   );
 });
