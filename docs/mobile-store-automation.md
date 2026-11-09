@@ -50,11 +50,13 @@ draft, or approved-but-unpublished state quietly records `pending-review`; it
 never stacks another release. Rejection records a failure and stops only that
 target. Unavailable or malformed review evidence fails closed, except that an
 unavailable Play lifecycle read quietly records `pending-review-unobservable`
-when a retained successful same-source submission receipt and its requalified
-signed build match the exact production-track versionCode, completed status and
-release name. The code uses the publisher's configured base plus that build's
-run number, never another source's release or merely a matching marketing
-version. This outcome starts no write and dispatches no stop; it is not proof of
+when a retained successful same-target submission receipt and its requalified
+signed build match the newest production-track versionCode, completed status and
+release name. That submission may belong to an earlier source: the store permits
+only one review in flight even when main advances. The code uses the publisher's
+configured base plus that build's run number, never an unproven release or merely
+a matching marketing version. It checks before qualifying or building the new
+source. This outcome starts no write and dispatches no stop; it is not proof of
 review or public availability. Missing or mismatched evidence still stops the
 target rather than submitting blind. Play's **empty
 DRAFT with zero artifacts**, including the existing internal-track placeholder,
@@ -95,6 +97,12 @@ does not stop the line. A check changing before any build/write records
 but does not open an app-stop. Only no boundary or a successful read-only
 `store-status.yml` boundary proves that refusal. Write evidence is persisted
 before build/publisher dispatch, never inferred from a missing submission ID.
+After a successful, requalified Android build, `write_started` returns to false
+until publisher dispatch: an Android build alone does not write to Play. A parent
+`app-line-stopped` refusal at that successful `android.yml` boundary is a quiet
+hold, with no submit or store-line stop. Ops accepts that exact boundary only for
+the Google Play parent-line refusal. Unknown/failed builds remain conservative;
+iOS builds retain write evidence because they upload to TestFlight.
 
 For infrastructure reasons allowlisted by ops `bin/lib/cd_retry.py`, an explicit
 `write_started: false` refusal retains `outcome: stopped`, its reason and the

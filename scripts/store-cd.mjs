@@ -142,6 +142,78 @@ export async function previousSubmission(
   transport = gh,
   readArtifact = artifactJson,
 ) {
+  return findSubmission(
+    target,
+    (receipt) =>
+      receipt.source === source &&
+      (liveVersion === undefined
+        ? submittedBuild(receipt)
+        : receipt.version === liveVersion),
+    transport,
+    readArtifact,
+  );
+}
+function submittedBuild(receipt) {
+  return (
+    receipt.outcome === "submitted" &&
+    /^[a-f0-9]{40}$/.test(receipt.source ?? "") &&
+    /^\d+\.\d+\.\d+$/.test(receipt.version ?? "") &&
+    Number.isSafeInteger(receipt.source_run_id) &&
+    receipt.source_run_id > 0 &&
+    Number.isSafeInteger(receipt.build) &&
+    receipt.build > 0
+  );
+}
+export function newestProductionRelease(tracks) {
+  if (!Array.isArray(tracks)) return null;
+  const production = tracks.filter((track) => track?.track === "production");
+  if (production.length !== 1) return null;
+  const releases = production[0].releases;
+  if (!Array.isArray(releases) || !releases.length) return null;
+  const candidates = [];
+  for (const release of releases) {
+    if (
+      !Array.isArray(release?.versionCodes) ||
+      !release.versionCodes.length ||
+      !release.versionCodes.every(
+        (code) =>
+          typeof code === "string" &&
+          /^[1-9]\d*$/.test(code) &&
+          Number.isSafeInteger(Number(code)),
+      )
+    )
+      return null;
+    candidates.push({
+      release,
+      versionCode: Math.max(...release.versionCodes.map(Number)),
+    });
+  }
+  candidates.sort((left, right) => right.versionCode - left.versionCode);
+  const newest = candidates[0];
+  if (
+    newest.release.status !== "completed" ||
+    candidates[1]?.versionCode === newest.versionCode
+  )
+    return null;
+  return { name: newest.release.name, versionCode: newest.versionCode };
+}
+export async function previousPlaySubmission(
+  release,
+  transport = gh,
+  readArtifact = artifactJson,
+  versionCode = androidVersionCode,
+) {
+  return findSubmission(
+    "google-play",
+    (receipt) =>
+      submittedBuild(receipt) &&
+      release.name === `TaskNotes ${receipt.version}` &&
+      release.versionCode === versionCode(receipt.build),
+    transport,
+    readArtifact,
+  );
+}
+async function findSubmission(target, accepts, transport, readArtifact) {
   const pages = transport(
     `repos/${REPO}/actions/workflows/publish-tasknotes-store.yml/runs?branch=main&event=workflow_dispatch&per_page=100`,
     { pages: true },
@@ -169,14 +241,7 @@ export async function previousSubmission(
       receipt.schema === "tasknotes/store-cd/1" &&
       receipt.run_id === run.id &&
       receipt.target === target &&
-      receipt.source === source &&
-      (liveVersion === undefined
-        ? receipt.outcome === "submitted" &&
-          Number.isSafeInteger(receipt.source_run_id) &&
-          receipt.source_run_id > 0 &&
-          Number.isSafeInteger(receipt.build) &&
-          receipt.build > 0
-        : receipt.version === liveVersion) &&
+      accepts(receipt) &&
       ["submitted", "already-live"].includes(receipt.outcome)
     )
       return receipt;
@@ -198,30 +263,23 @@ export async function releaseTarget({ target, source, runId, save, services }) {
     blocker === "play-release-lifecycle-observer-unavailable" &&
     status.review?.available === false
   ) {
-    const submitted = await services.previous(target, source);
+    const release = newestProductionRelease(status.tracks);
+    const submitted = release && (await services.previousPlay(release));
     if (submitted) {
       const qualified = await services.qualify(
         "android",
         submitted.source_run_id,
       );
       requirePolicy(
-        qualified.source === source &&
+        qualified.source === submitted.source &&
           qualified.version === submitted.version &&
           qualified.build === submitted.build,
         "store-build-candidate-changed",
       );
       const versionCode = services.versionCode(qualified.build);
-      const production = status.tracks?.find(
-        (track) => track.track === "production",
-      );
       if (
-        production?.releases?.some(
-          (release) =>
-            release.name === `TaskNotes ${qualified.version}` &&
-            release.status === "completed" &&
-            Array.isArray(release.versionCodes) &&
-            release.versionCodes.includes(String(versionCode)),
-        )
+        release.name === `TaskNotes ${qualified.version}` &&
+        release.versionCode === versionCode
       )
         return save({
           outcome: "pending-review-unobservable",
@@ -229,6 +287,7 @@ export async function releaseTarget({ target, source, runId, save, services }) {
           version: qualified.version,
           source_run_id: submitted.source_run_id,
           build: qualified.build,
+          pending_source: submitted.source,
         });
     }
   }
@@ -251,6 +310,7 @@ export async function releaseTarget({ target, source, runId, save, services }) {
     "store-build-candidate-changed",
   );
   await save({ source_run_id: sourceRunId, build: qualified.build });
+  if (platform === "android") await save({ write_started: false });
   await services.lines(platform);
   const workflow =
     platform === "android"
@@ -328,6 +388,7 @@ async function main() {
         status: (platform) => status(platform, save),
         commit: qualifyCommit,
         previous: previousSubmission,
+        previousPlay: previousPlaySubmission,
         versionCode: androidVersionCode,
         dispatch,
         qualify: qualifySource,
@@ -360,6 +421,17 @@ export async function recordFailure(receipt, error, save, hold = storeLine) {
     ? error.message
     : "store-evidence-unavailable";
   await save({ outcome: "stopped", reason });
+  if (
+    reason === "app-line-stopped" &&
+    receipt.write_started === false &&
+    (!receipt.boundary ||
+      (receipt.boundary === "store-status.yml" &&
+        receipt.boundary_outcome === "success") ||
+      (receipt.target === "google-play" &&
+        receipt.boundary === "android.yml" &&
+        receipt.boundary_outcome === "success"))
+  )
+    return;
   if (
     reason === "exact-main-ci-required" &&
     receipt.write_started === false &&
