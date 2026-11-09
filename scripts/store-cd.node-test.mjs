@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   appleQueueBlock,
   dispatch,
@@ -8,6 +13,7 @@ import {
   previousSubmission,
   releaseTarget,
   recordFailure,
+  storeInfrastructureReasons,
 } from "./store-cd.mjs";
 import { verifyArchive } from "./download-mobile-build.mjs";
 import { androidVersionCode } from "./publish-google-play.mjs";
@@ -127,7 +133,7 @@ test("unavailable Play lifecycle with the exact submitted source build quietly w
   assert.deepEqual(holds, []);
 });
 
-test("unavailable Play lifecycle still stops when the production track does not prove the exact build", async () => {
+test("unavailable Play lifecycle retains a retryable refusal when production does not prove the exact build", async () => {
   for (const change of [
     { versionCodes: ["100738"] },
     { versionCodes: ["1007390"] },
@@ -151,7 +157,7 @@ test("unavailable Play lifecycle still stops when the production track does not 
     assert.equal(receipt.reason, "play-release-lifecycle-observer-unavailable");
     assert.equal(receipt.write_started, false);
     assert.deepEqual(fixtureValue.calls, []);
-    assert.deepEqual(holds, [["android", "stop", "app-publication-failed"]]);
+    assert.deepEqual(holds, []);
   }
 });
 
@@ -179,13 +185,21 @@ test("unobservable review cannot borrow a missing receipt or changed/untrusted s
     const { receipt, holds } = await attempt(fixtureValue);
     assert.equal(receipt.outcome, "stopped");
     assert.equal(receipt.write_started, false);
-    assert.equal(holds.length, 1);
+    if (change.previous) {
+      assert.equal(
+        receipt.reason,
+        "play-release-lifecycle-observer-unavailable",
+      );
+      assert.deepEqual(holds, []);
+    } else {
+      assert.equal(holds.length, 1);
+    }
     assert.deepEqual(fixtureValue.calls, []);
   }
 });
 
-test("available Play lifecycle keeps published, pending, rejected and malformed handling unchanged", async () => {
-  for (const [review, expected] of [
+test("Play lifecycle preserves outcomes while only rejection self-stops before writes", async () => {
+  for (const [review, expected, reason] of [
     [status.review, "submitted"],
     [
       {
@@ -200,14 +214,25 @@ test("available Play lifecycle keeps published, pending, rejected and malformed 
         releases: [{ state: "RELEASE_LIFECYCLE_STATE_NOT_APPROVED" }],
       },
       "stopped",
+      "store-rejected",
     ],
-    [{ available: true, releases: [] }, "stopped"],
+    [
+      { available: true, releases: [] },
+      "stopped",
+      "play-release-lifecycle-observer-unavailable",
+    ],
   ]) {
     const fixtureValue = fixture();
     fixtureValue.services.status = async () => ({ ...status, review });
     const { receipt, holds } = await attempt(fixtureValue);
     assert.equal(receipt.outcome, expected);
-    assert.equal(holds.length, expected === "stopped" ? 1 : 0);
+    assert.equal(receipt.reason, reason);
+    assert.deepEqual(
+      holds,
+      reason === "store-rejected"
+        ? [["android", "stop", "store-rejected"]]
+        : [],
+    );
     assert.equal(fixtureValue.calls.length, expected === "submitted" ? 2 : 0);
   }
 });
@@ -427,7 +452,7 @@ test("target qualification receives only that platform before any write", async 
   }
 });
 
-test("only an evidenced pre-write check refusal avoids the TaskNotes stop writer", async () => {
+test("an evidenced pre-write check refusal avoids the TaskNotes stop writer", async () => {
   for (const target of ["google-play", "app-store"]) {
     for (const boundary of [
       {},
@@ -487,6 +512,222 @@ test("only an evidenced pre-write check refusal avoids the TaskNotes stop writer
       async (...args) => holds.push(args),
     );
     assert.deepEqual(holds, [["android", "stop", expected]]);
+  }
+});
+
+test("store infrastructure reasons pin the ops bin/lib/cd_retry.py allowlist", () => {
+  assert.deepEqual(storeInfrastructureReasons, [
+    "release-evidence-unavailable",
+    "npm-evidence-unavailable",
+    "store-line-outcome-unknown",
+    "store-line-read-timeout",
+    "store-outcome-unknown",
+    "play-release-lifecycle-observer-unavailable",
+    "store-observer-unavailable",
+    "store-status-observer-unavailable",
+    "store-status-transport",
+    "store-status-transport-failed",
+    "store-status-transport-unavailable",
+    "store-status-timeout",
+    "store-status-observer-timeout",
+  ]);
+});
+
+test("retryable pre-write failures retain target, source and run without dispatching a hold", async () => {
+  for (const target of ["google-play", "app-store"]) {
+    for (const reason of storeInfrastructureReasons.filter(
+      (reason) => !reason.includes("outcome-unknown"),
+    )) {
+      for (const boundary of [
+        {},
+        { boundary: "store-status.yml", boundary_outcome: "success" },
+        { boundary: "store-status.yml", boundary_outcome: "failed" },
+      ]) {
+        const receipt = {
+          schema: "tasknotes/store-cd/1",
+          target,
+          source,
+          run_id: 42,
+          write_started: false,
+          ...boundary,
+        };
+        const retained = [];
+        const holds = [];
+        await recordFailure(
+          receipt,
+          new Error(reason),
+          async (record) => {
+            Object.assign(receipt, record);
+            retained.push(structuredClone(receipt));
+          },
+          async (...args) => holds.push(args),
+        );
+        assert.deepEqual(retained, [
+          {
+            schema: "tasknotes/store-cd/1",
+            target,
+            source,
+            run_id: 42,
+            write_started: false,
+            ...boundary,
+            outcome: "stopped",
+            reason,
+          },
+        ]);
+        assert.deepEqual(holds, []);
+      }
+    }
+  }
+});
+
+test("retryable failures still hold when a write started or its state is unknown", async () => {
+  for (const [target, platform] of [
+    ["google-play", "android"],
+    ["app-store", "ios"],
+  ]) {
+    for (const reason of storeInfrastructureReasons) {
+      for (const writeStarted of [true, undefined, null]) {
+        const receipt = { target, write_started: writeStarted };
+        const holds = [];
+        await recordFailure(
+          receipt,
+          new Error(reason),
+          async (record) => Object.assign(receipt, record),
+          async (...args) => holds.push(args),
+        );
+        assert.equal(receipt.outcome, "stopped");
+        assert.equal(receipt.reason, reason);
+        assert.equal(receipt.write_started, writeStarted);
+        assert.deepEqual(holds, [
+          [
+            platform,
+            "stop",
+            reason === "store-outcome-unknown"
+              ? "app-outcome-unknown"
+              : "app-publication-failed",
+          ],
+        ]);
+      }
+    }
+  }
+});
+
+test("non-retryable and rejected pre-write failures still dispatch a hold", async () => {
+  for (const [target, platform] of [
+    ["google-play", "android"],
+    ["app-store", "ios"],
+  ]) {
+    for (const [reason, stopReason] of [
+      ["store-rejected", "store-rejected"],
+      ["signed-artifact-digest-required", "app-publication-failed"],
+      ["store-evidence-unavailable", "app-outcome-unknown"],
+      ["store-line-outcome-unknown", "app-publication-failed"],
+      ["store-outcome-unknown", "app-outcome-unknown"],
+      ["store-dispatch-identity-unknown", "app-outcome-unknown"],
+    ]) {
+      const receipt = { target, write_started: false };
+      const holds = [];
+      await recordFailure(
+        receipt,
+        new Error(reason),
+        async (record) => Object.assign(receipt, record),
+        async (...args) => holds.push(args),
+      );
+      assert.equal(receipt.outcome, "stopped");
+      assert.equal(receipt.reason, reason);
+      assert.deepEqual(holds, [[platform, "stop", stopReason]]);
+    }
+  }
+});
+
+test("retryable reasons never bypass an unknown or waiting dispatch boundary", async () => {
+  for (const target of ["google-play", "app-store"]) {
+    for (const reason of storeInfrastructureReasons) {
+      for (const boundaryOutcome of ["dispatch-unknown", "waiting"]) {
+        const receipt = {
+          target,
+          write_started: false,
+          boundary: "store-status.yml",
+          boundary_outcome: boundaryOutcome,
+        };
+        const holds = [];
+        await recordFailure(
+          receipt,
+          new Error(reason),
+          async (record) => Object.assign(receipt, record),
+          async (...args) => holds.push(args),
+        );
+        assert.deepEqual(holds, [
+          [
+            target === "google-play" ? "android" : "ios",
+            "stop",
+            "app-outcome-unknown",
+          ],
+        ]);
+      }
+    }
+  }
+});
+
+test("retryable CLI failure retains its result and exits nonzero without stopping the line", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "tasknotes-store-cd-"));
+  try {
+    await writeFile(
+      join(directory, "gh"),
+      `#!${process.execPath}
+import { appendFileSync, readFileSync } from "node:fs";
+const request = JSON.parse(readFileSync(0, "utf8"));
+appendFileSync(process.env.STORE_CD_TEST_CALLS, request.inputs.operation + "\\n");
+process.exitCode = 1;
+`,
+      { mode: 0o755 },
+    );
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL("./store-cd.mjs", import.meta.url))],
+      {
+        cwd: directory,
+        encoding: "utf8",
+        env: {
+          PATH: `${directory}:${process.env.PATH}`,
+          APP_EVIDENCE_GH_TOKEN: "test",
+          GITHUB_REPOSITORY: "callumalpass/tasknotes-app",
+          GITHUB_REF: "refs/heads/main",
+          GITHUB_RUN_ATTEMPT: "1",
+          GITHUB_RUN_ID: "42",
+          GITHUB_EVENT_NAME: "workflow_dispatch",
+          GITHUB_WORKFLOW_REF:
+            "callumalpass/tasknotes-app/.github/workflows/publish-tasknotes-store.yml@refs/heads/main",
+          STORE_TARGET: "app-store",
+          SOURCE_SHA: source,
+          STORE_CD_TEST_CALLS: join(directory, "calls"),
+        },
+      },
+    );
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.equal(
+      result.stderr,
+      "Store CD refused; inspect the bounded outcome.\n",
+    );
+    assert.deepEqual(
+      JSON.parse(
+        await readFile(join(directory, "store-cd-result.json"), "utf8"),
+      ),
+      {
+        schema: "tasknotes/store-cd/1",
+        target: "app-store",
+        source,
+        run_id: 42,
+        outcome: "stopped",
+        write_started: false,
+        reason: "release-evidence-unavailable",
+      },
+    );
+    assert.equal(await readFile(join(directory, "calls"), "utf8"), "status\n");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });
 

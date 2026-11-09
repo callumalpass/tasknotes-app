@@ -16,6 +16,22 @@ import { createStatusClient } from "./app-store-status.mjs";
 import { androidVersionCode } from "./publish-google-play.mjs";
 
 export const platforms = { "google-play": "android", "app-store": "ios" };
+// Mirrors mdbase-dev/mdbase-cloud-ops bin/lib/cd_retry.py STORE_INFRASTRUCTURE_REASONS at 224c0b0e7ca3bc7952fd468f16ffed08b7030c62.
+export const storeInfrastructureReasons = Object.freeze([
+  "release-evidence-unavailable",
+  "npm-evidence-unavailable",
+  "store-line-outcome-unknown",
+  "store-line-read-timeout",
+  "store-outcome-unknown",
+  "play-release-lifecycle-observer-unavailable",
+  "store-observer-unavailable",
+  "store-status-observer-unavailable",
+  "store-status-transport",
+  "store-status-transport-failed",
+  "store-status-transport-unavailable",
+  "store-status-timeout",
+  "store-status-observer-timeout",
+]);
 export function appleQueueBlock(versions) {
   if (
     versions.some((version) =>
@@ -350,6 +366,14 @@ export async function recordFailure(receipt, error, save, hold = storeLine) {
     (!receipt.boundary ||
       (receipt.boundary === "store-status.yml" &&
         receipt.boundary_outcome === "success"))
+  )
+    return;
+  if (
+    receipt.write_started === false &&
+    storeInfrastructureReasons.includes(reason) &&
+    !["dispatch-unknown", "waiting"].includes(receipt.boundary_outcome) &&
+    !reason.includes("outcome-unknown") &&
+    !reason.includes("identity-unknown")
   )
     return;
   const stopReason =
