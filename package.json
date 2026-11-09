@@ -5,6 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@10.7.0",
   "scripts": {
+    "check:release-downloads": "node scripts/check-release-downloads.mjs",
+    "test:release-downloads": "node --test scripts/check-release-downloads.node-test.mjs scripts/ci/prefetch-java.node-test.mjs",
     "i18n:extract": "mdbase-i18n extract",
     "i18n:compile": "mdbase-i18n compile",
     "i18n:check": "mdbase-i18n check --compose 'node_modules/@mdbase-dev/ui/dist/locales/{locale}/messages.json'",
