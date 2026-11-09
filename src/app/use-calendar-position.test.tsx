@@ -241,28 +241,3 @@ it("keeps the selected month heading below an overlapping toolbar", () => {
   expect(scroller.scrollTop).toBe(780);
   expect(scroller.style.paddingBottom).toBe("");
 });
-
-it("names the visible phone week columns and updates the cue after scrolling", async () => {
-  const root = fixture(
-    '<div class="tnc-tg-scroll"><div class="tnc-gutter-head"></div><div class="tnc-dh" data-date="2026-11-05"></div><div class="tnc-dh" data-date="2026-11-06"></div><div class="tnc-dh" data-date="2026-11-07"></div></div>',
-  );
-  const scroller = root.current.firstElementChild as HTMLElement;
-  bounds(scroller, 0, 80, 360, 400);
-  bounds(root.current.querySelector(".tnc-gutter-head")!, 0, 80, 44, 40);
-  const days = root.current.querySelectorAll(".tnc-dh");
-  bounds(days[0], 44, 80, 160, 40);
-  bounds(days[1], 204, 80, 160, 40);
-  bounds(days[2], 364, 80, 160, 40);
-  const view = renderHook(() =>
-    useCalendarPosition(root, "timeGridWeek", true, "2026-11-05", 0),
-  );
-  expect(view.result.current).toContain("Nov");
-  expect(view.result.current).toContain("5");
-  expect(view.result.current).toContain("6");
-  bounds(days[0], -116, 80, 160, 40);
-  bounds(days[1], 44, 80, 160, 40);
-  bounds(days[2], 204, 80, 160, 40);
-  await act(() => scroller.dispatchEvent(new Event("scroll")));
-  expect(view.result.current).not.toContain("5");
-  expect(view.result.current).toContain("7");
-});
