@@ -36,6 +36,7 @@ it("passes exact generated manifest and original compatibility storage data to t
     applicationNamespace: "tasknotes-web",
     joinDatabaseName: "tasknotes.native-collection-join.v1",
     setupDatabaseName: "tasknotes.native-model-setup.v1",
+    unsyncedDatabaseName: "tasknotes.unsynced.v1",
   });
   expect(Object.keys(declaration).sort()).toEqual([
     "environment",

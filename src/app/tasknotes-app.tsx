@@ -19,7 +19,10 @@ import {
 import "@mdbase-dev/ui/collections.css";
 
 import { addTaskNotesStarterViews } from "../application/ensure-default-view-source";
-import { taskNotesMdbase } from "../cloud/tasknotes-application";
+import {
+  taskNotesMdbase,
+  taskNotesUnsyncedEnabled,
+} from "../cloud/tasknotes-application";
 import { followNativeSignInReturn } from "../native/sign-in";
 import { registerStartupTiming } from "../observability/startup-timing";
 import { NextTaskRepository } from "../storage/next-repository";
@@ -45,9 +48,12 @@ type Workspace = ComponentType<Parameters<typeof OpenedCollection>[0]>;
 export function TaskNotesApp({
   mdbase: supplied,
   Workspace = OpenedCollection,
+  unsynced = taskNotesUnsyncedEnabled(),
 }: {
   mdbase?: Mdbase;
   Workspace?: Workspace;
+  /** Offer "Continue without connecting" (the entry was created with it). */
+  unsynced?: boolean;
 } = {}) {
   const [mdbase] = useState(() => supplied ?? taskNotesMdbase());
   const [arming] = useState(() => new StarterViewArming(mdbase.getSnapshot()));
@@ -61,7 +67,10 @@ export function TaskNotesApp({
     [mdbase],
   );
   useMdbaseLifetime(mdbase);
-  const ui = useMemo<CollectionUiOptions>(() => ({ mdbase, app }), [mdbase]);
+  const ui = useMemo<CollectionUiOptions>(
+    () => ({ mdbase, app, ...(unsynced ? { unsynced: true } : {}) }),
+    [mdbase, unsynced],
+  );
   return (
     <CollectionGate {...ui} extraActions={signedOutExplainer}>
       {(connection) => (

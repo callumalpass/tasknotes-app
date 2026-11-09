@@ -42,8 +42,16 @@ export function taskNotesApplicationDeclaration(
       applicationNamespace: "tasknotes-web",
       joinDatabaseName: "tasknotes.native-collection-join.v1",
       setupDatabaseName: "tasknotes.native-model-setup.v1",
+      unsyncedDatabaseName: "tasknotes.unsynced.v1",
     },
   };
+}
+
+/** Work before connecting: signed out, people can start in a collection
+ * saved only in this browser and bring it in when they connect. Web only for
+ * now; native shells keep requiring a collection until checked on devices. */
+export function taskNotesUnsyncedEnabled(): boolean {
+  return !Capacitor.isNativePlatform();
 }
 
 let entry: Mdbase | null = null;
@@ -64,6 +72,7 @@ export function taskNotesMdbase(): Mdbase {
   // Returning from the Connect window or another app re-checks at once.
   entry = createMdbase(taskNotesApplicationDeclaration(environment), {
     followVisibility: true,
+    unsynced: taskNotesUnsyncedEnabled(),
     ...(Capacitor.isNativePlatform() ? { signIn: nativeSignIn } : {}),
   });
   return entry;

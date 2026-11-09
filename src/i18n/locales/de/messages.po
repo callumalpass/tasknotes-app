@@ -2229,7 +2229,7 @@ msgstr "Kalender trennen"
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
 msgid "Dismiss"
-msgstr "Ausblenden"
+msgstr "Schließen"
 
 #: src/app/bulk-task-actions.tsx
 msgid "Dismiss bulk update notice"
