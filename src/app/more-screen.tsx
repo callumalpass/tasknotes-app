@@ -94,6 +94,7 @@ export function MoreScreen({
   const { info, stats, loading } = useCollectionSummary();
   const { connection, repository, privateAccount } = useRepository();
   const notice = useContext(ConnectionNoticeContext);
+  const { localCollection } = useCollectionGate();
   const reminders = useReminderSettings();
   const install = useInstallPrompt();
   const unsavedBehavior = useUnsavedTaskModelDraft(repository);
@@ -121,7 +122,9 @@ export function MoreScreen({
   const summaries: Record<SettingsSection, ReactNode> = {
     collection: [
       info?.name ?? translate({ message: "mdbase collection" }),
-      connectionLabel(connection, notice),
+      localCollection?.active
+        ? localConnectionLabel()
+        : connectionLabel(connection, notice),
       loading || !stats
         ? null
         : plural(stats.open, {
@@ -378,7 +381,8 @@ function CollectionSettings() {
   } = useCollectionSummary();
   const { connection, lastRefresh, refresh, refreshing } = useRepository();
   const notice = useContext(ConnectionNoticeContext);
-  const { collectionUi, changeCollection } = useCollectionGate();
+  const { collectionUi, localCollection, changeCollection } =
+    useCollectionGate();
   const [showStorage, setShowStorage] = useStoredFlag(
     "tasknotes:settings-storage-open:v1",
     false,
@@ -391,11 +395,15 @@ function CollectionSettings() {
             {info?.name ?? translate({ message: "mdbase collection" })}
           </strong>
           <span
-            className={`settings-connection is-${connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
+            className={`settings-connection is-${localCollection?.active ? "local" : connection.savedOnDevice || notice ? "unavailable" : connection.state}`}
             role="status"
           >
             <span aria-hidden="true" className="settings-connection-dot" />
-            <span>{connectionLabel(connection, notice)}</span>
+            <span>
+              {localCollection?.active
+                ? localConnectionLabel()
+                : connectionLabel(connection, notice)}
+            </span>
             {loading ? (
               <span>
                 <Trans>· Opening</Trans>
@@ -441,17 +449,44 @@ function CollectionSettings() {
             </button>
           </>
         ) : null}
+        {localCollection?.active ? (
+          <p className="section-copy settings-collection-note">
+            <Trans>
+              Saved in this browser. Clearing browser data removes local tasks.
+            </Trans>
+          </p>
+        ) : null}
         <div className="settings-collection-actions">
-          <button
-            className="secondary-action"
-            disabled={refreshing}
-            type="button"
-            onClick={() => void refresh().catch(() => undefined)}
-          >
-            {refreshing
-              ? translate({ message: "Refreshing" })
-              : translate({ message: "Refresh now" })}
-          </button>
+          {localCollection && !localCollection.active ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={localCollection.open}
+            >
+              <Trans>Open local tasks</Trans>
+            </button>
+          ) : null}
+          {localCollection?.review ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={localCollection.review}
+            >
+              <Trans>Review local tasks</Trans>
+            </button>
+          ) : null}
+          {localCollection?.active ? null : (
+            <button
+              className="secondary-action"
+              disabled={refreshing}
+              type="button"
+              onClick={() => void refresh().catch(() => undefined)}
+            >
+              {refreshing
+                ? translate({ message: "Refreshing" })
+                : translate({ message: "Refresh now" })}
+            </button>
+          )}
           {collectionUi ? (
             <CollectionSwitcher {...collectionUi} variant="full" />
           ) : (
@@ -460,7 +495,11 @@ function CollectionSettings() {
               type="button"
               onClick={changeCollection}
             >
-              <Trans>Change collection</Trans>
+              {localCollection?.active ? (
+                <Trans>Connect collection</Trans>
+              ) : (
+                <Trans>Change collection</Trans>
+              )}
             </button>
           )}
         </div>
@@ -490,7 +529,9 @@ function CollectionSettings() {
       </button>
       {showStorage ? (
         <div className="collection-storage-detail">
-          <p className="section-copy">{storageExplanation()}</p>
+          {localCollection?.active ? null : (
+            <p className="section-copy">{storageExplanation()}</p>
+          )}
           <p className="section-copy">
             <Trans>
               Tasks are portable Markdown records in the mdbase v0.3 format.
@@ -907,9 +948,9 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
           </summary>
           <p>
             <Trans>
-              No. TaskNotes reads and writes the authoritative mdbase collection
-              directly. Hosted collections need a network connection; a computer
-              collection also needs that computer to be reachable.
+              Local tasks work offline and are saved in this browser. Connected
+              collections depend on the records mdbase has available on this
+              device; syncing requires a connection.
             </Trans>
           </p>
         </details>
@@ -960,6 +1001,14 @@ function ThemeSelect() {
       }}
     />
   );
+}
+
+function localConnectionLabel(): string {
+  return translate({
+    message: "Not connected",
+    comment:
+      "Status of local tasks kept in this browser before a collection is connected",
+  });
 }
 
 function connectionLabel(

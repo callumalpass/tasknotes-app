@@ -113,9 +113,19 @@ function SwitcherWorkspace({
   actions,
   repository,
 }: {
-  actions: { collectionUi: CollectionUiOptions };
+  actions: {
+    collectionUi: CollectionUiOptions | null;
+    changeCollection(): void;
+  };
   repository: { records: { collection: string } };
 }) {
+  if (!actions.collectionUi)
+    return (
+      <main>
+        Local workspace
+        <button onClick={actions.changeCollection}>Connect</button>
+      </main>
+    );
   return (
     <main>
       <CollectionSwitcher
@@ -173,6 +183,8 @@ it.each(["choosing", "ready"] as const)(
         Workspace={SwitcherWorkspace as never}
       />,
     );
+    if (phase === "choosing")
+      fireEvent.click(await screen.findByRole("button", { name: "Connect" }));
     if (phase === "ready") {
       fireEvent.click(
         await screen.findByRole("button", { name: /switch collection/i }),
@@ -256,7 +268,10 @@ it("signs out through the SDK and never just closes the entry", async () => {
   const mdbase = await testMdbase();
   mdbase.fixture.set("choosing");
   window.history.replaceState(null, "", "/?demo=50");
-  render(<TaskNotesApp mdbase={mdbase} />);
+  render(
+    <TaskNotesApp mdbase={mdbase} Workspace={SwitcherWorkspace as never} />,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "Connect" }));
   fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
   await waitFor(() =>
     expect(mdbase.getSnapshot().phase.kind).toBe("signed_out"),
@@ -266,4 +281,36 @@ it("signs out through the SDK and never just closes the entry", async () => {
     .map((call) => call.action);
   expect(actions).toContain("signOut");
   expect(actions).not.toContain("close");
+});
+
+it("opens local work before sign-in and flushes edits before showing Connect", async () => {
+  const { registerReloadParticipant } = await import("../pwa/reload");
+  const mdbase = await createTestMdbase({
+    phase: "signed_out",
+    collections: [],
+  });
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const save = vi.fn(() => pending);
+  const unregister = registerReloadParticipant({ save });
+  try {
+    render(
+      <TaskNotesApp mdbase={mdbase} Workspace={SwitcherWorkspace as never} />,
+    );
+    expect(await screen.findByText("Local workspace")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+    expect(save).toHaveBeenCalledOnce();
+    expect(screen.getByText("Local workspace")).toBeVisible();
+    await act(async () => {
+      release();
+      await pending;
+    });
+    expect(
+      await screen.findByRole("button", { name: "Keep working locally" }),
+    ).toBeVisible();
+  } finally {
+    unregister();
+  }
 });

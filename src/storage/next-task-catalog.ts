@@ -16,6 +16,7 @@ import {
  */
 export interface NextTaskProvider extends ResolvedTaskProvider {
   sourcePath: string;
+  sourceFingerprint: string;
 }
 
 export async function nextTaskProviders(
@@ -83,6 +84,12 @@ export async function nextTaskCatalog(
         settings: options.settings,
       }),
       sourcePath: type.path,
+      sourceFingerprint: JSON.stringify([
+        resource.text,
+        contract,
+        [...implementation.fields],
+        binding,
+      ]),
     });
   }
   if (!providers.length)

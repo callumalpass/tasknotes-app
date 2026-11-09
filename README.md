@@ -34,20 +34,26 @@ See the [mdbase overview](https://mdbase.dev/) for an introduction or the
 
 ## Your tasks remain portable
 
-TaskNotes works with mdbase collections. You can choose a hosted collection or
+TaskNotes opens into a local workspace before sign-in. Tasks, notes and files
+are saved in this browser. Connecting a collection offers a reviewed import
+that keeps the local source available and preserves the destination definitions.
+See [Local first use](docs/local-first.md) for storage and transfer details.
+
+With mdbase, you can choose a hosted collection or
 one made available by a connected computer; the same TaskNotes features and
 terminology apply to both.
 
-Your collection—not the browser or app—is the durable home of your tasks.
-TaskNotes does not create a separate IndexedDB copy or open folders directly on
-your device. Each task remains a Markdown record that can be used beyond the
-app.
+Each task remains a Markdown record that can be used beyond the app. TaskNotes
+uses IndexedDB for its initial local collection and the mdbase runtime for
+connected collection persistence and replication; it does not
+open folders directly on your device.
 
-This also means TaskNotes is not an offline-first app:
-
-- A hosted collection needs an internet connection.
-- A connected-computer collection needs that computer to remain reachable.
-- A change is saved once the selected collection has accepted it.
+The runtime can capture changes in the selected local replica before upstream
+synchronization. Local capture and upstream confirmation are separate states.
+Available reads and writes depend on the runtime's local data and connection
+state. Synchronization with a hosted collection requires internet access;
+synchronization with a connected-computer authority requires that computer to
+be reachable.
 
 Task reminders are delivered by mdbase, so TaskNotes does not need to remain
 open. Reminder notifications contain no task titles, descriptions, paths, or

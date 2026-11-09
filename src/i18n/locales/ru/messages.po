@@ -112,6 +112,11 @@ msgstr "{0, plural, =1 {Добавление изображения…} one {Д�
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {Изображение добавлено} one {Добавлено # изображение} few {Добавлено # изображения} many {Добавлено # изображений} other {Добавлено # изображения}}"
 
+#. placeholder {0}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
+
 #. placeholder {0}: google.omitted
 #: src/app/task-calendar-view.tsx
 msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
@@ -132,7 +137,9 @@ msgstr "{0, plural, one {# незавершённая} few {# незавершё
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, one {Не удалось обновить # задачу. Откройте её и проверьте, прежде чем повторить попытку.} few {Не удалось обновить # задачи. Откройте их и проверьте, прежде чем повторить попытку.} many {Не удалось обновить # задач. Откройте их и проверьте, прежде чем повторить попытку.} other {Не удалось обновить # задач. Откройте их и проверьте, прежде чем повторить попытку.}}"
 
+#. placeholder {0}: source.tasks.length
 #. placeholder {0}: updates.length
+#: src/app/local-transfer.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, one {# задача} few {# задачи} many {# задач} other {# задач}}"
@@ -563,6 +570,10 @@ msgstr "{name} (не является записью участника)"
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} должно оставаться в навигации, пока не будет добавлено другое представление"
+
+#: src/app/local-transfer.tsx
+msgid "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
+msgstr "{noteCount, plural, one {# заметка блокнота} few {# заметки блокнота} many {# заметок блокнота} other {# заметки блокнота}}"
 
 #: src/app/views-screen.tsx
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
@@ -1200,6 +1211,10 @@ msgstr "Столбцы доски"
 msgid "Bold"
 msgstr "Полужирный"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "Перенести локальную работу в эту коллекцию"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "Перейти по задачам"
@@ -1330,6 +1345,14 @@ msgstr "Проверить завершение строгого режима"
 msgid "Check that the collection is connected, then try again."
 msgstr "Убедитесь, что коллекция подключена, и попробуйте ещё раз."
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "Проверить перенос"
+
+#: src/app/local-transfer.tsx
+msgid "Check transfer confirms what was already copied, then copies the rest."
+msgstr "«Проверить перенос» подтверждает уже скопированное, а затем копирует остальное."
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "Проверка"
@@ -1366,9 +1389,14 @@ msgstr "Выбрать участника…"
 msgid "Choose a property"
 msgstr "Выберите свойство"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Выберите значение"
+
+#: src/app/local-transfer.tsx
+msgid "Choose a value for each field to continue."
+msgstr "Чтобы продолжить, выберите значение для каждого поля."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1461,6 +1489,7 @@ msgstr "Очистить значение"
 msgid "Click tasks to select them."
 msgstr "Нажимайте на задачи, чтобы выбрать их."
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1751,6 +1780,11 @@ msgstr "Конфликтующие изменения"
 msgid "Connect calendars"
 msgstr "Подключить календари"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "Подключить коллекцию"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1807,6 +1841,10 @@ msgstr "Преобразовать {0} в заметку"
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
 msgstr "Преобразовать в заметку"
+
+#: src/app/local-transfer.tsx
+msgid "Copied {confirmed} of {total}"
+msgstr "Скопировано {confirmed} из {total}"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
@@ -2259,6 +2297,7 @@ msgstr "Работает ли TaskNotes без подключения к инт�
 msgid "done"
 msgstr "выполнено"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2958,6 +2997,10 @@ msgstr "Курсив"
 msgid "item"
 msgstr "элемент"
 
+#: src/app/local-transfer.tsx
+msgid "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+msgstr "Ранее импортированные элементы не копируются повторно. Локальные элементы, изменённые с тех пор, добавляются отдельными копиями, поэтому правки в этой коллекции сохраняются."
+
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
 msgstr "Перейти к проекту"
@@ -3029,6 +3072,10 @@ msgstr "Сохранять запланированные даты, даже е�
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
 msgstr "Оставить поле быстрого добавления в этом представлении."
+
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "Продолжить локально"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
@@ -3185,6 +3232,15 @@ msgstr "Загрузка записи участника…"
 msgid "Loading…"
 msgstr "Загрузка…"
 
+#. Name of the collection kept in this browser before connecting
+#: src/app/app-shell.tsx
+msgid "Local tasks"
+msgstr "Локальные задачи"
+
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "Локальные задачи работают без интернета и сохраняются в этом браузере. Доступность подключённых коллекций зависит от записей mdbase на этом устройстве; для синхронизации требуется соединение."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "Место"
@@ -3288,13 +3344,13 @@ msgstr "mdbase подтвердил, что целевые коллекции п
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase доставляет напоминания, даже когда TaskNotes закрыт. Уведомления не содержат текст задач."
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase — основной источник данных. Для внесения изменений требуется подключение."
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbase хранит задачи в переносимых файлах Markdown и позволяет совместимым приложениям одинаково работать с ними. В mdbase выберите коллекцию и разрешите TaskNotes доступ к ней — в облаке mdbase или на подключённом компьютере."
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase управляет локальными записями и синхронизацией. Для синхронизации требуется соединение с коллекцией."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3630,6 +3686,7 @@ msgstr "Далее: "
 msgid "Next: {0}"
 msgstr "Далее: {0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "Нет"
@@ -3771,10 +3828,6 @@ msgstr "Нет значения"
 msgid "No views yet."
 msgstr "Представлений пока нет."
 
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "Нет. TaskNotes напрямую читает и изменяет основную коллекцию mdbase. Для облачных коллекций требуется подключение к интернету; коллекция на компьютере также требует, чтобы этот компьютер был доступен."
-
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
@@ -3792,6 +3845,8 @@ msgstr "Недоступно"
 msgid "Not available in this browser"
 msgstr "Недоступно в этом браузере"
 
+#. Status of local tasks kept in this browser before a collection is connected
+#: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Not connected"
 msgstr "Не подключено"
@@ -3966,6 +4021,10 @@ msgstr "Открыть изображение"
 msgid "Open in Planner"
 msgstr "Открыть в Planner"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "Открыть локальные задачи"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4114,6 +4173,10 @@ msgstr "Planner — отдельное приложение. Сохраните 
 msgid "Planner will open this saved view."
 msgstr "Planner откроет это сохранённое представление."
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "Подготовка переноса"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "Предпросмотр"
@@ -4173,6 +4236,7 @@ msgid "Primary"
 msgstr "Основное"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4698,6 +4762,11 @@ msgstr "Повторно используемые значения группи�
 msgid "Review access"
 msgstr "Проверить разрешение"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "Просмотреть локальные задачи"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "Проверить доступ к уведомлениям"
@@ -4784,6 +4853,15 @@ msgstr "Сохраните ключ восстановления"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "Сохранено"
+
+#: src/app/app-shell.tsx
+msgid "Saved in this browser"
+msgstr "Сохранено в этом браузере"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "Сохранено в этом браузере. Очистка данных браузера удалит локальные задачи."
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5273,6 +5351,7 @@ msgstr "Запуск…"
 msgid "Starts"
 msgstr "Начинается"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5472,6 +5551,10 @@ msgstr "Напоминания о задачах"
 #: src/app/task-screen.tsx
 msgid "Task title"
 msgstr "Название задачи"
+
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "Тип задачи"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
@@ -5706,6 +5789,10 @@ msgstr "Не удалось обновить представление. {error}
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
 msgstr "Тема, блокнот и календарь"
+
+#: src/app/local-transfer.tsx
+msgid "There’s no new local work to bring in."
+msgstr "Новой локальной работы для переноса нет."
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
@@ -5967,6 +6054,22 @@ msgstr "Слишком много попыток. Подождите, прежд
 msgid "Tracked time"
 msgstr "Учтённое время"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "Перенос завершён. Локальная копия по-прежнему доступна."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "Подробности переноса"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe."
+msgstr "Перенос приостановлен. Ваша локальная работа в безопасности."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "Перенести работу"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6143,6 +6246,10 @@ msgstr "Используется, когда TaskNotes создаёт ссылк
 msgid "Value"
 msgstr "Значение"
 
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "Значение для импортируемых задач"
+
 #: src/app/more-screen.tsx
 msgid "Version "
 msgstr "Версия "
@@ -6293,6 +6400,7 @@ msgstr "Год"
 msgid "Yearly"
 msgstr "Ежегодно"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "Да"
@@ -6352,6 +6460,10 @@ msgstr "Сеанс Google Календаря завершён. Войдите с
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."
 msgstr "Входящие пусты."
+
+#: src/app/local-transfer.tsx
+msgid "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
+msgstr "Ваши локальные задачи, заметки блокнота и файлы копируются как новые элементы. Типы задач и настройки этой коллекции не меняются. Локальная копия остаётся отдельной, её можно открыть в настройках коллекции."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

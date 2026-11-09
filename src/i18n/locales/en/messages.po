@@ -112,6 +112,11 @@ msgstr "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgid "{0, plural, =1 {Image added} other {# images added}}"
 msgstr "{0, plural, =1 {Image added} other {# images added}}"
 
+#. placeholder {0}: source.files.length
+#: src/app/local-transfer.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, one {# file} other {# files}}"
+
 #. placeholder {0}: google.omitted
 #: src/app/task-calendar-view.tsx
 msgid "{0, plural, one {# Google event couldn’t be shown.} other {# Google events couldn’t be shown.}}"
@@ -132,7 +137,9 @@ msgstr "{0, plural, one {# open} other {# open}}"
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 
+#. placeholder {0}: source.tasks.length
 #. placeholder {0}: updates.length
+#: src/app/local-transfer.tsx
 #: src/app/views-screen.tsx
 msgid "{0, plural, one {# task} other {# tasks}}"
 msgstr "{0, plural, one {# task} other {# tasks}}"
@@ -563,6 +570,10 @@ msgstr "{name} (not a person record)"
 #: src/app/views/view-catalog.tsx
 msgid "{name} must remain in navigation until another view is added"
 msgstr "{name} must remain in navigation until another view is added"
+
+#: src/app/local-transfer.tsx
+msgid "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
+msgstr "{noteCount, plural, one {# Scratchpad note} other {# Scratchpad notes}}"
 
 #: src/app/views-screen.tsx
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
@@ -1200,6 +1211,10 @@ msgstr "Board columns"
 msgid "Bold"
 msgstr "Bold"
 
+#: src/app/local-transfer.tsx
+msgid "Bring local work into this collection"
+msgstr "Bring local work into this collection"
+
 #: src/app/task-editor-layout.tsx
 msgid "Browse tasks"
 msgstr "Browse tasks"
@@ -1330,6 +1345,14 @@ msgstr "Check strict completion"
 msgid "Check that the collection is connected, then try again."
 msgstr "Check that the collection is connected, then try again."
 
+#: src/app/local-transfer.tsx
+msgid "Check transfer"
+msgstr "Check transfer"
+
+#: src/app/local-transfer.tsx
+msgid "Check transfer confirms what was already copied, then copies the rest."
+msgstr "Check transfer confirms what was already copied, then copies the rest."
+
 #: src/app/notification-label.ts
 msgid "Checking"
 msgstr "Checking"
@@ -1366,9 +1389,14 @@ msgstr "Choose a person…"
 msgid "Choose a property"
 msgstr "Choose a property"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Choose a value"
+
+#: src/app/local-transfer.tsx
+msgid "Choose a value for each field to continue."
+msgstr "Choose a value for each field to continue."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1461,6 +1489,7 @@ msgstr "Clear value"
 msgid "Click tasks to select them."
 msgstr "Click tasks to select them."
 
+#: src/app/local-transfer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1751,6 +1780,11 @@ msgstr "Conflicting changes"
 msgid "Connect calendars"
 msgstr "Connect calendars"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Connect collection"
+msgstr "Connect collection"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1807,6 +1841,10 @@ msgstr "Convert {0} to note"
 #: src/app/scratchpad-screen.tsx
 msgid "Convert to note"
 msgstr "Convert to note"
+
+#: src/app/local-transfer.tsx
+msgid "Copied {confirmed} of {total}"
+msgstr "Copied {confirmed} of {total}"
 
 #: src/components/task-actions.tsx
 msgid "Copy"
@@ -2259,6 +2297,7 @@ msgstr "Does TaskNotes work offline?"
 msgid "done"
 msgstr "done"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
@@ -2958,6 +2997,10 @@ msgstr "Italic"
 msgid "item"
 msgstr "item"
 
+#: src/app/local-transfer.tsx
+msgid "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+msgstr "Items imported before aren’t copied again. Local items changed since then arrive as separate copies, so edits made in this collection are kept."
+
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
 msgstr "Jump to project"
@@ -3029,6 +3072,10 @@ msgstr "Keep the planned dates, even if you finish late."
 #: src/app/view-editor-form.tsx
 msgid "Keep the quick-add field on this view."
 msgstr "Keep the quick-add field on this view."
+
+#: src/app/tasknotes-app.tsx
+msgid "Keep working locally"
+msgstr "Keep working locally"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Keep writing"
@@ -3185,6 +3232,15 @@ msgstr "Loading your person identity…"
 msgid "Loading…"
 msgstr "Loading…"
 
+#. Name of the collection kept in this browser before connecting
+#: src/app/app-shell.tsx
+msgid "Local tasks"
+msgstr "Local tasks"
+
+#: src/app/more-screen.tsx
+msgid "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+msgstr "Local tasks work offline and are saved in this browser. Connected collections depend on the records mdbase has available on this device; syncing requires a connection."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Location"
 msgstr "Location"
@@ -3288,13 +3344,13 @@ msgstr "mdbase confirmed that recovery targets have applied strict mode."
 msgid "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 msgstr "mdbase delivers reminders while TaskNotes is closed. Notifications never include task content."
 
-#: src/app/storage-trust.ts
-msgid "mdbase is the source of truth. Changes require a connection."
-msgstr "mdbase is the source of truth. Changes require a connection."
-
 #: src/app/tasknotes-app.tsx
 msgid "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
 msgstr "mdbase keeps your tasks as portable Markdown files while giving compatible apps a shared way to understand them. In mdbase, you choose a collection and approve TaskNotes’ access, whether it’s hosted by mdbase or available from a connected computer."
+
+#: src/app/storage-trust.ts
+msgid "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
+msgstr "mdbase manages local records and synchronization. Syncing requires a connection to the collection."
 
 #: src/components/held-edits.tsx
 msgid "mdbase protected your edit"
@@ -3630,6 +3686,7 @@ msgstr "Next: "
 msgid "Next: {0}"
 msgstr "Next: {0}"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "No"
 msgstr "No"
@@ -3771,10 +3828,6 @@ msgstr "No value"
 msgid "No views yet."
 msgstr "No views yet."
 
-#: src/app/more-screen.tsx
-msgid "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-msgstr "No. TaskNotes reads and writes the authoritative mdbase collection directly. Hosted collections need a network connection; a computer collection also needs that computer to be reachable."
-
 #: src/components/task-actions.tsx
 #: src/i18n/view-presentation.ts
 msgid "None"
@@ -3792,6 +3845,8 @@ msgstr "Not available"
 msgid "Not available in this browser"
 msgstr "Not available in this browser"
 
+#. Status of local tasks kept in this browser before a collection is connected
+#: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Not connected"
 msgstr "Not connected"
@@ -3966,6 +4021,10 @@ msgstr "Open image"
 msgid "Open in Planner"
 msgstr "Open in Planner"
 
+#: src/app/more-screen.tsx
+msgid "Open local tasks"
+msgstr "Open local tasks"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
@@ -4114,6 +4173,10 @@ msgstr "Planner is a separate app. Save this view, then choose Open in Planner."
 msgid "Planner will open this saved view."
 msgstr "Planner will open this saved view."
 
+#: src/app/local-transfer.tsx
+msgid "Preparing transfer"
+msgstr "Preparing transfer"
+
 #: src/app/task-screen.tsx
 msgid "Preview"
 msgstr "Preview"
@@ -4173,6 +4236,7 @@ msgid "Primary"
 msgstr "Primary"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -4698,6 +4762,11 @@ msgstr "Reusable values for grouping and displayed fields."
 msgid "Review access"
 msgstr "Review access"
 
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Review local tasks"
+msgstr "Review local tasks"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "Review notification access"
@@ -4784,6 +4853,15 @@ msgstr "Save your recovery key"
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "Saved"
+
+#: src/app/app-shell.tsx
+msgid "Saved in this browser"
+msgstr "Saved in this browser"
+
+#: src/app/app-shell.tsx
+#: src/app/more-screen.tsx
+msgid "Saved in this browser. Clearing browser data removes local tasks."
+msgstr "Saved in this browser. Clearing browser data removes local tasks."
 
 #: src/app/connection-notice.ts
 #: src/app/more-screen.tsx
@@ -5273,6 +5351,7 @@ msgstr "Starting…"
 msgid "Starts"
 msgstr "Starts"
 
+#: src/app/local-transfer.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5472,6 +5551,10 @@ msgstr "Task reminders"
 #: src/app/task-screen.tsx
 msgid "Task title"
 msgstr "Task title"
+
+#: src/app/local-transfer.tsx
+msgid "Task type"
+msgstr "Task type"
 
 #: src/components/task-capture.tsx
 msgid "Task: "
@@ -5706,6 +5789,10 @@ msgstr "The view could not be updated. {error}"
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
 msgstr "Theme, Scratchpad, and calendar"
+
+#: src/app/local-transfer.tsx
+msgid "There’s no new local work to bring in."
+msgstr "There’s no new local work to bring in."
 
 #: src/app/more-screen.tsx
 msgid "These choices apply as soon as you make them and don’t change the collection."
@@ -5967,6 +6054,22 @@ msgstr "Too many attempts. Wait before trying again."
 msgid "Tracked time"
 msgstr "Tracked time"
 
+#: src/app/local-transfer.tsx
+msgid "Transfer complete. Your local copy is still available."
+msgstr "Transfer complete. Your local copy is still available."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer details"
+msgstr "Transfer details"
+
+#: src/app/local-transfer.tsx
+msgid "Transfer paused. Your local work is safe."
+msgstr "Transfer paused. Your local work is safe."
+
+#: src/app/local-transfer.tsx
+msgid "Transfer work"
+msgstr "Transfer work"
+
 #: src/app/app-shell.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
@@ -6143,6 +6246,10 @@ msgstr "Used when TaskNotes writes links to projects, people, and other tasks, f
 msgid "Value"
 msgstr "Value"
 
+#: src/app/local-transfer.tsx
+msgid "Value for imported tasks"
+msgstr "Value for imported tasks"
+
 #: src/app/more-screen.tsx
 msgid "Version "
 msgstr "Version "
@@ -6293,6 +6400,7 @@ msgstr "Year"
 msgid "Yearly"
 msgstr "Yearly"
 
+#: src/app/local-transfer.tsx
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "Yes"
@@ -6352,6 +6460,10 @@ msgstr "Your Google Calendar session ended. Sign in again in Settings."
 #: src/app/view-empty-state.tsx
 msgid "Your Inbox is clear."
 msgstr "Your Inbox is clear."
+
+#: src/app/local-transfer.tsx
+msgid "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
+msgstr "Your local tasks, Scratchpad notes and files are copied in as new items. This collection’s task types and settings don’t change. Your local copy stays separate and can be opened from Collection settings."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Your note changed while saving. Save it again before reloading."

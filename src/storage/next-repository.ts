@@ -2634,6 +2634,111 @@ export class NextTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     return connectedTaskStats(this.cache.values());
   }
+  private async importProviders(): Promise<NextTaskProvider[]> {
+    const signal = this.signal();
+    const settings = await this.settings.reload(signal);
+    return nextTaskProviders(this.client, signal, {
+      settings: settings.frontmatter,
+    });
+  }
+
+  readonly imports: import("../application/ports/task-import").TaskImportPort =
+    {
+      targets: async () => {
+        const providers = await this.importProviders();
+        return providers.map((provider) => ({
+          typeName: provider.typeName,
+          configuration: provider.model.configuration(),
+          fingerprint: JSON.stringify([
+            provider.sourceFingerprint,
+            provider.model.configuration(),
+          ]),
+        }));
+      },
+      prepareTask: async (source, target, id) => {
+        const providers = await this.importProviders();
+        const provider = providers.find(
+          (candidate) => candidate.typeName === target.typeName,
+        );
+        if (
+          !provider ||
+          JSON.stringify([
+            provider.sourceFingerprint,
+            provider.model.configuration(),
+          ]) !== target.fingerprint
+        )
+          throw new Error("import_destination_definition_changed");
+        const task = await this.availableTaskPath(
+          provider.model.importTask(source, id),
+          this.signal(),
+        );
+        return {
+          key: source.id,
+          id,
+          type: target.typeName,
+          path: task.path,
+          frontmatter: task.frontmatter,
+          body: task.body,
+          targetFingerprint: target.fingerprint,
+        };
+      },
+      write: async (record, mutationId, recovering) => {
+        await this.initialize({ deferTaskIndex: true });
+        if (!recovering && record.targetFingerprint) {
+          const targets = await this.imports.targets();
+          if (
+            !targets.some(
+              (target) =>
+                target.typeName === record.type &&
+                target.fingerprint === record.targetFingerprint,
+            )
+          )
+            throw new Error("import_destination_definition_changed");
+        }
+        await this.mutations.run(
+          {
+            key: JSON.stringify(["local-import", record.id]),
+            requestId: recovering ? mutationId : undefined,
+            mutationId,
+            prepare: async (_generated, signal) => {
+              // The ledger already owns this immutable payload and mutation identity.
+              signal.throwIfAborted();
+              return () =>
+                this.client.create(
+                  {
+                    id: record.id,
+                    type: record.type,
+                    path: record.path,
+                    frontmatter: record.frontmatter as Record<
+                      string,
+                      PlainValue
+                    >,
+                    body: record.body,
+                  },
+                  { mutationId, signal, wait: "confirmed" },
+                );
+            },
+            confirmed: async (receipt, signal) => {
+              if (receipt.status !== "applied" || receipt.conflicts?.length)
+                throw new Error("import_write_not_applied");
+              const saved = await this.client.get(
+                record.id,
+                { body: true, effective: true },
+                signal,
+              );
+              if (
+                saved.path !== record.path ||
+                !saved.types.includes(record.type)
+              )
+                throw new Error("import_record_changed");
+              this.emit("data");
+            },
+          },
+          this.scope.signal,
+        );
+      },
+    };
+
   async taskConfiguration() {
     const signal = this.signal();
     await this.initialize({ deferTaskIndex: true });

@@ -12,6 +12,8 @@ import {
   Ellipsis,
   FilePenLine,
   Library,
+  Link2,
+  Import,
   Plus,
   Search,
   Settings,
@@ -124,6 +126,7 @@ import type { OperationalError } from "../application/operational-error";
 
 export function AppShell() {
   const { t } = useLingui();
+  const localScopeDescriptionId = useId();
   const keyboardOccluded = useKeyboardOcclusion();
   const todayCounts = useTodayTaskCounts();
   const navigationCounts = useNavigationTaskCounts();
@@ -153,8 +156,12 @@ export function AppShell() {
     setTaskCompletion,
     updateTask,
   } = useRepository();
-  const { collectionUi, changeCollection, reauthorizeCurrentCollection } =
-    useCollectionGate();
+  const {
+    collectionUi,
+    localCollection,
+    changeCollection,
+    reauthorizeCurrentCollection,
+  } = useCollectionGate();
   const {
     documents,
     views,
@@ -444,6 +451,47 @@ export function AppShell() {
             icon="mark"
             variant="compact"
           />
+        ) : localCollection?.active ? (
+          <div className="local-collection-control">
+            <p id={localScopeDescriptionId}>
+              <Trans>
+                Saved in this browser. Clearing browser data removes local
+                tasks.
+              </Trans>
+            </p>
+            <button
+              className="secondary-action local-collection-connect"
+              type="button"
+              aria-label={t`Connect collection`}
+              aria-describedby={localScopeDescriptionId}
+              title={t`Connect collection`}
+              onClick={changeCollection}
+            >
+              <Link2
+                className="local-collection-connect-icon"
+                aria-hidden="true"
+                size={20}
+                strokeWidth={1.8}
+              />
+              <span>
+                <Trans>Connect collection</Trans>
+              </span>
+            </button>
+          </div>
+        ) : null}
+        {localCollection?.review ? (
+          <button
+            className="text-action"
+            type="button"
+            aria-label={t`Review local tasks`}
+            title={t`Review local tasks`}
+            onClick={localCollection.review}
+          >
+            <Import aria-hidden="true" size={20} strokeWidth={1.8} />
+            <span>
+              <Trans>Review local tasks</Trans>
+            </span>
+          </button>
         ) : null}
         <button
           aria-keyshortcuts="Control+N Meta+N"
@@ -598,6 +646,7 @@ export function AppShell() {
           <Navigation
             active={activePage}
             collectionUi={collectionUi}
+            localCollection={!!localCollection?.active}
             homeKey={homeKey}
             mode="mobile"
             navigationKeys={navigationKeys}
@@ -808,7 +857,9 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
     label: string;
     text: string;
     left: number;
-    top: number;
+    top?: number;
+    bottom?: number;
+    maxHeight?: number;
   } | null>(null);
   if (!projects.length) return null;
   return (
@@ -1235,6 +1286,29 @@ function HomeViewLoading() {
   );
 }
 
+function MenuLocalCollectionItem({ onChoose }: { onChoose(): void }) {
+  return (
+    <button
+      className="navigation-menu-collection"
+      role="menuitem"
+      type="button"
+      onClick={onChoose}
+    >
+      <Library aria-hidden="true" size={19} strokeWidth={1.7} />
+      <span>
+        <strong>
+          <Trans comment="Name of the collection kept in this browser before connecting">
+            Local tasks
+          </Trans>
+        </strong>
+        <small>
+          <Trans>Saved in this browser</Trans>
+        </small>
+      </span>
+    </button>
+  );
+}
+
 function MenuCollectionItem({
   collectionUi,
   onChoose,
@@ -1265,6 +1339,7 @@ function MenuCollectionItem({
 export function Navigation({
   active,
   collectionUi,
+  localCollection = false,
   homeKey,
   mode,
   navigationKeys,
@@ -1279,6 +1354,8 @@ export function Navigation({
   active: string;
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
   collectionUi?: CollectionUiOptions | null;
+  /** Local work before connecting: More names it and leads to Collection settings. */
+  localCollection?: boolean;
   homeKey?: string;
   mode: "desktop" | "mobile";
   navigationKeys: string[];
@@ -1352,7 +1429,9 @@ export function Navigation({
   const items = visibleViews;
   const [menuPosition, setMenuPosition] = useState<{
     left: number;
-    top: number;
+    top?: number;
+    bottom?: number;
+    maxHeight?: number;
   } | null>(null);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -1389,7 +1468,9 @@ export function Navigation({
     const rect = triggerRef.current?.getBoundingClientRect();
     const width = Math.min(236, innerWidth - 16);
     const height = Math.min(
-      (additionalViews.length + (collectionUi ? 3 : 2)) * 46 + 16,
+      (additionalViews.length + (collectionUi || localCollection ? 3 : 2)) *
+        46 +
+        16,
       innerHeight - 96,
     );
     const left =
@@ -1404,11 +1485,22 @@ export function Navigation({
             ),
           )
         : Math.min((rect?.right ?? 190) + 8, innerWidth - width - 8);
-    const top =
-      mode === "mobile"
-        ? Math.max(8, (rect?.top ?? innerHeight) - height - 8)
-        : Math.max(8, Math.min(rect?.top ?? 80, innerHeight - height - 8));
-    setMenuPosition({ left, top });
+    if (mode === "mobile") {
+      // Anchor the actual menu above More. Collection labels and enlarged text
+      // can wrap, so an estimated row height cannot determine its top edge.
+      const bottom = innerHeight - (rect?.top ?? innerHeight) + 8;
+      setMenuPosition({
+        left,
+        bottom,
+        maxHeight: Math.max(44, Math.min(520, innerHeight - bottom - 8)),
+      });
+    } else {
+      const top = Math.max(
+        8,
+        Math.min(rect?.top ?? 80, innerHeight - height - 8),
+      );
+      setMenuPosition({ left, top });
+    }
   }
 
   function closeMenu() {
@@ -1544,6 +1636,15 @@ export function Navigation({
                     <>
                       <MenuCollectionItem
                         collectionUi={collectionUi}
+                        onChoose={() =>
+                          choose({ page: "more", section: "collection" })
+                        }
+                      />
+                      <hr />
+                    </>
+                  ) : localCollection ? (
+                    <>
+                      <MenuLocalCollectionItem
                         onChoose={() =>
                           choose({ page: "more", section: "collection" })
                         }

@@ -51,8 +51,8 @@ for (const locale of ["en", "fr"]) {
     await expect(disclosure).toHaveAttribute("aria-expanded", "true");
     await expect(panel).toContainText(
       locale === "fr"
-        ? "Les modifications nécessitent une connexion"
-        : "Changes require a connection",
+        ? "La synchronisation nécessite une connexion à la collection"
+        : "Syncing requires a connection to the collection",
     );
     await expect(
       panel.getByRole("button", {

@@ -2,7 +2,7 @@
 
 Follow-up to the [September 9 audit](audits/2026-09-09-ui-ux-performance.md),
 implemented incrementally on `improve/daily-experience` / PR #156. This is an
-incremental application-layer refactor, not a new data authority or task replica.
+incremental application-layer refactor.
 
 ## Ownership rules
 
@@ -42,7 +42,7 @@ incremental application-layer refactor, not a new data authority or task replica
 - **Availability is not inferred from a successful cached query.** The shared
   collection notice observes repository status independently of query results.
   Accepted capture confirmations are transient, repository/route-scoped UI state;
-  they do not alter saved-view membership or create a task replica.
+  they do not alter saved-view membership.
 - **A saved-view session owns its read cursor.** `ViewQuerySession` requests the
   first 200-record page without draining the iterator. Load more advances that
   cursor rather than rereading every earlier page. Query order, total count, and
@@ -58,8 +58,10 @@ incremental application-layer refactor, not a new data authority or task replica
   estimates from `content-visibility`; measured windowing owns bounded layout.
 
 All durable operations still go through `TaskRepository`. These controllers keep
-only transient interaction/read state. There is no IndexedDB task replica,
-provider-specific UI routing, device-folder access, or new synchronization engine.
+only transient interaction/read state. Anonymous local persistence belongs to
+`LocalTaskRepository`; connected persistence and synchronization belong to the
+mdbase runtime behind the same boundary. UI code does not
+route by provider or open device folders.
 
 ## Partial results and manual ordering
 

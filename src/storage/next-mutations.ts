@@ -53,6 +53,8 @@ function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 interface NativeMutation<Result> {
+  /** Durable imports allocate the identity before the submission boundary. */
+  mutationId?: string;
   /** Includes the logical action and its input, not generated timestamps. */
   key: string;
   /** Reads/validation happen before the submission boundary. */
@@ -354,7 +356,7 @@ export class NextMutations {
       const recovering = Boolean(this.pending || operation.requestId);
       const pending = this.pending ?? {
         key: operation.key,
-        id: operation.requestId ?? crypto.randomUUID(),
+        id: operation.requestId ?? operation.mutationId ?? crypto.randomUUID(),
         confirmed: operation.confirmed,
       };
       // A rejected template/read/model validation is not an uncertain write.

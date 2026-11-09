@@ -3,11 +3,14 @@
 ## Status
 
 Three architectural increments, not 50k-record product acceptance. The target is a
-responsive web/native TaskNotes at up to 50,000 records, without a durable local
-task replica. Incremental refresh, session indexes, metadata-only browsing,
-bounded document retention, and authority-side body matching are implemented.
+responsive web/native TaskNotes at up to 50,000 records, with bounded application
+read state over the mdbase runtime. Incremental refresh, session indexes,
+metadata-only browsing, bounded document retention, and authority-side body
+matching are implemented.
 Task-list views can now open before the full metadata index. Background indexing,
 broad non-list views, and browser/mobile acceptance still need measurement.
+The anonymous local adapter uses full checkpoints for initial capture; it is not
+covered by these collection-scale performance targets.
 
 ## Reproducible baseline
 

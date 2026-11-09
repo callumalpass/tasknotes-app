@@ -287,3 +287,122 @@
   width: 100%;
   color: var(--ink-soft);
 }
+
+.local-collection-control {
+  padding: 8px 12px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+.local-collection-control p {
+  margin: 0 0 8px;
+}
+.local-collection-connect-icon {
+  display: none;
+}
+@media (min-width: 840px) {
+  .sidebar-collapsed .local-collection-control {
+    padding: 0;
+    margin-bottom: var(--space-sm);
+  }
+  .sidebar-collapsed .local-collection-control p {
+    display: none;
+  }
+  .sidebar-collapsed .local-collection-connect {
+    width: 100%;
+    height: 44px;
+    color: var(--ink-muted);
+    border: 0;
+  }
+  .sidebar-collapsed .local-collection-connect-icon {
+    display: block;
+  }
+}
+/* Local work is not connected, not unavailable: a quiet ring, never success green. */
+.settings-connection.is-local .settings-connection-dot {
+  background: transparent;
+  border: 2px solid var(--ink-muted);
+}
+.settings-collection-card > .settings-collection-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.recurring-scope-dialog.local-transfer-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.local-transfer-dialog fieldset {
+  min-width: 0;
+  margin: var(--space-lg) 0 0;
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+}
+.local-transfer-dialog label {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+}
+.local-transfer-dialog input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-sm) 0;
+  font-size: var(--type-field);
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+}
+.local-transfer-dialog .local-transfer-summary {
+  color: var(--ink);
+  font-weight: 700;
+}
+.local-transfer-dialog .local-transfer-hint {
+  margin-top: var(--space-md);
+  font-size: var(--type-supporting);
+}
+/* The shared dialog lays out its direct divs as an action row. */
+.local-transfer-dialog > .local-transfer-progress {
+  display: grid;
+  justify-content: stretch;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+.local-transfer-progress p {
+  margin: 0;
+}
+.local-transfer-progress progress {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  border: 0;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.local-transfer-progress progress::-webkit-progress-bar {
+  background: var(--line);
+}
+.local-transfer-progress progress::-webkit-progress-value {
+  background: var(--accent);
+}
+.local-transfer-progress progress::-moz-progress-bar {
+  background: var(--accent);
+}
+.local-transfer-problem {
+  margin-top: var(--space-md);
+}
+.local-transfer-dialog .local-transfer-problem .inline-error {
+  margin: 0 0 var(--space-xs);
+  color: var(--danger);
+}
+.local-transfer-dialog .local-transfer-problem .operation-error-details {
+  margin: 0;
+}
+
+.local-transfer-dialog .primary-action[aria-disabled="true"] {
+  cursor: progress;
+  opacity: 0.6;
+}

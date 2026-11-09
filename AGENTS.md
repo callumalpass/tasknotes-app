@@ -6,9 +6,9 @@ Capacitor.
 
 All durable collection access goes through the provider-neutral mdbase
 `TaskRepository`. UI and application code must not branch on hosted versus
-connected-computer storage. TaskNotes does not open device folders and does not
-maintain an IndexedDB task replica; IndexedDB is permitted only for bounded
-application state such as a delayed deletion's undo window.
+connected-computer storage. Local collection persistence and replication belong
+behind this boundary and may use the mdbase runtime. TaskNotes does not open
+device folders directly.
 
 Interface copy uses Lingui; read `docs/translations.md` before changing it. Mark
 English source copy with macros, keep generated JSON compiler-owned, and never

@@ -86,7 +86,9 @@ composer. Close also remains enabled during an in-flight write, so the new
 
 **Fix direction:** Retain a collection-scoped in-memory UI draft across dismissal
 or confirm discarding dirty content. Keep pending writes and their eventual
-failure visible/recoverable. Do not implement a second durable task replica.
+failure visible/recoverable. The original restriction on a second durable task
+replica is superseded by [Local first use](../local-first.md); local persistence
+belongs behind `TaskRepository`.
 
 ### A03 — P1: A late create-refresh callback can discard the next draft
 
