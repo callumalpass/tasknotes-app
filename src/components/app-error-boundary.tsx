@@ -1,7 +1,10 @@
 import { Trans } from "@lingui/react/macro";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { FeedbackButton } from "@mdbase-dev/ui/feedback";
+
 import { tasknotesMarkUrl } from "../app/assets";
+import { ReportFailure } from "../app/feedback-root";
 
 export class AppErrorBoundary extends Component<
   { children: ReactNode },
@@ -21,6 +24,7 @@ export class AppErrorBoundary extends Component<
     if (!this.state.error) return this.props.children;
     return (
       <main className="opening-screen storage-error">
+        <ReportFailure code="unknown_error" />
         <img alt="" src={tasknotesMarkUrl} />
         <h1>
           <Trans>TaskNotes needs to restart.</Trans>
@@ -38,6 +42,7 @@ export class AppErrorBoundary extends Component<
         >
           <Trans>Restart TaskNotes</Trans>
         </button>
+        <FeedbackButton className="failure-feedback" topic="problem" />
         <details className="technical-details">
           <summary>
             <Trans>Technical details</Trans>

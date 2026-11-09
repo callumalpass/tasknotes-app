@@ -1,0 +1,93 @@
+/* Shared private feedback (@mdbase-dev/ui/feedback) in TaskNotes' own design
+ * system. The form keeps the kit's layout; type, radii and the entry points
+ * follow TaskNotes. */
+.mdbase-feedback-dialog,
+.mdbase-feedback-markup,
+.mdbase-feedback-trigger {
+  --sans: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --mono: var(--font-mono);
+  --radius-sm: var(--radius-control);
+  --font-size-ui: var(--type-body);
+  --font-size-caption: var(--type-supporting);
+}
+
+/* Touch-sized controls inside the form. */
+.mdbase-feedback-dialog :is(button, .mdbase-feedback-upload) {
+  min-height: var(--control-min-size);
+}
+
+/* Desktop rail: a labelled row above Views, Quick actions and Settings. The
+ * icon row has no room for a fourth control, so feedback takes its own line;
+ * a collapsed rail shows the icon alone and keeps the label for assistive
+ * technology. */
+.navigation-rail .navigation-utility:has(.navigation-feedback) {
+  flex-wrap: wrap;
+}
+
+.navigation-rail .navigation-utility .navigation-feedback {
+  order: -1;
+  flex: 1 0 100%;
+  justify-content: flex-start;
+  width: auto;
+  padding: 0 10px;
+}
+
+.navigation-rail .navigation-utility .navigation-feedback > span {
+  display: inline;
+}
+
+.navigation-rail .navigation-utility .navigation-feedback:hover {
+  color: var(--ink);
+  background: var(--color-selected);
+}
+
+.sidebar-collapsed .navigation-rail .navigation-utility .navigation-feedback {
+  position: relative;
+  flex: none;
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+}
+
+.sidebar-collapsed
+  .navigation-rail
+  .navigation-utility
+  .navigation-feedback
+  > span {
+  position: absolute;
+  display: block;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.navigation-feedback .mdbase-feedback-bug {
+  width: 20px;
+  height: 20px;
+}
+
+/* Settings → About & help, and the two failure screens. */
+.settings-feedback,
+.failure-feedback {
+  min-height: var(--control-min-size);
+  padding: 0 2px;
+  color: var(--accent);
+  font-size: var(--type-body);
+  font-weight: 700;
+}
+
+.settings-feedback {
+  margin-top: var(--space-sm);
+}
+
+.failure-feedback {
+  margin-top: var(--space-md);
+}
+
+:is(.settings-feedback, .failure-feedback):hover {
+  color: var(--accent);
+  background: transparent;
+  text-decoration: underline;
+}

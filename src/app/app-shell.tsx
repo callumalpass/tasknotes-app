@@ -27,7 +27,9 @@ import {
 } from "react";
 import { ConnectionNoticeContext } from "./connection-notice";
 import { createPortal } from "react-dom";
+import { FeedbackButton } from "@mdbase-dev/ui/feedback";
 import { moveMenuFocus } from "@mdbase-dev/ui/popover";
+import { ReportFailure, useFeedbackView } from "./feedback-root";
 
 import { CollectionAvailability } from "../components/collection-availability";
 import { CollectionWriteStatus } from "../components/collection-write-status";
@@ -200,6 +202,7 @@ export function AppShell() {
     repository: typeof repository;
     route: Route;
   }>();
+  useFeedbackView(route.page);
   const routeRef = useRef(route);
   useEffect(() => {
     routeRef.current = route;
@@ -1181,6 +1184,9 @@ export function StorageErrorScreen({
   const authorizationExpired = isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">
+      {authorizationExpired ? null : (
+        <ReportFailure code="source_open_failed" />
+      )}
       <img alt="" src={tasknotesMarkUrl} />
       <h1>
         {authorizationExpired
@@ -1217,6 +1223,7 @@ export function StorageErrorScreen({
           <Trans>Choose a different collection</Trans>
         </button>
       </div>
+      <FeedbackButton className="failure-feedback" topic="problem" />
     </main>
   );
 }
@@ -1644,6 +1651,10 @@ export function Navigation({
               </span>
               {isApplePlatform() ? <kbd>{shortcutLabel("K")}</kbd> : null}
             </button>
+          ) : null}
+          {/* Phones reach feedback from Settings → About & help instead. */}
+          {mode === "desktop" ? (
+            <FeedbackButton className="navigation-feedback" />
           ) : null}
           <button
             aria-current={active === "more" ? "page" : undefined}

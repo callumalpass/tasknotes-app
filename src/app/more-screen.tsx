@@ -44,6 +44,7 @@ import {
   type ThemePreference,
 } from "../theme";
 import { CollectionSwitcher } from "@mdbase-dev/ui/collections";
+import { FeedbackButton } from "@mdbase-dev/ui/feedback";
 import {
   ConnectionNoticeContext,
   connectionNoticeLabels,
@@ -925,6 +926,7 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
             </Trans>
           </p>
         </details>
+        <FeedbackButton className="settings-feedback" />
       </div>
     </>
   );
