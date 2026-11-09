@@ -443,7 +443,8 @@ export async function recordFailure(receipt, error, save, hold = storeLine) {
   if (
     receipt.write_started === false &&
     storeInfrastructureReasons.includes(reason) &&
-    !["dispatch-unknown", "waiting"].includes(receipt.boundary_outcome) &&
+    (receipt.boundary === "store-status.yml" ||
+      !["dispatch-unknown", "waiting"].includes(receipt.boundary_outcome)) &&
     !reason.includes("outcome-unknown") &&
     !reason.includes("identity-unknown")
   )
