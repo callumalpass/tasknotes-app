@@ -2230,7 +2230,7 @@ msgstr "Déconnecter les agendas"
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
 msgid "Dismiss"
-msgstr "Masquer"
+msgstr "Ignorer"
 
 #: src/app/bulk-task-actions.tsx
 msgid "Dismiss bulk update notice"

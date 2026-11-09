@@ -32,8 +32,7 @@ native-speaker certification or permission to release.
 The shared `@mdbase-dev/ui` `/i18n` source is composed through the kit's `libraries`
 option, using its exported singleton for presentation helpers. Library UI is never
 copied into application PO files. The published UI/kit retain obsolete-entry pruning
-before compiling: the library has exactly 197 active compiled messages per locale,
-without obsolete `nzHlj8`. Conflicts still fail closed and retain the current
+before compiling, without obsolete `nzHlj8`. Conflicts still fail closed and retain the current
 language rather than overriding translations; successful composition remains a
 product release gate.
 

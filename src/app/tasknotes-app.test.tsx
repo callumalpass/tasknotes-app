@@ -141,7 +141,7 @@ it("adds starter views when the shared switcher's Add a collection approves one"
 
   // The switcher calls the SDK itself; TaskNotes sees only the outcome.
   approvalAdds(mdbase, b);
-  fireEvent.click(screen.getByRole("button", { name: /switch collection/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Alpha" }));
   fireEvent.click(await screen.findByText("Add a collection…"));
   expect(await screen.findByText(`Workspace ${b}`)).toBeVisible();
   await waitFor(() => expect(starterViews).toHaveBeenCalledOnce());
@@ -174,9 +174,7 @@ it.each(["choosing", "ready"] as const)(
       />,
     );
     if (phase === "ready") {
-      fireEvent.click(
-        await screen.findByRole("button", { name: /switch collection/i }),
-      );
+      fireEvent.click(await screen.findByRole("button", { name: "Alpha" }));
     }
     // jsdom's native-popover stub leaves the dialog role-hidden; query its
     // actual mounted content, as the existing switcher approval test does.
@@ -266,4 +264,26 @@ it("signs out through the SDK and never just closes the entry", async () => {
     .map((call) => call.action);
   expect(actions).toContain("signOut");
   expect(actions).not.toContain("close");
+});
+
+it("offers to start without connecting when signed out, through the SDK", async () => {
+  const mdbase = await createTestMdbase({ phase: "signed_out" });
+  render(<TaskNotesApp mdbase={mdbase} unsynced />);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Continue without connecting" }),
+  );
+  await waitFor(() =>
+    expect(
+      mdbase.fixture.controls.observedActions().map((call) => call.action),
+    ).toContain("openUnsynced"),
+  );
+});
+
+it("keeps requiring a collection where work before connecting is off", async () => {
+  const mdbase = await createTestMdbase({ phase: "signed_out" });
+  render(<TaskNotesApp mdbase={mdbase} unsynced={false} />);
+  expect(await screen.findByRole("button", { name: /sign in/i })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Continue without connecting" }),
+  ).toBeNull();
 });

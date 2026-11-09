@@ -9,3 +9,22 @@ beforeEach(() => initializeAppI18n().activate("en"));
 
 configure({ asyncUtilTimeout: 5_000 });
 import "fake-indexeddb/auto";
+
+// jsdom has <dialog> but not its modal methods or Web Animations; the shared
+// UI's Dialog (collection switcher, confirmations) opens through showModal()
+// and waits for its closing animation.
+if (typeof Element !== "undefined")
+  Element.prototype.getAnimations ??= () => [];
+if (typeof HTMLDialogElement !== "undefined") {
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.show ??= function (this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+    if (!this.hasAttribute("open")) return;
+    this.removeAttribute("open");
+    this.dispatchEvent(new Event("close"));
+  };
+}
