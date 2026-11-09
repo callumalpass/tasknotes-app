@@ -258,8 +258,14 @@ test("one to five simultaneous tasks keep readable titles and keyboard access", 
   const planned = tracked
     .locator("xpath=../..")
     .locator(".tnc-col-plan .tnc-item--timed");
+  // The column splits only where planned and tracked time overlap.
   for (const item of await planned.all()) {
     const bounds = (await item.boundingBox())!;
+    if (
+      bounds.y >= trackedBounds.y + trackedBounds.height ||
+      trackedBounds.y >= bounds.y + bounds.height
+    )
+      continue;
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(trackedBounds.x);
   }
   const secondary = await page

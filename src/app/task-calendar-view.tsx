@@ -1073,9 +1073,11 @@ export function TaskCalendarView({
               onDateClick={selectDate}
               onRangeChange={(view: ViewInfo) => {
                 setTitle(view.title);
-                // The data range also covers the date strip's later days.
+                // The data range also covers the date strip's later days. Its
+                // earlier days stay out: a task dated inside the range is drawn
+                // on that past day, not carried to today as overdue.
                 setRange({
-                  start: new Date(view.dataRange.start.getTime()),
+                  start: new Date(view.range.start.getTime()),
                   end: new Date(view.dataRange.end.getTime()),
                 });
               }}
