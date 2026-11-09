@@ -277,6 +277,13 @@ export function AppShell() {
     saveCalendarPreferences(next);
     setCalendarPreferences(next);
   }, []);
+  const pinchCalendarSlotHeight = useCallback((slotHeight: number) => {
+    setCalendarPreferences((current) => {
+      const next = { ...current, slotHeight };
+      saveCalendarPreferences(next);
+      return next;
+    });
+  }, []);
   const closeCapture = useCallback(() => setCaptureOpen(false), []);
   const viewsCatalogOpen = route.page === "views" && !route.key;
 
@@ -517,6 +524,7 @@ export function AppShell() {
           <HomeViewLoading />
         ) : workspacePage === "views" || workspacePage === "view" ? (
           <ViewsScreen
+            onCalendarSlotHeightChange={pinchCalendarSlotHeight}
             onManageViews={() => navigate({ page: "views" })}
             onTaskAdded={reportAdded}
             calendarPreferences={calendarPreferences}

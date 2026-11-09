@@ -27,6 +27,8 @@ describe("calendar preferences", () => {
       weekends: false,
       hourFormat: "24" as const,
       slotDuration: "00:15:00",
+      slotHeight: 52,
+      pinchZoom: false,
     };
     saveCalendarPreferences(preference, storage);
     expect(loadCalendarPreferences(storage, "en-US")).toEqual(preference);
@@ -40,6 +42,18 @@ describe("calendar preferences", () => {
     expect(loadCalendarPreferences(storage, "en-AU")).toEqual(
       defaultCalendarPreferences("en-AU"),
     );
+  });
+
+  it("keeps slot heights within the pinch range", () => {
+    const load = (slotHeight: unknown) =>
+      loadCalendarPreferences(
+        { getItem: () => JSON.stringify({ slotHeight }) },
+        "en-AU",
+      ).slotHeight;
+    expect(load(4)).toBe(16);
+    expect(load(240)).toBe(96);
+    expect(load(40.4)).toBe(40);
+    expect(load("tall")).toBeUndefined();
   });
 
   it("orders labels and week boundaries from the selected first day", () => {

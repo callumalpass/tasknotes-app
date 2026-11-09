@@ -15,6 +15,7 @@ const TaskCalendarView = lazy(async () => ({
 export function CalendarViewPresentation({
   execution,
   preferences,
+  onSlotHeightChange,
   identityTasks,
   selected,
   selectedCreateValue,
@@ -29,6 +30,7 @@ export function CalendarViewPresentation({
 }: {
   execution: TaskViewExecution;
   preferences: CalendarPreferences;
+  onSlotHeightChange?(slotHeight: number): void;
   identityTasks: readonly TaskSummary[];
   selected: string;
   selectedCreateValue: string;
@@ -50,6 +52,7 @@ export function CalendarViewPresentation({
       <TaskCalendarView
         execution={execution}
         preferences={preferences}
+        onSlotHeightChange={onSlotHeightChange}
         identityTasks={identityTasks}
         selected={selected}
         selectedCreateValue={selectedCreateValue}

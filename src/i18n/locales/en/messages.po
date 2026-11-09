@@ -4096,6 +4096,10 @@ msgstr "People could not be loaded. Existing assignments are unchanged. {0}"
 msgid "Pick date"
 msgstr "Pick date"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "Pinch to resize time slots"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "Planned dates"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "Time format"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "Time slot height"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "Time slot size"
 
@@ -6159,6 +6167,11 @@ msgstr "Versions of {0}"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "View actions"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "View default"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

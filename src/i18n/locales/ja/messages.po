@@ -4096,6 +4096,10 @@ msgstr "人物を読み込めませんでした。既存の割り当ては変更
 msgid "Pick date"
 msgstr "日付を選択"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "ピンチで時間枠の高さを変更"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "予定日"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "時刻の形式"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "時間枠の高さ"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "時間枠の長さ"
 
@@ -6159,6 +6167,11 @@ msgstr "「{0}」のバージョン"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "ビューの操作"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "ビューの既定値"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

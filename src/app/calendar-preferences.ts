@@ -13,7 +13,16 @@ export interface CalendarPreferences {
   slotMinTime: string;
   slotMaxTime: string;
   slotDuration: string;
+  /** Pixels per time slot chosen on this device; unset follows the view, then the app default. */
+  slotHeight?: number;
+  /** Two fingers on a time grid change the slot height. */
+  pinchZoom: boolean;
 }
+
+/** Slot heights the calendar's pinch reaches, and the app default. */
+export const CALENDAR_SLOT_HEIGHT_MIN = 16;
+export const CALENDAR_SLOT_HEIGHT_MAX = 96;
+export const DEFAULT_CALENDAR_SLOT_HEIGHT = 36;
 
 const STORAGE_KEY = "tasknotes:calendar-preferences:v1";
 
@@ -30,6 +39,7 @@ export function defaultCalendarPreferences(
     slotMinTime: "06:00:00",
     slotMaxTime: "22:00:00",
     slotDuration: "00:30:00",
+    pinchZoom: true,
   };
 }
 
@@ -59,6 +69,10 @@ export function loadCalendarPreferences(
       slotMinTime: validClock(stored.slotMinTime) ?? fallback.slotMinTime,
       slotMaxTime: validClock(stored.slotMaxTime) ?? fallback.slotMaxTime,
       slotDuration: validDuration(stored.slotDuration) ?? fallback.slotDuration,
+      ...(validSlotHeight(stored.slotHeight) !== undefined
+        ? { slotHeight: validSlotHeight(stored.slotHeight) }
+        : {}),
+      pinchZoom: boolean(stored.pinchZoom) ?? fallback.pinchZoom,
     };
   } catch {
     return fallback;
@@ -161,6 +175,16 @@ function validDuration(value: unknown): string | undefined {
   return typeof value === "string" &&
     ["00:15:00", "00:30:00", "01:00:00"].includes(value)
     ? value
+    : undefined;
+}
+
+/** A slot height within the pinch range, in whole pixels. */
+export function validSlotHeight(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(
+        CALENDAR_SLOT_HEIGHT_MAX,
+        Math.max(CALENDAR_SLOT_HEIGHT_MIN, Math.round(value)),
+      )
     : undefined;
 }
 

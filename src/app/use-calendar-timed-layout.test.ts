@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   isTimedCascadeSliver,
+  laneFraction,
   readableTimedPlacement,
+  timedLane,
 } from "./use-calendar-timed-layout";
 
 describe("readableTimedPlacement", () => {
@@ -32,6 +34,46 @@ describe("readableTimedPlacement", () => {
       left: 17.5,
       width: 51.5,
     });
+  });
+});
+
+describe("laneFraction", () => {
+  it("reads percentages and the calendar's lane calc", () => {
+    expect(laneFraction("33.3333%")).toBeCloseTo(1 / 3);
+    expect(laneFraction("calc(1px + (100% - 9px) * 0.6667)")).toBe(0.6667);
+    expect(laneFraction("calc((100% - 9px) * 0.3333 - 1px)")).toBe(0.3333);
+    expect(laneFraction("calc(25% - 1.25px)")).toBe(0.25);
+    expect(laneFraction("calc(100% - 9px)")).toBe(1);
+    expect(laneFraction("1px")).toBeUndefined();
+    expect(
+      laneFraction("calc(1px + (100% - var(--tnc-actual-w) - 5px) * 0.5)"),
+    ).toBe(0.5);
+    expect(laneFraction("")).toBeUndefined();
+  });
+});
+
+describe("timedLane", () => {
+  it("uses the whole column unless the calendar split it for tracked time", () => {
+    expect(timedLane(200, "calc(50% - 3.5px)", 0.22, false)).toEqual({
+      offset: 0,
+      width: 200,
+    });
+    expect(
+      timedLane(
+        200,
+        "calc(1px + (100% - var(--tnc-actual-w) - 5px) * 0.5)",
+        0.22,
+        false,
+      ),
+    ).toEqual({ offset: 1, width: 151 });
+    expect(
+      timedLane(
+        200,
+        "calc(100% - var(--tnc-actual-w) - 2px + (var(--tnc-actual-w)) * 0)",
+        0.22,
+        true,
+      ),
+    ).toEqual({ offset: 154, width: 44 });
   });
 });
 

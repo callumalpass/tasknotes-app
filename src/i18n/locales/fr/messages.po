@@ -4097,6 +4097,10 @@ msgstr "Impossible de charger les personnes. Les assignations existantes restent
 msgid "Pick date"
 msgstr "Choisir une date"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "Pincer pour redimensionner les créneaux"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "Dates planifiées"
@@ -5879,6 +5883,10 @@ msgid "Time format"
 msgstr "Format de l’heure"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "Hauteur des créneaux horaires"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "Taille des créneaux horaires"
 
@@ -6160,6 +6168,11 @@ msgstr "Versions de {0}"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "Actions de la vue"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "Valeur par défaut de la vue"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

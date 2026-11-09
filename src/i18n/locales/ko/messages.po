@@ -4096,6 +4096,10 @@ msgstr "사람 목록을 불러오지 못했습니다. 기존 할당은 변경�
 msgid "Pick date"
 msgstr "날짜 선택"
 
+#: src/components/calendar-preferences.tsx
+msgid "Pinch to resize time slots"
+msgstr "핀치하여 시간 슬롯 크기 조정"
+
 #: src/components/recurrence-field.tsx
 msgid "Planned dates"
 msgstr "계획된 날짜"
@@ -5878,6 +5882,10 @@ msgid "Time format"
 msgstr "시간 형식"
 
 #: src/components/calendar-preferences.tsx
+msgid "Time slot height"
+msgstr "시간 슬롯 높이"
+
+#: src/components/calendar-preferences.tsx
 msgid "Time slot size"
 msgstr "시간 슬롯 간격"
 
@@ -6159,6 +6167,11 @@ msgstr "{0} 버전"
 #: src/components/tasknotes-controls.tsx
 msgid "View actions"
 msgstr "보기 작업"
+
+#. Slot height option that follows the calendar view
+#: src/components/calendar-preferences.tsx
+msgid "View default"
+msgstr "보기 기본값"
 
 #: src/app/view-editor-form.tsx
 msgid "View name"

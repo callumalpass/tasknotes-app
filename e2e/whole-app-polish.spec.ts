@@ -49,10 +49,12 @@ test("calendar overflow owns focus and restores More on Escape", async ({
   await page.keyboard.press("Enter");
   await expect(popup).toBeVisible();
   await popup.getByRole("button", { name: "Close additional tasks" }).focus();
+  // The popover is a dialog: Tab and Shift+Tab cycle inside it.
   await page.keyboard.press("Shift+Tab");
-  await expect(popup).toHaveCount(0);
-  await more.focus();
-  await page.keyboard.press("Enter");
+  await expect(popup).toBeVisible();
+  expect(
+    await popup.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
   await popup.getByRole("button", { name: "Close additional tasks" }).focus();
   await page.keyboard.press("Enter");
   await expect(popup).toHaveCount(0);

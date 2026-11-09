@@ -207,6 +207,11 @@
   --tnc-small: 13px;
   --tnc-bar-h: 46px;
   --tnc-col-min: 120px;
+  /* Overlapping tasks always cascade (use-calendar-timed-layout keeps each
+     title readable), so the calendar never folds a cluster into a summary. */
+  --tnc-event-min-width: 1px;
+  /* Where planned and tracked time overlap, tracked time keeps this share. */
+  --tnc-actual-w: 40%;
   /* More is a 44px target; the calendar sizes rows to fit it. */
   --tnc-more-h: 44px;
   --tnc-dg-top-h: 30px;
@@ -217,6 +222,14 @@
   color: var(--ink);
   background: transparent;
   border-top: 1px solid var(--line);
+}
+
+/* Calendar 0.1.10 adds a row of day buttons whenever the week overflows
+   sideways. With 120px columns that is most widths, and it repeats the
+   column headers directly below it. The grid already scrolls sideways and
+   the toolbar navigates. */
+.full-calendar-view .tnc-tg-day-navigation {
+  display: none;
 }
 
 .full-calendar-view .tnc-dg-dow,
@@ -666,16 +679,8 @@
 
 .full-calendar-view
   .tnc-item--timed[data-readable-cascade]:is(:hover, :focus-visible) {
-  left: 0 !important;
-  width: calc(100% - 1px) !important;
-}
-
-.full-calendar-view .tnc-col.has-actual .tnc-col-plan {
-  right: calc(40% + 4px);
-}
-
-.full-calendar-view .tnc-col.has-actual .tnc-col-actual {
-  width: 40%;
+  left: var(--calendar-lane-left) !important;
+  width: var(--calendar-lane-width) !important;
 }
 
 .full-calendar-view .tnc-item--timed.is-short .tnc-item-main {
