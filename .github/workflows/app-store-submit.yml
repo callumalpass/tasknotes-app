@@ -4,19 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: Successful iOS release workflow run ID to promote (not a build number)
+        description: Exact successful main-source iOS build run
         required: true
         type: string
-      submit:
-        description: Submit publicly after environment approval; false performs read-only checks
-        required: true
-        default: false
-        type: boolean
-      release:
-        description: Release an Apple-approved MANUAL version to everyone (overrides submit)
-        required: true
-        default: false
-        type: boolean
 
 permissions:
   actions: read
@@ -28,7 +18,7 @@ concurrency:
 
 jobs:
   submit:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
@@ -45,18 +35,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Record read-only dispatch (never consumes submission cooldown)
-        if: ${{ !inputs.submit && !inputs.release }}
-        run: |
-          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("read-only-attempt.json", JSON.stringify({schema:"tasknotes/mobile-read-only-attempt/1",platform:"ios",runId:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),source:process.env.GITHUB_SHA,submit:false,release:false})+"\n")'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: ${{ !inputs.submit && !inputs.release }}
-        with:
-          name: mobile-read-only-attempt
-          path: read-only-attempt.json
-          retention-days: 90
-          if-no-files-found: error
-
       - name: Verify source workflow and resolve exact uploaded build
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,7 +45,6 @@ jobs:
 
       - name: Scope ops-line and Connect evidence access
         id: evidence
-        if: inputs.submit || inputs.release
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
         with:
           client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
@@ -79,32 +56,31 @@ jobs:
           permission-contents: read
           permission-actions: write
 
-      - name: Enforce shared source, SDK, hold and 24-hour gates
-        if: inputs.submit || inputs.release
+      - name: Enforce shared source, SDK, hold and review gates
         env:
           GH_TOKEN: ${{ github.token }}
           APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
-          TASKNOTES_APP_STORE_AUTOMATION_ENABLED: ${{ vars.TASKNOTES_APP_STORE_AUTOMATION_ENABLED }}
+          APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
+          APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
+          APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
         run: node scripts/mobile-release-policy.mjs ios
 
       - name: Test publication policy
         run: node --test scripts/submit-app-store.node-test.mjs scripts/app-store-source-run.node-test.mjs
 
       - name: Check or submit the public release
+        if: env.STORE_PENDING != 'true'
         env:
           APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
           APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
           APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
           APP_REVIEW_DEMO_ACCOUNT_NAME: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_NAME }}
           APP_REVIEW_DEMO_ACCOUNT_PASSWORD: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_PASSWORD }}
-          SUBMIT: ${{ inputs.submit }}
-          RELEASE: ${{ inputs.release }}
-        run: |
-          if [ "$RELEASE" = true ]; then
-            node scripts/submit-app-store.mjs --release
-          elif [ "$SUBMIT" = true ]; then
-            node scripts/submit-app-store.mjs --submit
-          else
-            node scripts/submit-app-store.mjs
-          fi
+        run: node scripts/submit-app-store.mjs --submit
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: store-target-result
+          path: store-target-result.json
+          retention-days: 90
+          if-no-files-found: error

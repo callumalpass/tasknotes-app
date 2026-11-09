@@ -6,18 +6,25 @@ on:
     branches: [main]
   push:
     branches: [main]
-    tags: ["android-v*"]
   workflow_dispatch:
+    inputs:
+      source_sha:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
   group: android-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       TASKNOTES_FIREBASE_PROJECT_ID: ${{ vars.TASKNOTES_FIREBASE_PROJECT_ID }}
@@ -83,11 +90,12 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/android-v')
+    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -98,6 +106,42 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scope ops-line and Connect evidence access
+        id: evidence
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: ${{ vars.RELEASE_AUTOMATION_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_AUTOMATION_APP_PRIVATE_KEY }}
+          owner: mdbase-dev
+          repositories: mdbase-cloud-ops,mdbase-connect
+          permission-contents: read
+          permission-actions: write
+
+      - name: Qualify exact main source before dependency execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          STORE_VERSION: ${{ inputs.version }}
+        run: node scripts/store-cd.mjs build android
+
+      - name: Retain immutable build source
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-build-source-android
+          path: mobile-build-source.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Check out qualified build source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -128,12 +172,7 @@ jobs:
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
 
-          version_name="${GITHUB_REF_NAME#android-v}"
-          package_version="$(node -p "require('./package.json').version")"
-          if [ "$version_name" != "$package_version" ]; then
-            echo "Tag version $version_name does not match package.json version $package_version." >&2
-            exit 1
-          fi
+          version_name="$TASKNOTES_STORE_VERSION"
           if ! [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
             echo "Android release tag must contain a semantic version." >&2
             exit 1
@@ -171,7 +210,7 @@ jobs:
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
           fi
-          pnpm build
+          pnpm verify
           pnpm exec cap sync android
 
       - name: Build signed Android release
@@ -181,7 +220,7 @@ jobs:
       - name: Upload signed artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: tasknotes-android-${{ github.ref_name }}
+          name: tasknotes-android-${{ inputs.source_sha }}
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             android/app/build/outputs/bundle/release/app-release.aab

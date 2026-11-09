@@ -1,17 +1,11 @@
 import { createSign } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PLAY_PACKAGE = "dev.tasknotes.app";
-export const PLAY_TRACK = "alpha";
+export const PLAY_TRACK = "production";
 export const PLAY_RELEASE_STATUS = "completed";
-// Production always starts at 10%; post-release failures halt the same
-// version. Never silently fall back to a full rollout if staging is refused.
-export const PLAY_PRODUCTION_TRACK = "production";
-export const PLAY_PRODUCTION_RELEASE_STATUS = "inProgress";
-export const PLAY_PRODUCTION_FRACTION = 0.1;
 const PLAY_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
 const PLAY_API = "https://androidpublisher.googleapis.com/androidpublisher/v3";
 const PLAY_UPLOAD_API =
@@ -62,24 +56,13 @@ export function parseServiceAccount(encodedCredential) {
   return { clientEmail, privateKey, tokenUri: credential.token_uri };
 }
 
-export function createServiceAccountAssertion(
-  credential,
-  now = Date.now(),
-  scope = PLAY_SCOPE,
-) {
-  if (
-    ![
-      PLAY_SCOPE,
-      "https://www.googleapis.com/auth/playdeveloperreporting",
-    ].includes(scope)
-  )
-    throw new Error("Unsupported Google API scope");
+export function createServiceAccountAssertion(credential, now = Date.now()) {
   const issuedAt = Math.floor(now / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = base64Url(
     JSON.stringify({
       iss: credential.clientEmail,
-      scope,
+      scope: PLAY_SCOPE,
       aud: credential.tokenUri,
       iat: issuedAt,
       exp: issuedAt + 3600,
@@ -99,9 +82,9 @@ async function responseError(response) {
 
 export async function exchangeAccessToken(
   credential,
-  { fetchImpl = fetch, now = Date.now(), scope = PLAY_SCOPE } = {},
+  { fetchImpl = fetch, now = Date.now() } = {},
 ) {
-  const assertion = createServiceAccountAssertion(credential, now, scope);
+  const assertion = createServiceAccountAssertion(credential, now);
   const response = await fetchImpl(credential.tokenUri, {
     method: "POST",
     redirect: "error",
@@ -156,7 +139,7 @@ async function playRequest(fetchImpl, token, url, options = {}) {
   return response.json();
 }
 
-function isExactClosedTestTrack(track, versionCode, name) {
+function isExactProductionTrack(track, versionCode, name) {
   if (track?.track !== PLAY_TRACK || track?.releases?.length !== 1)
     return false;
   const release = track.releases[0];
@@ -169,59 +152,6 @@ function isExactClosedTestTrack(track, versionCode, name) {
     release.userFraction === undefined &&
     release.countryTargeting === undefined
   );
-}
-
-function isExactProductionTrack(
-  track,
-  versionCode,
-  name,
-  allowCompleted = true,
-) {
-  if (track?.track !== PLAY_PRODUCTION_TRACK) return false;
-  const releases = track.releases ?? [];
-  const matching = releases.filter((release) =>
-    release?.versionCodes?.includes(String(versionCode)),
-  );
-  if (matching.length !== 1) return false;
-  const release = matching[0];
-  return (
-    release?.name === name &&
-    ((allowCompleted &&
-      release?.status === "completed" &&
-      release.userFraction === undefined) ||
-      (release?.status === PLAY_PRODUCTION_RELEASE_STATUS &&
-        release.userFraction === PLAY_PRODUCTION_FRACTION)) &&
-    release.versionCodes.length === 1 &&
-    release.countryTargeting === undefined &&
-    // Play keeps only the newest completed production release on the track.
-    releases.every(
-      (other) =>
-        other === release ||
-        (other?.versionCodes ?? []).every((code) => Number(code) < versionCode),
-    )
-  );
-}
-
-function closedTestReleaseForPromotion(track, versionCode, name) {
-  const matching = (track?.releases ?? []).filter((release) =>
-    release?.versionCodes?.includes(String(versionCode)),
-  );
-  if (matching.length !== 1) {
-    throw new Error(
-      `Version code ${versionCode} is not on the Google Play closed-testing track (${PLAY_TRACK})`,
-    );
-  }
-  const release = matching[0];
-  if (
-    release.status !== PLAY_RELEASE_STATUS ||
-    release.versionCodes.length !== 1 ||
-    release.name !== name
-  ) {
-    throw new Error(
-      `Version code ${versionCode} is not a completed '${name}' closed-test release`,
-    );
-  }
-  return release;
 }
 
 function assertProductionAcceptsVersion(track, versionCode) {
@@ -249,7 +179,7 @@ function trackContainsVersion(track, versionCode) {
   );
 }
 
-export async function publishClosedTest({
+export async function publishProduction({
   credentialBase64,
   aabPath,
   expectedVersionCode,
@@ -282,7 +212,7 @@ export async function publishClosedTest({
     const existingTrack = tracks?.tracks?.find(
       (track) => track?.track === PLAY_TRACK,
     );
-    if (isExactClosedTestTrack(existingTrack, versionCode, validatedName)) {
+    if (isExactProductionTrack(existingTrack, versionCode, validatedName)) {
       return {
         packageName: PLAY_PACKAGE,
         track: PLAY_TRACK,
@@ -292,10 +222,16 @@ export async function publishClosedTest({
     }
     if (trackContainsVersion(existingTrack, versionCode)) {
       throw new Error(
-        "Google Play already contains this version code in a different closed-test state",
+        "Google Play already contains this version code in a different production state",
       );
     }
 
+    assertProductionAcceptsVersion(existingTrack, versionCode);
+    const allCodes = (tracks.tracks ?? []).flatMap((track) =>
+      (track.releases ?? []).flatMap((release) => release.versionCodes ?? []),
+    );
+    if (allCodes.some((code) => Number(code) >= versionCode))
+      throw new Error("Version code must exceed every store artifact");
     const bundle = await readFileImpl(resolve(aabPath));
     if (!Buffer.isBuffer(bundle) || bundle.length === 0) {
       throw new Error("Android App Bundle is empty");
@@ -335,9 +271,9 @@ export async function publishClosedTest({
         }),
       },
     );
-    if (!isExactClosedTestTrack(track, versionCode, validatedName)) {
+    if (!isExactProductionTrack(track, versionCode, validatedName)) {
       throw new Error(
-        "Google Play did not return the required closed-test release state",
+        "Google Play did not return the required production release state",
       );
     }
 
@@ -376,276 +312,36 @@ export async function publishClosedTest({
   }
 }
 
-export async function promoteToProduction({
-  credentialBase64,
-  expectedVersionCode,
-  name,
-  fetchImpl = fetch,
-  now = Date.now(),
-}) {
-  const versionCode = validateVersionCode(expectedVersionCode);
-  const validatedName = releaseName(name);
-  const credential = parseServiceAccount(credentialBase64);
-  const token = await exchangeAccessToken(credential, { fetchImpl, now });
-  const packagePath = `applications/${PLAY_PACKAGE}`;
-  let editId;
-
-  try {
-    const edit = await playRequest(
-      fetchImpl,
-      token,
-      `${PLAY_API}/${packagePath}/edits`,
-      { method: "POST", body: "{}" },
-    );
-    editId = requiredString(edit.id, "Google Play edit id");
-
-    const tracks = await playRequest(
-      fetchImpl,
-      token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}/tracks`,
-    );
-    const productionTrack = tracks?.tracks?.find(
-      (track) => track?.track === PLAY_PRODUCTION_TRACK,
-    );
-    if (isExactProductionTrack(productionTrack, versionCode, validatedName)) {
-      return {
-        packageName: PLAY_PACKAGE,
-        track: PLAY_PRODUCTION_TRACK,
-        versionCode,
-        alreadyPublished: true,
-      };
-    }
-    assertProductionAcceptsVersion(productionTrack, versionCode);
-
-    const closedTestTrack = tracks?.tracks?.find(
-      (track) => track?.track === PLAY_TRACK,
-    );
-    const closedTestRelease = closedTestReleaseForPromotion(
-      closedTestTrack,
-      versionCode,
-      validatedName,
-    );
-
-    const productionRelease = {
-      name: validatedName,
-      versionCodes: [String(versionCode)],
-      status: PLAY_PRODUCTION_RELEASE_STATUS,
-      userFraction: PLAY_PRODUCTION_FRACTION,
-    };
-    if (
-      Array.isArray(closedTestRelease.releaseNotes) &&
-      closedTestRelease.releaseNotes.length > 0
-    ) {
-      productionRelease.releaseNotes = closedTestRelease.releaseNotes;
-    }
-
-    const track = await playRequest(
-      fetchImpl,
-      token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}/tracks/${PLAY_PRODUCTION_TRACK}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({
-          track: PLAY_PRODUCTION_TRACK,
-          releases: [...(productionTrack?.releases ?? []), productionRelease],
-        }),
-      },
-    );
-    if (!isExactProductionTrack(track, versionCode, validatedName, false)) {
-      throw new Error(
-        "Google Play did not return the required production release state",
-      );
-    }
-
-    await playRequest(
-      fetchImpl,
-      token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:validate`,
-      { method: "POST", body: "{}" },
-    );
-    await playRequest(
-      fetchImpl,
-      token,
-      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`,
-      { method: "POST", body: "{}" },
-    );
-    editId = undefined;
-    return {
-      packageName: PLAY_PACKAGE,
-      track: PLAY_PRODUCTION_TRACK,
-      versionCode,
-      alreadyPublished: false,
-    };
-  } finally {
-    if (editId) {
-      try {
-        await playRequest(
-          fetchImpl,
-          token,
-          `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}`,
-          { method: "DELETE" },
-        );
-      } catch {
-        // An abandoned edit expires automatically. Preserve the original error.
-      }
-    }
-  }
-}
-
-/** Reconcile one staged version, preserving previous completed releases.
- * No upload, automatic retry, downgrade, or full-rollout fallback. */
-export async function setProductionRollout({
-  credentialBase64,
-  expectedVersionCode,
-  status,
-  userFraction,
-  expectedFraction,
-  fetchImpl = fetch,
-}) {
-  const versionCode = String(validateVersionCode(expectedVersionCode));
-  if (
-    !["halted", "completed", "inProgress"].includes(status) ||
-    (status === "inProgress" &&
-      (userFraction !== 0.5 || expectedFraction !== 0.1)) ||
-    (status === "completed" && expectedFraction !== 0.5)
-  )
-    throw new Error("Only halt, widen 10% to 50%, or complete 50% rollout");
-  const token = await exchangeAccessToken(
-    parseServiceAccount(credentialBase64),
-    { fetchImpl },
-  );
-  const root = `${PLAY_API}/applications/${PLAY_PACKAGE}/edits`;
-  let editId;
-  try {
-    editId = requiredString(
-      (
-        await playRequest(fetchImpl, token, root, {
-          method: "POST",
-          body: "{}",
-        })
-      ).id,
-      "edit id",
-    );
-    const url = `${root}/${encodeURIComponent(editId)}/tracks/production`;
-    const track = await playRequest(fetchImpl, token, url);
-    const releases = track.releases ?? [];
-    const selected = releases.filter((r) =>
-      r.versionCodes?.includes(versionCode),
-    );
-    if (selected.length !== 1 || selected[0].versionCodes.length !== 1)
-      throw new Error("Exact staged version not found");
-    const release = selected[0];
-    if (
-      release.status === status &&
-      (status !== "inProgress" || release.userFraction === userFraction)
-    )
-      return { status, versionCode, alreadyApplied: true };
-    if (
-      release.status !== "inProgress" ||
-      (status !== "halted" && release.userFraction !== expectedFraction) ||
-      releases.some((r) => r !== release && r.status !== "completed")
-    )
-      throw new Error("Production rollout cannot be reconciled automatically");
-    const updated = { ...release, status };
-    if (status === "completed") delete updated.userFraction;
-    if (status === "inProgress") updated.userFraction = userFraction;
-    const next = {
-      track: "production",
-      releases: releases.map((r) => (r === release ? updated : r)),
-    };
-    const saved = await playRequest(fetchImpl, token, url, {
-      method: "PUT",
-      body: JSON.stringify(next),
-    });
-    if (!isDeepStrictEqual(saved.releases, next.releases))
-      throw new Error("Production rollout readback mismatch");
-    await playRequest(
-      fetchImpl,
-      token,
-      `${root}/${encodeURIComponent(editId)}:validate`,
-      { method: "POST", body: "{}" },
-    );
-    await playRequest(
-      fetchImpl,
-      token,
-      `${root}/${encodeURIComponent(editId)}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`,
-      { method: "POST", body: "{}" },
-    );
-    editId = undefined;
-    return { status, versionCode, alreadyApplied: false };
-  } finally {
-    if (editId)
-      await playRequest(
-        fetchImpl,
-        token,
-        `${root}/${encodeURIComponent(editId)}`,
-        { method: "DELETE" },
-      );
-  }
-}
-
-export const PROMOTE_PRODUCTION_FLAG = "--promote-production";
-
-async function promoteProductionMain(args) {
-  if (args.length !== 2) {
-    throw new Error(
-      `Usage: publish-google-play.mjs ${PROMOTE_PRODUCTION_FLAG} <version code> <version name>`,
-    );
-  }
-  const [expectedVersionCode, versionName] = args;
-  const qualified = JSON.parse(
-    await readFile("mobile-release-qualified.json", "utf8"),
-  );
-  if (qualified.version !== versionName || !qualified.sourceRunId)
-    throw new Error("Qualified mobile source required before promotion");
-  const result = await promoteToProduction({
-    credentialBase64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
-    expectedVersionCode,
-    name: `TaskNotes ${requiredString(versionName, "version name")}`,
-  });
-  await writeFile(
-    "mobile-production-result.json",
-    JSON.stringify(
-      {
-        ...result,
-        source: qualified.source,
-        sourceRunId: qualified.sourceRunId,
-        promotedAt: new Date().toISOString(),
-      },
-      null,
-      2,
-    ) + "\n",
-  );
-  const action = result.alreadyPublished ? "Verified" : "Promoted";
-  console.log(
-    `${action} ${result.packageName} version code ${result.versionCode} on Google Play production (${result.track}).`,
-  );
-}
-
 async function main() {
-  if (process.argv[2] === PROMOTE_PRODUCTION_FLAG) {
-    return promoteProductionMain(process.argv.slice(3));
+  if (process.argv[2] === "--qualified") {
+    const qualified = JSON.parse(
+      await readFile("mobile-release-qualified.json", "utf8"),
+    );
+    const base = Number(process.env.TASKNOTES_ANDROID_VERSION_CODE_BASE);
+    if (!Number.isSafeInteger(base) || base < 0)
+      throw new Error("Android version code base required");
+    const result = await publishProduction({
+      credentialBase64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
+      aabPath: "android-release/bundle/release/app-release.aab",
+      expectedVersionCode: base + qualified.build,
+      name: `TaskNotes ${qualified.version}`,
+    });
+    await writeFile(
+      "store-target-result.json",
+      JSON.stringify({ outcome: "submitted", source: qualified.source }) + "\n",
+    );
+    return result;
   }
-  const [aabPath, expectedVersionCode, versionName] = process.argv.slice(2);
-  const result = await publishClosedTest({
-    credentialBase64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
-    aabPath: requiredString(aabPath, "AAB path"),
-    expectedVersionCode,
-    name: `TaskNotes ${requiredString(versionName, "version name")}`,
-  });
-  const action = result.alreadyPublished ? "Verified" : "Published";
-  console.log(
-    `${action} ${result.packageName} version code ${result.versionCode} on Google Play closed testing (${result.track}).`,
-  );
+  throw new Error("Use the protected qualified-source publisher");
 }
 
 const isMain =
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 if (isMain) {
-  main().catch((error) => {
+  main().catch(() => {
     console.error(
-      error instanceof Error ? error.message : "Google Play publication failed",
+      "Google Play publication refused; inspect the target outcome.",
     );
     process.exitCode = 1;
   });

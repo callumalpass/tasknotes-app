@@ -16,6 +16,15 @@ test("release lifecycle, not track completed, controls review and rejection", ()
     },
   };
   assert.equal(playReviewBlock(status), null);
+  const emptyDraft = structuredClone(status);
+  emptyDraft.review.releases.push({
+    track: "internal",
+    state: "RELEASE_LIFECYCLE_STATE_DRAFT",
+    versionCodes: [],
+  });
+  assert.equal(playReviewBlock(emptyDraft), null);
+  emptyDraft.review.releases.at(-1).versionCodes.push("124");
+  assert.equal(playReviewBlock(emptyDraft), "earlier-store-version-in-flight");
   for (const state of [
     "DRAFT",
     "IN_REVIEW",

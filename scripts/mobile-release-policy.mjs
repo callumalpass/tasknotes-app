@@ -1,9 +1,12 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { provenSource } from "./publisher/sdk-provenance.mjs";
+import { compatible } from "./publisher/compatibility.mjs";
 import {
   assertProductionTrustPin,
   assertSdkDependency,
 } from "./production-sdk.mjs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -77,90 +80,6 @@ export function latestExactGreen(runs, sha, workflow) {
     )
     .sort((a, b) => b.id - a.id || b.run_attempt - a.run_attempt);
   return exact[0]?.status === "completed" && exact[0]?.conclusion === "success";
-}
-export function assertCooldown(runs, currentRun, now = Date.now()) {
-  for (const run of runs) {
-    if (String(run.id) === String(currentRun)) continue;
-    requirePolicy(
-      run.status === "completed",
-      "earlier-store-attempt-in-flight",
-    );
-    // Only an exact-run read-only receipt can exempt a dry run. Missing
-    // receipts and failed/unknown writes still consume the cooldown.
-    if (run.verifiedReadOnly === true) continue;
-    const created = Date.parse(run.created_at);
-    requirePolicy(Number.isFinite(created), "store-attempt-time-unavailable");
-    requirePolicy(now - created >= 86_400_000, "store-24-hour-cooldown");
-  }
-}
-export function isReadOnlyReceipt(receipt, run, platform) {
-  return (
-    receipt?.schema === "tasknotes/mobile-read-only-attempt/1" &&
-    receipt.runId === run.id &&
-    receipt.source === run.head_sha &&
-    receipt.attempt === 1 &&
-    run.run_attempt === 1 &&
-    run.event === "workflow_dispatch" &&
-    run.head_branch === "main" &&
-    run.path === `.github/workflows/${WORKFLOWS[platform]}` &&
-    receipt.platform === platform &&
-    receipt.submit === false &&
-    receipt.release === false
-  );
-}
-export async function cooldownRuns(platform) {
-  const reconciled = JSON.parse(
-    await readFile(
-      new URL(
-        "../config/mobile-read-only-reconciliations.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  ).runs;
-  const runs = gh(
-    `repos/${REPO}/actions/workflows/${WORKFLOWS[platform]}/runs?per_page=100`,
-    { pages: true },
-  ).flatMap((page) => page.workflow_runs);
-  for (const run of runs) {
-    if (
-      Date.now() - Date.parse(run.created_at) >= 86_400_000 ||
-      run.status !== "completed" ||
-      run.head_branch !== "main" ||
-      run.event !== "workflow_dispatch" ||
-      run.path !== `.github/workflows/${WORKFLOWS[platform]}` ||
-      run.run_attempt !== 1
-    )
-      continue;
-    run.verifiedReadOnly =
-      run.conclusion === "success" &&
-      reconciled.some(
-        (r) =>
-          r.platform === platform &&
-          r.id === run.id &&
-          r.headSha === run.head_sha &&
-          r.attempt === run.run_attempt &&
-          r.createdAt === run.created_at,
-      );
-    if (run.verifiedReadOnly || platform !== "ios") continue;
-    // Artifact comes only from this successful, protected, first-attempt run.
-    const artifacts = gh(
-      `repos/${REPO}/actions/runs/${run.id}/artifacts?per_page=100`,
-    ).artifacts;
-    if (
-      !artifacts.some(
-        (a) => !a.expired && a.name === "mobile-read-only-attempt",
-      )
-    )
-      continue;
-    const receipt = await artifactJson(
-      run.id,
-      "mobile-read-only-attempt",
-      "read-only-attempt.json",
-    );
-    run.verifiedReadOnly = isReadOnlyReceipt(receipt, run, platform);
-  }
-  return runs;
 }
 export async function artifactJson(
   runId,
@@ -244,7 +163,9 @@ export async function storeLine(
         true,
       );
       requirePolicy(
-        state.app === LINES[platform] && typeof state.stopped === "boolean",
+        state.app === LINES[platform] &&
+          typeof state.stopped === "boolean" &&
+          typeof state.app_stopped === "boolean",
         "store-line-artifact-binding-required",
       );
       return state;
@@ -254,26 +175,20 @@ export async function storeLine(
   throw new Error("store-line-outcome-unknown");
 }
 
-export async function qualifySource(platform, sourceRunId) {
-  requirePolicy(
-    WORKFLOWS[platform] && /^[1-9]\d*$/.test(String(sourceRunId)),
-    "source-run-required",
-  );
-  const run = gh(`repos/${REPO}/actions/runs/${sourceRunId}`);
-  const expected = platform === "android" ? "android.yml" : "ios-release.yml";
-  requirePolicy(
-    run.path === `.github/workflows/${expected}` &&
-      run.repository.full_name === REPO &&
-      run.head_repository.full_name === REPO &&
-      run.status === "completed" &&
-      run.conclusion === "success" &&
-      ["push", "workflow_dispatch"].includes(run.event) &&
-      /^[a-f0-9]{40}$/.test(run.head_sha),
-    "trusted-successful-source-run-required",
-  );
-  const source = run.head_sha;
+export async function assertLinesOpen(platform, readLine = storeLine) {
+  const state = await readLine(platform);
+  requirePolicy(state.stopped === false, "store-line-stopped");
+  requirePolicy(state.app_stopped === false, "app-line-stopped");
+}
+
+export async function qualifyCommit(source) {
   requirePolicy(ancestor(REPO, source), "source-not-on-main");
-  for (const ci of ["android.yml", "ios.yml"]) {
+  for (const ci of [
+    "ci.yml",
+    "android.yml",
+    "ios.yml",
+    "production-smoke.yml",
+  ]) {
     const runs = gh(
       `repos/${REPO}/actions/workflows/${ci}/runs?head_sha=${source}&branch=main&event=push&per_page=100`,
     ).workflow_runs;
@@ -294,6 +209,20 @@ export async function qualifySource(platform, sourceRunId) {
   );
   const archive = gitFile(source, `vendor/${pin.artifact}`);
   assertSdkDependency(trust, pin, pkg, archive);
+  requirePolicy(
+    pin.publication?.integrity ===
+      "sha512-" + createHash("sha512").update(archive).digest("base64"),
+    "sdk-publication-integrity-mismatch",
+  );
+  const authenticated = await provenSource("@mdbase-dev/sdk", {
+    version: pin.version,
+    workflow: "publish-sdk-npm.yml",
+    entry: { dist: { integrity: pin.publication.integrity } },
+  });
+  requirePolicy(
+    authenticated.commit === pin.sourceCommit,
+    "authenticated-sdk-producer-mismatch",
+  );
   const embedded = JSON.parse(
     execFileSync("tar", ["-xzOf", "-", "package/dist/native/provenance.json"], {
       input: archive,
@@ -325,6 +254,45 @@ export async function qualifySource(platform, sourceRunId) {
       pin.trust?.sha256 === approved.trustAssetSha256,
     "trust-change-needs-owner",
   );
+  return { ...pkg, producer: pin.sourceCommit };
+}
+
+export async function qualifySource(platform, sourceRunId) {
+  requirePolicy(
+    WORKFLOWS[platform] && /^[1-9]\d*$/.test(String(sourceRunId)),
+    "source-run-required",
+  );
+  const run = gh(`repos/${REPO}/actions/runs/${sourceRunId}`);
+  const expected = platform === "android" ? "android.yml" : "ios-release.yml";
+  requirePolicy(
+    run.path === `.github/workflows/${expected}` &&
+      run.repository.full_name === REPO &&
+      run.head_repository.full_name === REPO &&
+      run.status === "completed" &&
+      run.conclusion === "success" &&
+      run.run_attempt === 1 &&
+      run.event === "workflow_dispatch" &&
+      run.head_branch === "main" &&
+      /^[a-f0-9]{40}$/.test(run.head_sha),
+    "trusted-successful-source-run-required",
+  );
+  const binding = await artifactJson(
+    sourceRunId,
+    `mobile-build-source-${platform}`,
+    "mobile-build-source.json",
+  );
+  requirePolicy(
+    binding.runId === run.id &&
+      binding.platform === platform &&
+      /^[a-f0-9]{40}$/.test(binding.source),
+    "build-source-binding-required",
+  );
+  const source = binding.source;
+  const pkg = await qualifyCommit(source);
+  requirePolicy(
+    /^\d+\.\d+\.\d+$/.test(binding.version) && binding.build === run.run_number,
+    "build-version-binding-required",
+  );
   const artifacts = gh(
     `repos/${REPO}/actions/runs/${sourceRunId}/artifacts?per_page=100`,
   ).artifacts;
@@ -332,19 +300,18 @@ export async function qualifySource(platform, sourceRunId) {
     (a) =>
       !a.expired &&
       (platform === "android"
-        ? a.name === `tasknotes-android-${run.head_branch}`
+        ? a.name === `tasknotes-android-${source}`
         : /^tasknotes-ios-\d+\.\d+\.\d+-\d+$/.test(a.name)),
   );
   requirePolicy(builds.length === 1, "unique-signed-build-artifact-required");
   const artifact = builds[0];
-  if (platform === "android")
+  requirePolicy(
+    /^sha256:[a-f0-9]{64}$/.test(artifact.digest ?? ""),
+    "signed-artifact-digest-required",
+  );
+  if (platform === "ios") {
     requirePolicy(
-      run.head_branch === `android-v${pkg.version}`,
-      "android-release-tag-required",
-    );
-  else {
-    requirePolicy(
-      artifact.name === `tasknotes-ios-${pkg.version}-${run.run_number}`,
+      artifact.name === `tasknotes-ios-${binding.version}-${run.run_number}`,
       "ios-version-build-mismatch",
     );
     const jobs = gh(
@@ -361,9 +328,11 @@ export async function qualifySource(platform, sourceRunId) {
   return {
     source,
     sourceRunId: run.id,
-    version: pkg.version,
+    version: binding.version,
     build: run.run_number,
     artifactDigest: artifact.digest,
+    artifactName: artifact.name,
+    producer: pkg.producer,
   };
 }
 
@@ -378,28 +347,57 @@ async function main() {
         `${REPO}/.github/workflows/${WORKFLOWS[platform]}@refs/heads/main`,
     "protected-first-attempt-store-context-required",
   );
-  requirePolicy(
-    (await storeLine(platform)).stopped === false,
-    "store-line-stopped",
-  );
-  const enabled =
-    platform === "android"
-      ? process.env.TASKNOTES_PLAY_AUTOMATION_ENABLED
-      : process.env.TASKNOTES_APP_STORE_AUTOMATION_ENABLED;
-  requirePolicy(
-    enabled === "true",
-    "release-supervisor-go-required-automation-disabled",
-  );
+  await assertLinesOpen(platform);
   const source = await qualifySource(platform, process.env.SOURCE_RUN_ID);
-  assertCooldown(await cooldownRuns(platform), process.env.GITHUB_RUN_ID);
+  if (
+    !(await compatible(source.producer, {
+      token: process.env.APP_EVIDENCE_GH_TOKEN,
+    }))
+  ) {
+    await writeFile(
+      "store-target-result.json",
+      JSON.stringify({
+        outcome: "production-contract-wait",
+        source: source.source,
+      }) + "\n",
+    );
+    await appendFile(process.env.GITHUB_ENV, "STORE_PENDING=true\n");
+    return;
+  }
+  let block;
   if (platform === "android") {
     const { readPlayStatus, playReviewBlock } =
       await import("./store-status.mjs");
     const status = await readPlayStatus(
       process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
     );
-    requirePolicy(!playReviewBlock(status), playReviewBlock(status));
+    block = playReviewBlock(status);
+  } else {
+    const { readAppleLive } = await import("./store-status.mjs");
+    const { createStatusClient } = await import("./app-store-status.mjs");
+    const { appleQueueBlock } = await import("./store-cd.mjs");
+    const status = await readAppleLive(
+      createStatusClient({
+        keyId: process.env.APP_STORE_PUBLISH_KEY_ID,
+        issuerId: process.env.APP_STORE_PUBLISH_ISSUER_ID,
+        privateKey: Buffer.from(
+          process.env.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 ?? "",
+          "base64",
+        ).toString("utf8"),
+      }),
+    );
+    block = appleQueueBlock(status.versions);
   }
+  if (block === "earlier-store-version-in-flight") {
+    await writeFile(
+      "store-target-result.json",
+      JSON.stringify({ outcome: "pending-review", source: source.source }) +
+        "\n",
+    );
+    await appendFile(process.env.GITHUB_ENV, "STORE_PENDING=true\n");
+    return;
+  }
+  requirePolicy(!block, block);
   await writeFile(
     "mobile-release-qualified.json",
     JSON.stringify(source, null, 2) + "\n",
