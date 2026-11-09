@@ -79,6 +79,7 @@ export async function dispatch(
   wait = (delay) => new Promise((done) => setTimeout(done, delay)),
 ) {
   await save({
+    ...(workflow === "store-status.yml" ? {} : { write_started: true }),
     boundary: workflow,
     boundary_outcome: "dispatch-unknown",
     child_run_id: null,
@@ -104,11 +105,13 @@ export async function dispatch(
       "store-run-binding-required",
     );
     if (run.status === "completed") {
+      await save({
+        boundary_outcome: run.conclusion === "success" ? "success" : "failed",
+      });
       requirePolicy(
         run.conclusion === "success",
         "store-build-or-publication-failed",
       );
-      await save({ boundary_outcome: "success" });
       return runId;
     }
     await wait(15000);
@@ -163,11 +166,11 @@ export async function releaseTarget({ target, source, runId, save, services }) {
   if (blocker === "earlier-store-version-in-flight")
     return save({ outcome: "pending-review" });
   requirePolicy(!blocker, blocker);
-  const pkg = await services.commit(source);
+  const pkg = await services.commit(source, platform);
   if (await services.previous(target, source, status.liveVersion))
     return save({ outcome: "already-live", version: status.liveVersion });
   const version = nextVersion(pkg.version, status.liveVersion);
-  await save({ version, outcome: "building" });
+  await save({ version, outcome: "building", write_started: true });
   const buildWorkflow =
     platform === "android" ? "android.yml" : "ios-release.yml";
   const sourceRunId = await services.dispatch(
@@ -234,6 +237,7 @@ async function main() {
     source,
     run_id: Number(process.env.GITHUB_RUN_ID),
     outcome: "qualifying",
+    write_started: false,
   };
   const save = async (value) => {
     Object.assign(receipt, value);
@@ -271,19 +275,7 @@ async function main() {
       },
     });
   } catch (error) {
-    const reason = /^[a-z0-9-]+$/.test(error.message)
-      ? error.message
-      : "store-evidence-unavailable";
-    await save({ outcome: "stopped", reason });
-    try {
-      await storeLine(
-        platforms[target],
-        "stop",
-        reason === "store-rejected" ? reason : "app-outcome-unknown",
-      );
-    } catch {
-      await save({ hold_write_failed: true });
-    }
+    await recordFailure(receipt, error, save);
     throw new Error(
       "Store target stopped; inspect its bounded attempt record",
       {
@@ -292,12 +284,43 @@ async function main() {
     );
   }
 }
+export async function recordFailure(receipt, error, save, hold = storeLine) {
+  const reason = /^[a-z0-9-]+$/.test(error.message)
+    ? error.message
+    : "store-evidence-unavailable";
+  await save({ outcome: "stopped", reason });
+  if (
+    reason === "exact-main-ci-required" &&
+    receipt.write_started === false &&
+    (!receipt.boundary ||
+      (receipt.boundary === "store-status.yml" &&
+        receipt.boundary_outcome === "success"))
+  )
+    return;
+  const stopReason =
+    reason === "store-rejected"
+      ? reason
+      : ["dispatch-unknown", "waiting"].includes(receipt.boundary_outcome) ||
+          [
+            "store-outcome-unknown",
+            "store-dispatch-identity-unknown",
+            "store-evidence-unavailable",
+            "exact-main-ci-required",
+          ].includes(reason)
+        ? "app-outcome-unknown"
+        : "app-publication-failed";
+  try {
+    await hold(platforms[receipt.target], "stop", stopReason);
+  } catch {
+    await save({ hold_write_failed: true });
+  }
+}
 export async function prepareBuild(platform) {
   context(platform === "android" ? "android.yml" : "ios-release.yml");
   await assertLinesOpen(platform);
   const source = process.env.SOURCE_SHA,
     version = process.env.STORE_VERSION;
-  await qualifyCommit(source);
+  await qualifyCommit(source, platform);
   requirePolicy(
     /^\d+\.\d+\.\d+$/.test(version ?? ""),
     "numeric-store-version-required",

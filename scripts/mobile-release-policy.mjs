@@ -69,7 +69,7 @@ export function ancestor(repo, older, newer = "main") {
     ).status,
   );
 }
-export function latestExactGreen(runs, sha, workflow) {
+function latestExactRun(runs, sha, workflow) {
   const exact = runs
     .filter(
       (r) =>
@@ -78,8 +78,12 @@ export function latestExactGreen(runs, sha, workflow) {
         r.head_branch === "main" &&
         r.path === `.github/workflows/${workflow}`,
     )
-    .sort((a, b) => b.id - a.id || b.run_attempt - a.run_attempt);
-  return exact[0]?.status === "completed" && exact[0]?.conclusion === "success";
+    .sort((a, b) => b.id - a.id || (b.run_attempt ?? 1) - (a.run_attempt ?? 1));
+  return exact[0];
+}
+export function latestExactGreen(runs, sha, workflow) {
+  const latest = latestExactRun(runs, sha, workflow);
+  return latest?.status === "completed" && latest?.conclusion === "success";
 }
 export async function artifactJson(
   runId,
@@ -181,19 +185,78 @@ export async function assertLinesOpen(platform, readLine = storeLine) {
   requirePolicy(state.app_stopped === false, "app-line-stopped");
 }
 
-export async function qualifyCommit(source) {
-  requirePolicy(ancestor(REPO, source), "source-not-on-main");
-  for (const ci of [
-    "ci.yml",
-    "android.yml",
-    "ios.yml",
-    "production-smoke.yml",
-  ]) {
-    const runs = gh(
+export function requiredChecks(platform, transport = gh) {
+  requirePolicy(LINES[platform], "invalid-store-platform");
+  const file = transport(
+    `repos/${OPS}/contents/config/client-apps.json?ref=main`,
+    {},
+    true,
+  );
+  requirePolicy(
+    file.encoding === "base64" && file.size <= 262144,
+    "store-check-policy-required",
+  );
+  const clients = JSON.parse(
+    Buffer.from(file.content, "base64").toString("utf8"),
+  );
+  const target = LINES[platform].replace("tasknotes-", "");
+  const checks = clients.find((client) => client.repository === REPO)
+    ?.store_checks?.[target];
+  requirePolicy(
+    Array.isArray(checks) &&
+      checks.every(
+        (check) => check && /^[A-Za-z0-9_-]+\.yml$/.test(check.workflow),
+      ) &&
+      checks.some((check) => check.workflow === "ci.yml") &&
+      checks.length === new Set(checks.map((check) => check.workflow)).size &&
+      checks.every(
+        (check) =>
+          !Object.hasOwn(check, "jobs") ||
+          (Array.isArray(check.jobs) &&
+            check.jobs.length > 0 &&
+            check.jobs.every(
+              (job) => typeof job === "string" && job.length > 0,
+            ) &&
+            check.jobs.length === new Set(check.jobs).size),
+      ),
+    "store-check-policy-required",
+  );
+  return checks;
+}
+
+export function qualifyChecks(source, platform, transport = gh) {
+  for (const check of requiredChecks(platform, transport)) {
+    const ci = check.workflow;
+    const runs = transport(
       `repos/${REPO}/actions/workflows/${ci}/runs?head_sha=${source}&branch=main&event=push&per_page=100`,
     ).workflow_runs;
     requirePolicy(latestExactGreen(runs, source, ci), "exact-main-ci-required");
+    if (check.jobs) {
+      const latest = latestExactRun(runs, source, ci);
+      const attempt = latest.run_attempt ?? 1;
+      const jobs = transport(
+        `repos/${REPO}/actions/runs/${latest.id}/attempts/${attempt}/jobs?per_page=100`,
+      ).jobs;
+      requirePolicy(
+        check.jobs.every((name) => {
+          const matches = jobs.filter((job) => job.name === name);
+          return (
+            matches.length === 1 &&
+            matches[0].run_id === latest.id &&
+            matches[0].run_attempt === attempt &&
+            matches[0].status === "completed" &&
+            matches[0].conclusion === "success"
+          );
+        }),
+        "exact-main-ci-required",
+      );
+    }
   }
+}
+
+export async function qualifyCommit(source, platform) {
+  requirePolicy(ancestor(REPO, source), "source-not-on-main");
+  qualifyChecks(source, platform);
   const pkg = jsonFile(source, "package.json");
   const trust = assertProductionTrustPin(
     jsonFile(source, "vendor/production-trust.pin.json"),
@@ -288,7 +351,7 @@ export async function qualifySource(platform, sourceRunId) {
     "build-source-binding-required",
   );
   const source = binding.source;
-  const pkg = await qualifyCommit(source);
+  const pkg = await qualifyCommit(source, platform);
   requirePolicy(
     /^\d+\.\d+\.\d+$/.test(binding.version) && binding.build === run.run_number,
     "build-version-binding-required",
