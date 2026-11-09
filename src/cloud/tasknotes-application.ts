@@ -47,11 +47,11 @@ export function taskNotesApplicationDeclaration(
   };
 }
 
-/** Work before connecting: signed out, people can start in a collection
- * saved only in this browser and bring it in when they connect. Web only for
- * now; native shells keep requiring a collection until checked on devices. */
+/** Keep work before connecting off until the SDK's unsynced setup and
+ * signed-out entry flow are fixed. Preserve the feature and storage identity
+ * for re-enablement; native shells still need device validation as well. */
 export function taskNotesUnsyncedEnabled(): boolean {
-  return !Capacitor.isNativePlatform();
+  return false;
 }
 
 let entry: Mdbase | null = null;
