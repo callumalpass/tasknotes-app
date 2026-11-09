@@ -10,7 +10,7 @@ export const developmentDeployments = Object.freeze({
     editorOrigin: "https://lab.mdbase-editor-lab.pages.dev",
     connectOrigin: "https://connect-lab.mdbase.dev",
     loopbackOrigin: "http://127.0.0.1:28487",
-    sdkArtifact: "vendor/sdk-4443fd15-lab-beta149.tgz",
+    sdkArtifact: "vendor/sdk-475d1ea0-lab-beta166.tgz",
     project: "tasknotes-app",
     branch: "lab",
     wranglerVersion: "4.114.0",
