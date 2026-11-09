@@ -48,7 +48,15 @@ The web publisher `deploy-tasknotes.yml` is unchanged.
 One review/release may be in flight per store. Pending, processing, populated
 draft, or approved-but-unpublished state quietly records `pending-review`; it
 never stacks another release. Rejection records a failure and stops only that
-target. Unavailable or malformed review evidence fails closed. Play's **empty
+target. Unavailable or malformed review evidence fails closed, except that an
+unavailable Play lifecycle read quietly records `pending-review-unobservable`
+when a retained successful same-source submission receipt and its requalified
+signed build match the exact production-track versionCode, completed status and
+release name. The code uses the publisher's configured base plus that build's
+run number, never another source's release or merely a matching marketing
+version. This outcome starts no write and dispatches no stop; it is not proof of
+review or public availability. Missing or mismatched evidence still stops the
+target rather than submitting blind. Play's **empty
 DRAFT with zero artifacts**, including the existing internal-track placeholder,
 is not a release in flight. No Console deletion is required or allowed as a
 workaround. A draft with any artifact remains a blocker.
@@ -97,7 +105,7 @@ failure. A review raced at the final publisher also returns `pending-review`.
 
 The coordinator retains `tasknotes-store-TARGET-RUN/store-cd-result.json`; ops
 retains `app-cd-tasknotes-publish-TARGET-RUN/tasknotes.json` with the exact source,
-child run and outcome (`submitted`, `pending-review`, `already-live`, `store-unchanged`, `stopped`).
+child run and outcome (`submitted`, `pending-review`, `pending-review-unobservable`, `already-live`, `store-unchanged`, `stopped`).
 Submission is not proof of public availability. Daily summaries should report
 these outcomes, never relabel a pending review as a failed deployment.
 

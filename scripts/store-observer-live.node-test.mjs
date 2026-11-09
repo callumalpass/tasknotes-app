@@ -13,6 +13,47 @@ const credential = Buffer.from(
   }),
 ).toString("base64");
 
+test("403 lifecycle read retains exact edits-track evidence without claiming review availability", async () => {
+  const calls = [];
+  const production = {
+    track: "production",
+    releases: [
+      {
+        name: "TaskNotes 1.0.13",
+        status: "completed",
+        versionCodes: ["100739"],
+        userFraction: null,
+      },
+    ],
+  };
+  const result = await readPlayStatus(credential, async (url, options) => {
+    calls.push(options.method);
+    if (url.includes("oauth2")) return Response.json({ access_token: "test" });
+    if (options.method === "POST") return Response.json({ id: "123" });
+    if (options.method === "DELETE") return new Response(null, { status: 204 });
+    if (url.endsWith("/releases"))
+      return Response.json(
+        {
+          error: {
+            status: "PERMISSION_DENIED",
+            message: "private-api-body",
+          },
+        },
+        { status: 403 },
+      );
+    return Response.json({ tracks: [production] });
+  });
+  assert.equal(result.review.available, false);
+  assert.equal(result.review.httpStatus, 403);
+  assert.deepEqual(result.tracks, [production]);
+  assert.equal(
+    playReviewBlock(result),
+    "play-release-lifecycle-observer-unavailable",
+  );
+  assert.deepEqual(calls, ["POST", "POST", "GET", "GET", "DELETE"]);
+  assert.ok(!JSON.stringify(result).includes("private-api-body"));
+});
+
 for (const productionEmpty of [false, true]) {
   test(`204 empty-track summary does not fabricate production approval (${productionEmpty})`, async () => {
     const result = await readPlayStatus(credential, async (url, options) => {

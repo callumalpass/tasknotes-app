@@ -5,10 +5,12 @@ import {
   appleQueueBlock,
   dispatch,
   nextVersion,
+  previousSubmission,
   releaseTarget,
   recordFailure,
 } from "./store-cd.mjs";
 import { verifyArchive } from "./download-mobile-build.mjs";
+import { androidVersionCode } from "./publish-google-play.mjs";
 
 const source = "a".repeat(40);
 const status = {
@@ -46,6 +48,7 @@ function fixture(target = "google-play") {
       ),
     commit: async () => ({ version: "1.0.12" }),
     previous: async () => false,
+    versionCode: (build) => androidVersionCode(build, "100000"),
     dispatch: async (workflow, inputs) => {
       calls.push({ workflow, inputs });
       return calls.length;
@@ -61,6 +64,218 @@ function fixture(target = "google-play") {
     run: () => releaseTarget({ target, source, runId: 7, save, services }),
   };
 }
+function unobservableFixture() {
+  const fixtureValue = fixture();
+  fixtureValue.services.status = async () => ({
+    ...status,
+    review: { available: false, httpStatus: 403, reason: "permission-denied" },
+    tracks: [
+      {
+        track: "production",
+        releases: [
+          {
+            name: "TaskNotes 1.0.13",
+            status: "completed",
+            versionCodes: ["100739"],
+          },
+        ],
+      },
+    ],
+  });
+  fixtureValue.services.previous = async (...args) => {
+    assert.deepEqual(args, ["google-play", source]);
+    return {
+      outcome: "submitted",
+      source_run_id: 42,
+      version: "1.0.13",
+      build: 739,
+    };
+  };
+  fixtureValue.services.qualify = async (...args) => {
+    assert.deepEqual(args, ["android", 42]);
+    return { source, version: "1.0.13", build: 739 };
+  };
+  return fixtureValue;
+}
+
+async function attempt(fixtureValue) {
+  const receipt = { target: "google-play", write_started: false };
+  const holds = [];
+  try {
+    await fixtureValue.run();
+    for (const record of fixtureValue.records) Object.assign(receipt, record);
+  } catch (error) {
+    for (const record of fixtureValue.records) Object.assign(receipt, record);
+    await recordFailure(
+      receipt,
+      error,
+      async (record) => Object.assign(receipt, record),
+      async (...args) => holds.push(args),
+    );
+  }
+  return { receipt, holds };
+}
+
+test("unavailable Play lifecycle with the exact submitted source build quietly waits without writes or stops", async () => {
+  const fixtureValue = unobservableFixture();
+  const { receipt, holds } = await attempt(fixtureValue);
+  assert.equal(receipt.outcome, "pending-review-unobservable");
+  assert.equal(receipt.write_started, false);
+  assert.equal(receipt.source_run_id, 42);
+  assert.equal(receipt.build, 739);
+  assert.deepEqual(fixtureValue.calls, []);
+  assert.deepEqual(holds, []);
+});
+
+test("unavailable Play lifecycle still stops when the production track does not prove the exact build", async () => {
+  for (const change of [
+    { versionCodes: ["100738"] },
+    { versionCodes: ["1007390"] },
+    { versionCodes: [100739] },
+    { name: "TaskNotes 1.0.12" },
+    { status: "draft" },
+    { track: "internal" },
+    { tracks: [] },
+  ]) {
+    const fixtureValue = unobservableFixture();
+    const original = fixtureValue.services.status;
+    fixtureValue.services.status = async () => {
+      const value = await original();
+      Object.assign(value.tracks[0].releases[0], change);
+      if (change.track) value.tracks[0].track = change.track;
+      if (change.tracks) value.tracks = change.tracks;
+      return value;
+    };
+    const { receipt, holds } = await attempt(fixtureValue);
+    assert.equal(receipt.outcome, "stopped");
+    assert.equal(receipt.reason, "play-release-lifecycle-observer-unavailable");
+    assert.equal(receipt.write_started, false);
+    assert.deepEqual(fixtureValue.calls, []);
+    assert.deepEqual(holds, [["android", "stop", "app-publication-failed"]]);
+  }
+});
+
+test("unobservable review cannot borrow a missing receipt or changed/untrusted signed build", async () => {
+  for (const change of [
+    { previous: async () => false },
+    {
+      qualify: async () => ({
+        source: "b".repeat(40),
+        version: "1.0.13",
+        build: 739,
+      }),
+    },
+    { qualify: async () => ({ source, version: "1.0.14", build: 739 }) },
+    { qualify: async () => ({ source, version: "1.0.13", build: 740 }) },
+    {
+      qualify: async () => {
+        throw new Error("signed-artifact-digest-required");
+      },
+    },
+    { versionCode: (build) => androidVersionCode(build, null) },
+  ]) {
+    const fixtureValue = unobservableFixture();
+    Object.assign(fixtureValue.services, change);
+    const { receipt, holds } = await attempt(fixtureValue);
+    assert.equal(receipt.outcome, "stopped");
+    assert.equal(receipt.write_started, false);
+    assert.equal(holds.length, 1);
+    assert.deepEqual(fixtureValue.calls, []);
+  }
+});
+
+test("available Play lifecycle keeps published, pending, rejected and malformed handling unchanged", async () => {
+  for (const [review, expected] of [
+    [status.review, "submitted"],
+    [
+      {
+        available: true,
+        releases: [{ state: "RELEASE_LIFECYCLE_STATE_IN_REVIEW" }],
+      },
+      "pending-review",
+    ],
+    [
+      {
+        available: true,
+        releases: [{ state: "RELEASE_LIFECYCLE_STATE_NOT_APPROVED" }],
+      },
+      "stopped",
+    ],
+    [{ available: true, releases: [] }, "stopped"],
+  ]) {
+    const fixtureValue = fixture();
+    fixtureValue.services.status = async () => ({ ...status, review });
+    const { receipt, holds } = await attempt(fixtureValue);
+    assert.equal(receipt.outcome, expected);
+    assert.equal(holds.length, expected === "stopped" ? 1 : 0);
+    assert.equal(fixtureValue.calls.length, expected === "submitted" ? 2 : 0);
+  }
+});
+
+test("same-source submission lookup binds the retained receipt and successful first-attempt run", async () => {
+  const run = {
+    id: 7,
+    status: "completed",
+    conclusion: "success",
+    run_attempt: 1,
+    path: ".github/workflows/publish-tasknotes-store.yml",
+    head_branch: "main",
+    event: "workflow_dispatch",
+  };
+  const receipt = {
+    schema: "tasknotes/store-cd/1",
+    run_id: 7,
+    target: "google-play",
+    source,
+    outcome: "submitted",
+    source_run_id: 42,
+    version: "1.0.13",
+    build: 739,
+  };
+  for (const [runChange, receiptChange, expired] of [
+    [{}, {}, false],
+    [{ conclusion: "failure" }, {}, false],
+    [{ run_attempt: 2 }, {}, false],
+    [{}, { source: "b".repeat(40) }, false],
+    [{}, { target: "app-store" }, false],
+    [{}, { run_id: 8 }, false],
+    [{}, { schema: "old" }, false],
+    [{}, { outcome: "pending-review-unobservable" }, false],
+    [{}, { outcome: "already-live" }, false],
+    [{}, { source_run_id: null }, false],
+    [{}, { build: null }, false],
+    [{}, {}, true],
+  ]) {
+    const expected =
+      !Object.keys(runChange).length &&
+      !Object.keys(receiptChange).length &&
+      !expired;
+    const found = await previousSubmission(
+      "google-play",
+      source,
+      undefined,
+      (path) =>
+        path.includes("/artifacts?")
+          ? { artifacts: [{ name: "tasknotes-store-google-play-7", expired }] }
+          : [{ workflow_runs: [{ ...run, ...runChange }] }],
+      async () => ({ ...receipt, ...receiptChange }),
+    );
+    assert.equal(Boolean(found), expected);
+  }
+});
+
+test("publisher and observer calculate the same exact Android versionCode", () => {
+  assert.equal(androidVersionCode(739, "100000"), 100739);
+  for (const [build, base] of [
+    [739, ""],
+    [739, "bad"],
+    [739, "-1"],
+    [0, "100000"],
+    [1.5, "100000"],
+    [739, "2100000000"],
+  ])
+    assert.throws(() => androidVersionCode(build, base));
+});
 test("both production targets build exact green main and submit automatically", async () => {
   for (const [target, build, publisher] of [
     ["google-play", "android.yml", "google-play-production.yml"],
@@ -148,10 +363,12 @@ test("rejections, stopped lines, failed checks and mismatched builds fail closed
   }
 });
 test("a review raced at the final publisher remains pending, not submitted", async () => {
-  const fixtureValue = fixture();
-  fixtureValue.services.result = async () => "pending-review";
-  await fixtureValue.run();
-  assert.equal(fixtureValue.records.at(-1).outcome, "pending-review");
+  for (const outcome of ["pending-review", "pending-review-unobservable"]) {
+    const fixtureValue = fixture();
+    fixtureValue.services.result = async () => outcome;
+    await fixtureValue.run();
+    assert.equal(fixtureValue.records.at(-1).outcome, outcome);
+  }
 });
 test("a submitted same-source receipt prevents a second build after approval", async () => {
   const fixtureValue = fixture();

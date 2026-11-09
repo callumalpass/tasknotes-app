@@ -13,6 +13,7 @@ import {
 } from "./mobile-release-policy.mjs";
 import { readAppleLive, playReviewBlock } from "./store-status.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
+import { androidVersionCode } from "./publish-google-play.mjs";
 
 export const platforms = { "google-play": "android", "app-store": "ios" };
 export function appleQueueBlock(versions) {
@@ -118,8 +119,14 @@ export async function dispatch(
   }
   throw new Error("store-outcome-unknown");
 }
-async function previousSubmission(target, source, liveVersion) {
-  const pages = gh(
+export async function previousSubmission(
+  target,
+  source,
+  liveVersion,
+  transport = gh,
+  readArtifact = artifactJson,
+) {
+  const pages = transport(
     `repos/${REPO}/actions/workflows/publish-tasknotes-store.yml/runs?branch=main&event=workflow_dispatch&per_page=100`,
     { pages: true },
   );
@@ -134,23 +141,29 @@ async function previousSubmission(target, source, liveVersion) {
     )
       continue;
     const name = `tasknotes-store-${target}-${run.id}`;
-    const artifacts = gh(
+    const artifacts = transport(
       `repos/${REPO}/actions/runs/${run.id}/artifacts?per_page=100`,
     ).artifacts;
     if (
       !artifacts.some((artifact) => artifact.name === name && !artifact.expired)
     )
       continue;
-    const receipt = await artifactJson(run.id, name, "store-cd-result.json");
+    const receipt = await readArtifact(run.id, name, "store-cd-result.json");
     if (
       receipt.schema === "tasknotes/store-cd/1" &&
       receipt.run_id === run.id &&
       receipt.target === target &&
       receipt.source === source &&
-      receipt.version === liveVersion &&
+      (liveVersion === undefined
+        ? receipt.outcome === "submitted" &&
+          Number.isSafeInteger(receipt.source_run_id) &&
+          receipt.source_run_id > 0 &&
+          Number.isSafeInteger(receipt.build) &&
+          receipt.build > 0
+        : receipt.version === liveVersion) &&
       ["submitted", "already-live"].includes(receipt.outcome)
     )
-      return true;
+      return receipt;
   }
   return false;
 }
@@ -165,6 +178,44 @@ export async function releaseTarget({ target, source, runId, save, services }) {
       : appleQueueBlock(status.versions);
   if (blocker === "earlier-store-version-in-flight")
     return save({ outcome: "pending-review" });
+  if (
+    blocker === "play-release-lifecycle-observer-unavailable" &&
+    status.review?.available === false
+  ) {
+    const submitted = await services.previous(target, source);
+    if (submitted) {
+      const qualified = await services.qualify(
+        "android",
+        submitted.source_run_id,
+      );
+      requirePolicy(
+        qualified.source === source &&
+          qualified.version === submitted.version &&
+          qualified.build === submitted.build,
+        "store-build-candidate-changed",
+      );
+      const versionCode = services.versionCode(qualified.build);
+      const production = status.tracks?.find(
+        (track) => track.track === "production",
+      );
+      if (
+        production?.releases?.some(
+          (release) =>
+            release.name === `TaskNotes ${qualified.version}` &&
+            release.status === "completed" &&
+            Array.isArray(release.versionCodes) &&
+            release.versionCodes.includes(String(versionCode)),
+        )
+      )
+        return save({
+          outcome: "pending-review-unobservable",
+          write_started: false,
+          version: qualified.version,
+          source_run_id: submitted.source_run_id,
+          build: qualified.build,
+        });
+    }
+  }
   requirePolicy(!blocker, blocker);
   const pkg = await services.commit(source, platform);
   if (await services.previous(target, source, status.liveVersion))
@@ -196,9 +247,12 @@ export async function releaseTarget({ target, source, runId, save, services }) {
   );
   const outcome = await services.result(publishRunId, source);
   requirePolicy(
-    ["submitted", "pending-review", "production-contract-wait"].includes(
-      outcome,
-    ),
+    [
+      "submitted",
+      "pending-review",
+      "pending-review-unobservable",
+      "production-contract-wait",
+    ].includes(outcome),
     "store-publication-receipt-required",
   );
   await save({ outcome, run_id: runId });
@@ -258,6 +312,7 @@ async function main() {
         status: (platform) => status(platform, save),
         commit: qualifyCommit,
         previous: previousSubmission,
+        versionCode: androidVersionCode,
         dispatch,
         qualify: qualifySource,
         result: async (runId, source) => {
