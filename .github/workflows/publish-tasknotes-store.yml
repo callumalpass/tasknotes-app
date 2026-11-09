@@ -58,6 +58,7 @@ jobs:
           APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
           STORE_TARGET: ${{ inputs.target }}
           SOURCE_SHA: ${{ inputs.source_sha }}
+          TASKNOTES_ANDROID_VERSION_CODE_BASE: ${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}

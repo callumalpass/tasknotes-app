@@ -114,6 +114,17 @@ function validateVersionCode(value) {
   return versionCode;
 }
 
+export function androidVersionCode(
+  build,
+  base = process.env.TASKNOTES_ANDROID_VERSION_CODE_BASE,
+) {
+  if (!/^\d+$/.test(base ?? "") || !Number.isSafeInteger(Number(base)))
+    throw new Error("android-version-code-base-required");
+  if (!Number.isSafeInteger(build) || build < 1)
+    throw new Error("android-build-number-required");
+  return validateVersionCode(Number(base) + build);
+}
+
 function releaseName(value) {
   const name = requiredString(value, "release name").trim();
   if (!/^TaskNotes \d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(name)) {
@@ -317,13 +328,10 @@ async function main() {
     const qualified = JSON.parse(
       await readFile("mobile-release-qualified.json", "utf8"),
     );
-    const base = Number(process.env.TASKNOTES_ANDROID_VERSION_CODE_BASE);
-    if (!Number.isSafeInteger(base) || base < 0)
-      throw new Error("Android version code base required");
     const result = await publishProduction({
       credentialBase64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
       aabPath: "android-release/bundle/release/app-release.aab",
-      expectedVersionCode: base + qualified.build,
+      expectedVersionCode: androidVersionCode(qualified.build),
       name: `TaskNotes ${qualified.version}`,
     });
     await writeFile(
