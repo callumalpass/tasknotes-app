@@ -5,6 +5,7 @@ const origins = {
   production: "https://app.tasknotes.dev",
   staging: "https://staging.tasknotes.dev",
 };
+const FIRST_SCREEN = /^(Sign in|Connect to sync your work)$/;
 const need = (ok, reason) => {
   if (!ok) throw Error(reason);
 };
@@ -66,18 +67,25 @@ export async function smoke(chromium, source, target = "production") {
       entry.ok() && (await entry.body()).length > 0,
       "entry-asset-unavailable",
     );
+    // A fresh visitor sees Sign in, or on the web starts in this browser's
+    // unsynced collection (work before connecting) with its Connect action.
     await page
-      .getByRole("button", { name: "Sign in", exact: true })
+      .getByRole("button", { name: FIRST_SCREEN })
+      .first()
       .waitFor({ state: "visible", timeout: 60000 });
-    need(
-      !/readiness_fenced/i.test(await page.locator("body").innerText()),
-      "readiness-fenced",
-    );
+    // The unsynced workspace loads its views after it opens: let a refusal show.
+    await page.waitForTimeout(5000);
+    const text = await page.locator("body").innerText();
+    need(!/readiness_fenced/i.test(text), "readiness-fenced");
+    need(!/Can't continue/i.test(text), "first-screen-blocked");
+    need(!/Couldn't load your views/i.test(text), "views-unavailable");
     need(failures.size === 0, [...failures].sort().join(","));
+    const unsynced = /Connect to sync your work/.test(text);
     return {
       ok: true,
       source: source.slice(0, 12),
-      signIn: true,
+      signIn: !unsynced,
+      unsynced,
       cacheDisabled: true,
     };
   } finally {
