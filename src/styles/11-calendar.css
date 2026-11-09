@@ -219,6 +219,14 @@
   border-top: 1px solid var(--line);
 }
 
+/* Calendar 0.1.10 adds a row of day buttons whenever the week overflows
+   sideways. With 120px columns that is most widths, and it repeats the
+   column headers directly below it. The grid already scrolls sideways and
+   the toolbar navigates. */
+.full-calendar-view .tnc-tg-day-navigation {
+  display: none;
+}
+
 .full-calendar-view .tnc-dg-dow,
 .full-calendar-view .tnc-dh-dow,
 .full-calendar-view .tnc-ym-dow,
