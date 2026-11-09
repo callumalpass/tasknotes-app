@@ -9,11 +9,13 @@ import type { TaskView, TaskViewExecution } from "../domain/view";
 
 import {
   nextTaskFixture,
+  seedRecord,
   seedTask,
   seedTaskView,
   taskQueryWhere,
 } from "../test/next-task-fixture";
 import { TASKNOTES_SETTINGS_TYPE } from "@tasknotes/model/settings";
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 
 describe("SDK TaskRepository behavior (protocol stand-in)", () => {
   let fixture: Awaited<ReturnType<typeof nextTaskFixture>>;
@@ -744,6 +746,42 @@ describe("SDK TaskRepository behavior (protocol stand-in)", () => {
     await expect(
       repository.search({ search: "anything" }, { signal: controller.signal }),
     ).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  // mdbase-connect#1336: one record with a status the type doesn't list
+  // (here, from TaskNotes for Obsidian) must not stop the collection opening.
+  it("opens a collection whose records hold statuses the type doesn't list", async () => {
+    seedTask(fixture.replica, { title: "Listed status" });
+    const unlisted = new TaskNotesTaskModel().create(
+      { title: "Captured elsewhere" },
+      { id: crypto.randomUUID(), now: "2026-07-22T00:00:00.000Z" },
+    );
+    seedRecord(fixture.replica, {
+      path: unlisted.path,
+      types: ["task"],
+      frontmatter: { ...unlisted.frontmatter, status: "inbox" },
+      body: unlisted.body,
+    });
+
+    expect(await repository.stats()).toMatchObject({ total: 2, open: 2 });
+    const summaries = await repository.list();
+    expect(summaries.map((task) => task.status).sort()).toEqual([
+      "inbox",
+      "open",
+    ]);
+    const saved = await repository.update(unlisted.id, {
+      title: "Captured elsewhere, renamed",
+    });
+    expect(saved).toMatchObject({
+      title: "Captured elsewhere, renamed",
+      status: "inbox",
+    });
+    expect((await repository.get(unlisted.id))?.frontmatter.status).toBe(
+      "inbox",
+    );
+    await expect(
+      repository.update(unlisted.id, { status: "someday" }),
+    ).rejects.toMatchObject({ name: "TaskNotesValidationError" });
   });
 
   it("returns actionable missing-task and domain validation errors without accepting writes", async () => {

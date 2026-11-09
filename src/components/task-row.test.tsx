@@ -436,6 +436,26 @@ it("draws a coloured status as the ring and names it, without a fill", () => {
   expect(neutral).not.toHaveClass("has-status");
   expect(neutral).not.toHaveAttribute("title");
 });
+it("names a status the vocabulary doesn't list by its stored value, uncoloured", () => {
+  const { container } = render(
+    <TaskRow
+      task={{ ...task, status: "inbox" } as Task}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+      details={[]}
+    />,
+  );
+  const control = screen.getByRole("button", {
+    name: "Complete Write brief, inbox",
+  });
+  expect(control).toHaveAttribute("title", "inbox");
+  expect(control).not.toHaveClass("has-status");
+  expect(
+    [...container.querySelectorAll(".task-row-property")].map((property) =>
+      property.getAttribute("aria-label"),
+    ),
+  ).toContain("Status: inbox");
+});
 it("animates only a completion made in the row and reports it for Undo", async () => {
   const report = vi.fn();
   let resolve!: () => void;

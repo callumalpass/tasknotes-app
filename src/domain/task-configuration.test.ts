@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveTaskCollectionConfiguration,
   splitTaskModelSettingsPatch,
+  statusChoices,
   taskNotesSettingsChanges,
 } from "./task-configuration";
 
@@ -442,5 +443,18 @@ describe("TaskNotes collection configuration", () => {
     expect(taskNotesSettingsChanges({ move_on_archive: true }, record)).toEqual(
       { move_on_archive: true },
     );
+  });
+
+  it("keeps a stored status the vocabulary doesn't list as its own choice", () => {
+    const statuses = [
+      { value: "open", label: "Open" },
+      { value: "done", label: "Done" },
+    ];
+    expect(statusChoices(statuses, "open")).toEqual(statuses);
+    expect(statusChoices(statuses, "")).toEqual(statuses);
+    expect(statusChoices(statuses, "inbox")).toEqual([
+      ...statuses,
+      { value: "inbox", label: "inbox" },
+    ]);
   });
 });

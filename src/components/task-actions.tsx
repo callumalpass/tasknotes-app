@@ -56,6 +56,7 @@ import { rescheduleInput, shiftTaskDate } from "../domain/task-date-actions";
 import { actionFeedback } from "../native/feedback";
 import { writeClipboard } from "../native/clipboard";
 import { taskRecordLink } from "../domain/task-links";
+import { statusChoices } from "../domain/task-configuration";
 import {
   TASK_MENU_PANEL_EVENT,
   returnFocusToList,
@@ -612,7 +613,10 @@ export function TaskActions({
                   {panel === "series" ? <TaskActionList series /> : null}
                   {panel === "status" ? (
                     <ChoiceOptions
-                      options={configuration.statuses}
+                      options={statusChoices(
+                        configuration.statuses,
+                        task.status,
+                      )}
                       value={task.status}
                       label={t`Status`}
                       disabled={busy}
