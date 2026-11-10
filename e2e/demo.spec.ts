@@ -393,6 +393,9 @@ test("suggests wikilinks and capture shorthand in a Scratchpad note", async ({
   });
   await expect(option).toBeVisible();
   await expect(option.locator(".cm-completionIcon")).toBeHidden();
+  // The editor ignores Enter for a moment after suggestions appear, so that
+  // a line break typed in passing is not taken as a choice.
+  await page.waitForTimeout(200);
   await page.keyboard.press("Enter");
   // A line that is only a link to a task is that task, and writing moves on.
   await expect(
@@ -410,6 +413,7 @@ test("suggests wikilinks and capture shorthand in a Scratchpad note", async ({
   await page.keyboard.type("Call Sam #wo");
   const tag = current.getByRole("option", { name: /work/ });
   await expect(tag).toBeVisible();
+  await page.waitForTimeout(200);
   await page.keyboard.press("Enter");
   await expect
     .poll(() => noteText(note))
@@ -519,6 +523,10 @@ test("a status and a custom field added in Settings reach the task editor", asyn
   ).toBeFocused();
   await page.keyboard.type("Waiting on reply");
   await page.getByRole("button", { name: "Add field", exact: true }).click();
+  // The new row takes focus a frame later; a key before then is a shortcut.
+  await expect(
+    page.getByRole("textbox", { name: "Field name" }).last(),
+  ).toBeFocused();
   await page.keyboard.type("Client");
   // A status without a name is refused in plain words, before anything is saved.
   await page.getByRole("button", { name: "Add priority", exact: true }).click();
