@@ -515,11 +515,43 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       if (route === "returned")
         f.list.mockResolvedValueOnce({ kind: "refusal", problem });
       else f.list.mockRejectedValueOnce(new MdbaseError(problem));
+      const started = performance.now();
       const documents = await f.repository.listViews();
       expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
       expect(f.list).toHaveBeenCalledTimes(2);
+      // No local change event explains this refusal: the reread is paced.
+      expect(performance.now() - started).toBeGreaterThanOrEqual(240);
     },
   );
+  it("rereads discovery at once when a local data event retires its cut", async () => {
+    const f = await fixture();
+    f.list.mockClear();
+    // A refresh finishing during discovery (as the post-start refresh does)
+    // emits a data event, which retires the cut this discovery was reading.
+    f.list.mockImplementationOnce(async () => {
+      await f.repository.refresh();
+      return {
+        kind: "success" as const,
+        views: [descriptor],
+        clock,
+        collectionRevision: revision,
+        continuation: null,
+      };
+    });
+    const data = vi.fn();
+    f.repository.subscribe((change) => {
+      if (change?.kind === "data") data();
+    });
+    const started = performance.now();
+    const documents = await f.repository.listViews();
+    const elapsed = performance.now() - started;
+    expect(data).toHaveBeenCalled();
+    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    expect(f.list).toHaveBeenCalledTimes(2);
+    // The new generation already exists; the 250 ms refusal pacing would
+    // only delay the first view.
+    expect(elapsed).toBeLessThan(240);
+  });
   it("propagates native refusal and pre-cancellation without fallback or hydration", async () => {
     const f = await fixture();
     const get = vi.spyOn(f.client, "get");

@@ -4,6 +4,7 @@ const stages = [
   "sql_open",
   "verified_read",
   "repository_init",
+  "view_discovery",
   "first_query",
   "first_render",
 ] as const;
