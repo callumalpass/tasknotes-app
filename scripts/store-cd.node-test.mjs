@@ -1308,3 +1308,21 @@ test("build refusal prints only the fixed policy reason", () => {
     "Store CD refused: protected-store-context-required\n",
   );
 });
+
+test("a failed evidence read after the status run and before any write records infrastructure, not an unknown outcome", async () => {
+  const receipt = {
+    target: "google-play",
+    write_started: false,
+    boundary: "store-status.yml",
+    boundary_outcome: "success",
+  };
+  const holds = [];
+  await recordFailure(
+    receipt,
+    new Error("release-evidence-unavailable"),
+    async (record) => Object.assign(receipt, record),
+    async (...args) => holds.push(args),
+  );
+  assert.equal(receipt.reason, "release-evidence-unavailable");
+  assert.deepEqual(holds, []);
+});

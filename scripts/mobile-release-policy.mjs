@@ -6,7 +6,14 @@ import {
   assertProductionTrustPin,
   assertSdkDependency,
 } from "./production-sdk.mjs";
-import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  appendFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -91,29 +98,46 @@ export async function artifactJson(
   filename,
   evidenceRepo = REPO,
   evidence = false,
+  {
+    download = execFileSync,
+    wait = (delay) => new Promise((done) => setTimeout(done, delay)),
+  } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), "tasknotes-mobile-evidence-"));
   try {
     const env = { ...process.env };
     if (evidence) env.GH_TOKEN = env.APP_EVIDENCE_GH_TOKEN;
-    execFileSync(
-      "gh",
-      [
-        "run",
-        "download",
-        String(runId),
-        "--repo",
-        evidenceRepo,
-        "--name",
-        name,
-        "--dir",
-        dir,
-      ],
-      {
-        env,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    // Downloading is a read, so a transient failure (artifact listing lag or a
+    // transport error just after the run completes) is retried a bounded number
+    // of times, then reported as the same slug as any other evidence read.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        download(
+          "gh",
+          [
+            "run",
+            "download",
+            String(runId),
+            "--repo",
+            evidenceRepo,
+            "--name",
+            name,
+            "--dir",
+            dir,
+          ],
+          {
+            env,
+            stdio: ["ignore", "pipe", "pipe"],
+          },
+        );
+        break;
+      } catch {
+        if (attempt >= 3) throw new Error("release-evidence-unavailable");
+        await rm(dir, { recursive: true, force: true });
+        await mkdir(dir, { recursive: true });
+        await wait(10000);
+      }
+    }
     return JSON.parse(await readFile(join(dir, filename), "utf8"));
   } finally {
     await rm(dir, { recursive: true, force: true });
