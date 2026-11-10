@@ -23,6 +23,7 @@ import {
   SEARCH_NAVIGATION_KEY,
   writeNavigationViewKeys,
 } from "./navigation-views";
+import { startupTiming } from "../observability/startup-timing";
 
 import type { TaskView, TaskViewDocument } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
@@ -122,6 +123,9 @@ export function useNavigationViews(): {
         });
         stage = "discovery";
         const readStarted = performance.now();
+        // The first published discovery of this start, as a User Timing measure.
+        const endStartupDiscovery =
+          startupTiming(repository)?.begin("view_discovery");
         let providerDocuments: TaskViewDocument[];
         try {
           // Discovery is read-only. Setup and explicit Create view own writes;
@@ -133,6 +137,7 @@ export function useNavigationViews(): {
         viewCount = flattenViewDocuments(providerDocuments).length;
         outcome = viewCount ? "ok" : "empty";
         if (request !== sequence.value) return;
+        endStartupDiscovery?.();
         setCatalog(
           resolveNavigationViewCatalog(info, providerDocuments, false)!,
         );
