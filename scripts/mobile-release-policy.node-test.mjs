@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   artifactJson,
   assertLinesOpen,
+  storeLine,
   latestExactGreen,
   qualifyChecks,
   requiredChecks,
@@ -307,4 +308,50 @@ test("artifact reads retry a transient download, then fail with a bounded slug",
     { message: "release-evidence-unavailable" },
   );
   assert.equal(calls, 3);
+});
+
+test("a store-line read tolerates a just-dispatched run that is briefly unreadable", async () => {
+  const run = {
+    path: ".github/workflows/tasknotes-store-line.yml",
+    head_branch: "main",
+    event: "workflow_dispatch",
+    run_attempt: 1,
+    status: "completed",
+    conclusion: "success",
+  };
+  const make = (failures) => {
+    let reads = 0;
+    const transport = (path) => {
+      if (path.endsWith("/dispatches")) return { workflow_run_id: 7 };
+      if (++reads <= failures) throw new Error("release-evidence-unavailable");
+      return run;
+    };
+    return { transport, reads: () => reads };
+  };
+  const readArtifact = async () => ({
+    app: LINES.android,
+    stopped: false,
+    app_stopped: false,
+  });
+  const wait = async () => {};
+  const flaky = make(2);
+  assert.deepEqual(
+    await storeLine("android", "status", undefined, {
+      transport: flaky.transport,
+      readArtifact,
+      wait,
+    }),
+    { app: LINES.android, stopped: false, app_stopped: false },
+  );
+  assert.equal(flaky.reads(), 3);
+  const down = make(Infinity);
+  await assert.rejects(
+    storeLine("android", "status", undefined, {
+      transport: down.transport,
+      readArtifact,
+      wait,
+    }),
+    { message: "release-evidence-unavailable" },
+  );
+  assert.equal(down.reads(), 8);
 });

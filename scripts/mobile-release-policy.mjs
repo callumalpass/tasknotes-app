@@ -147,12 +147,17 @@ export async function storeLine(
   platform,
   operation = "status",
   reason = "app-outcome-unknown",
+  {
+    transport = gh,
+    readArtifact = artifactJson,
+    wait = (delay) => new Promise((done) => setTimeout(done, delay)),
+  } = {},
 ) {
   requirePolicy(
     LINES[platform] && ["status", "stop"].includes(operation),
     "invalid-store-line",
   );
-  const result = gh(
+  const result = transport(
     `repos/${OPS}/actions/workflows/tasknotes-store-line.yml/dispatches`,
     {
       body: {
@@ -172,8 +177,19 @@ export async function storeLine(
     "store-line-dispatch-unknown",
   );
   const id = result.workflow_run_id;
+  let consecutiveReadFailures = 0;
   for (let attempt = 0; attempt < 60; attempt++) {
-    const run = gh(`repos/${OPS}/actions/runs/${id}`, {}, true);
+    // A run returned by the dispatch can be briefly unreadable; reading it is
+    // safe to repeat, so only a persistent read failure refuses.
+    let run;
+    try {
+      run = transport(`repos/${OPS}/actions/runs/${id}`, {}, true);
+    } catch (error) {
+      if (++consecutiveReadFailures >= 8) throw error;
+      await wait(5000);
+      continue;
+    }
+    consecutiveReadFailures = 0;
     requirePolicy(
       run.path === ".github/workflows/tasknotes-store-line.yml" &&
         run.head_branch === "main" &&
@@ -183,7 +199,7 @@ export async function storeLine(
     );
     if (run.status === "completed") {
       requirePolicy(run.conclusion === "success", "store-line-read-failed");
-      const state = await artifactJson(
+      const state = await readArtifact(
         id,
         "tasknotes-store-line",
         "store-line.json",
@@ -198,7 +214,7 @@ export async function storeLine(
       );
       return state;
     }
-    await new Promise((done) => setTimeout(done, 5000));
+    await wait(5000);
   }
   throw new Error("store-line-outcome-unknown");
 }
