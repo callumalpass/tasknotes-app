@@ -23,6 +23,10 @@ import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
 import { runningTimers } from "../domain/running-timers";
 import {
+  patchTaskTypeVocabulary,
+  vocabularyInUse,
+} from "../domain/task-type-vocabulary";
+import {
   findOccurrenceParent,
   occurrenceRecordId,
 } from "../domain/task-occurrence";
@@ -928,8 +932,26 @@ export class DemoTaskRepository implements TaskRepository {
       patch,
       this.model.configuration(),
     );
+    const vocabulary = patch.vocabulary;
+    if (vocabulary) {
+      const current = this.model.configuration();
+      const inUse = vocabularyInUse(
+        this.tasks.values(),
+        {
+          statuses: current.statuses.map(({ value }) => value),
+          priorities: current.priorities.map(({ value }) => value),
+        },
+        vocabulary,
+      );
+      if (inUse) throw inUse;
+    }
     const modelDefinition = patchTaskNotesMdbaseTypeSettings(
-      this.modelDefinition,
+      vocabulary
+        ? patchTaskTypeVocabulary(this.modelDefinition, vocabulary, {
+            status: split.type.defaultStatus,
+            priority: split.type.defaultPriority,
+          })
+        : this.modelDefinition,
       split.type,
     );
     if (Object.keys(split.app).length) {

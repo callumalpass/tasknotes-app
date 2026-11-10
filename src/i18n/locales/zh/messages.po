@@ -68,10 +68,20 @@ msgstr "· 正在打开"
 msgid "” was saved…"
 msgstr "” 已保存…"
 
+#. placeholder {0}: problem.key
+#: src/components/task-model-settings.tsx
+msgid "“{0}” can’t be used for a custom field. Try another name."
+msgstr "“{0}”不能用于自定义字段。请换一个名称。"
+
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}”由计算得出，无法接收移入的任务。"
+
+#. placeholder {0}: problem.value
+#: src/components/task-model-settings.tsx
+msgid "“{0}” is used twice. Rename one of them."
+msgstr "“{0}”使用了两次。请重命名其中一个。"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
@@ -131,6 +141,16 @@ msgstr "{0, plural, other {# 个未完成}}"
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {有 # 个任务无法更新。请打开查看后再试。}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the priority “{name}”. Give it another priority, then remove this one.} other {# tasks still have the priority “{name}”. Give them another priority, then remove this one.}}"
+msgstr "{0, plural, other {仍有 # 个任务的优先级为“{name}”。请先为它们设置其他优先级，再移除此优先级。}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the status “{name}”. Move it to another status, then remove this one.} other {# tasks still have the status “{name}”. Move them to another status, then remove this one.}}"
+msgstr "{0, plural, other {仍有 # 个任务的状态为“{name}”。请先将它们改为其他状态，再移除此状态。}}"
 
 #. placeholder {0}: updates.length
 #: src/app/views-screen.tsx
@@ -826,6 +846,10 @@ msgstr "添加上下文…"
 msgid "Add details"
 msgstr "添加详情"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add field"
+msgstr "添加字段"
+
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
 msgstr "添加公式"
@@ -842,6 +866,10 @@ msgstr "添加备注"
 msgid "Add or remove a tag on selected tasks"
 msgstr "为所选任务添加或移除标签"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add priority"
+msgstr "添加优先级"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "添加投影"
@@ -854,6 +882,10 @@ msgstr "添加提醒"
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
 msgstr "添加初始视图"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add status"
+msgstr "添加状态"
 
 #: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
@@ -1376,6 +1408,10 @@ msgstr "选择已提交，但可能仍在等待同步；请检查已确认、待
 msgid "Choose"
 msgstr "选择"
 
+#: src/components/task-model-settings.tsx
+msgid "Choose a default that is still in the list."
+msgstr "请选择仍在列表中的默认值。"
+
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
 msgstr "选择其他集合"
@@ -1391,6 +1427,10 @@ msgstr "选择属性"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "选择值"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Choose another default before removing this one."
+msgstr "移除前请先选择其他默认值。"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1602,6 +1642,10 @@ msgstr "集合不可用"
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
 msgstr "集合不可用。正在显示之前加载的任务；无法保存更改。"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Color for {name}"
+msgstr "{name}的颜色"
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
@@ -1943,6 +1987,10 @@ msgstr "无法撤销。请重试。"
 msgid "Count the interval from when you finish the task."
 msgstr "从完成任务时开始计算重复间隔。"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Counts as done"
+msgstr "视为已完成"
+
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2006,6 +2054,10 @@ msgstr "当前笔记"
 msgid "current scratchpad"
 msgstr "当前随手记"
 
+#: src/components/task-model-settings.tsx
+msgid "Custom fields"
+msgstr "自定义字段"
+
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
 msgstr "自定义筛选器"
@@ -2021,6 +2073,7 @@ msgstr "深色"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
 msgstr "日期"
@@ -2076,6 +2129,10 @@ msgstr "天"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "距今天数"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Default"
+msgstr "默认"
 
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
@@ -2577,6 +2634,14 @@ msgstr "外部应用"
 msgid "Extra context for the task"
 msgstr "任务的补充上下文"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
+msgstr "保存在每个任务文件中的额外属性。在此移除字段不会删除文件中已有的值。"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Field name"
+msgstr "字段名称"
+
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
@@ -2756,9 +2821,21 @@ msgstr "未来范围"
 msgid "Gap"
 msgstr "间隔"
 
+#: src/components/task-model-settings.tsx
+msgid "Give every custom field a name."
+msgstr "请为每个自定义字段命名。"
+
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Give every occurrence this time"
 msgstr "为每个重复项设置此时间"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every priority a name."
+msgstr "请为每个优先级命名。"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every status a name."
+msgstr "请为每个状态命名。"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
@@ -3015,6 +3092,18 @@ msgstr "继续添加任务"
 msgid "Keep as note"
 msgstr "保留为笔记"
 
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one priority."
+msgstr "请至少保留一个优先级。"
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that counts as done."
+msgstr "请至少保留一个视为已完成的状态。"
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that does not count as done."
+msgstr "请至少保留一个不视为已完成的状态。"
+
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "如果想将你的编辑保留为文件，请改为同时保留两者。"
@@ -3159,8 +3248,13 @@ msgid "Links and time tracking"
 msgstr "链接和时间跟踪"
 
 #: src/app/view-editor-form.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "List"
 msgstr "列表"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Listed from lowest to highest."
+msgstr "按从低到高排列。"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
@@ -3444,6 +3538,14 @@ msgstr "将 {label} 下移"
 msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} down"
+msgstr "下移{name}"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} up"
+msgstr "上移{name}"
+
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "全部移至今天"
@@ -3455,6 +3557,10 @@ msgstr "将已归档的任务文件移至文件夹"
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
 msgstr "将日期延后一天"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move down"
+msgstr "下移"
 
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
@@ -3477,6 +3583,10 @@ msgstr "将所选任务移至项目"
 #: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "移至项目"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move up"
+msgstr "上移"
 
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
@@ -3921,6 +4031,10 @@ msgstr "在固定时间或相对于此任务的时间发送通知。"
 msgid "Now"
 msgstr "现在"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Number"
+msgstr "数字"
+
 #: src/app/task-screen.tsx
 msgid "Occurrence"
 msgstr "重复项"
@@ -4231,6 +4345,10 @@ msgstr "之前加载的结果可能已过期。"
 msgid "Primary"
 msgstr "主要"
 
+#: src/components/task-model-settings.tsx
+msgid "Priorities"
+msgstr "优先级"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
@@ -4247,6 +4365,10 @@ msgstr "优先级"
 #: src/app/bulk-task-actions.tsx
 msgid "Priority for selected tasks"
 msgstr "所选任务的优先级"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Priority name"
+msgstr "优先级名称"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
@@ -4510,6 +4632,7 @@ msgstr "提醒"
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Remove"
 msgstr "移除"
 
@@ -4525,6 +4648,10 @@ msgstr "移除 {0}"
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
 msgstr "移除 {label}"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Remove {name}"
+msgstr "移除{name}"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
@@ -5255,6 +5382,10 @@ msgstr "显示在导航中"
 msgid "Shown in this order below each item."
 msgstr "按此顺序显示在各项目下方。"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Shown in this order wherever a status is chosen. At least one must count as done."
+msgstr "在选择状态的地方按此顺序显示。至少要有一个视为已完成。"
+
 #: src/app/task-calendar-view.tsx
 msgid "Sign in to Google Calendar in Settings to see events."
 msgstr "请在设置中登录 Google 日历以查看活动。"
@@ -5378,6 +5509,10 @@ msgstr "状态"
 msgid "Status for selected tasks"
 msgstr "所选任务的状态"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Status name"
+msgstr "状态名称"
+
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
 msgstr "状态、优先级和关系"
@@ -5386,6 +5521,10 @@ msgstr "状态、优先级和关系"
 #: src/components/task-capture.tsx
 msgid "Status: {0}"
 msgstr "状态：{0}"
+
+#: src/components/task-model-settings.tsx
+msgid "Statuses"
+msgstr "状态"
 
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
@@ -5671,6 +5810,10 @@ msgstr "Templates/Occurrence.md"
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Text"
+msgstr "文本"
 
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
@@ -6125,6 +6268,10 @@ msgstr "在任务标题中输入 {example}。"
 msgid "Type a date"
 msgstr "输入日期"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Type of {name}"
+msgstr "{name}的类型"
+
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "未分配"
@@ -6425,6 +6572,10 @@ msgstr "每年"
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "是"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Yes or no"
+msgstr "是或否"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
