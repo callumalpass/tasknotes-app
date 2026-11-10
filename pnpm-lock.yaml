@@ -84,8 +84,8 @@ importers:
         specifier: 0.1.10
         version: 0.1.10(react@19.2.8)
       '@tasknotes/model':
-        specifier: file:vendor/tasknotes-model-0.3.0-rc.21-08f2c357.tgz
-        version: file:vendor/tasknotes-model-0.3.0-rc.21-08f2c357.tgz
+        specifier: file:vendor/tasknotes-model-0.3.0-rc.21-4984a938.tgz
+        version: file:vendor/tasknotes-model-0.3.0-rc.21-4984a938.tgz
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1264,8 +1264,8 @@ packages:
       react:
         optional: true
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.21-08f2c357.tgz':
-    resolution: {integrity: sha512-qZNukGM9Ef8d6BpUBiEaV5R5WRJxzQ3xicjVxiJjH7+3fObiljRuMh3VCOCQuLeixzgIx8kjoZMGftcoK2Zfag==, tarball: file:vendor/tasknotes-model-0.3.0-rc.21-08f2c357.tgz}
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.21-4984a938.tgz':
+    resolution: {integrity: sha512-AYfIqaCeq0tlK3Xhavf43HEhFnVS2bPiFdULkur538xtpBH0wDWj7SwDt1y0trl11811c5dNJ6xUA7HXgjcIOQ==, tarball: file:vendor/tasknotes-model-0.3.0-rc.21-4984a938.tgz}
     version: 0.3.0-rc.21
 
   '@testing-library/dom@10.4.1':
@@ -5477,7 +5477,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.21-08f2c357.tgz':
+  '@tasknotes/model@file:vendor/tasknotes-model-0.3.0-rc.21-4984a938.tgz':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.0
