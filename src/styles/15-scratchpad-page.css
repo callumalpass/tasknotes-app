@@ -28,6 +28,7 @@
 /*
  * The heading sits where every view's heading sits and stays there while the
  * feed scrolls under it. It lives inside the feed so both share one column.
+ * The page is for writing, so its name is a quiet label and the note leads.
  */
 .scratchpad-stream-header {
   position: sticky;
@@ -46,9 +47,10 @@
 
 .scratchpad-stream-header h1 {
   min-width: 0;
-  font-size: var(--type-page);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  font-weight: 600;
+  letter-spacing: 0;
   line-height: 44px;
 }
 

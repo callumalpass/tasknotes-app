@@ -603,6 +603,7 @@ export class NextTaskRepository implements TaskRepository {
     for (;;) {
       signal.throwIfAborted();
       if (this.changeWindow.unsettled) await this.changeWindow.quiet(signal);
+      const generation = this.dataRevision;
       try {
         const result = await read();
         signal.throwIfAborted();
@@ -620,8 +621,11 @@ export class NextTaskRepository implements TaskRepository {
         )
           throw reason;
         // A currentness refusal is a retired READ, not a failed collection.
-        // Also bound pacing when no local change event accompanied the refusal.
-        await waitForChangeWindow(250, signal);
+        // When a local change event retired it, the new generation already
+        // exists: reread at once (a coalesced native change still waits for
+        // its quiet window above). Pace only a refusal no local event explains.
+        if (this.dataRevision === generation)
+          await waitForChangeWindow(250, signal);
       }
     }
   }
