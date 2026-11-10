@@ -833,6 +833,10 @@ msgstr "Aggiungi immagine"
 msgid "Add notes"
 msgstr "Aggiungi note"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Add or remove a tag on selected tasks"
+msgstr "Aggiungi o rimuovi un tag dalle attività selezionate"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "Aggiungi proiezione"
@@ -850,6 +854,10 @@ msgstr "Aggiungi viste iniziali"
 #: src/components/task-actions.tsx
 msgid "Add subtask"
 msgstr "Aggiungi attività secondaria"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Add tag"
+msgstr "Aggiungi tag"
 
 #: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
@@ -896,6 +904,10 @@ msgstr "Aggiungi il lavoro da svolgere prima di questa attività."
 #: src/app/views/view-catalog.tsx
 msgid "Added"
 msgstr "Aggiunta"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Added tag {value} to {tasks}"
+msgstr "Tag {value} aggiunto: {tasks}"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
@@ -1235,6 +1247,7 @@ msgstr "Indicatori del calendario"
 msgid "Can I change collections later?"
 msgstr "Posso cambiare raccolta in seguito?"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -3561,6 +3574,14 @@ msgstr "Nuova password di recupero"
 msgid "New subtask"
 msgstr "Nuova attività secondaria"
 
+#: src/app/bulk-task-actions.tsx
+msgid "New tag"
+msgstr "Nuovo tag"
+
+#: src/app/bulk-task-actions.tsx
+msgid "New tag…"
+msgstr "Nuovo tag…"
+
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4485,6 +4506,10 @@ msgstr "Rimuovi la condizione"
 msgid "Remove from Scratchpad"
 msgstr "Rimuovi dal blocco appunti"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Remove from selected tasks"
+msgstr "Rimuovi dalle attività selezionate"
+
 #: src/components/expression-builder.tsx
 msgid "Remove group"
 msgstr "Rimuovi il gruppo"
@@ -4509,6 +4534,10 @@ msgstr "Progetti rimossi: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed scheduled dates from {tasks}"
 msgstr "Date pianificate rimosse: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed tag {value} from {tasks}"
+msgstr "Tag {value} rimosso: {tasks}"
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
@@ -4627,6 +4656,14 @@ msgstr "Priorità ripristinate: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Restored projects for {tasks}"
 msgstr "Progetti ripristinati: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored statuses for {tasks}"
+msgstr "Stati ripristinati: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored tags for {tasks}"
+msgstr "Tag ripristinati: {tasks}"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -5069,6 +5106,10 @@ msgstr "Priorità {value} impostata: {tasks}"
 msgid "Set status"
 msgstr "Imposta stato"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Set status to {value} for {tasks}"
+msgstr "Stato {value} impostato: {tasks}"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "Configura il recupero"
@@ -5277,6 +5318,7 @@ msgstr "Avvio in corso…"
 msgid "Starts"
 msgstr "Inizia"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5287,6 +5329,10 @@ msgstr "Inizia"
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "Stato"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Status for selected tasks"
+msgstr "Stato delle attività selezionate"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
@@ -5371,10 +5417,15 @@ msgstr "Sincronizzazione in corso…"
 msgid "System"
 msgstr "Sistema"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Tag actions"
+msgstr "Azioni dei tag"
+
 #: src/app/search-match-context.ts
 msgid "tags"
 msgstr "tag"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts

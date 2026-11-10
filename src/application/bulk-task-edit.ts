@@ -4,7 +4,9 @@ import type { Task, TaskSummary, UpdateTaskInput } from "../domain/task";
 export type BulkTaskChange =
   | { kind: "complete" }
   | { kind: "schedule"; date: string | null; moveDeadlines?: boolean }
+  | { kind: "status"; value: string }
   | { kind: "priority"; value: string }
+  | { kind: "tag"; value: string; remove: boolean }
   | { kind: "project"; value: string }
   | { kind: "archive" };
 export interface BulkEditReceipt {
@@ -93,6 +95,14 @@ function rescheduleChange(
   };
 }
 
+/** A task already in the requested state is left alone: no write, no Undo. */
+export function taskNeedsChange(task: TaskSummary, change: BulkTaskChange) {
+  if (change.kind === "status") return task.status !== change.value;
+  if (change.kind === "tag")
+    return task.tags.includes(change.value) === change.remove;
+  return true;
+}
+
 export function planTaskChange(task: TaskSummary, change: BulkTaskChange) {
   switch (change.kind) {
     case "complete":
@@ -103,6 +113,20 @@ export function planTaskChange(task: TaskSummary, change: BulkTaskChange) {
     case "schedule":
       return {
         ...rescheduleChange(task, change.date, change.moveDeadlines),
+      };
+    case "status":
+      return {
+        input: { status: change.value },
+        undo: { status: task.status },
+      };
+    case "tag":
+      return {
+        input: {
+          tags: change.remove
+            ? task.tags.filter((tag) => tag !== change.value)
+            : [...task.tags, change.value],
+        },
+        undo: { tags: [...task.tags] },
       };
     case "priority":
       return {

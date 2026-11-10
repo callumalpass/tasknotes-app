@@ -159,6 +159,99 @@ it("announces only accepted rows, names failures and keeps them selected", async
   expect(store.selectedTasks.map((task) => task.id)).toEqual(["b"]);
   expect(fixture.updateTask).toHaveBeenCalledTimes(2);
 });
+it("sets one status on the selection and skips tasks already there", async () => {
+  const { store, tasks } = setup();
+  tasks[1].status = "in-progress";
+  fixture.updateTask.mockImplementation(
+    async (id: string, input: UpdateTaskInput) =>
+      ({ ...tasks[0], id, ...input, revision: 2 }) as Task,
+  );
+  render(<BulkTaskActions store={store} navigationKey="today" />);
+  fireEvent.click(
+    screen.getByRole("combobox", { name: "Status for selected tasks" }),
+  );
+  fireEvent.click(await screen.findByRole("option", { name: "In progress" }));
+  await waitFor(() => expect(store.busy).toBe(false));
+  expect(fixture.updateTask).toHaveBeenCalledTimes(1);
+  expect(fixture.updateTask).toHaveBeenCalledWith("a", {
+    status: "in-progress",
+  });
+  expect(
+    screen.getByText("Set status to In progress for 1 task"),
+  ).toBeVisible();
+  expect(store.count).toBe(0);
+});
+it("adds a tag to tasks missing it and removes one every task carries", async () => {
+  const { store, tasks } = setup();
+  tasks[0].tags = ["task", "home", "errand"];
+  tasks[1].tags = ["task", "home"];
+  fixture.completeField.mockResolvedValue([
+    { value: "work", label: "work" },
+    { value: "task", label: "task" },
+    { value: "archived", label: "archived" },
+  ] as never);
+  fixture.updateTask.mockImplementation(
+    async (id: string, input: UpdateTaskInput) =>
+      ({ ...tasks[0], id, ...input, revision: 2 }) as Task,
+  );
+  const view = render(<BulkTaskActions store={store} navigationKey="today" />);
+  const tagMenu = () =>
+    screen.getByRole("combobox", {
+      name: "Add or remove a tag on selected tasks",
+    });
+  fireEvent.click(tagMenu());
+  expect(await screen.findByRole("option", { name: /work/ })).toBeVisible();
+  expect(screen.getByRole("option", { name: /home/ })).toHaveTextContent(
+    "Remove from selected tasks",
+  );
+  // The tags that identify and archive tasks are never offered as labels.
+  expect(screen.queryByRole("option", { name: /^task/ })).toBeNull();
+  expect(screen.queryByRole("option", { name: /archived/ })).toBeNull();
+  fireEvent.click(screen.getByRole("option", { name: /errand/ }));
+  await waitFor(() => expect(store.busy).toBe(false));
+  expect(fixture.updateTask).toHaveBeenCalledTimes(1);
+  expect(fixture.updateTask).toHaveBeenCalledWith("b", {
+    tags: ["task", "home", "errand"],
+  });
+  expect(screen.getByText("Added tag errand to 1 task")).toBeVisible();
+
+  view.unmount();
+  fixture.updateTask.mockClear();
+  store.all();
+  render(<BulkTaskActions store={store} navigationKey="today" />);
+  fireEvent.click(tagMenu());
+  fireEvent.click(await screen.findByRole("option", { name: /home/ }));
+  await waitFor(() => expect(store.busy).toBe(false));
+  expect(fixture.updateTask).toHaveBeenCalledWith("a", {
+    tags: ["task", "errand"],
+  });
+  expect(fixture.updateTask).toHaveBeenCalledWith("b", { tags: ["task"] });
+  expect(screen.getByText("Removed tag home from 2 tasks")).toBeVisible();
+});
+it("adds a newly named tag without its hash mark", async () => {
+  const { store, tasks } = setup();
+  fixture.updateTask.mockImplementation(
+    async (id: string, input: UpdateTaskInput) =>
+      ({ ...tasks[0], id, ...input, revision: 2 }) as Task,
+  );
+  render(<BulkTaskActions store={store} navigationKey="today" />);
+  fireEvent.click(
+    screen.getByRole("combobox", {
+      name: "Add or remove a tag on selected tasks",
+    }),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "New tag…" }));
+  const input = screen.getByRole("textbox", { name: "New tag" });
+  expect(screen.getByRole("button", { name: "Add tag" })).toBeDisabled();
+  fireEvent.change(input, { target: { value: "archived" } });
+  expect(screen.getByRole("button", { name: "Add tag" })).toBeDisabled();
+  fireEvent.change(input, { target: { value: " #waiting " } });
+  fireEvent.click(screen.getByRole("button", { name: "Add tag" }));
+  await waitFor(() => expect(store.busy).toBe(false));
+  expect(fixture.updateTask).toHaveBeenCalledWith("a", { tags: ["waiting"] });
+  expect(fixture.updateTask).toHaveBeenCalledWith("b", { tags: ["waiting"] });
+  expect(screen.queryByRole("textbox", { name: "New tag" })).toBeNull();
+});
 it("never offers a success notice when all writes fail", async () => {
   const { store } = setup();
   fixture.updateTask.mockRejectedValue(new Error("outcome unknown"));
