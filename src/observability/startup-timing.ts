@@ -75,15 +75,52 @@ export class StartupTiming {
       return;
     this.logged = true;
     try {
+      const mdbase = sdkStartupDurations();
       console.debug(
         "[TaskNotes startup timing ms]",
-        JSON.stringify(this.durations),
+        JSON.stringify(mdbase ? { ...this.durations, mdbase } : this.durations),
       );
     } catch {
       /* Logging must not affect rendering. */
     }
   }
 }
+const sdkMeasure = /^mdbase:startup:([a-z_]{1,32}(?::[a-z_]{1,32})?)$/;
+
+/** Measures up to here went into an earlier report. The page's measures
+ * outlive a collection, so a later collection's report would repeat them. */
+let sdkReportedUntil = -Infinity;
+
+/** The SDK's own startup stages, which it records as User Timing measures
+ * named `mdbase:startup:<stage>` with fixed labels. Empty before an SDK that
+ * records them. */
+function sdkStartupDurations(): Record<string, number> | undefined {
+  const durations: Record<string, number> = {};
+  let latest = sdkReportedUntil;
+  try {
+    for (const entry of performance.getEntriesByType("measure")) {
+      const stage = sdkMeasure.exec(entry.name)?.[1];
+      const end = entry.startTime + entry.duration;
+      if (
+        stage === undefined ||
+        !Number.isFinite(end) ||
+        end <= sdkReportedUntil ||
+        entry.duration < 0 ||
+        entry.duration > 600_000
+      )
+        continue;
+      latest = Math.max(latest, end);
+      // A stage entered twice (a phase revisited) reports its whole time.
+      durations[stage] =
+        Math.round(((durations[stage] ?? 0) + entry.duration) * 10) / 10;
+    }
+  } catch {
+    return undefined;
+  }
+  sdkReportedUntil = latest;
+  return Object.keys(durations).length ? durations : undefined;
+}
+
 export function registerStartupTiming(repository: object, seed?: unknown) {
   const trace = new StartupTiming(seed);
   traces.set(repository, trace);

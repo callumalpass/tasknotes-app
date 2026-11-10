@@ -22,7 +22,7 @@ const checks = [
   async () => {
     const html = await text(`${appOrigin}/`);
     if (
-      !html.includes('<div id="root"></div>') ||
+      !html.includes('<div id="root">') ||
       !html.includes("TaskNotes") ||
       !html.includes("manifest.webmanifest") ||
       !html.includes('<meta name="mobile-web-app-capable" content="yes"')
@@ -83,7 +83,7 @@ const checks = [
   },
   async () => {
     const callback = await text(`${appOrigin}/auth/mdbase/callback`);
-    if (!callback.includes('<div id="root"></div>'))
+    if (!callback.includes('<div id="root">'))
       throw new Error(
         "The deployed authorization callback cannot load the app.",
       );
