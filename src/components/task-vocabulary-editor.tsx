@@ -3,12 +3,12 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 
 import {
-  customFieldKey,
-  vocabularyValue,
-  type TaskCustomFieldEdit,
-  type TaskPriorityEdit,
-  type TaskStatusEdit,
-} from "../domain/task-type-vocabulary";
+  taskNotesUserFieldKey,
+  taskNotesVocabularyValue,
+  type TaskNotesPriorityEdit,
+  type TaskNotesStatusEdit,
+  type TaskNotesUserFieldEdit,
+} from "@tasknotes/model/mdbase";
 import { TaskNotesSelect } from "./tasknotes-controls";
 
 import type { DraftEntry } from "./task-model-draft";
@@ -110,7 +110,7 @@ function OptionRows<Entry extends Named>({
                     return;
                   }
                   // A new entry's stored value follows its name until saved.
-                  const value = vocabularyValue(
+                  const value = taskNotesVocabularyValue(
                     label,
                     entries
                       .filter((candidate) => candidate.id !== entry.id)
@@ -214,9 +214,9 @@ export function StatusListEditor({
   onChange,
   onDefault,
 }: {
-  statuses: DraftEntry<TaskStatusEdit>[];
+  statuses: DraftEntry<TaskNotesStatusEdit>[];
   defaultStatus: string;
-  onChange(statuses: DraftEntry<TaskStatusEdit>[]): void;
+  onChange(statuses: DraftEntry<TaskNotesStatusEdit>[]): void;
   onDefault(value: string): void;
 }) {
   const { t } = useLingui();
@@ -256,7 +256,7 @@ export function StatusListEditor({
             ...statuses,
             {
               id: newId(),
-              value: vocabularyValue(
+              value: taskNotesVocabularyValue(
                 "",
                 statuses.map(({ value }) => value),
               ),
@@ -280,9 +280,9 @@ export function PriorityListEditor({
   onChange,
   onDefault,
 }: {
-  priorities: DraftEntry<TaskPriorityEdit>[];
+  priorities: DraftEntry<TaskNotesPriorityEdit>[];
   defaultPriority: string;
-  onChange(priorities: DraftEntry<TaskPriorityEdit>[]): void;
+  onChange(priorities: DraftEntry<TaskNotesPriorityEdit>[]): void;
   onDefault(value: string): void;
 }) {
   const { t } = useLingui();
@@ -305,7 +305,7 @@ export function PriorityListEditor({
             ...priorities,
             {
               id: newId(),
-              value: vocabularyValue(
+              value: taskNotesVocabularyValue(
                 "",
                 priorities.map(({ value }) => value),
               ),
@@ -327,10 +327,10 @@ export function CustomFieldListEditor({
   reservedKeys,
   onChange,
 }: {
-  fields: DraftEntry<TaskCustomFieldEdit>[];
+  fields: DraftEntry<TaskNotesUserFieldEdit>[];
   /** Property names a new field may not take. */
   reservedKeys: readonly string[];
-  onChange(fields: DraftEntry<TaskCustomFieldEdit>[]): void;
+  onChange(fields: DraftEntry<TaskNotesUserFieldEdit>[]): void;
 }) {
   const { t } = useLingui();
   const root = useRef<HTMLDivElement>(null);
@@ -357,7 +357,7 @@ export function CustomFieldListEditor({
         <ul className="vocabulary-list">
           {fields.map((field) => {
             const name = field.displayName.trim() || t`Field name`;
-            const change = (patch: Partial<TaskCustomFieldEdit>) =>
+            const change = (patch: Partial<TaskNotesUserFieldEdit>) =>
               onChange(
                 fields.map((candidate) =>
                   candidate.id === field.id
@@ -378,7 +378,10 @@ export function CustomFieldListEditor({
                         isNew(field)
                           ? {
                               displayName,
-                              key: customFieldKey(displayName, taken(field.id)),
+                              key: taskNotesUserFieldKey(
+                                displayName,
+                                taken(field.id),
+                              ),
                             }
                           : { displayName },
                       );
@@ -427,7 +430,7 @@ export function CustomFieldListEditor({
             ...fields,
             {
               id,
-              key: customFieldKey("", taken(id)),
+              key: taskNotesUserFieldKey("", taken(id)),
               displayName: "",
               type: "text",
             },

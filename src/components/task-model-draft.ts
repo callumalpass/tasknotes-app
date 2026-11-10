@@ -2,10 +2,10 @@ import { useCallback, useSyncExternalStore } from "react";
 
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type {
-  TaskCustomFieldEdit,
-  TaskPriorityEdit,
-  TaskStatusEdit,
-} from "../domain/task-type-vocabulary";
+  TaskNotesPriorityEdit,
+  TaskNotesStatusEdit,
+  TaskNotesUserFieldEdit,
+} from "@tasknotes/model/mdbase";
 
 /**
  * `id` names a row while it is edited. A saved entry's id is its stored
@@ -32,10 +32,10 @@ export interface TaskModelSettingsDraft {
     string,
     { autoArchive: boolean; autoArchiveDelay: number }
   >;
-  statuses: DraftEntry<TaskStatusEdit>[];
+  statuses: DraftEntry<TaskNotesStatusEdit>[];
   /** Lowest first; a priority's weight is its position. */
-  priorities: DraftEntry<TaskPriorityEdit>[];
-  customFields: DraftEntry<TaskCustomFieldEdit>[];
+  priorities: DraftEntry<TaskNotesPriorityEdit>[];
+  customFields: DraftEntry<TaskNotesUserFieldEdit>[];
 }
 
 type DraftPatch = Partial<TaskModelSettingsDraft>;

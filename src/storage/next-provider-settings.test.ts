@@ -3,7 +3,10 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
-import { TaskVocabularyInUseError } from "../domain/task-type-vocabulary";
+import {
+  taskNotesMdbaseTypeDisagreements,
+  TaskNotesVocabularyInUseError,
+} from "@tasknotes/model/mdbase";
 import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
@@ -93,23 +96,21 @@ it("adds a status, a priority and a custom field to the task type", async () => 
   const f = await fixture();
   const current = await vocabulary(f);
   const configuration = await f.repository.updateTaskModelSettings({
-    vocabulary: {
-      statuses: [
-        ...current.statuses,
-        {
-          value: "waiting",
-          label: "Waiting",
-          color: "#aa5500",
-          isCompleted: false,
-        },
-      ],
-      priorities: [
-        ...current.priorities,
-        { value: "urgent", label: "Urgent", color: "#cc0000" },
-      ],
-      customFields: {
-        add: [{ key: "client", displayName: "Client", type: "text" }],
+    statuses: [
+      ...current.statuses,
+      {
+        value: "waiting",
+        label: "Waiting",
+        color: "#aa5500",
+        isCompleted: false,
       },
+    ],
+    priorities: [
+      ...current.priorities,
+      { value: "urgent", label: "Urgent", color: "#cc0000" },
+    ],
+    userFields: {
+      add: [{ key: "client", displayName: "Client", type: "text" }],
     },
   });
   expect(configuration.statuses.at(-1)).toMatchObject({
@@ -158,14 +159,10 @@ it("refuses to remove a status that tasks still hold", async () => {
   const submit = vi.spyOn(f.client, "submit");
   const refusal = await f.repository
     .updateTaskModelSettings({
-      vocabulary: {
-        statuses: current.statuses.filter(
-          ({ value }) => value !== removed.value,
-        ),
-      },
+      statuses: current.statuses.filter(({ value }) => value !== removed.value),
     })
     .catch((reason: unknown) => reason);
-  expect(refusal).toBeInstanceOf(TaskVocabularyInUseError);
+  expect(refusal).toBeInstanceOf(TaskNotesVocabularyInUseError);
   expect(refusal).toMatchObject({
     list: "status",
     value: removed.value,
@@ -183,10 +180,8 @@ it("removes an unused status and keeps the new priority order", async () => {
   )!;
   const reversed = [...current.priorities].reverse();
   const configuration = await f.repository.updateTaskModelSettings({
-    vocabulary: {
-      statuses: current.statuses.filter(({ value }) => value !== removed.value),
-      priorities: reversed,
-    },
+    statuses: current.statuses.filter(({ value }) => value !== removed.value),
+    priorities: reversed,
   });
   expect(configuration.statuses.map(({ value }) => value)).not.toContain(
     removed.value,
@@ -201,4 +196,38 @@ it("removes an unused status and keeps the new priority order", async () => {
   expect(
     (await f.repository.taskConfiguration()).statuses.map(({ value }) => value),
   ).toEqual(configuration.statuses.map(({ value }) => value));
+});
+it("leaves a hand-edited type with one list of statuses when it saves settings", async () => {
+  const f = await fixture();
+  const source = await f.client.resources.get("_types/task.md");
+  const parsed = parseFrontmatter(source.text!);
+  const type = structuredClone(parsed.frontmatter) as {
+    schema: { value: { properties: { status: { enum: string[] } } } };
+  };
+  // Someone allowed a status in the schema and did not describe it.
+  type.schema.value.properties.status.enum = [
+    ...type.schema.value.properties.status.enum,
+    "blocked",
+  ];
+  f.replica.seedResource(
+    "_types/task.md",
+    serializeMarkdownDocument(type, parsed.body),
+  );
+  const seeded = await f.client.resources.get("_types/task.md");
+  expect(
+    taskNotesMdbaseTypeDisagreements(
+      parseFrontmatter(seeded.text!).frontmatter,
+    ),
+  ).not.toEqual([]);
+
+  const { defaults } = await f.repository.taskConfiguration();
+  const configuration = await f.repository.updateTaskModelSettings({
+    defaultPriority: defaults.priority === "high" ? "low" : "high",
+  });
+
+  const saved = parseFrontmatter(
+    (await f.client.resources.get("_types/task.md")).text!,
+  ).frontmatter;
+  expect(taskNotesMdbaseTypeDisagreements(saved)).toEqual([]);
+  expect(configuration.statuses.map(({ value }) => value)).toContain("blocked");
 });

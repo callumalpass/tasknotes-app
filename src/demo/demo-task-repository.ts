@@ -10,6 +10,7 @@ import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import {
   buildTaskNotesMdbaseResources,
   patchTaskNotesMdbaseTypeSettings,
+  taskNotesVocabularyInUse,
 } from "@tasknotes/model/mdbase";
 import {
   buildTaskNotesSettingsPatch,
@@ -22,10 +23,6 @@ import { appendViewPage } from "../application/view-query-session";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
 import { runningTimers } from "../domain/running-timers";
-import {
-  patchTaskTypeVocabulary,
-  vocabularyInUse,
-} from "../domain/task-type-vocabulary";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
@@ -932,26 +929,20 @@ export class DemoTaskRepository implements TaskRepository {
       patch,
       this.model.configuration(),
     );
-    const vocabulary = patch.vocabulary;
-    if (vocabulary) {
+    if (split.type.statuses || split.type.priorities) {
       const current = this.model.configuration();
-      const inUse = vocabularyInUse(
+      const inUse = taskNotesVocabularyInUse(
         this.tasks.values(),
         {
           statuses: current.statuses.map(({ value }) => value),
           priorities: current.priorities.map(({ value }) => value),
         },
-        vocabulary,
+        split.type,
       );
       if (inUse) throw inUse;
     }
     const modelDefinition = patchTaskNotesMdbaseTypeSettings(
-      vocabulary
-        ? patchTaskTypeVocabulary(this.modelDefinition, vocabulary, {
-            status: split.type.defaultStatus,
-            priority: split.type.defaultPriority,
-          })
-        : this.modelDefinition,
+      this.modelDefinition,
       split.type,
     );
     if (Object.keys(split.app).length) {

@@ -9,8 +9,6 @@ import {
 } from "@tasknotes/model/settings";
 
 import type {
-  PriorityConfig,
-  StatusConfig,
   TaskNotesModelConfig,
   UserMappedField,
   UserMappedFieldType,
@@ -18,7 +16,6 @@ import type {
 import type { TaskNotesMdbaseTypeSettingsPatch } from "@tasknotes/model/mdbase";
 
 import { editableFieldSchema } from "./editable-field-schema";
-import type { TaskVocabularyPatch } from "./task-type-vocabulary";
 import { taskNotesImplementationOf } from "./tasknotes-contract";
 
 /**
@@ -44,12 +41,6 @@ export interface TaskModelSettingsPatch extends Omit<
     string,
     { autoArchive?: boolean; autoArchiveDelay?: number }
   >;
-  /**
-   * The statuses, priorities and custom fields themselves. Written to the
-   * task type before the other type settings, so a default saved in the same
-   * step may name a status or priority this adds.
-   */
-  vocabulary?: TaskVocabularyPatch;
 }
 
 export interface TaskModelSettingsAccess {
@@ -134,11 +125,6 @@ export function resolveTaskCollectionConfiguration(
   const properties = record(schema.properties);
   const required = new Set(stringList(schema.required));
   const collectionLinks = record(record(value.collection).links);
-  const statuses = resolveStatuses(base.statuses, record(extension.status));
-  const priorities = resolvePriorities(
-    base.priorities,
-    record(extension.priority),
-  );
   const inferredFields = inferUserFields(
     properties,
     base.fieldMapping,
@@ -156,12 +142,6 @@ export function resolveTaskCollectionConfiguration(
     applyTaskNotesAppSettingsToModelConfig(
       resolveModelConfig({
         ...base,
-        statuses,
-        priorities,
-        occurrences: resolveOccurrences(
-          base.occurrences,
-          record(extension.occurrences),
-        ),
         userFields: [
           ...explicitFields,
           ...inferredFields.filter((field) => !explicitKeys.has(field.key)),
@@ -265,6 +245,12 @@ export function splitTaskModelSettingsPatch(
         }
       : {}),
     ...(patch.occurrences ? { occurrences: patch.occurrences } : {}),
+    // The statuses, priorities and custom fields themselves. The type editor
+    // writes them with the defaults, so a default saved in the same step may
+    // name a status or priority this adds.
+    ...(patch.statuses ? { statuses: patch.statuses } : {}),
+    ...(patch.priorities ? { priorities: patch.priorities } : {}),
+    ...(patch.userFields ? { userFields: patch.userFields } : {}),
   };
   const app: TaskNotesAppSettingsChanges = {};
   const reset = patch.recurrence?.resetCheckboxesOnRecurrence;
@@ -404,99 +390,6 @@ function enumValues(
   return [...new Set([...direct, ...items])].map((value) => ({ value }));
 }
 
-function resolveStatuses(
-  base: StatusConfig[],
-  status: Record<string, unknown>,
-): StatusConfig[] {
-  const completedValues = new Set(stringList(status.completed_values));
-  const skippedValues = new Set(stringList(status.skipped_values));
-  const definitions = objectList(status.definitions);
-  if (!definitions.length && !completedValues.size && !skippedValues.size)
-    return base;
-  const byValue = new Map(
-    definitions.flatMap((definition) => {
-      const value = string(definition.value);
-      return value ? [[value, definition] as const] : [];
-    }),
-  );
-  return base.map((entry, index) => {
-    const definition = byValue.get(entry.value) ?? {};
-    return {
-      ...entry,
-      label: string(definition.label) ?? entry.label,
-      color: string(definition.color) ?? entry.color,
-      icon: string(definition.icon) ?? entry.icon,
-      order: integer(definition.order) ?? entry.order ?? index,
-      isCompleted:
-        boolean(definition.is_completed) ??
-        boolean(definition.isCompleted) ??
-        (completedValues.size ? completedValues.has(entry.value) : undefined) ??
-        entry.isCompleted,
-      isSkipped:
-        boolean(definition.is_skipped) ??
-        boolean(definition.isSkipped) ??
-        (skippedValues.size ? skippedValues.has(entry.value) : undefined) ??
-        entry.isSkipped,
-      // Cycling and auto-archive are app settings: the settings record, then
-      // an earlier binding's definitions (see resolveTaskNotesAppSettings).
-    };
-  });
-}
-
-function resolveOccurrences(
-  base: TaskNotesModelConfig["occurrences"],
-  occurrences: Record<string, unknown>,
-): TaskNotesModelConfig["occurrences"] {
-  const mode =
-    occurrences.default_materialization ?? occurrences.defaultMaterialization;
-  const trigger =
-    occurrences.default_next_trigger ?? occurrences.defaultNextTrigger;
-  return {
-    ...base,
-    defaultMaterialization:
-      mode === "manual" || mode === "on_completion" || mode === "rolling"
-        ? mode
-        : base.defaultMaterialization,
-    defaultNextTrigger:
-      trigger === "completion" || trigger === "completion_or_skip"
-        ? trigger
-        : base.defaultNextTrigger,
-    pastHorizon:
-      string(occurrences.past_horizon) ??
-      string(occurrences.pastHorizon) ??
-      base.pastHorizon,
-    futureHorizon:
-      string(occurrences.future_horizon) ??
-      string(occurrences.futureHorizon) ??
-      base.futureHorizon,
-  };
-}
-
-function resolvePriorities(
-  base: PriorityConfig[],
-  priority: Record<string, unknown>,
-): PriorityConfig[] {
-  const definitions = objectList(priority.definitions);
-  if (!definitions.length) return base;
-  const byValue = new Map(
-    definitions.flatMap((definition) => {
-      const value = string(definition.value);
-      return value ? [[value, definition] as const] : [];
-    }),
-  );
-  return base.map((entry, index) => {
-    const definition = byValue.get(entry.value);
-    if (!definition) return entry;
-    return {
-      ...entry,
-      label: string(definition.label) ?? entry.label,
-      color: string(definition.color) ?? entry.color,
-      icon: string(definition.icon) ?? entry.icon,
-      weight: number(definition.weight) ?? entry.weight ?? index,
-    };
-  });
-}
-
 function inferUserFields(
   properties: Record<string, unknown>,
   fieldMapping: TaskNotesModelConfig["fieldMapping"],
@@ -579,10 +472,6 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function objectList(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.map(record) : [];
-}
-
 function stringList(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === "string")
@@ -595,18 +484,6 @@ function string(value: unknown): string | undefined {
 
 function boolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
-}
-
-function number(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
-}
-
-function integer(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value)
-    ? value
-    : undefined;
 }
 
 function humanize(value: string): string {
