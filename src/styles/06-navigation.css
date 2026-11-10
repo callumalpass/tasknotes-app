@@ -715,22 +715,66 @@
   mix-blend-mode: normal;
 }
 
-::view-transition-old(navigation-rail) {
+:root:not([data-navigation-motion="sidebar"])::view-transition-old(
+    navigation-rail
+  ) {
   display: none;
 }
 
-::view-transition-group(navigation-rail),
+:root:not([data-navigation-motion="sidebar"])::view-transition-group(
+    navigation-rail
+  ),
 ::view-transition-new(navigation-rail) {
   animation: none;
 }
 
-/* Switching views: the old work fades away, the new settles into place. */
+/*
+ * Collapsing or expanding the sidebar: the rail's edge sweeps across while its
+ * contents stay where they are, and the work glides beside it (see
+ * navigation-transition.ts). Neither picture of the rail is stretched.
+ */
+:root[data-navigation-motion="sidebar"]::view-transition-group(
+    navigation-rail
+  ) {
+  overflow: clip;
+  animation-duration: 220ms;
+  animation-timing-function: var(--ease-out);
+}
+
+:root[data-navigation-motion="sidebar"]::view-transition-old(navigation-rail),
+:root[data-navigation-motion="sidebar"]::view-transition-new(navigation-rail) {
+  width: auto;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+
+:root[data-navigation-motion="sidebar"]::view-transition-old(navigation-rail) {
+  animation: none;
+}
+
+:root[data-navigation-motion="sidebar"]::view-transition-new(navigation-rail) {
+  animation: motion-view-fade-in 140ms var(--ease-out) both;
+}
+
+:root[data-navigation-motion="sidebar"]::view-transition-old(root),
+:root[data-navigation-motion="sidebar"]::view-transition-old(task-detail) {
+  display: none;
+}
+
+:root[data-navigation-motion="sidebar"]::view-transition-new(root),
+:root[data-navigation-motion="sidebar"]::view-transition-new(task-detail) {
+  animation: none;
+}
+
+/* Switching views: the old work fades away, the new settles into place. The
+   new work starts once the old is mostly gone, so their text does not overlap. */
 :root[data-navigation-motion="switch"]::view-transition-old(root) {
-  animation: motion-view-out var(--motion-exit) var(--ease-in) both;
+  animation: motion-view-out 90ms var(--ease-in) both;
 }
 
 :root[data-navigation-motion="switch"]::view-transition-new(root) {
-  animation: motion-view-in var(--motion-view) var(--ease-out) both;
+  animation: motion-view-in 170ms var(--ease-out) 50ms both;
 }
 
 ::view-transition-old(bottom-navigation) {

@@ -109,10 +109,12 @@ import {
   SCRATCHPAD_NAVIGATION_KEY,
   SEARCH_NAVIGATION_KEY,
 } from "./navigation-views";
-import { TaskScreen } from "./task-screen";
+import { transitionSidebar } from "./navigation-transition";
+import { TaskScreen, warmMarkdownPreview } from "./task-screen";
 import { useNavigationViews } from "./use-navigation-views";
 import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
+import { warmCalendarView } from "./views/calendar-view-presentation";
 import { CaptureFab } from "../components/capture-fab";
 import { requestRecordWriteReview } from "../components/record-write-status-context";
 import {
@@ -133,12 +135,29 @@ export function AppShell() {
   const projectLinks = useProjectShortcuts();
   const [sidebarCollapsed, setSidebarCollapsed] =
     useState(readSidebarCollapsed);
+  // The note renderer and the calendar load while the app is idle, so the
+  // first task and the first calendar open without a loading state.
+  useEffect(() => {
+    if (import.meta.env.MODE === "test") return;
+    const warm = () => {
+      warmMarkdownPreview();
+      warmCalendarView();
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(warm);
+      return () => window.cancelIdleCallback(handle);
+    }
+    const timer = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
   const toggleSidebar = useCallback(
     () =>
-      setSidebarCollapsed((current) => {
-        saveSidebarCollapsed(!current);
-        return !current;
-      }),
+      transitionSidebar(() =>
+        setSidebarCollapsed((current) => {
+          saveSidebarCollapsed(!current);
+          return !current;
+        }),
+      ),
     [],
   );
   const {

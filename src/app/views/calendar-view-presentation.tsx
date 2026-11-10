@@ -1,16 +1,22 @@
-import { lazy, Suspense } from "react";
+import { Suspense, useState } from "react";
 
 import { LoadingRows } from "../../components/loading";
 import { MiniCalendarView } from "./mini-calendar-view";
+import { preloadable } from "../preloadable";
 
 import type { CalendarPreferences } from "../calendar-preferences";
 import type { CalendarTaskEdit } from "../../domain/calendar-edit";
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewExecution, TaskViewRow } from "../../domain/view";
 
-const TaskCalendarView = lazy(async () => ({
-  default: (await import("../task-calendar-view")).TaskCalendarView,
-}));
+const calendarView = preloadable(
+  async () => (await import("../task-calendar-view")).TaskCalendarView,
+);
+
+/** Fetches the calendar ahead of the first view that shows one. */
+export function warmCalendarView(): void {
+  calendarView.preload();
+}
 
 export function CalendarViewPresentation({
   execution,
@@ -47,6 +53,7 @@ export function CalendarViewPresentation({
   ): Promise<void>;
   movingOverdue?: boolean;
 }) {
+  const [TaskCalendarView] = useState(calendarView.component);
   return execution.view.presentation?.type === "tasknotes.calendar" ? (
     <Suspense fallback={<LoadingRows count={6} />}>
       <TaskCalendarView

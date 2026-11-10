@@ -119,6 +119,7 @@ export function TaskRow({
     setLocalPending(true);
     setLocalError("");
     const completing = !displayedTask.completed;
+    if (completing) quietCompletionHover();
     try {
       const saved = await onToggle(task, occurrence?.date);
       if (completing) {
@@ -1030,4 +1031,21 @@ function defaultTaskDetails(
       rawValue: task.priority,
     });
   return details;
+}
+
+/**
+ * A completed row folds away and the next one slides under a pointer that has
+ * not moved. Its circle stays plain until the pointer does move, so it never
+ * looks half ticked.
+ */
+function quietCompletionHover() {
+  const root = document.documentElement;
+  root.dataset.completionHover = "quiet";
+  const move = (event: PointerEvent) => {
+    // Content moving under a resting pointer can report a move of nothing.
+    if (!event.movementX && !event.movementY) return;
+    window.removeEventListener("pointermove", move);
+    delete root.dataset.completionHover;
+  };
+  window.addEventListener("pointermove", move);
 }
