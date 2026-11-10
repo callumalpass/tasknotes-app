@@ -19,7 +19,16 @@ describe("feedback configuration", () => {
     });
   });
 
-  it.each(["production", "lab", undefined])(
+  it("uses the managed production Worker and its widget on production", () => {
+    expect(
+      feedbackConfiguration({ ...none, environment: "production" }),
+    ).toEqual({
+      endpoint: "https://feedback-api.mdbase.dev/v1/feedback",
+      turnstileSiteKey: "0x4AAAAAAEboz_mLT-taI3H-",
+    });
+  });
+
+  it.each(["lab", undefined])(
     "stays hidden on %s until its origin is approved",
     (environment) => {
       expect(feedbackConfiguration({ ...none, environment })).toEqual({
