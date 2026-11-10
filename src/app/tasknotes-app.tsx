@@ -60,10 +60,13 @@ function LoadedReadyCollection(props: Parameters<ReadyCollection>[0]) {
   useEffect(() => {
     if (state) return;
     let current = true;
-    loadReadyCollection().then(
-      (Component) => current && setState({ Component }),
-      (error: unknown) => current && setState({ error }),
-    );
+    loadReadyCollection()
+      // The fetch that failed may be the early one, begun before this mounted.
+      .catch(() => loadReadyCollection())
+      .then(
+        (Component) => current && setState({ Component }),
+        (error: unknown) => current && setState({ error }),
+      );
     return () => {
       current = false;
     };
@@ -99,8 +102,8 @@ export function TaskNotesApp({
   );
   useMdbaseLifetime(mdbase);
   useEffect(() => {
-    // A failed early fetch is tried again, and reported, when a collection is
-    // ready.
+    // A failed early fetch is tried again when a collection is ready, and
+    // reported if it fails then too.
     void loadReadyCollection().catch(() => undefined);
   }, []);
   const ui = useMemo<CollectionUiOptions>(

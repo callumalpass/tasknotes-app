@@ -51,14 +51,30 @@ it("reports the SDK's startup measures beside its own, by fixed label only", () 
     getEntriesByType: (type: string) =>
       type === "measure"
         ? [
-            { name: "mdbase:startup:registration", duration: 12.34 },
-            { name: "mdbase:startup:opening:checking_setup", duration: 80 },
-            { name: "mdbase:startup:starting", duration: 5 },
-            { name: "mdbase:startup:starting", duration: 7.04 },
-            { name: "mdbase:startup:total", duration: 410.26 },
-            { name: "mdbase:startup:Account 42", duration: 1 },
-            { name: "mdbase:startup:session", duration: Infinity },
-            { name: "tasknotes:startup:1:first_query", duration: 3 },
+            {
+              name: "mdbase:startup:registration",
+              startTime: 1,
+              duration: 12.34,
+            },
+            {
+              name: "mdbase:startup:opening:checking_setup",
+              startTime: 30,
+              duration: 80,
+            },
+            { name: "mdbase:startup:starting", startTime: 14, duration: 5 },
+            { name: "mdbase:startup:starting", startTime: 20, duration: 7.04 },
+            { name: "mdbase:startup:total", startTime: 0, duration: 410.26 },
+            { name: "mdbase:startup:Account 42", startTime: 0, duration: 1 },
+            {
+              name: "mdbase:startup:session",
+              startTime: 0,
+              duration: Infinity,
+            },
+            {
+              name: "tasknotes:startup:1:first_query",
+              startTime: 0,
+              duration: 3,
+            },
           ]
         : [],
   });
@@ -75,6 +91,14 @@ it("reports the SDK's startup measures beside its own, by fixed label only", () 
       total: 410.3,
     },
   });
+  // A later collection on the same page does not report those again.
+  const next = new StartupTiming();
+  next.begin("first_query")();
+  next.begin("first_render")();
+  next.report();
+  expect(JSON.parse(debug.mock.calls[1]![1] as string)).toEqual(
+    next.snapshot(),
+  );
 });
 it("keeps only bounded own host durations, never IDs, errors, invented UI evidence or getters", () => {
   const getter = vi.fn(() => {
