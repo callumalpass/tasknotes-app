@@ -1649,6 +1649,10 @@ msgstr "Completa {0}"
 msgid "Complete occurrence"
 msgstr "Completa ricorrenza"
 
+#: src/components/task-actions.tsx
+msgid "Complete on another date"
+msgstr "Completa in un’altra data"
+
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
 msgstr "Completa o riapri"
@@ -1668,6 +1672,11 @@ msgstr "Completata"
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "“{0}” completata"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}” ({completedOn})"
+msgstr "“{0}” completata ({completedOn})"
 
 #: src/app/bulk-task-feedback.ts
 msgid "Completed {tasks}"
@@ -2331,6 +2340,7 @@ msgstr "scadenza"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -3275,6 +3285,10 @@ msgstr "Collegamento Markdown"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Collegamenti Markdown"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Marks that day’s occurrence as done."
+msgstr "Segna come completata la ricorrenza di quel giorno."
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -4335,6 +4349,10 @@ msgstr "Riconnessione"
 msgid "Reconnecting…"
 msgstr "Riconnessione in corso…"
 
+#: src/components/task-complete-on-panel.tsx
+msgid "Records the day you finished it."
+msgstr "Registra il giorno in cui l’hai completata."
+
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "Recupera l'accesso all'account"
@@ -4904,6 +4922,7 @@ msgstr "pianificata"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -6365,6 +6384,7 @@ msgstr "Sì"
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 msgstr "Sì. Usa «Cambia raccolta» nella sezione Raccolta per aprire un'altra raccolta mdbase. Cambiare raccolta non sposta i record tra le raccolte."
 
+#: src/components/task-complete-on-panel.tsx
 #: src/i18n/presentation.ts
 msgid "Yesterday"
 msgstr "Ieri"

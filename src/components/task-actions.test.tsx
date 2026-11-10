@@ -1,6 +1,13 @@
 import "fake-indexeddb/auto";
 
-import { act, fireEvent, render, screen, waitFor } from "../test/render";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "../test/render";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
@@ -12,6 +19,11 @@ import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskRow } from "./task-row";
 import { TaskActions } from "./task-actions";
 import { clearUndoHistory, onUndoNotice, takeUndo } from "../app/undo-history";
+
+import {
+  TaskCompletionReportContext,
+  type TaskCompletion,
+} from "./task-completion-motion";
 
 import type { Task } from "../domain/task";
 
@@ -287,6 +299,10 @@ describe("TaskActions", () => {
     );
 
     expect(fireEvent.keyDown(menu, { key: "ArrowDown" })).toBe(false);
+    expect(
+      screen.getByRole("menuitem", { name: "Complete on another date" }),
+    ).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
     expect(screen.getByRole("menuitem", { name: "Dates" })).toHaveFocus();
     fireEvent.keyDown(menu, { key: "Home" });
     expect(
@@ -351,6 +367,93 @@ describe("TaskActions", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  function renderReportingRow(report: (completion: TaskCompletion) => void) {
+    render(
+      <RepositoryProvider
+        mutationJournal={new MemoryMutationJournal()}
+        repository={repository}
+      >
+        <TaskCompletionReportContext.Provider value={report}>
+          <TaskRow onOpen={vi.fn()} onToggle={vi.fn()} task={task} />
+        </TaskCompletionReportContext.Provider>
+      </RepositoryProvider>,
+    );
+  }
+
+  it("completes a task as of an earlier day and reports it for Undo", async () => {
+    const yesterday = shiftTaskDate(todayString(), -1);
+    const report = vi.fn();
+    renderReportingRow(report);
+
+    await openMenu();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Complete on another date" }),
+    );
+    const panel = screen.getByRole("dialog", { name: "Menu parent" });
+    expect(
+      within(panel).getByText("Complete on another date", {
+        selector: "strong",
+      }),
+    ).toBeVisible();
+    fireEvent.click(within(panel).getByRole("button", { name: "Yesterday" }));
+
+    await waitFor(async () =>
+      expect(await repository.get(task.id)).toMatchObject({
+        completed: true,
+        completedDate: yesterday,
+      }),
+    );
+    expect(report).toHaveBeenCalledWith({
+      task: expect.objectContaining({ id: task.id }),
+      on: yesterday,
+    });
+  });
+
+  it("ticks a late occurrence of a repeating task and keeps its old dates for Undo", async () => {
+    const late = shiftTaskDate(todayString(), -3);
+    await repository.update(task.id, {
+      recurrence: `DTSTART:${late.replaceAll("-", "")};FREQ=DAILY;INTERVAL=1`,
+    });
+    // Setting the rule moves the plan to the next occurrence; put it back.
+    task = await repository.update(task.id, { scheduled: late });
+    expect(task.scheduled).toBe(late);
+    const report = vi.fn();
+    renderReportingRow(report);
+
+    await openMenu();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Complete on another date" }),
+    );
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Menu parent" })).getByRole(
+        "button",
+        { name: /^Scheduled/ },
+      ),
+    );
+
+    await waitFor(() => expect(report).toHaveBeenCalled());
+    const saved = await repository.get(task.id);
+    expect(saved.completed).toBe(false);
+    expect(saved.completeInstances).toEqual([late]);
+    expect(saved.scheduled).not.toBe(late);
+    expect(report).toHaveBeenCalledWith({
+      task: expect.objectContaining({ id: task.id }),
+      occurrenceDate: late,
+      on: late,
+      advanced: { scheduled: late, due: null },
+    });
+  });
+
+  it("offers no other completion date for a finished one-off task", async () => {
+    task = await repository.toggle(task.id);
+    renderRow();
+    await openMenu();
+    expect(screen.getByRole("menuitem", { name: "Mark open" })).toBeVisible();
+    expect(
+      screen.queryByRole("menuitem", { name: "Complete on another date" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps occurrence actions separate from series-wide changes", async () => {

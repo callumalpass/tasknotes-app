@@ -1649,6 +1649,10 @@ msgstr "{0} を完了"
 msgid "Complete occurrence"
 msgstr "この発生分を完了"
 
+#: src/components/task-actions.tsx
+msgid "Complete on another date"
+msgstr "別の日付で完了"
+
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
 msgstr "完了または再開"
@@ -1668,6 +1672,11 @@ msgstr "完了済み"
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "「{0}」を完了しました"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}” ({completedOn})"
+msgstr "「{0}」を完了しました（{completedOn}）"
 
 #: src/app/bulk-task-feedback.ts
 msgid "Completed {tasks}"
@@ -2331,6 +2340,7 @@ msgstr "期限"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -3275,6 +3285,10 @@ msgstr "Markdownリンク"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdownリンク"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Marks that day’s occurrence as done."
+msgstr "その日の発生分を完了にします。"
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -4335,6 +4349,10 @@ msgstr "再接続中"
 msgid "Reconnecting…"
 msgstr "再接続中…"
 
+#: src/components/task-complete-on-panel.tsx
+msgid "Records the day you finished it."
+msgstr "完了した日を記録します。"
+
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "アカウントアクセスを復元"
@@ -4904,6 +4922,7 @@ msgstr "予定"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -6365,6 +6384,7 @@ msgstr "はい"
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 msgstr "はい。「コレクション」の下にある「コレクションを変更」から別のmdbaseコレクションを開けます。コレクションを変えてもレコードは移動しません。"
 
+#: src/components/task-complete-on-panel.tsx
 #: src/i18n/presentation.ts
 msgid "Yesterday"
 msgstr "昨日"

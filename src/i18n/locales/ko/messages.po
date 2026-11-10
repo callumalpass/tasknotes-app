@@ -1649,6 +1649,10 @@ msgstr "{0} 완료"
 msgid "Complete occurrence"
 msgstr "반복 항목 완료"
 
+#: src/components/task-actions.tsx
+msgid "Complete on another date"
+msgstr "다른 날짜로 완료"
+
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
 msgstr "완료 또는 다시 열기"
@@ -1668,6 +1672,11 @@ msgstr "완료됨"
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "“{0}” 완료됨"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}” ({completedOn})"
+msgstr "“{0}” 완료됨 ({completedOn})"
 
 #: src/app/bulk-task-feedback.ts
 msgid "Completed {tasks}"
@@ -2331,6 +2340,7 @@ msgstr "마감"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -3275,6 +3285,10 @@ msgstr "Markdown 링크"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown 링크"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Marks that day’s occurrence as done."
+msgstr "해당 날짜의 반복 항목을 완료로 표시합니다."
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -4335,6 +4349,10 @@ msgstr "다시 연결 중"
 msgid "Reconnecting…"
 msgstr "다시 연결 중…"
 
+#: src/components/task-complete-on-panel.tsx
+msgid "Records the day you finished it."
+msgstr "완료한 날짜를 기록합니다."
+
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "계정 접근 복구"
@@ -4904,6 +4922,7 @@ msgstr "예정"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -6365,6 +6384,7 @@ msgstr "예"
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 msgstr "예. 컬렉션 아래의 컬렉션 변경을 사용해 다른 mdbase 컬렉션을 여세요. 컬렉션을 변경해도 레코드는 이동하지 않습니다."
 
+#: src/components/task-complete-on-panel.tsx
 #: src/i18n/presentation.ts
 msgid "Yesterday"
 msgstr "어제"
