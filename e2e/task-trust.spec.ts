@@ -18,6 +18,32 @@ test("Undo of a completion puts the status back", async ({ page }) => {
   await expect(row).toContainText("In progress");
 });
 
+test("a completion recorded for yesterday names the day and can be undone", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const row = page
+    .locator(".task-row")
+    .filter({ hasText: "Book the project room" });
+  await row
+    .getByRole("button", { name: "Task actions for Book the project room" })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Complete on another date" })
+    .click();
+  await page
+    .locator(".task-complete-on-panel")
+    .getByRole("button", { name: "Yesterday" })
+    .click();
+  const notice = page.locator(".task-completed-notice");
+  await expect(notice).toContainText(
+    /Completed “Book the project room” \(.+\)/,
+  );
+  await expect(row).toHaveCount(0);
+  await notice.getByRole("button", { name: "Undo" }).click();
+  await expect(row).toContainText("In progress");
+});
+
 test("bulk Pick date takes typing and asks before moving due dates", async ({
   page,
 }) => {

@@ -1,6 +1,7 @@
 import { t as translate } from "@lingui/core/macro";
 import { X } from "lucide-react";
 import { FeedbackNotice } from "./workspace-feedback";
+import { formatTaskDate } from "../i18n/presentation";
 import { useEffect, useRef, useState } from "react";
 
 import type { TaskCompletion } from "./task-completion-motion";
@@ -35,6 +36,7 @@ export function TaskCompletedNotice({
     const timeout = window.setTimeout(onDismiss, NOTICE_MS);
     return () => window.clearTimeout(timeout);
   }, [completion, held, undoing, failed, onDismiss]);
+  const completedOn = completion?.on ? formatTaskDate(completion.on) : "";
   const message = completion
     ? failed
       ? completion.completed === false
@@ -42,7 +44,9 @@ export function TaskCompletedNotice({
         : translate`Couldn’t reopen “${completion.task.title}”`
       : completion.completed === false
         ? translate`Reopened “${completion.task.title}”`
-        : translate`Completed “${completion.task.title}”`
+        : completedOn
+          ? translate`Completed “${completion.task.title}” (${completedOn})`
+          : translate`Completed “${completion.task.title}”`
     : "";
   return (
     <FeedbackNotice>

@@ -1649,6 +1649,10 @@ msgstr "Complete {0}"
 msgid "Complete occurrence"
 msgstr "Complete occurrence"
 
+#: src/components/task-actions.tsx
+msgid "Complete on another date"
+msgstr "Complete on another date"
+
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
 msgstr "Complete or reopen"
@@ -1668,6 +1672,11 @@ msgstr "Completed"
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "Completed “{0}”"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}” ({completedOn})"
+msgstr "Completed “{0}” ({completedOn})"
 
 #: src/app/bulk-task-feedback.ts
 msgid "Completed {tasks}"
@@ -2331,6 +2340,7 @@ msgstr "due"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -3275,6 +3285,10 @@ msgstr "Markdown link"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown links"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Marks that day’s occurrence as done."
+msgstr "Marks that day’s occurrence as done."
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -4335,6 +4349,10 @@ msgstr "Reconnecting"
 msgid "Reconnecting…"
 msgstr "Reconnecting…"
 
+#: src/components/task-complete-on-panel.tsx
+msgid "Records the day you finished it."
+msgstr "Records the day you finished it."
+
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "Recover account access"
@@ -4904,6 +4922,7 @@ msgstr "scheduled"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -6365,6 +6384,7 @@ msgstr "Yes"
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 msgstr "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 
+#: src/components/task-complete-on-panel.tsx
 #: src/i18n/presentation.ts
 msgid "Yesterday"
 msgstr "Yesterday"
