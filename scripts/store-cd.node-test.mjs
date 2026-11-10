@@ -1032,11 +1032,17 @@ for (const boundaryOutcome of ["waiting", "dispatch-unknown"]) {
       const holds = [];
       let failure;
       await assert.rejects(
-        dispatch("store-status.yml", { platform: "android" }, save, (path) => {
-          if (path.endsWith("/dispatches") && boundaryOutcome === "waiting")
-            return { workflow_run_id: 8 };
-          throw new Error("release-evidence-unavailable");
-        }),
+        dispatch(
+          "store-status.yml",
+          { platform: "android" },
+          save,
+          (path) => {
+            if (path.endsWith("/dispatches") && boundaryOutcome === "waiting")
+              return { workflow_run_id: 8 };
+            throw new Error("release-evidence-unavailable");
+          },
+          async () => {},
+        ),
         (error) => {
           failure = error;
           return error.message === "release-evidence-unavailable";
@@ -1195,4 +1201,110 @@ test("completed build failure is known failure, not an unknown write", async () 
   );
   assert.equal(records[0].write_started, true);
   assert.equal(records.at(-1).boundary_outcome, "failed");
+});
+
+const completedChild = {
+  id: 9,
+  path: ".github/workflows/android.yml",
+  head_branch: "main",
+  event: "workflow_dispatch",
+  run_attempt: 1,
+  status: "completed",
+  conclusion: "success",
+};
+
+test("child reads recover from transient failures and reset the consecutive counter", async () => {
+  const records = [],
+    waits = [];
+  let dispatches = 0,
+    reads = 0;
+  const runId = await dispatch(
+    "android.yml",
+    {},
+    async (record) => records.push(record),
+    (path) => {
+      if (path.endsWith("/dispatches")) {
+        dispatches++;
+        return { workflow_run_id: 9 };
+      }
+      reads++;
+      if (reads === 8) return { ...completedChild, status: "in_progress" };
+      if (reads === 16) return completedChild;
+      throw new Error("release-evidence-unavailable");
+    },
+    async (delay) => waits.push(delay),
+  );
+  assert.equal(runId, 9);
+  assert.equal(dispatches, 1);
+  assert.equal(reads, 16);
+  assert.deepEqual(waits, Array(15).fill(15000));
+  assert.equal(records.at(-1).boundary_outcome, "success");
+});
+
+test("eight consecutive failed child reads give up without redispatch", async () => {
+  const receipt = {},
+    waits = [];
+  let dispatches = 0,
+    reads = 0;
+  await assert.rejects(
+    dispatch(
+      "android.yml",
+      {},
+      async (record) => Object.assign(receipt, record),
+      (path) => {
+        if (path.endsWith("/dispatches")) {
+          dispatches++;
+          return { workflow_run_id: 9 };
+        }
+        reads++;
+        throw new Error("release-evidence-unavailable");
+      },
+      async (delay) => waits.push(delay),
+    ),
+    /^Error: release-evidence-unavailable$/,
+  );
+  assert.equal(dispatches, 1);
+  assert.equal(reads, 8);
+  assert.deepEqual(waits, Array(7).fill(15000));
+  assert.equal(receipt.child_run_id, 9);
+  assert.equal(receipt.boundary_outcome, "waiting");
+  assert.equal(receipt.write_started, true);
+});
+
+test("a successful child read with the wrong binding fails immediately after a read failure", async () => {
+  let reads = 0;
+  await assert.rejects(
+    dispatch(
+      "android.yml",
+      {},
+      async () => {},
+      (path) => {
+        if (path.endsWith("/dispatches")) return { workflow_run_id: 9 };
+        if (++reads === 1) throw new Error("release-evidence-unavailable");
+        return { ...completedChild, head_branch: "other" };
+      },
+      async () => {},
+    ),
+    /store-run-binding-required/,
+  );
+  assert.equal(reads, 2);
+});
+
+test("build refusal prints only the fixed policy reason", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL("./store-cd.mjs", import.meta.url)),
+      "build",
+      "android",
+    ],
+    { encoding: "utf8", env: { PATH: process.env.PATH } },
+  );
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.equal(
+    result.stderr,
+    "Store CD refused: protected-store-context-required\n",
+  );
 });

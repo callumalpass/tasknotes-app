@@ -111,8 +111,17 @@ export async function dispatch(
     "store-dispatch-identity-unknown",
   );
   await save({ child_run_id: runId, boundary_outcome: "waiting" });
+  let consecutiveReadFailures = 0;
   for (let attempt = 0; attempt < 600; attempt++) {
-    const run = transport(`repos/${REPO}/actions/runs/${runId}`);
+    let run;
+    try {
+      run = transport(`repos/${REPO}/actions/runs/${runId}`);
+    } catch (error) {
+      if (++consecutiveReadFailures >= 8) throw error;
+      await wait(15000);
+      continue;
+    }
+    consecutiveReadFailures = 0;
     requirePolicy(
       run.id === runId &&
         run.path === `.github/workflows/${workflow}` &&
@@ -496,8 +505,16 @@ if (
 ) {
   const operation =
     process.argv[2] === "build" ? () => prepareBuild(process.argv[3]) : main;
-  operation().catch(() => {
-    console.error("Store CD refused; inspect the bounded outcome.");
+  operation().catch((error) => {
+    if (process.argv[2] === "build") {
+      // Only fixed policy reasons; never command stderr or response bodies.
+      const reason = /^[a-z0-9-]+$/.test(error.message)
+        ? error.message
+        : "release-evidence-unavailable";
+      console.error(`Store CD refused: ${reason}`);
+    } else {
+      console.error("Store CD refused; inspect the bounded outcome.");
+    }
     process.exitCode = 1;
   });
 }
