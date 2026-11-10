@@ -343,10 +343,13 @@ test("suggests wikilinks in Scratchpad Outline and Markdown", async ({
   const source = current.getByRole("textbox", {
     name: "Scratchpad Markdown",
   });
-  await expect(source).toContainText("- Prepare quarterly planning session");
-  await expect(source).not.toContainText(
-    "[ ] Prepare quarterly planning session",
-  );
+  // The editor renders Markdown as it is written: the linked line reads as a
+  // bullet, not as a task.
+  const linkedLine = source
+    .locator(".cm-line", { hasText: "Prepare quarterly planning session" })
+    .last();
+  await expect(linkedLine.locator(".cm-lp-bullet")).toBeVisible();
+  await expect(linkedLine.locator(".cm-lp-task")).toHaveCount(0);
   await source.fill("[[quarterly");
   const markdownOption = current.getByRole("option", {
     name: /Prepare quarterly planning session/,

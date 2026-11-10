@@ -1,0 +1,140 @@
+/*
+ * The shared Markdown live preview (@mdbase-dev/ui/live-preview) in TaskNotes'
+ * own design. Its stylesheet reads the shared UI tokens; the ones TaskNotes
+ * does not define globally are given here, for the editor and for the table
+ * menu, which the preview mounts on the page body.
+ */
+
+.markdown-source-editor,
+.cm-lp-table-menu {
+  --color-text-faint: var(--ink-faint);
+  --color-warning: oklch(64% 0.13 75);
+  --syntax-heading: var(--ink);
+  --syntax-link: var(--accent);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-caption: var(--type-supporting);
+  --sans: inherit;
+  --mono: var(--font-mono);
+  --motion-quick: 150ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --elevation-low:
+    0 1px 2px var(--color-shadow-soft), 0 10px 28px var(--color-shadow-soft);
+  --lp-line-padding: 8px;
+}
+
+/* A page of writing, not a code editor: no band across the caret's line. */
+.markdown-source-editor .cm-activeLine {
+  background: transparent;
+}
+
+/* Revealed heading and quote marks hang in the margin; let them show. */
+.markdown-source-editor .cm-scroller {
+  overflow: visible;
+}
+
+/* The task box: a round check in the app's own hand, sized to the text. */
+.markdown-source-editor .cm-lp-task {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 17px;
+  height: 17px;
+  margin: 0 3px 0 0;
+  padding: 0;
+  vertical-align: -3px;
+  color: var(--paper);
+  background: transparent;
+  border: 1.75px solid var(--ink-muted);
+  border-radius: 50%;
+  cursor: pointer;
+  appearance: none;
+}
+
+.markdown-source-editor .cm-lp-task:hover {
+  border-color: var(--accent);
+}
+
+.markdown-source-editor .cm-lp-task[aria-checked="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.markdown-source-editor .cm-lp-task[aria-checked="true"]::after {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  content: "";
+  border: solid currentColor;
+  border-width: 0 1.75px 1.75px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.markdown-source-editor .cm-lp-task:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.markdown-source-editor .cm-lp-task-done {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+/* The table menu uses the shared menu classes, which TaskNotes does not load. */
+.mdbase-menu.cm-lp-table-menu {
+  position: fixed;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.cm-lp-table-menu .mdbase-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  color: inherit;
+  font: inherit;
+  font-size: var(--type-supporting);
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.cm-lp-table-menu .mdbase-menu-item:hover,
+.cm-lp-table-menu .mdbase-menu-item:focus-visible {
+  background: var(--nav-active);
+  outline: 0;
+}
+
+.cm-lp-table-menu .mdbase-menu-item.is-danger {
+  color: var(--color-danger);
+}
+
+@media (pointer: coarse) {
+  .markdown-source-editor .cm-lp-task {
+    width: 20px;
+    height: 20px;
+    vertical-align: -4px;
+  }
+
+  .cm-lp-table-menu .mdbase-menu-item {
+    min-height: 44px;
+  }
+}

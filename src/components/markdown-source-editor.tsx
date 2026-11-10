@@ -6,11 +6,17 @@ import {
 } from "@mdbase-dev/i18n/codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
-import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState } from "@codemirror/state";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { Compartment, EditorState, Prec } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup } from "codemirror";
+import {
+  indentListItem,
+  livePreview,
+  outdentListItem,
+} from "@mdbase-dev/ui/live-preview";
+import "@mdbase-dev/ui/live-preview.css";
 import { observeTheme, resolveDarkTheme } from "@mdbase-dev/ui/theme";
 import { useEffect, useRef } from "react";
 import { Bold, Italic, Heading2, Quote, Link } from "lucide-react";
@@ -23,9 +29,8 @@ import {
 } from "./markdown-wikilink-completion";
 
 const scratchpadHighlightStyle = HighlightStyle.define([
+  // Heading sizes come from the live preview's line styles.
   { tag: tags.heading, color: "var(--ink)", fontWeight: "700" },
-  { tag: tags.heading1, fontSize: "1.4em" },
-  { tag: tags.heading2, fontSize: "1.2em" },
   {
     tag: [tags.link, tags.url],
     color: "var(--accent)",
@@ -172,9 +177,19 @@ export function MarkdownSourceEditor({
               },
             },
           ]),
+          // Tab nests a list item; anywhere else it still moves focus on.
+          Prec.high(
+            keymap.of([
+              { key: "Tab", run: indentListItem },
+              { key: "Shift-Tab", run: outdentListItem },
+            ]),
+          ),
           basicSetup,
-          markdown(),
-          readableWikilinks,
+          // GitHub-flavoured Markdown, for tasks, strikethrough and tables.
+          markdown({ base: markdownLanguage }),
+          // The note reads as rendered text; Markdown shows at the caret.
+          livePreview(),
+          Prec.high(readableWikilinks),
           autocompletion({
             activateOnTyping: true,
             override: [completionSource],

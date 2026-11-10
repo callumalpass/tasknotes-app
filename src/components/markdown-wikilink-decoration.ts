@@ -6,6 +6,7 @@ import {
   WidgetType,
   type DecorationSet,
 } from "@codemirror/view";
+import { isRevealed, livePreviewReveal } from "@mdbase-dev/ui/live-preview";
 import { linkDisplayLabel } from "../domain/completion";
 
 class WikilinkLabel extends WidgetType {
@@ -32,18 +33,21 @@ class WikilinkLabel extends WidgetType {
 export function wikilinkDecorations(state: EditorState): DecorationSet {
   const source = state.doc.toString();
   const tree = syntaxTree(state);
+  const live = state.field(livePreviewReveal, false) !== undefined;
   const ranges = [...source.matchAll(/\[\[([^\]\n]+)\]\]/g)].flatMap(
     (match) => {
       const from = match.index;
       const to = from + match[0].length;
       const prefix = source.slice(0, from).match(/\\+$/)?.[0].length ?? 0;
       if (prefix % 2 || source[from - 1] === "!") return [];
-      if (
-        state.selection.ranges.some(
-          (selection) => selection.from <= to && selection.to >= from,
-        )
-      )
-        return [];
+      // Beside the live preview the label follows its rule for showing
+      // Markdown, so a link reads the same whether or not the note has focus.
+      const showsSource = live
+        ? isRevealed(state, from, to)
+        : state.selection.ranges.some(
+            (selection) => selection.from <= to && selection.to >= from,
+          );
+      if (showsSource) return [];
       let node = tree.resolveInner(from, 1);
       while (node.parent) {
         if (
