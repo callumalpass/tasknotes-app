@@ -875,9 +875,19 @@ export function ScratchpadScreen({
         <div
           className="scratchpad-history-scroll"
           ref={historyRef}
+          onFocus={(event) => {
+            // Reaching an earlier note, by key or pointer, is not followed
+            // by a jump back down to the current one.
+            if (event.target.closest(".scratchpad-history"))
+              stickToBottom.current = false;
+          }}
           onPointerDown={(event) => {
             const bounds = event.currentTarget.getBoundingClientRect();
-            if (event.clientX >= bounds.right - 20)
+            if (
+              event.clientX >= bounds.right - 20 ||
+              (event.target instanceof Element &&
+                event.target.closest(".scratchpad-history"))
+            )
               stickToBottom.current = false;
           }}
           onScroll={(event) => {

@@ -218,6 +218,25 @@ function sameCaretLine(
  * A scratchpad note: Markdown that reads as rendered text and behaves as an
  * outline. The text belongs to the editor; the app is told when it changes.
  */
+/**
+ * The editor loads after the page, so someone may already be in a menu, a
+ * field or an earlier note by the time it would take focus.
+ */
+function focusIsInUse(): boolean {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || active === document.body)
+    return false;
+  return (
+    active.isContentEditable ||
+    active.matches("input, textarea, select") ||
+    Boolean(
+      active.closest(
+        '[role="menu"], [role="dialog"], [role="listbox"], .scratchpad-history',
+      ),
+    )
+  );
+}
+
 export function ScratchpadNoteEditor({
   initialText,
   onChange,
@@ -437,7 +456,8 @@ export function ScratchpadNoteEditor({
     };
     const stopObservingTheme = observeTheme(updateTheme);
 
-    if (autoFocus) view.contentDOM.focus({ preventScroll: true });
+    if (autoFocus && !focusIsInUse())
+      view.contentDOM.focus({ preventScroll: true });
     setFocused(view.hasFocus);
     return () => {
       stopObservingTheme();

@@ -248,6 +248,13 @@ test("leads to earlier notes from the Scratchpad heading", async ({ page }) => {
 test("deletes a previous Scratchpad note behind an Undo window", async ({
   page,
 }) => {
+  await page.route(
+    /scratchpad-note-editor[^/]*\.(tsx|js)(\?.*)?$/,
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1_200));
+      await route.continue();
+    },
+  );
   await page.goto("scratchpad/?demo=12");
   const planning = page.getByRole("button", { name: /Planning notes/ });
   await expect(planning).toBeVisible();
@@ -260,6 +267,11 @@ test("deletes a previous Scratchpad note behind an Undo window", async ({
 
   await actions.click();
   const remove = page.getByRole("menuitem", { name: "Delete note" });
+  await expect(remove).toBeFocused();
+  await expect(remove).toBeInViewport({ ratio: 1 });
+  // The current note's editor arrives after the page. It takes neither the
+  // focus nor the scroll position from a menu that is already open.
+  await expect(outlineOf(current)).toBeVisible();
   await expect(remove).toBeFocused();
   await expect(remove).toBeInViewport({ ratio: 1 });
   await remove.click();
