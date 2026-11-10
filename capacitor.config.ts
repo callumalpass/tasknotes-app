@@ -25,7 +25,7 @@ const config: CapacitorConfig = {
   appId: "dev.tasknotes.app",
   appName: "TaskNotes",
   webDir: "dist",
-  backgroundColor: "#fbfcfe",
+  backgroundColor: "#fffefd",
   server: {
     hostname: nativeApplicationUrl.hostname,
     androidScheme: nativeApplicationUrl.protocol.slice(0, -1),
@@ -34,7 +34,7 @@ const config: CapacitorConfig = {
     iosScheme: "capacitor",
   },
   android: {
-    backgroundColor: "#fbfcfe",
+    backgroundColor: "#fffefd",
     includePlugins: [
       ...sharedNativePlugins,
       ...(androidFirebaseConfigured ? ["@capacitor/push-notifications"] : []),
