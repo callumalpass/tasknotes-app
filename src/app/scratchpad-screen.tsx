@@ -152,6 +152,8 @@ interface ScratchpadNotice {
 
 /** Matches the recovery window of deleted tasks. */
 const SCRATCHPAD_DELETE_UNDO_MS = 30_000;
+/** Clear space kept above the current note when the feed is at rest. */
+const CURRENT_NOTE_TOP_GAP = 8;
 
 export function ScratchpadScreen({
   onOpenTask,
@@ -544,11 +546,19 @@ export function ScratchpadScreen({
       const bottomGutter = Number.parseFloat(
         getComputedStyle(scroller).paddingBottom,
       );
-      const centeredGap = Math.max(
-        0,
-        (scroller.clientHeight - card.getBoundingClientRect().height) / 2,
+      // At rest the current note starts at the top of the feed, under the
+      // heading that stays there; earlier notes sit above it, a scroll away.
+      const heading = scroller.querySelector<HTMLElement>(
+        ".scratchpad-stream-header",
       );
-      const restSpace = Math.max(0, centeredGap - bottomGutter);
+      const restSpace = Math.max(
+        0,
+        scroller.clientHeight -
+          (heading?.offsetHeight ?? 0) -
+          card.getBoundingClientRect().height -
+          bottomGutter -
+          CURRENT_NOTE_TOP_GAP,
+      );
       const next = `${restSpace}px`;
       if (scroller.style.getPropertyValue("--scratch-current-rest") !== next)
         scroller.style.setProperty("--scratch-current-rest", next);
@@ -968,6 +978,54 @@ export function ScratchpadScreen({
             if (event.deltaY < 0) stickToBottom.current = false;
           }}
         >
+          <header className="scratchpad-stream-header">
+            <h1 id="scratchpad-stream-title">
+              <Trans>Scratchpad</Trans>
+            </h1>
+            <div className="scratchpad-stream-actions">
+              <button
+                aria-label={t({ message: "Add image" })}
+                aria-expanded={imageCaptureOpen}
+                aria-controls="scratchpad-image-capture"
+                className="text-action scratchpad-image-action"
+                disabled={!repository.files || !repository.createScratchImage}
+                ref={imageActionRef}
+                title={t({ message: "Add image" })}
+                type="button"
+                onClick={() => {
+                  if (!imageCaptureOpen) {
+                    stickToBottom.current = false;
+                    revealBottom.current = false;
+                  }
+                  setImageCaptureOpen((open) => !open);
+                }}
+              >
+                <ImagePlus aria-hidden="true" size={18} />
+                <span>
+                  <Trans>Add image</Trans>
+                </span>
+              </button>
+              <button
+                aria-label={t({ message: "New note" })}
+                className="text-action scratchpad-new-action"
+                type="button"
+                onClick={() => void startNew()}
+                disabled={
+                  startingNew ||
+                  reactivatingId !== undefined ||
+                  (!repository.startNewScratchpad &&
+                    !repository.archiveScratchpad)
+                }
+              >
+                <Plus aria-hidden="true" size={18} />
+                <span>
+                  {startingNew
+                    ? t({ message: "Starting…" })
+                    : t({ message: "New note" })}
+                </span>
+              </button>
+            </div>
+          </header>
           {nextCursor ? (
             <button
               className="text-action scratchpad-load-older"
@@ -1108,54 +1166,6 @@ export function ScratchpadScreen({
           {currentDocument ? (
             <div aria-hidden="true" className="scratchpad-current-spacer" />
           ) : null}
-          <header className="scratchpad-stream-header">
-            <h1 className="visually-hidden" id="scratchpad-stream-title">
-              <Trans>Scratchpad</Trans>
-            </h1>
-            <div className="scratchpad-stream-actions">
-              <button
-                aria-label={t({ message: "Add image" })}
-                aria-expanded={imageCaptureOpen}
-                aria-controls="scratchpad-image-capture"
-                className="text-action scratchpad-image-action"
-                disabled={!repository.files || !repository.createScratchImage}
-                ref={imageActionRef}
-                title={t({ message: "Add image" })}
-                type="button"
-                onClick={() => {
-                  if (!imageCaptureOpen) {
-                    stickToBottom.current = false;
-                    revealBottom.current = false;
-                  }
-                  setImageCaptureOpen((open) => !open);
-                }}
-              >
-                <ImagePlus aria-hidden="true" size={18} />
-                <span>
-                  <Trans>Add image</Trans>
-                </span>
-              </button>
-              <button
-                aria-label={t({ message: "New note" })}
-                className="text-action scratchpad-new-action"
-                type="button"
-                onClick={() => void startNew()}
-                disabled={
-                  startingNew ||
-                  reactivatingId !== undefined ||
-                  (!repository.startNewScratchpad &&
-                    !repository.archiveScratchpad)
-                }
-              >
-                <Plus aria-hidden="true" size={18} />
-                <span>
-                  {startingNew
-                    ? t({ message: "Starting…" })
-                    : t({ message: "New note" })}
-                </span>
-              </button>
-            </div>
-          </header>
           {imageCaptureOpen ? (
             <section
               aria-labelledby="scratchpad-image-capture-title"

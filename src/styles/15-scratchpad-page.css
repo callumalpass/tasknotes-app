@@ -1,0 +1,601 @@
+/*
+ * Scratchpad as a page. The current note is the page itself, in the same
+ * column and under the same kind of heading as every other view. Earlier
+ * notes are a quiet dated list above it, a scroll away.
+ */
+
+.scratchpad-screen {
+  --scratch-feed-width: calc(var(--content-width) - 2 * var(--page-inset));
+  --scratch-disclosure: 24px;
+  --scratch-marker: 32px;
+  --scratch-row: 44px;
+  --scratch-indent: 20px;
+  --scratch-text-inset: 4px;
+  --scratch-menu: 44px;
+  --scratch-text-pad: calc((var(--scratch-row) - 1.5rem) / 2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scratchpad-screen {
+    --scratch-disclosure: 20px;
+    --scratch-marker: 24px;
+    --scratch-row: 36px;
+    --scratch-text-inset: 6px;
+    --scratch-menu: 36px;
+  }
+}
+
+/*
+ * The heading sits where every view's heading sits and stays there while the
+ * feed scrolls under it. It lives inside the feed so both share one column.
+ */
+.scratchpad-stream-header {
+  position: sticky;
+  z-index: 6;
+  top: 0;
+  width: 100%;
+  min-height: 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px
+    max(var(--page-inset), calc((100% - var(--scratch-feed-width)) / 2)) 12px;
+  margin: 0;
+  flex: 0 0 auto;
+  background: var(--paper);
+}
+
+.scratchpad-stream-header h1 {
+  min-width: 0;
+  font-size: var(--type-page);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 44px;
+}
+
+.scratchpad-stream-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.scratchpad-new-action,
+.scratchpad-image-action {
+  padding: 0 10px;
+  font-size: var(--type-supporting);
+  font-weight: 600;
+}
+
+.scratchpad-image-action {
+  color: var(--ink-soft);
+}
+
+.scratchpad-image-action:hover,
+.scratchpad-image-action[aria-expanded="true"] {
+  color: var(--ink);
+  background: var(--nav-active);
+}
+
+@media (min-width: 840px) {
+  .scratchpad-stream-header {
+    padding-top: 44px;
+  }
+}
+
+/* A rule appears under the heading while earlier notes are scrolled beneath it. */
+.scratchpad-stream-header::after {
+  position: absolute;
+  right: max(var(--page-inset), calc((100% - var(--scratch-feed-width)) / 2));
+  bottom: 0;
+  left: max(var(--page-inset), calc((100% - var(--scratch-feed-width)) / 2));
+  height: 1px;
+  background: var(--line);
+  content: "";
+  opacity: 0;
+}
+
+@supports (animation-timeline: scroll()) {
+  .scratchpad-stream-header::after {
+    animation: scratch-heading-rule linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0 16px;
+  }
+}
+
+@keyframes scratch-heading-rule {
+  to {
+    opacity: 1;
+  }
+}
+
+/* The feed keeps its centre whether or not it scrolls. */
+.scratchpad-history-scroll {
+  scroll-padding-block-start: 112px;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Earlier notes: a dated list, one rule between entries. */
+.scratchpad-history {
+  gap: 0;
+}
+
+.scratchpad-document {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.scratchpad-document-header {
+  margin-inline: -10px;
+  padding-inline: 10px 0;
+  border-radius: var(--radius-control);
+  transition: background-color 140ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  .scratchpad-document-header:hover {
+    background: var(--paper-soft);
+  }
+}
+
+.scratchpad-document-disclosure {
+  min-height: 56px;
+  padding: 9px 40px 9px 0;
+}
+
+.scratchpad-document-disclosure:not(.has-title) {
+  min-height: 44px;
+}
+
+.scratchpad-document-disclosure strong {
+  font-size: var(--type-body);
+  font-weight: 600;
+}
+
+.scratchpad-document-disclosure small {
+  margin-top: 2px;
+  font-size: var(--type-supporting);
+}
+
+.scratchpad-document-chevron {
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+
+.scratchpad-document-actions {
+  padding: 0;
+  align-self: center;
+}
+
+.scratchpad-document.is-expanded > .scratchpad-editor {
+  padding: 0 0 16px;
+  border-top: 0;
+}
+
+.scratch-image-card {
+  margin-block: 12px;
+  border-color: var(--line);
+}
+
+.scratchpad-document + .scratch-image-card {
+  margin-top: 16px;
+}
+
+.scratchpad-current-spacer {
+  min-height: 24px;
+  flex: 0 0 24px;
+}
+
+/* The current note has no card: it is the page. */
+.scratchpad-current-document {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* One line above the note: its title and date, then how it is edited. */
+.scratchpad-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 16px;
+}
+
+.scratchpad-editor > * {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.scratchpad-editor > .scratchpad-title-row {
+  grid-column: 1;
+}
+
+.scratchpad-editor > .scratchpad-editor-toolbar {
+  grid-column: 2;
+  margin: 0;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.scratchpad-title-row {
+  min-height: 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.scratchpad-title-row input {
+  text-overflow: ellipsis;
+}
+
+/* Under the page heading, the current note does not need to say so again. */
+.scratchpad-current-document .scratchpad-title-meta small {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scratchpad-mode-switch {
+  padding: 2px;
+  background: var(--paper-soft);
+  border-radius: var(--radius-control);
+}
+
+.scratchpad-mode-switch button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: calc(var(--radius-control) - 2px);
+}
+
+.scratchpad-mode-switch button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--paper-raised);
+  box-shadow: 0 1px 2px var(--color-shadow-soft);
+}
+
+.scratchpad-header-actions {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.scratchpad-review-action,
+.scratchpad-reactivate-action {
+  padding: 0 10px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: var(--radius-control);
+}
+
+.scratchpad-review-action:hover:not(:disabled),
+.scratchpad-reactivate-action:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.scratchpad-review-action:disabled,
+.scratchpad-reactivate-action:disabled {
+  color: var(--ink-faint);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scratchpad-mode-switch button {
+    min-height: 28px;
+    padding: 0 10px;
+  }
+
+  .scratchpad-review-action,
+  .scratchpad-reactivate-action {
+    min-height: 32px;
+  }
+}
+
+/* Narrow columns give the editing controls their own line. */
+@media (max-width: 640px) {
+  .scratchpad-editor > .scratchpad-title-row,
+  .scratchpad-editor > .scratchpad-editor-toolbar {
+    grid-column: 1 / -1;
+  }
+
+  .scratchpad-editor > .scratchpad-editor-toolbar {
+    min-height: 44px;
+    justify-content: space-between;
+  }
+}
+
+/*
+ * Outline lines read as text. Each has a narrow column for folding, a
+ * marker that says what the line is, and the words.
+ */
+.scratchpad-outline {
+  margin-top: 4px;
+  border-top: 0;
+}
+
+.scratchpad-row {
+  --scratch-disclosure-track: var(--scratch-disclosure);
+}
+
+.scratchpad-row::before {
+  top: 4px;
+  bottom: 4px;
+  left: calc(var(--scratch-disclosure) / 2 - var(--scratch-indent));
+}
+
+.scratchpad-row-main {
+  grid-template-columns:
+    var(--scratch-disclosure) var(--scratch-marker)
+    minmax(0, 1fr) var(--scratch-menu);
+  min-height: var(--scratch-row);
+}
+
+.scratchpad-row-main > .scratchpad-collapse {
+  width: var(--scratch-disclosure);
+  min-width: 0;
+  min-height: var(--scratch-row);
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* A line that has children keeps its own marker beside the fold control. */
+.scratchpad-row-main > .scratchpad-kind-controls,
+.scratchpad-row.has-children
+  > .scratchpad-row-main
+  > .scratchpad-kind-controls {
+  display: flex;
+  width: var(--scratch-marker);
+  min-height: var(--scratch-row);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.scratchpad-row-main > .scratchpad-kind-label,
+.scratchpad-row.has-children > .scratchpad-row-main > .scratchpad-kind-label {
+  display: inline-flex;
+  width: var(--scratch-marker);
+  min-height: var(--scratch-row);
+  padding: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.scratchpad-kind-controls .scratchpad-draft-completion,
+.scratchpad-note-kind-icon {
+  width: var(--scratch-marker);
+  min-width: 0;
+  min-height: var(--scratch-row);
+}
+
+/* A plain line is marked with a bullet. */
+.scratchpad-note-kind-icon > svg {
+  display: none;
+}
+
+.scratchpad-note-kind-icon::before {
+  width: 5px;
+  height: 5px;
+  background: var(--ink-muted);
+  border-radius: 50%;
+  content: "";
+}
+
+.scratchpad-row-main > .outline-text-shell,
+.scratchpad-row-main > .scratchpad-task-link {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.scratchpad-row-main > .task-actions-trigger,
+.scratchpad-row-main > .scratchpad-row-menu-trigger {
+  width: var(--scratch-menu);
+  min-width: 0;
+  min-height: var(--scratch-row);
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.scratchpad-row textarea,
+.scratchpad-task-link,
+.outline-rendered-text {
+  padding: var(--scratch-text-pad) 8px var(--scratch-text-pad)
+    var(--scratch-text-inset);
+}
+
+.scratchpad-row textarea,
+.scratchpad-task-link {
+  min-height: var(--scratch-row);
+}
+
+/* The line being written shows a caret and a faint wash, not a form field. */
+.scratchpad-row textarea:focus-visible {
+  box-shadow: none;
+}
+
+.markdown-source-editor .cm-focused {
+  box-shadow: none;
+}
+
+.scratchpad-nlp-preview {
+  grid-template-columns:
+    calc(
+      var(--scratch-disclosure) + var(--scratch-marker) +
+        var(--scratch-text-inset)
+    )
+    minmax(0, 1fr) var(--scratch-menu);
+}
+
+/* Depth controls belong to the line that has the caret. */
+.scratchpad-row:not(:focus-within) > .scratchpad-mobile-depth-actions {
+  display: none;
+}
+
+.scratchpad-mobile-depth-actions {
+  margin-left: calc(var(--scratch-disclosure) + var(--scratch-marker));
+  padding: 2px 0 6px;
+}
+
+.scratchpad-mobile-depth-actions button {
+  background: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* With a keyboard and a pointer: Tab, the line menu and the drag handle. */
+  .scratchpad-mobile-depth-actions {
+    display: none;
+  }
+
+  .scratchpad-draft-completion > svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .scratchpad-row-main {
+    grid-template-columns:
+      var(--scratch-disclosure) var(--scratch-marker)
+      minmax(0, 1fr) 28px var(--scratch-menu);
+  }
+
+  .scratchpad-row-main > .scratchpad-drag-handle {
+    display: inline-flex;
+    width: 28px;
+    min-width: 0;
+    min-height: var(--scratch-row);
+    grid-column: 4;
+    grid-row: 1;
+    color: var(--ink-faint);
+  }
+
+  .scratchpad-row-main > .scratchpad-drag-handle:hover {
+    color: var(--ink-soft);
+  }
+
+  .scratchpad-row-main > .task-actions-trigger,
+  .scratchpad-row-main > .scratchpad-row-menu-trigger {
+    grid-column: 5;
+  }
+
+  .scratchpad-nlp-preview {
+    grid-template-columns:
+      calc(
+        var(--scratch-disclosure) + var(--scratch-marker) +
+          var(--scratch-text-inset)
+      )
+      minmax(0, 1fr) calc(28px + var(--scratch-menu));
+  }
+
+  /* Top-level fold controls sit in the page margin, so markers line up with the title. */
+  .scratchpad-outline {
+    margin-left: calc(-1 * var(--scratch-disclosure));
+  }
+}
+
+@media (max-width: 560px) {
+  .scratchpad-image-action > span {
+    display: none;
+  }
+
+  .scratchpad-image-action {
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .scratchpad-history,
+  .scratchpad-current-document,
+  .scratchpad-image-capture {
+    width: calc(100% - 2 * var(--page-inset));
+  }
+
+  .scratchpad-current-document {
+    padding-right: 0;
+    padding-left: 0;
+    margin-top: 0;
+  }
+
+  .scratchpad-row-main {
+    grid-template-columns:
+      var(--scratch-disclosure) var(--scratch-marker)
+      minmax(0, 1fr) var(--scratch-menu);
+  }
+
+  .scratchpad-row-main > .scratchpad-kind-controls,
+  .scratchpad-row-main > .scratchpad-kind-label {
+    grid-column: 2;
+  }
+
+  .scratchpad-row-main > .outline-text-shell,
+  .scratchpad-row-main > .scratchpad-task-link {
+    grid-column: 3;
+  }
+
+  .scratchpad-kind-controls {
+    width: var(--scratch-marker);
+  }
+
+  .scratchpad-kind-controls .scratchpad-draft-completion,
+  .scratchpad-note-kind-icon {
+    width: var(--scratch-marker);
+    min-width: 0;
+  }
+
+  .scratchpad-screen .scratchpad-row-menu-trigger,
+  .scratchpad-row .task-actions-trigger {
+    grid-column: 4;
+  }
+
+  .scratchpad-nlp-preview {
+    grid-template-columns:
+      calc(
+        var(--scratch-disclosure) + var(--scratch-marker) +
+          var(--scratch-text-inset)
+      )
+      minmax(0, 1fr) var(--scratch-menu);
+  }
+
+  /*
+   * On the phone the depth controls dock at the bottom edge of the screen,
+   * which follows the keyboard, instead of opening inside the note.
+   */
+  .scratchpad-mobile-depth-actions {
+    position: fixed;
+    z-index: 14;
+    top: calc(
+      min(
+          100dvh - var(--nav-height) - env(safe-area-inset-bottom),
+          var(--scratch-visual-viewport-bottom, 100dvh)
+        ) -
+        52px
+    );
+    right: 0;
+    left: 0;
+    height: 52px;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-around;
+    gap: 4px;
+    padding: 0 var(--page-inset);
+    margin: 0;
+    background: var(--paper-raised);
+    border-top: 1px solid var(--line);
+  }
+
+  .scratchpad-mobile-depth-actions button {
+    min-height: 44px;
+    padding: 0 10px;
+    background: transparent;
+  }
+
+  /* Room at the end of the feed so the docked controls cover nothing. */
+  .scratchpad-history-scroll:has(.scratchpad-row:focus-within)
+    > .scratchpad-current-rest-space {
+    display: block;
+    min-height: 52px;
+    flex: 0 0 52px;
+  }
+}
