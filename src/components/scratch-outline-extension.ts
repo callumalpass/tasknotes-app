@@ -30,6 +30,7 @@ import {
   gutter,
   keymap,
   type DecorationSet,
+  type Rect,
 } from "@codemirror/view";
 import { outdentListItem } from "@mdbase-dev/ui/live-preview";
 
@@ -214,6 +215,35 @@ class TaskChip extends WidgetType {
   }
 }
 
+/**
+ * Where the caret goes at the end of a line that carries something after its
+ * text. The editor would otherwise draw it against what follows, which sits at
+ * the far end of the line or on the row below.
+ */
+function endOfLineText(widget: HTMLElement): Rect | null {
+  let node: Node | null = widget.previousSibling;
+  while (
+    node instanceof HTMLElement &&
+    node.matches(".cm-scratch-details, .cm-scratch-create, .cm-widgetBuffer")
+  )
+    node = node.previousSibling;
+  if (!node) return null;
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  const rects = range.getClientRects();
+  for (let index = rects.length - 1; index >= 0; index -= 1) {
+    const rect = rects[index]!;
+    if (rect.bottom > rect.top)
+      return {
+        left: rect.right,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      };
+  }
+  return null;
+}
+
 /** Turns the draft on its line into a task. */
 class CreateTaskButton extends WidgetType {
   constructor(
@@ -245,6 +275,10 @@ class CreateTaskButton extends WidgetType {
     return button;
   }
 
+  coordsAt(dom: HTMLElement): Rect | null {
+    return endOfLineText(dom);
+  }
+
   ignoreEvent(): boolean {
     return true;
   }
@@ -273,6 +307,10 @@ class DraftDetails extends WidgetType {
       element.append(entry);
     }
     return element;
+  }
+
+  coordsAt(dom: HTMLElement): Rect | null {
+    return endOfLineText(dom);
   }
 
   ignoreEvent(): boolean {
