@@ -334,6 +334,45 @@ test("continues on a fresh line after converting the final outline draft", async
     .toBe("- [ ] Continue after conversion tomorrow\n- [ ] The next thought");
 });
 
+test("keeps the caret at the end of a draft's text while typing", async ({
+  page,
+}) => {
+  await page.goto("scratchpad/?demo=12");
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  const current = page.getByRole("region", {
+    name: "Editor for current scratchpad",
+  });
+  const note = outlineOf(current);
+  await expect(note).toBeFocused();
+  // The date is read as it is typed, so the line carries both its details
+  // and its button after the text.
+  await page.keyboard.type("Call the venue tomorrow");
+  const line = note.locator(".cm-line", { hasText: "Call the venue" });
+  await expect(line.locator(".cm-scratch-details")).toBeVisible();
+  await expect(
+    line.getByRole("button", {
+      name: "Create task for Call the venue tomorrow",
+    }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      current.evaluate((region) => {
+        const caret = region.querySelector(".cm-cursor-primary");
+        const text = [
+          ...(region.querySelector(".cm-scratch-active")?.childNodes ?? []),
+        ].find((node) => node.nodeType === Node.TEXT_NODE);
+        if (!caret || !text) return Number.NaN;
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        return Math.abs(
+          caret.getBoundingClientRect().left -
+            range.getBoundingClientRect().right,
+        );
+      }),
+    )
+    .toBeLessThan(2);
+});
+
 test("creates a task from the button on a draft's line", async ({ page }) => {
   await page.goto("scratchpad/?demo=12");
   await page.getByRole("button", { name: "New note", exact: true }).click();
