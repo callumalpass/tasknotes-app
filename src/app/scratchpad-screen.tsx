@@ -1,157 +1,55 @@
 import { t as translate } from "@lingui/core/macro";
 import { t, plural } from "@lingui/core/macro";
-import { nestedItemCount } from "../i18n/default-labels";
-import { appLocale } from "../i18n/app";
-import { formatTaskDate } from "../i18n/presentation";
 import { useLingui, Trans } from "@lingui/react/macro";
-import { uiCopy } from "../i18n/ui-copy";
 import {
   Camera,
-  Check,
-  FileImage,
-  ImagePlus,
   ChevronDown,
   ChevronRight,
-  CircleAlert,
-  CornerDownRight,
-  CornerUpLeft,
-  FileCheck2,
-  GripVertical,
-  Link2,
-  ListChecks,
-  ListTodo,
+  FileImage,
+  History,
+  ImagePlus,
   MoreHorizontal,
   Plus,
-  RotateCcw,
-  Square,
-  SquareCheckBig,
-  StickyNote,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { registerReloadParticipant } from "../pwa/reload";
 import {
-  lazy,
-  Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
-  useLayoutEffect,
   useState,
   type DragEvent as ReactDragEvent,
-  type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-  type CSSProperties,
 } from "react";
 
-import { useOverlay } from "../components/overlays/use-overlay";
-import { useScratchpadMenu } from "./use-scratchpad-menu";
+import { ScratchImageService } from "../application/scratch-images/scratch-image-service";
+import { RecordWriteNotice } from "../components/record-write-notice";
+import { scratchFeedKey } from "../domain/scratch-feed";
 import {
-  activeCaptureToken,
-  applyCaptureSuggestion,
-  captureSuggestionRequest,
-  captureTriggers,
-  configuredCaptureSuggestions,
-} from "../domain/capture-autosuggest";
-import {
-  linkTarget,
-  recordCompletion,
-  recordMatchesLink,
-} from "../domain/completion";
-import {
-  activeRecordWikilink,
-  applyRecordWikilinkCompletion,
-  recordWikilinkCompletionRequest,
-  recordWikilinkValue,
-} from "../domain/record-wikilink-completion";
-import {
-  changeScratchDepth,
-  createScratchNode,
-  moveScratchSubtree,
-  nearestTaskAncestor,
-  parseScratchBody,
-  removeScratchNode,
-  scratchSubtreeEnd,
   scratchpadHistoryDate,
   scratchpadPreview,
-  serializeScratchNodes,
-  visibleScratchNodes,
-  type ScratchDropPlacement,
-  type ScratchNode,
   type ReactivateScratchpadResult,
   type ScratchpadDocument,
   type StartNewScratchpadInput,
   type StartNewScratchpadResult,
 } from "../domain/scratchpad";
-import {
-  parseTaskCapture,
-  preloadTaskCapture,
-  type TaskCaptureResult,
-} from "../domain/task-capture";
-import { selectionFeedback, successFeedback } from "../native/feedback";
+import { uiCopy } from "../i18n/ui-copy";
 import { useRepository } from "./repository-context";
-import { OutlineTextarea } from "../components/outline-textarea";
-import {
-  outlineSelection,
-  setOutlineSelection,
-} from "../components/outline-selection";
-import { ensureScratchContinuation } from "../domain/scratchpad-continuation";
-import { initialScratchpadMode } from "./scratchpad-preferences";
-import {
-  undoScratchpadConversion,
-  type ScratchpadConversion,
-} from "../application/scratchpad-conversion";
+import { formatScratchDate, message } from "./scratchpad-format";
+import { ScratchNoteActions, ScratchpadNote } from "./scratchpad-note";
+import { useMenuDirection, useScratchpadMenu } from "./use-scratchpad-menu";
 
-import type {
-  FieldCompletion,
-  FieldCompletionRequest,
-} from "../domain/completion";
-import type { TaskSummary } from "../domain/task";
-import type {
-  TaskRepository,
-  TaskCreateIntent,
-} from "../application/ports/task-repository";
+import type { TaskRepository } from "../application/ports/task-repository";
 import type { ScratchFeedItem } from "../domain/scratch-feed";
 import type { ScratchImage } from "../domain/scratch-image";
-import { scratchFeedKey } from "../domain/scratch-feed";
-import { ScratchImageService } from "../application/scratch-images/scratch-image-service";
-import { TaskActions } from "../components/task-actions";
-import { RecordWriteNotice } from "../components/record-write-notice";
-import { useRecordWriteState } from "../components/use-record-write-state";
-
-const MarkdownSourceEditor = lazy(async () => ({
-  default: (await import("../components/markdown-source-editor"))
-    .MarkdownSourceEditor,
-}));
-
-interface DragState {
-  sourceId: string;
-  targetId?: string;
-  placement?: ScratchDropPlacement;
-}
-
-interface ReviewItem {
-  id: string;
-  text: string;
-  depth: number;
-}
-
-interface ReviewResult {
-  state: "creating" | "created" | "error";
-  message?: string;
-  task?: TaskSummary;
-}
-
-interface ScratchpadNotice {
-  message: string;
-  tasks?: TaskSummary[];
-  conversions?: ScratchpadConversion[];
-}
+import type { TaskSummary } from "../domain/task";
 
 /** Matches the recovery window of deleted tasks. */
 const SCRATCHPAD_DELETE_UNDO_MS = 30_000;
+/** Clear space kept above the current note when the feed is at rest. */
+const CURRENT_NOTE_TOP_GAP = 8;
 
 export function ScratchpadScreen({
   onOpenTask,
@@ -163,7 +61,7 @@ export function ScratchpadScreen({
   const [currentDocument, setCurrentDocument] = useState<ScratchpadDocument>();
   const [historyItems, setHistoryItems] = useState<ScratchFeedItem[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [collapsedImageIds, setCollapsedImageIds] = useState<Set<string>>(
+  const [expandedImageIds, setExpandedImageIds] = useState<Set<string>>(
     new Set(),
   );
   const [collapseStorageKey, setCollapseStorageKey] = useState<string>();
@@ -320,7 +218,7 @@ export function ScratchpadScreen({
         const key = `tasknotes:scratchpad-collapse:${identity}`;
         const stored = readScratchpadCollapseState(key);
         setExpandedIds(new Set(stored.expandedDocuments));
-        setCollapsedImageIds(new Set(stored.collapsedImages));
+        setExpandedImageIds(new Set(stored.expandedImages));
         setCollapseStorageKey(key);
         setCollapseStateLoaded(true);
       })
@@ -339,13 +237,13 @@ export function ScratchpadScreen({
         collapseStorageKey,
         JSON.stringify({
           expandedDocuments: [...expandedIds],
-          collapsedImages: [...collapsedImageIds],
+          expandedImages: [...expandedImageIds],
         }),
       );
     } catch {
       // Collapse preferences are optional local UI state.
     }
-  }, [collapseStateLoaded, collapseStorageKey, collapsedImageIds, expandedIds]);
+  }, [collapseStateLoaded, collapseStorageKey, expandedIds, expandedImageIds]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadStream(), 0);
@@ -366,6 +264,8 @@ export function ScratchpadScreen({
         return next;
       });
     } else {
+      // The line that was pressed stays where it is; what follows moves down.
+      stickToBottom.current = false;
       setExpandedIds((current) => new Set(current).add(document.id));
     }
   }
@@ -544,11 +444,19 @@ export function ScratchpadScreen({
       const bottomGutter = Number.parseFloat(
         getComputedStyle(scroller).paddingBottom,
       );
-      const centeredGap = Math.max(
-        0,
-        (scroller.clientHeight - card.getBoundingClientRect().height) / 2,
+      // At rest the current note starts at the top of the feed, under the
+      // heading that stays there; earlier notes sit above it, a scroll away.
+      const heading = scroller.querySelector<HTMLElement>(
+        ".scratchpad-stream-header",
       );
-      const restSpace = Math.max(0, centeredGap - bottomGutter);
+      const restSpace = Math.max(
+        0,
+        scroller.clientHeight -
+          (heading?.offsetHeight ?? 0) -
+          card.getBoundingClientRect().height -
+          bottomGutter -
+          CURRENT_NOTE_TOP_GAP,
+      );
       const next = `${restSpace}px`;
       if (scroller.style.getPropertyValue("--scratch-current-rest") !== next)
         scroller.style.setProperty("--scratch-current-rest", next);
@@ -563,11 +471,20 @@ export function ScratchpadScreen({
     window.addEventListener("resize", scheduleUpdate);
     const observer = new MutationObserver(scheduleUpdate);
     observer.observe(card, { childList: true, subtree: true });
+    // The keyboard and the note's own growth change the room without a
+    // window resize.
+    const sizes =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(scheduleUpdate);
+    sizes?.observe(scroller);
+    sizes?.observe(card);
     void document.fonts?.ready.then(scheduleUpdate);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", scheduleUpdate);
       observer.disconnect();
+      sizes?.disconnect();
     };
   }, [currentDocument]);
 
@@ -821,8 +738,8 @@ export function ScratchpadScreen({
     }
   }
 
-  const editor = (document: ScratchpadDocument, isCurrent = false) => (
-    <ScratchpadDocumentEditor
+  const note = (document: ScratchpadDocument, isCurrent = false) => (
+    <ScratchpadNote
       key={document.id}
       initialDocument={document}
       isCurrent={isCurrent}
@@ -830,6 +747,12 @@ export function ScratchpadScreen({
       onReactivate={
         !isCurrent && repository.reactivateScratchpad
           ? () => void reactivate(document)
+          : undefined
+      }
+      onCollapse={isCurrent ? undefined : () => void toggleDocument(document)}
+      onDelete={
+        !isCurrent && repository.deleteScratchpad
+          ? () => void requestDeletion(document)
           : undefined
       }
       reactivating={reactivatingId === document.id}
@@ -851,6 +774,20 @@ export function ScratchpadScreen({
       }}
     />
   );
+
+  /** Brings the notes above the current one into view. */
+  function showEarlier() {
+    const scroller = historyRef.current;
+    if (!scroller) return;
+    stickToBottom.current = false;
+    revealBottom.current = false;
+    scroller.scrollBy({
+      top: -Math.round(scroller.clientHeight * 0.6),
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }
 
   return (
     <section
@@ -938,9 +875,19 @@ export function ScratchpadScreen({
         <div
           className="scratchpad-history-scroll"
           ref={historyRef}
+          onFocus={(event) => {
+            // Reaching an earlier note, by key or pointer, is not followed
+            // by a jump back down to the current one.
+            if (event.target.closest(".scratchpad-history"))
+              stickToBottom.current = false;
+          }}
           onPointerDown={(event) => {
             const bounds = event.currentTarget.getBoundingClientRect();
-            if (event.clientX >= bounds.right - 20)
+            if (
+              event.clientX >= bounds.right - 20 ||
+              (event.target instanceof Element &&
+                event.target.closest(".scratchpad-history"))
+            )
               stickToBottom.current = false;
           }}
           onScroll={(event) => {
@@ -968,6 +915,68 @@ export function ScratchpadScreen({
             if (event.deltaY < 0) stickToBottom.current = false;
           }}
         >
+          <header className="scratchpad-stream-header">
+            <h1 id="scratchpad-stream-title">
+              <Trans>Scratchpad</Trans>
+            </h1>
+            <div className="scratchpad-stream-actions">
+              {historicalItems.length ? (
+                <button
+                  aria-label={t({ message: "Earlier notes" })}
+                  className="text-action scratchpad-earlier-action"
+                  title={t({ message: "Earlier notes" })}
+                  type="button"
+                  onClick={showEarlier}
+                >
+                  <History aria-hidden="true" size={18} />
+                  <span>
+                    <Trans>Earlier notes</Trans>
+                  </span>
+                </button>
+              ) : null}
+              <button
+                aria-label={t({ message: "Add image" })}
+                aria-expanded={imageCaptureOpen}
+                aria-controls="scratchpad-image-capture"
+                className="text-action scratchpad-image-action"
+                disabled={!repository.files || !repository.createScratchImage}
+                ref={imageActionRef}
+                title={t({ message: "Add image" })}
+                type="button"
+                onClick={() => {
+                  if (!imageCaptureOpen) {
+                    stickToBottom.current = false;
+                    revealBottom.current = false;
+                  }
+                  setImageCaptureOpen((open) => !open);
+                }}
+              >
+                <ImagePlus aria-hidden="true" size={18} />
+                <span>
+                  <Trans>Add image</Trans>
+                </span>
+              </button>
+              <button
+                aria-label={t({ message: "New note" })}
+                className="text-action scratchpad-new-action"
+                type="button"
+                onClick={() => void startNew()}
+                disabled={
+                  startingNew ||
+                  reactivatingId !== undefined ||
+                  (!repository.startNewScratchpad &&
+                    !repository.archiveScratchpad)
+                }
+              >
+                <Plus aria-hidden="true" size={18} />
+                <span>
+                  {startingNew
+                    ? t({ message: "Starting…" })
+                    : t({ message: "New note" })}
+                </span>
+              </button>
+            </div>
+          </header>
           {nextCursor ? (
             <button
               className="text-action scratchpad-load-older"
@@ -1024,19 +1033,20 @@ export function ScratchpadScreen({
             {historicalItems.map((item) => {
               if (item.kind === "image")
                 return (
-                  <ScratchImageCard
-                    collapsed={collapsedImageIds.has(item.id)}
+                  <ScratchImageRow
+                    expanded={expandedImageIds.has(item.id)}
                     image={item}
                     key={scratchFeedKey(item)}
                     repository={repository}
-                    onCollapsedChange={(collapsed) =>
-                      setCollapsedImageIds((current) => {
+                    onExpandedChange={(expanded) => {
+                      if (expanded) stickToBottom.current = false;
+                      setExpandedImageIds((current) => {
                         const next = new Set(current);
-                        if (collapsed) next.add(item.id);
+                        if (expanded) next.add(item.id);
                         else next.delete(item.id);
                         return next;
-                      })
-                    }
+                      });
+                    }}
                     onRemoved={() =>
                       setHistoryItems((items) =>
                         items.filter(
@@ -1055,52 +1065,53 @@ export function ScratchpadScreen({
                   data-feed-key={scratchFeedKey(item)}
                   key={scratchFeedKey(item)}
                 >
-                  <div className="scratchpad-document-header">
-                    <button
-                      className={`scratchpad-document-disclosure${document.title && !expanded ? " has-title" : ""}`}
-                      type="button"
-                      aria-expanded={expanded}
-                      onClick={() => void toggleDocument(document)}
-                    >
-                      <span>
-                        {document.title && !expanded ? (
-                          <strong>{document.title}</strong>
+                  {expanded ? (
+                    // An opened note is its own line: the title or date, then
+                    // what can be done with it.
+                    note(document)
+                  ) : (
+                    <>
+                      <div className="scratchpad-document-header">
+                        <button
+                          className={`scratchpad-document-disclosure${document.title ? " has-title" : ""}`}
+                          type="button"
+                          aria-expanded="false"
+                          onClick={() => void toggleDocument(document)}
+                        >
+                          <span>
+                            {document.title ? (
+                              <strong>{document.title}</strong>
+                            ) : null}
+                            <time dateTime={scratchpadHistoryDate(document)}>
+                              {formatScratchDate(
+                                scratchpadHistoryDate(document),
+                              )}
+                            </time>
+                          </span>
+                          {document.title ? (
+                            <small>{scratchpadPreview(document)}</small>
+                          ) : null}
+                          <ChevronRight
+                            aria-hidden="true"
+                            className="scratchpad-document-chevron"
+                            size={18}
+                          />
+                        </button>
+                        {repository.deleteScratchpad ? (
+                          <ScratchNoteActions
+                            disabled={
+                              startingNew || reactivatingId !== undefined
+                            }
+                            onDelete={() => void requestDeletion(document)}
+                          />
                         ) : null}
-                        <time dateTime={scratchpadHistoryDate(document)}>
-                          {formatScratchDate(scratchpadHistoryDate(document))}
-                        </time>
-                      </span>
-                      {!expanded && document.title ? (
-                        <small>{scratchpadPreview(document)}</small>
-                      ) : null}
-                      {expanded ? (
-                        <ChevronDown
-                          aria-hidden="true"
-                          className="scratchpad-document-chevron"
-                          size={18}
-                        />
-                      ) : (
-                        <ChevronRight
-                          aria-hidden="true"
-                          className="scratchpad-document-chevron"
-                          size={18}
-                        />
-                      )}
-                    </button>
-                    {repository.deleteScratchpad ? (
-                      <ScratchNoteActions
-                        disabled={startingNew || reactivatingId !== undefined}
-                        onDelete={() => void requestDeletion(document)}
+                      </div>
+                      <RecordWriteNotice
+                        repository={repository}
+                        target={{ kind: "scratchpad", id: document.id }}
                       />
-                    ) : null}
-                  </div>
-                  {!expanded ? (
-                    <RecordWriteNotice
-                      repository={repository}
-                      target={{ kind: "scratchpad", id: document.id }}
-                    />
-                  ) : null}
-                  {expanded ? editor(document) : null}
+                    </>
+                  )}
                 </article>
               );
             })}
@@ -1108,54 +1119,6 @@ export function ScratchpadScreen({
           {currentDocument ? (
             <div aria-hidden="true" className="scratchpad-current-spacer" />
           ) : null}
-          <header className="scratchpad-stream-header">
-            <h1 className="visually-hidden" id="scratchpad-stream-title">
-              <Trans>Scratchpad</Trans>
-            </h1>
-            <div className="scratchpad-stream-actions">
-              <button
-                aria-label={t({ message: "Add image" })}
-                aria-expanded={imageCaptureOpen}
-                aria-controls="scratchpad-image-capture"
-                className="text-action scratchpad-image-action"
-                disabled={!repository.files || !repository.createScratchImage}
-                ref={imageActionRef}
-                title={t({ message: "Add image" })}
-                type="button"
-                onClick={() => {
-                  if (!imageCaptureOpen) {
-                    stickToBottom.current = false;
-                    revealBottom.current = false;
-                  }
-                  setImageCaptureOpen((open) => !open);
-                }}
-              >
-                <ImagePlus aria-hidden="true" size={18} />
-                <span>
-                  <Trans>Add image</Trans>
-                </span>
-              </button>
-              <button
-                aria-label={t({ message: "New note" })}
-                className="text-action scratchpad-new-action"
-                type="button"
-                onClick={() => void startNew()}
-                disabled={
-                  startingNew ||
-                  reactivatingId !== undefined ||
-                  (!repository.startNewScratchpad &&
-                    !repository.archiveScratchpad)
-                }
-              >
-                <Plus aria-hidden="true" size={18} />
-                <span>
-                  {startingNew
-                    ? t({ message: "Starting…" })
-                    : t({ message: "New note" })}
-                </span>
-              </button>
-            </div>
-          </header>
           {imageCaptureOpen ? (
             <section
               aria-labelledby="scratchpad-image-capture-title"
@@ -1236,7 +1199,7 @@ export function ScratchpadScreen({
                 className="scratchpad-current-document"
                 ref={currentCardRef}
               >
-                {editor(currentDocument, true)}
+                {note(currentDocument, true)}
               </article>
               <div
                 aria-hidden="true"
@@ -1250,94 +1213,18 @@ export function ScratchpadScreen({
   );
 }
 
-function ScratchNoteActions({
-  disabled,
-  onDelete,
-}: {
-  disabled: boolean;
-  onDelete(): void;
-}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuTriggerRef = useRef<HTMLButtonElement>(null);
-
-  useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
-    setMenuOpen(false),
-  );
-
-  useLayoutEffect(() => {
-    const menu = menuRef.current;
-    const trigger = menuTriggerRef.current;
-    if (!menuOpen || !menu || !trigger) return;
-    const bounds = trigger.getBoundingClientRect();
-    const scrollBounds = trigger
-      .closest(".scratchpad-history-scroll")
-      ?.getBoundingClientRect();
-    const roomAbove = bounds.top - Math.max(0, scrollBounds?.top ?? 0);
-    const roomBelow =
-      Math.min(window.innerHeight, scrollBounds?.bottom ?? window.innerHeight) -
-      bounds.bottom;
-    menu.classList.toggle(
-      "opens-up",
-      roomBelow < menu.offsetHeight + 8 && roomAbove > roomBelow,
-    );
-  }, [menuOpen]);
-
-  return (
-    <div className="scratchpad-document-actions">
-      <button
-        aria-expanded={menuOpen}
-        aria-haspopup="menu"
-        aria-label={translate({ message: "Note actions" })}
-        className="scratchpad-document-menu-trigger"
-        disabled={disabled}
-        ref={menuTriggerRef}
-        type="button"
-        onClick={() => setMenuOpen((open) => !open)}
-      >
-        <MoreHorizontal aria-hidden="true" size={18} />
-      </button>
-      {menuOpen ? (
-        <div
-          aria-label={translate({ message: "Note actions" })}
-          className="scratchpad-row-menu"
-          ref={menuRef}
-          role="menu"
-          onKeyDown={(event) => {
-            if (event.key !== "Escape") return;
-            event.stopPropagation();
-            setMenuOpen(false);
-            menuTriggerRef.current?.focus();
-          }}
-        >
-          <button
-            className="danger"
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              onDelete();
-            }}
-          >
-            <Trash2 aria-hidden="true" size={17} /> <Trans>Delete note</Trans>
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ScratchImageCard({
-  collapsed,
+/** An image in the feed: a dated line with a thumbnail that opens in place. */
+function ScratchImageRow({
+  expanded,
   image,
   repository,
-  onCollapsedChange,
+  onExpandedChange,
   onRemoved,
 }: {
-  collapsed: boolean;
+  expanded: boolean;
   image: ScratchImage;
   repository: TaskRepository;
-  onCollapsedChange(collapsed: boolean): void;
+  onExpandedChange(expanded: boolean): void;
   onRemoved(): void;
 }) {
   const { t } = useLingui();
@@ -1353,6 +1240,7 @@ function ScratchImageCard({
   useScratchpadMenu(menuOpen, menuRef, menuTriggerRef, () =>
     setMenuOpen(false),
   );
+  useMenuDirection(menuOpen, menuRef, menuTriggerRef);
 
   useEffect(() => {
     const store = repository.files;
@@ -1410,74 +1298,59 @@ function ScratchImageCard({
     }
   }
 
+  const unavailable = state === "missing" || state === "error";
+  const alt = image.caption || t`Pasted Scratchpad image`;
+
   return (
     <article
-      className="scratch-image-card"
+      className={`scratch-image-row${expanded ? " is-expanded" : ""}`}
       data-feed-key={scratchFeedKey(image)}
     >
-      <RecordWriteNotice
-        repository={repository}
-        target={{ kind: "image", id: image.id }}
-      />
-      {!collapsed ? (
-        <div
-          className={`scratch-image-frame${state === "missing" || state === "error" ? " is-unavailable" : ""}`}
-          style={
-            (state === "loading" || state === "ready") &&
-            image.width &&
-            image.height
-              ? { aspectRatio: `${image.width} / ${image.height}` }
-              : undefined
-          }
-        >
-          {state === "ready" && source ? (
-            <img
-              alt={image.caption || t`Pasted Scratchpad image`}
-              src={source}
-            />
-          ) : (
-            <div
-              className="scratch-image-placeholder"
-              role={state === "error" ? "alert" : "status"}
-            >
-              <FileImage aria-hidden="true" size={24} />
-              {state === "loading"
-                ? t({ message: "Loading image…" })
-                : state === "missing"
-                  ? t({ message: "Image file is unavailable" })
-                  : t({ message: "Image could not be loaded" })}
-            </div>
-          )}
-        </div>
-      ) : null}
-      <footer>
+      <div className="scratch-image-line">
         <button
-          aria-expanded={!collapsed}
+          aria-expanded={expanded}
           aria-label={
-            collapsed
-              ? t({ message: "Expand image" })
-              : t({ message: "Collapse image" })
+            expanded
+              ? t({ message: "Collapse image" })
+              : t({ message: "Expand image" })
           }
           className="scratch-image-disclosure"
           type="button"
-          onClick={() => onCollapsedChange(!collapsed)}
+          onClick={() => onExpandedChange(!expanded)}
         >
-          {collapsed ? (
-            <ChevronRight aria-hidden="true" size={18} />
+          <span className="scratch-image-thumb">
+            {state === "ready" && source ? (
+              <img alt="" src={source} />
+            ) : (
+              <FileImage aria-hidden="true" size={17} />
+            )}
+          </span>
+          <span className="scratch-image-label">
+            {image.caption ? <strong>{image.caption}</strong> : null}
+            <time dateTime={image.dateCreated}>
+              {formatScratchDate(image.dateCreated, true)}
+            </time>
+          </span>
+          {expanded ? (
+            <ChevronDown
+              aria-hidden="true"
+              className="scratchpad-document-chevron"
+              size={18}
+            />
           ) : (
-            <ChevronDown aria-hidden="true" size={18} />
+            <ChevronRight
+              aria-hidden="true"
+              className="scratchpad-document-chevron"
+              size={18}
+            />
           )}
-          <FileImage aria-hidden="true" size={17} />
-          <time dateTime={image.dateCreated}>
-            {formatScratchDate(image.dateCreated, true)}
-          </time>
         </button>
         <div className="scratch-image-actions">
           <button
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-label={t({ message: "Image actions" })}
-            className="scratch-image-menu-trigger"
+            className="scratchpad-document-menu-trigger"
             disabled={removing}
             ref={menuTriggerRef}
             type="button"
@@ -1488,7 +1361,7 @@ function ScratchImageCard({
           {menuOpen ? (
             <div
               aria-label={t({ message: "Image actions" })}
-              className="scratchpad-row-menu opens-up"
+              className="scratchpad-row-menu"
               ref={menuRef}
               role="menu"
               onKeyDown={(event) => {
@@ -1515,2112 +1388,38 @@ function ScratchImageCard({
             </div>
           ) : null}
         </div>
-      </footer>
-    </article>
-  );
-}
-
-function ScratchpadDocumentEditor({
-  onOpenTask,
-  onReactivate,
-  initialDocument,
-  isCurrent,
-  reactivating,
-  reactivationDisabled,
-  registerFlusher,
-  onDocumentUpdated,
-}: {
-  onOpenTask(task: TaskSummary): void;
-  onReactivate?: () => void;
-  initialDocument: ScratchpadDocument;
-  isCurrent: boolean;
-  reactivating: boolean;
-  reactivationDisabled: boolean;
-  registerFlusher(flush: (() => Promise<unknown>) | null): void;
-  onDocumentUpdated(document: ScratchpadDocument): void;
-}) {
-  const { t } = useLingui();
-  const { repository, configuration, createTask, updateTask } = useRepository();
-  const createIntents = useRef(new WeakMap<ScratchNode, TaskCreateIntent>());
-  const [document, setDocument] = useState<ScratchpadDocument | null>(null);
-  const [nodes, setNodes] = useState<ScratchNode[]>([]);
-  const [linkedTasks, setLinkedTasks] = useState<Map<string, TaskSummary>>(
-    new Map(),
-  );
-  const nativeSaveState = useRecordWriteState(repository, {
-    kind: "scratchpad",
-    id: document?.id ?? initialDocument.id,
-  });
-  const [source, setSource] = useState(initialDocument.body);
-  const [title, setTitle] = useState(initialDocument.title ?? "");
-  const [editorMode, setEditorMode] = useState<"outline" | "markdown">(() =>
-    initialScratchpadMode(
-      initialDocument.body,
-      isOutlineCompatible(initialDocument.body),
-    ),
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">(
-    "saved",
-  );
-  const [activeId, setActiveId] = useState<string>();
-  const [cursor, setCursor] = useState(0);
-  const [preview, setPreview] = useState<{
-    id: string;
-    text: string;
-    result: TaskCaptureResult;
-  } | null>(null);
-  const [suggestionState, setSuggestionState] = useState<{
-    key: string;
-    values: FieldCompletion[];
-  }>({ key: "", values: [] });
-  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [menuId, setMenuId] = useState<string>();
-  const [drag, setDrag] = useState<DragState | null>(null);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const reviewRef = useRef<HTMLElement | null>(null);
-  const reviewCloseRef = useRef<HTMLButtonElement | null>(null);
-  const reviewTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
-  const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [reviewResults, setReviewResults] = useState<
-    Record<string, ReviewResult>
-  >({});
-  const [reviewProcessing, setReviewProcessing] = useState(false);
-  useOverlay({
-    open: reviewOpen,
-    rootRef: reviewRef,
-    modal: true,
-    returnFocusRef: reviewTriggerRef,
-    initialFocus: () => reviewCloseRef.current,
-    onDismiss: () => {
-      if (!reviewProcessing) setReviewOpen(false);
-    },
-  });
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-  const [convertingId, setConvertingId] = useState<string>();
-  const [notice, setNotice] = useState<ScratchpadNotice | null>(null);
-  const [undoingConversion, setUndoingConversion] = useState(false);
-  const initialDocumentRef = useRef(initialDocument);
-  const documentRef = useRef<ScratchpadDocument | null>(null);
-  const nodesRef = useRef<ScratchNode[]>([]);
-  const sourceRef = useRef(initialDocument.body);
-  const sourceEditVersion = useRef(0);
-  const titleRef = useRef(initialDocument.title ?? "");
-  const rowMenuRef = useRef<HTMLDivElement | null>(null);
-  const rowMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
-  useScratchpadMenu(menuId, rowMenuRef, rowMenuTriggerRef, () =>
-    setMenuId(undefined),
-  );
-  const editorModeRef = useRef<"outline" | "markdown">(editorMode);
-  const saveTail = useRef<Promise<unknown>>(Promise.resolve());
-  const savesInFlight = useRef(0);
-  /** Advances whenever this editor adopts a saved or incoming version. */
-  const documentVersion = useRef(0);
-  const autosaveSuspended = useRef(false);
-  const focusAfterRender = useRef<
-    | {
-        id: string;
-        cursor?: number;
-        selectionEnd?: number;
-        selectionDirection?: "forward" | "backward" | "none";
-      }
-    | undefined
-  >(undefined);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(preloadTaskCapture, 0);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  const hydrate = useCallback(
-    async (body: string) => {
-      const parsed = parseScratchBody(body);
-      const tasks = parsed.some((node) => node.link)
-        ? await repository.listSummaries({
-            status: "all",
-            archived: "include",
-            limit: 50_000,
-          })
-        : [];
-      const visible = hydrateLinkedNodes(parsed, tasks);
-      const last = visible.at(-1);
-      if (!last || last.kind === "task" || last.text.trim())
-        visible.push(createScratchNode());
-      return { visible, tasks };
-    },
-    [repository],
-  );
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const next = initialDocumentRef.current;
-      const { visible, tasks } = await hydrate(next.body);
-      const mode = initialScratchpadMode(
-        next.body,
-        isOutlineCompatible(next.body),
-      );
-      documentRef.current = next;
-      nodesRef.current = visible;
-      sourceRef.current = next.body;
-      titleRef.current = next.title ?? "";
-      editorModeRef.current = mode;
-      setDocument(next);
-      setNodes(visible);
-      setLinkedTasks(new Map(tasks.map((task) => [task.id, task])));
-      setSource(next.body);
-      setTitle(next.title ?? "");
-      setEditorMode(mode);
-      setSaveState("saved");
-    } catch (reason) {
-      setError(message(reason));
-    } finally {
-      setLoading(false);
-    }
-  }, [hydrate]);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timeout);
-  }, [load]);
-
-  const persistBody = useCallback(
-    (body: string, nextTitle = titleRef.current) => {
-      const current = documentRef.current;
-      if (!current || !repository.saveScratchpad)
-        return Promise.reject(
-          new Error(t({ message: "Scratchpad storage is unavailable." })),
-        );
-      const normalizedTitle = nextTitle.trim();
-      setSaveState("saving");
-      savesInFlight.current += 1;
-      const operation = saveTail.current
-        .catch(() => undefined)
-        .then(async () => {
-          const latest = documentRef.current;
-          if (!latest)
-            throw new Error(t({ message: "The scratchpad is not open." }));
-          if (
-            body === latest.body &&
-            normalizedTitle === (latest.title?.trim() ?? "")
-          ) {
-            setSaveState("saved");
-            return latest;
-          }
-          const saved = await repository.saveScratchpad!({
-            id: latest.id,
-            path: latest.path,
-            revision: latest.revision,
-            baseBody: latest.body,
-            body,
-            title: normalizedTitle,
-          });
-          documentRef.current = saved;
-          documentVersion.current += 1;
-          sourceRef.current = saved.body;
-          if (titleRef.current === nextTitle) {
-            titleRef.current = saved.title ?? "";
-            setTitle(saved.title ?? "");
-          }
-          setDocument(saved);
-          onDocumentUpdated(saved);
-          setError("");
-          setSaveState("saved");
-          return saved;
-        })
-        .catch((reason) => {
-          setSaveState("error");
-          setError(message(reason));
-          throw reason;
-        })
-        .finally(() => {
-          savesInFlight.current -= 1;
-        });
-      saveTail.current = operation;
-      return operation;
-    },
-    [onDocumentUpdated, repository, t],
-  );
-
-  // A change saved elsewhere (another tab or device) is shown only while this
-  // editor has no unsaved or saving edit. An edit in progress is kept and saved
-  // against the version it started from, so the collection reports the
-  // conflict instead of either side being silently overwritten.
-  const onDocumentUpdatedRef = useRef(onDocumentUpdated);
-  useEffect(() => {
-    onDocumentUpdatedRef.current = onDocumentUpdated;
-  }, [onDocumentUpdated]);
-
-  useEffect(() => {
-    const getScratchpad = repository.getScratchpad?.bind(repository);
-    if (!getScratchpad) return;
-    let live = true;
-    let latestRequest = 0;
-    const unchangedLocally = (current: ScratchpadDocument) =>
-      savesInFlight.current === 0 &&
-      !autosaveSuspended.current &&
-      titleRef.current.trim() === (current.title?.trim() ?? "") &&
-      (editorModeRef.current === "markdown"
-        ? sourceRef.current
-        : scratchBody(nodesRef.current)) === current.body;
-    const refresh = async () => {
-      const current = documentRef.current;
-      if (!current) return;
-      const request = ++latestRequest;
-      const version = documentVersion.current;
-      const sourceVersion = sourceEditVersion.current;
-      const incoming = await getScratchpad(current.id).catch(() => null);
-      const stillCurrent = () =>
-        live &&
-        request === latestRequest &&
-        version === documentVersion.current &&
-        sourceVersion === sourceEditVersion.current &&
-        documentRef.current === current;
-      if (
-        !incoming ||
-        !stillCurrent() ||
-        incoming.id !== current.id ||
-        incoming.revision === current.revision ||
-        // Starting, resuming and deleting notes are applied by the stream.
-        incoming.state !== current.state ||
-        !unchangedLocally(current)
-      )
-        return;
-      let hydrated: Awaited<ReturnType<typeof hydrate>> | undefined;
-      if (incoming.body !== current.body) {
-        hydrated = await hydrate(incoming.body).catch(() => undefined);
-        if (!hydrated || !stillCurrent() || !unchangedLocally(current)) return;
-      }
-      documentRef.current = incoming;
-      documentVersion.current += 1;
-      titleRef.current = incoming.title ?? "";
-      setTitle(incoming.title ?? "");
-      if (hydrated) {
-        nodesRef.current = hydrated.visible;
-        sourceRef.current = incoming.body;
-        setNodes(hydrated.visible);
-        setLinkedTasks(new Map(hydrated.tasks.map((task) => [task.id, task])));
-        setSource(incoming.body);
-      }
-      setDocument(incoming);
-      onDocumentUpdatedRef.current(incoming);
-    };
-    const stop = repository.subscribe((change) => {
-      if (!change || change.kind === "data") void refresh();
-    });
-    return () => {
-      live = false;
-      stop();
-    };
-  }, [hydrate, repository]);
-
-  useEffect(() => {
-    let live = true;
-    let latestRequest = 0;
-    const refreshLinkedTasks = async () => {
-      const documentId = documentRef.current?.id;
-      const request = ++latestRequest;
-      const ids = new Set(
-        nodesRef.current.flatMap((node) =>
-          node.kind === "task" && node.taskId ? [node.taskId] : [],
-        ),
-      );
-      if (!ids.size) return;
-      const tasks = await Promise.all(
-        [...ids].map((id) => repository.getSummary(id).catch(() => null)),
-      );
-      if (
-        !live ||
-        request !== latestRequest ||
-        documentRef.current?.id !== documentId
-      )
-        return;
-      setLinkedTasks((current) => {
-        const next = new Map(current);
-        for (const task of tasks) if (task) next.set(task.id, task);
-        return next;
-      });
-    };
-    const stop = repository.subscribe((change) => {
-      if (!change || change.kind === "data") void refreshLinkedTasks();
-    });
-    return () => {
-      live = false;
-      stop();
-    };
-  }, [repository]);
-
-  const persist = useCallback(
-    (nextNodes: readonly ScratchNode[]) => persistBody(scratchBody(nextNodes)),
-    [persistBody],
-  );
-  const completeRecords = useCallback(
-    (request: FieldCompletionRequest) => repository.completeField(request),
-    [repository],
-  );
-  const changeSource = useCallback((nextSource: string) => {
-    sourceEditVersion.current += 1;
-    sourceRef.current = nextSource;
-    setSource(nextSource);
-  }, []);
-
-  const flush = useCallback(
-    () =>
-      documentRef.current
-        ? editorModeRef.current === "markdown"
-          ? persistBody(sourceRef.current)
-          : persist(nodesRef.current)
-        : Promise.resolve(initialDocumentRef.current),
-    [persist, persistBody],
-  );
-
-  useEffect(
-    () =>
-      registerReloadParticipant({
-        save: async () => {
-          if (reviewProcessing || convertingId || autosaveSuspended.current)
-            throw new Error(
-              translate({
-                message: "Finish the note action in progress before reloading.",
-              }),
-            );
-          const version = sourceEditVersion.current;
-          await flush();
-          if (version !== sourceEditVersion.current)
-            throw new Error(
-              translate({
-                message:
-                  "Your note changed while saving. Save it again before reloading.",
-              }),
-            );
-        },
-        check: () => {
-          const current = documentRef.current;
-          if (!current) return;
-          const body =
-            editorModeRef.current === "markdown"
-              ? sourceRef.current
-              : scratchBody(nodesRef.current);
-          if (
-            body !== current.body ||
-            titleRef.current.trim() !== (current.title?.trim() ?? "") ||
-            repository.writeState?.({ kind: "scratchpad", id: current.id })
-          )
-            throw new Error(
-              translate({
-                message:
-                  "Some note changes are not saved. Keep this page open and try again.",
-              }),
-            );
-        },
-      }),
-    [flush, repository, reviewProcessing, convertingId],
-  );
-
-  useEffect(() => {
-    registerFlusher(flush);
-    return () => registerFlusher(null);
-  }, [flush, registerFlusher]);
-
-  useEffect(() => {
-    if (
-      !document ||
-      editorMode !== "outline" ||
-      reviewProcessing ||
-      autosaveSuspended.current
-    )
-      return;
-    const body = scratchBody(nodes);
-    if (body === documentRef.current?.body) return;
-    const timeout = window.setTimeout(() => {
-      if (!autosaveSuspended.current)
-        void persist(nodes).catch(() => undefined);
-    }, 260);
-    return () => window.clearTimeout(timeout);
-  }, [document, editorMode, nodes, persist, reviewProcessing]);
-
-  useEffect(() => {
-    if (
-      !document ||
-      editorMode !== "markdown" ||
-      autosaveSuspended.current ||
-      source === documentRef.current?.body
-    )
-      return;
-    const timeout = window.setTimeout(() => {
-      if (!autosaveSuspended.current)
-        void persistBody(source).catch(() => undefined);
-    }, 260);
-    return () => window.clearTimeout(timeout);
-  }, [document, editorMode, persistBody, source]);
-
-  useEffect(() => {
-    if (
-      !document ||
-      autosaveSuspended.current ||
-      title.trim() === (documentRef.current?.title?.trim() ?? "")
-    )
-      return;
-    const timeout = window.setTimeout(() => {
-      if (!autosaveSuspended.current) {
-        const body =
-          editorModeRef.current === "markdown"
-            ? sourceRef.current
-            : scratchBody(nodesRef.current);
-        void persistBody(body, title).catch(() => undefined);
-      }
-    }, 260);
-    return () => window.clearTimeout(timeout);
-  }, [document, persistBody, title]);
-
-  useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
-
-  useEffect(() => {
-    sourceRef.current = source;
-  }, [source]);
-
-  useEffect(() => {
-    editorModeRef.current = editorMode;
-  }, [editorMode]);
-
-  useLayoutEffect(() => {
-    if (!isCurrent || loading || editorMode !== "outline") return;
-    const last = nodesRef.current.at(-1);
-    if (!last) return;
-    const input = globalThis.document.querySelector<HTMLTextAreaElement>(
-      `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? initialDocument.id}:${last.id}`)}"]`,
-    );
-    input?.focus({ preventScroll: true });
-  }, [editorMode, initialDocument.id, isCurrent, loading]);
-
-  useLayoutEffect(() => {
-    const menu = rowMenuRef.current;
-    if (!menu || !menuId) return;
-    const row = menu.closest(".scratchpad-row");
-    const scroller = menu.closest(".scratchpad-history-scroll");
-    if (!row) return;
-    const rowBounds = row.getBoundingClientRect();
-    const scrollBounds = scroller?.getBoundingClientRect();
-    const boundaryTop = Math.max(0, scrollBounds?.top ?? 0);
-    const boundaryBottom = Math.min(
-      window.innerHeight,
-      scrollBounds?.bottom ?? window.innerHeight,
-    );
-    const roomAbove = rowBounds.top - boundaryTop;
-    const roomBelow = boundaryBottom - rowBounds.bottom;
-    menu.classList.toggle(
-      "opens-up",
-      roomBelow < menu.offsetHeight + 8 && roomAbove > roomBelow,
-    );
-  }, [menuId]);
-
-  useEffect(() => {
-    const request = focusAfterRender.current;
-    if (!request || reviewOpen) return;
-    focusAfterRender.current = undefined;
-    const input = globalThis.document.querySelector<HTMLTextAreaElement>(
-      `[data-scratch-input="${CSS.escape(`${documentRef.current?.id ?? "scratchpad"}:${request.id}`)}"]`,
-    );
-    input?.focus();
-    const position = request.cursor ?? input?.value.length ?? 0;
-    if (input)
-      setOutlineSelection(
-        input,
-        position,
-        request.selectionEnd ?? position,
-        request.selectionDirection,
-      );
-  }, [nodes, reviewOpen]);
-
-  const activeNode = nodes.find((node) => node.id === activeId);
-  const recordWikilinkToken = useMemo(
-    () =>
-      activeNode && activeNode.kind !== "task"
-        ? activeRecordWikilink(activeNode.text, cursor)
-        : undefined,
-    [activeNode, cursor],
-  );
-  const triggers = useMemo(
-    () => captureTriggers(configuration),
-    [configuration],
-  );
-  const activeCaptureSuggestionToken = useMemo(
-    () =>
-      !recordWikilinkToken && activeNode?.kind === "draft"
-        ? activeCaptureToken(activeNode.text, cursor, triggers)
-        : undefined,
-    [activeNode, cursor, recordWikilinkToken, triggers],
-  );
-  const suggestionRequest = useMemo(
-    () =>
-      recordWikilinkToken
-        ? recordWikilinkCompletionRequest(recordWikilinkToken)
-        : activeCaptureSuggestionToken
-          ? captureSuggestionRequest(
-              activeCaptureSuggestionToken,
-              configuration,
-            )
-          : undefined,
-    [activeCaptureSuggestionToken, configuration, recordWikilinkToken],
-  );
-  const suggestionKey = suggestionRequest
-    ? [
-        activeId,
-        suggestionRequest.field,
-        suggestionRequest.query ?? "",
-        recordWikilinkToken
-          ? `wikilink:${recordWikilinkToken.from}`
-          : `capture:${activeCaptureSuggestionToken?.start ?? 0}`,
-      ].join("\0")
-    : "";
-  const suggestions =
-    suggestionKey === suggestionState.key ? suggestionState.values : [];
-
-  useEffect(() => {
-    if (!suggestionRequest || !suggestionKey) return;
-    let active = true;
-    const fallback = recordWikilinkToken
-      ? []
-      : configuredCaptureSuggestions(suggestionRequest);
-    void repository.completeField(suggestionRequest).then(
-      (values) => {
-        if (!active) return;
-        setSuggestionState({
-          key: suggestionKey,
-          values: values.length ? values : fallback,
-        });
-        setSelectedSuggestion(0);
-      },
-      () => {
-        if (!active) return;
-        setSuggestionState({ key: suggestionKey, values: fallback });
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [recordWikilinkToken, repository, suggestionKey, suggestionRequest]);
-
-  useEffect(() => {
-    if (!activeNode || activeNode.kind !== "draft" || !activeNode.text.trim())
-      return;
-    let active = true;
-    const id = activeNode.id;
-    const text = activeNode.text;
-    const timeout = window.setTimeout(() => {
-      void parseTaskCapture(text, configuration).then(
-        (result) => {
-          if (active) setPreview({ id, text, result });
-        },
-        () => {
-          if (active) setPreview(null);
-        },
-      );
-    }, 90);
-    return () => {
-      active = false;
-      window.clearTimeout(timeout);
-    };
-  }, [activeNode, configuration]);
-
-  function updateNodes(next: ScratchNode[]) {
-    nodesRef.current = next;
-    setNodes(next);
-    setError("");
-  }
-
-  function changeNode(id: string, change: Partial<ScratchNode>) {
-    updateNodes(
-      nodesRef.current.map((node) =>
-        node.id === id ? { ...node, ...change } : node,
-      ),
-    );
-  }
-
-  function chooseSuggestion(value: FieldCompletion) {
-    const node = nodesRef.current.find(
-      (candidate) => candidate.id === activeId,
-    );
-    if (!node) return;
-    if (recordWikilinkToken) {
-      const next = applyRecordWikilinkCompletion(
-        node.text,
-        recordWikilinkToken,
-        value,
-      );
-      const link = recordWikilinkValue(value);
-      if (!next || !link) return;
-      const isExactLink = next.text.trim() === link;
-      const taskId = isExactLink ? value.taskId : undefined;
-      if (taskId) {
-        const created = createScratchNode("draft", node.depth);
-        const current = nodesRef.current;
-        const index = current.findIndex(
-          (candidate) => candidate.id === node.id,
-        );
-        const subtreeEnd = scratchSubtreeEnd(current, index);
-        updateNodes([
-          ...current.slice(0, index),
-          {
-            ...node,
-            kind: "task",
-            text: value.label,
-            completed: false,
-            link,
-            taskId,
-          },
-          ...current.slice(index + 1, subtreeEnd),
-          created,
-          ...current.slice(subtreeEnd),
-        ]);
-        focusAfterRender.current = { id: created.id, cursor: 0 };
-        void repository.get(taskId).then((task) => {
-          if (!task) return;
-          setLinkedTasks((currentTasks) =>
-            new Map(currentTasks).set(task.id, task),
-          );
-        });
-      } else {
-        changeNode(node.id, {
-          text: next.text,
-          ...(isExactLink
-            ? {
-                kind: "note",
-                completed: false,
-                link: undefined,
-                taskId: undefined,
-              }
-            : {}),
-        });
-        focusAfterRender.current = { id: node.id, cursor: next.cursor };
-      }
-      setCursor(taskId ? 0 : next.cursor);
-      setSuggestionState({ key: "", values: [] });
-      return;
-    }
-    if (!activeCaptureSuggestionToken) return;
-    const next = applyCaptureSuggestion(
-      node.text,
-      activeCaptureSuggestionToken,
-      value.value,
-    );
-    changeNode(node.id, { text: next.text });
-    setCursor(next.cursor);
-    setSuggestionState({ key: "", values: [] });
-    focusAfterRender.current = { id: node.id, cursor: next.cursor };
-  }
-
-  function handleKeyDown(
-    event: KeyboardEvent<HTMLTextAreaElement>,
-    node: ScratchNode,
-  ) {
-    if (suggestions.length) {
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        setSelectedSuggestion((current) =>
-          event.key === "ArrowDown"
-            ? (current + 1) % suggestions.length
-            : (current - 1 + suggestions.length) % suggestions.length,
-        );
-        return;
-      }
-      if (event.key === "Enter" || event.key === "Tab") {
-        event.preventDefault();
-        void chooseSuggestion(suggestions[selectedSuggestion]!);
-        return;
-      }
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSuggestionState({ key: "", values: [] });
-        return;
-      }
-    }
-    if (event.key === "Tab") {
-      event.preventDefault();
-      updateNodes(
-        changeScratchDepth(nodesRef.current, node.id, event.shiftKey ? -1 : 1),
-      );
-      focusAfterRender.current = { id: node.id, cursor };
-      selectionFeedback();
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      const position =
-        outlineSelection(event.currentTarget) ?? node.text.length;
-      const before = node.text.slice(0, position);
-      const after = node.text.slice(position);
-      const created = createScratchNode(
-        node.kind === "note" ? "note" : "draft",
-        node.depth,
-        after,
-      );
-      const current = nodesRef.current;
-      const index = current.findIndex((candidate) => candidate.id === node.id);
-      const next = [
-        ...current.slice(0, index),
-        { ...node, text: before },
-        created,
-        ...current.slice(index + 1),
-      ];
-      focusAfterRender.current = { id: created.id, cursor: 0 };
-      updateNodes(next);
-      return;
-    }
-    if (event.key === "Backspace" && !node.text) {
-      event.preventDefault();
-      const current = nodesRef.current;
-      if (current.length === 1) return;
-      const index = current.findIndex((candidate) => candidate.id === node.id);
-      const previous = current[index - 1];
-      if (previous)
-        focusAfterRender.current = {
-          id: previous.id,
-          cursor: previous.text.length,
-        };
-      updateNodes(removeScratchNode(current, node.id));
-    }
-  }
-
-  function changeDepth(node: ScratchNode, direction: -1 | 1) {
-    focusAfterRender.current = { id: node.id };
-    updateNodes(changeScratchDepth(nodesRef.current, node.id, direction));
-    selectionFeedback();
-  }
-
-  function canIndent(node: ScratchNode): boolean {
-    const index = nodesRef.current.findIndex(
-      (candidate) => candidate.id === node.id,
-    );
-    const previous = nodesRef.current[index - 1];
-    return Boolean(previous && node.depth <= previous.depth);
-  }
-
-  function addChild(node: ScratchNode) {
-    const index = nodesRef.current.findIndex(
-      (candidate) => candidate.id === node.id,
-    );
-    const child = createScratchNode("draft", node.depth + 1);
-    focusAfterRender.current = { id: child.id };
-    updateNodes([
-      ...nodesRef.current.slice(0, index + 1),
-      child,
-      ...nodesRef.current.slice(index + 1),
-    ]);
-    setCollapsedIds((current) => {
-      if (!current.has(node.id)) return current;
-      const next = new Set(current);
-      next.delete(node.id);
-      return next;
-    });
-  }
-
-  async function convertNode(id: string) {
-    if (convertingId || reviewProcessing) return;
-    autosaveSuspended.current = true;
-    setConvertingId(id);
-    setError("");
-    try {
-      const converted = await createTaskForNode(nodesRef.current, id);
-      focusAfterRender.current = { id: converted.continuationId, cursor: 0 };
-      updateNodes(converted.nodes);
-      await persist(converted.nodes);
-      const children = await linkExistingChildren(
-        converted.nodes,
-        id,
-        converted.task,
-      );
-      successFeedback();
-      setNotice({
-        message: t`Created “${converted.task.title}”`,
-        tasks: [converted.task],
-        conversions: [
-          {
-            draft: converted.draft,
-            linked: converted.nodes.find((node) => node.id === id)!,
-            task: converted.task,
-            children,
-          },
-        ],
-      });
-    } catch (reason) {
-      setError(message(reason));
-    } finally {
-      autosaveSuspended.current = false;
-      setConvertingId(undefined);
-    }
-  }
-
-  async function createTaskForNode(source: ScratchNode[], id: string) {
-    const index = source.findIndex((node) => node.id === id);
-    const node = source[index];
-    if (!node || node.kind !== "draft")
-      throw new Error(t({ message: "Only draft items can become TaskNotes." }));
-    if (!node.text.trim())
-      throw new Error(t({ message: "Add a task title first." }));
-    const result: TaskCaptureResult = await parseTaskCapture(
-      node.text,
-      configuration,
-    ).catch(() => ({
-      input: { title: node.text.trim() },
-      preview: [],
-    }));
-    const parent = nearestTaskAncestor(source, index);
-    const projects = [
-      ...(result.input.projects ?? []),
-      ...(parent?.link ? [parent.link] : []),
-    ].filter((value, candidate, values) => values.indexOf(value) === candidate);
-    const completedStatus = node.completed
-      ? configuration.statuses.find((status) => status.isCompleted)
-      : undefined;
-    if (node.completed && !completedStatus)
-      throw new Error(
-        t({
-          message: "This collection does not define a completed task status.",
-        }),
-      );
-    const createInput = {
-      ...result.input,
-      ...(projects.length ? { projects } : {}),
-      ...(completedStatus ? { status: completedStatus.value } : {}),
-    };
-    let intent = createIntents.current.get(node);
-    if (!intent) {
-      intent = { id: crypto.randomUUID() };
-      createIntents.current.set(node, intent);
-    }
-    const task = await createTask(createInput, intent);
-    setLinkedTasks((current) => new Map(current).set(task.id, task));
-    const link = recordCompletion(
-      {
-        path: task.path,
-        label: task.title,
-        frontmatter: task.frontmatter,
-        types: ["task"],
-      },
-      configuration.linkWriteFormat,
-    ).value;
-    return {
-      task,
-      draft: node,
-      ...ensureScratchContinuation(
-        source.map((candidate) => {
-          if (candidate.id !== id) return candidate;
-          const converted = { ...candidate };
-          delete converted.completed;
-          return {
-            ...converted,
-            kind: "task" as const,
-            text: task.title,
-            link,
-            taskId: task.id,
-          };
-        }),
-        id,
-      ),
-    };
-  }
-
-  async function linkExistingChildren(
-    source: ScratchNode[],
-    parentId: string,
-    parentTask: TaskSummary,
-  ) {
-    const children: ScratchpadConversion["children"] = [];
-    const parentIndex = source.findIndex((node) => node.id === parentId);
-    if (parentIndex < 0) return children;
-    const parentLink = recordCompletion(
-      {
-        path: parentTask.path,
-        label: parentTask.title,
-        frontmatter: parentTask.frontmatter,
-        types: ["task"],
-      },
-      configuration.linkWriteFormat,
-    ).value;
-    for (let index = parentIndex + 1; index < source.length; index += 1) {
-      const node = source[index]!;
-      if (node.depth <= source[parentIndex]!.depth) break;
-      if (
-        node.kind !== "task" ||
-        nearestTaskAncestor(source, index)?.id !== parentId
-      )
-        continue;
-      const task = await resolveLinkedTask(node);
-      if (!task || task.projects.some((value) => value === parentLink))
-        continue;
-      const after = await updateTask(task.id, {
-        projects: [...task.projects, parentLink],
-      });
-      children.push({ before: task, after });
-    }
-    return children;
-  }
-
-  async function resolveLinkedTask(
-    node: ScratchNode,
-  ): Promise<TaskSummary | null> {
-    if (node.taskId) {
-      const task = await repository.get(node.taskId);
-      if (task) return task;
-    }
-    const tasks = await repository.listSummaries({
-      status: "all",
-      archived: "include",
-      limit: 50_000,
-    });
-    return (
-      tasks.find(
-        (task) => node.link && recordMatchesLink(task.path, node.link),
-      ) ?? null
-    );
-  }
-
-  async function openLinkedNode(node: ScratchNode) {
-    try {
-      const task = await resolveLinkedTask(node);
-      if (!task)
-        throw new Error(
-          t({ message: "The linked TaskNote could not be found." }),
-        );
-      onOpenTask(task);
-    } catch (reason) {
-      setError(message(reason));
-    }
-  }
-
-  function openReview() {
-    const items = nodesRef.current
-      .filter((node) => node.kind === "draft" && node.text.trim())
-      .map(({ id, text, depth }) => ({ id, text, depth }));
-    if (
-      items.length === 1 &&
-      nodesRef.current.every(
-        (node) => node.id === items[0]!.id || !node.text.trim(),
-      )
-    ) {
-      void convertNode(items[0]!.id);
-      return;
-    }
-    setReviewItems(items);
-    const current = items.find((item) => item.id === activeId);
-    setSelectedReviewIds(new Set(current ? [current.id] : []));
-    setReviewResults({});
-    setReviewOpen(true);
-  }
-
-  function toggleReviewBranch(id: string) {
-    const source = nodesRef.current;
-    const index = source.findIndex((node) => node.id === id);
-    if (index < 0) return;
-    const branchIds = source
-      .slice(index, scratchSubtreeEnd(source, index))
-      .filter((node) => node.kind === "draft" && node.text.trim())
-      .map((node) => node.id);
-    setSelectedReviewIds((current) => {
-      const next = new Set(current);
-      const select = branchIds.some((branchId) => !next.has(branchId));
-      for (const branchId of branchIds)
-        if (select) next.add(branchId);
-        else next.delete(branchId);
-      return next;
-    });
-  }
-
-  async function createReviewedTasks() {
-    if (reviewProcessing) return;
-    const pending = reviewItems.filter(
-      (item) =>
-        selectedReviewIds.has(item.id) &&
-        reviewResults[item.id]?.state !== "created",
-    );
-    if (!pending.length) return;
-    autosaveSuspended.current = true;
-    setReviewProcessing(true);
-    setError("");
-    const failedIds = new Set<string>();
-    const completed = new Map<string, TaskSummary>();
-    const conversions: ScratchpadConversion[] = [];
-    for (const result of Object.values(reviewResults))
-      if (result.state === "created" && result.task)
-        completed.set(result.task.id, result.task);
-
-    for (const item of pending) {
-      const previous = reviewResults[item.id];
-      setReviewResults((current) => ({
-        ...current,
-        [item.id]: { state: "creating", task: previous?.task },
-      }));
-      let createdTask = previous?.task;
-      let convertedDraft: ScratchNode | undefined;
-      try {
-        let working = nodesRef.current;
-        const currentNode = working.find((node) => node.id === item.id);
-        if (currentNode?.kind === "draft") {
-          const converted = await createTaskForNode(working, item.id);
-          working = converted.nodes;
-          createdTask = converted.task;
-          convertedDraft = converted.draft;
-          focusAfterRender.current = {
-            id: converted.continuationId,
-            cursor: 0,
-          };
-          updateNodes(working);
-        } else if (currentNode?.kind === "task") {
-          createdTask ??= (await resolveLinkedTask(currentNode)) ?? undefined;
-        } else {
-          throw new Error(
-            t({ message: "This draft is no longer in the scratchpad." }),
-          );
-        }
-        if (!createdTask)
-          throw new Error(
-            t({ message: "The created TaskNote could not be found." }),
-          );
-        await persist(working);
-        const children = await linkExistingChildren(
-          working,
-          item.id,
-          createdTask,
-        );
-        if (convertedDraft)
-          conversions.push({
-            draft: convertedDraft,
-            linked: working.find((node) => node.id === item.id)!,
-            task: createdTask,
-            children,
-          });
-        completed.set(createdTask.id, createdTask);
-        setReviewResults((current) => ({
-          ...current,
-          [item.id]: { state: "created", task: createdTask! },
-        }));
-      } catch (reason) {
-        failedIds.add(item.id);
-        setReviewResults((current) => ({
-          ...current,
-          [item.id]: {
-            state: "error",
-            message: message(reason),
-            task: createdTask,
-          },
-        }));
-      }
-    }
-
-    autosaveSuspended.current = false;
-    setReviewProcessing(false);
-    if (failedIds.size) {
-      setSelectedReviewIds(failedIds);
-      return;
-    }
-    setReviewOpen(false);
-    const tasks = [...completed.values()];
-    setNotice({
-      message: plural(tasks.length, {
-        one: "Created # task",
-        other: "Created # tasks",
-      }),
-      tasks,
-      conversions,
-    });
-    successFeedback();
-  }
-
-  async function undoConversion() {
-    if (!notice?.conversions?.length || undoingConversion) return;
-    const conversions = notice.conversions;
-    setUndoingConversion(true);
-    autosaveSuspended.current = true;
-    let changed = false;
-    try {
-      await flush();
-      if (
-        editorModeRef.current === "markdown" &&
-        sourceRef.current !== scratchBody(nodesRef.current)
-      ) {
-        changed = true;
-      } else {
-        for (const conversion of [...conversions].reverse()) {
-          const result = await undoScratchpadConversion(
-            repository,
-            conversion,
-            () => nodesRef.current,
-          );
-          if (result === "changed") {
-            changed = true;
-            continue;
-          }
-          createIntents.current.delete(conversion.draft);
-          const next = nodesRef.current.map((node) =>
-            node.id === conversion.draft.id ? conversion.draft : node,
-          );
-          updateNodes(next);
-          if (editorModeRef.current === "markdown")
-            changeSource(scratchBody(next));
-          await persist(next);
-        }
-      }
-      setNotice({
-        message: changed
-          ? t`Some tasks or notes changed after conversion. They were kept; their drafts were not restored.`
-          : t`Conversion undone`,
-      });
-    } catch (reason) {
-      setError(message(reason));
-    } finally {
-      autosaveSuspended.current = false;
-      setUndoingConversion(false);
-    }
-  }
-
-  async function changeEditorMode(nextMode: "outline" | "markdown") {
-    if (nextMode === editorMode) return;
-    setError("");
-    try {
-      if (nextMode === "markdown") {
-        const latest = await persist(nodesRef.current);
-        sourceRef.current = latest.body;
-        editorModeRef.current = "markdown";
-        setSource(latest.body);
-        setEditorMode("markdown");
-        return;
-      }
-
-      const transitionSource = sourceRef.current;
-      const transitionVersion = sourceEditVersion.current;
-      const latest = await persistBody(transitionSource);
-      if (!isOutlineCompatible(latest.body)) {
-        setError(
-          t({
-            message:
-              "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown.",
-          }),
-        );
-        return;
-      }
-      const parsed = parseScratchBody(latest.body);
-      const tasks = parsed.some((node) => node.link)
-        ? await repository.listSummaries({
-            status: "all",
-            archived: "include",
-            limit: 50_000,
-          })
-        : [];
-      const hydrated = hydrateLinkedNodes(parsed, tasks);
-      // Completion lookup may be remote. Keep Markdown mode if the user typed
-      // while it was in flight rather than replacing newer text with this snapshot.
-      if (sourceEditVersion.current !== transitionVersion) return;
-      const last = hydrated.at(-1);
-      if (!last || last.kind === "task" || last.text.trim())
-        hydrated.push(createScratchNode());
-      nodesRef.current = hydrated;
-      editorModeRef.current = "outline";
-      setLinkedTasks(new Map(tasks.map((task) => [task.id, task])));
-      setNodes(hydrated);
-      setEditorMode("outline");
-    } catch (reason) {
-      setError(message(reason));
-    }
-  }
-
-  function beginDrag(event: ReactPointerEvent, sourceId: string) {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    let drop: DragState = { sourceId };
-    setDrag(drop);
-    const move = (pointer: PointerEvent) => {
-      const row = globalThis.document
-        .elementFromPoint(pointer.clientX, pointer.clientY)
-        ?.closest<HTMLElement>("[data-scratch-row]");
-      const targetId = row?.dataset.scratchRow;
-      if (!row || !targetId || targetId === sourceId) return;
-      const rect = row.getBoundingClientRect();
-      const ratio = (pointer.clientY - rect.top) / Math.max(1, rect.height);
-      const placement: ScratchDropPlacement =
-        pointer.clientX > rect.left + 78
-          ? "inside"
-          : ratio < 0.5
-            ? "before"
-            : "after";
-      drop = { sourceId, targetId, placement };
-      setDrag(drop);
-    };
-    const finish = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", finish);
-      window.removeEventListener("pointercancel", cancel);
-      setDrag(null);
-      if (!drop.targetId || !drop.placement) return;
-      const next = moveScratchSubtree(
-        nodesRef.current,
-        sourceId,
-        drop.targetId,
-        drop.placement,
-      );
-      updateNodes(next);
-      selectionFeedback();
-    };
-    const cancel = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", finish);
-      window.removeEventListener("pointercancel", cancel);
-      setDrag(null);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", finish, { once: true });
-    window.addEventListener("pointercancel", cancel, { once: true });
-  }
-
-  if (loading)
-    return (
-      <section className="scratchpad-editor" aria-busy="true">
-        <div className="scratchpad-loading" />
-      </section>
-    );
-
-  const drafts = nodes.filter(
-    (node) => node.kind === "draft" && node.text.trim(),
-  ).length;
-  const visibleNodes = visibleScratchNodes(nodes, collapsedIds);
-  const failedReviewCount = Object.values(reviewResults).filter(
-    (result) => result.state === "error",
-  ).length;
-  const selectedReviewCount = reviewItems.filter(
-    (item) =>
-      selectedReviewIds.has(item.id) &&
-      reviewResults[item.id]?.state !== "created",
-  ).length;
-  const displayDate = isCurrent
-    ? (document?.dateCreated ?? initialDocument.dateCreated)
-    : scratchpadHistoryDate(document ?? initialDocument);
-
-  return (
-    <section
-      className={`scratchpad-editor${editorMode === "markdown" ? " is-writing" : ""}`}
-      inert={undoingConversion}
-      aria-busy={undoingConversion}
-      aria-label={t`Editor for ${document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))}`}
-    >
-      <div className="scratchpad-title-row">
-        <input
-          aria-label={t({ message: "Note title" })}
-          className={title ? undefined : "is-empty"}
-          maxLength={160}
-          placeholder={t({ message: "Add title" })}
-          type="text"
-          value={title}
-          onBlur={() => {
-            const trimmed = title.trim();
-            titleRef.current = trimmed;
-            setTitle(trimmed);
-          }}
-          onChange={(event) => {
-            titleRef.current = event.target.value;
-            setTitle(event.target.value);
-          }}
-        />
-        <span className="scratchpad-title-meta">
-          {isCurrent ? (
-            <small>
-              <Trans>Current note</Trans>
-            </small>
-          ) : null}
-          <time dateTime={displayDate}>{formatScratchDate(displayDate)}</time>
-        </span>
       </div>
-      <header className="scratchpad-editor-toolbar">
+      <RecordWriteNotice
+        repository={repository}
+        target={{ kind: "image", id: image.id }}
+      />
+      {expanded ? (
         <div
-          aria-label={t({ message: "Scratchpad editing mode" })}
-          className="scratchpad-mode-switch"
-          role="group"
+          className={`scratch-image-frame${unavailable ? " is-unavailable" : ""}`}
+          style={
+            !unavailable && image.width && image.height
+              ? { aspectRatio: `${image.width} / ${image.height}` }
+              : undefined
+          }
         >
-          <button
-            aria-label={t({ message: "Outline" })}
-            aria-pressed={editorMode === "outline"}
-            title={t({ message: "Outline" })}
-            type="button"
-            onClick={() => void changeEditorMode("outline")}
-          >
-            <Trans>Outline</Trans>
-          </button>
-          <button
-            aria-label={t({ message: "Write" })}
-            aria-pressed={editorMode === "markdown"}
-            title={t({ message: "Write" })}
-            type="button"
-            onClick={() => void changeEditorMode("markdown")}
-          >
-            <Trans>Write</Trans>
-          </button>
-        </div>
-        <div className="scratchpad-header-actions">
-          {nativeSaveState ? (
-            <RecordWriteNotice
-              repository={repository}
-              target={{
-                kind: "scratchpad",
-                id: document?.id ?? initialDocument.id,
-              }}
-            />
-          ) : null}
-          <span
-            className={`scratchpad-save-state is-${saveState}`}
-            role={saveState === "error" ? "status" : undefined}
-          >
-            {saveState === "error"
-              ? nativeSaveState
-                ? translate({ message: "Save needs review" })
-                : translate({ message: "Not saved" })
-              : saveState === "saving" || nativeSaveState
-                ? ""
-                : translate({ message: "Saved" })}
-          </span>
-          {onReactivate ? (
-            <button
-              className="text-action scratchpad-reactivate-action"
-              disabled={reactivationDisabled}
-              type="button"
-              onClick={onReactivate}
-            >
-              <RotateCcw aria-hidden="true" size={17} />
-              {reactivating
-                ? t({ message: "Resuming…" })
-                : t({ message: "Resume as current" })}
-            </button>
-          ) : null}
-          <button
-            aria-label={t({ message: "Create tasks" })}
-            className="text-action scratchpad-review-action"
-            disabled={editorMode === "outline" && !drafts}
-            type="button"
-            ref={reviewTriggerRef}
-            onClick={async () => {
-              if (editorMode === "markdown") await changeEditorMode("outline");
-              if (editorModeRef.current !== "outline") return;
-              openReview();
-            }}
-          >
-            <ListChecks aria-hidden="true" size={17} />{" "}
-            <Trans>Create tasks</Trans>
-          </button>
-        </div>
-      </header>
-      {error ? (
-        <div className="scratchpad-error" role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={() => void load()}>
-            <Trans>Reload</Trans>
-          </button>
-        </div>
-      ) : null}
-      {editorMode === "markdown" ? (
-        <Suspense fallback={<div className="scratchpad-loading" />}>
-          <MarkdownSourceEditor
-            ariaLabel={t({ message: "Scratchpad Markdown" })}
-            autoFocus={isCurrent}
-            completeRecords={completeRecords}
-            value={source}
-            onChange={changeSource}
-          />
-        </Suspense>
-      ) : (
-        <div
-          className="scratchpad-outline"
-          role="tree"
-          aria-label={t({ message: "Scratchpad outline" })}
-        >
-          {visibleNodes.map(({ node: storedNode, descendantCount }) => {
-            const linkedTask = storedNode.taskId
-              ? linkedTasks.get(storedNode.taskId)
-              : undefined;
-            const node = linkedTask
-              ? { ...storedNode, text: linkedTask.title }
-              : storedNode;
-            const activePreview =
-              preview?.id === node.id && preview.text === node.text
-                ? preview.result.preview
-                : [];
-            const dropTarget =
-              drag?.targetId === node.id ? drag.placement : undefined;
-            const suggestionListId = `scratchpad-suggestions-${document?.id ?? initialDocument.id}-${node.id}`;
-            const suggestionsOpen =
-              activeId === node.id && suggestions.length > 0;
-            return (
-              <div
-                className={`scratchpad-row kind-${node.kind}${descendantCount ? " has-children" : ""}${drag?.sourceId === node.id ? " is-dragging" : ""}${dropTarget ? ` drop-${dropTarget}` : ""}`}
-                data-scratch-row={node.id}
-                key={node.id}
-                role="treeitem"
-                onFocusCapture={() => {
-                  if (node.kind === "task") setActiveId(node.id);
-                }}
-                aria-level={node.depth + 1}
-                style={{ "--scratch-depth": node.depth } as CSSProperties}
-              >
-                <div className="scratchpad-row-main">
-                  {descendantCount ? (
-                    <button
-                      aria-expanded={!collapsedIds.has(node.id)}
-                      aria-label={t`${collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")} ${node.text || uiCopy("item")}, ${nestedItemCount(descendantCount)}`}
-                      className="scratchpad-collapse"
-                      type="button"
-                      onClick={() =>
-                        setCollapsedIds((current) => {
-                          const next = new Set(current);
-                          if (next.has(node.id)) next.delete(node.id);
-                          else next.add(node.id);
-                          return next;
-                        })
-                      }
-                    >
-                      {collapsedIds.has(node.id) ? (
-                        <ChevronRight aria-hidden="true" size={17} />
-                      ) : (
-                        <ChevronDown aria-hidden="true" size={17} />
-                      )}
-                    </button>
-                  ) : (
-                    <span
-                      aria-hidden="true"
-                      className="scratchpad-disclosure-space"
-                    />
-                  )}
-                  <button
-                    aria-label={t`Move ${node.text || uiCopy("empty item")}`}
-                    className="scratchpad-drag-handle"
-                    type="button"
-                    onPointerDown={(event) => beginDrag(event, node.id)}
-                  >
-                    <GripVertical aria-hidden="true" size={18} />
-                  </button>
-                  {node.kind === "task" ? (
-                    <span className="scratchpad-kind-label is-linked">
-                      <Link2 aria-hidden="true" size={14} />
-                      <span>
-                        <Trans>Linked</Trans>
-                      </span>
-                    </span>
-                  ) : (
-                    <div className="scratchpad-kind-controls">
-                      {node.kind === "draft" ? (
-                        <button
-                          aria-label={`${node.completed ? t({ message: "Mark incomplete" }) : t({ message: "Mark complete" })} ${node.text || t({ message: "empty task" })}`}
-                          aria-pressed={Boolean(node.completed)}
-                          className="scratchpad-draft-completion"
-                          title={
-                            node.completed
-                              ? t({ message: "Completed draft" })
-                              : t({ message: "Task draft" })
-                          }
-                          type="button"
-                          onClick={() =>
-                            changeNode(node.id, { completed: !node.completed })
-                          }
-                        >
-                          {node.completed ? (
-                            <SquareCheckBig aria-hidden="true" size={19} />
-                          ) : (
-                            <Square aria-hidden="true" size={19} />
-                          )}
-                        </button>
-                      ) : (
-                        <span
-                          aria-hidden="true"
-                          className="scratchpad-note-kind-icon"
-                        >
-                          <StickyNote size={19} />
-                        </span>
-                      )}
-                      <button
-                        aria-label={
-                          node.kind === "draft"
-                            ? t`Convert ${node.text || uiCopy("empty task")} to note`
-                            : t({ message: "Make a task" })
-                        }
-                        className="scratchpad-kind-toggle"
-                        title={
-                          node.kind === "draft"
-                            ? t({ message: "Convert to note" })
-                            : t({ message: "Note" })
-                        }
-                        type="button"
-                        onClick={() =>
-                          changeNode(node.id, {
-                            kind: node.kind === "draft" ? "note" : "draft",
-                            completed: false,
-                          })
-                        }
-                      >
-                        {node.kind === "draft"
-                          ? t({ message: "Task" })
-                          : t({ message: "Note" })}
-                      </button>
-                    </div>
-                  )}
-                  {node.kind === "task" ? (
-                    <button
-                      aria-label={node.text}
-                      className="scratchpad-task-link"
-                      type="button"
-                      onClick={() => void openLinkedNode(node)}
-                    >
-                      {node.text}
-                      {linkedTask ? (
-                        <span className="scratchpad-linked-metadata">
-                          {linkedTask.scheduled || linkedTask.due ? (
-                            <span>
-                              {formatTaskDate(
-                                linkedTask.scheduled || linkedTask.due!,
-                              )}
-                            </span>
-                          ) : null}
-                          {linkedTask.priority ? (
-                            <span>
-                              {configuration.priorities.find(
-                                ({ value }) => value === linkedTask.priority,
-                              )?.label ?? linkedTask.priority}
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : null}
-                    </button>
-                  ) : (
-                    <OutlineTextarea
-                      aria-activedescendant={
-                        suggestionsOpen
-                          ? `${suggestionListId}-${selectedSuggestion}`
-                          : undefined
-                      }
-                      aria-autocomplete="list"
-                      aria-controls={
-                        suggestionsOpen ? suggestionListId : undefined
-                      }
-                      aria-label={`${node.kind === "draft" ? t({ message: "Draft task" }) : t({ message: "Note" })}: ${node.text || t({ message: "empty" })}`}
-                      autoComplete="off"
-                      data-scratch-input={`${document?.id ?? initialDocument.id}:${node.id}`}
-                      placeholder={
-                        node.kind === "draft"
-                          ? t({ message: "What needs doing?" })
-                          : t({ message: "Add context…" })
-                      }
-                      value={node.text}
-                      onValueChange={(
-                        raw,
-                        selectionStart,
-                        selectionEnd,
-                        selectionDirection,
-                      ) => {
-                        const normalize = (value: string) =>
-                          value.replace(/[\r\n]+/g, " ");
-                        const text = normalize(raw);
-                        const position = normalize(
-                          raw.slice(0, selectionStart),
-                        ).length;
-                        if (text !== raw) {
-                          focusAfterRender.current = {
-                            id: node.id,
-                            cursor: position,
-                            selectionEnd: normalize(raw.slice(0, selectionEnd))
-                              .length,
-                            selectionDirection,
-                          };
-                        }
-                        changeNode(node.id, { text });
-                        setCursor(position);
-                      }}
-                      onFocus={(event) => {
-                        setActiveId(node.id);
-                        setCursor(
-                          outlineSelection(event.currentTarget) ??
-                            node.text.length,
-                        );
-                      }}
-                      onClick={(event) =>
-                        setCursor(
-                          outlineSelection(event.currentTarget) ??
-                            node.text.length,
-                        )
-                      }
-                      onKeyDown={(event) => handleKeyDown(event, node)}
-                      onSelect={(event) =>
-                        setCursor(
-                          outlineSelection(event.currentTarget) ??
-                            node.text.length,
-                        )
-                      }
-                    />
-                  )}
-                  {node.kind === "draft" && node.text.trim() ? (
-                    <button
-                      aria-label={t`Create task for ${node.text}`}
-                      className="scratchpad-convert-line"
-                      disabled={Boolean(convertingId) || reviewProcessing}
-                      title={t({ message: "Create task" })}
-                      type="button"
-                      onClick={() => void convertNode(node.id)}
-                    >
-                      <FileCheck2 aria-hidden="true" size={18} />
-                    </button>
-                  ) : null}
-                  {node.kind === "task" && linkedTask ? (
-                    <TaskActions
-                      task={linkedTask}
-                      onOpen={(task) => onOpenTask(task)}
-                      onToggle={async (task) => {
-                        const updated = await updateTask(task.id, {
-                          completed: !task.completed,
-                        });
-                        setLinkedTasks((current) =>
-                          new Map(current).set(updated.id, updated),
-                        );
-                      }}
-                      onDeleted={() =>
-                        updateNodes(
-                          removeScratchNode(nodesRef.current, node.id),
-                        )
-                      }
-                    />
-                  ) : (
-                    <button
-                      aria-expanded={menuId === node.id}
-                      aria-haspopup="menu"
-                      aria-label={t`Actions for ${node.text || uiCopy("empty item")}`}
-                      className="scratchpad-row-menu-trigger"
-                      type="button"
-                      onClick={(event) => {
-                        rowMenuTriggerRef.current = event.currentTarget;
-                        setMenuId((current) =>
-                          current === node.id ? undefined : node.id,
-                        );
-                      }}
-                    >
-                      <MoreHorizontal aria-hidden="true" size={18} />
-                    </button>
-                  )}
-                </div>
-                {node.kind === "draft" && activePreview.length ? (
-                  <div
-                    className="scratchpad-nlp-preview"
-                    aria-label={t({ message: "Recognized task details" })}
-                    aria-live="polite"
-                  >
-                    <div>
-                      {activePreview.map((item) => (
-                        <span key={item.key}>{item.label}</span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-                {activeId === node.id ? (
-                  <div
-                    aria-label={t`Outline controls for ${node.text || uiCopy("empty item")}`}
-                    className="scratchpad-mobile-depth-actions"
-                  >
-                    <button
-                      aria-label={t({ message: "Move focused item" })}
-                      className="scratchpad-mobile-move"
-                      type="button"
-                      onPointerDown={(event) => beginDrag(event, node.id)}
-                    >
-                      <GripVertical aria-hidden="true" size={15} />{" "}
-                      <Trans>Move</Trans>
-                    </button>
-                    <button
-                      disabled={node.depth === 0}
-                      type="button"
-                      onPointerDown={(event) => event.preventDefault()}
-                      onClick={() => changeDepth(node, -1)}
-                    >
-                      <CornerUpLeft aria-hidden="true" size={15} />{" "}
-                      <Trans>Outdent</Trans>
-                    </button>
-                    <button
-                      disabled={!canIndent(node)}
-                      type="button"
-                      onPointerDown={(event) => event.preventDefault()}
-                      onClick={() => changeDepth(node, 1)}
-                    >
-                      <CornerDownRight aria-hidden="true" size={15} />{" "}
-                      <Trans>Indent</Trans>
-                    </button>
-                    <button
-                      type="button"
-                      onPointerDown={(event) => event.preventDefault()}
-                      onClick={() => addChild(node)}
-                    >
-                      <Plus aria-hidden="true" size={15} /> <Trans>Child</Trans>
-                    </button>
-                  </div>
-                ) : null}
-                {suggestionsOpen ? (
-                  <div
-                    className="scratchpad-suggestions"
-                    id={suggestionListId}
-                    role="listbox"
-                    aria-label={t({ message: "Suggestions" })}
-                  >
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        aria-selected={index === selectedSuggestion}
-                        className={
-                          index === selectedSuggestion
-                            ? "is-selected"
-                            : undefined
-                        }
-                        id={`${suggestionListId}-${index}`}
-                        key={`${suggestion.kind}:${suggestion.value}`}
-                        role="option"
-                        type="button"
-                        onPointerDown={(event) => event.preventDefault()}
-                        onClick={() => void chooseSuggestion(suggestion)}
-                      >
-                        <span>{suggestion.label}</span>
-                        {suggestion.detail ? (
-                          <small>{suggestion.detail}</small>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                {menuId === node.id ? (
-                  <div
-                    className="scratchpad-row-menu"
-                    ref={rowMenuRef}
-                    role="menu"
-                    aria-label={t`Actions for ${node.text || uiCopy("item")}`}
-                  >
-                    {node.kind === "draft" ? (
-                      <button
-                        role="menuitem"
-                        type="button"
-                        onClick={() => {
-                          changeNode(node.id, { completed: !node.completed });
-                          setMenuId(undefined);
-                        }}
-                      >
-                        <SquareCheckBig aria-hidden="true" size={17} />
-                        {node.completed
-                          ? t({ message: "Mark incomplete" })
-                          : t({ message: "Mark complete" })}
-                      </button>
-                    ) : null}
-                    {node.kind === "draft" && node.text.trim() ? (
-                      <button
-                        role="menuitem"
-                        type="button"
-                        onClick={() => {
-                          setMenuId(undefined);
-                          void convertNode(node.id);
-                        }}
-                      >
-                        <FileCheck2 aria-hidden="true" size={17} />{" "}
-                        <Trans>Create task</Trans>
-                      </button>
-                    ) : null}
-                    {node.kind !== "task" ? (
-                      <button
-                        role="menuitem"
-                        type="button"
-                        onClick={() => {
-                          changeNode(node.id, {
-                            kind: node.kind === "draft" ? "note" : "draft",
-                            completed: false,
-                          });
-                          setMenuId(undefined);
-                        }}
-                      >
-                        {node.kind === "draft" ? (
-                          <StickyNote aria-hidden="true" size={17} />
-                        ) : (
-                          <ListTodo aria-hidden="true" size={17} />
-                        )}
-                        {node.kind === "draft"
-                          ? t({ message: "Keep as note" })
-                          : t({ message: "Make a task" })}
-                      </button>
-                    ) : null}
-                    <button
-                      disabled={node.depth === 0}
-                      role="menuitem"
-                      type="button"
-                      onClick={() => {
-                        changeDepth(node, -1);
-                        setMenuId(undefined);
-                      }}
-                    >
-                      <CornerUpLeft aria-hidden="true" size={17} />{" "}
-                      <Trans>Outdent</Trans>
-                    </button>
-                    <button
-                      disabled={!canIndent(node)}
-                      role="menuitem"
-                      type="button"
-                      onClick={() => {
-                        changeDepth(node, 1);
-                        setMenuId(undefined);
-                      }}
-                    >
-                      <CornerDownRight aria-hidden="true" size={17} />{" "}
-                      <Trans>Indent</Trans>
-                    </button>
-                    <button
-                      role="menuitem"
-                      type="button"
-                      onClick={() => {
-                        addChild(node);
-                        setMenuId(undefined);
-                      }}
-                    >
-                      <Plus aria-hidden="true" size={17} />{" "}
-                      <Trans>Add child</Trans>
-                    </button>
-                    <button
-                      className="danger"
-                      role="menuitem"
-                      type="button"
-                      onClick={() => {
-                        updateNodes(
-                          removeScratchNode(nodesRef.current, node.id),
-                        );
-                        setMenuId(undefined);
-                      }}
-                    >
-                      <Trash2 aria-hidden="true" size={17} />{" "}
-                      <Trans>Delete item</Trans>
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {reviewOpen ? (
-        <div className="scratchpad-dialog-backdrop" role="presentation">
-          <section
-            aria-labelledby="review-scratchpad-title"
-            aria-modal="true"
-            className="scratchpad-dialog scratchpad-review-dialog"
-            ref={reviewRef}
-            role="dialog"
-            tabIndex={-1}
-          >
-            <header>
-              <div>
-                <p className="eyebrow">
-                  <Trans>Choose what becomes a task</Trans>
-                </p>
-                <h2 id="review-scratchpad-title">
-                  <Trans>Create tasks</Trans>
-                </h2>
-              </div>
-              <button
-                aria-label={t({ message: "Close" })}
-                ref={reviewCloseRef}
-                disabled={reviewProcessing}
-                type="button"
-                onClick={() => setReviewOpen(false)}
-              >
-                <X aria-hidden="true" size={20} />
-              </button>
-            </header>
-            <p>
-              <Trans>
-                Selected drafts become tasks linked to their Markdown notes.
-                Everything else stays in this scratchpad so you can keep
-                working.
-              </Trans>
-            </p>
-            <div className="scratchpad-review-toolbar">
-              <span>
-                <Trans>
-                  {selectedReviewCount} of {reviewItems.length} selected
-                </Trans>
-              </span>
-              <button
-                disabled={reviewProcessing}
-                type="button"
-                onClick={() =>
-                  setSelectedReviewIds(
-                    selectedReviewCount === reviewItems.length
-                      ? new Set()
-                      : new Set(
-                          reviewItems
-                            .filter(
-                              (item) =>
-                                reviewResults[item.id]?.state !== "created",
-                            )
-                            .map((item) => item.id),
-                        ),
-                  )
-                }
-              >
-                {selectedReviewCount === reviewItems.length
-                  ? t({ message: "Clear selection" })
-                  : t({ message: "Select all" })}
-              </button>
-            </div>
+          {state === "ready" && source ? (
+            <img alt={alt} src={source} />
+          ) : (
             <div
-              aria-label={t({ message: "Task drafts" })}
-              className="scratchpad-review-list"
-              role="list"
+              className="scratch-image-placeholder"
+              role={state === "error" ? "alert" : "status"}
             >
-              {reviewItems.map((item) => {
-                const result = reviewResults[item.id];
-                const sourceIndex = nodesRef.current.findIndex(
-                  (node) => node.id === item.id,
-                );
-                const branchEnd =
-                  sourceIndex < 0
-                    ? sourceIndex
-                    : scratchSubtreeEnd(nodesRef.current, sourceIndex);
-                const hasDraftDescendants =
-                  sourceIndex >= 0 &&
-                  nodesRef.current
-                    .slice(sourceIndex + 1, branchEnd)
-                    .some(
-                      (node) =>
-                        node.kind === "draft" && Boolean(node.text.trim()),
-                    );
-                return (
-                  <div
-                    className={`scratchpad-review-item${result ? ` is-${result.state}` : ""}`}
-                    key={item.id}
-                    role="listitem"
-                    style={{ "--review-depth": item.depth } as CSSProperties}
-                  >
-                    <label>
-                      <input
-                        checked={
-                          result?.state === "created" ||
-                          selectedReviewIds.has(item.id)
-                        }
-                        disabled={
-                          reviewProcessing || result?.state === "created"
-                        }
-                        type="checkbox"
-                        onChange={(event) =>
-                          setSelectedReviewIds((current) => {
-                            const next = new Set(current);
-                            if (event.target.checked) next.add(item.id);
-                            else next.delete(item.id);
-                            return next;
-                          })
-                        }
-                      />
-                      <span>{item.text}</span>
-                    </label>
-                    {hasDraftDescendants && result?.state !== "created" ? (
-                      <button
-                        className="scratchpad-review-branch"
-                        disabled={reviewProcessing}
-                        type="button"
-                        onClick={() => toggleReviewBranch(item.id)}
-                      >
-                        <Trans>Select branch</Trans>
-                      </button>
-                    ) : null}
-                    {result?.state === "creating" ? (
-                      <span className="scratchpad-review-status">
-                        <Trans>Creating…</Trans>
-                      </span>
-                    ) : null}
-                    {result?.state === "created" ? (
-                      <span className="scratchpad-review-status is-success">
-                        <Check aria-hidden="true" size={14} />{" "}
-                        <Trans>Created</Trans>
-                      </span>
-                    ) : null}
-                    {result?.state === "error" ? (
-                      <span className="scratchpad-review-error" role="alert">
-                        <CircleAlert aria-hidden="true" size={15} />{" "}
-                        {result.message}
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
+              <FileImage aria-hidden="true" size={24} />
+              {state === "loading"
+                ? t({ message: "Loading image…" })
+                : state === "missing"
+                  ? t({ message: "Image file is unavailable" })
+                  : t({ message: "Image could not be loaded" })}
             </div>
-            <div className="scratchpad-dialog-actions">
-              <button
-                className="text-action"
-                disabled={reviewProcessing}
-                type="button"
-                onClick={() => setReviewOpen(false)}
-              >
-                <Trans>Keep writing</Trans>
-              </button>
-              <button
-                className="outline-action"
-                disabled={reviewProcessing || !selectedReviewCount}
-                type="button"
-                onClick={() => void createReviewedTasks()}
-              >
-                {failedReviewCount ? (
-                  <RotateCcw aria-hidden="true" size={17} />
-                ) : (
-                  <FileCheck2 aria-hidden="true" size={17} />
-                )}{" "}
-                {reviewProcessing
-                  ? t({ message: "Creating…" })
-                  : failedReviewCount
-                    ? plural(selectedReviewCount, {
-                        one: "Retry # task",
-                        other: "Retry # tasks",
-                      })
-                    : plural(selectedReviewCount, {
-                        one: "Create # task",
-                        other: "Create # tasks",
-                      })}
-              </button>
-            </div>
-          </section>
+          )}
         </div>
       ) : null}
-      {notice ? (
-        <div className="scratchpad-notice" role="status">
-          <span>{notice.message}</span>
-          {notice.conversions?.length ? (
-            <button
-              className="scratchpad-notice-action"
-              type="button"
-              onClick={() => void undoConversion()}
-            >
-              <Trans>Undo</Trans>
-            </button>
-          ) : null}
-          {notice.tasks?.length ? (
-            <button
-              className="scratchpad-notice-action"
-              type="button"
-              onClick={() => {
-                onOpenTask(notice.tasks![0]!);
-                setNotice(null);
-              }}
-            >
-              {notice.tasks.length === 1
-                ? t({ message: "Open task" })
-                : t({ message: "Open first" })}
-            </button>
-          ) : null}
-          <button
-            aria-label={t({ message: "Dismiss" })}
-            type="button"
-            onClick={() => setNotice(null)}
-          >
-            <X aria-hidden="true" size={16} />
-          </button>
-        </div>
-      ) : null}
-    </section>
+    </article>
   );
 }
 
@@ -3639,89 +1438,24 @@ async function transitionToNewScratchpad(
   );
 }
 
-function isOutlineCompatible(body: string): boolean {
-  if (!body.trim()) return true;
-  const normalized = body.replaceAll("\r\n", "\n");
-  return (
-    scratchBody(parseScratchBody(normalized)).trimEnd() === normalized.trimEnd()
-  );
-}
-
-function scratchBody(nodes: readonly ScratchNode[]): string {
-  return serializeScratchNodes(
-    nodes.filter((node) => node.kind === "task" || Boolean(node.text.trim())),
-  );
-}
-
-function hydrateLinkedNodes(
-  nodes: readonly ScratchNode[],
-  tasks: readonly TaskSummary[],
-): ScratchNode[] {
-  return nodes.map((node) => {
-    if (!node.link) return node;
-    const target = linkTarget(node.link).toLocaleLowerCase();
-    const task = tasks.find(
-      (candidate) => linkTarget(candidate.path).toLocaleLowerCase() === target,
-    );
-    if (!task)
-      return {
-        ...node,
-        kind: "note" as const,
-        text: node.link,
-        link: undefined,
-        taskId: undefined,
-      };
-    return {
-      ...node,
-      kind: "task" as const,
-      text: task.title,
-      taskId: task.id,
-      // Preserve exact syntax, alias, and fragment. The resolved path only
-      // controls whether this outline row receives linked-task behavior.
-      link: node.link,
-    };
-  });
-}
-
 function readScratchpadCollapseState(key: string): {
   expandedDocuments: string[];
-  collapsedImages: string[];
+  expandedImages: string[];
 } {
+  const ids = (value: unknown) =>
+    Array.isArray(value)
+      ? value.filter((id): id is string => typeof id === "string")
+      : [];
   try {
     const value = JSON.parse(localStorage.getItem(key) ?? "null") as unknown;
     if (!value || typeof value !== "object")
-      return { expandedDocuments: [], collapsedImages: [] };
+      return { expandedDocuments: [], expandedImages: [] };
     const state = value as Record<string, unknown>;
     return {
-      expandedDocuments: Array.isArray(state.expandedDocuments)
-        ? state.expandedDocuments.filter(
-            (id): id is string => typeof id === "string",
-          )
-        : [],
-      collapsedImages: Array.isArray(state.collapsedImages)
-        ? state.collapsedImages.filter(
-            (id): id is string => typeof id === "string",
-          )
-        : [],
+      expandedDocuments: ids(state.expandedDocuments),
+      expandedImages: ids(state.expandedImages),
     };
   } catch {
-    return { expandedDocuments: [], collapsedImages: [] };
+    return { expandedDocuments: [], expandedImages: [] };
   }
-}
-
-function message(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
-}
-
-/** Scratchpad dates use the same short month-and-day vocabulary as task rows. */
-function formatScratchDate(value: string, includeTime = false): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) return value;
-  return new Intl.DateTimeFormat(appLocale(), {
-    day: "numeric",
-    month: "short",
-    year:
-      date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
-    ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {}),
-  }).format(date);
 }

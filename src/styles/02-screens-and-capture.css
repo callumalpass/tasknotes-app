@@ -23,8 +23,6 @@
   line-height: 1.08;
 }
 
-.scratchpad-header h1,
-.scratchpad-header h2,
 .view-header h1 {
   font-size: var(--type-page);
   letter-spacing: -0.02em;

@@ -5,6 +5,7 @@ import type { PlainValue } from "@mdbase-dev/sdk";
 import { expect, test, type Page } from "./local-test";
 import { TaskNotesTaskModel } from "../src/domain/tasknotes-model";
 import { openFixture } from "./next-fixture";
+import { noteText, outlineOf } from "./scratchpad-editor";
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
@@ -184,29 +185,29 @@ test("reviews a held-client scratchpad selectively and collapses outline branche
     ],
   });
   await page.getByRole("button", { name: "Scratchpad", exact: true }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Draft task: Parent task" }),
-  ).toBeVisible();
-  await expect(page.getByRole("textbox", { name: /^Draft task:/ })).toHaveCount(
-    4,
-  );
-  await expect(page.getByRole("textbox", { name: /^Note:/ })).toHaveCount(1);
+  const note = outlineOf(page.locator(".scratchpad-current-document"));
+  await expect(note).toContainText("Parent task");
+  // The note is shown as it was written: three drafts and a plain point.
+  await expect
+    .poll(() => noteText(note))
+    .toBe(
+      "- [ ] Parent task\n  - [ ] Child task\n- [ ] Independent task\n- Context that should stay a note",
+    );
   await page
     .getByRole("button", { name: "Collapse Parent task, 1 nested item" })
     .click();
-  await expect(
-    page.getByRole("textbox", { name: "Draft task: Child task" }),
-  ).toHaveCount(0);
+  await expect(note).not.toContainText("Child task");
   await page
     .getByRole("button", { name: "Expand Parent task, 1 nested item" })
     .click();
-  await page.getByRole("textbox", { name: "Draft task: Child task" }).focus();
+  await note.locator(".cm-line", { hasText: "Child task" }).click();
+  await expect(note).toBeFocused();
   if ((page.viewportSize()?.width ?? 1000) <= 560) {
     await expect(
       page.getByRole("button", { name: "Outdent", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Child", exact: true }),
+      page.getByRole("button", { name: "Indent", exact: true }),
     ).toBeVisible();
   }
   await page.getByRole("button", { name: "Create tasks" }).click();

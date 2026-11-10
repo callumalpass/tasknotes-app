@@ -170,14 +170,6 @@ export interface ScratchNode {
   taskId?: string;
 }
 
-export interface VisibleScratchNode {
-  node: ScratchNode;
-  index: number;
-  descendantCount: number;
-}
-
-export type ScratchDropPlacement = "before" | "after" | "inside";
-
 export function parseScratchBody(body: string): ScratchNode[] {
   const duplicates = new Map<string, number>();
   return body.split(/\r?\n/).flatMap((line, index) => {
@@ -206,36 +198,6 @@ export function parseScratchBody(body: string): ScratchNode[] {
   });
 }
 
-export function serializeScratchNodes(nodes: readonly ScratchNode[]): string {
-  if (!nodes.length) return "";
-  return `${nodes
-    .map((node) => {
-      const marker =
-        node.kind === "draft"
-          ? `[${node.completed ? "x" : " "}] ${node.text.trim()}`
-          : node.kind === "task"
-            ? (node.link ?? node.text.trim())
-            : node.text.trim();
-      return `${"  ".repeat(Math.max(0, node.depth))}- ${marker}`;
-    })
-    .join("\n")}\n`;
-}
-
-export function createScratchNode(
-  kind: Exclude<ScratchNodeKind, "task"> = "draft",
-  depth = 0,
-  text = "",
-): ScratchNode {
-  return {
-    id:
-      globalThis.crypto?.randomUUID?.() ??
-      `line-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind,
-    depth: Math.max(0, depth),
-    text,
-  };
-}
-
 export function scratchSubtreeEnd(
   nodes: readonly ScratchNode[],
   index: number,
@@ -245,99 +207,6 @@ export function scratchSubtreeEnd(
   let end = index + 1;
   while (end < nodes.length && nodes[end]!.depth > depth) end += 1;
   return end;
-}
-
-export function visibleScratchNodes(
-  nodes: readonly ScratchNode[],
-  collapsedIds: ReadonlySet<string>,
-): VisibleScratchNode[] {
-  const visible: VisibleScratchNode[] = [];
-  let collapsedDepth: number | undefined;
-  for (let index = 0; index < nodes.length; index += 1) {
-    const node = nodes[index]!;
-    if (collapsedDepth !== undefined) {
-      if (node.depth > collapsedDepth) continue;
-      collapsedDepth = undefined;
-    }
-    const descendantCount = scratchSubtreeEnd(nodes, index) - index - 1;
-    visible.push({ node, index, descendantCount });
-    if (descendantCount && collapsedIds.has(node.id))
-      collapsedDepth = node.depth;
-  }
-  return visible;
-}
-
-export function moveScratchSubtree(
-  nodes: readonly ScratchNode[],
-  sourceId: string,
-  targetId: string,
-  placement: ScratchDropPlacement,
-): ScratchNode[] {
-  const sourceIndex = nodes.findIndex((node) => node.id === sourceId);
-  const targetIndex = nodes.findIndex((node) => node.id === targetId);
-  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex)
-    return [...nodes];
-  const sourceEnd = scratchSubtreeEnd(nodes, sourceIndex);
-  if (targetIndex >= sourceIndex && targetIndex < sourceEnd) return [...nodes];
-
-  const subtree = nodes.slice(sourceIndex, sourceEnd);
-  const remaining = [...nodes.slice(0, sourceIndex), ...nodes.slice(sourceEnd)];
-  const remainingTarget = remaining.findIndex((node) => node.id === targetId);
-  if (remainingTarget < 0) return [...nodes];
-  const target = remaining[remainingTarget]!;
-  const insertion =
-    placement === "before"
-      ? remainingTarget
-      : placement === "inside"
-        ? remainingTarget + 1
-        : scratchSubtreeEnd(remaining, remainingTarget);
-  const nextDepth = placement === "inside" ? target.depth + 1 : target.depth;
-  const depthDelta = nextDepth - subtree[0]!.depth;
-  const moved = subtree.map((node) => ({
-    ...node,
-    depth: Math.max(0, node.depth + depthDelta),
-  }));
-  return [
-    ...remaining.slice(0, insertion),
-    ...moved,
-    ...remaining.slice(insertion),
-  ];
-}
-
-export function changeScratchDepth(
-  nodes: readonly ScratchNode[],
-  id: string,
-  direction: -1 | 1,
-): ScratchNode[] {
-  const index = nodes.findIndex((node) => node.id === id);
-  if (index < 0) return [...nodes];
-  const node = nodes[index]!;
-  const maximum = index ? nodes[index - 1]!.depth + 1 : 0;
-  const nextDepth = Math.max(0, Math.min(node.depth + direction, maximum));
-  if (nextDepth === node.depth) return [...nodes];
-  const end = scratchSubtreeEnd(nodes, index);
-  const delta = nextDepth - node.depth;
-  return nodes.map((candidate, candidateIndex) =>
-    candidateIndex >= index && candidateIndex < end
-      ? { ...candidate, depth: candidate.depth + delta }
-      : candidate,
-  );
-}
-
-export function removeScratchNode(
-  nodes: readonly ScratchNode[],
-  id: string,
-): ScratchNode[] {
-  const index = nodes.findIndex((node) => node.id === id);
-  if (index < 0) return [...nodes];
-  const depth = nodes[index]!.depth;
-  const end = scratchSubtreeEnd(nodes, index);
-  return nodes.flatMap((node, candidateIndex) => {
-    if (candidateIndex === index) return [];
-    if (candidateIndex > index && candidateIndex < end)
-      return [{ ...node, depth: Math.max(depth, node.depth - 1) }];
-    return [node];
-  });
 }
 
 export function nearestTaskAncestor(

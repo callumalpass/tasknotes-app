@@ -1,0 +1,192 @@
+/*
+ * Warmth experiment. Colour lives where a person looks all day: the
+ * completion circle of each row. The navigation stays quiet, in ink.
+ * The paper, ink and accent themselves are set in 01-foundation.css.
+ */
+
+:root {
+  --nav-active: oklch(94% 0.009 70);
+  --monogram-ink-lightness: 44%;
+  --monogram-paper-lightness: 94%;
+  --monogram-paper-chroma: 0.04;
+  --priority-fill-alpha: 0.13;
+  --priority-fill-alpha-hover: 0.24;
+}
+
+:root[data-theme="dark"] {
+  --nav-active: oklch(27% 0.01 70);
+  --monogram-ink-lightness: 84%;
+  --monogram-paper-lightness: 30%;
+  --monogram-paper-chroma: 0.05;
+  --priority-fill-alpha: 0.2;
+  --priority-fill-alpha-hover: 0.32;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --nav-active: oklch(27% 0.01 70);
+    --monogram-ink-lightness: 84%;
+    --monogram-paper-lightness: 30%;
+    --monogram-paper-chroma: 0.05;
+    --priority-fill-alpha: 0.2;
+    --priority-fill-alpha-hover: 0.32;
+  }
+}
+
+/* Navigation icons stay in ink; on the phone the current tab takes the accent. */
+.bottom-navigation button.is-active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.bottom-navigation button.is-active > svg {
+  color: var(--accent);
+}
+
+@media (min-width: 840px) {
+  /* The current place is a darker patch of the same paper, not a blue slab. */
+  .navigation-rail button.is-active {
+    color: var(--ink);
+    background: var(--nav-active);
+  }
+
+  .navigation-rail .wordmark {
+    font-family: inherit;
+    font-size: 1.1875rem;
+    letter-spacing: -0.01em;
+  }
+
+  .navigation-rail > button.global-capture-navigation {
+    padding: 0 16px;
+    border-radius: 999px;
+    box-shadow:
+      inset 0 1px 0 oklch(100% 0 0 / 0.22),
+      0 1px 2px var(--color-shadow-soft),
+      0 6px 16px color-mix(in oklch, var(--accent), transparent 76%);
+    transition:
+      background-color 160ms var(--ease-out),
+      box-shadow 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+  }
+
+  .navigation-rail > button.global-capture-navigation:active {
+    transform: scale(0.98);
+  }
+
+  .sidebar-collapsed .navigation-rail > button.global-capture-navigation {
+    padding: 0;
+  }
+
+  /* A project keeps one hue, taken from its name. */
+  .navigation-project-section .project-monogram {
+    color: oklch(var(--monogram-ink-lightness) 0.11 var(--project-hue, 80));
+    background: oklch(
+      var(--monogram-paper-lightness) var(--monogram-paper-chroma)
+        var(--project-hue, 80)
+    );
+    border-color: transparent;
+    border-radius: 7px;
+  }
+}
+
+/*
+ * The circle carries the priority: its ring and a wash of the colour the
+ * collection gave that priority. A coloured status still owns the ring.
+ */
+.completion-control.has-priority::before {
+  display: none;
+}
+
+.completion-control span {
+  border-width: 1.75px;
+}
+
+.completion-control.has-priority span {
+  border-width: 2px;
+  background-color: oklch(
+    from var(--priority-color) l c h / var(--priority-fill-alpha)
+  );
+}
+
+.completion-control.has-priority:not(.has-status) span {
+  border-color: var(--priority-color);
+  border-color: oklch(from var(--priority-color) min(l, 0.58) c h);
+}
+
+:root[data-theme="dark"]
+  .completion-control.has-priority:not(.has-status)
+  span {
+  border-color: oklch(from var(--priority-color) max(l, 0.7) c h);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme])
+    .completion-control.has-priority:not(.has-status)
+    span {
+    border-color: oklch(from var(--priority-color) max(l, 0.7) c h);
+  }
+}
+
+.completion-control.has-priority:hover span,
+.completion-control.has-priority:focus-visible span {
+  background-color: oklch(
+    from var(--priority-color) l c h / var(--priority-fill-alpha-hover)
+  );
+}
+
+/* Hovering an open task previews the check it is about to get. */
+@media (hover: hover) {
+  :root:not([data-completion-hover="quiet"])
+    .completion-control:not([aria-pressed="true"], [aria-busy="true"]):hover
+    span::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 10px;
+    content: "";
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    opacity: 0.5;
+    transform: translate(-50%, -60%) rotate(45deg);
+  }
+}
+
+/*
+ * After a completion the next row slides under a pointer that has not moved.
+ * Its circle keeps its resting look until the pointer moves (task-row.tsx).
+ */
+:root[data-completion-hover="quiet"]
+  .completion-control:not([aria-pressed="true"]):hover
+  span {
+  background-color: transparent;
+}
+
+:root[data-completion-hover="quiet"]
+  .completion-control.has-priority:not([aria-pressed="true"]):hover
+  span {
+  background-color: oklch(
+    from var(--priority-color) l c h / var(--priority-fill-alpha)
+  );
+}
+
+/* Ticking a task off lands with a small pop and a ring that fades outwards. */
+.task-row.is-just-completed .completion-control span {
+  animation: completion-pop 360ms var(--ease-out) both;
+}
+
+@keyframes completion-pop {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent), transparent 62%);
+    transform: scale(0.84);
+  }
+
+  40% {
+    transform: scale(1.14);
+  }
+
+  to {
+    box-shadow: 0 0 0 9px color-mix(in oklch, var(--accent), transparent 100%);
+    transform: scale(1);
+  }
+}

@@ -2262,8 +2262,14 @@
   min-height: 64px;
 }
 
+.task-screen .markdown-preview,
 .task-screen .markdown-preview-empty {
   min-height: 64px;
+}
+
+/* Until the renderer loads, the note shows as it was written. */
+.markdown-preview.is-pending {
+  white-space: pre-wrap;
 }
 /* Notes grow with what is written, so a short note leaves Subtasks in reach. */
 @supports (field-sizing: content) {

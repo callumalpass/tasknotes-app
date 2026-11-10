@@ -5,8 +5,8 @@ import { ArrowLeft, X } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
 import { useHistoryLeaveGuard } from "./use-workspace-navigation";
 import { TaskEditRecoveryBoundary } from "./task-edit-recovery-boundary";
+import { preloadable } from "./preloadable";
 import {
-  lazy,
   Suspense,
   useCallback,
   useContext,
@@ -84,9 +84,14 @@ import {
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
 
-const MarkdownPreview = lazy(async () => ({
-  default: (await import("../components/markdown-preview")).MarkdownPreview,
-}));
+const markdownPreview = preloadable(
+  async () => (await import("../components/markdown-preview")).MarkdownPreview,
+);
+
+/** Fetches the note renderer ahead of the first task a person opens. */
+export function warmMarkdownPreview(): void {
+  markdownPreview.preload();
+}
 
 type SaveState = "saved" | "saving" | "error";
 type TaskEditorProps = {
@@ -173,6 +178,7 @@ function TaskEditor({
 }: TaskEditorProps & { recoveryScope: string }) {
   const { t } = useLingui();
   const besideWork = useDetailsBesideWork();
+  const [MarkdownPreview] = useState(markdownPreview.component);
   const {
     updateTask,
     mutations,
@@ -1152,9 +1158,16 @@ function TaskEditor({
           ) : (
             <Suspense
               fallback={
-                <p className="markdown-preview-empty">
-                  <Trans>Rendering…</Trans>
-                </p>
+                draft.body.trim() ? (
+                  // The note's own text holds its place until it is rendered.
+                  <div className="markdown-preview is-pending">
+                    {draft.body}
+                  </div>
+                ) : (
+                  <p className="markdown-preview-empty">
+                    <Trans>Rendering…</Trans>
+                  </p>
+                )
               }
             >
               {/* Keyboard users switch with Write; pointer users click the text. */}

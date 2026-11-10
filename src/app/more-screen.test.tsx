@@ -79,9 +79,6 @@ vi.mock("../pwa/install", () => ({
 vi.mock("../components/task-model-settings", () => ({
   TaskModelSettingsEditor: () => <p>Task model editor</p>,
 }));
-vi.mock("../components/scratchpad-mode-preference", () => ({
-  ScratchpadModePreference: () => null,
-}));
 
 import { MoreScreen } from "./more-screen";
 

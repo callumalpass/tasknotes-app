@@ -163,7 +163,7 @@ msgid "{0, plural, one {Account unlocked. # private collection still needs to fi
 msgstr "{0, plural, other {账户已解锁。# 个私有集合尚未完成密钥访问；请在分别选中这些集合时重试解锁。}}"
 
 #. placeholder {0}: tasks.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
 msgstr "{0, plural, other {已创建 # 个任务}}"
 
@@ -187,10 +187,10 @@ msgstr "{0, plural, other {# 个恢复目标的严格模式仍待启用。mdbase
 msgid "{0} (ambiguous account link)"
 msgstr "{0}（账户链接不明确）"
 
-#. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
-#. placeholder {1}: node.text || uiCopy("item")
-#. placeholder {2}: nestedItemCount(descendantCount)
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: open ? uiCopy("Collapse") : uiCopy("Expand")
+#. placeholder {1}: text || uiCopy("item")
+#. placeholder {2}: nestedItemCount(nested)
+#: src/app/scratchpad-note.tsx
 msgid "{0} {1}, {2}"
 msgstr "{0} {1}，{2}"
 
@@ -593,16 +593,16 @@ msgstr "添加其他视图前，必须保留 {name} 在导航中"
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
 msgstr "{overdueCount, plural, other {# 项已逾期}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Create # task} other {Create # tasks}}"
 msgstr "{selectedReviewCount, plural, other {创建 # 个任务}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Retry # task} other {Retry # tasks}}"
 msgstr "{selectedReviewCount, plural, other {重试 # 个任务}}"
 
 #. placeholder {0}: reviewItems.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount} of {0} selected"
 msgstr "已选 {selectedReviewCount} / {0} 个"
 
@@ -722,10 +722,8 @@ msgstr "整个集合"
 msgid "Actions"
 msgstr "操作"
 
-#. placeholder {0}: node.text || uiCopy("empty item")
-#. placeholder {0}: node.text || uiCopy("item")
 #. placeholder {0}: task.title
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
@@ -814,7 +812,7 @@ msgstr "添加子任务…"
 msgid "Add a tag"
 msgstr "添加标签"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add a task title first."
 msgstr "请先添加任务标题。"
 
@@ -833,14 +831,6 @@ msgstr "离开此任务前请添加标题。"
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
 msgstr "添加负责人"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add child"
-msgstr "添加子项"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add context…"
-msgstr "添加上下文…"
 
 #: src/components/task-capture.tsx
 msgid "Add details"
@@ -920,7 +910,7 @@ msgstr "将任务添加到 {label}"
 msgid "Add thoughts, links, or supporting details…"
 msgstr "添加想法、链接或补充详情…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add title"
 msgstr "添加标题"
 
@@ -1249,7 +1239,7 @@ msgstr "看板列"
 msgid "Board columns"
 msgstr "看板列"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Bold"
 msgstr "粗体"
 
@@ -1396,10 +1386,6 @@ msgstr "正在检查账户恢复状态…"
 msgid "Checking collection settings…"
 msgstr "正在检查集合设置…"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Child"
-msgstr "子项"
-
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
 msgstr "选择已提交，但可能仍在等待同步；请检查已确认、待同步和受保护的编辑数量。"
@@ -1456,7 +1442,7 @@ msgstr "选择日历模式，以及哪些任务日期会显示为日历事件。
 msgid "Choose the information shown beneath each task."
 msgstr "选择每个任务下方显示的信息。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Choose what becomes a task"
 msgstr "选择要转换为任务的内容"
 
@@ -1507,7 +1493,7 @@ msgstr "清除计划日期"
 msgid "Clear search"
 msgstr "清除搜索"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "清除选择"
 
@@ -1523,7 +1509,7 @@ msgstr "清除值"
 msgid "Click tasks to select them."
 msgstr "点击任务以选择。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
 #: src/components/choice-options.tsx
@@ -1735,10 +1721,6 @@ msgstr "已完成“{0}”（{completedOn}）"
 msgid "Completed {tasks}"
 msgstr "已完成：{tasks}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Completed draft"
-msgstr "已完成的草稿"
-
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
 msgstr "已完成的重复任务实例"
@@ -1870,16 +1852,11 @@ msgstr "情境、人员、依赖关系和自定义属性"
 msgid "Continue on the timeline"
 msgstr "沿时间线继续"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Conversion undone"
 msgstr "已撤销转换"
 
-#. placeholder {0}: node.text || uiCopy("empty task")
-#: src/app/scratchpad-screen.tsx
-msgid "Convert {0} to note"
-msgstr "将 {0} 转换为笔记"
-
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Convert to note"
 msgstr "转换为笔记"
 
@@ -1941,10 +1918,6 @@ msgstr "无法移动“{0}”。{1}"
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
 msgstr "无法重新连接。请重试或检查连接设置。"
-
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Could not save the default mode on this device."
-msgstr "无法在此设备上保存默认模式。"
 
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
@@ -2012,16 +1985,15 @@ msgstr "提前创建文件"
 msgid "Create subtask"
 msgstr "创建子任务"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Create task"
 msgstr "创建任务"
 
-#. placeholder {0}: node.text
-#: src/app/scratchpad-screen.tsx
-msgid "Create task for {0}"
-msgstr "为 {0} 创建任务"
+#: src/app/scratchpad-note.tsx
+msgid "Create task for {text}"
+msgstr "为 {text} 创建任务"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Create tasks"
 msgstr "创建任务"
 
@@ -2033,20 +2005,20 @@ msgstr "完成后创建下一次"
 msgid "Create view"
 msgstr "创建视图"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "已创建"
 
 #. placeholder {0}: converted.task.title
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created “{0}”"
 msgstr "已创建“{0}”"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "正在创建…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Current note"
 msgstr "当前笔记"
 
@@ -2139,18 +2111,10 @@ msgstr "默认"
 msgid "Default fields"
 msgstr "默认字段"
 
-#: src/app/more-screen.tsx
-msgid "Default mode for new notes"
-msgstr "新笔记的默认模式"
-
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
 msgstr "默认优先级"
-
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Default Scratchpad mode"
-msgstr "默认随手记模式"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
@@ -2176,11 +2140,7 @@ msgstr "删除“{name}”？"
 msgid "Delete calendar account"
 msgstr "删除日历账号"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Delete item"
-msgstr "删除条目"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Delete note"
 msgstr "删除笔记"
 
@@ -2322,6 +2282,7 @@ msgstr "断开日历连接"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/running-timer.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -2380,10 +2341,6 @@ msgstr "下载"
 #: src/components/task-attachments.tsx
 msgid "Download {0}"
 msgstr "下载 {0}"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Draft task"
-msgstr "任务草稿"
 
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
@@ -2470,6 +2427,10 @@ msgstr "每个日期都会记录在重复任务中。只有在你请求时，才
 msgid "Each month"
 msgstr "每月"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Earlier notes"
+msgstr "之前的笔记"
+
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
 msgstr "较早的规则优先。"
@@ -2508,10 +2469,6 @@ msgstr "编辑未保存"
 msgid "Edit pattern"
 msgstr "编辑重复模式"
 
-#: src/components/outline-textarea.tsx
-msgid "Edit reference Markdown"
-msgstr "编辑引用 Markdown"
-
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "编辑重复任务"
@@ -2526,7 +2483,7 @@ msgid "Editable"
 msgstr "可编辑"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Editor for {0}"
 msgstr "{0}的编辑器"
 
@@ -2534,15 +2491,10 @@ msgstr "{0}的编辑器"
 msgid "Editor mode"
 msgstr "编辑器模式"
 
-#: src/app/scratchpad-screen.tsx
-msgid "empty"
-msgstr "空"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "空项目"
 
-#: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
 msgstr "空任务"
@@ -2737,7 +2689,7 @@ msgstr "重新加载前，请先完成或放弃正在添加的任务。"
 msgid "Finish strict mode on this device"
 msgstr "在此设备上完成严格模式设置"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Finish the note action in progress before reloading."
 msgstr "重新加载前，请先完成正在进行的笔记操作。"
 
@@ -2907,7 +2859,7 @@ msgstr "分组列"
 msgid "Has tag {tag}"
 msgstr "有标签 {tag}"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Heading"
 msgstr "标题"
 
@@ -3000,7 +2952,7 @@ msgstr "包含已跳过的重复项。"
 msgid "Include tasks when"
 msgstr "包含任务的条件"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Indent"
 msgstr "缩进"
 
@@ -3068,7 +3020,7 @@ msgstr "早于或等于"
 msgid "ISO 8601 value"
 msgstr "ISO 8601 值"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Italic"
 msgstr "斜体"
 
@@ -3087,10 +3039,6 @@ msgstr "保留滚动时间范围"
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
 msgstr "继续添加任务"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Keep as note"
-msgstr "保留为笔记"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep at least one priority."
@@ -3160,7 +3108,7 @@ msgstr "即使你晚完成，也保留计划日期。"
 msgid "Keep the quick-add field on this view."
 msgstr "在此视图中保留快速添加字段。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Keep writing"
 msgstr "继续书写"
 
@@ -3238,10 +3186,6 @@ msgstr "链接格式"
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
 msgstr "使用“分配给我”前，请先将你的账户关联到人员记录。"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Linked"
-msgstr "已关联"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
@@ -3337,7 +3281,7 @@ msgstr "此设备已锁定"
 msgid "Looking in collection…"
 msgstr "正在查看集合…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Make a task"
 msgstr "创建任务"
 
@@ -3368,14 +3312,6 @@ msgstr "手动排序"
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
 msgstr "手动排序已启用。任务上将显示拖动手柄。"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark complete"
-msgstr "标记为已完成"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark incomplete"
-msgstr "标记为未完成"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
@@ -3506,15 +3442,6 @@ msgstr "更多任务操作"
 msgid "move"
 msgstr "移动"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Move"
-msgstr "移动"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Move {0}"
-msgstr "移动 {0}"
-
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
@@ -3558,6 +3485,7 @@ msgstr "将已归档的任务文件移至文件夹"
 msgid "Move dates one day later"
 msgstr "将日期延后一天"
 
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 msgid "Move down"
 msgstr "下移"
@@ -3565,10 +3493,6 @@ msgstr "下移"
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
 msgstr "同时移动截止日期"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Move focused item"
-msgstr "移动当前焦点项"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
@@ -3584,6 +3508,7 @@ msgstr "将所选任务移至项目"
 msgid "Move to project"
 msgstr "移至项目"
 
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 msgid "Move up"
 msgstr "上移"
@@ -3965,7 +3890,7 @@ msgstr "未连接"
 msgid "Not now"
 msgstr "暂不"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Not saved"
 msgstr "未保存"
 
@@ -3982,11 +3907,7 @@ msgstr "未保存。请检查你的编辑。"
 msgid "Not: {0}"
 msgstr "非：{0}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Note"
-msgstr "笔记"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note actions"
 msgstr "笔记操作"
 
@@ -3994,7 +3915,7 @@ msgstr "笔记操作"
 msgid "Note deleted"
 msgstr "笔记已删除"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note title"
 msgstr "笔记标题"
 
@@ -4092,7 +4013,7 @@ msgstr "指定日期"
 msgid "On this device"
 msgstr "在此设备上"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
 msgstr "只有草稿项目可以转换为 TaskNotes 任务。"
 
@@ -4122,7 +4043,7 @@ msgstr "打开 {0}"
 msgid "Open a collection first"
 msgstr "请先打开一个集合"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Open first"
 msgstr "优先打开"
 
@@ -4137,7 +4058,7 @@ msgstr "在 Planner 中打开"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/running-timer.tsx
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "打开任务"
@@ -4201,19 +4122,9 @@ msgstr "整理"
 msgid "Other"
 msgstr "其他"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"
 msgstr "减少缩进"
-
-#: src/app/scratchpad-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Outline"
-msgstr "大纲"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Outline controls for {0}"
-msgstr "{0}的大纲控件"
 
 #: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
@@ -4459,7 +4370,7 @@ msgstr "快捷日期"
 msgid "Quick reminders"
 msgstr "快捷提醒"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Quote"
 msgstr "引用"
 
@@ -4475,7 +4386,7 @@ msgstr "最近的搜索"
 msgid "Recently opened"
 msgstr "最近打开"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Recognized task details"
 msgstr "已识别的任务详情"
 
@@ -4591,6 +4502,7 @@ msgstr "相对"
 msgid "Relative to"
 msgstr "相对于"
 
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
 msgstr "重新加载"
@@ -4838,11 +4750,11 @@ msgstr "正在恢复你的首页视图"
 msgid "Results"
 msgstr "结果"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resume as current"
 msgstr "设为当前项"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resuming…"
 msgstr "正在恢复…"
 
@@ -4970,7 +4882,7 @@ msgstr "保存失败 · 重试"
 msgid "Save failed. {retrySaveLabel}"
 msgstr "保存失败。{retrySaveLabel}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Save needs review"
 msgstr "保存需要审核"
 
@@ -4990,7 +4902,7 @@ msgstr "保存视图"
 msgid "Save your recovery key"
 msgstr "保存恢复密钥"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "已保存"
@@ -5116,7 +5028,6 @@ msgstr "随手记"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
-#: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
@@ -5124,18 +5035,10 @@ msgid "Scratchpad"
 msgstr "随手记"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Scratchpad editing mode"
-msgstr "随手记编辑模式"
-
-#: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
 msgstr "随手记历史记录"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Scratchpad Markdown"
-msgstr "随手记 Markdown"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad outline"
 msgstr "随手记大纲"
 
@@ -5143,7 +5046,7 @@ msgstr "随手记大纲"
 msgid "Scratchpad storage is not available for this collection."
 msgstr "此集合无法使用随手记存储。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad storage is unavailable."
 msgstr "随手记存储不可用。"
 
@@ -5198,7 +5101,7 @@ msgstr "查看“即将到来”"
 msgid "Select {0}"
 msgstr "选择 {0}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "全选"
 
@@ -5206,7 +5109,7 @@ msgstr "全选"
 msgid "Select all visible tasks"
 msgstr "选择所有可见任务"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select branch"
 msgstr "选择分支"
 
@@ -5230,7 +5133,7 @@ msgstr "所选日期"
 msgid "Selected day"
 msgstr "所选日期"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Selected drafts become tasks linked to their Markdown notes. Everything else stays in this scratchpad so you can keep working."
 msgstr "所选草稿将成为链接到其 Markdown 笔记的任务。其余内容会保留在此便笺中,方便你继续工作。"
 
@@ -5426,11 +5329,11 @@ msgstr "部分更改仍在保存。请保持此页面打开并重试。"
 msgid "Some files could not be read and were omitted from this view."
 msgstr "部分文件无法读取，已从此视图中排除。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "部分笔记更改尚未保存。请保持此页面打开并重试。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
 msgstr "部分任务或笔记在转换后已更改。它们已保留,其草稿未恢复。"
 
@@ -5581,10 +5484,6 @@ msgstr "子任务"
 msgid "Subtasks of {0}"
 msgstr "{0}的子任务"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Suggestions"
-msgstr "建议"
-
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "根据前 {limit} 个任务提供的建议。搜索以查找其他任务。"
@@ -5650,10 +5549,6 @@ msgstr "轻点以重试。"
 msgid "task"
 msgstr "任务"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task"
-msgstr "任务"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
@@ -5683,11 +5578,7 @@ msgstr "已开启任务创建"
 msgid "Task details"
 msgstr "任务详情"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task draft"
-msgstr "任务草稿"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Task drafts"
 msgstr "任务草稿"
 
@@ -5863,7 +5754,7 @@ msgstr "集合目前不可用。"
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
 msgstr "无法加载完整的手动排序。草稿已保留；请重试。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The created TaskNote could not be found."
 msgstr "找不到已创建的 TaskNote。"
 
@@ -5895,7 +5786,7 @@ msgstr "Google 授权已过期，请重试。"
 msgid "The language could not be loaded. Check your connection and try again."
 msgstr "无法加载语言。请检查网络连接后重试。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The linked TaskNote could not be found."
 msgstr "找不到关联的 TaskNote。"
 
@@ -5925,7 +5816,7 @@ msgstr "恢复密钥仍保留在此设备上。"
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "规则会按原样保留。只有规则有效时才能应用。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "随手记未打开。"
 
@@ -6006,7 +5897,7 @@ msgstr "此看板按计算属性分组，因此无法在列之间移动卡片。
 msgid "This calendar is read-only."
 msgstr "此日历为只读。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This collection does not define a completed task status."
 msgstr "此集合未定义已完成任务的状态。"
 
@@ -6018,7 +5909,7 @@ msgstr "仅此设备"
 msgid "This discards your protected version."
 msgstr "这会放弃你的受保护版本。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This draft is no longer in the scratchpad."
 msgstr "此草稿已不在随手记中。"
 
@@ -6041,10 +5932,6 @@ msgstr "此筛选器使用构建器无法安全编辑的语法。"
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "此密钥仅显示一次。请将其安全地保存在 TaskNotes 之外。任何持有此密钥的人都可以恢复对你私有集合的访问权限。"
-
-#: src/app/scratchpad-screen.tsx
-msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
-msgstr "此 Markdown 包含大纲无法表示的内容。内容已保存；请继续以 Markdown 方式编辑。"
 
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
@@ -6286,6 +6173,7 @@ msgstr "已撤销对“{label}”的更改"
 
 #: src/app/app-shell.tsx
 #: src/app/bulk-task-actions.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -6506,8 +6394,8 @@ msgstr "你正在做什么？"
 msgid "What is mdbase?"
 msgstr "mdbase 是什么？"
 
-#: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "有什么待办事项？"
@@ -6532,7 +6420,7 @@ msgstr "计划处理的时间"
 msgid "Which"
 msgstr "哪一个"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
 msgstr "维基链接"
@@ -6549,13 +6437,11 @@ msgstr "工作会话"
 msgid "Working…"
 msgstr "正在处理中…"
 
-#: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
 msgstr "书写"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"
 msgstr "书写工具"
 
@@ -6634,7 +6520,7 @@ msgstr "你的 Google 日历会话已结束。请在设置中重新登录。"
 msgid "Your Inbox is clear."
 msgstr "收件箱已清空。"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Your note changed while saving. Save it again before reloading."
 msgstr "保存时笔记已更改。请重新保存，然后再重新加载。"
 

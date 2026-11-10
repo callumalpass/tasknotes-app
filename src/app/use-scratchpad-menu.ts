@@ -1,4 +1,9 @@
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+  type RefObject,
+} from "react";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 
 export function useScratchpadMenu(
@@ -57,4 +62,49 @@ export function useScratchpadMenu(
       release();
     };
   }, [identity, menuRef, triggerRef]);
+}
+
+/** Opens a row's menu upwards when there is no room for it below. */
+export function useMenuDirection(
+  open: boolean,
+  menuRef: RefObject<HTMLElement | null>,
+  triggerRef: RefObject<HTMLElement | null>,
+) {
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    const trigger = triggerRef.current;
+    if (!open || !menu || !trigger) return;
+    const bounds = trigger.getBoundingClientRect();
+    const scrollBounds = trigger
+      .closest(".scratchpad-history-scroll")
+      ?.getBoundingClientRect();
+    const roomAbove = bounds.top - Math.max(0, scrollBounds?.top ?? 0);
+    const roomBelow =
+      Math.min(window.innerHeight, scrollBounds?.bottom ?? window.innerHeight) -
+      bounds.bottom;
+    menu.classList.toggle(
+      "opens-up",
+      roomBelow < menu.offsetHeight + 8 && roomAbove > roomBelow,
+    );
+  }, [menuRef, open, triggerRef]);
+}
+
+const PHONE = "(max-width: 560px)";
+
+function subscribeToPhoneWidth(listener: () => void) {
+  const media = window.matchMedia?.(PHONE);
+  media?.addEventListener("change", listener);
+  return () => media?.removeEventListener("change", listener);
+}
+
+/**
+ * Whether the feed is at phone width, where an earlier note's line has room
+ * for its name but not for a labelled button beside it.
+ */
+export function usePhoneNoteLine(): boolean {
+  return useSyncExternalStore(
+    subscribeToPhoneWidth,
+    () => Boolean(window.matchMedia?.(PHONE).matches),
+    () => false,
+  );
 }

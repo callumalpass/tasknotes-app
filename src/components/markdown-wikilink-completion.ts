@@ -1,4 +1,5 @@
 import type { CompletionSource } from "@codemirror/autocomplete";
+import type { EditorView } from "@codemirror/view";
 
 import {
   activeRecordWikilink,
@@ -17,6 +18,12 @@ export type CompleteRecords = (
 
 export function recordWikilinkCompletionSource(
   getCompleteRecords: () => CompleteRecords | undefined,
+  /** Called once a chosen link is in the text. */
+  onApplied?: (
+    view: EditorView,
+    completion: FieldCompletion,
+    link: string,
+  ) => void,
 ): CompletionSource {
   return async (context) => {
     const token = activeRecordWikilink(
@@ -37,13 +44,27 @@ export function recordWikilinkCompletionSource(
       to: token.to,
       filter: false,
       options: values.flatMap((value) => {
-        const apply = recordWikilinkValue(value);
-        return apply
+        const link = recordWikilinkValue(value);
+        return link
           ? [
               {
                 label: value.label,
                 detail: value.detail,
-                apply,
+                apply: onApplied
+                  ? (
+                      view: EditorView,
+                      _option: unknown,
+                      from: number,
+                      to: number,
+                    ) => {
+                      view.dispatch({
+                        changes: { from, to, insert: link },
+                        selection: { anchor: from + link.length },
+                        userEvent: "input.complete",
+                      });
+                      onApplied(view, value, link);
+                    }
+                  : link,
               },
             ]
           : [];

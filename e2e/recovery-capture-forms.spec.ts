@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "./local-test";
+import { outlineOf } from "./scratchpad-editor";
 
 async function prepare(page: Page, info: TestInfo) {
   await page.setViewportSize({
@@ -64,53 +65,32 @@ for (const theme of ["light"] as const) {
     await page.emulateMedia({ colorScheme: theme });
     await prepare(page, info);
     await page.goto("scratchpad/?demo=60");
-    const empty = page
-      .getByRole("textbox", { name: "Draft task: empty", exact: true })
-      .last();
-    await empty.fill("First draft for review");
-    await page
-      .getByRole("textbox", {
-        name: "Draft task: First draft for review",
-        exact: true,
-      })
-      .press("Enter");
-    const second = page
-      .getByRole("textbox", { name: "Draft task: empty", exact: true })
-      .last();
-    await second.fill("Current draft for review");
-    const current = page.getByRole("textbox", {
-      name: "Draft task: Current draft for review",
-      exact: true,
-    });
-    const trigger = page.getByRole("button", {
-      name: "Actions for Current draft for review",
-      exact: true,
-    });
+    await expect(
+      outlineOf(page.locator(".scratchpad-current-document")),
+    ).toBeFocused();
+    await page.getByRole("button", { name: "Earlier notes" }).click();
+    // A past note keeps its actions in a menu on its line.
+    const trigger = page
+      .getByRole("button", { name: "Note actions", exact: true })
+      .first();
+    const menu = page.getByRole("menu", { name: "Note actions", exact: true });
     await trigger.click();
-    await expect(
-      page.getByRole("menu", {
-        name: "Actions for Current draft for review",
-        exact: true,
-      }),
-    ).toBeVisible();
+    await expect(menu).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(
-      page.getByRole("menu", {
-        name: "Actions for Current draft for review",
-        exact: true,
-      }),
-    ).toHaveCount(0);
+    await expect(menu).toHaveCount(0);
     await expect(trigger).toBeFocused();
     await trigger.click();
+    await expect(menu).toBeVisible();
     await page.getByRole("button", { name: "Add image", exact: true }).click();
-    await expect(
-      page.getByRole("menu", {
-        name: "Actions for Current draft for review",
-        exact: true,
-      }),
-    ).toHaveCount(0);
+    await expect(menu).toHaveCount(0);
     await page.getByRole("button", { name: "Add image", exact: true }).click();
-    await current.focus();
+
+    await page.getByRole("button", { name: "New note", exact: true }).click();
+    const current = outlineOf(page.locator(".scratchpad-current-document"));
+    await expect(current).toBeFocused();
+    await page.keyboard.type("First draft for review");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("Current draft for review");
     await page
       .getByRole("button", { name: "Create tasks", exact: true })
       .click();

@@ -163,7 +163,7 @@ msgid "{0, plural, one {Account unlocked. # private collection still needs to fi
 msgstr "{0, plural, one {Account sbloccato. # raccolta privata deve ancora completare l'accesso alla chiave; riprova a sbloccare con questa raccolta selezionata.} other {Account sbloccato. # raccolte private devono ancora completare l'accesso alle chiavi; riprova a sbloccare con ciascuna raccolta selezionata.}}"
 
 #. placeholder {0}: tasks.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
 msgstr "{0, plural, one {# attività creata} many {# attività create} other {# attività create}}"
 
@@ -187,10 +187,10 @@ msgstr "{0, plural, one {La modalità rigorosa è in sospeso in # destinazione d
 msgid "{0} (ambiguous account link)"
 msgstr "{0} (collegamento all'account ambiguo)"
 
-#. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
-#. placeholder {1}: node.text || uiCopy("item")
-#. placeholder {2}: nestedItemCount(descendantCount)
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: open ? uiCopy("Collapse") : uiCopy("Expand")
+#. placeholder {1}: text || uiCopy("item")
+#. placeholder {2}: nestedItemCount(nested)
+#: src/app/scratchpad-note.tsx
 msgid "{0} {1}, {2}"
 msgstr "{0} {1}, {2}"
 
@@ -593,16 +593,16 @@ msgstr "{name} deve rimanere nella navigazione finché non viene aggiunta un'alt
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
 msgstr "{overdueCount, plural, one {# in ritardo} many {# in ritardo} other {# in ritardo}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Create # task} other {Create # tasks}}"
 msgstr "{selectedReviewCount, plural, one {Crea # attività} many {Crea # attività} other {Crea # attività}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Retry # task} other {Retry # tasks}}"
 msgstr "{selectedReviewCount, plural, one {Riprova # attività} many {Riprova # attività} other {Riprova # attività}}"
 
 #. placeholder {0}: reviewItems.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount} of {0} selected"
 msgstr "{selectedReviewCount} di {0} selezionati"
 
@@ -722,10 +722,8 @@ msgstr "In tutta la raccolta"
 msgid "Actions"
 msgstr "Azioni"
 
-#. placeholder {0}: node.text || uiCopy("empty item")
-#. placeholder {0}: node.text || uiCopy("item")
 #. placeholder {0}: task.title
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
@@ -814,7 +812,7 @@ msgstr "Aggiungi un’attività secondaria…"
 msgid "Add a tag"
 msgstr "Aggiungi un tag"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add a task title first."
 msgstr "Prima aggiungi un titolo all'attività."
 
@@ -833,14 +831,6 @@ msgstr "Aggiungi un titolo prima di lasciare questa attività."
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
 msgstr "Aggiungi un assegnatario"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add child"
-msgstr "Aggiungi elemento figlio"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add context…"
-msgstr "Aggiungi contesto…"
 
 #: src/components/task-capture.tsx
 msgid "Add details"
@@ -920,7 +910,7 @@ msgstr "Aggiungi attività a {label}"
 msgid "Add thoughts, links, or supporting details…"
 msgstr "Aggiungi pensieri, collegamenti o dettagli di supporto…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add title"
 msgstr "Aggiungi titolo"
 
@@ -1249,7 +1239,7 @@ msgstr "Colonna della bacheca"
 msgid "Board columns"
 msgstr "Colonne della bacheca"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Bold"
 msgstr "Grassetto"
 
@@ -1396,10 +1386,6 @@ msgstr "Verifica del recupero dell'account…"
 msgid "Checking collection settings…"
 msgstr "Verifica delle impostazioni della raccolta…"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Child"
-msgstr "Elemento figlio"
-
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
 msgstr "Scelta inviata. Potrebbe essere ancora in attesa di sincronizzazione; verifica i conteggi confermati, in sospeso e trattenuti."
@@ -1456,7 +1442,7 @@ msgstr "Scegli la modalità del calendario e quali date delle attività diventan
 msgid "Choose the information shown beneath each task."
 msgstr "Scegli le informazioni da mostrare sotto ogni attività."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Choose what becomes a task"
 msgstr "Scegli cosa trasformare in attività"
 
@@ -1507,7 +1493,7 @@ msgstr "Cancella data pianificata"
 msgid "Clear search"
 msgstr "Cancella la ricerca"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "Cancella la selezione"
 
@@ -1523,7 +1509,7 @@ msgstr "Cancella il valore"
 msgid "Click tasks to select them."
 msgstr "Fai clic sulle attività per selezionarle."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
 #: src/components/choice-options.tsx
@@ -1735,10 +1721,6 @@ msgstr "“{0}” completata ({completedOn})"
 msgid "Completed {tasks}"
 msgstr "Completato: {tasks}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Completed draft"
-msgstr "Bozza completata"
-
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
 msgstr "Istanze ricorrenti completate"
@@ -1870,16 +1852,11 @@ msgstr "Contesti, persone, dipendenze e proprietà personalizzate"
 msgid "Continue on the timeline"
 msgstr "Continua nella cronologia"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Conversion undone"
 msgstr "Conversione annullata"
 
-#. placeholder {0}: node.text || uiCopy("empty task")
-#: src/app/scratchpad-screen.tsx
-msgid "Convert {0} to note"
-msgstr "Converti {0} in nota"
-
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Convert to note"
 msgstr "Converti in nota"
 
@@ -1941,10 +1918,6 @@ msgstr "Impossibile spostare “{0}”. {1}"
 #: src/components/collection-availability.tsx
 msgid "Could not reconnect. Try again or check connection settings."
 msgstr "Impossibile riconnettersi. Riprova o verifica le impostazioni di connessione."
-
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Could not save the default mode on this device."
-msgstr "Impossibile salvare la modalità predefinita su questo dispositivo."
 
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
@@ -2012,16 +1985,15 @@ msgstr "Crea file in anticipo"
 msgid "Create subtask"
 msgstr "Crea attività secondaria"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Create task"
 msgstr "Crea attività"
 
-#. placeholder {0}: node.text
-#: src/app/scratchpad-screen.tsx
-msgid "Create task for {0}"
-msgstr "Crea attività per {0}"
+#: src/app/scratchpad-note.tsx
+msgid "Create task for {text}"
+msgstr "Crea attività per {text}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Create tasks"
 msgstr "Crea attività"
 
@@ -2033,20 +2005,20 @@ msgstr "Crea la successiva dopo il completamento"
 msgid "Create view"
 msgstr "Crea vista"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "Creata"
 
 #. placeholder {0}: converted.task.title
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created “{0}”"
 msgstr "Creata “{0}”"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "Creazione in corso…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Current note"
 msgstr "Nota corrente"
 
@@ -2139,18 +2111,10 @@ msgstr "Predefinito"
 msgid "Default fields"
 msgstr "Campi predefiniti"
 
-#: src/app/more-screen.tsx
-msgid "Default mode for new notes"
-msgstr "Modalità predefinita per le nuove note"
-
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
 msgstr "Priorità predefinita"
-
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Default Scratchpad mode"
-msgstr "Modalità predefinita del blocco appunti"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
@@ -2176,11 +2140,7 @@ msgstr "Eliminare “{name}”?"
 msgid "Delete calendar account"
 msgstr "Elimina account calendario"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Delete item"
-msgstr "Elimina elemento"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Delete note"
 msgstr "Elimina nota"
 
@@ -2322,6 +2282,7 @@ msgstr "Scollega calendari"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/running-timer.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -2380,10 +2341,6 @@ msgstr "Scarica"
 #: src/components/task-attachments.tsx
 msgid "Download {0}"
 msgstr "Scarica {0}"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Draft task"
-msgstr "Bozza di attività"
 
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
@@ -2470,6 +2427,10 @@ msgstr "Ogni data viene registrata nell'attività ricorrente. Un file di attivit
 msgid "Each month"
 msgstr "Ogni mese"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Earlier notes"
+msgstr "Note precedenti"
+
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
 msgstr "Le regole precedenti hanno la precedenza."
@@ -2508,10 +2469,6 @@ msgstr "Modifica non salvata"
 msgid "Edit pattern"
 msgstr "Modifica schema"
 
-#: src/components/outline-textarea.tsx
-msgid "Edit reference Markdown"
-msgstr "Modifica Markdown del riferimento"
-
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "Modifica attività ricorrente"
@@ -2526,7 +2483,7 @@ msgid "Editable"
 msgstr "Modificabile"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Editor for {0}"
 msgstr "Editor di {0}"
 
@@ -2534,15 +2491,10 @@ msgstr "Editor di {0}"
 msgid "Editor mode"
 msgstr "Modalità editor"
 
-#: src/app/scratchpad-screen.tsx
-msgid "empty"
-msgstr "vuoto"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "elemento vuoto"
 
-#: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
 msgstr "attività vuota"
@@ -2737,7 +2689,7 @@ msgstr "Completa o scarta l’attività in fase di aggiunta prima di ricaricare.
 msgid "Finish strict mode on this device"
 msgstr "Completa la modalità rigorosa su questo dispositivo"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Finish the note action in progress before reloading."
 msgstr "Completa l'azione sulla nota in corso prima di ricaricare."
 
@@ -2907,7 +2859,7 @@ msgstr "Colonne raggruppate"
 msgid "Has tag {tag}"
 msgstr "Ha il tag {tag}"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Heading"
 msgstr "Intestazione"
 
@@ -3000,7 +2952,7 @@ msgstr "Includi le ricorrenze saltate."
 msgid "Include tasks when"
 msgstr "Includi le attività quando"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Indent"
 msgstr "Aumenta rientro"
 
@@ -3068,7 +3020,7 @@ msgstr "è il o prima del"
 msgid "ISO 8601 value"
 msgstr "Valore ISO 8601"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Italic"
 msgstr "Corsivo"
 
@@ -3087,10 +3039,6 @@ msgstr "Mantieni una finestra mobile"
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
 msgstr "Continua ad aggiungere attività"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Keep as note"
-msgstr "Mantieni come nota"
 
 #: src/components/task-model-settings.tsx
 msgid "Keep at least one priority."
@@ -3160,7 +3108,7 @@ msgstr "Mantieni le date pianificate, anche se completi in ritardo."
 msgid "Keep the quick-add field on this view."
 msgstr "Mantieni il campo di aggiunta rapida in questa vista."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Keep writing"
 msgstr "Continua a scrivere"
 
@@ -3238,10 +3186,6 @@ msgstr "Formato dei collegamenti"
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
 msgstr "Collega l'account a un record persona prima di usare «Assegnate a me»."
-
-#: src/app/scratchpad-screen.tsx
-msgid "Linked"
-msgstr "Collegato"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
@@ -3337,7 +3281,7 @@ msgstr "Bloccata su questo dispositivo"
 msgid "Looking in collection…"
 msgstr "Ricerca nella raccolta…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Make a task"
 msgstr "Crea un'attività"
 
@@ -3368,14 +3312,6 @@ msgstr "Ordine manuale"
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
 msgstr "L'ordine manuale è attivo. Sulle attività compariranno le maniglie di trascinamento."
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark complete"
-msgstr "Segna come completata"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark incomplete"
-msgstr "Segna come non completata"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
@@ -3506,15 +3442,6 @@ msgstr "Altre azioni per l'attività"
 msgid "move"
 msgstr "sposta"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Move"
-msgstr "Sposta"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Move {0}"
-msgstr "Sposta {0}"
-
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
@@ -3558,6 +3485,7 @@ msgstr "Sposta i file delle attività archiviate in una cartella"
 msgid "Move dates one day later"
 msgstr "Sposta le date di un giorno in avanti"
 
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 msgid "Move down"
 msgstr "Sposta in giù"
@@ -3565,10 +3493,6 @@ msgstr "Sposta in giù"
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
 msgstr "Sposta anche le scadenze"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Move focused item"
-msgstr "Sposta l'elemento selezionato"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
@@ -3584,6 +3508,7 @@ msgstr "Sposta le attività selezionate in un progetto"
 msgid "Move to project"
 msgstr "Sposta in un progetto"
 
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 msgid "Move up"
 msgstr "Sposta in su"
@@ -3965,7 +3890,7 @@ msgstr "Non collegato"
 msgid "Not now"
 msgstr "Non ora"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Not saved"
 msgstr "Non salvato"
 
@@ -3982,11 +3907,7 @@ msgstr "Non salvato. Verifica la modifica."
 msgid "Not: {0}"
 msgstr "Non: {0}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Note"
-msgstr "Nota"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note actions"
 msgstr "Azioni per la nota"
 
@@ -3994,7 +3915,7 @@ msgstr "Azioni per la nota"
 msgid "Note deleted"
 msgstr "Nota eliminata"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note title"
 msgstr "Titolo della nota"
 
@@ -4092,7 +4013,7 @@ msgstr "In una data"
 msgid "On this device"
 msgstr "Su questo dispositivo"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
 msgstr "Solo gli elementi in bozza possono diventare attività di TaskNotes."
 
@@ -4122,7 +4043,7 @@ msgstr "Apri {0}"
 msgid "Open a collection first"
 msgstr "Apri prima una raccolta"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Open first"
 msgstr "Apri per prima"
 
@@ -4137,7 +4058,7 @@ msgstr "Apri nel Pianificatore"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/running-timer.tsx
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "Apri attività"
@@ -4201,19 +4122,9 @@ msgstr "Organizza"
 msgid "Other"
 msgstr "Altro"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"
 msgstr "Riduci rientro"
-
-#: src/app/scratchpad-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Outline"
-msgstr "Struttura"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Outline controls for {0}"
-msgstr "Controlli della struttura per {0}"
 
 #: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
@@ -4459,7 +4370,7 @@ msgstr "Date rapide"
 msgid "Quick reminders"
 msgstr "Promemoria rapidi"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Quote"
 msgstr "Citazione"
 
@@ -4475,7 +4386,7 @@ msgstr "Ricerche recenti"
 msgid "Recently opened"
 msgstr "Aperte di recente"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Recognized task details"
 msgstr "Dettagli delle attività riconosciuti"
 
@@ -4591,6 +4502,7 @@ msgstr "Relativo"
 msgid "Relative to"
 msgstr "Rispetto a"
 
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
 msgstr "Ricarica"
@@ -4838,11 +4750,11 @@ msgstr "Ripristino della vista Home"
 msgid "Results"
 msgstr "Risultati"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resume as current"
 msgstr "Riprendi come corrente"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resuming…"
 msgstr "Ripresa in corso…"
 
@@ -4970,7 +4882,7 @@ msgstr "Salvataggio non riuscito · Riprova"
 msgid "Save failed. {retrySaveLabel}"
 msgstr "Salvataggio non riuscito. {retrySaveLabel}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Save needs review"
 msgstr "Salvataggio da verificare"
 
@@ -4990,7 +4902,7 @@ msgstr "Salva vista"
 msgid "Save your recovery key"
 msgstr "Salva la chiave di recupero"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "Salvato"
@@ -5116,7 +5028,6 @@ msgstr "blocco appunti"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
-#: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
@@ -5124,18 +5035,10 @@ msgid "Scratchpad"
 msgstr "Blocco appunti"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Scratchpad editing mode"
-msgstr "Modalità di modifica del blocco appunti"
-
-#: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
 msgstr "Cronologia del blocco appunti"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Scratchpad Markdown"
-msgstr "Markdown del blocco appunti"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad outline"
 msgstr "Struttura del blocco appunti"
 
@@ -5143,7 +5046,7 @@ msgstr "Struttura del blocco appunti"
 msgid "Scratchpad storage is not available for this collection."
 msgstr "L'archiviazione del blocco appunti non è disponibile per questa raccolta."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad storage is unavailable."
 msgstr "L'archiviazione del blocco appunti non è disponibile."
 
@@ -5198,7 +5101,7 @@ msgstr "Vedi Prossimamente"
 msgid "Select {0}"
 msgstr "Seleziona {0}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "Seleziona tutto"
 
@@ -5206,7 +5109,7 @@ msgstr "Seleziona tutto"
 msgid "Select all visible tasks"
 msgstr "Seleziona tutte le attività visibili"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select branch"
 msgstr "Seleziona ramo"
 
@@ -5230,7 +5133,7 @@ msgstr "giorno selezionato"
 msgid "Selected day"
 msgstr "Giorno selezionato"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Selected drafts become tasks linked to their Markdown notes. Everything else stays in this scratchpad so you can keep working."
 msgstr "Le bozze selezionate diventano attività collegate alle rispettive note Markdown. Tutto il resto rimane in questo blocco per consentirti di continuare a lavorare."
 
@@ -5426,11 +5329,11 @@ msgstr "Alcune modifiche sono ancora in fase di salvataggio. Tieni aperta questa
 msgid "Some files could not be read and were omitted from this view."
 msgstr "Alcuni file non sono stati letti e sono stati omessi da questa vista."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "Alcune modifiche alle note non sono salvate. Tieni aperta questa pagina e riprova."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
 msgstr "Alcune attività o note sono cambiate dopo la conversione. Sono state mantenute e le relative bozze non sono state ripristinate."
 
@@ -5581,10 +5484,6 @@ msgstr "Attività secondarie"
 msgid "Subtasks of {0}"
 msgstr "Attività secondarie di {0}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Suggestions"
-msgstr "Suggerimenti"
-
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "Suggerimenti dalle prime {limit} attività. Cerca per trovarne altre."
@@ -5650,10 +5549,6 @@ msgstr "Tocca per riprovare."
 msgid "task"
 msgstr "attività"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task"
-msgstr "Attività"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
@@ -5683,11 +5578,7 @@ msgstr "Creazione di attività attivata"
 msgid "Task details"
 msgstr "Dettagli dell'attività"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task draft"
-msgstr "Bozza di attività"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Task drafts"
 msgstr "Bozze di attività"
 
@@ -5863,7 +5754,7 @@ msgstr "La raccolta non è disponibile in questo momento."
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
 msgstr "Impossibile caricare l'intero ordine manuale. La bozza è conservata; riprova."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The created TaskNote could not be found."
 msgstr "Impossibile trovare la nota TaskNotes creata."
 
@@ -5895,7 +5786,7 @@ msgstr "L’autorizzazione Google è scaduta. Riprova."
 msgid "The language could not be loaded. Check your connection and try again."
 msgstr "Impossibile caricare la lingua. Verifica la connessione e riprova."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The linked TaskNote could not be found."
 msgstr "Impossibile trovare la nota TaskNotes collegata."
 
@@ -5925,7 +5816,7 @@ msgstr "La chiave di recupero è ancora conservata su questo dispositivo."
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "La regola viene conservata esattamente come scritta. Applicala solo quando è valida."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "Il blocco appunti non è aperto."
 
@@ -6006,7 +5897,7 @@ msgstr "Questa bacheca raggruppa per una proprietà calcolata, quindi le schede 
 msgid "This calendar is read-only."
 msgstr "Questo calendario è di sola lettura."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This collection does not define a completed task status."
 msgstr "Questa raccolta non definisce uno stato di attività completata."
 
@@ -6018,7 +5909,7 @@ msgstr "Solo su questo dispositivo"
 msgid "This discards your protected version."
 msgstr "Questa operazione scarta la versione protetta."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This draft is no longer in the scratchpad."
 msgstr "Questa bozza non è più nel blocco appunti."
 
@@ -6041,10 +5932,6 @@ msgstr "Questo filtro usa una sintassi che il generatore non può modificare in 
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "Questa chiave viene mostrata una sola volta. Conservala in un luogo sicuro fuori da TaskNotes. Chiunque la possieda può recuperare l'accesso alle raccolte private."
-
-#: src/app/scratchpad-screen.tsx
-msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
-msgstr "Questo Markdown contiene blocchi che la struttura non può rappresentare. È stato salvato; continua a modificarlo come Markdown."
 
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
@@ -6286,6 +6173,7 @@ msgstr "Modifica annullata: «{label}»"
 
 #: src/app/app-shell.tsx
 #: src/app/bulk-task-actions.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -6506,8 +6394,8 @@ msgstr "Su cosa si sta lavorando?"
 msgid "What is mdbase?"
 msgstr "Che cos'è mdbase?"
 
-#: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "Cosa c'è da fare?"
@@ -6532,7 +6420,7 @@ msgstr "Quando pensi di lavorarci"
 msgid "Which"
 msgstr "Quale"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
 msgstr "Wikilink"
@@ -6549,13 +6437,11 @@ msgstr "Sessione di lavoro"
 msgid "Working…"
 msgstr "Elaborazione in corso…"
 
-#: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
 msgstr "Scrivi"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"
 msgstr "Strumenti di scrittura"
 
@@ -6634,7 +6520,7 @@ msgstr "La sessione di Google Calendar è terminata. Accedi di nuovo in Impostaz
 msgid "Your Inbox is clear."
 msgstr "La tua posta in arrivo è vuota."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Your note changed while saving. Save it again before reloading."
 msgstr "La nota è stata modificata durante il salvataggio. Salvala di nuovo prima di ricaricare."
 

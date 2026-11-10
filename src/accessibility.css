@@ -1,11 +1,11 @@
 /* Keep secondary text at WCAG AA contrast on the light surfaces. */
 :root:not([data-theme="dark"]) {
-  --color-text-muted: oklch(52% 0.014 255);
+  --color-text-muted: oklch(52% 0.012 65);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --color-text-muted: oklch(67% 0.012 255);
+    --color-text-muted: oklch(68% 0.01 75);
   }
 }
 
