@@ -434,7 +434,7 @@ describe("TaskActions", () => {
     );
 
     await waitFor(() => expect(report).toHaveBeenCalled());
-    const saved = await repository.get(task.id);
+    const saved = (await repository.get(task.id))!;
     expect(saved.completed).toBe(false);
     expect(saved.completeInstances).toEqual([late]);
     expect(saved.scheduled).not.toBe(late);
