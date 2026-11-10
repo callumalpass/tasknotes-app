@@ -20,12 +20,13 @@ import {
   StatusListEditor,
 } from "./task-vocabulary-editor";
 import {
-  TaskVocabularyError,
-  TaskVocabularyInUseError,
-  vocabularyProblem,
-  type TaskVocabularyPatch,
-  type TaskVocabularyProblem,
-} from "../domain/task-type-vocabulary";
+  isTaskNotesVocabularyError,
+  isTaskNotesVocabularyInUseError,
+  taskNotesVocabularyProblem,
+  type TaskNotesVocabularyInUseError,
+  type TaskNotesVocabularyPatch,
+  type TaskNotesVocabularyProblem,
+} from "@tasknotes/model/mdbase";
 import {
   useTaskModelDraft,
   type TaskModelSettingsDraft,
@@ -157,19 +158,20 @@ export function TaskModelSettingsEditor() {
     if (!writable || !dirty || saveState === "saving") return;
     const vocabulary = vocabularyChanges(draft, original);
     const invalid =
-      vocabularyProblem(vocabulary, {
+      taskNotesVocabularyProblem(vocabulary, {
         status: draft.defaultStatus,
         priority: draft.defaultPriority,
       }) ??
-      (vocabulary.customFields?.add?.some(
+      (vocabulary.userFields?.add?.some(
         ({ displayName }) => !displayName.trim(),
       )
         ? ({ kind: "field-label", key: "" } as const)
         : null);
-    if (invalid) {
+    const invalidMessage = invalid && vocabularyProblemMessage(invalid);
+    if (invalidMessage) {
       setSaveState("error");
       setError("");
-      setProblem(vocabularyProblemMessage(invalid));
+      setProblem(invalidMessage);
       // A missing name is the usual reason; put the keyboard on it.
       (event.currentTarget as HTMLElement)
         .querySelector<HTMLInputElement>(
@@ -183,7 +185,7 @@ export function TaskModelSettingsEditor() {
     setProblem("");
     try {
       await updateTaskModelSettings({
-        ...(Object.keys(vocabulary).length ? { vocabulary } : {}),
+        ...vocabulary,
         defaultStatus: draft.defaultStatus,
         defaultPriority: draft.defaultPriority,
         recurrence: {
@@ -217,10 +219,12 @@ export function TaskModelSettingsEditor() {
       setSaveState("saved");
     } catch (reason) {
       setSaveState("error");
-      if (reason instanceof TaskVocabularyInUseError)
-        setProblem(vocabularyInUseMessage(reason, original));
-      else if (reason instanceof TaskVocabularyError)
-        setProblem(vocabularyProblemMessage(reason.problem));
+      const message = isTaskNotesVocabularyInUseError(reason)
+        ? vocabularyInUseMessage(reason, original)
+        : isTaskNotesVocabularyError(reason)
+          ? vocabularyProblemMessage(reason.problem)
+          : null;
+      if (message) setProblem(message);
       else setError(reason instanceof Error ? reason.message : String(reason));
     }
   }
@@ -625,10 +629,10 @@ function SettingsGroup({
 function vocabularyChanges(
   draft: TaskModelSettingsDraft,
   original: TaskModelSettingsDraft,
-): TaskVocabularyPatch {
+): TaskNotesVocabularyPatch {
   const changed = (key: "statuses" | "priorities" | "customFields") =>
     JSON.stringify(draft[key]) !== JSON.stringify(original[key]);
-  const patch: TaskVocabularyPatch = {};
+  const patch: TaskNotesVocabularyPatch = {};
   if (changed("statuses"))
     patch.statuses = draft.statuses.map(
       ({ value, label, color, isCompleted }) => ({
@@ -649,7 +653,7 @@ function vocabularyChanges(
       original.customFields.map((field) => [field.id, field]),
     );
     const kept = new Set(draft.customFields.map(({ id }) => id));
-    patch.customFields = {
+    patch.userFields = {
       add: draft.customFields
         .filter(({ id }) => !before.has(id))
         .map(({ key, displayName, type }) => ({ key, displayName, type })),
@@ -668,7 +672,13 @@ function vocabularyChanges(
   return patch;
 }
 
-function vocabularyProblemMessage(problem: TaskVocabularyProblem): string {
+/**
+ * What to tell someone about a problem they can fix in this form, or null for
+ * one this form cannot cause.
+ */
+function vocabularyProblemMessage(
+  problem: TaskNotesVocabularyProblem,
+): string | null {
   switch (problem.kind) {
     case "empty-label":
       return problem.list === "status"
@@ -689,11 +699,13 @@ function vocabularyProblemMessage(problem: TaskVocabularyProblem): string {
     case "field-name":
     case "field-taken":
       return translate`“${problem.key}” can’t be used for a custom field. Try another name.`;
+    case "completed-and-skipped":
+      return null;
   }
 }
 
 function vocabularyInUseMessage(
-  problem: TaskVocabularyInUseError,
+  problem: TaskNotesVocabularyInUseError,
   original: TaskModelSettingsDraft,
 ): string {
   const entries =
