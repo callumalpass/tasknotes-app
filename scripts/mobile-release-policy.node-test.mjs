@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import {
+  artifactJson,
   assertLinesOpen,
   latestExactGreen,
   qualifyChecks,
@@ -270,4 +273,32 @@ test("the Actions-only bridge checks target and whole-app stops without an Issue
   ]) {
     await assert.rejects(assertLinesOpen("android", async () => state));
   }
+});
+
+test("artifact reads retry a transient download, then fail with a bounded slug", async () => {
+  const waits = [];
+  let calls = 0;
+  const flaky = (_cmd, args) => {
+    if (++calls < 3) throw new Error("Command failed: gh run download");
+    writeFileSync(join(args[args.indexOf("--dir") + 1], "x.json"), '{"ok":true}');
+  };
+  const wait = async (delay) => waits.push(delay);
+  assert.deepEqual(
+    await artifactJson(1, "x", "x.json", REPO, false, { download: flaky, wait }),
+    { ok: true },
+  );
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, [10000, 10000]);
+  calls = 0;
+  await assert.rejects(
+    artifactJson(1, "x", "x.json", REPO, false, {
+      download: () => {
+        calls++;
+        throw new Error("Command failed: gh run download");
+      },
+      wait,
+    }),
+    { message: "release-evidence-unavailable" },
+  );
+  assert.equal(calls, 3);
 });
