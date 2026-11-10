@@ -24,6 +24,7 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 import { ConnectionNoticeContext } from "./connection-notice";
 import { createPortal } from "react-dom";
@@ -876,6 +877,7 @@ function SidebarProjects({ projects }: { projects: ProjectShortcut[] }) {
               aria-hidden="true"
               className="project-monogram"
               data-monogram={monogram}
+              style={{ "--project-hue": projectHue(label) } as CSSProperties}
             />
             <span>{label}</span> <small aria-hidden="true">{count}</small>
             <span hidden id={`${tooltipId}-${index}`}>
@@ -1673,4 +1675,12 @@ export function Navigation({
       ) : null}
     </>
   );
+}
+
+/** A stable hue for a project, so its monogram keeps one colour. */
+function projectHue(label: string): number {
+  let hash = 0;
+  for (const character of label)
+    hash = (hash * 31 + (character.codePointAt(0) ?? 0)) % 360;
+  return hash;
 }

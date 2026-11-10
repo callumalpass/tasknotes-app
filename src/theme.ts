@@ -12,7 +12,7 @@ function chromeColor(): void {
   if (!theme.resolveDarkTheme())
     document
       .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-      ?.setAttribute("content", "#fbfcfe");
+      ?.setAttribute("content", "#fefdfa");
 }
 
 export function applyThemePreference(preference: theme.ThemePreference): void {
