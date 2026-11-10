@@ -833,6 +833,10 @@ msgstr "画像を追加"
 msgid "Add notes"
 msgstr "ノートを追加"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Add or remove a tag on selected tasks"
+msgstr "選択したタスクのタグを追加または削除"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "プロジェクションを追加"
@@ -850,6 +854,10 @@ msgstr "初期ビューを追加"
 #: src/components/task-actions.tsx
 msgid "Add subtask"
 msgstr "サブタスクを追加"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Add tag"
+msgstr "タグを追加"
 
 #: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
@@ -896,6 +904,10 @@ msgstr "このタスクの前に行う必要がある作業を追加します。
 #: src/app/views/view-catalog.tsx
 msgid "Added"
 msgstr "追加しました"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Added tag {value} to {tasks}"
+msgstr "タグ {value} を追加しました: {tasks}"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
@@ -1235,6 +1247,7 @@ msgstr "カレンダーの目印"
 msgid "Can I change collections later?"
 msgstr "後からコレクションを変更できますか？"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -3561,6 +3574,14 @@ msgstr "新しい復元用パスワード"
 msgid "New subtask"
 msgstr "新しいサブタスク"
 
+#: src/app/bulk-task-actions.tsx
+msgid "New tag"
+msgstr "新しいタグ"
+
+#: src/app/bulk-task-actions.tsx
+msgid "New tag…"
+msgstr "新しいタグ…"
+
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4485,6 +4506,10 @@ msgstr "条件を削除"
 msgid "Remove from Scratchpad"
 msgstr "スクラッチパッドから削除"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Remove from selected tasks"
+msgstr "選択したタスクから削除"
+
 #: src/components/expression-builder.tsx
 msgid "Remove group"
 msgstr "グループを削除"
@@ -4509,6 +4534,10 @@ msgstr "プロジェクトを削除しました: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed scheduled dates from {tasks}"
 msgstr "予定日を削除しました: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed tag {value} from {tasks}"
+msgstr "タグ {value} を削除しました: {tasks}"
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
@@ -4627,6 +4656,14 @@ msgstr "優先度を元に戻しました: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Restored projects for {tasks}"
 msgstr "プロジェクトを元に戻しました: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored statuses for {tasks}"
+msgstr "ステータスを元に戻しました: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored tags for {tasks}"
+msgstr "タグを元に戻しました: {tasks}"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -5069,6 +5106,10 @@ msgstr "優先度を {value} に設定しました: {tasks}"
 msgid "Set status"
 msgstr "ステータスを設定"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Set status to {value} for {tasks}"
+msgstr "ステータスを {value} に設定しました: {tasks}"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "復元を設定"
@@ -5277,6 +5318,7 @@ msgstr "開始中…"
 msgid "Starts"
 msgstr "開始"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5287,6 +5329,10 @@ msgstr "開始"
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "ステータス"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Status for selected tasks"
+msgstr "選択したタスクのステータス"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
@@ -5371,10 +5417,15 @@ msgstr "同期中…"
 msgid "System"
 msgstr "システム"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Tag actions"
+msgstr "タグの操作"
+
 #: src/app/search-match-context.ts
 msgid "tags"
 msgstr "タグ"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts

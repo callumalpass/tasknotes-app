@@ -3,6 +3,7 @@ import { Archive, Check, Trash2, X } from "lucide-react";
 import {
   useEffect,
   useEffectEvent,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -18,8 +19,10 @@ import {
   type BulkEditReceipt,
   type BulkTaskChange,
   planTaskChange,
+  taskNeedsChange,
 } from "../application/bulk-task-edit";
 import { taskDatePart, todayString } from "../domain/task";
+import { statusChoices } from "../domain/task-configuration";
 import { shiftTaskDate } from "../domain/task-date-actions";
 import {
   nextWeekStart,
@@ -83,6 +86,9 @@ export function BulkTaskActions({
   const [projects, setProjects] = useState<FieldCompletion[]>([]);
   const [projectError, setProjectError] = useState("");
   const [projectAttempt, setProjectAttempt] = useState(0);
+  const [knownTags, setKnownTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState<string | null>(null);
+  const newTagId = useId();
   const actionBar = useRef<HTMLElement>(null);
   const pickAnchor = useRef<HTMLElement>(null);
   const deleting = useRef<{ navigationKey: string; ids: string[] } | null>(
@@ -101,6 +107,27 @@ export function BulkTaskActions({
   )
     ? (eligible[0]?.priority ?? "")
     : "";
+  const sharedStatus = eligible.every(
+    (task) => task.status === eligible[0]?.status,
+  )
+    ? (eligible[0]?.status ?? "")
+    : "";
+  // The tags that mark a record as a task or as archived are not labels.
+  const reservedTags = [
+    configuration.defaults.taskTag,
+    configuration.fieldMapping.archiveTag,
+  ];
+  // A tag every selected task carries is offered for removal; any other is added.
+  const sharedTags = (eligible[0]?.tags ?? []).filter(
+    (tag) =>
+      !reservedTags.includes(tag) &&
+      eligible.every((task) => task.tags.includes(tag)),
+  );
+  const otherTags = [
+    ...new Set([...eligible.flatMap((task) => task.tags), ...knownTags]),
+  ].filter((tag) => !sharedTags.includes(tag) && !reservedTags.includes(tag));
+  const namedTag = newTag?.trim().replace(/^#+/, "") ?? "";
+  const canAddNamedTag = Boolean(namedTag) && !reservedTags.includes(namedTag);
   const shownNotice = notice?.navigationKey === navigationKey ? notice : null;
   const currentNavigation = useRef(navigationKey);
   useEffect(() => {
@@ -111,6 +138,7 @@ export function BulkTaskActions({
     setFailures([]);
     setPicking(false);
     setScheduleChoice(null);
+    setNewTag(null);
     setNotice(null);
   }, [navigationKey]);
   useEffect(() => {
@@ -157,6 +185,22 @@ export function BulkTaskActions({
     projectAttempt,
   ]);
   useEffect(() => {
+    if (!hasSelection) return;
+    let active = true;
+    // Tags already on the selection are listed even when this cannot load.
+    void repository
+      .completeField({ field: "tags", kind: "values", limit: 200 })
+      .then(
+        (values) => {
+          if (active) setKnownTags(values.map(({ value }) => value));
+        },
+        () => undefined,
+      );
+    return () => {
+      active = false;
+    };
+  }, [hasSelection, repository]);
+  useEffect(() => {
     if (!shownNotice || held || undoing || failures.length) return;
     const timer = window.setTimeout(() => setNotice(null), 6000);
     return () => window.clearTimeout(timer);
@@ -200,11 +244,17 @@ export function BulkTaskActions({
     keyedFocus.current = focusedRow
       ? preserveRowFocus(focusedRow)
       : returnFocusToList;
-    const menus = actionBar.current?.querySelectorAll<HTMLElement>(
-      ".tasknotes-select-trigger",
-    );
-    const menu =
-      menus?.[["dates", "priority", "project"].indexOf(action)] ?? null;
+    const menuClass = {
+      dates: "bulk-schedule",
+      status: "bulk-status",
+      priority: "bulk-priority",
+      project: "bulk-project",
+    }[action as string];
+    const menu = menuClass
+      ? (actionBar.current?.querySelector<HTMLElement>(
+          `.${menuClass} .tasknotes-select-trigger`,
+        ) ?? null)
+      : null;
     if (menu) {
       menu.focus();
       menu.click();
@@ -229,7 +279,8 @@ export function BulkTaskActions({
 
   const changedMessage = t`This task changed. Open it to review before trying again.`;
   async function run(change: BulkTaskChange) {
-    if (store.busy || !eligible.length) return;
+    const targets = eligible.filter((task) => taskNeedsChange(task, change));
+    if (store.busy || !targets.length) return;
     if (
       change.kind === "schedule" &&
       change.date &&
@@ -256,7 +307,7 @@ export function BulkTaskActions({
     const origin = navigationKey;
     try {
       const result = await applyBulkEdits(
-        eligible,
+        targets,
         (task) => planTaskChange(task, change),
         port,
         changedMessage,
@@ -269,9 +320,15 @@ export function BulkTaskActions({
           ? (configuration.priorities.find(
               (priority) => priority.value === change.value,
             )?.label ?? change.value)
-          : change.kind === "project"
-            ? linkDisplayLabel(change.value)
-            : "",
+          : change.kind === "status"
+            ? (configuration.statuses.find(
+                (status) => status.value === change.value,
+              )?.label ?? change.value)
+            : change.kind === "project"
+              ? linkDisplayLabel(change.value)
+              : change.kind === "tag"
+                ? change.value
+                : "",
         result.receipts.filter(({ undo }) => "due" in undo).length,
       );
       let undoReceipts = result.receipts;
@@ -298,7 +355,11 @@ export function BulkTaskActions({
       };
       if (result.receipts.length) rememberUndo(entry);
       if (currentNavigation.current !== origin) return;
-      store.remove(result.receipts.map((receipt) => receipt.before.id));
+      // Rows that already matched are done too; only refused rows stay selected.
+      const refused = new Set(result.failures.map(({ task }) => task.id));
+      store.remove(
+        eligible.filter((task) => !refused.has(task.id)).map(({ id }) => id),
+      );
       setFailures(result.failures);
       if (result.receipts.length) {
         setNotice({
@@ -401,6 +462,14 @@ export function BulkTaskActions({
     t,
   ]);
   const disabled = store.busy || !eligible.length || deletionNeedsReview;
+  function closeNewTag() {
+    setNewTag(null);
+    requestAnimationFrame(() =>
+      actionBar.current
+        ?.querySelector<HTMLElement>(".bulk-tags .tasknotes-select-trigger")
+        ?.focus(),
+    );
+  }
   return (
     <>
       <p className="visually-hidden" aria-live="polite" aria-atomic="true">
@@ -468,6 +537,7 @@ export function BulkTaskActions({
               </button>
               <TaskNotesSelect
                 ariaLabel={t`Schedule selected tasks`}
+                className="bulk-schedule"
                 disabled={disabled}
                 options={[
                   { value: "today", label: t`Today` },
@@ -492,7 +562,18 @@ export function BulkTaskActions({
                 }}
               />
               <TaskNotesSelect
+                ariaLabel={t`Status for selected tasks`}
+                className="bulk-status"
+                triggerLabel={t`Status`}
+                disabled={disabled}
+                options={statusChoices(configuration.statuses, sharedStatus)}
+                placeholder={t`Status`}
+                value={sharedStatus}
+                onChange={(value) => void run({ kind: "status", value })}
+              />
+              <TaskNotesSelect
                 ariaLabel={t`Priority for selected tasks`}
+                className="bulk-priority"
                 triggerLabel={t`Priority`}
                 disabled={disabled}
                 options={configuration.priorities.map((priority) => ({
@@ -506,6 +587,7 @@ export function BulkTaskActions({
               />
               <TaskNotesSelect
                 ariaLabel={t`Move selected tasks to project`}
+                className="bulk-project"
                 disabled={disabled}
                 options={[
                   { value: "__none__", label: t`No project` },
@@ -520,6 +602,32 @@ export function BulkTaskActions({
                   void run({
                     kind: "project",
                     value: value === "__none__" ? "" : value,
+                  })
+                }
+              />
+              <TaskNotesSelect
+                ariaLabel={t`Add or remove a tag on selected tasks`}
+                className="bulk-tags"
+                disabled={disabled}
+                options={[
+                  ...sharedTags.map((tag) => ({
+                    value: tag,
+                    label: tag,
+                    description: t`Remove from selected tasks`,
+                  })),
+                  ...otherTags.map((tag) => ({ value: tag, label: tag })),
+                ]}
+                actions={[
+                  { label: t`New tag…`, onChoose: () => setNewTag("") },
+                ]}
+                actionsLabel={t`Tag actions`}
+                placeholder={t`Tags`}
+                value=""
+                onChange={(value) =>
+                  void run({
+                    kind: "tag",
+                    value,
+                    remove: sharedTags.includes(value),
                   })
                 }
               />
@@ -542,6 +650,41 @@ export function BulkTaskActions({
               </button>
             </div>
           )}
+          {newTag !== null && hasSelection ? (
+            <form
+              className="bulk-new-tag"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!canAddNamedTag) return;
+                setNewTag(null);
+                void run({ kind: "tag", value: namedTag, remove: false });
+              }}
+            >
+              <label htmlFor={newTagId}>
+                <Trans>New tag</Trans>
+              </label>
+              <input
+                id={newTagId}
+                autoFocus
+                autoCapitalize="none"
+                autoComplete="off"
+                spellCheck={false}
+                value={newTag}
+                onChange={(event) => setNewTag(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  event.stopPropagation();
+                  closeNewTag();
+                }}
+              />
+              <button type="submit" disabled={store.busy || !canAddNamedTag}>
+                <Trans>Add tag</Trans>
+              </button>
+              <button type="button" onClick={closeNewTag}>
+                <Trans>Cancel</Trans>
+              </button>
+            </form>
+          ) : null}
           {picking ? (
             <TaskDatePopover
               draft={NO_DATES}

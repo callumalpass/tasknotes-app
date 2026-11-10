@@ -833,6 +833,10 @@ msgstr "이미지 추가"
 msgid "Add notes"
 msgstr "노트 추가"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Add or remove a tag on selected tasks"
+msgstr "선택한 작업에 태그 추가 또는 제거"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "투영 추가"
@@ -850,6 +854,10 @@ msgstr "기본 뷰 추가"
 #: src/components/task-actions.tsx
 msgid "Add subtask"
 msgstr "하위 작업 추가"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Add tag"
+msgstr "태그 추가"
 
 #: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
@@ -896,6 +904,10 @@ msgstr "이 작업 전에 완료해야 하는 작업을 추가하세요."
 #: src/app/views/view-catalog.tsx
 msgid "Added"
 msgstr "추가됨"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Added tag {value} to {tasks}"
+msgstr "태그 {value} 추가함: {tasks}"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
@@ -1235,6 +1247,7 @@ msgstr "캘린더 표시"
 msgid "Can I change collections later?"
 msgstr "나중에 컬렉션을 변경할 수 있나요?"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -3561,6 +3574,14 @@ msgstr "새 복구 비밀번호"
 msgid "New subtask"
 msgstr "새 하위 작업"
 
+#: src/app/bulk-task-actions.tsx
+msgid "New tag"
+msgstr "새 태그"
+
+#: src/app/bulk-task-actions.tsx
+msgid "New tag…"
+msgstr "새 태그…"
+
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
@@ -4485,6 +4506,10 @@ msgstr "조건 제거"
 msgid "Remove from Scratchpad"
 msgstr "스크래치패드에서 제거"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Remove from selected tasks"
+msgstr "선택한 작업에서 제거"
+
 #: src/components/expression-builder.tsx
 msgid "Remove group"
 msgstr "그룹 제거"
@@ -4509,6 +4534,10 @@ msgstr "프로젝트 제거됨: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed scheduled dates from {tasks}"
 msgstr "예정일 제거됨: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed tag {value} from {tasks}"
+msgstr "태그 {value} 제거함: {tasks}"
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
@@ -4627,6 +4656,14 @@ msgstr "우선순위 복원됨: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Restored projects for {tasks}"
 msgstr "프로젝트 복원됨: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored statuses for {tasks}"
+msgstr "상태를 복원함: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored tags for {tasks}"
+msgstr "태그를 복원함: {tasks}"
 
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
@@ -5069,6 +5106,10 @@ msgstr "우선순위를 {value}(으)로 설정함: {tasks}"
 msgid "Set status"
 msgstr "상태 설정"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Set status to {value} for {tasks}"
+msgstr "상태를 {value}(으)로 설정함: {tasks}"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "복구 설정"
@@ -5277,6 +5318,7 @@ msgstr "시작 중…"
 msgid "Starts"
 msgstr "시작"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5287,6 +5329,10 @@ msgstr "시작"
 #: src/i18n/default-labels.ts
 msgid "Status"
 msgstr "상태"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Status for selected tasks"
+msgstr "선택한 작업의 상태"
 
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
@@ -5371,10 +5417,15 @@ msgstr "동기화 중…"
 msgid "System"
 msgstr "시스템"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Tag actions"
+msgstr "태그 작업"
+
 #: src/app/search-match-context.ts
 msgid "tags"
 msgstr "태그"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
