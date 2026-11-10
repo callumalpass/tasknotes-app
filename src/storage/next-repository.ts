@@ -29,6 +29,10 @@ import {
 } from "@tasknotes/model/frontmatter";
 import { patchTaskNotesMdbaseTypeSettings } from "@tasknotes/model/mdbase";
 import {
+  patchTaskTypeVocabulary,
+  vocabularyInUse,
+} from "../domain/task-type-vocabulary";
+import {
   TaskDeletionNotStartedError,
   TaskRevisionChangedError,
 } from "../application/ports/task-repository";
@@ -123,6 +127,7 @@ import {
   scratchpadFrontmatter,
 } from "./scratchpads";
 import { taskCompletion } from "../domain/task-completion";
+import { runningTimers } from "../domain/running-timers";
 import { taskSearchTokens } from "../domain/task-query";
 import {
   findOccurrenceParent,
@@ -1826,6 +1831,14 @@ export class NextTaskRepository implements TaskRepository {
     return decoded.task;
   }
 
+  /**
+   * Answers from the last loaded metadata while a change notice waits for its
+   * index read, so row markers do not blink out after each write.
+   */
+  taskRowRelations() {
+    return this.hasLoadedIndex ? this.cache.rowRelations() : null;
+  }
+
   async relationships(id: string) {
     const signal = this.signal();
     await this.ensureIndex();
@@ -2619,6 +2632,17 @@ export class NextTaskRepository implements TaskRepository {
       : [];
   }
 
+  /**
+   * Unlike the counts, this keeps answering from the last loaded metadata
+   * while a change notice waits for its index read: a timer that vanished
+   * between those two would look stopped.
+   */
+  runningTimers() {
+    return this.hasLoadedIndex
+      ? runningTimers([...this.cache.values()].map(({ task }) => task))
+      : null;
+  }
+
   navigationTaskCounts(today: string) {
     return this.indexReady
       ? navigationTaskCounts(
@@ -2696,6 +2720,23 @@ export class NextTaskRepository implements TaskRepository {
       patch,
       this.providers[0]!.model.configuration(),
     );
+    const vocabulary = patch.vocabulary;
+    if (vocabulary?.statuses || vocabulary?.priorities) {
+      // A status or priority tasks still hold stays until they are moved off
+      // it: removing it would put those tasks outside the type's schema.
+      await this.ensureIndex();
+      owner.throwIfAborted();
+      const current = this.providers[0]!.model.configuration();
+      const inUse = vocabularyInUse(
+        [...this.cache.values()].map(({ task }) => task),
+        {
+          statuses: current.statuses.map(({ value }) => value),
+          priorities: current.priorities.map(({ value }) => value),
+        },
+        vocabulary,
+      );
+      if (inUse) throw inUse;
+    }
     // App behaviour goes to the settings record, never to the binding. It is
     // saved first: a conflict there stops the save before anything is written.
     if (Object.keys(split.app).length) {
@@ -2714,7 +2755,7 @@ export class NextTaskRepository implements TaskRepository {
     const typePatch = split.type;
     await this.mutations.run(
       {
-        key: JSON.stringify(["task:settings", typePatch]),
+        key: JSON.stringify(["task:settings", typePatch, vocabulary ?? null]),
         prepare: async (mutationId, signal) => {
           const providers = await nextTaskProviders(this.client, signal);
           if (providers.length !== 1 || providers[0]!.sourcePath !== source)
@@ -2726,7 +2767,15 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error("The replica did not supply the task type source.");
           const parsed = parseFrontmatter(resource.text);
           const text = serializeMarkdownDocument(
-            patchTaskNotesMdbaseTypeSettings(parsed.frontmatter, typePatch),
+            patchTaskNotesMdbaseTypeSettings(
+              vocabulary
+                ? patchTaskTypeVocabulary(parsed.frontmatter, vocabulary, {
+                    status: typePatch.defaultStatus,
+                    priority: typePatch.defaultPriority,
+                  })
+                : parsed.frontmatter,
+              typePatch,
+            ),
             parsed.body,
           );
           // Nothing the type keeps changed: leave its revision alone.

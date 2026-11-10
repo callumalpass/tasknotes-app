@@ -68,10 +68,20 @@ msgstr "· 여는 중"
 msgid "” was saved…"
 msgstr "”이(가) 저장되었습니다…"
 
+#. placeholder {0}: problem.key
+#: src/components/task-model-settings.tsx
+msgid "“{0}” can’t be used for a custom field. Try another name."
+msgstr "“{0}”은(는) 사용자 지정 필드에 사용할 수 없습니다. 다른 이름을 사용해 보세요."
+
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "“{0}”은(는) 계산된 값이므로 작업을 이동할 수 없습니다."
+
+#. placeholder {0}: problem.value
+#: src/components/task-model-settings.tsx
+msgid "“{0}” is used twice. Rename one of them."
+msgstr "“{0}”이(가) 두 번 사용되었습니다. 둘 중 하나의 이름을 바꾸세요."
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
@@ -131,6 +141,16 @@ msgstr "{0, plural, other {미완료 #개}}"
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {작업 #개를 업데이트하지 못했습니다. 열어서 검토한 후 다시 시도하세요.}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the priority “{name}”. Give it another priority, then remove this one.} other {# tasks still have the priority “{name}”. Give them another priority, then remove this one.}}"
+msgstr "{0, plural, other {작업 #개가 아직 우선순위 “{name}”입니다. 다른 우선순위로 바꾼 다음 이 우선순위를 삭제하세요.}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the status “{name}”. Move it to another status, then remove this one.} other {# tasks still have the status “{name}”. Move them to another status, then remove this one.}}"
+msgstr "{0, plural, other {작업 #개가 아직 상태 “{name}”입니다. 다른 상태로 옮긴 다음 이 상태를 삭제하세요.}}"
 
 #. placeholder {0}: updates.length
 #: src/app/views-screen.tsx
@@ -314,7 +334,12 @@ msgstr "{action}이(가) 취소되었습니다."
 msgid "{ariaLabel} suggestions"
 msgstr "{ariaLabel} 제안"
 
+#: src/components/task-row.tsx
+msgid "{blockers, plural, one {Waiting on # task} other {Waiting on # tasks}}"
+msgstr "{blockers, plural, other {작업 #개를 기다리는 중}}"
+
 #: src/app/task-subtasks.tsx
+#: src/components/task-row.tsx
 msgid "{completed} of {total}"
 msgstr "{completed}/{total}"
 
@@ -446,7 +471,7 @@ msgstr "{field}에 {value} 포함"
 msgid "{field} is empty"
 msgstr "{field}이(가) 비어 있음"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours}시간 {minutes}분"
 
@@ -811,6 +836,10 @@ msgstr "담당자 추가"
 msgid "Add details"
 msgstr "세부정보 추가"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add field"
+msgstr "필드 추가"
+
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
 msgstr "수식 추가"
@@ -822,6 +851,14 @@ msgstr "이미지 추가"
 #: src/components/task-capture.tsx
 msgid "Add notes"
 msgstr "노트 추가"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Add or remove a tag on selected tasks"
+msgstr "선택한 작업에 태그 추가 또는 제거"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add priority"
+msgstr "우선순위 추가"
 
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
@@ -836,10 +873,18 @@ msgstr "리마인더 추가"
 msgid "Add starter views"
 msgstr "기본 뷰 추가"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add status"
+msgstr "상태 추가"
+
 #: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
 msgid "Add subtask"
 msgstr "하위 작업 추가"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Add tag"
+msgstr "태그 추가"
 
 #: src/app/task-calendar-view.tsx
 #: src/app/views/projects-view.tsx
@@ -886,6 +931,10 @@ msgstr "이 작업 전에 완료해야 하는 작업을 추가하세요."
 #: src/app/views/view-catalog.tsx
 msgid "Added"
 msgstr "추가됨"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Added tag {value} to {tasks}"
+msgstr "태그 {value} 추가함: {tasks}"
 
 #: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
@@ -1166,6 +1215,10 @@ msgstr "이전"
 msgid "Before"
 msgstr "이전"
 
+#: src/components/task-row.tsx
+msgid "Blocked"
+msgstr "차단됨"
+
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
 msgstr "차단 작업"
@@ -1225,6 +1278,7 @@ msgstr "캘린더 표시"
 msgid "Can I change collections later?"
 msgstr "나중에 컬렉션을 변경할 수 있나요?"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-time-tracking.tsx
 #: src/app/view-editor.tsx
 #: src/calendar-service/event-dialog.tsx
@@ -1340,6 +1394,10 @@ msgstr "선택 내용을 제출했습니다. 아직 동기화 대기 중일 수 
 msgid "Choose"
 msgstr "선택"
 
+#: src/components/task-model-settings.tsx
+msgid "Choose a default that is still in the list."
+msgstr "목록에 남아 있는 기본값을 선택하세요."
+
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
 msgstr "다른 컬렉션 선택"
@@ -1355,6 +1413,10 @@ msgstr "속성 선택"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "값 선택"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Choose another default before removing this one."
+msgstr "삭제하기 전에 다른 기본값을 선택하세요."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1567,6 +1629,10 @@ msgstr "컬렉션을 사용할 수 없음"
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
 msgstr "컬렉션을 사용할 수 없습니다. 이전에 불러온 작업을 표시하며 변경 사항은 저장할 수 없습니다."
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Color for {name}"
+msgstr "{name} 색상"
+
 #: src/app/more-screen.tsx
 msgid "Color theme"
 msgstr "색상 테마"
@@ -1622,6 +1688,10 @@ msgstr "{0} 완료"
 msgid "Complete occurrence"
 msgstr "반복 항목 완료"
 
+#: src/components/task-actions.tsx
+msgid "Complete on another date"
+msgstr "다른 날짜로 완료"
+
 #: src/app/keyboard-shortcuts.ts
 msgid "Complete or reopen"
 msgstr "완료 또는 다시 열기"
@@ -1641,6 +1711,11 @@ msgstr "완료됨"
 #: src/components/task-completed-notice.tsx
 msgid "Completed “{0}”"
 msgstr "“{0}” 완료됨"
+
+#. placeholder {0}: completion.task.title
+#: src/components/task-completed-notice.tsx
+msgid "Completed “{0}” ({completedOn})"
+msgstr "“{0}” 완료됨 ({completedOn})"
 
 #: src/app/bulk-task-feedback.ts
 msgid "Completed {tasks}"
@@ -1866,6 +1941,14 @@ msgstr "날짜를 읽을 수 없습니다"
 msgid "Couldn’t reopen “{0}”"
 msgstr "“{0}”을(를) 다시 열 수 없습니다"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "타이머를 시작하지 못했습니다."
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "타이머를 중지하지 못했습니다."
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -1876,6 +1959,10 @@ msgstr "실행 취소하지 못했습니다. 다시 시도하세요."
 #: src/components/recurrence-field.tsx
 msgid "Count the interval from when you finish the task."
 msgstr "작업을 완료한 시점부터 간격을 계산합니다."
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Counts as done"
+msgstr "완료로 간주"
 
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
@@ -1939,6 +2026,10 @@ msgstr "현재 노트"
 msgid "current scratchpad"
 msgstr "현재 스크래치패드"
 
+#: src/components/task-model-settings.tsx
+msgid "Custom fields"
+msgstr "사용자 지정 필드"
+
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
 msgstr "사용자 지정 필터"
@@ -1954,6 +2045,7 @@ msgstr "어둡게"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
 msgstr "날짜"
@@ -2009,6 +2101,10 @@ msgstr "일"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "오늘부터 일수"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Default"
+msgstr "기본값"
 
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
@@ -2185,6 +2281,7 @@ msgid "Disconnect calendars"
 msgstr "캘린더 연결 해제"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
@@ -2275,6 +2372,7 @@ msgstr "마감"
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -2488,6 +2586,14 @@ msgstr "외부 앱"
 msgid "Extra context for the task"
 msgstr "작업의 추가 컨텍스트"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
+msgstr "각 작업 파일에 저장되는 추가 속성입니다. 여기서 필드를 삭제해도 파일에 이미 있는 값은 그대로 남습니다."
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Field name"
+msgstr "필드 이름"
+
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
@@ -2667,9 +2773,21 @@ msgstr "미래 범위"
 msgid "Gap"
 msgstr "간격"
 
+#: src/components/task-model-settings.tsx
+msgid "Give every custom field a name."
+msgstr "모든 사용자 지정 필드에 이름을 지정하세요."
+
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Give every occurrence this time"
 msgstr "모든 반복 항목에 이 시간 지정"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every priority a name."
+msgstr "모든 우선순위에 이름을 지정하세요."
+
+#: src/components/task-model-settings.tsx
+msgid "Give every status a name."
+msgstr "모든 상태에 이름을 지정하세요."
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
@@ -2922,6 +3040,18 @@ msgstr "이동 기간 유지"
 msgid "Keep adding tasks"
 msgstr "작업 계속 추가"
 
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one priority."
+msgstr "우선순위를 하나 이상 남겨 두세요."
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that counts as done."
+msgstr "완료로 간주되는 상태를 하나 이상 남겨 두세요."
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that does not count as done."
+msgstr "완료로 간주되지 않는 상태를 하나 이상 남겨 두세요."
+
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "편집 내용을 파일로 보관하려면 대신 둘 다 유지하세요."
@@ -3062,8 +3192,13 @@ msgid "Links and time tracking"
 msgstr "링크 및 시간 추적"
 
 #: src/app/view-editor-form.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "List"
 msgstr "목록"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Listed from lowest to highest."
+msgstr "낮은 것부터 높은 순서로 나열됩니다."
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
@@ -3110,6 +3245,7 @@ msgid "Loading previous notes…"
 msgstr "이전 노트 불러오는 중…"
 
 #: src/app/task-subtasks.tsx
+#: src/components/task-row-subtasks.tsx
 msgid "Loading subtasks…"
 msgstr "하위 작업 불러오는 중…"
 
@@ -3198,6 +3334,10 @@ msgstr "Markdown 링크"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown 링크"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Marks that day’s occurrence as done."
+msgstr "해당 날짜의 반복 항목을 완료로 표시합니다."
 
 #: src/components/expression-builder.tsx
 msgid "Match mode"
@@ -3325,6 +3465,14 @@ msgstr "{label} 아래로 이동"
 msgid "Move {label} up"
 msgstr "{label} 위로 이동"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} down"
+msgstr "{name} 아래로 이동"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} up"
+msgstr "{name} 위로 이동"
+
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "모두 오늘로 이동"
@@ -3338,6 +3486,7 @@ msgid "Move dates one day later"
 msgstr "날짜를 하루 늦추기"
 
 #: src/components/scratchpad-note-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Move down"
 msgstr "아래로 이동"
 
@@ -3360,6 +3509,7 @@ msgid "Move to project"
 msgstr "프로젝트로 이동"
 
 #: src/components/scratchpad-note-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Move up"
 msgstr "위로 이동"
 
@@ -3491,6 +3641,14 @@ msgstr "새 복구 비밀번호"
 #: src/components/task-actions.tsx
 msgid "New subtask"
 msgstr "새 하위 작업"
+
+#: src/app/bulk-task-actions.tsx
+msgid "New tag"
+msgstr "새 태그"
+
+#: src/app/bulk-task-actions.tsx
+msgid "New tag…"
+msgstr "새 태그…"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
@@ -3794,6 +3952,10 @@ msgstr "정해진 시간 또는 이 작업을 기준으로 알립니다."
 msgid "Now"
 msgstr "지금"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Number"
+msgstr "숫자"
+
 #: src/app/task-screen.tsx
 msgid "Occurrence"
 msgstr "반복 항목"
@@ -3895,6 +4057,7 @@ msgstr "Planner에서 열기"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4093,6 +4256,10 @@ msgstr "이전에 불러온 결과가 최신이 아닐 수 있습니다."
 msgid "Primary"
 msgstr "기본"
 
+#: src/components/task-model-settings.tsx
+msgid "Priorities"
+msgstr "우선순위"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
@@ -4109,6 +4276,10 @@ msgstr "우선순위"
 #: src/app/bulk-task-actions.tsx
 msgid "Priority for selected tasks"
 msgstr "선택한 작업의 우선순위"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Priority name"
+msgstr "우선순위 이름"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
@@ -4230,6 +4401,10 @@ msgstr "다시 연결 중"
 #: src/components/collection-availability.tsx
 msgid "Reconnecting…"
 msgstr "다시 연결 중…"
+
+#: src/components/task-complete-on-panel.tsx
+msgid "Records the day you finished it."
+msgstr "완료한 날짜를 기록합니다."
 
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
@@ -4369,6 +4544,7 @@ msgstr "리마인더"
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Remove"
 msgstr "삭제"
 
@@ -4384,6 +4560,10 @@ msgstr "{0} 제거"
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
 msgstr "{label} 제거"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Remove {name}"
+msgstr "{name} 삭제"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
@@ -4402,6 +4582,10 @@ msgstr "조건 제거"
 #: src/app/scratchpad-screen.tsx
 msgid "Remove from Scratchpad"
 msgstr "스크래치패드에서 제거"
+
+#: src/app/bulk-task-actions.tsx
+msgid "Remove from selected tasks"
+msgstr "선택한 작업에서 제거"
 
 #: src/components/expression-builder.tsx
 msgid "Remove group"
@@ -4427,6 +4611,10 @@ msgstr "프로젝트 제거됨: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed scheduled dates from {tasks}"
 msgstr "예정일 제거됨: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Removed tag {value} from {tasks}"
+msgstr "태그 {value} 제거함: {tasks}"
 
 #: src/app/task-screen.tsx
 msgid "Rendering…"
@@ -4546,6 +4734,14 @@ msgstr "우선순위 복원됨: {tasks}"
 msgid "Restored projects for {tasks}"
 msgstr "프로젝트 복원됨: {tasks}"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Restored statuses for {tasks}"
+msgstr "상태를 복원함: {tasks}"
+
+#: src/app/bulk-task-feedback.ts
+msgid "Restored tags for {tasks}"
+msgstr "태그를 복원함: {tasks}"
+
 #: src/app/app-shell.tsx
 msgid "Restoring your home view"
 msgstr "홈 뷰 복원 중"
@@ -4651,6 +4847,10 @@ msgstr "다른 변경을 하기 전에 작업을 검토하세요."
 #: src/app/repository-context.tsx
 msgid "Review your protected edits before reloading."
 msgstr "새로고침하기 전에 보호된 편집 내용을 검토하세요."
+
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "실행 중인 타이머"
 
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
@@ -4785,6 +4985,7 @@ msgstr "예정"
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-capture.tsx
+#: src/components/task-complete-on-panel.tsx
 #: src/components/task-date-panel.tsx
 #: src/components/task-detail-dates.tsx
 #: src/components/task-property-editor.tsx
@@ -4978,6 +5179,10 @@ msgstr "우선순위를 {value}(으)로 설정함: {tasks}"
 msgid "Set status"
 msgstr "상태 설정"
 
+#: src/app/bulk-task-feedback.ts
+msgid "Set status to {value} for {tasks}"
+msgstr "상태를 {value}(으)로 설정함: {tasks}"
+
 #: src/components/private-account-settings.tsx
 msgid "Set up recovery"
 msgstr "복구 설정"
@@ -5080,6 +5285,10 @@ msgstr "탐색 메뉴에 표시"
 msgid "Shown in this order below each item."
 msgstr "각 항목 아래에 이 순서로 표시됩니다."
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Shown in this order wherever a status is chosen. At least one must count as done."
+msgstr "상태를 선택하는 모든 곳에 이 순서로 표시됩니다. 하나 이상은 완료로 간주되어야 합니다."
+
 #: src/app/task-calendar-view.tsx
 msgid "Sign in to Google Calendar in Settings to see events."
 msgstr "일정을 보려면 설정에서 Google 캘린더에 로그인하세요."
@@ -5162,6 +5371,7 @@ msgstr "시작"
 msgid "Start new tasks from a template"
 msgstr "템플릿으로 새 작업 시작"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "타이머 시작"
@@ -5186,6 +5396,7 @@ msgstr "시작 중…"
 msgid "Starts"
 msgstr "시작"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
@@ -5197,6 +5408,14 @@ msgstr "시작"
 msgid "Status"
 msgstr "상태"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Status for selected tasks"
+msgstr "선택한 작업의 상태"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Status name"
+msgstr "상태 이름"
+
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
 msgstr "상태, 우선순위 및 관계"
@@ -5206,6 +5425,11 @@ msgstr "상태, 우선순위 및 관계"
 msgid "Status: {0}"
 msgstr "상태: {0}"
 
+#: src/components/task-model-settings.tsx
+msgid "Statuses"
+msgstr "상태"
+
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "중지"
@@ -5214,9 +5438,15 @@ msgstr "중지"
 msgid "Stop a running timer when its task is completed"
 msgstr "작업이 완료되면 실행 중인 타이머 중지"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "타이머 중지"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "{0} 타이머 중지"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5245,8 +5475,14 @@ msgstr "하위 작업 제목"
 
 #: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
+#: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "하위 작업"
+
+#. placeholder {0}: task.title
+#: src/components/task-row-subtasks.tsx
+msgid "Subtasks of {0}"
+msgstr "{0}의 하위 작업"
 
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
@@ -5276,10 +5512,15 @@ msgstr "동기화 중…"
 msgid "System"
 msgstr "시스템"
 
+#: src/app/bulk-task-actions.tsx
+msgid "Tag actions"
+msgstr "태그 작업"
+
 #: src/app/search-match-context.ts
 msgid "tags"
 msgstr "태그"
 
+#: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
 #: src/app/task-screen.tsx
 #: src/app/view-editor-fields.ts
@@ -5460,6 +5701,10 @@ msgstr "Templates/Occurrence.md"
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Text"
+msgstr "텍스트"
 
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
@@ -5791,6 +6036,14 @@ msgstr "타이머 설명"
 msgid "Timer running"
 msgstr "타이머 실행 중"
 
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "{title} 타이머를 시작했습니다."
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "{title} 타이머를 중지했습니다."
+
 #: src/components/task-capture.tsx
 msgid "Timing"
 msgstr "시간 설정"
@@ -5901,6 +6154,10 @@ msgstr "작업 제목에 {example}을(를) 입력하세요."
 #: src/components/task-date-panel.tsx
 msgid "Type a date"
 msgstr "날짜 입력"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Type of {name}"
+msgstr "{name} 유형"
 
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
@@ -6202,10 +6459,15 @@ msgstr "매년"
 msgid "Yes"
 msgstr "예"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Yes or no"
+msgstr "예 또는 아니요"
+
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."
 msgstr "예. 컬렉션 아래의 컬렉션 변경을 사용해 다른 mdbase 컬렉션을 여세요. 컬렉션을 변경해도 레코드는 이동하지 않습니다."
 
+#: src/components/task-complete-on-panel.tsx
 #: src/i18n/presentation.ts
 msgid "Yesterday"
 msgstr "어제"

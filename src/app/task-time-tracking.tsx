@@ -1,14 +1,14 @@
 import { appLocale } from "../i18n/app";
-import { t } from "@lingui/core/macro";
 import { countLabel } from "../i18n/default-labels";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { uiCopy } from "../i18n/ui-copy";
 import { Clock3, Play, Square, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { TaskNotesDateTimeField } from "../components/tasknotes-controls";
 import { activeTimeEntry, taskTimeTotals } from "../domain/task";
 import { cleanOperationError } from "./operation-error";
+import { formatMinutes, useTimerNow } from "./timer-clock";
 
 import type { TaskTimeEntry } from "../domain/task";
 
@@ -223,23 +223,6 @@ function TimeEntryEditor({
       </div>
     </div>
   );
-}
-
-function useTimerNow(running: boolean): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => setNow(new Date()), 15_000);
-    return () => window.clearInterval(timer);
-  }, [running]);
-  return now;
-}
-
-function formatMinutes(value: number): string {
-  if (value < 60) return `${value}m`;
-  const hours = Math.floor(value / 60);
-  const minutes = value % 60;
-  return minutes ? t`${hours}h ${minutes}m` : `${hours}h`;
 }
 
 function formatSession(entry: TaskTimeEntry, now: Date): string {

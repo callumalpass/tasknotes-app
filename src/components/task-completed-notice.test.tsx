@@ -47,6 +47,20 @@ it("undoes the completion it names, then dismisses", async () => {
   await vi.waitFor(() => expect(dismiss).toHaveBeenCalledOnce());
 });
 
+it("names the day when a completion was recorded for another date", () => {
+  render(
+    <TaskCompletedNotice
+      completion={{ task: completion.task, on: "2026-10-11" }}
+      aboveMobileControls={false}
+      onUndo={vi.fn()}
+      onDismiss={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    /^Completed “Write brief” \(.*Oct.*11.*\)$/,
+  );
+});
+
 it("stays with a retry when Undo fails", async () => {
   const dismiss = vi.fn();
   render(

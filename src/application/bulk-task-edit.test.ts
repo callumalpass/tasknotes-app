@@ -3,6 +3,7 @@ import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import {
   applyBulkEdits,
   planTaskChange,
+  taskNeedsChange,
   undoBulkEdits,
   type BulkEditPort,
   type BulkTaskChange,
@@ -16,6 +17,7 @@ const fixture = () => {
         title: id,
         scheduled: "2026-11-01T10:30",
         priority: "high",
+        tags: ["home"],
         projects: ["[[Old]]", "[[Other]]"],
       },
       { id },
@@ -45,7 +47,10 @@ describe("bulk edits", () => {
     { kind: "complete" },
     { kind: "schedule", date: "2026-11-08" },
     { kind: "schedule", date: null },
+    { kind: "status", value: "in-progress" },
     { kind: "priority", value: "low" },
+    { kind: "tag", value: "errand", remove: false },
+    { kind: "tag", value: "home", remove: true },
     { kind: "project", value: "[[New]]" },
     { kind: "archive" },
   ])("restores prior values and reports failed rows for %o", async (change) => {
@@ -83,7 +88,37 @@ describe("bulk edits", () => {
         before.projects,
         before.archived,
       ]);
+      if (change.kind === "tag") expect(saved.tags).toEqual(before.tags);
     }
+  });
+  it("adds or removes one tag and leaves the others in place", () => {
+    const { tasks } = fixture();
+    expect(
+      planTaskChange(tasks[0], { kind: "tag", value: "errand", remove: false }),
+    ).toEqual({
+      input: { tags: ["home", "errand"] },
+      undo: { tags: ["home"] },
+    });
+    expect(
+      planTaskChange(tasks[0], { kind: "tag", value: "home", remove: true }),
+    ).toEqual({ input: { tags: [] }, undo: { tags: ["home"] } });
+  });
+  it("skips tasks already in the requested state", () => {
+    const { tasks } = fixture();
+    const [task] = tasks;
+    expect(taskNeedsChange(task, { kind: "status", value: task.status })).toBe(
+      false,
+    );
+    expect(taskNeedsChange(task, { kind: "status", value: "done" })).toBe(true);
+    expect(
+      taskNeedsChange(task, { kind: "tag", value: "home", remove: false }),
+    ).toBe(false);
+    expect(
+      taskNeedsChange(task, { kind: "tag", value: "home", remove: true }),
+    ).toBe(true);
+    expect(taskNeedsChange(task, { kind: "priority", value: "high" })).toBe(
+      true,
+    );
   });
   it("keeps scheduled times and leaves Due alone", () => {
     const { tasks } = fixture();

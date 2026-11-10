@@ -16,10 +16,12 @@ import {
   navigationCommands,
   paletteTaskTarget,
   taskCommands,
+  timerCommands,
 } from "./palette-commands";
 import { useTaskSearch } from "./repository-context";
 import type { Route } from "./use-workspace-navigation";
 import type { TaskView } from "../domain/view";
+import type { TimerControl } from "./use-timer-control";
 
 /**
  * Shell-wide keyboard layer: j/k and arrow row navigation, ? for the
@@ -35,6 +37,7 @@ export function KeyboardLayer({
   newTask,
   paletteRequest,
   toggleSidebar,
+  timers,
 }: {
   route: Route;
   navigationKeys: readonly string[];
@@ -45,6 +48,8 @@ export function KeyboardLayer({
   toggleSidebar?(): void;
   /** Increments when the sidebar asks for the palette. */
   paletteRequest: number;
+  /** Running timers and their actions; without it the palette offers none. */
+  timers?: Pick<TimerControl, "timers" | "start" | "stop">;
 }) {
   useI18n();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -206,6 +211,7 @@ export function KeyboardLayer({
   const openTaskId = route.page === "task" ? route.id : undefined;
   const commands = [
     ...taskCommands(target, openTaskId),
+    ...(timers ? timerCommands(target, timers) : []),
     ...navigationCommands({
       navigationKeys,
       views,

@@ -135,7 +135,9 @@ test("bulk schedule keeps one Undo for all rows, including those leaving the que
 
 for (const action of [
   "complete",
+  "status",
   "priority",
+  "tag",
   "project",
   "archive",
   "delete",
@@ -149,7 +151,27 @@ for (const action of [
       elements[2].getAttribute("data-task-id"),
     ]);
     await selectTwo(page);
-    if (action === "priority") {
+    if (action === "status") {
+      await page
+        .getByRole("combobox", { name: "Status for selected tasks" })
+        .click();
+      await page.getByRole("option", { name: "In progress" }).click();
+      await expect(
+        page.locator(".bulk-update-notice").getByRole("status"),
+      ).toContainText("Set status to In progress for");
+    } else if (action === "tag") {
+      await page
+        .getByRole("combobox", {
+          name: "Add or remove a tag on selected tasks",
+        })
+        .click();
+      await page.getByRole("button", { name: "New tag…" }).click();
+      await page.getByRole("textbox", { name: "New tag" }).fill("errand");
+      await page.getByRole("button", { name: "Add tag" }).click();
+      await expect(
+        page.locator(".bulk-update-notice").getByRole("status"),
+      ).toHaveText("Added tag errand to 2 tasks");
+    } else if (action === "priority") {
       await page
         .getByRole("combobox", { name: "Priority for selected tasks" })
         .click();

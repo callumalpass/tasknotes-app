@@ -29,7 +29,7 @@
   left: 12px;
   right: 12px;
   bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12px);
-  max-width: 960px;
+  max-width: 1040px;
   margin-inline: auto;
   padding: 8px 12px 12px;
   border: 1px solid var(--line-strong);
@@ -124,9 +124,40 @@ body:has(.bulk-actions) :is(.view-context-capture, .global-capture-fab) {
   border-radius: var(--radius-control);
   font-size: var(--type-supporting);
 }
-.bulk-actions > .overdue-deadline-choice {
+.bulk-actions > .overdue-deadline-choice,
+.bulk-actions > .bulk-new-tag {
   grid-column: 1 / -1;
   order: 3;
+}
+.bulk-new-tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--type-supporting);
+}
+.bulk-new-tag input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.bulk-new-tag button {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+}
+.bulk-new-tag button:disabled {
+  opacity: 0.5;
 }
 .bulk-failures p {
   margin: 0;
@@ -158,8 +189,8 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
   }
   .bulk-action-controls {
     grid-template-columns:
-      auto minmax(90px, 1fr) minmax(100px, 1fr) minmax(145px, 1.4fr)
-      auto auto;
+      auto repeat(3, minmax(84px, 1fr)) minmax(110px, 1.3fr)
+      minmax(72px, 1fr) auto auto;
   }
   .bulk-actions {
     display: grid;
@@ -194,7 +225,7 @@ body:has(.bulk-actions) .workspace-feedback > .undo-toast {
     gap: 4px;
   }
   .bulk-action-controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 @media (prefers-reduced-motion: reduce) {

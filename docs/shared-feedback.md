@@ -41,7 +41,7 @@ this app's origin on that Worker and widget; anything else hides every entry.
 | Environment | Origin                                        | State                                             |
 | ----------- | --------------------------------------------- | ------------------------------------------------- |
 | Staging     | `https://staging.tasknotes.dev`               | Listed                                            |
-| Production  | `https://app.tasknotes.dev` (web and Android) | Not listed until staging delivery is accepted     |
+| Production  | `https://app.tasknotes.dev` (web and Android) | Listed                                            |
 | iOS         | `capacitor://app.tasknotes.dev`               | Hidden: the Worker accepts HTTPS origins only     |
 | LAB, local  | any                                           | Hidden unless the build sets an explicit endpoint |
 

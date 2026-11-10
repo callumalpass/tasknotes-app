@@ -97,6 +97,59 @@ test("inline subtasks create, complete and open without losing the parent draft"
   ).toContainText("Prepare quarterly planning session");
 });
 
+test("a list row counts its subtasks and opens them in place", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  const parent = "Prepare quarterly planning session";
+  await page.getByRole("button", { name: parent, exact: true }).click();
+  const pane = page.getByRole("complementary", {
+    name: "Task details",
+    exact: true,
+  });
+  for (const title of ["Collect planning questions", "Book the room"]) {
+    await pane
+      .getByRole("textbox", { name: "Subtask title", exact: true })
+      .fill(title);
+    await pane
+      .getByRole("button", { name: "Add subtask", exact: true })
+      .click();
+    await expect(
+      pane.getByRole("button", { name: title, exact: true }),
+    ).toBeVisible();
+  }
+
+  const main = page.locator("#main-content");
+  const row = main.locator(".task-row", {
+    has: page.getByRole("button", { name: parent, exact: true }),
+  });
+  const toggle = row.getByRole("button", {
+    name: "Subtasks: 0 of 2",
+    exact: true,
+  });
+  await expect(toggle).toHaveText("0/2");
+  await toggle.click();
+  const subtasks = row.getByRole("group", { name: `Subtasks of ${parent}` });
+  await expect(
+    subtasks.getByRole("button", { name: "Book the room", exact: true }),
+  ).toBeVisible();
+
+  await subtasks
+    .getByRole("button", {
+      name: "Complete Collect planning questions",
+      exact: true,
+    })
+    .click();
+  await expect(
+    row.getByRole("button", { name: "Subtasks: 1 of 2", exact: true }),
+  ).toHaveText("1/2");
+  // The parent is untouched by keys pressed on a listed subtask.
+  await subtasks
+    .getByRole("button", { name: "Book the room", exact: true })
+    .press("x");
+  await expect(row).not.toHaveAttribute("data-task-completed", "true");
+});
+
 for (const source of ["today", "search"] as const)
   test(`adjacent navigation includes unrendered rows in ${source}`, async ({
     page,

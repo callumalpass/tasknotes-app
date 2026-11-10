@@ -6,6 +6,7 @@ import {
   Archive,
   ArchiveRestore,
   AtSign,
+  CalendarCheck,
   CalendarClock,
   Check,
   ChevronLeft,
@@ -36,6 +37,7 @@ import {
 } from "lucide-react";
 import { rememberTaskEdit } from "../app/task-edit-undo";
 import {
+  useContext,
   useEffect,
   useEffectEvent,
   useId,
@@ -68,6 +70,11 @@ import { ChoiceOptions } from "./choice-options";
 
 import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 import { TaskDatePanel } from "./task-date-panel";
+import { TaskCompleteOnPanel } from "./task-complete-on-panel";
+import {
+  datedCompletionRecord,
+  TaskCompletionReportContext,
+} from "./task-completion-motion";
 import type { TaskCreateIntent } from "../application/ports/task-repository";
 
 interface MenuPosition {
@@ -83,6 +90,7 @@ type MenuPanel =
   | "status"
   | "priority"
   | "dates"
+  | "completeOn"
   | "organize"
   | "move"
   | "projects"
@@ -124,11 +132,13 @@ export function TaskActions({
     deleteTask,
     materializeOccurrence,
     setTaskArchived,
+    setTaskCompletion,
     skipTask,
     startTimeTracking,
     stopTimeTracking,
     updateTask,
   } = useRepository();
+  const reportCompletion = useContext(TaskCompletionReportContext);
   const [position, setPosition] = useState<MenuPosition | null>(null);
   const [panels, setPanels] = useState<MenuPanel[]>(["actions"]);
   const [subtaskTitle, setSubtaskTitle] = useState("");
@@ -161,6 +171,11 @@ export function TaskActions({
   const virtualOccurrence = Boolean(
     occurrenceDate && task.recurrence && !task.occurrenceDate,
   );
+  // An occurrence note is completed through its parent, which has no say in
+  // the day; a finished one-off task already has its completion date.
+  const canCompleteOn = task.recurrenceParent
+    ? false
+    : Boolean(task.recurrence) || !task.completed;
   const occurrence = task.occurrenceDate ?? occurrenceDate;
   const occurrenceComplete = task.occurrenceDate
     ? task.completed
@@ -223,7 +238,7 @@ export function TaskActions({
             ? finePointer
               ? ".multi-value-control input"
               : "[data-panel-back]"
-            : panel === "dates"
+            : panel === "dates" || panel === "completeOn"
               ? finePointer
                 ? ".task-date-presets button"
                 : "[data-panel-focus]"
@@ -401,6 +416,19 @@ export function TaskActions({
     await onToggle(task, occurrenceDate);
   }
 
+  /** Records the completion for a chosen day and offers it to Undo. */
+  async function completeOn(date: string) {
+    const repeating = Boolean(task.recurrence);
+    // A day already ticked stays ticked; there is nothing new to undo.
+    if (repeating && task.completeInstances.includes(date)) return;
+    const saved = await setTaskCompletion({
+      id: task.id,
+      occurrenceDate: date,
+      completed: true,
+    });
+    reportCompletion(datedCompletionRecord(task, date, saved));
+  }
+
   const projectLink = taskRecordLink(task, configuration.linkWriteFormat);
   const rootRole =
     panel === "delete"
@@ -408,6 +436,7 @@ export function TaskActions({
       : mobile ||
           panel === "subtask" ||
           panel === "dates" ||
+          panel === "completeOn" ||
           isFieldEditor(panel)
         ? "dialog"
         : "menu";
@@ -416,6 +445,7 @@ export function TaskActions({
     panel !== "subtask" &&
     panel !== "delete" &&
     panel !== "dates" &&
+    panel !== "completeOn" &&
     !isFieldEditor(panel);
   useOverlay({
     open: Boolean(position),
@@ -674,6 +704,13 @@ export function TaskActions({
                         />
                       ) : null}
                     </>
+                  ) : null}
+                  {panel === "completeOn" ? (
+                    <TaskCompleteOnPanel
+                      busy={busy}
+                      task={task}
+                      onChoose={(date) => void run(() => completeOn(date))}
+                    />
                   ) : null}
                   {panel === "organize" ? (
                     <>
@@ -935,6 +972,14 @@ export function TaskActions({
           }
           onClick={() => void run(toggle)}
         />
+        {canCompleteOn ? (
+          <MenuAction
+            icon={CalendarCheck}
+            label={t({ message: "Complete on another date" })}
+            next
+            onClick={() => navigate("completeOn")}
+          />
+        ) : null}
         <MenuAction
           detail={dateSummary(task)}
           icon={CalendarClock}
@@ -1335,6 +1380,7 @@ function panelTitle(panel: Exclude<MenuPanel, "actions">): string {
   if (panel === "status") return t({ message: "Status" });
   if (panel === "priority") return t({ message: "Priority" });
   if (panel === "dates") return t({ message: "Dates" });
+  if (panel === "completeOn") return t({ message: "Complete on another date" });
   if (panel === "organize") return t({ message: "Organize" });
   if (panel === "move") return t({ message: "Move to project" });
   if (panel === "projects") return t({ message: "Projects" });

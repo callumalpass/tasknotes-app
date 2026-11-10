@@ -30,6 +30,18 @@ export function bulkTaskFeedback(
         undoNotice: t`Restored dates for ${tasks}`,
       };
     }
+    case "status":
+      return {
+        message: t`Set status to ${value} for ${tasks}`,
+        undoNotice: t`Restored statuses for ${tasks}`,
+      };
+    case "tag":
+      return {
+        message: change.remove
+          ? t`Removed tag ${value} from ${tasks}`
+          : t`Added tag ${value} to ${tasks}`,
+        undoNotice: t`Restored tags for ${tasks}`,
+      };
     case "priority":
       return {
         message: t`Set priority to ${value} for ${tasks}`,

@@ -8,6 +8,10 @@ import {
   selectTaskSummaries,
   taskSearchMetadata,
 } from "../domain/task-query";
+import {
+  taskRowRelations,
+  type TaskRowRelations,
+} from "../domain/task-row-relations";
 import type { TaskSummary, TaskListQuery } from "../domain/task";
 
 type Entry = { task: TaskSummary };
@@ -20,6 +24,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   private readonly paths = new Map<string, string>();
   private readonly rolling = new Map<string, TaskSummary>();
   private ordered?: TaskSummary[];
+  private relations?: TaskRowRelations;
   private readonly searchMetadata = new WeakMap<TaskSummary, string>();
   private readonly trackers = new Set<Set<string>>();
 
@@ -66,7 +71,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       if (previous) paths.add(previous.task.path);
       paths.add(value.task.path);
     }
-    if (previous?.task !== value.task) this.ordered = undefined;
+    if (previous?.task !== value.task) {
+      this.ordered = undefined;
+      this.relations = undefined;
+    }
     return super.set(id, value);
   }
 
@@ -78,11 +86,22 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     this.rolling.delete(id);
     for (const paths of this.trackers) paths.add(previous.task.path);
     this.ordered = undefined;
+    this.relations = undefined;
     return super.delete(id);
   }
 
   override clear(): void {
     for (const id of this.keys()) this.delete(id);
+  }
+
+  /** Subtask counts and open blockers; rebuilt only after metadata changes. */
+  rowRelations(): TaskRowRelations {
+    this.relations ??= taskRowRelations(
+      (function* (entries: Iterable<Value>) {
+        for (const { task } of entries) yield task;
+      })(this.values()),
+    );
+    return this.relations;
   }
 
   atPath(path: string): Value | undefined {

@@ -502,6 +502,55 @@ test("supports demo attachments and collection settings", async ({ page }) => {
   await expect(page.getByText("Saved with the collection.")).toBeVisible();
 });
 
+test("a status and a custom field added in Settings reach the task editor", async ({
+  page,
+}) => {
+  await page.goto("?demo=24");
+  await expect(page.locator(".task-row-title").first()).toBeVisible();
+  await openNavigationItem(page, "Settings");
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByText("Collection behavior", { exact: true })
+    .click();
+
+  await page.getByRole("button", { name: "Add status", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Status name" }).last(),
+  ).toBeFocused();
+  await page.keyboard.type("Waiting on reply");
+  await page.getByRole("button", { name: "Add field", exact: true }).click();
+  await page.keyboard.type("Client");
+  // A status without a name is refused in plain words, before anything is saved.
+  await page.getByRole("button", { name: "Add priority", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Give every priority a name.",
+  );
+  await expect(
+    page.getByRole("textbox", { name: "Priority name" }).last(),
+  ).toBeFocused();
+  await page.keyboard.type("Someday");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Saved with the collection.")).toBeVisible();
+
+  await page.getByRole("button", { name: /^Today\b/ }).click();
+  await page.locator(".task-row-title").first().click();
+  const pane = page.getByRole("complementary", {
+    name: "Task details",
+    exact: true,
+  });
+  await pane.getByRole("combobox", { name: "Status", exact: true }).click();
+  await page.getByRole("option", { name: "Waiting on reply" }).click();
+  await expect(
+    pane.getByRole("combobox", { name: "Status", exact: true }),
+  ).toContainText("Waiting on reply");
+  await pane.getByRole("combobox", { name: "Priority", exact: true }).click();
+  await expect(page.getByRole("option", { name: "Someday" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await pane.getByText("More properties", { exact: true }).click();
+  await expect(pane.getByText("Client", { exact: true })).toBeVisible();
+});
+
 test("demo work screen has no serious accessibility violations", async ({
   page,
 }) => {

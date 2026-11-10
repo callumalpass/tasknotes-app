@@ -146,6 +146,12 @@
   border-color: var(--line);
 }
 
+/* index.html paints the starting screen before the app loads, so its wordmark
+   does not make a second entrance when the app renders the same screen. */
+.mdbase-collections-gate[data-phase="starting"] .wordmark-label {
+  transition: none;
+}
+
 .opening-screen {
   width: min(100% - 40px, 520px);
   min-height: 100vh;

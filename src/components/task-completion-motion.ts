@@ -35,6 +35,8 @@ export interface TaskCompletion {
   task: TaskSummary;
   completed?: boolean;
   occurrenceDate?: string;
+  /** The day a completion was recorded for, when it was not left to default. */
+  on?: string;
   /** Dates a repeating task advanced on completion, which Undo puts back. */
   advanced?: { scheduled: string | null; due: string | null };
 }
@@ -54,6 +56,37 @@ export function completionRecord(
   return {
     task,
     occurrenceDate: instance,
+    ...(moved
+      ? {
+          advanced: {
+            scheduled: task.scheduled ?? null,
+            due: task.due ?? null,
+          },
+        }
+      : {}),
+  };
+}
+
+/**
+ * A completion recorded for a chosen day. A repeating task has that day's
+ * occurrence ticked, and its dates may move on; any other task is completed
+ * as a whole, so Undo reopens the record.
+ */
+export function datedCompletionRecord(
+  task: TaskSummary,
+  date: string,
+  saved: unknown,
+): TaskCompletion {
+  if (!task.recurrence) return { task, on: date };
+  const next =
+    saved && typeof saved === "object" ? (saved as Partial<TaskSummary>) : {};
+  const moved =
+    ("scheduled" in next && next.scheduled !== task.scheduled) ||
+    ("due" in next && next.due !== task.due);
+  return {
+    task,
+    occurrenceDate: date,
+    on: date,
     ...(moved
       ? {
           advanced: {

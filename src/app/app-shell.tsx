@@ -40,6 +40,8 @@ import {
 } from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
+import { RunningTimerNotice } from "./running-timer";
+import { useTimerControl } from "./use-timer-control";
 import {
   onProjectJump,
   requestProjectJump,
@@ -87,6 +89,7 @@ import { useCollectionGate } from "./collection-context";
 import { countLabel } from "../i18n/default-labels";
 import type { TodayTaskCounts } from "../domain/today-summary";
 import { useTodayTaskCounts } from "./use-today-task-counts";
+import { TaskRowRelationsProvider } from "./task-row-relations";
 import { useNavigationTaskCounts } from "./use-navigation-task-counts";
 import {
   readSidebarCollapsed,
@@ -239,6 +242,7 @@ export function AppShell() {
       }),
     [navigate, views],
   );
+  const timerControl = useTimerControl();
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
   const undoCompletion = useCallback(
     async ({ task, occurrenceDate, advanced, completed }: TaskCompletion) => {
@@ -651,7 +655,12 @@ export function AppShell() {
         toggleSidebar={toggleSidebar}
         paletteRequest={paletteRequest}
         route={route}
+        timers={timerControl}
         views={views ?? []}
+      />
+      <RunningTimerNotice
+        control={timerControl}
+        onOpen={(id) => navigate({ page: "task", id })}
       />
       <GlobalTaskCapture
         onAdded={reportAdded}
@@ -728,7 +737,7 @@ export function AppShell() {
       >
         <TaskCompletionReportContext.Provider value={reportCompleted}>
           <TaskSelectionProvider navigationKey={JSON.stringify(route)}>
-            {shell}
+            <TaskRowRelationsProvider>{shell}</TaskRowRelationsProvider>
           </TaskSelectionProvider>
         </TaskCompletionReportContext.Provider>
       </CollectionWriteStatus>

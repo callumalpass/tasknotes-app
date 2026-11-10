@@ -53,6 +53,7 @@ export function TaskNotesSelect({
   triggerLabel,
   triggerIcon,
   actions = [],
+  actionsLabel,
   help,
 }: {
   value: string;
@@ -67,6 +68,8 @@ export function TaskNotesSelect({
   triggerLabel?: string;
   triggerIcon?: ReactNode;
   actions?: readonly { label: string; onChoose(): void }[];
+  /** Names the action group; views are the default because they came first. */
+  actionsLabel?: string;
   help?: string;
 }) {
   const { t } = useLingui();
@@ -228,9 +231,11 @@ export function TaskNotesSelect({
               <div
                 className="tasknotes-select-actions"
                 role="group"
-                aria-label={t`View actions`}
+                aria-label={actionsLabel ?? t`View actions`}
               >
-                <p className="tasknotes-select-group-label">{t`View actions`}</p>
+                <p className="tasknotes-select-group-label">
+                  {actionsLabel ?? t`View actions`}
+                </p>
                 {actions.map((action) => (
                   <button
                     key={action.label}

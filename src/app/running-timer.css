@@ -1,0 +1,124 @@
+/* The running timer sits in the shared notice stack, nearest the corner, so
+   passing confirmations stack above it instead of covering it. */
+.running-timer {
+  order: -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: min(22rem, 100%);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: 0 6px 18px var(--color-shadow);
+  pointer-events: auto;
+}
+
+.running-timer button {
+  min-height: var(--control-min-size);
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.running-timer button:disabled {
+  color: var(--ink-muted);
+  cursor: wait;
+}
+
+.running-timer-task {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 10px 0 12px;
+  text-align: left;
+}
+
+.running-timer-task > svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.running-timer-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.running-timer-elapsed {
+  flex: none;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.running-timer .running-timer-stop {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  color: var(--accent);
+  border-left: 1px solid var(--line);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+.running-timer-problem {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 0 12px;
+  color: var(--danger);
+  font-size: var(--type-supporting);
+}
+
+.running-timer:not(.has-problem) .running-timer-problem {
+  display: none;
+}
+
+.running-timer-task + .running-timer-stop ~ .running-timer-problem {
+  border-top: 1px solid var(--line);
+}
+
+.running-timer-problem button {
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-min-size);
+  color: var(--ink-soft);
+}
+
+/* The bulk bar owns the bottom of the screen while a selection is held. */
+body:has(.bulk-actions) .running-timer {
+  display: none;
+}
+
+/* A phone keeps the timer to a short title and a Stop mark, so it covers
+   little more of the list than the capture button below it. */
+@media (max-width: 839px) {
+  .running-timer-title {
+    max-width: 7rem;
+  }
+
+  .running-timer .running-timer-stop {
+    justify-content: center;
+    width: var(--control-min-size);
+    padding: 0;
+  }
+
+  .running-timer-stop > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

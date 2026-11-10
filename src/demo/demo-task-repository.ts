@@ -1,6 +1,7 @@
 import { projectShortcuts } from "../domain/project-shortcuts";
 import { TaskRevisionChangedError } from "../application/ports/task-repository";
 import { navigationTaskCounts } from "../domain/navigation-task-counts";
+import { taskRowRelations } from "../domain/task-row-relations";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -20,6 +21,11 @@ import { completeTaskValues, usedValuesFirst } from "../storage/completions";
 import { appendViewPage } from "../application/view-query-session";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
+import { runningTimers } from "../domain/running-timers";
+import {
+  patchTaskTypeVocabulary,
+  vocabularyInUse,
+} from "../domain/task-type-vocabulary";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
@@ -301,6 +307,10 @@ export class DemoTaskRepository implements TaskRepository {
     return clone(this.tasks.get(id) ?? null);
   }
 
+  taskRowRelations() {
+    return taskRowRelations(this.tasks.values());
+  }
+
   async relationships(id: string): Promise<TaskRelationships> {
     const current = this.tasks.get(id);
     if (!current)
@@ -551,6 +561,10 @@ export class DemoTaskRepository implements TaskRepository {
 
   navigationTaskCounts(today: string) {
     return navigationTaskCounts(this.tasks.values(), today);
+  }
+
+  runningTimers() {
+    return runningTimers(this.tasks.values());
   }
 
   async stats(): Promise<TaskStats> {
@@ -918,8 +932,26 @@ export class DemoTaskRepository implements TaskRepository {
       patch,
       this.model.configuration(),
     );
+    const vocabulary = patch.vocabulary;
+    if (vocabulary) {
+      const current = this.model.configuration();
+      const inUse = vocabularyInUse(
+        this.tasks.values(),
+        {
+          statuses: current.statuses.map(({ value }) => value),
+          priorities: current.priorities.map(({ value }) => value),
+        },
+        vocabulary,
+      );
+      if (inUse) throw inUse;
+    }
     const modelDefinition = patchTaskNotesMdbaseTypeSettings(
-      this.modelDefinition,
+      vocabulary
+        ? patchTaskTypeVocabulary(this.modelDefinition, vocabulary, {
+            status: split.type.defaultStatus,
+            priority: split.type.defaultPriority,
+          })
+        : this.modelDefinition,
       split.type,
     );
     if (Object.keys(split.app).length) {

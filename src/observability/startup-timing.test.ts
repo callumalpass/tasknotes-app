@@ -43,6 +43,63 @@ it("marks/measures monotonic durations and reports once only after genuine query
     trace.snapshot(),
   );
 });
+it("reports the SDK's startup measures beside its own, by fixed label only", () => {
+  vi.stubGlobal("performance", {
+    now: () => clock,
+    mark,
+    measure,
+    getEntriesByType: (type: string) =>
+      type === "measure"
+        ? [
+            {
+              name: "mdbase:startup:registration",
+              startTime: 1,
+              duration: 12.34,
+            },
+            {
+              name: "mdbase:startup:opening:checking_setup",
+              startTime: 30,
+              duration: 80,
+            },
+            { name: "mdbase:startup:starting", startTime: 14, duration: 5 },
+            { name: "mdbase:startup:starting", startTime: 20, duration: 7.04 },
+            { name: "mdbase:startup:total", startTime: 0, duration: 410.26 },
+            { name: "mdbase:startup:Account 42", startTime: 0, duration: 1 },
+            {
+              name: "mdbase:startup:session",
+              startTime: 0,
+              duration: Infinity,
+            },
+            {
+              name: "tasknotes:startup:1:first_query",
+              startTime: 0,
+              duration: 3,
+            },
+          ]
+        : [],
+  });
+  const trace = new StartupTiming();
+  trace.begin("first_query")();
+  trace.begin("first_render")();
+  trace.report();
+  expect(JSON.parse(debug.mock.calls[0]![1] as string)).toEqual({
+    ...trace.snapshot(),
+    mdbase: {
+      registration: 12.3,
+      "opening:checking_setup": 80,
+      starting: 12,
+      total: 410.3,
+    },
+  });
+  // A later collection on the same page does not report those again.
+  const next = new StartupTiming();
+  next.begin("first_query")();
+  next.begin("first_render")();
+  next.report();
+  expect(JSON.parse(debug.mock.calls[1]![1] as string)).toEqual(
+    next.snapshot(),
+  );
+});
 it("keeps only bounded own host durations, never IDs, errors, invented UI evidence or getters", () => {
   const getter = vi.fn(() => {
     throw Error("secret");

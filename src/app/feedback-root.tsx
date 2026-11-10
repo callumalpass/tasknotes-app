@@ -41,12 +41,16 @@ const hidden: FeedbackConfiguration = {
  * The managed feedback Worker and its public Turnstile widget, per environment.
  * An environment appears here only after mdbase-cloud-ops has approved this
  * app's origin for that Worker and widget; anything else keeps every feedback
- * entry hidden. Production is added once staging delivery has been accepted.
+ * entry hidden.
  */
 const managed: Partial<Record<string, FeedbackConfiguration>> = {
   staging: {
     endpoint: "https://feedback-api-staging.mdbase.dev/v1/feedback",
     turnstileSiteKey: "0x4AAAAAAEbkvA4d9vQJq2D1",
+  },
+  production: {
+    endpoint: "https://feedback-api.mdbase.dev/v1/feedback",
+    turnstileSiteKey: "0x4AAAAAAEboz_mLT-taI3H-",
   },
 };
 
