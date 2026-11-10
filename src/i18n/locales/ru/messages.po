@@ -446,7 +446,7 @@ msgstr "{field} содержит {value}"
 msgid "{field} is empty"
 msgstr "{field} пусто"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours} ч {minutes} мин"
 
@@ -1915,6 +1915,14 @@ msgstr "Не удалось распознать дату"
 msgid "Couldn’t reopen “{0}”"
 msgstr "Не удалось снова открыть «{0}»"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "Не удалось запустить таймер."
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "Не удалось остановить таймер."
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -2247,6 +2255,7 @@ msgid "Disconnect calendars"
 msgstr "Отключить календари"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -4003,6 +4012,7 @@ msgstr "Открыть в Planner"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4789,6 +4799,10 @@ msgstr "Проверьте задачу, прежде чем вносить сл
 msgid "Review your protected edits before reloading."
 msgstr "Проверьте защищённые изменения перед перезагрузкой."
 
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "Активный таймер"
+
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -5313,6 +5327,7 @@ msgstr "Начало"
 msgid "Start new tasks from a template"
 msgstr "Создавать новые задачи по шаблону"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "Запустить таймер"
@@ -5362,6 +5377,7 @@ msgstr "Статус, приоритет и связи"
 msgid "Status: {0}"
 msgstr "Статус: {0}"
 
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "Остановить"
@@ -5370,9 +5386,15 @@ msgstr "Остановить"
 msgid "Stop a running timer when its task is completed"
 msgstr "Останавливать запущенный таймер при выполнении задачи"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "Остановить таймер"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "Остановить таймер для «{0}»"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5967,6 +5989,14 @@ msgstr "Описание таймера"
 #: src/components/task-row.tsx
 msgid "Timer running"
 msgstr "Таймер запущен"
+
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "Таймер для «{title}» запущен."
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "Таймер для «{title}» остановлен."
 
 #: src/components/task-capture.tsx
 msgid "Timing"

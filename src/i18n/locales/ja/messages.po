@@ -446,7 +446,7 @@ msgstr "{field} に {value} を含む"
 msgid "{field} is empty"
 msgstr "{field} が空"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours}時間{minutes}分"
 
@@ -1915,6 +1915,14 @@ msgstr "その日付を読み取れませんでした"
 msgid "Couldn’t reopen “{0}”"
 msgstr "「{0}」を再開できませんでした"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "タイマーを開始できませんでした。"
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "タイマーを停止できませんでした。"
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -2247,6 +2255,7 @@ msgid "Disconnect calendars"
 msgstr "カレンダーの接続を解除"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -4003,6 +4012,7 @@ msgstr "Plannerで開く"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4789,6 +4799,10 @@ msgstr "別の変更を行う前にタスクを確認してください。"
 msgid "Review your protected edits before reloading."
 msgstr "再読み込みする前に保護された編集を確認してください。"
 
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "実行中のタイマー"
+
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -5313,6 +5327,7 @@ msgstr "開始"
 msgid "Start new tasks from a template"
 msgstr "新しいタスクにテンプレートを使用"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "タイマーを開始"
@@ -5362,6 +5377,7 @@ msgstr "ステータス、優先度、関係"
 msgid "Status: {0}"
 msgstr "ステータス: {0}"
 
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "停止"
@@ -5370,9 +5386,15 @@ msgstr "停止"
 msgid "Stop a running timer when its task is completed"
 msgstr "タスク完了時に実行中のタイマーを停止"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "タイマーを停止"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "{0} のタイマーを停止"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5967,6 +5989,14 @@ msgstr "タイマーの説明"
 #: src/components/task-row.tsx
 msgid "Timer running"
 msgstr "タイマー実行中"
+
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "{title} のタイマーを開始しました。"
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "{title} のタイマーを停止しました。"
 
 #: src/components/task-capture.tsx
 msgid "Timing"

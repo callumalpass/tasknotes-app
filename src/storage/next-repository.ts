@@ -123,6 +123,7 @@ import {
   scratchpadFrontmatter,
 } from "./scratchpads";
 import { taskCompletion } from "../domain/task-completion";
+import { runningTimers } from "../domain/running-timers";
 import { taskSearchTokens } from "../domain/task-query";
 import {
   findOccurrenceParent,
@@ -2617,6 +2618,17 @@ export class NextTaskRepository implements TaskRepository {
     return this.indexReady
       ? projectShortcuts([...this.cache.values()].map(({ task }) => task))
       : [];
+  }
+
+  /**
+   * Unlike the counts, this keeps answering from the last loaded metadata
+   * while a change notice waits for its index read: a timer that vanished
+   * between those two would look stopped.
+   */
+  runningTimers() {
+    return this.hasLoadedIndex
+      ? runningTimers([...this.cache.values()].map(({ task }) => task))
+      : null;
   }
 
   navigationTaskCounts(today: string) {

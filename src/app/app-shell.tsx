@@ -39,6 +39,8 @@ import {
 } from "../components/workspace-feedback";
 import { TaskAddedNotice } from "../components/task-added-notice";
 import { TaskCompletedNotice } from "../components/task-completed-notice";
+import { RunningTimerNotice } from "./running-timer";
+import { useTimerControl } from "./use-timer-control";
 import {
   onProjectJump,
   requestProjectJump,
@@ -219,6 +221,7 @@ export function AppShell() {
       }),
     [navigate, views],
   );
+  const timerControl = useTimerControl();
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
   const undoCompletion = useCallback(
     async ({ task, occurrenceDate, advanced, completed }: TaskCompletion) => {
@@ -631,7 +634,12 @@ export function AppShell() {
         toggleSidebar={toggleSidebar}
         paletteRequest={paletteRequest}
         route={route}
+        timers={timerControl}
         views={views ?? []}
+      />
+      <RunningTimerNotice
+        control={timerControl}
+        onOpen={(id) => navigate({ page: "task", id })}
       />
       <GlobalTaskCapture
         onAdded={reportAdded}

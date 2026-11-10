@@ -446,7 +446,7 @@ msgstr "{field} contiene {value}"
 msgid "{field} is empty"
 msgstr "{field} è vuoto"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours} h {minutes} min"
 
@@ -1915,6 +1915,14 @@ msgstr "Impossibile leggere questa data"
 msgid "Couldn’t reopen “{0}”"
 msgstr "Impossibile riaprire “{0}”"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "Impossibile avviare il timer."
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "Impossibile fermare il timer."
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -2247,6 +2255,7 @@ msgid "Disconnect calendars"
 msgstr "Scollega calendari"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -4003,6 +4012,7 @@ msgstr "Apri nel Pianificatore"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4789,6 +4799,10 @@ msgstr "Verifica l'attività prima di apportare un'altra modifica."
 msgid "Review your protected edits before reloading."
 msgstr "Verifica le modifiche protette prima di ricaricare."
 
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "Timer attivo"
+
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -5313,6 +5327,7 @@ msgstr "Avvia"
 msgid "Start new tasks from a template"
 msgstr "Crea nuove attività da un modello"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "Avvia timer"
@@ -5362,6 +5377,7 @@ msgstr "Stato, priorità e relazioni"
 msgid "Status: {0}"
 msgstr "Stato: {0}"
 
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "Ferma"
@@ -5370,9 +5386,15 @@ msgstr "Ferma"
 msgid "Stop a running timer when its task is completed"
 msgstr "Ferma il timer in esecuzione quando l'attività è completata"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "Ferma timer"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "Ferma il timer di {0}"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5967,6 +5989,14 @@ msgstr "Descrizione del timer"
 #: src/components/task-row.tsx
 msgid "Timer running"
 msgstr "Timer in esecuzione"
+
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "Timer avviato per {title}."
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "Timer fermato per {title}."
 
 #: src/components/task-capture.tsx
 msgid "Timing"

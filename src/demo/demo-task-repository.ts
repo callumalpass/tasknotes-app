@@ -20,6 +20,7 @@ import { completeTaskValues, usedValuesFirst } from "../storage/completions";
 import { appendViewPage } from "../application/view-query-session";
 import { materializeRollingWindow } from "../application/rolling-occurrences";
 import { taskCompletion } from "../domain/task-completion";
+import { runningTimers } from "../domain/running-timers";
 import {
   findOccurrenceParent,
   occurrenceRecordId,
@@ -551,6 +552,10 @@ export class DemoTaskRepository implements TaskRepository {
 
   navigationTaskCounts(today: string) {
     return navigationTaskCounts(this.tasks.values(), today);
+  }
+
+  runningTimers() {
+    return runningTimers(this.tasks.values());
   }
 
   async stats(): Promise<TaskStats> {
