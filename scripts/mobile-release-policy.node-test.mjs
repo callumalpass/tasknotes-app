@@ -280,11 +280,17 @@ test("artifact reads retry a transient download, then fail with a bounded slug",
   let calls = 0;
   const flaky = (_cmd, args) => {
     if (++calls < 3) throw new Error("Command failed: gh run download");
-    writeFileSync(join(args[args.indexOf("--dir") + 1], "x.json"), '{"ok":true}');
+    writeFileSync(
+      join(args[args.indexOf("--dir") + 1], "x.json"),
+      '{"ok":true}',
+    );
   };
   const wait = async (delay) => waits.push(delay);
   assert.deepEqual(
-    await artifactJson(1, "x", "x.json", REPO, false, { download: flaky, wait }),
+    await artifactJson(1, "x", "x.json", REPO, false, {
+      download: flaky,
+      wait,
+    }),
     { ok: true },
   );
   assert.equal(calls, 3);
