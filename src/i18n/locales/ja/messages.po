@@ -68,10 +68,20 @@ msgstr "· 開いています"
 msgid "” was saved…"
 msgstr "」を保存しました…"
 
+#. placeholder {0}: problem.key
+#: src/components/task-model-settings.tsx
+msgid "“{0}” can’t be used for a custom field. Try another name."
+msgstr "「{0}」はカスタムフィールドに使用できません。別の名前をお試しください。"
+
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "「{0}」は計算値のため、移動したタスクを受け入れられません。"
+
+#. placeholder {0}: problem.value
+#: src/components/task-model-settings.tsx
+msgid "“{0}” is used twice. Rename one of them."
+msgstr "「{0}」が2回使われています。どちらかの名前を変更してください。"
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
@@ -131,6 +141,16 @@ msgstr "{0, plural, other {未完了#件}}"
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, other {# 件のタスクを更新できませんでした。開いて確認してから、もう一度お試しください。}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the priority “{name}”. Give it another priority, then remove this one.} other {# tasks still have the priority “{name}”. Give them another priority, then remove this one.}}"
+msgstr "{0, plural, other {#件のタスクがまだ優先度「{name}」になっています。別の優先度に変更してから、この優先度を削除してください。}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the status “{name}”. Move it to another status, then remove this one.} other {# tasks still have the status “{name}”. Move them to another status, then remove this one.}}"
+msgstr "{0, plural, other {#件のタスクがまだステータス「{name}」になっています。別のステータスに変更してから、このステータスを削除してください。}}"
 
 #. placeholder {0}: updates.length
 #: src/app/views-screen.tsx
@@ -826,6 +846,10 @@ msgstr "コンテキストを追加…"
 msgid "Add details"
 msgstr "詳細を追加"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add field"
+msgstr "フィールドを追加"
+
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
 msgstr "数式を追加"
@@ -842,6 +866,10 @@ msgstr "ノートを追加"
 msgid "Add or remove a tag on selected tasks"
 msgstr "選択したタスクのタグを追加または削除"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add priority"
+msgstr "優先度を追加"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "プロジェクションを追加"
@@ -854,6 +882,10 @@ msgstr "リマインダーを追加"
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
 msgstr "初期ビューを追加"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add status"
+msgstr "ステータスを追加"
 
 #: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
@@ -1376,6 +1408,10 @@ msgstr "選択を送信しました。同期待ちの可能性があります。
 msgid "Choose"
 msgstr "選択"
 
+#: src/components/task-model-settings.tsx
+msgid "Choose a default that is still in the list."
+msgstr "一覧に残っている既定値を選んでください。"
+
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
 msgstr "別のコレクションを選択"
@@ -1391,6 +1427,10 @@ msgstr "プロパティを選択"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "値を選択"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Choose another default before removing this one."
+msgstr "削除する前に、別の既定値を選んでください。"
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1602,6 +1642,10 @@ msgstr "コレクションを利用できません"
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
 msgstr "コレクションを利用できません。以前に読み込んだタスクを表示しています。変更は保存できません。"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Color for {name}"
+msgstr "{name}の色"
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
@@ -1943,6 +1987,10 @@ msgstr "元に戻せませんでした。もう一度お試しください。"
 msgid "Count the interval from when you finish the task."
 msgstr "タスクを完了した時点から間隔を数えます。"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Counts as done"
+msgstr "完了として扱う"
+
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2006,6 +2054,10 @@ msgstr "現在のノート"
 msgid "current scratchpad"
 msgstr "現在のスクラッチパッド"
 
+#: src/components/task-model-settings.tsx
+msgid "Custom fields"
+msgstr "カスタムフィールド"
+
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
 msgstr "カスタムフィルター"
@@ -2021,6 +2073,7 @@ msgstr "ダーク"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
 msgstr "日付"
@@ -2076,6 +2129,10 @@ msgstr "日数"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "今日からの日数"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Default"
+msgstr "既定"
 
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
@@ -2577,6 +2634,14 @@ msgstr "外部アプリ"
 msgid "Extra context for the task"
 msgstr "タスクの追加コンテキスト"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
+msgstr "各タスクのファイルに保存される追加のプロパティです。ここでフィールドを削除しても、ファイルにある値はそのまま残ります。"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Field name"
+msgstr "フィールド名"
+
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
@@ -2756,9 +2821,21 @@ msgstr "将来の期間"
 msgid "Gap"
 msgstr "間隔"
 
+#: src/components/task-model-settings.tsx
+msgid "Give every custom field a name."
+msgstr "すべてのカスタムフィールドに名前を付けてください。"
+
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Give every occurrence this time"
 msgstr "すべての発生分をこの時刻にする"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every priority a name."
+msgstr "すべての優先度に名前を付けてください。"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every status a name."
+msgstr "すべてのステータスに名前を付けてください。"
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
@@ -3015,6 +3092,18 @@ msgstr "タスクを追加し続ける"
 msgid "Keep as note"
 msgstr "ノートとして保持"
 
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one priority."
+msgstr "優先度を少なくとも1つ残してください。"
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that counts as done."
+msgstr "完了として扱うステータスを少なくとも1つ残してください。"
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that does not count as done."
+msgstr "完了として扱わないステータスを少なくとも1つ残してください。"
+
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "両方を保持してください。編集内容をファイルとして残せます。"
@@ -3159,8 +3248,13 @@ msgid "Links and time tracking"
 msgstr "リンクと時間の記録"
 
 #: src/app/view-editor-form.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "List"
 msgstr "リスト"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Listed from lowest to highest."
+msgstr "低いものから高いものの順に並びます。"
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
@@ -3444,6 +3538,14 @@ msgstr "{label}を下へ移動"
 msgid "Move {label} up"
 msgstr "{label}を上へ移動"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} down"
+msgstr "{name}を下へ移動"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} up"
+msgstr "{name}を上へ移動"
+
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "今日に移動"
@@ -3455,6 +3557,10 @@ msgstr "アーカイブ済みタスクのファイルをフォルダーに移動
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
 msgstr "日付を1日後に移動"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move down"
+msgstr "下へ移動"
 
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
@@ -3477,6 +3583,10 @@ msgstr "選択したタスクをプロジェクトに移動"
 #: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "プロジェクトに移動"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move up"
+msgstr "上へ移動"
 
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
@@ -3921,6 +4031,10 @@ msgstr "指定した時刻またはこのタスクを基準に通知します。
 msgid "Now"
 msgstr "今"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Number"
+msgstr "数値"
+
 #: src/app/task-screen.tsx
 msgid "Occurrence"
 msgstr "発生分"
@@ -4231,6 +4345,10 @@ msgstr "以前に読み込んだ結果は古くなっている可能性があり
 msgid "Primary"
 msgstr "メイン"
 
+#: src/components/task-model-settings.tsx
+msgid "Priorities"
+msgstr "優先度"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
@@ -4247,6 +4365,10 @@ msgstr "優先度"
 #: src/app/bulk-task-actions.tsx
 msgid "Priority for selected tasks"
 msgstr "選択したタスクの優先度"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Priority name"
+msgstr "優先度の名前"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
@@ -4510,6 +4632,7 @@ msgstr "リマインダー"
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Remove"
 msgstr "削除"
 
@@ -4525,6 +4648,10 @@ msgstr "{0}を削除"
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
 msgstr "{label}を削除"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Remove {name}"
+msgstr "{name}を削除"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
@@ -5255,6 +5382,10 @@ msgstr "ナビゲーションに表示"
 msgid "Shown in this order below each item."
 msgstr "各項目の下にこの順序で表示"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Shown in this order wherever a status is chosen. At least one must count as done."
+msgstr "ステータスを選ぶ場所では、この順序で表示されます。少なくとも1つは完了として扱う必要があります。"
+
 #: src/app/task-calendar-view.tsx
 msgid "Sign in to Google Calendar in Settings to see events."
 msgstr "予定を表示するには、設定で Google カレンダーにログインしてください。"
@@ -5378,6 +5509,10 @@ msgstr "ステータス"
 msgid "Status for selected tasks"
 msgstr "選択したタスクのステータス"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Status name"
+msgstr "ステータスの名前"
+
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
 msgstr "ステータス、優先度、関係"
@@ -5386,6 +5521,10 @@ msgstr "ステータス、優先度、関係"
 #: src/components/task-capture.tsx
 msgid "Status: {0}"
 msgstr "ステータス: {0}"
+
+#: src/components/task-model-settings.tsx
+msgid "Statuses"
+msgstr "ステータス"
 
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
@@ -5671,6 +5810,10 @@ msgstr "Templates/Occurrence.md"
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Text"
+msgstr "テキスト"
 
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
@@ -6125,6 +6268,10 @@ msgstr "タスクのタイトルに {example} と入力します。"
 msgid "Type a date"
 msgstr "日付を入力"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Type of {name}"
+msgstr "{name}の種類"
+
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "未割り当て"
@@ -6425,6 +6572,10 @@ msgstr "毎年"
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "はい"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Yes or no"
+msgstr "はい/いいえ"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."

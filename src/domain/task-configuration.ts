@@ -18,6 +18,7 @@ import type {
 import type { TaskNotesMdbaseTypeSettingsPatch } from "@tasknotes/model/mdbase";
 
 import { editableFieldSchema } from "./editable-field-schema";
+import type { TaskVocabularyPatch } from "./task-type-vocabulary";
 import { taskNotesImplementationOf } from "./tasknotes-contract";
 
 /**
@@ -43,6 +44,12 @@ export interface TaskModelSettingsPatch extends Omit<
     string,
     { autoArchive?: boolean; autoArchiveDelay?: number }
   >;
+  /**
+   * The statuses, priorities and custom fields themselves. Written to the
+   * task type before the other type settings, so a default saved in the same
+   * step may name a status or priority this adds.
+   */
+  vocabulary?: TaskVocabularyPatch;
 }
 
 export interface TaskModelSettingsAccess {

@@ -68,10 +68,20 @@ msgstr "· Ouverture en cours"
 msgid "” was saved…"
 msgstr "» a bien été enregistrée…"
 
+#. placeholder {0}: problem.key
+#: src/components/task-model-settings.tsx
+msgid "“{0}” can’t be used for a custom field. Try another name."
+msgstr "« {0} » ne peut pas servir de nom à un champ personnalisé. Essayez un autre nom."
+
 #. placeholder {0}: destination.label ?? uiCopy("This section")
 #: src/app/views-screen.tsx
 msgid "“{0}” is calculated and cannot accept moved tasks."
 msgstr "« {0} » est une section calculée et ne peut pas recevoir de tâches déplacées."
+
+#. placeholder {0}: problem.value
+#: src/components/task-model-settings.tsx
+msgid "“{0}” is used twice. Rename one of them."
+msgstr "« {0} » est utilisé deux fois. Renommez l’un des deux."
 
 #: src/app/use-calendar-mutations.ts
 #: src/components/task-actions.tsx
@@ -131,6 +141,16 @@ msgstr "{0, plural, one {# ouverte} other {# ouvertes}}"
 #: src/app/bulk-task-actions.tsx
 msgid "{0, plural, one {# task could not be updated. Open it to review before trying again.} other {# tasks could not be updated. Open them to review before trying again.}}"
 msgstr "{0, plural, one {# tâche n’a pas pu être mise à jour. Ouvrez-la pour la vérifier avant de réessayer.} many {# tâches n’ont pas pu être mises à jour. Ouvrez-les pour les vérifier avant de réessayer.} other {# tâches n’ont pas pu être mises à jour. Ouvrez-les pour les vérifier avant de réessayer.}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the priority “{name}”. Give it another priority, then remove this one.} other {# tasks still have the priority “{name}”. Give them another priority, then remove this one.}}"
+msgstr "{0, plural, one {# tâche a encore la priorité « {name} ». Donnez-lui une autre priorité, puis retirez celle-ci.} many {# tâches ont encore la priorité « {name} ». Donnez-leur une autre priorité, puis retirez celle-ci.} other {# tâches ont encore la priorité « {name} ». Donnez-leur une autre priorité, puis retirez celle-ci.}}"
+
+#. placeholder {0}: problem.count
+#: src/components/task-model-settings.tsx
+msgid "{0, plural, one {# task still has the status “{name}”. Move it to another status, then remove this one.} other {# tasks still have the status “{name}”. Move them to another status, then remove this one.}}"
+msgstr "{0, plural, one {# tâche a encore le statut « {name} ». Passez-la à un autre statut, puis retirez celui-ci.} many {# tâches ont encore le statut « {name} ». Passez-les à un autre statut, puis retirez celui-ci.} other {# tâches ont encore le statut « {name} ». Passez-les à un autre statut, puis retirez celui-ci.}}"
 
 #. placeholder {0}: updates.length
 #: src/app/views-screen.tsx
@@ -827,6 +847,10 @@ msgstr "Ajouter un contexte…"
 msgid "Add details"
 msgstr "Ajouter des détails"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add field"
+msgstr "Ajouter un champ"
+
 #: src/app/view-editor-form.tsx
 msgid "Add formula"
 msgstr "Ajouter une formule"
@@ -843,6 +867,10 @@ msgstr "Ajouter des notes"
 msgid "Add or remove a tag on selected tasks"
 msgstr "Ajouter ou retirer une étiquette des tâches sélectionnées"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add priority"
+msgstr "Ajouter une priorité"
+
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "Ajouter une projection"
@@ -855,6 +883,10 @@ msgstr "Ajouter un rappel"
 #: src/app/views/starter-views-offer.tsx
 msgid "Add starter views"
 msgstr "Ajouter les vues de départ"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Add status"
+msgstr "Ajouter un statut"
 
 #: src/app/task-subtasks.tsx
 #: src/components/task-actions.tsx
@@ -1377,6 +1409,10 @@ msgstr "Choix envoyé. Il peut être encore en attente de synchronisation ; vér
 msgid "Choose"
 msgstr "Choisir"
 
+#: src/components/task-model-settings.tsx
+msgid "Choose a default that is still in the list."
+msgstr "Choisissez une valeur par défaut qui figure encore dans la liste."
+
 #: src/app/app-shell.tsx
 msgid "Choose a different collection"
 msgstr "Choisir une autre collection"
@@ -1392,6 +1428,10 @@ msgstr "Choisir une propriété"
 #: src/app/task-custom-field.tsx
 msgid "Choose a value"
 msgstr "Choisir une valeur"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Choose another default before removing this one."
+msgstr "Choisissez une autre valeur par défaut avant de retirer celle-ci."
 
 #: src/components/assignee-editor.tsx
 msgid "Choose assignees"
@@ -1603,6 +1643,10 @@ msgstr "Collection indisponible"
 #: src/components/collection-availability.tsx
 msgid "Collection unavailable. Showing previously loaded tasks; changes can’t be saved."
 msgstr "Collection indisponible. Affichage des tâches chargées précédemment ; les modifications ne peuvent pas être enregistrées."
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Color for {name}"
+msgstr "Couleur de {name}"
 
 #: src/app/more-screen.tsx
 msgid "Color theme"
@@ -1944,6 +1988,10 @@ msgstr "Annulation impossible. Réessayez."
 msgid "Count the interval from when you finish the task."
 msgstr "Calculer l’intervalle à partir du moment où vous terminez la tâche."
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Counts as done"
+msgstr "Compte comme terminé"
+
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Create a subtask of {0}"
@@ -2007,6 +2055,10 @@ msgstr "Note actuelle"
 msgid "current scratchpad"
 msgstr "bloc-notes actuel"
 
+#: src/components/task-model-settings.tsx
+msgid "Custom fields"
+msgstr "Champs personnalisés"
+
 #: src/app/view-editor-form.tsx
 msgid "Custom filter"
 msgstr "Filtre personnalisé"
@@ -2022,6 +2074,7 @@ msgstr "Sombre"
 
 #: src/components/recurrence-field.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
 msgstr "Date"
@@ -2077,6 +2130,10 @@ msgstr "Jours"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Jours à partir d’aujourd’hui"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Default"
+msgstr "Par défaut"
 
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
@@ -2578,6 +2635,14 @@ msgstr "Application externe"
 msgid "Extra context for the task"
 msgstr "Informations complémentaires pour la tâche"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
+msgstr "Propriétés supplémentaires conservées dans le fichier de chaque tâche. Retirer un champ ici laisse les valeurs déjà présentes dans les fichiers."
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Field name"
+msgstr "Nom du champ"
+
 #: src/app/view-editor-form.tsx
 #: src/app/view-editor.tsx
 #: src/app/views-screen.tsx
@@ -2757,9 +2822,21 @@ msgstr "Horizon futur"
 msgid "Gap"
 msgstr "Décalage"
 
+#: src/components/task-model-settings.tsx
+msgid "Give every custom field a name."
+msgstr "Donnez un nom à chaque champ personnalisé."
+
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "Give every occurrence this time"
 msgstr "Appliquer cette heure à chaque occurrence"
+
+#: src/components/task-model-settings.tsx
+msgid "Give every priority a name."
+msgstr "Donnez un nom à chaque priorité."
+
+#: src/components/task-model-settings.tsx
+msgid "Give every status a name."
+msgstr "Donnez un nom à chaque statut."
 
 #: src/app/task-edit-recovery-boundary.tsx
 msgid "Go back and refresh the collection before editing."
@@ -3016,6 +3093,18 @@ msgstr "Continuer à ajouter des tâches"
 msgid "Keep as note"
 msgstr "Conserver comme note"
 
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one priority."
+msgstr "Gardez au moins une priorité."
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that counts as done."
+msgstr "Gardez au moins un statut qui compte comme terminé."
+
+#: src/components/task-model-settings.tsx
+msgid "Keep at least one status that does not count as done."
+msgstr "Gardez au moins un statut qui ne compte pas comme terminé."
+
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
 msgstr "Choisissez plutôt « Conserver les deux » pour garder votre modification sous forme de fichier."
@@ -3160,8 +3249,13 @@ msgid "Links and time tracking"
 msgstr "Liens et suivi du temps"
 
 #: src/app/view-editor-form.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "List"
 msgstr "Liste"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Listed from lowest to highest."
+msgstr "De la plus basse à la plus haute."
 
 #: src/app/views-screen.tsx
 msgid "Load more tasks"
@@ -3445,6 +3539,14 @@ msgstr "Descendre {label}"
 msgid "Move {label} up"
 msgstr "Remonter {label}"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} down"
+msgstr "Descendre {name}"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move {name} up"
+msgstr "Monter {name}"
+
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move all to today"
 msgstr "Tout déplacer pour aujourd’hui"
@@ -3456,6 +3558,10 @@ msgstr "Déplacer les fichiers des tâches archivées dans un dossier"
 #: src/components/task-actions.tsx
 msgid "Move dates one day later"
 msgstr "Décaler les dates d’un jour"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move down"
+msgstr "Descendre"
 
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
@@ -3478,6 +3584,10 @@ msgstr "Déplacer les tâches sélectionnées vers un projet"
 #: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "Déplacer vers un projet"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Move up"
+msgstr "Monter"
 
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
@@ -3922,6 +4032,10 @@ msgstr "Notifier à une heure fixe ou par rapport à cette tâche."
 msgid "Now"
 msgstr "Maintenant"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Number"
+msgstr "Nombre"
+
 #: src/app/task-screen.tsx
 msgid "Occurrence"
 msgstr "Occurrence"
@@ -4232,6 +4346,10 @@ msgstr "Les résultats chargés précédemment peuvent être obsolètes."
 msgid "Primary"
 msgstr "Principale"
 
+#: src/components/task-model-settings.tsx
+msgid "Priorities"
+msgstr "Priorités"
+
 #: src/app/bulk-task-actions.tsx
 #: src/app/task-core-properties.tsx
 #: src/app/view-editor-fields.ts
@@ -4248,6 +4366,10 @@ msgstr "Priorité"
 #: src/app/bulk-task-actions.tsx
 msgid "Priority for selected tasks"
 msgstr "Priorité des tâches sélectionnées"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Priority name"
+msgstr "Nom de la priorité"
 
 #: src/app/task-editor-draft.ts
 msgid "Priority, projects, dependencies, contexts and tags"
@@ -4511,6 +4633,7 @@ msgstr "Rappels"
 #: src/app/views/view-catalog.tsx
 #: src/components/assignee-editor.tsx
 #: src/components/reminder-editor.tsx
+#: src/components/task-vocabulary-editor.tsx
 msgid "Remove"
 msgstr "Retirer"
 
@@ -4526,6 +4649,10 @@ msgstr "Retirer : {0}"
 #: src/app/view-editor-form.tsx
 msgid "Remove {label}"
 msgstr "Retirer {label}"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Remove {name}"
+msgstr "Retirer {name}"
 
 #. placeholder {0}: label(value)
 #: src/components/assignee-editor.tsx
@@ -5256,6 +5383,10 @@ msgstr "Éléments de navigation"
 msgid "Shown in this order below each item."
 msgstr "Affichage dans cet ordre sous chaque élément."
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Shown in this order wherever a status is chosen. At least one must count as done."
+msgstr "Affichés dans cet ordre partout où l’on choisit un statut. Au moins un doit compter comme terminé."
+
 #: src/app/task-calendar-view.tsx
 msgid "Sign in to Google Calendar in Settings to see events."
 msgstr "Connectez-vous à Google Agenda dans les Paramètres pour voir les événements."
@@ -5379,6 +5510,10 @@ msgstr "Statut"
 msgid "Status for selected tasks"
 msgstr "Statut des tâches sélectionnées"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Status name"
+msgstr "Nom du statut"
+
 #: src/components/task-capture.tsx
 msgid "Status, priority, and relationships"
 msgstr "Statut, priorité et relations"
@@ -5387,6 +5522,10 @@ msgstr "Statut, priorité et relations"
 #: src/components/task-capture.tsx
 msgid "Status: {0}"
 msgstr "Statut : {0}"
+
+#: src/components/task-model-settings.tsx
+msgid "Statuses"
+msgstr "Statuts"
 
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
@@ -5672,6 +5811,10 @@ msgstr "Templates/Occurrence.md"
 #: src/components/task-model-settings.tsx
 msgid "Templates/Task.md"
 msgstr "Templates/Task.md"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Text"
+msgstr "Texte"
 
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
@@ -6126,6 +6269,10 @@ msgstr "Saisissez {example} dans le titre de la tâche."
 msgid "Type a date"
 msgstr "Saisir une date"
 
+#: src/components/task-vocabulary-editor.tsx
+msgid "Type of {name}"
+msgstr "Type de {name}"
+
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "Sans assignation"
@@ -6426,6 +6573,10 @@ msgstr "Tous les ans"
 #: src/i18n/view-presentation.ts
 msgid "Yes"
 msgstr "Oui"
+
+#: src/components/task-vocabulary-editor.tsx
+msgid "Yes or no"
+msgstr "Oui ou non"
 
 #: src/app/more-screen.tsx
 msgid "Yes. Use Change collection under Collection to open another mdbase collection. Changing collections does not move records between them."

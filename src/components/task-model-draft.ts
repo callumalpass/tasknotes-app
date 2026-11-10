@@ -1,6 +1,17 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type {
+  TaskCustomFieldEdit,
+  TaskPriorityEdit,
+  TaskStatusEdit,
+} from "../domain/task-type-vocabulary";
+
+/**
+ * `id` names a row while it is edited. A saved entry's id is its stored
+ * value; a new one keeps a temporary id so its value can follow its name.
+ */
+export type DraftEntry<Entry> = Entry & { id: string };
 
 export interface TaskModelSettingsDraft {
   defaultStatus: string;
@@ -21,6 +32,10 @@ export interface TaskModelSettingsDraft {
     string,
     { autoArchive: boolean; autoArchiveDelay: number }
   >;
+  statuses: DraftEntry<TaskStatusEdit>[];
+  /** Lowest first; a priority's weight is its position. */
+  priorities: DraftEntry<TaskPriorityEdit>[];
+  customFields: DraftEntry<TaskCustomFieldEdit>[];
 }
 
 type DraftPatch = Partial<TaskModelSettingsDraft>;
@@ -115,6 +130,21 @@ export function settingsDraft(
     archiveFolder: configuration.archive.folder,
     templatingEnabled: configuration.templating.enabled,
     templatePath: configuration.templating.templatePath ?? "",
+    statuses: [...configuration.statuses]
+      .sort((first, second) => first.order - second.order)
+      .map(({ value, label, color, isCompleted }) => ({
+        id: value,
+        value,
+        label,
+        color,
+        isCompleted,
+      })),
+    priorities: [...configuration.priorities]
+      .sort((first, second) => first.weight - second.weight)
+      .map(({ value, label, color }) => ({ id: value, value, label, color })),
+    customFields: configuration.userFields.map(
+      ({ key, displayName, type }) => ({ id: key, key, displayName, type }),
+    ),
     statusAutomation: Object.fromEntries(
       configuration.statuses.map((status) => [
         status.value,

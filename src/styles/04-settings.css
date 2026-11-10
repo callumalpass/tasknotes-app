@@ -952,6 +952,11 @@
   font-size: var(--type-supporting);
 }
 
+.settings-save-bar > .settings-save-problem {
+  flex: 1 1 16rem;
+  color: var(--danger);
+}
+
 .settings-save-actions {
   display: flex;
   gap: var(--space-sm);
@@ -1011,4 +1016,151 @@
 
 .notes-preview-surface {
   cursor: text;
+}
+
+/* Editable lists of statuses, priorities and custom fields. */
+.vocabulary-editor {
+  padding: 4px 0 var(--space-lg);
+}
+
+.vocabulary-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.vocabulary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 56px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Square at any height: phones raise settings inputs to a 44px target. */
+.vocabulary-color {
+  flex: 0 0 auto;
+  width: auto;
+  height: 32px;
+  aspect-ratio: 1;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.vocabulary-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.vocabulary-color::-webkit-color-swatch,
+.vocabulary-color::-moz-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+.vocabulary-name {
+  display: flex;
+  flex: 1 1 14rem;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.vocabulary-name > input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--ink);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.vocabulary-name > code {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--type-mono-micro);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vocabulary-name > small {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.vocabulary-flag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: var(--type-supporting);
+  cursor: pointer;
+}
+
+.vocabulary-flag > input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.vocabulary-type {
+  flex: 0 0 9rem;
+}
+
+.vocabulary-type.is-fixed {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.vocabulary-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.vocabulary-actions > button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.vocabulary-actions > button:hover:not(:disabled),
+.vocabulary-actions > button:focus-visible {
+  color: var(--ink);
+  background: var(--paper-soft);
+}
+
+.vocabulary-actions > button:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+.vocabulary-add {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
 }

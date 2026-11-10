@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
-import { t as translate } from "@lingui/core/macro";
+import { plural, t as translate } from "@lingui/core/macro";
 import {
   useEffect,
   useId,
@@ -14,6 +14,18 @@ import type { TaskModelSettingsAccess } from "../domain/task-configuration";
 import { DurationField } from "./duration-field";
 import { OperationErrorNotice } from "./operation-error-notice";
 import { TaskNotesSelectField } from "./tasknotes-controls";
+import {
+  CustomFieldListEditor,
+  PriorityListEditor,
+  StatusListEditor,
+} from "./task-vocabulary-editor";
+import {
+  TaskVocabularyError,
+  TaskVocabularyInUseError,
+  vocabularyProblem,
+  type TaskVocabularyPatch,
+  type TaskVocabularyProblem,
+} from "../domain/task-type-vocabulary";
 import {
   useTaskModelDraft,
   type TaskModelSettingsDraft,
@@ -88,6 +100,9 @@ export function TaskModelSettingsEditor() {
   );
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState("");
+  // Something the person can put right in the lists, as opposed to a save
+  // that failed; it is said plainly instead of as a technical detail.
+  const [problem, setProblem] = useState("");
   const ids = useId();
 
   useEffect(() => {
@@ -134,15 +149,41 @@ export function TaskModelSettingsEditor() {
     change(patch);
     setSaveState("idle");
     setError("");
+    setProblem("");
   }
 
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!writable || !dirty || saveState === "saving") return;
+    const vocabulary = vocabularyChanges(draft, original);
+    const invalid =
+      vocabularyProblem(vocabulary, {
+        status: draft.defaultStatus,
+        priority: draft.defaultPriority,
+      }) ??
+      (vocabulary.customFields?.add?.some(
+        ({ displayName }) => !displayName.trim(),
+      )
+        ? ({ kind: "field-label", key: "" } as const)
+        : null);
+    if (invalid) {
+      setSaveState("error");
+      setError("");
+      setProblem(vocabularyProblemMessage(invalid));
+      // A missing name is the usual reason; put the keyboard on it.
+      (event.currentTarget as HTMLElement)
+        .querySelector<HTMLInputElement>(
+          ".vocabulary-name input:placeholder-shown",
+        )
+        ?.focus();
+      return;
+    }
     setSaveState("saving");
     setError("");
+    setProblem("");
     try {
       await updateTaskModelSettings({
+        ...(Object.keys(vocabulary).length ? { vocabulary } : {}),
         defaultStatus: draft.defaultStatus,
         defaultPriority: draft.defaultPriority,
         recurrence: {
@@ -176,7 +217,11 @@ export function TaskModelSettingsEditor() {
       setSaveState("saved");
     } catch (reason) {
       setSaveState("error");
-      setError(reason instanceof Error ? reason.message : String(reason));
+      if (reason instanceof TaskVocabularyInUseError)
+        setProblem(vocabularyInUseMessage(reason, original));
+      else if (reason instanceof TaskVocabularyError)
+        setProblem(vocabularyProblemMessage(reason.problem));
+      else setError(reason instanceof Error ? reason.message : String(reason));
     }
   }
 
@@ -222,13 +267,21 @@ export function TaskModelSettingsEditor() {
           <div className="task-model-settings-grid">
             <TaskNotesSelectField
               label={translate({ message: "Default status" })}
-              options={configuration.statuses}
+              options={draft.statuses.map(({ value, label, color }) => ({
+                value,
+                label: label.trim() || value,
+                color,
+              }))}
               value={draft.defaultStatus}
               onChange={(defaultStatus) => update({ defaultStatus })}
             />
             <TaskNotesSelectField
               label={translate({ message: "Default priority" })}
-              options={configuration.priorities}
+              options={draft.priorities.map(({ value, label, color }) => ({
+                value,
+                label: label.trim() || value,
+                color,
+              }))}
               value={draft.defaultPriority}
               onChange={(defaultPriority) => update({ defaultPriority })}
             />
@@ -254,6 +307,39 @@ export function TaskModelSettingsEditor() {
               </label>
             ) : null}
           </fieldset>
+        </SettingsGroup>
+
+        <SettingsGroup title={translate({ message: "Statuses" })}>
+          <StatusListEditor
+            defaultStatus={draft.defaultStatus}
+            statuses={draft.statuses}
+            onChange={(statuses) => update({ statuses })}
+            onDefault={(defaultStatus) => update({ defaultStatus })}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title={translate({ message: "Priorities" })}>
+          <PriorityListEditor
+            defaultPriority={draft.defaultPriority}
+            priorities={draft.priorities}
+            onChange={(priorities) => update({ priorities })}
+            onDefault={(defaultPriority) => update({ defaultPriority })}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title={translate({ message: "Custom fields" })}>
+          <CustomFieldListEditor
+            fields={draft.customFields}
+            reservedKeys={[
+              ...Object.keys(configuration.fieldMapping),
+              ...Object.values(configuration.fieldMapping),
+              "id",
+              "tags",
+              "type",
+              "types",
+            ]}
+            onChange={(customFields) => update({ customFields })}
+          />
         </SettingsGroup>
 
         <SettingsGroup title={translate({ message: "Repeating tasks" })}>
@@ -472,7 +558,12 @@ export function TaskModelSettingsEditor() {
       ) : null}
       {writable && (dirty || saveState !== "idle") ? (
         <div className="settings-save-bar">
-          <span role="status">
+          {problem ? (
+            <span className="settings-save-problem" role="alert">
+              {problem}
+            </span>
+          ) : null}
+          <span hidden={Boolean(problem)} role="status">
             {saveState === "saving"
               ? translate({ message: "Saving…" })
               : dirty
@@ -494,6 +585,7 @@ export function TaskModelSettingsEditor() {
                   discard();
                   setSaveState("idle");
                   setError("");
+                  setProblem("");
                 }}
               >
                 <Trans>Discard</Trans>
@@ -527,6 +619,97 @@ function SettingsGroup({
       {children}
     </section>
   );
+}
+
+/** Only the lists that changed, as the collection should hold them. */
+function vocabularyChanges(
+  draft: TaskModelSettingsDraft,
+  original: TaskModelSettingsDraft,
+): TaskVocabularyPatch {
+  const changed = (key: "statuses" | "priorities" | "customFields") =>
+    JSON.stringify(draft[key]) !== JSON.stringify(original[key]);
+  const patch: TaskVocabularyPatch = {};
+  if (changed("statuses"))
+    patch.statuses = draft.statuses.map(
+      ({ value, label, color, isCompleted }) => ({
+        value,
+        label,
+        color,
+        isCompleted,
+      }),
+    );
+  if (changed("priorities"))
+    patch.priorities = draft.priorities.map(({ value, label, color }) => ({
+      value,
+      label,
+      color,
+    }));
+  if (changed("customFields")) {
+    const before = new Map(
+      original.customFields.map((field) => [field.id, field]),
+    );
+    const kept = new Set(draft.customFields.map(({ id }) => id));
+    patch.customFields = {
+      add: draft.customFields
+        .filter(({ id }) => !before.has(id))
+        .map(({ key, displayName, type }) => ({ key, displayName, type })),
+      rename: draft.customFields
+        .filter(
+          (field) =>
+            before.has(field.id) &&
+            before.get(field.id)!.displayName !== field.displayName,
+        )
+        .map(({ key, displayName }) => ({ key, displayName })),
+      remove: original.customFields
+        .filter(({ id }) => !kept.has(id))
+        .map(({ key }) => key),
+    };
+  }
+  return patch;
+}
+
+function vocabularyProblemMessage(problem: TaskVocabularyProblem): string {
+  switch (problem.kind) {
+    case "empty-label":
+      return problem.list === "status"
+        ? translate`Give every status a name.`
+        : translate`Give every priority a name.`;
+    case "duplicate-value":
+      return translate`“${problem.value}” is used twice. Rename one of them.`;
+    case "no-open-status":
+      return translate`Keep at least one status that does not count as done.`;
+    case "no-completed-status":
+      return translate`Keep at least one status that counts as done.`;
+    case "no-priority":
+      return translate`Keep at least one priority.`;
+    case "default-removed":
+      return translate`Choose a default that is still in the list.`;
+    case "field-label":
+      return translate`Give every custom field a name.`;
+    case "field-name":
+    case "field-taken":
+      return translate`“${problem.key}” can’t be used for a custom field. Try another name.`;
+  }
+}
+
+function vocabularyInUseMessage(
+  problem: TaskVocabularyInUseError,
+  original: TaskModelSettingsDraft,
+): string {
+  const entries =
+    problem.list === "status" ? original.statuses : original.priorities;
+  const name =
+    entries.find(({ value }) => value === problem.value)?.label ??
+    problem.value;
+  return problem.list === "status"
+    ? plural(problem.count, {
+        one: `# task still has the status “${name}”. Move it to another status, then remove this one.`,
+        other: `# tasks still have the status “${name}”. Move them to another status, then remove this one.`,
+      })
+    : plural(problem.count, {
+        one: `# task still has the priority “${name}”. Give it another priority, then remove this one.`,
+        other: `# tasks still have the priority “${name}”. Give them another priority, then remove this one.`,
+      });
 }
 
 function changedStatusAutomation(

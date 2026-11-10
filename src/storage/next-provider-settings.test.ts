@@ -3,7 +3,8 @@ import {
   parseFrontmatter,
   serializeMarkdownDocument,
 } from "@tasknotes/model/frontmatter";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import { TaskVocabularyInUseError } from "../domain/task-type-vocabulary";
+import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 async function fixture() {
@@ -70,4 +71,134 @@ it("retains single-provider settings updates", async () => {
     defaultPriority: "high",
   });
   expect(configuration.defaults.priority).toBe("high");
+});
+
+async function vocabulary(f: Awaited<ReturnType<typeof fixture>>) {
+  const { statuses, priorities } = await f.repository.taskConfiguration();
+  return {
+    statuses: [...statuses]
+      .sort((first, second) => first.order - second.order)
+      .map(({ value, label, color, isCompleted }) => ({
+        value,
+        label,
+        color,
+        isCompleted,
+      })),
+    priorities: [...priorities]
+      .sort((first, second) => first.weight - second.weight)
+      .map(({ value, label, color }) => ({ value, label, color })),
+  };
+}
+it("adds a status, a priority and a custom field to the task type", async () => {
+  const f = await fixture();
+  const current = await vocabulary(f);
+  const configuration = await f.repository.updateTaskModelSettings({
+    vocabulary: {
+      statuses: [
+        ...current.statuses,
+        {
+          value: "waiting",
+          label: "Waiting",
+          color: "#aa5500",
+          isCompleted: false,
+        },
+      ],
+      priorities: [
+        ...current.priorities,
+        { value: "urgent", label: "Urgent", color: "#cc0000" },
+      ],
+      customFields: {
+        add: [{ key: "client", displayName: "Client", type: "text" }],
+      },
+    },
+  });
+  expect(configuration.statuses.at(-1)).toMatchObject({
+    value: "waiting",
+    label: "Waiting",
+    color: "#aa5500",
+    isCompleted: false,
+  });
+  expect(
+    [...configuration.priorities].sort(
+      (first, second) => first.weight - second.weight,
+    ),
+  ).toMatchObject([...current.priorities, { value: "urgent" }]);
+  expect(configuration.userFields).toContainEqual(
+    expect.objectContaining({
+      key: "client",
+      displayName: "Client",
+      type: "text",
+    }),
+  );
+  // The type file itself carries the change, for every other client.
+  const source = await f.client.resources.get("_types/task.md");
+  expect(source.text).toContain("waiting");
+  expect(source.text).toContain("client");
+
+  const created = await f.repository.create({
+    title: "Chase the supplier",
+    status: "waiting",
+    priority: "urgent",
+  });
+  expect(created).toMatchObject({ status: "waiting", priority: "urgent" });
+});
+it("refuses to remove a status that tasks still hold", async () => {
+  const f = await fixture();
+  const current = await vocabulary(f);
+  const open = current.statuses.find(({ isCompleted }) => !isCompleted)!;
+  const spare = current.statuses.find(
+    (status) => !status.isCompleted && status.value !== open.value,
+  );
+  const removed =
+    (await f.repository.taskConfiguration()).defaults.status === open.value
+      ? spare!
+      : open;
+  seedTask(f.replica, { title: "Still here", status: removed.value });
+  const before = await f.client.resources.get("_types/task.md");
+  const submit = vi.spyOn(f.client, "submit");
+  const refusal = await f.repository
+    .updateTaskModelSettings({
+      vocabulary: {
+        statuses: current.statuses.filter(
+          ({ value }) => value !== removed.value,
+        ),
+      },
+    })
+    .catch((reason: unknown) => reason);
+  expect(refusal).toBeInstanceOf(TaskVocabularyInUseError);
+  expect(refusal).toMatchObject({
+    list: "status",
+    value: removed.value,
+    count: 1,
+  });
+  expect(submit).not.toHaveBeenCalled();
+  expect(await f.client.resources.get("_types/task.md")).toEqual(before);
+});
+it("removes an unused status and keeps the new priority order", async () => {
+  const f = await fixture();
+  const current = await vocabulary(f);
+  const { defaults } = await f.repository.taskConfiguration();
+  const removed = current.statuses.find(
+    (status) => !status.isCompleted && status.value !== defaults.status,
+  )!;
+  const reversed = [...current.priorities].reverse();
+  const configuration = await f.repository.updateTaskModelSettings({
+    vocabulary: {
+      statuses: current.statuses.filter(({ value }) => value !== removed.value),
+      priorities: reversed,
+    },
+  });
+  expect(configuration.statuses.map(({ value }) => value)).not.toContain(
+    removed.value,
+  );
+  expect(
+    [...configuration.priorities]
+      .sort((first, second) => first.weight - second.weight)
+      .map(({ value }) => value),
+  ).toEqual(reversed.map(({ value }) => value));
+  expect(configuration.defaults).toEqual(defaults);
+  // A reload reads the same lists back from the type file.
+  expect(
+    (await f.repository.taskConfiguration()).statuses.map(({ value }) => value),
+  ).toEqual(configuration.statuses.map(({ value }) => value));
 });
