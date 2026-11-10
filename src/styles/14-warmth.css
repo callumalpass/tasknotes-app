@@ -1,16 +1,10 @@
 /*
- * Warmth experiment. Colour lives in the places a person looks at all day:
- * the destinations in the navigation and the completion circle of each row.
+ * Warmth experiment. Colour lives where a person looks all day: the
+ * completion circle of each row. The navigation stays quiet, in ink.
  * The paper, ink and accent themselves are set in 01-foundation.css.
  */
 
 :root {
-  --nav-today: oklch(64% 0.16 62);
-  --nav-upcoming: oklch(56% 0.17 300);
-  --nav-scratchpad: oklch(58% 0.11 195);
-  --nav-inbox: oklch(57% 0.15 245);
-  --nav-calendar: oklch(60% 0.18 5);
-  --nav-projects: oklch(57% 0.13 150);
   --nav-active: oklch(93.4% 0.017 80);
   --monogram-ink-lightness: 44%;
   --monogram-paper-lightness: 94%;
@@ -20,12 +14,6 @@
 }
 
 :root[data-theme="dark"] {
-  --nav-today: oklch(80% 0.14 75);
-  --nav-upcoming: oklch(76% 0.13 300);
-  --nav-scratchpad: oklch(78% 0.1 195);
-  --nav-inbox: oklch(76% 0.12 245);
-  --nav-calendar: oklch(76% 0.14 5);
-  --nav-projects: oklch(78% 0.13 150);
   --nav-active: oklch(27% 0.01 70);
   --monogram-ink-lightness: 84%;
   --monogram-paper-lightness: 30%;
@@ -36,12 +24,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --nav-today: oklch(80% 0.14 75);
-    --nav-upcoming: oklch(76% 0.13 300);
-    --nav-scratchpad: oklch(78% 0.1 195);
-    --nav-inbox: oklch(76% 0.12 245);
-    --nav-calendar: oklch(76% 0.14 5);
-    --nav-projects: oklch(78% 0.13 150);
     --nav-active: oklch(27% 0.01 70);
     --monogram-ink-lightness: 84%;
     --monogram-paper-lightness: 30%;
@@ -51,32 +33,7 @@
   }
 }
 
-/* Each destination keeps one colour of its own in the sidebar. */
-.navigation-rail button > svg.lucide-sun {
-  color: var(--nav-today);
-}
-
-.navigation-rail button > svg.lucide-calendar-clock {
-  color: var(--nav-upcoming);
-}
-
-.navigation-rail button > svg.lucide-file-pen-line {
-  color: var(--nav-scratchpad);
-}
-
-.navigation-rail button > svg.lucide-inbox {
-  color: var(--nav-inbox);
-}
-
-.navigation-rail button > svg.lucide-calendar-days {
-  color: var(--nav-calendar);
-}
-
-.navigation-rail button > svg.lucide-folder-kanban {
-  color: var(--nav-projects);
-}
-
-/* On the phone only the current tab is coloured, so the bar stays quiet. */
+/* Navigation icons stay in ink; on the phone the current tab takes the accent. */
 .bottom-navigation button.is-active {
   color: var(--ink);
   font-weight: 700;
@@ -84,30 +41,6 @@
 
 .bottom-navigation button.is-active > svg {
   color: var(--accent);
-}
-
-.bottom-navigation button.is-active > svg.lucide-sun {
-  color: var(--nav-today);
-}
-
-.bottom-navigation button.is-active > svg.lucide-calendar-clock {
-  color: var(--nav-upcoming);
-}
-
-.bottom-navigation button.is-active > svg.lucide-file-pen-line {
-  color: var(--nav-scratchpad);
-}
-
-.bottom-navigation button.is-active > svg.lucide-inbox {
-  color: var(--nav-inbox);
-}
-
-.bottom-navigation button.is-active > svg.lucide-calendar-days {
-  color: var(--nav-calendar);
-}
-
-.bottom-navigation button.is-active > svg.lucide-folder-kanban {
-  color: var(--nav-projects);
 }
 
 @media (min-width: 840px) {
