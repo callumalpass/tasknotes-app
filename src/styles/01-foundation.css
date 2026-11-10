@@ -7,14 +7,14 @@
   background: var(--paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --color-canvas: oklch(99.4% 0.004 85);
+  --color-canvas: oklch(99.7% 0.0015 75);
   --color-surface: oklch(100% 0 0);
-  --color-surface-subtle: oklch(97.3% 0.009 82);
+  --color-surface-subtle: oklch(97.5% 0.005 70);
   --color-text: oklch(24% 0.012 55);
   --color-text-soft: oklch(43% 0.012 60);
   --color-text-muted: oklch(54% 0.012 65);
-  --color-border: oklch(92.3% 0.008 80);
-  --color-border-strong: oklch(84% 0.012 80);
+  --color-border: oklch(92.4% 0.005 70);
+  --color-border-strong: oklch(84% 0.008 70);
   --color-accent: oklch(52% 0.19 264);
   --color-accent-soft: oklch(96% 0.025 264);
   --color-on-accent: oklch(99% 0.003 85);

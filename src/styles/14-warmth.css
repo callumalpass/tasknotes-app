@@ -5,7 +5,7 @@
  */
 
 :root {
-  --nav-active: oklch(93.4% 0.017 80);
+  --nav-active: oklch(94% 0.009 70);
   --monogram-ink-lightness: 44%;
   --monogram-paper-lightness: 94%;
   --monogram-paper-chroma: 0.04;
