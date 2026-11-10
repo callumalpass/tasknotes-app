@@ -1,5 +1,7 @@
 # Unreleased
 
+- Show your tasks about a quarter of a second sooner when TaskNotes opens. Saved views no longer wait out a fixed delay when the app's own startup refresh changes the collection while they load.
+
 - Add a persistent App language setting for English, French, German, Spanish, Japanese, Korean, Brazilian Portuguese, Russian, and Simplified Chinese. The interface starts in the best supported device language unless you choose another language.
 
 - Include the current Settings, keyboard commands, account recovery, and save-status messages in app translations.
