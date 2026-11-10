@@ -1,0 +1,377 @@
+/*
+ * A scratchpad note is one Markdown text, written as an outline. Its lines
+ * start in the title's column; fold controls hang in the margin beside them.
+ */
+
+.scratchpad-note-surface {
+  position: relative;
+  min-width: 0;
+}
+
+.scratchpad-note-text .cm-scroller {
+  padding: 2px 0 12px;
+}
+
+/* Room below the last line of the current note to click and keep writing. */
+.scratchpad-current-document .scratchpad-note-text .cm-content {
+  min-height: 160px;
+}
+
+.scratchpad-note-text {
+  --scratch-line-pad: 3px;
+}
+
+.scratchpad-note-text .cm-line {
+  padding: var(--scratch-line-pad) 0;
+}
+
+/* Fold controls: in the margin, on lines that have something under them. */
+.scratchpad-note-text .cm-gutters {
+  width: 20px;
+  margin-left: -20px;
+  color: var(--ink-faint);
+  background: transparent;
+  border: 0;
+}
+
+.scratchpad-note-text .cm-scratch-fold-gutter {
+  width: 20px;
+}
+
+.cm-scratch-fold {
+  display: grid;
+  width: 20px;
+  /* One line tall, so it stays beside the first line of a wrapped item. */
+  height: calc(1.6em + 2 * var(--scratch-line-pad));
+  place-items: center;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cm-scratch-fold svg {
+  transform: rotate(90deg);
+  transition: transform 140ms var(--ease-out);
+}
+
+.cm-scratch-fold.is-folded svg {
+  transform: none;
+}
+
+.cm-scratch-fold.is-folded {
+  color: var(--ink-soft);
+}
+
+@media (hover: hover) {
+  .cm-scratch-fold:hover {
+    color: var(--ink);
+    background: var(--paper-soft);
+  }
+}
+
+/* What a folded line hides: how many lines are under it. */
+.cm-scratch-folded {
+  min-width: 22px;
+  padding: 0 7px;
+  margin-left: 8px;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--type-label);
+  font-weight: 600;
+  line-height: 20px;
+  text-indent: 0;
+  vertical-align: 1px;
+  background: var(--paper-soft);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/*
+ * Every bulleted line has the same column for its mark, a checkbox wide, and
+ * steps in by that much a level. Task, draft and plain lines then share their
+ * text columns, and a line's mark sits under its parent's words.
+ */
+.scratchpad-note-text {
+  --scratch-step: 27px;
+}
+
+.scratchpad-note-text .cm-scratch-item {
+  --lp-list-indent: calc(
+    (var(--scratch-depth, 0) + 1) * var(--scratch-step)
+  ) !important;
+}
+
+.scratchpad-note-text .cm-scratch-item .cm-lp-list-prefix:not(.cm-lp-mark) {
+  width: var(--lp-list-indent) !important;
+  padding-left: calc(var(--scratch-depth, 0) * var(--scratch-step)) !important;
+}
+
+/* The marker's own characters, shown while the caret is in them. */
+.scratchpad-note-text .cm-scratch-item .cm-lp-list-prefix.cm-lp-mark {
+  width: auto;
+  min-width: var(--lp-list-indent);
+}
+
+.scratchpad-note-text .cm-scratch-item .cm-lp-bullet {
+  width: 17px !important;
+  text-align: center;
+}
+
+/*
+ * A line that links to a task reads as that task: its circle, its title, and
+ * its date and priority. Its circle is the task's own completion.
+ */
+.scratchpad-note-text .cm-scratch-task .cm-lp-bullet {
+  position: relative;
+  box-sizing: border-box;
+  height: 17px;
+  vertical-align: -3px;
+  color: var(--paper);
+  border: 1.75px solid var(--ink-muted);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.scratchpad-note-text .cm-scratch-task .cm-lp-bullet::before {
+  content: none;
+}
+
+.scratchpad-note-text .cm-scratch-task .cm-lp-bullet:hover {
+  border-color: var(--accent);
+}
+
+/* The collection's own colour for the task's priority, as on a task row. */
+.scratchpad-note-text .cm-scratch-task.has-priority .cm-lp-bullet {
+  background-color: oklch(
+    from var(--priority-color) l c h / var(--priority-fill-alpha)
+  );
+  border-width: 2px;
+  border-color: var(--priority-color);
+}
+
+.scratchpad-note-text .cm-scratch-task.is-done .cm-lp-bullet {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.scratchpad-note-text .cm-scratch-task.is-done .cm-lp-bullet::after {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  content: "";
+  border: solid currentColor;
+  border-width: 0 1.75px 1.75px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.cm-scratch-chip {
+  text-indent: 0;
+}
+
+.cm-scratch-task-title {
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.cm-scratch-task-title:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.cm-scratch-task.is-done .cm-scratch-task-title {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+.cm-scratch-task-details,
+.cm-scratch-details {
+  display: inline-flex;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  text-indent: 0;
+  user-select: none;
+}
+
+.cm-scratch-task-details > span + span::before {
+  margin-right: 6px;
+  content: "·";
+}
+
+/* The gap belongs to what comes first, so details that wrap start in line. */
+.cm-scratch-task-title {
+  margin-right: 10px;
+}
+
+.cm-scratch-details {
+  margin-left: 10px;
+}
+
+/* What typing on a draft has been read as so far. */
+.cm-scratch-details > span {
+  padding: 0 7px;
+  line-height: 20px;
+  background: var(--paper-soft);
+  border-radius: 999px;
+}
+
+.cm-scratch-prompt {
+  color: var(--ink-faint);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A draft can become a task from the end of its own line. */
+.scratchpad-note-text .cm-scratch-draft {
+  position: relative;
+  padding-right: 34px;
+}
+
+/* Centred by its margins: pressed buttons are given a transform of their own. */
+.cm-scratch-create {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  margin: auto 0;
+  color: var(--ink-muted);
+  text-indent: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms var(--ease-out),
+    background-color 120ms var(--ease-out);
+}
+
+.cm-focused .cm-scratch-active > .cm-scratch-create,
+.cm-scratch-create:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .cm-scratch-draft:hover > .cm-scratch-create {
+    opacity: 1;
+  }
+
+  .cm-scratch-create:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+
+/*
+ * Without a keyboard, the keys an outline needs are a row of buttons that
+ * shows while the note is being written.
+ */
+.scratchpad-note-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.scratchpad-note-tools button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+.scratchpad-note-tools button:disabled {
+  color: var(--ink-faint);
+}
+
+.scratchpad-note-tools button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scratchpad-note-tools {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .scratchpad-note-text {
+    --scratch-line-pad: 7px;
+  }
+
+  .cm-scratch-create {
+    width: 36px;
+    height: 36px;
+  }
+
+  .scratchpad-note-text .cm-scratch-draft {
+    padding-right: 40px;
+  }
+}
+
+@media (max-width: 560px) {
+  /* On the phone the buttons sit on the bottom edge, which follows the keyboard. */
+  .scratchpad-note-tools {
+    position: fixed;
+    z-index: 14;
+    top: calc(
+      min(
+          100dvh - var(--nav-height) - env(safe-area-inset-bottom),
+          var(--scratch-visual-viewport-bottom, 100dvh)
+        ) -
+        52px
+    );
+    right: 0;
+    left: 0;
+    height: 52px;
+    padding: 0 var(--page-inset);
+    background: var(--paper-raised);
+    border-top: 1px solid var(--line);
+  }
+
+  /* A notice rests on the buttons, and so stays above the keyboard too. */
+  .scratchpad-screen:has(.scratchpad-note-tools) .scratchpad-notice {
+    top: calc(
+      min(
+          100dvh - var(--nav-height) - env(safe-area-inset-bottom),
+          var(--scratch-visual-viewport-bottom, 100dvh)
+        ) -
+        64px
+    );
+    bottom: auto;
+    translate: 0 -100%;
+  }
+
+  /* Room at the end of the feed so the buttons cover nothing. */
+  .scratchpad-history-scroll:has(.scratchpad-note-tools) {
+    padding-bottom: calc(var(--scratch-bottom-gutter) + 52px);
+  }
+}

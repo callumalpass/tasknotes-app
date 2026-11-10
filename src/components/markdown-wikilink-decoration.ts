@@ -8,6 +8,7 @@ import {
 } from "@codemirror/view";
 import { isRevealed, livePreviewReveal } from "@mdbase-dev/ui/live-preview";
 import { linkDisplayLabel } from "../domain/completion";
+import { outlineTaskLinkStarts } from "./scratch-outline-extension";
 
 class WikilinkLabel extends WidgetType {
   constructor(readonly label: string) {
@@ -34,12 +35,15 @@ export function wikilinkDecorations(state: EditorState): DecorationSet {
   const source = state.doc.toString();
   const tree = syntaxTree(state);
   const live = state.field(livePreviewReveal, false) !== undefined;
+  // A line that links to a task shows the task itself, not a link label.
+  const taskLinks = outlineTaskLinkStarts(state);
   const ranges = [...source.matchAll(/\[\[([^\]\n]+)\]\]/g)].flatMap(
     (match) => {
       const from = match.index;
       const to = from + match[0].length;
       const prefix = source.slice(0, from).match(/\\+$/)?.[0].length ?? 0;
       if (prefix % 2 || source[from - 1] === "!") return [];
+      if (taskLinks.has(from)) return [];
       // Beside the live preview the label follows its rule for showing
       // Markdown, so a link reads the same whether or not the note has focus.
       const showsSource = live

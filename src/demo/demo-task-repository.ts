@@ -187,7 +187,7 @@ export class DemoTaskRepository implements TaskRepository {
         "  - [ ] Pull the last three examples",
         "- Meeting notes for the planning session",
         "  - Decisions belong in the project brief",
-        "- [[tasks/prepare-quarterly-planning-session|Prepare quarterly planning session]]",
+        "- [[tasks/demo-planning-session|Prepare quarterly planning session]]",
         "",
       ].join("\n"),
     };

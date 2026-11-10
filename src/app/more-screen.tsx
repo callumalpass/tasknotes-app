@@ -27,7 +27,6 @@ import {
 } from "react";
 import { LanguageSettings } from "../i18n/language-settings";
 import { TaskNotesSelect } from "../components/tasknotes-controls";
-import { ScratchpadModePreference } from "../components/scratchpad-mode-preference";
 import { TaskModelSettingsEditor } from "../components/task-model-settings";
 import { useUnsavedTaskModelDraft } from "../components/task-model-draft";
 import { PrivateAccountSettings } from "../components/private-account-settings";
@@ -735,17 +734,6 @@ function DeviceSettings({
             <Trans>Color theme</Trans>
           </span>
           <ThemeSelect />
-        </div>
-      </div>
-      <div className="settings-group">
-        <h3>
-          <Trans>Scratchpad</Trans>
-        </h3>
-        <div className="setting-row">
-          <span>
-            <Trans>Default mode for new notes</Trans>
-          </span>
-          <ScratchpadModePreference />
         </div>
       </div>
       <div className="settings-group">

@@ -28,3 +28,13 @@ if (typeof HTMLDialogElement !== "undefined") {
     this.dispatchEvent(new Event("close"));
   };
 }
+
+// jsdom has no layout, and its Range cannot be measured at all. CodeMirror
+// measures the text it draws, so a Range answers as an unlaid-out one would.
+if (typeof Range !== "undefined") {
+  Range.prototype.getClientRects ??= () =>
+    Object.assign([], {
+      item: () => null,
+    }) as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect ??= () => new DOMRect();
+}

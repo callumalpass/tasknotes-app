@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "./local-test";
+import { noteText, outlineOf } from "./scratchpad-editor";
 
 async function startupLocale(page: Page, locale: string): Promise<void> {
   await page.addInitScript(
@@ -221,32 +222,25 @@ test("French view editor and Scratchpad writing controls", async ({ page }) => {
     name: "Éditeur de bloc-notes actuel",
     exact: true,
   });
-  await current.getByRole("button", { name: "Écrire", exact: true }).click();
-  await current
-    .getByRole("textbox", { name: "Markdown du Bloc-notes", exact: true })
-    .fill("- [ ] Texte personnel **inchangé**\n");
+  const note = outlineOf(current, "Plan du Bloc-notes");
+  await expect(note).toBeFocused();
+  await page.keyboard.type("Texte personnel **inchangé**");
   await expect(current.locator(".scratchpad-save-state")).toHaveText(
     "Enregistré",
   );
-  await expect(
-    current.getByRole("button", { name: "Gras", exact: true }),
-  ).toBeVisible();
-  await current.getByRole("button", { name: "Plan", exact: true }).click();
-  await expect(
-    current.getByRole("tree", { name: "Plan du Bloc-notes", exact: true }),
-  ).toBeVisible();
+  // What was written is the user's own and is never translated.
+  await expect
+    .poll(() => noteText(note))
+    .toBe("- [ ] Texte personnel **inchangé**");
   await expect(
     current.getByRole("button", {
-      name: "Actions pour élément vide",
+      name: "Créer une tâche pour Texte personnel **inchangé**",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    current.getByRole("textbox", {
-      name: "Brouillon de tâche: Texte personnel **inchangé**",
-      exact: true,
-    }),
-  ).toHaveValue("Texte personnel **inchangé**");
+    current.getByRole("button", { name: "Créer les tâches", exact: true }),
+  ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

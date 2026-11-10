@@ -143,7 +143,7 @@ msgid "{0, plural, one {Account unlocked. # private collection still needs to fi
 msgstr "{0, plural, other {계정 잠금이 해제되었습니다. 비공개 컬렉션 #개의 키 접근 설정이 아직 완료되지 않았습니다. 각 컬렉션을 선택한 상태에서 잠금 해제를 다시 시도하세요.}}"
 
 #. placeholder {0}: tasks.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{0, plural, one {Created # task} other {Created # tasks}}"
 msgstr "{0, plural, other {작업 #개를 만들었습니다}}"
 
@@ -167,10 +167,10 @@ msgstr "{0, plural, other {복구 대상 #개에서 엄격 모드 적용이 보�
 msgid "{0} (ambiguous account link)"
 msgstr "{0} (계정 링크가 모호함)"
 
-#. placeholder {0}: collapsedIds.has(node.id) ? uiCopy("Expand") : uiCopy("Collapse")
-#. placeholder {1}: node.text || uiCopy("item")
-#. placeholder {2}: nestedItemCount(descendantCount)
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: open ? uiCopy("Collapse") : uiCopy("Expand")
+#. placeholder {1}: text || uiCopy("item")
+#. placeholder {2}: nestedItemCount(nested)
+#: src/app/scratchpad-note.tsx
 msgid "{0} {1}, {2}"
 msgstr "{0} {1}, {2}"
 
@@ -568,16 +568,16 @@ msgstr "다른 뷰를 추가할 때까지 {name}을(를) 탐색 메뉴에 유지
 msgid "{overdueCount, plural, one {# overdue} other {# overdue}}"
 msgstr "{overdueCount, plural, other {# 개 기한 지남}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Create # task} other {Create # tasks}}"
 msgstr "{selectedReviewCount, plural, other {작업 #개 만들기}}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount, plural, one {Retry # task} other {Retry # tasks}}"
 msgstr "{selectedReviewCount, plural, other {작업 #개 다시 시도}}"
 
 #. placeholder {0}: reviewItems.length
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "{selectedReviewCount} of {0} selected"
 msgstr "{0}개 중 {selectedReviewCount}개 선택됨"
 
@@ -697,10 +697,8 @@ msgstr "이 컬렉션 전체"
 msgid "Actions"
 msgstr "작업"
 
-#. placeholder {0}: node.text || uiCopy("empty item")
-#. placeholder {0}: node.text || uiCopy("item")
 #. placeholder {0}: task.title
-#: src/app/scratchpad-screen.tsx
+#. placeholder {0}: view.name
 #: src/app/views/view-catalog.tsx
 #: src/components/task-actions.tsx
 msgid "Actions for {0}"
@@ -789,7 +787,7 @@ msgstr "하위 작업 추가…"
 msgid "Add a tag"
 msgstr "태그 추가"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add a task title first."
 msgstr "먼저 작업 제목을 추가하세요."
 
@@ -808,14 +806,6 @@ msgstr "이 작업을 나가기 전에 제목을 추가하세요."
 #: src/components/assignee-editor.tsx
 msgid "Add an assignee"
 msgstr "담당자 추가"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add child"
-msgstr "하위 항목 추가"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Add context…"
-msgstr "컨텍스트 추가…"
 
 #: src/components/task-capture.tsx
 msgid "Add details"
@@ -875,7 +865,7 @@ msgstr "{label}에 작업 추가"
 msgid "Add thoughts, links, or supporting details…"
 msgstr "생각, 링크 또는 보충 내용을 추가하세요…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Add title"
 msgstr "제목 추가"
 
@@ -1196,7 +1186,7 @@ msgstr "보드 열"
 msgid "Board columns"
 msgstr "보드 열"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Bold"
 msgstr "굵게"
 
@@ -1342,10 +1332,6 @@ msgstr "계정 복구 확인 중…"
 msgid "Checking collection settings…"
 msgstr "컬렉션 설정 확인 중…"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Child"
-msgstr "하위 항목"
-
 #: src/components/held-edits.tsx
 msgid "Choice submitted. It may still be pending sync; check the confirmed, pending and held counts."
 msgstr "선택 내용을 제출했습니다. 아직 동기화 대기 중일 수 있습니다. 확인됨, 대기 중 및 보류됨 수를 확인하세요."
@@ -1394,7 +1380,7 @@ msgstr "캘린더 모드와 이벤트로 표시할 작업 날짜를 선택하세
 msgid "Choose the information shown beneath each task."
 msgstr "각 작업 아래에 표시할 정보를 선택하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Choose what becomes a task"
 msgstr "작업으로 만들 항목 선택"
 
@@ -1445,7 +1431,7 @@ msgstr "예정일 지우기"
 msgid "Clear search"
 msgstr "검색 지우기"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "선택 항목 지우기"
 
@@ -1461,7 +1447,7 @@ msgstr "값 지우기"
 msgid "Click tasks to select them."
 msgstr "작업을 클릭하여 선택하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 #: src/calendar-service/event-dialog.tsx
 #: src/components/choice-options.tsx
@@ -1660,10 +1646,6 @@ msgstr "“{0}” 완료됨"
 msgid "Completed {tasks}"
 msgstr "완료됨: {tasks}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Completed draft"
-msgstr "완료된 초안"
-
 #: src/app/view-editor-form.tsx
 msgid "Completed recurring instances"
 msgstr "완료된 반복 항목"
@@ -1795,16 +1777,11 @@ msgstr "컨텍스트, 사람, 종속성 및 사용자 지정 속성"
 msgid "Continue on the timeline"
 msgstr "타임라인에서 계속"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Conversion undone"
 msgstr "변환을 취소했습니다"
 
-#. placeholder {0}: node.text || uiCopy("empty task")
-#: src/app/scratchpad-screen.tsx
-msgid "Convert {0} to note"
-msgstr "{0}을(를) 노트로 변환"
-
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Convert to note"
 msgstr "노트로 변환"
 
@@ -1867,10 +1844,6 @@ msgstr "“{0}”을(를) 이동하지 못했습니다. {1}"
 msgid "Could not reconnect. Try again or check connection settings."
 msgstr "다시 연결하지 못했습니다. 다시 시도하거나 연결 설정을 확인하세요."
 
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Could not save the default mode on this device."
-msgstr "이 기기에 기본 모드를 저장하지 못했습니다."
-
 #: src/app/use-starter-views.ts
 msgid "Couldn't add starter views."
 msgstr "기본 뷰를 추가하지 못했습니다."
@@ -1925,16 +1898,15 @@ msgstr "파일 미리 만들기"
 msgid "Create subtask"
 msgstr "하위 작업 만들기"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Create task"
 msgstr "작업 만들기"
 
-#. placeholder {0}: node.text
-#: src/app/scratchpad-screen.tsx
-msgid "Create task for {0}"
-msgstr "{0} 작업 만들기"
+#: src/app/scratchpad-note.tsx
+msgid "Create task for {text}"
+msgstr "{text} 작업 만들기"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Create tasks"
 msgstr "작업 만들기"
 
@@ -1946,20 +1918,20 @@ msgstr "완료 후 다음 항목 만들기"
 msgid "Create view"
 msgstr "뷰 만들기"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "만들었습니다"
 
 #. placeholder {0}: converted.task.title
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Created “{0}”"
 msgstr "“{0}”을(를) 만들었습니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "만드는 중…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Current note"
 msgstr "현재 노트"
 
@@ -2043,18 +2015,10 @@ msgstr "오늘부터 일수"
 msgid "Default fields"
 msgstr "기본 필드"
 
-#: src/app/more-screen.tsx
-msgid "Default mode for new notes"
-msgstr "새 노트의 기본 모드"
-
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
 msgid "Default priority"
 msgstr "기본 우선순위"
-
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Default Scratchpad mode"
-msgstr "기본 스크래치패드 모드"
 
 #: src/app/view-editor-form.tsx
 #: src/components/task-model-settings.tsx
@@ -2080,11 +2044,7 @@ msgstr "“{name}”을(를) 삭제할까요?"
 msgid "Delete calendar account"
 msgstr "캘린더 계정 삭제"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Delete item"
-msgstr "항목 삭제"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Delete note"
 msgstr "노트 삭제"
 
@@ -2225,6 +2185,7 @@ msgid "Disconnect calendars"
 msgstr "캘린더 연결 해제"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -2283,10 +2244,6 @@ msgstr "다운로드"
 #: src/components/task-attachments.tsx
 msgid "Download {0}"
 msgstr "{0} 다운로드"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Draft task"
-msgstr "작업 초안"
 
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
@@ -2372,6 +2329,10 @@ msgstr "각 날짜는 반복 작업에서 추적합니다. 요청한 경우에�
 msgid "Each month"
 msgstr "매월"
 
+#: src/app/scratchpad-screen.tsx
+msgid "Earlier notes"
+msgstr "이전 노트"
+
 #: src/app/view-editor-form.tsx
 msgid "Earlier rules take priority."
 msgstr "앞에 있는 규칙이 우선 적용됩니다."
@@ -2410,10 +2371,6 @@ msgstr "편집 내용이 저장되지 않음"
 msgid "Edit pattern"
 msgstr "패턴 편집"
 
-#: src/components/outline-textarea.tsx
-msgid "Edit reference Markdown"
-msgstr "참조 Markdown 편집"
-
 #: src/components/task-actions.tsx
 msgid "Edit repeating task"
 msgstr "반복 작업 편집"
@@ -2428,7 +2385,7 @@ msgid "Editable"
 msgstr "편집 가능"
 
 #. placeholder {0}: document?.title || (document?.state === "active" ? uiCopy("current scratchpad") : uiCopy("scratchpad"))
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Editor for {0}"
 msgstr "{0} 편집기"
 
@@ -2436,15 +2393,10 @@ msgstr "{0} 편집기"
 msgid "Editor mode"
 msgstr "편집기 모드"
 
-#: src/app/scratchpad-screen.tsx
-msgid "empty"
-msgstr "비어 있음"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "빈 항목"
 
-#: src/app/scratchpad-screen.tsx
 #: src/i18n/ui-copy.ts
 msgid "empty task"
 msgstr "빈 작업"
@@ -2631,7 +2583,7 @@ msgstr "새로고침하기 전에 추가 중인 작업을 완료하거나 폐기
 msgid "Finish strict mode on this device"
 msgstr "이 기기에서 엄격 모드 완료"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Finish the note action in progress before reloading."
 msgstr "새로고침하기 전에 진행 중인 노트 작업을 완료하세요."
 
@@ -2789,7 +2741,7 @@ msgstr "그룹화된 열"
 msgid "Has tag {tag}"
 msgstr "태그 {tag} 있음"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Heading"
 msgstr "제목"
 
@@ -2882,7 +2834,7 @@ msgstr "건너뛴 반복 항목을 포함합니다."
 msgid "Include tasks when"
 msgstr "다음 조건에 해당하는 작업 포함"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Indent"
 msgstr "들여쓰기"
 
@@ -2950,7 +2902,7 @@ msgstr "이전 또는 당일"
 msgid "ISO 8601 value"
 msgstr "ISO 8601 값"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Italic"
 msgstr "기울임꼴"
 
@@ -2969,10 +2921,6 @@ msgstr "이동 기간 유지"
 #: src/components/global-task-capture.tsx
 msgid "Keep adding tasks"
 msgstr "작업 계속 추가"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Keep as note"
-msgstr "노트로 유지"
 
 #: src/components/held-edits.tsx
 msgid "Keep both instead if you want your edit kept as a file."
@@ -3030,7 +2978,7 @@ msgstr "늦게 완료하더라도 계획된 날짜를 유지합니다."
 msgid "Keep the quick-add field on this view."
 msgstr "이 뷰에 빠른 추가 입력란 유지"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Keep writing"
 msgstr "계속 작성"
 
@@ -3108,10 +3056,6 @@ msgstr "링크 형식"
 #: src/app/search-screen.tsx
 msgid "Link your account to a person record before using Assigned to me."
 msgstr "내 담당 작업을 사용하려면 계정을 사람 레코드에 연결하세요."
-
-#: src/app/scratchpad-screen.tsx
-msgid "Linked"
-msgstr "연결됨"
 
 #: src/components/task-model-settings.tsx
 msgid "Links and time tracking"
@@ -3201,7 +3145,7 @@ msgstr "이 기기에서 잠김"
 msgid "Looking in collection…"
 msgstr "컬렉션에서 찾는 중…"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Make a task"
 msgstr "작업 만들기"
 
@@ -3232,14 +3176,6 @@ msgstr "수동 순서"
 #: src/app/view-editor-form.tsx
 msgid "Manual order is active. Drag handles will appear on tasks."
 msgstr "수동 순서가 활성화되었습니다. 작업에 드래그 핸들이 표시됩니다."
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark complete"
-msgstr "완료로 표시"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Mark incomplete"
-msgstr "미완료로 표시"
 
 #: src/components/task-actions.tsx
 msgid "Mark occurrence open"
@@ -3366,15 +3302,6 @@ msgstr "작업 추가 작업"
 msgid "move"
 msgstr "이동"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Move"
-msgstr "이동"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Move {0}"
-msgstr "{0} 이동"
-
 #. placeholder {0}: view.name
 #: src/app/views/navigation-view-order.tsx
 msgid "Move {0} earlier"
@@ -3410,13 +3337,13 @@ msgstr "보관된 작업 파일을 폴더로 이동"
 msgid "Move dates one day later"
 msgstr "날짜를 하루 늦추기"
 
+#: src/components/scratchpad-note-editor.tsx
+msgid "Move down"
+msgstr "아래로 이동"
+
 #: src/components/overdue-schedule-actions.tsx
 msgid "Move due dates too"
 msgstr "마감일도 이동"
-
-#: src/app/scratchpad-screen.tsx
-msgid "Move focused item"
-msgstr "포커스된 항목 이동"
 
 #: src/app/view-editor-form.tsx
 msgid "Move Manual order to the first position to enable drag handles."
@@ -3431,6 +3358,10 @@ msgstr "선택한 작업을 프로젝트로 이동"
 #: src/components/task-actions.tsx
 msgid "Move to project"
 msgstr "프로젝트로 이동"
+
+#: src/components/scratchpad-note-editor.tsx
+msgid "Move up"
+msgstr "위로 이동"
 
 #: src/components/task-actions.tsx
 #: src/components/task-row.tsx
@@ -3801,7 +3732,7 @@ msgstr "연결되지 않음"
 msgid "Not now"
 msgstr "나중에"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Not saved"
 msgstr "저장되지 않음"
 
@@ -3818,11 +3749,7 @@ msgstr "저장되지 않았습니다. 편집 내용을 검토하세요."
 msgid "Not: {0}"
 msgstr "아님: {0}"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Note"
-msgstr "노트"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note actions"
 msgstr "노트 작업"
 
@@ -3830,7 +3757,7 @@ msgstr "노트 작업"
 msgid "Note deleted"
 msgstr "노트 삭제됨"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Note title"
 msgstr "노트 제목"
 
@@ -3924,7 +3851,7 @@ msgstr "날짜 기준"
 msgid "On this device"
 msgstr "이 기기에서"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
 msgstr "초안 항목만 TaskNotes로 만들 수 있습니다."
 
@@ -3954,7 +3881,7 @@ msgstr "{0} 열기"
 msgid "Open a collection first"
 msgstr "먼저 컬렉션을 여세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Open first"
 msgstr "첫 번째로 열기"
 
@@ -3968,7 +3895,7 @@ msgstr "Planner에서 열기"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "작업 열기"
@@ -4032,19 +3959,9 @@ msgstr "정리"
 msgid "Other"
 msgstr "기타"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"
 msgstr "내어쓰기"
-
-#: src/app/scratchpad-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
-msgid "Outline"
-msgstr "개요"
-
-#. placeholder {0}: node.text || uiCopy("empty item")
-#: src/app/scratchpad-screen.tsx
-msgid "Outline controls for {0}"
-msgstr "{0} 개요 제어"
 
 #: src/app/task-calendar-view.tsx
 #: src/i18n/default-labels.ts
@@ -4282,7 +4199,7 @@ msgstr "빠른 날짜"
 msgid "Quick reminders"
 msgstr "빠른 리마인더"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Quote"
 msgstr "인용"
 
@@ -4298,7 +4215,7 @@ msgstr "최근 검색"
 msgid "Recently opened"
 msgstr "최근에 연 항목"
 
-#: src/app/scratchpad-screen.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Recognized task details"
 msgstr "인식된 작업 세부정보"
 
@@ -4410,6 +4327,7 @@ msgstr "상대적"
 msgid "Relative to"
 msgstr "기준"
 
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 msgid "Reload"
 msgstr "다시 불러오기"
@@ -4636,11 +4554,11 @@ msgstr "홈 뷰 복원 중"
 msgid "Results"
 msgstr "검색 결과"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resume as current"
 msgstr "현재 항목으로 이어서 사용"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Resuming…"
 msgstr "이어서 여는 중…"
 
@@ -4764,7 +4682,7 @@ msgstr "저장 실패 · 다시 시도"
 msgid "Save failed. {retrySaveLabel}"
 msgstr "저장하지 못했습니다. {retrySaveLabel}"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Save needs review"
 msgstr "저장 내용 검토 필요"
 
@@ -4784,7 +4702,7 @@ msgstr "뷰 저장"
 msgid "Save your recovery key"
 msgstr "복구 키 저장"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/task-screen.tsx
 msgid "Saved"
 msgstr "저장됨"
@@ -4909,7 +4827,6 @@ msgstr "스크래치패드"
 
 #: src/app/app-shell.tsx
 #: src/app/keyboard-shortcuts.ts
-#: src/app/more-screen.tsx
 #: src/app/palette-commands.ts
 #: src/app/scratchpad-screen.tsx
 #: src/app/views/view-catalog.tsx
@@ -4917,18 +4834,10 @@ msgid "Scratchpad"
 msgstr "스크래치패드"
 
 #: src/app/scratchpad-screen.tsx
-msgid "Scratchpad editing mode"
-msgstr "스크래치패드 편집 모드"
-
-#: src/app/scratchpad-screen.tsx
 msgid "Scratchpad history"
 msgstr "스크래치패드 기록"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Scratchpad Markdown"
-msgstr "스크래치패드 Markdown"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad outline"
 msgstr "스크래치패드 개요"
 
@@ -4936,7 +4845,7 @@ msgstr "스크래치패드 개요"
 msgid "Scratchpad storage is not available for this collection."
 msgstr "이 컬렉션에서는 스크래치패드 저장소를 사용할 수 없습니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Scratchpad storage is unavailable."
 msgstr "스크래치패드 저장소를 사용할 수 없습니다."
 
@@ -4991,7 +4900,7 @@ msgstr "예정 보기"
 msgid "Select {0}"
 msgstr "{0} 선택"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "모두 선택"
 
@@ -4999,7 +4908,7 @@ msgstr "모두 선택"
 msgid "Select all visible tasks"
 msgstr "표시된 작업 모두 선택"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Select branch"
 msgstr "분기 선택"
 
@@ -5023,7 +4932,7 @@ msgstr "선택한 날짜"
 msgid "Selected day"
 msgstr "선택한 날짜"
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Selected drafts become tasks linked to their Markdown notes. Everything else stays in this scratchpad so you can keep working."
 msgstr "선택한 초안은 Markdown 노트에 연결된 작업이 됩니다. 나머지는 이 스크래치패드에 남아 있어 계속 작업할 수 있습니다."
 
@@ -5211,11 +5120,11 @@ msgstr "일부 변경 사항이 아직 저장 중입니다. 이 페이지를 열
 msgid "Some files could not be read and were omitted from this view."
 msgstr "일부 파일을 읽을 수 없어 이 뷰에서 제외했습니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some note changes are not saved. Keep this page open and try again."
 msgstr "일부 노트 변경 사항이 저장되지 않았습니다. 이 페이지를 열어 둔 채 다시 시도하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Some tasks or notes changed after conversion. They were kept; their drafts were not restored."
 msgstr "변환 후 변경된 작업 또는 노트가 있습니다. 해당 항목은 유지되었고 초안은 복원되지 않았습니다."
 
@@ -5339,10 +5248,6 @@ msgstr "하위 작업 제목"
 msgid "Subtasks"
 msgstr "하위 작업"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Suggestions"
-msgstr "제안"
-
 #: src/app/search-screen.tsx
 msgid "Suggestions from the first {limit} tasks. Search to find others."
 msgstr "처음 {limit}개 작업에서 제안합니다. 다른 항목은 검색하세요."
@@ -5403,10 +5308,6 @@ msgstr "탭하여 다시 시도하세요."
 msgid "task"
 msgstr "작업"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task"
-msgstr "작업"
-
 #. placeholder {0}: task.title
 #: src/components/task-actions.tsx
 msgid "Task actions for {0}"
@@ -5436,11 +5337,7 @@ msgstr "작업 생성 켬"
 msgid "Task details"
 msgstr "작업 세부정보"
 
-#: src/app/scratchpad-screen.tsx
-msgid "Task draft"
-msgstr "작업 초안"
-
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Task drafts"
 msgstr "작업 초안"
 
@@ -5612,7 +5509,7 @@ msgstr "현재 컬렉션을 사용할 수 없습니다."
 msgid "The complete manual order could not be loaded. Your draft is kept; try again."
 msgstr "전체 수동 순서를 불러오지 못했습니다. 초안은 유지됩니다. 다시 시도하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The created TaskNote could not be found."
 msgstr "생성된 TaskNote를 찾을 수 없습니다."
 
@@ -5644,7 +5541,7 @@ msgstr "Google 인증이 만료되었습니다. 다시 시도하세요."
 msgid "The language could not be loaded. Check your connection and try again."
 msgstr "언어를 불러오지 못했습니다. 연결을 확인한 후 다시 시도하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The linked TaskNote could not be found."
 msgstr "연결된 TaskNote를 찾을 수 없습니다."
 
@@ -5674,7 +5571,7 @@ msgstr "복구 키는 이 기기에 계속 보관됩니다."
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "규칙은 입력한 그대로 유지됩니다. 유효한 경우에만 적용하세요."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "스크래치패드가 열려 있지 않습니다."
 
@@ -5755,7 +5652,7 @@ msgstr "이 보드는 계산된 속성으로 그룹화되어 카드 간 열 이�
 msgid "This calendar is read-only."
 msgstr "이 캘린더는 읽기 전용입니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This collection does not define a completed task status."
 msgstr "이 컬렉션에는 완료된 작업 상태가 정의되어 있지 않습니다."
 
@@ -5767,7 +5664,7 @@ msgstr "이 기기에서만"
 msgid "This discards your protected version."
 msgstr "보호된 버전을 폐기합니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "This draft is no longer in the scratchpad."
 msgstr "이 초안은 더 이상 스크래치패드에 없습니다."
 
@@ -5790,10 +5687,6 @@ msgstr "이 필터는 빌더에서 안전하게 편집할 수 없는 구문을 �
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "이 키는 한 번만 표시됩니다. TaskNotes 외부의 안전한 곳에 보관하세요. 이 키가 있으면 누구나 비공개 컬렉션에 다시 접근할 수 있습니다."
-
-#: src/app/scratchpad-screen.tsx
-msgid "This Markdown contains blocks the outline cannot represent. It is saved; keep editing it as Markdown."
-msgstr "이 Markdown에는 개요에서 표현할 수 없는 블록이 포함되어 있습니다. 저장되었습니다. Markdown으로 계속 편집하세요."
 
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
@@ -6023,6 +5916,7 @@ msgstr "“{label}” 변경을 실행 취소했습니다"
 
 #: src/app/app-shell.tsx
 #: src/app/bulk-task-actions.tsx
+#: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -6243,8 +6137,8 @@ msgstr "무엇을 하고 있나요?"
 msgid "What is mdbase?"
 msgstr "mdbase란 무엇인가요?"
 
-#: src/app/scratchpad-screen.tsx
 #: src/components/global-task-capture.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-capture.tsx
 msgid "What needs doing?"
 msgstr "무엇을 해야 하나요?"
@@ -6269,7 +6163,7 @@ msgstr "작업할 계획인 날짜"
 msgid "Which"
 msgstr "항목 선택"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Wikilink"
 msgstr "위키링크"
@@ -6286,13 +6180,11 @@ msgstr "작업 세션"
 msgid "Working…"
 msgstr "작업 중…"
 
-#: src/app/scratchpad-screen.tsx
 #: src/app/task-screen.tsx
-#: src/components/scratchpad-mode-preference.tsx
 msgid "Write"
 msgstr "쓰기"
 
-#: src/components/markdown-source-editor.tsx
+#: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"
 msgstr "작성 도구"
 
@@ -6366,7 +6258,7 @@ msgstr "Google 캘린더 세션이 종료되었습니다. 설정에서 다시 �
 msgid "Your Inbox is clear."
 msgstr "받은 편지함이 비어 있습니다."
 
-#: src/app/scratchpad-screen.tsx
+#: src/app/scratchpad-note.tsx
 msgid "Your note changed while saving. Save it again before reloading."
 msgstr "저장하는 동안 노트가 변경되었습니다. 새로고침하기 전에 다시 저장하세요."
 
