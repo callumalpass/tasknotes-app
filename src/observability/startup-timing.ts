@@ -75,15 +75,43 @@ export class StartupTiming {
       return;
     this.logged = true;
     try {
+      const mdbase = sdkStartupDurations();
       console.debug(
         "[TaskNotes startup timing ms]",
-        JSON.stringify(this.durations),
+        JSON.stringify(mdbase ? { ...this.durations, mdbase } : this.durations),
       );
     } catch {
       /* Logging must not affect rendering. */
     }
   }
 }
+const sdkMeasure = /^mdbase:startup:([a-z_]{1,32}(?::[a-z_]{1,32})?)$/;
+
+/** The SDK's own startup stages, which it records as User Timing measures
+ * named `mdbase:startup:<stage>` with fixed labels. Empty before an SDK that
+ * records them. */
+function sdkStartupDurations(): Record<string, number> | undefined {
+  const durations: Record<string, number> = {};
+  try {
+    for (const entry of performance.getEntriesByType("measure")) {
+      const stage = sdkMeasure.exec(entry.name)?.[1];
+      if (
+        stage === undefined ||
+        !Number.isFinite(entry.duration) ||
+        entry.duration < 0 ||
+        entry.duration > 600_000
+      )
+        continue;
+      // A stage entered twice (a phase revisited) reports its whole time.
+      durations[stage] =
+        Math.round(((durations[stage] ?? 0) + entry.duration) * 10) / 10;
+    }
+  } catch {
+    return undefined;
+  }
+  return Object.keys(durations).length ? durations : undefined;
+}
+
 export function registerStartupTiming(repository: object, seed?: unknown) {
   const trace = new StartupTiming(seed);
   traces.set(repository, trace);

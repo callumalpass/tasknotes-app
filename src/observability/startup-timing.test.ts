@@ -43,6 +43,39 @@ it("marks/measures monotonic durations and reports once only after genuine query
     trace.snapshot(),
   );
 });
+it("reports the SDK's startup measures beside its own, by fixed label only", () => {
+  vi.stubGlobal("performance", {
+    now: () => clock,
+    mark,
+    measure,
+    getEntriesByType: (type: string) =>
+      type === "measure"
+        ? [
+            { name: "mdbase:startup:registration", duration: 12.34 },
+            { name: "mdbase:startup:opening:checking_setup", duration: 80 },
+            { name: "mdbase:startup:starting", duration: 5 },
+            { name: "mdbase:startup:starting", duration: 7.04 },
+            { name: "mdbase:startup:total", duration: 410.26 },
+            { name: "mdbase:startup:Account 42", duration: 1 },
+            { name: "mdbase:startup:session", duration: Infinity },
+            { name: "tasknotes:startup:1:first_query", duration: 3 },
+          ]
+        : [],
+  });
+  const trace = new StartupTiming();
+  trace.begin("first_query")();
+  trace.begin("first_render")();
+  trace.report();
+  expect(JSON.parse(debug.mock.calls[0]![1] as string)).toEqual({
+    ...trace.snapshot(),
+    mdbase: {
+      registration: 12.3,
+      "opening:checking_setup": 80,
+      starting: 12,
+      total: 410.3,
+    },
+  });
+});
 it("keeps only bounded own host durations, never IDs, errors, invented UI evidence or getters", () => {
   const getter = vi.fn(() => {
     throw Error("secret");
