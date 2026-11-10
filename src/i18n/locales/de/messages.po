@@ -314,7 +314,12 @@ msgstr "{action} wurde abgebrochen."
 msgid "{ariaLabel} suggestions"
 msgstr "Vorschläge für {ariaLabel}"
 
+#: src/components/task-row.tsx
+msgid "{blockers, plural, one {Waiting on # task} other {Waiting on # tasks}}"
+msgstr "{blockers, plural, one {Wartet auf # Aufgabe} other {Wartet auf # Aufgaben}}"
+
 #: src/app/task-subtasks.tsx
+#: src/components/task-row.tsx
 msgid "{completed} of {total}"
 msgstr "{completed} von {total}"
 
@@ -1187,6 +1192,10 @@ msgstr "vor"
 #: src/components/reminder-editor.tsx
 msgid "Before"
 msgstr "Vor"
+
+#: src/components/task-row.tsx
+msgid "Blocked"
+msgstr "Blockiert"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
@@ -3198,6 +3207,7 @@ msgid "Loading previous notes…"
 msgstr "Vorherige Notizen werden geladen…"
 
 #: src/app/task-subtasks.tsx
+#: src/components/task-row-subtasks.tsx
 msgid "Loading subtasks…"
 msgstr "Unteraufgaben werden geladen…"
 
@@ -5423,8 +5433,14 @@ msgstr "Titel der Unteraufgabe"
 
 #: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
+#: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "Unteraufgaben"
+
+#. placeholder {0}: task.title
+#: src/components/task-row-subtasks.tsx
+msgid "Subtasks of {0}"
+msgstr "Unteraufgaben von {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"

@@ -1827,6 +1827,14 @@ export class NextTaskRepository implements TaskRepository {
     return decoded.task;
   }
 
+  /**
+   * Answers from the last loaded metadata while a change notice waits for its
+   * index read, so row markers do not blink out after each write.
+   */
+  taskRowRelations() {
+    return this.hasLoadedIndex ? this.cache.rowRelations() : null;
+  }
+
   async relationships(id: string) {
     const signal = this.signal();
     await this.ensureIndex();

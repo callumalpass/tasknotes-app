@@ -1,6 +1,7 @@
 import { projectShortcuts } from "../domain/project-shortcuts";
 import { TaskRevisionChangedError } from "../application/ports/task-repository";
 import { navigationTaskCounts } from "../domain/navigation-task-counts";
+import { taskRowRelations } from "../domain/task-row-relations";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -300,6 +301,10 @@ export class DemoTaskRepository implements TaskRepository {
 
   async get(id: string): Promise<Task | null> {
     return clone(this.tasks.get(id) ?? null);
+  }
+
+  taskRowRelations() {
+    return taskRowRelations(this.tasks.values());
   }
 
   async relationships(id: string): Promise<TaskRelationships> {

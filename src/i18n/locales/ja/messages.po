@@ -314,7 +314,12 @@ msgstr "{action}はキャンセルされました。"
 msgid "{ariaLabel} suggestions"
 msgstr "{ariaLabel}の候補"
 
+#: src/components/task-row.tsx
+msgid "{blockers, plural, one {Waiting on # task} other {Waiting on # tasks}}"
+msgstr "{blockers, plural, other {#件のタスクを待っています}}"
+
 #: src/app/task-subtasks.tsx
+#: src/components/task-row.tsx
 msgid "{completed} of {total}"
 msgstr "{completed}/{total}"
 
@@ -1187,6 +1192,10 @@ msgstr "前"
 #: src/components/reminder-editor.tsx
 msgid "Before"
 msgstr "前"
+
+#: src/components/task-row.tsx
+msgid "Blocked"
+msgstr "ブロック中"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
@@ -3198,6 +3207,7 @@ msgid "Loading previous notes…"
 msgstr "以前のノートを読み込み中…"
 
 #: src/app/task-subtasks.tsx
+#: src/components/task-row-subtasks.tsx
 msgid "Loading subtasks…"
 msgstr "サブタスクを読み込み中…"
 
@@ -5423,8 +5433,14 @@ msgstr "サブタスク名"
 
 #: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
+#: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "サブタスク"
+
+#. placeholder {0}: task.title
+#: src/components/task-row-subtasks.tsx
+msgid "Subtasks of {0}"
+msgstr "{0}のサブタスク"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"

@@ -314,7 +314,12 @@ msgstr "{action} è stata annullata."
 msgid "{ariaLabel} suggestions"
 msgstr "Suggerimenti per {ariaLabel}"
 
+#: src/components/task-row.tsx
+msgid "{blockers, plural, one {Waiting on # task} other {Waiting on # tasks}}"
+msgstr "{blockers, plural, one {In attesa di # attività} many {In attesa di # attività} other {In attesa di # attività}}"
+
 #: src/app/task-subtasks.tsx
+#: src/components/task-row.tsx
 msgid "{completed} of {total}"
 msgstr "{completed} di {total}"
 
@@ -1187,6 +1192,10 @@ msgstr "prima"
 #: src/components/reminder-editor.tsx
 msgid "Before"
 msgstr "Prima"
+
+#: src/components/task-row.tsx
+msgid "Blocked"
+msgstr "Bloccata"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
@@ -3198,6 +3207,7 @@ msgid "Loading previous notes…"
 msgstr "Caricamento delle note precedenti…"
 
 #: src/app/task-subtasks.tsx
+#: src/components/task-row-subtasks.tsx
 msgid "Loading subtasks…"
 msgstr "Caricamento delle attività secondarie…"
 
@@ -5423,8 +5433,14 @@ msgstr "Titolo dell'attività secondaria"
 
 #: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
+#: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "Attività secondarie"
+
+#. placeholder {0}: task.title
+#: src/components/task-row-subtasks.tsx
+msgid "Subtasks of {0}"
+msgstr "Attività secondarie di {0}"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"

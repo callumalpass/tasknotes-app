@@ -894,6 +894,75 @@
   text-transform: uppercase;
 }
 
+/* A task waiting on another reads as text with a glyph, never colour alone. */
+.task-row-blocked {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.task-row-compact-metadata > .task-row-blocked {
+  min-height: 0;
+}
+
+.task-row-subtask-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.task-row-subtask-toggle:hover,
+.task-row-subtask-toggle:focus-visible,
+.task-row-subtask-toggle[aria-expanded="true"] {
+  color: var(--accent);
+}
+
+.task-row-subtask-toggle:hover .task-row-glyph,
+.task-row-subtask-toggle:focus-visible .task-row-glyph,
+.task-row-subtask-toggle[aria-expanded="true"] .task-row-glyph {
+  color: inherit;
+}
+
+.task-row-subtask-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtasks open beneath the row's text, clear of its completion control. */
+.task-row-subtasks {
+  grid-column: 2 / -1;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding-inline-start: 4px;
+  border-inline-start: 1px solid var(--line);
+}
+
+.task-row-subtasks > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-row-subtasks .field-help {
+  margin: 0;
+  padding: 6px 8px;
+}
+
 .task-row-properties {
   display: flex;
   flex-wrap: wrap;

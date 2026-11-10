@@ -126,13 +126,13 @@ export function TaskSubtasks({
   );
 }
 
-function SubtaskRow({
+export function SubtaskRow({
   task,
   beforeMutation,
   onOpen,
 }: {
   task: TaskSummary;
-  beforeMutation(): Promise<void>;
+  beforeMutation?(): Promise<void>;
   onOpen?(task: TaskSummary): void;
 }) {
   const { t } = useLingui();
@@ -155,7 +155,7 @@ function SubtaskRow({
             setBusy(true);
             setError(null);
             try {
-              await beforeMutation();
+              await beforeMutation?.();
               await setTaskCompletion({
                 id: task.id,
                 completed: !task.completed,

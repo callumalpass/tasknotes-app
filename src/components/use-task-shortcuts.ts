@@ -86,6 +86,12 @@ export function useTaskShortcuts(
       window.requestAnimationFrame(restoreFocus);
     };
     const keydown = (event: KeyboardEvent) => {
+      // Keys pressed on a listed subtask are not about the row's own task.
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".task-row-subtasks")
+      )
+        return;
       const action = taskRowShortcut(event);
       if (!action) return;
       if (action !== "open" && latest.current.yieldToSelection()) return;

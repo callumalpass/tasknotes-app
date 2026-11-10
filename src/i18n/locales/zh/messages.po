@@ -314,7 +314,12 @@ msgstr "{action} 已取消。"
 msgid "{ariaLabel} suggestions"
 msgstr "{ariaLabel}建议"
 
+#: src/components/task-row.tsx
+msgid "{blockers, plural, one {Waiting on # task} other {Waiting on # tasks}}"
+msgstr "{blockers, plural, other {正在等待 # 个任务}}"
+
 #: src/app/task-subtasks.tsx
+#: src/components/task-row.tsx
 msgid "{completed} of {total}"
 msgstr "{completed}/{total}"
 
@@ -1187,6 +1192,10 @@ msgstr "之前"
 #: src/components/reminder-editor.tsx
 msgid "Before"
 msgstr "之前"
+
+#: src/components/task-row.tsx
+msgid "Blocked"
+msgstr "受阻"
 
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
@@ -3198,6 +3207,7 @@ msgid "Loading previous notes…"
 msgstr "正在加载之前的笔记…"
 
 #: src/app/task-subtasks.tsx
+#: src/components/task-row-subtasks.tsx
 msgid "Loading subtasks…"
 msgstr "正在加载子任务…"
 
@@ -5423,8 +5433,14 @@ msgstr "子任务标题"
 
 #: src/app/task-subtasks.tsx
 #: src/components/dependency-editor.tsx
+#: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "子任务"
+
+#. placeholder {0}: task.title
+#: src/components/task-row-subtasks.tsx
+msgid "Subtasks of {0}"
+msgstr "{0}的子任务"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Suggestions"

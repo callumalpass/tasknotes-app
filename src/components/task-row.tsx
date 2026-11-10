@@ -1,17 +1,19 @@
 import { useTaskSelecting, useTaskSelection } from "../app/use-task-selection";
 import { taskMeta } from "../i18n/presentation";
 import { linkDisplayLabel, linkTarget } from "../domain/completion";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import {
   Check,
   AtSign,
+  Ban,
   CalendarDays,
   Circle,
   Folder,
   Flag,
   Hash,
   Ellipsis,
+  ListTree,
   Square,
   Target,
   type LucideIcon,
@@ -54,6 +56,8 @@ import { useSwipeActions } from "./use-swipe-actions";
 import { useTaskShortcuts } from "./use-task-shortcuts";
 import { preserveRowFocus } from "../app/keyboard-shortcuts";
 import { useTaskOpen } from "../app/open-task";
+import { useTaskRowRelation } from "../app/use-task-row-relation";
+import { TaskRowSubtasks } from "./task-row-subtasks";
 import { rescheduleInput } from "../domain/task-date-actions";
 import { markedPriorityColorOf } from "../domain/task-configuration";
 import { rememberTaskEdit } from "../app/task-edit-undo";
@@ -159,6 +163,22 @@ export function TaskRow({
     if (!displayedTask.completed) setJustCompleted(false);
   }
   const tracking = Boolean(activeTimeEntry(task.timeEntries));
+  const relation = useTaskRowRelation(task.id);
+  const blockers = displayedTask.completed ? 0 : (relation?.blockedBy ?? 0);
+  const subtaskTotal = relation?.subtasks ?? 0;
+  const subtasksDone = relation?.subtasksDone ?? 0;
+  const [subtasksOpen, setSubtasksOpen] = useState(false);
+  const subtasksId = useId();
+  const blockedLabel = blockers
+    ? plural(blockers, {
+        one: "Waiting on # task",
+        other: "Waiting on # tasks",
+      })
+    : "";
+  const subtasksLabel = subtaskTotal
+    ? `${t`Subtasks`}: ${subtaskProgress(subtasksDone, subtaskTotal)}`
+    : "";
+  const marked = tracking || Boolean(blockers) || Boolean(subtaskTotal);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const propertiesTrigger = useRef<HTMLButtonElement>(null);
   const [editing, setEditing] = useState<{
@@ -445,8 +465,14 @@ export function TaskRow({
             className="task-row-title"
             aria-label={task.title}
             aria-description={
-              shownDetails
-                .map((detail) => `${detail.label}: ${detail.value}`)
+              [
+                blockedLabel,
+                subtasksLabel,
+                ...shownDetails.map(
+                  (detail) => `${detail.label}: ${detail.value}`,
+                ),
+              ]
+                .filter(Boolean)
                 .join(", ") || undefined
             }
             aria-pressed={selection.selectable ? selection.selected : undefined}
@@ -458,9 +484,23 @@ export function TaskRow({
             <span className="task-row-title-text">
               <span>{task.title}</span>
             </span>
-            {tracking || shownDetails.length ? (
+            {marked || shownDetails.length ? (
               <span className="task-row-compact-metadata" aria-hidden="true">
                 {tracking ? <TrackingIndicator /> : null}
+                {blockers ? <BlockedMarker /> : null}
+                {subtaskTotal ? (
+                  <span className="task-row-metadata-unit task-row-subtask-count">
+                    <ListTree
+                      aria-hidden="true"
+                      className="task-row-glyph"
+                      size={14}
+                      strokeWidth={1.8}
+                    />
+                    <span className="task-row-value">
+                      {subtasksDone}/{subtaskTotal}
+                    </span>
+                  </span>
+                ) : null}
                 {shownDetails.map((detail) => (
                   <span
                     key={detail.key}
@@ -481,7 +521,7 @@ export function TaskRow({
         </div>
         {context && !contextLeadsDetails ? context : null}
         {details ? (
-          tracking || shownDetails.length ? (
+          marked || shownDetails.length ? (
             <span
               className="task-row-properties task-row-inline-metadata"
               role="toolbar"
@@ -490,6 +530,29 @@ export function TaskRow({
               onFocus={focusRowProperty}
             >
               {tracking ? <TrackingIndicator /> : null}
+              {blockers ? <BlockedMarker title={blockedLabel} /> : null}
+              {subtaskTotal ? (
+                <button
+                  className="task-row-subtask-toggle"
+                  type="button"
+                  tabIndex={0}
+                  title={subtasksLabel}
+                  aria-label={subtasksLabel}
+                  aria-expanded={subtasksOpen}
+                  aria-controls={subtasksOpen ? subtasksId : undefined}
+                  onClick={() => setSubtasksOpen((open) => !open)}
+                >
+                  <ListTree
+                    aria-hidden="true"
+                    className="task-row-glyph"
+                    size={14}
+                    strokeWidth={1.8}
+                  />
+                  <span className="task-row-value">
+                    {subtasksDone}/{subtaskTotal}
+                  </span>
+                </button>
+              ) : null}
               {contextLeadsDetails ? context : null}
               {shownDetails.map((detail, index) => (
                 <button
@@ -500,7 +563,7 @@ export function TaskRow({
                   }
                   aria-label={`${detail.label}: ${detail.value}`}
                   type="button"
-                  tabIndex={index === 0 ? 0 : -1}
+                  tabIndex={index === 0 && !subtaskTotal ? 0 : -1}
                   onClick={(event) => openDetail(detail, event.currentTarget)}
                 >
                   <span>{detail.label}</span>
@@ -516,7 +579,7 @@ export function TaskRow({
               ))}
             </span>
           ) : null
-        ) : tracking || shownDetails.length ? (
+        ) : marked || shownDetails.length ? (
           <span
             className="task-row-meta task-row-inline-metadata"
             role="toolbar"
@@ -525,12 +588,35 @@ export function TaskRow({
             onFocus={focusRowProperty}
           >
             {tracking ? <TrackingIndicator /> : null}
+            {blockers ? <BlockedMarker title={blockedLabel} /> : null}
+            {subtaskTotal ? (
+              <button
+                className="task-row-subtask-toggle"
+                type="button"
+                tabIndex={0}
+                title={subtasksLabel}
+                aria-label={subtasksLabel}
+                aria-expanded={subtasksOpen}
+                aria-controls={subtasksOpen ? subtasksId : undefined}
+                onClick={() => setSubtasksOpen((open) => !open)}
+              >
+                <ListTree
+                  aria-hidden="true"
+                  className="task-row-glyph"
+                  size={14}
+                  strokeWidth={1.8}
+                />
+                <span className="task-row-value">
+                  {subtasksDone}/{subtaskTotal}
+                </span>
+              </button>
+            ) : null}
             {shownDetails.map((detail, index) => (
               <button
                 className={detail.overdue ? "is-overdue" : undefined}
                 aria-label={`${detail.label}: ${detail.value}`}
                 key={detail.key}
-                tabIndex={index === 0 ? 0 : -1}
+                tabIndex={index === 0 && !subtaskTotal ? 0 : -1}
                 title={`${detail.label}: ${detail.value}`}
                 type="button"
                 onClick={(event) => openDetail(detail, event.currentTarget)}
@@ -593,6 +679,9 @@ export function TaskRow({
           }}
           onExited={shownEditor.clear}
         />
+      ) : null}
+      {subtasksOpen && subtaskTotal ? (
+        <TaskRowSubtasks id={subtasksId} task={task} onOpen={onOpen} />
       ) : null}
     </div>
   );
@@ -746,6 +835,19 @@ function editorAnchor(element: HTMLElement): TaskPropertyEditorAnchor {
     left: bounds.left,
     width: bounds.width,
   };
+}
+
+function subtaskProgress(completed: number, total: number): string {
+  return t`${completed} of ${total}`;
+}
+
+function BlockedMarker({ title }: { title?: string }) {
+  return (
+    <span className="task-row-blocked" title={title}>
+      <Ban aria-hidden="true" size={13} strokeWidth={2} />
+      <Trans>Blocked</Trans>
+    </span>
+  );
 }
 
 function TrackingIndicator() {
