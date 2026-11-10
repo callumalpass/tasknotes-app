@@ -112,6 +112,54 @@ test("the command palette navigates, acts on the focused task, and finds tasks",
   await expect(dialog).toBeHidden();
 });
 
+test("a timer started from the palette stays in view and stops from anywhere", async ({
+  page,
+}) => {
+  await openDemo(page);
+  const title = "Send the research summary to Rowan";
+  await page.getByRole("button", { name: title, exact: true }).focus();
+  await page.keyboard.press("ControlOrMeta+k");
+  const dialog = page.getByRole("dialog", { name: "Command palette" });
+  const search = dialog.getByRole("combobox");
+  await search.fill("start timer");
+  await expect(
+    dialog.getByRole("group", { name: new RegExp(title) }),
+  ).toContainText("Start timer");
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+
+  const timer = page.getByRole("group", { name: "Running timer" });
+  await expect(timer).toContainText(title);
+  const row = page.locator(".task-row").filter({ hasText: title });
+  await expect(row).toContainText("Timer running");
+
+  // The timer follows to a view its task is not in.
+  await page.keyboard.press("ControlOrMeta+k");
+  await search.fill("cal");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
+  await expect(timer).toContainText(title);
+
+  await page.keyboard.press("ControlOrMeta+k");
+  await search.fill("stop timer");
+  await expect(
+    dialog.getByRole("option", { name: /Stop timer/ }),
+  ).toContainText(title);
+  await page.keyboard.press("Enter");
+  await expect(timer).toHaveCount(0);
+
+  // And the notice's own Stop works without the palette.
+  await page.keyboard.press("g");
+  await page.keyboard.press("t");
+  await page.getByRole("button", { name: title, exact: true }).focus();
+  await page.keyboard.press("ControlOrMeta+k");
+  await search.fill("start timer");
+  await page.keyboard.press("Enter");
+  await timer.getByRole("button", { name: `Stop timer for ${title}` }).click();
+  await expect(timer).toHaveCount(0);
+  await expect(row).not.toContainText("Timer running");
+});
+
 test("? opens the shortcut sheet, which lists the global keys", async ({
   page,
 }) => {

@@ -446,7 +446,7 @@ msgstr "{field}에 {value} 포함"
 msgid "{field} is empty"
 msgstr "{field}이(가) 비어 있음"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours}시간 {minutes}분"
 
@@ -1915,6 +1915,14 @@ msgstr "날짜를 읽을 수 없습니다"
 msgid "Couldn’t reopen “{0}”"
 msgstr "“{0}”을(를) 다시 열 수 없습니다"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "타이머를 시작하지 못했습니다."
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "타이머를 중지하지 못했습니다."
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -2247,6 +2255,7 @@ msgid "Disconnect calendars"
 msgstr "캘린더 연결 해제"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -4003,6 +4012,7 @@ msgstr "Planner에서 열기"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4789,6 +4799,10 @@ msgstr "다른 변경을 하기 전에 작업을 검토하세요."
 msgid "Review your protected edits before reloading."
 msgstr "새로고침하기 전에 보호된 편집 내용을 검토하세요."
 
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "실행 중인 타이머"
+
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -5313,6 +5327,7 @@ msgstr "시작"
 msgid "Start new tasks from a template"
 msgstr "템플릿으로 새 작업 시작"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "타이머 시작"
@@ -5362,6 +5377,7 @@ msgstr "상태, 우선순위 및 관계"
 msgid "Status: {0}"
 msgstr "상태: {0}"
 
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "중지"
@@ -5370,9 +5386,15 @@ msgstr "중지"
 msgid "Stop a running timer when its task is completed"
 msgstr "작업이 완료되면 실행 중인 타이머 중지"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "타이머 중지"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "{0} 타이머 중지"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5967,6 +5989,14 @@ msgstr "타이머 설명"
 #: src/components/task-row.tsx
 msgid "Timer running"
 msgstr "타이머 실행 중"
+
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "{title} 타이머를 시작했습니다."
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "{title} 타이머를 중지했습니다."
 
 #: src/components/task-capture.tsx
 msgid "Timing"

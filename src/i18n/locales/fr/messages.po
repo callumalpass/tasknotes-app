@@ -446,7 +446,7 @@ msgstr "{field} contient {value}"
 msgid "{field} is empty"
 msgstr "{field} est vide"
 
-#: src/app/task-time-tracking.tsx
+#: src/app/timer-clock.ts
 msgid "{hours}h {minutes}m"
 msgstr "{hours} h {minutes} min"
 
@@ -1916,6 +1916,14 @@ msgstr "Date illisible"
 msgid "Couldn’t reopen “{0}”"
 msgstr "Impossible de rouvrir « {0} »"
 
+#: src/app/running-timer.tsx
+msgid "Couldn’t start the timer."
+msgstr "Impossible de démarrer le chronomètre."
+
+#: src/app/running-timer.tsx
+msgid "Couldn’t stop the timer."
+msgstr "Impossible d’arrêter le chronomètre."
+
 #: src/app/app-shell.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-added-notice.tsx
@@ -2248,6 +2256,7 @@ msgid "Disconnect calendars"
 msgstr "Déconnecter les agendas"
 
 #: src/app/bulk-task-actions.tsx
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/returning-user-notice.tsx
 #: src/components/task-capture.tsx
@@ -4004,6 +4013,7 @@ msgstr "Ouvrir dans Planner"
 
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
+#: src/app/running-timer.tsx
 #: src/app/scratchpad-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Open task"
@@ -4790,6 +4800,10 @@ msgstr "Vérifiez la tâche avant d’effectuer une autre modification."
 msgid "Review your protected edits before reloading."
 msgstr "Vérifiez vos modifications protégées avant de recharger la page."
 
+#: src/app/running-timer.tsx
+msgid "Running timer"
+msgstr "Chronomètre actif"
+
 #: src/calendar-service/event-dialog.tsx
 #: src/components/task-property-editor.tsx
 msgid "Save"
@@ -5314,6 +5328,7 @@ msgstr "Démarrer"
 msgid "Start new tasks from a template"
 msgstr "Créer les nouvelles tâches à partir d’un modèle"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Start timer"
 msgstr "Démarrer le chronomètre"
@@ -5363,6 +5378,7 @@ msgstr "Statut, priorité et relations"
 msgid "Status: {0}"
 msgstr "Statut : {0}"
 
+#: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
 msgstr "Arrêter"
@@ -5371,9 +5387,15 @@ msgstr "Arrêter"
 msgid "Stop a running timer when its task is completed"
 msgstr "Arrêter le chronomètre en cours lorsque la tâche est terminée"
 
+#: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
 msgid "Stop timer"
 msgstr "Arrêter le chronomètre"
+
+#. placeholder {0}: timer.title
+#: src/app/running-timer.tsx
+msgid "Stop timer for {0}"
+msgstr "Arrêter le chronomètre de {0}"
 
 #: src/calendar-service/settings.tsx
 msgid "Stop waiting"
@@ -5968,6 +5990,14 @@ msgstr "Description du chronomètre"
 #: src/components/task-row.tsx
 msgid "Timer running"
 msgstr "Chronomètre en cours"
+
+#: src/app/use-timer-control.ts
+msgid "Timer started for {title}."
+msgstr "Chronomètre démarré pour {title}."
+
+#: src/app/use-timer-control.ts
+msgid "Timer stopped for {title}."
+msgstr "Chronomètre arrêté pour {title}."
 
 #: src/components/task-capture.tsx
 msgid "Timing"

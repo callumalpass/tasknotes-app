@@ -11,6 +11,7 @@ import {
 } from "./navigation-views";
 import type { Route } from "./use-workspace-navigation";
 import type { TaskView } from "../domain/view";
+import type { TimerControl } from "./use-timer-control";
 
 /** Find the task row the palette should act on: focused, else the open task. */
 export function paletteTaskTarget(
@@ -223,6 +224,39 @@ export function taskCommands(
       run: request("next-week"),
     },
   );
+  return commands;
+}
+
+/**
+ * Start for the task the palette is acting on, and Stop for whatever is
+ * running, which need not be on screen.
+ */
+export function timerCommands(
+  row: HTMLElement | null,
+  control: Pick<TimerControl, "timers" | "start" | "stop">,
+): PaletteCommand[] {
+  const commands: PaletteCommand[] = [];
+  const targetId = row?.dataset.taskId;
+  if (targetId && !control.timers.some((timer) => timer.id === targetId)) {
+    const title = row.dataset.taskTitle ?? t({ message: "this task" });
+    commands.push({
+      id: "task:timer",
+      label: t({ message: "Start timer" }),
+      detail: title,
+      section: "task",
+      keywords: ["time", "track", "clock", "work"],
+      run: () => void control.start(targetId, title),
+    });
+  }
+  for (const timer of control.timers.slice(0, 3))
+    commands.push({
+      id: `timer:stop:${timer.id}`,
+      label: t({ message: "Stop timer" }),
+      detail: timer.title,
+      section: timer.id === targetId ? "task" : "actions",
+      keywords: ["time", "track", "clock", "running", "finish"],
+      run: () => void control.stop(timer),
+    });
   return commands;
 }
 
