@@ -88,6 +88,7 @@ import { useCollectionGate } from "./collection-context";
 import { countLabel } from "../i18n/default-labels";
 import type { TodayTaskCounts } from "../domain/today-summary";
 import { useTodayTaskCounts } from "./use-today-task-counts";
+import { TaskRowRelationsProvider } from "./task-row-relations";
 import { useNavigationTaskCounts } from "./use-navigation-task-counts";
 import {
   readSidebarCollapsed,
@@ -716,7 +717,7 @@ export function AppShell() {
       >
         <TaskCompletionReportContext.Provider value={reportCompleted}>
           <TaskSelectionProvider navigationKey={JSON.stringify(route)}>
-            {shell}
+            <TaskRowRelationsProvider>{shell}</TaskRowRelationsProvider>
           </TaskSelectionProvider>
         </TaskCompletionReportContext.Provider>
       </CollectionWriteStatus>

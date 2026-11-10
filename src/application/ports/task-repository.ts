@@ -160,6 +160,12 @@ export interface TaskRepository {
   navigationTaskCounts?(
     today: string,
   ): { inbox: number; upcoming: number } | null;
+  /**
+   * Session metadata only; null until the index has loaded once. Never starts
+   * a read.
+   */
+  taskRowRelations?():
+    import("../../domain/task-row-relations").TaskRowRelations | null;
   /** Session metadata only, like todayTaskCounts. Never starts a read. */
   projectShortcuts?(): import("../../domain/project-shortcuts").ProjectShortcut[];
   /** Session metadata only; null until the index has loaded once. Never starts a read. */

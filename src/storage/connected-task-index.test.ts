@@ -122,6 +122,27 @@ describe("session task index", () => {
   });
 });
 
+it("keeps row relations until task metadata changes", () => {
+  const index = new ConnectedTaskIndex<{ task: Task }>();
+  const parent = task("parent");
+  const child = task("child", { projects: ["[[parent]]"] });
+  index.set(parent.id, { task: parent });
+  index.set(child.id, { task: child });
+  const first = index.rowRelations();
+  expect(first).toEqual({
+    parent: { subtasks: 1, subtasksDone: 0, blockedBy: 0 },
+  });
+  // The same object lets observers skip work between changes.
+  expect(index.rowRelations()).toBe(first);
+
+  index.set(child.id, { task: { ...child, completed: true } });
+  expect(index.rowRelations()).toEqual({
+    parent: { subtasks: 1, subtasksDone: 1, blockedBy: 0 },
+  });
+  index.delete(child.id);
+  expect(index.rowRelations()).toEqual({});
+});
+
 it("maintains Today counters incrementally, with one rebuild at day rollover", () => {
   const index = new ConnectedTaskIndex<{ task: Task }>();
   const today = "2026-09-19";
