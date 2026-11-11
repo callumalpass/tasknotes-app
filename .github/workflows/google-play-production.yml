@@ -39,7 +39,8 @@ jobs:
           repositories: mdbase-cloud-ops,mdbase-connect
           permission-contents: read
           permission-actions: write
-      - name: Recheck source, SDK, stops and review under the Play edit lock
+      - id: recheck
+        name: Recheck source, SDK, stops and review under the Play edit lock
         env:
           GH_TOKEN: ${{ github.token }}
           APP_EVIDENCE_GH_TOKEN: ${{ steps.evidence.outputs.token }}
@@ -57,7 +58,10 @@ jobs:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
           TASKNOTES_ANDROID_VERSION_CODE_BASE: ${{ vars.TASKNOTES_ANDROID_VERSION_CODE_BASE }}
         run: node scripts/publish-google-play.mjs --qualified
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      # A recheck refusal retains its bounded pre-write receipt; any later
+      # failure uploads nothing, so the parent cannot read it as pre-write.
+      - if: success() || steps.recheck.outcome == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: store-target-result
           path: store-target-result.json

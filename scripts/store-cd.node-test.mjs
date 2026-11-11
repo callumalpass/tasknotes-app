@@ -18,6 +18,11 @@ import {
   storeInfrastructureReasons,
 } from "./store-cd.mjs";
 import { verifyArchive } from "./download-mobile-build.mjs";
+import {
+  recheckRefusal,
+  recheckRefusalReason,
+} from "./mobile-release-policy.mjs";
+import { parse } from "yaml";
 import { androidVersionCode } from "./publish-google-play.mjs";
 
 const source = "a".repeat(40);
@@ -1325,4 +1330,183 @@ test("a failed evidence read after the status run and before any write records i
   );
   assert.equal(receipt.reason, "release-evidence-unavailable");
   assert.deepEqual(holds, []);
+});
+
+function failedPlayPublisher(fixtureValue, refusal) {
+  fixtureValue.services.dispatch = (workflow, inputs, save) =>
+    dispatch(workflow, inputs, save, (path) =>
+      path.endsWith("/dispatches")
+        ? { workflow_run_id: 77 }
+        : {
+            id: 77,
+            path: `.github/workflows/${workflow}`,
+            head_branch: "main",
+            event: "workflow_dispatch",
+            run_attempt: 1,
+            status: "completed",
+            conclusion: workflow === "android.yml" ? "success" : "failure",
+          },
+    );
+  fixtureValue.services.qualify = async (_platform, runId) => ({
+    source,
+    version: "1.0.13",
+    build: runId,
+  });
+  fixtureValue.services.refusal = async (runId, sourceRunId) => {
+    assert.equal(runId, 77);
+    return recheckRefusalReason(await refusal(), sourceRunId);
+  };
+  return fixtureValue;
+}
+
+test("a Play recheck refusal before any write becomes a retryable pre-write receipt", async () => {
+  const { receipt, holds } = await attempt(
+    failedPlayPublisher(fixture(), async () =>
+      recheckRefusal("play-release-lifecycle-observer-unavailable", "77"),
+    ),
+  );
+  assert.equal(receipt.outcome, "stopped");
+  assert.equal(receipt.write_started, false);
+  assert.equal(receipt.reason, "play-release-lifecycle-observer-unavailable");
+  assert.equal(receipt.boundary, "google-play-production.yml");
+  assert.equal(receipt.boundary_outcome, "refused-before-write");
+  assert.ok(storeInfrastructureReasons.includes(receipt.reason));
+  assert.deepEqual(holds, []);
+});
+
+test("a Play recheck policy refusal is pre-write but still stops the line", async () => {
+  const { receipt, holds } = await attempt(
+    failedPlayPublisher(fixture(), async () =>
+      recheckRefusal("trust-change-needs-owner", 77),
+    ),
+  );
+  assert.equal(receipt.write_started, false);
+  assert.equal(receipt.reason, "trust-change-needs-owner");
+  assert.deepEqual(holds, [["android", "stop", "app-publication-failed"]]);
+});
+
+test("a Play publisher failure without a bound recheck receipt stays a write-started stop", async () => {
+  for (const refusal of [
+    // A failure after download or submit uploads no receipt at all.
+    async () => {
+      throw new Error("release-evidence-unavailable");
+    },
+    async () => ({ outcome: "submitted", source }),
+    async () => recheckRefusal("store-observer-unavailable", 78),
+    async () => ({
+      ...recheckRefusal("store-observer-unavailable", 77),
+      detail: "extra",
+    }),
+    async () => ({
+      outcome: "refused-before-write",
+      reason: "Unbounded message",
+      source_run_id: 77,
+    }),
+  ]) {
+    const fixtureValue = failedPlayPublisher(fixture(), refusal);
+    const read = fixtureValue.services.refusal;
+    fixtureValue.services.refusal = async (...args) => {
+      try {
+        return await read(...args);
+      } catch {
+        return null;
+      }
+    };
+    const { receipt, holds } = await attempt(fixtureValue);
+    assert.equal(receipt.write_started, true);
+    assert.equal(receipt.boundary_outcome, "failed");
+    assert.equal(receipt.reason, "store-build-or-publication-failed");
+    assert.deepEqual(holds, [["android", "stop", "app-publication-failed"]]);
+  }
+});
+
+test("a failed Android build never consults the Play recheck receipt", async () => {
+  const fixtureValue = failedPlayPublisher(fixture(), async () =>
+    assert.fail("build failures have no publisher receipt"),
+  );
+  const play = fixtureValue.services.dispatch;
+  fixtureValue.services.dispatch = (workflow, inputs, save) =>
+    play(
+      workflow === "android.yml" ? "ios-release.yml" : workflow,
+      inputs,
+      save,
+    );
+  const { receipt, holds } = await attempt(fixtureValue);
+  assert.equal(receipt.write_started, true);
+  assert.equal(receipt.reason, "store-build-or-publication-failed");
+  assert.deepEqual(holds, [["android", "stop", "app-publication-failed"]]);
+});
+
+test("the Play publisher retains a receipt only on success or a recheck refusal", async () => {
+  const workflow = parse(
+    await readFile(
+      new URL(
+        "../.github/workflows/google-play-production.yml",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const steps = workflow.jobs.publish.steps;
+  const recheck = steps.findIndex((step) => step.id === "recheck");
+  assert.equal(
+    steps[recheck].run,
+    "node scripts/mobile-release-policy.mjs android",
+  );
+  const upload = steps.filter((step) =>
+    step.uses?.startsWith("actions/upload-artifact@"),
+  );
+  assert.equal(upload.length, 1);
+  assert.equal(upload[0].if, "success() || steps.recheck.outcome == 'failure'");
+  assert.ok(steps.indexOf(upload[0]) > recheck);
+  for (const step of steps.slice(recheck + 1))
+    if (step !== upload[0])
+      assert.equal(step.if, "env.STORE_PENDING != 'true'");
+});
+
+test("the Play recheck CLI writes only the bounded refusal receipt", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "tasknotes-recheck-"));
+  try {
+    for (const [platform, written] of [
+      ["android", true],
+      ["ios", false],
+    ]) {
+      await rm(join(directory, "store-target-result.json"), { force: true });
+      const result = spawnSync(
+        process.execPath,
+        [
+          fileURLToPath(
+            new URL("./mobile-release-policy.mjs", import.meta.url),
+          ),
+          platform,
+        ],
+        {
+          cwd: directory,
+          encoding: "utf8",
+          env: { PATH: process.env.PATH, SOURCE_RUN_ID: "42" },
+        },
+      );
+      assert.equal(result.status, 1);
+      assert.equal(
+        result.stderr,
+        "Mobile publication refused: protected-first-attempt-store-context-required\n",
+      );
+      const receipt = await readFile(
+        join(directory, "store-target-result.json"),
+        "utf8",
+      ).catch(() => null);
+      assert.deepEqual(
+        receipt && JSON.parse(receipt),
+        written
+          ? {
+              outcome: "refused-before-write",
+              reason: "protected-first-attempt-store-context-required",
+              source_run_id: 42,
+            }
+          : null,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
