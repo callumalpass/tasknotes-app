@@ -242,23 +242,46 @@ export async function readAppleLive(client) {
   };
 }
 
+// Both reads are read-only (Play uses a disposable edit that is always
+// deleted), so a transient API or token failure is retried a bounded number
+// of times before the observation is reported unavailable.
+export async function readWithRetry(
+  read,
+  {
+    attempts = 3,
+    delayMs = 10_000,
+    wait = (ms) => new Promise((done) => setTimeout(done, ms)),
+  } = {},
+) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await read();
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      await wait(delayMs);
+    }
+  }
+}
+
 async function main() {
   const platform = process.argv[2];
   let status;
   if (platform === "android") {
-    status = await readPlayStatus(
-      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64,
+    status = await readWithRetry(() =>
+      readPlayStatus(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64),
     );
   } else if (platform === "ios") {
-    status = await readAppleLive(
-      createStatusClient({
-        keyId: process.env.APP_STORE_CONNECT_KEY_ID,
-        issuerId: process.env.APP_STORE_CONNECT_ISSUER_ID,
-        privateKey: Buffer.from(
-          process.env.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 ?? "",
-          "base64",
-        ).toString("utf8"),
-      }),
+    status = await readWithRetry(() =>
+      readAppleLive(
+        createStatusClient({
+          keyId: process.env.APP_STORE_CONNECT_KEY_ID,
+          issuerId: process.env.APP_STORE_CONNECT_ISSUER_ID,
+          privateKey: Buffer.from(
+            process.env.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 ?? "",
+            "base64",
+          ).toString("utf8"),
+        }),
+      ),
     );
   } else throw new Error("Expected android or ios");
   await writeFile(

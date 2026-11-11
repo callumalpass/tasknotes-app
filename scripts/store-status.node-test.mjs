@@ -4,6 +4,7 @@ import {
   readAppleLive,
   readPlayStatus,
   playReviewBlock,
+  readWithRetry,
 } from "./store-status.mjs";
 import { generateKeyPairSync } from "node:crypto";
 
@@ -85,4 +86,33 @@ test("Apple reports actual live version, not package version", async () => {
   assert.deepEqual(result.live, [
     { version: "1.0.8", state: "READY_FOR_SALE" },
   ]);
+});
+
+test("a transient status read is retried, bounded, without waiting for real", async () => {
+  const waits = [];
+  let calls = 0;
+  const status = await readWithRetry(
+    async () => {
+      calls++;
+      if (calls < 3) throw new Error("transient");
+      return { ok: true };
+    },
+    { wait: async (ms) => waits.push(ms) },
+  );
+  assert.deepEqual(status, { ok: true });
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, [10_000, 10_000]);
+
+  let failures = 0;
+  await assert.rejects(
+    readWithRetry(
+      async () => {
+        failures++;
+        throw new Error("down");
+      },
+      { attempts: 3, wait: async () => {} },
+    ),
+    /down/,
+  );
+  assert.equal(failures, 3);
 });
