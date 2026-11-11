@@ -107,8 +107,8 @@ iOS builds retain write evidence because they upload to TestFlight.
 For infrastructure reasons allowlisted by ops `bin/lib/cd_retry.py`, an explicit
 `write_started: false` refusal retains `outcome: stopped`, its reason and the
 nonzero exit status without opening an app-stop. App CD verifies the retained
-target/source/run binding, retries once after 90 seconds, and stops that store
-line if the retry fails or is refused. TaskNotes mirrors and test-pins the ops
+target/source/run binding, retries once after the backoff `cd_retry.py` sets for
+that reason, and stops that store line if the retry fails or is refused. TaskNotes mirrors and test-pins the ops
 allowlist because there is no shared contract file; fetching policy while
 handling an evidence outage would add another failure dependency. A read-only
 `store-status.yml` boundary may remain `dispatch-unknown` or `waiting` without
@@ -116,6 +116,18 @@ self-stopping when `write_started: false` and the reason is retryable. Explicit
 unknown outcome/identity reasons and unknown or waiting write boundaries still
 self-stop, even if an ops allowlist entry would otherwise match. A started or unknown write,
 non-allowlisted reason, or store rejection also keeps its existing stop behavior.
+
+The Play publisher's first step re-reads lines, source, SDK and review before
+downloading or submitting anything. When that step refuses, it retains only
+`{outcome: "refused-before-write", reason, source_run_id}` as
+`store-target-result`; the artifact uploads on success or on that step's own
+failure, never after a download or submit failure. Only for a completed, failed
+`google-play-production.yml` run does the coordinator read that receipt, bound to
+the exact signed source run, and record `write_started: false`,
+`boundary_outcome: refused-before-write` and the child's reason. An allowlisted
+reason then follows the retry rule above; any other reason still stops the line.
+A missing, extra-field or mismatched receipt keeps `write_started: true` and the
+`store-build-or-publication-failed` stop.
 
 A failed build, upload, signing/digest check, rejected review, or unknown dispatch stops the
 selected store through those existing `app-stop` records. Unknown child writes

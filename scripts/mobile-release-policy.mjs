@@ -30,6 +30,27 @@ export const LINES = {
   ios: "tasknotes-app-store",
 };
 
+// The Play publisher's pre-submit recheck only reads (lines, source, SDK,
+// review). Its refusal is retained as this bounded receipt so the parent can
+// prove no Play write began; download and submit never run after it.
+export const RECHECK_REFUSED = "refused-before-write";
+const SLUG = /^[a-z0-9-]{1,100}$/;
+export function recheckRefusal(reason, sourceRunId) {
+  const runId = Number(sourceRunId);
+  if (!SLUG.test(reason ?? "") || !Number.isSafeInteger(runId) || runId <= 0)
+    return null;
+  return { outcome: RECHECK_REFUSED, reason, source_run_id: runId };
+}
+export function recheckRefusalReason(result, sourceRunId) {
+  return result &&
+    Object.keys(result).sort().join() === "outcome,reason,source_run_id" &&
+    result.outcome === RECHECK_REFUSED &&
+    result.source_run_id === sourceRunId &&
+    SLUG.test(result.reason ?? "")
+    ? result.reason
+    : null;
+}
+
 export function requirePolicy(condition, reason) {
   if (!condition) throw new Error(reason);
 }
@@ -510,11 +531,19 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 )
-  main().catch((error) => {
+  main().catch(async (error) => {
     // Only fixed policy reasons; never command stderr or store response bodies.
     const reason = /^[a-z0-9-]+$/.test(error.message)
       ? error.message
       : "release-evidence-unavailable";
     console.error(`Mobile publication refused: ${reason}`);
     process.exitCode = 1;
+    const receipt =
+      process.argv[2] === "android" &&
+      recheckRefusal(reason, process.env.SOURCE_RUN_ID);
+    if (receipt)
+      await writeFile(
+        "store-target-result.json",
+        JSON.stringify(receipt) + "\n",
+      ).catch(() => {});
   });

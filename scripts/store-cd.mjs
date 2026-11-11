@@ -10,6 +10,7 @@ import {
   assertLinesOpen,
   artifactJson,
   storeLine,
+  recheckRefusalReason,
 } from "./mobile-release-policy.mjs";
 import { readAppleLive, playReviewBlock } from "./store-status.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
@@ -134,10 +135,10 @@ export async function dispatch(
       await save({
         boundary_outcome: run.conclusion === "success" ? "success" : "failed",
       });
-      requirePolicy(
-        run.conclusion === "success",
-        "store-build-or-publication-failed",
-      );
+      if (run.conclusion !== "success")
+        throw Object.assign(new Error("store-build-or-publication-failed"), {
+          runId,
+        });
       return runId;
     }
     await wait(15000);
@@ -325,11 +326,27 @@ export async function releaseTarget({ target, source, runId, save, services }) {
     platform === "android"
       ? "google-play-production.yml"
       : "app-store-submit.yml";
-  const publishRunId = await services.dispatch(
-    workflow,
-    { source_run_id: String(sourceRunId) },
-    save,
-  );
+  let publishRunId;
+  try {
+    publishRunId = await services.dispatch(
+      workflow,
+      { source_run_id: String(sourceRunId) },
+      save,
+    );
+  } catch (error) {
+    // Only a completed failed Play publisher whose bound receipt says its
+    // read-only recheck refused proves no Play write; anything else stays a stop.
+    const reason =
+      platform === "android" && error.runId
+        ? await services.refusal(error.runId, sourceRunId)
+        : null;
+    if (!reason) throw error;
+    await save({
+      write_started: false,
+      boundary_outcome: "refused-before-write",
+    });
+    throw new Error(reason, { cause: error });
+  }
   const outcome = await services.result(publishRunId, source);
   requirePolicy(
     [
@@ -401,6 +418,20 @@ async function main() {
         versionCode: androidVersionCode,
         dispatch,
         qualify: qualifySource,
+        refusal: async (runId, sourceRunId) => {
+          try {
+            return recheckRefusalReason(
+              await artifactJson(
+                runId,
+                "store-target-result",
+                "store-target-result.json",
+              ),
+              sourceRunId,
+            );
+          } catch {
+            return null;
+          }
+        },
         result: async (runId, source) => {
           const result = await artifactJson(
             runId,
