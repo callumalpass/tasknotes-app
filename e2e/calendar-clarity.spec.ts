@@ -154,24 +154,15 @@ test.describe("calendar drops", () => {
     page,
   }) => {
     await page.goto(view("calendar"));
-    const event = page
-      .locator(".tnc-dg .tnc-item.is-draggable")
-      .filter({ hasText: /\S/ })
-      .first();
-    await expect(event).toBeVisible();
-    const title = (await event
-      .locator(".full-calendar-event-primary > span")
-      .last()
-      .textContent())!.trim();
-    const from = (await event.getAttribute("data-date"))!;
-    // The quietest other day in the same week keeps the drop on screen
-    // rather than behind its "+N more". A full day renders only what fits, so
-    // its overflow button counts too; and a neighbour alone is not enough,
-    // since today can open the week beside an equally full day.
-    const to = await page.evaluate((from) => {
-      const cell = document.querySelector(`.tnc-dg-day[data-date="${from}"]`)!;
-      const week = cell.closest(".tnc-dg-week")!;
-      const load = (day: Element) => {
+    const draggable = page.locator(".tnc-dg .tnc-item.is-draggable");
+    await expect(draggable.filter({ hasText: /\S/ }).first()).toBeVisible();
+    // The demo's dates follow today, so which days are full changes daily.
+    // An empty day in the task's own week always shows the drop; take the
+    // first task that has one. Failing that, take the first task and its
+    // quietest other day, where the drop may land behind "+N more". A full
+    // day renders only what fits, so its overflow button counts as load.
+    const pick = await page.evaluate(() => {
+      const load = (week: Element, day: Element) => {
         const { left, right } = day.getBoundingClientRect();
         const hidden = [...week.querySelectorAll(".tnc-more")]
           .filter((more) => {
@@ -186,11 +177,38 @@ test.describe("calendar drops", () => {
           ).length
         );
       };
-      const [quietest] = [...week.querySelectorAll(".tnc-dg-day")]
-        .filter((day) => day !== cell)
-        .sort((a, b) => load(a) - load(b));
-      return quietest!.getAttribute("data-date")!;
-    }, from);
+      let fallback: { index: number; to: string; empty: boolean } | null = null;
+      const events = document.querySelectorAll(
+        ".tnc-dg .tnc-item.is-draggable",
+      );
+      for (const [index, event] of [...events].entries()) {
+        if (!/\S/.test(event.textContent ?? "")) continue;
+        const cell = document.querySelector(
+          `.tnc-dg-day[data-date="${event.getAttribute("data-date")}"]`,
+        );
+        const week = cell?.closest(".tnc-dg-week");
+        if (!cell || !week) continue;
+        const [quietest] = [...week.querySelectorAll(".tnc-dg-day")]
+          .filter((day) => day !== cell)
+          .map((day) => ({
+            to: day.getAttribute("data-date")!,
+            load: load(week, day),
+          }))
+          .sort((a, b) => a.load - b.load);
+        if (!quietest) continue;
+        if (quietest.load === 0) return { index, to: quietest.to, empty: true };
+        fallback ??= { index, to: quietest.to, empty: false };
+      }
+      return fallback;
+    });
+    expect(pick).not.toBeNull();
+    const { to, empty } = pick!;
+    const event = draggable.nth(pick!.index);
+    const title = (await event
+      .locator(".full-calendar-event-primary > span")
+      .last()
+      .textContent())!.trim();
+    const from = (await event.getAttribute("data-date"))!;
     const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
     // The first draggable task can sit in a week below the fold; the mouse
     // only reaches what is on screen.
@@ -236,10 +254,14 @@ test.describe("calendar drops", () => {
       ).__calendarDays.length = 0;
     });
     await page.mouse.up();
+    // Landed: on screen in its new day, or, where that day was already full,
+    // announced as moved.
     await expect(
-      page.locator(`.tnc-dg .tnc-item[data-date="${to}"]`, {
-        hasText: title,
-      }),
+      empty
+        ? page.locator(`.tnc-dg .tnc-item[data-date="${to}"]`, {
+            hasText: title,
+          })
+        : page.getByRole("status").filter({ hasText: title }),
     ).toBeVisible();
     await page.waitForTimeout(500);
     const days = await page.evaluate(
