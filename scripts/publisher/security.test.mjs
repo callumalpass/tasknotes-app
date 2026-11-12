@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { it } from "node:test";
 import { createRequire } from "node:module";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 const { parse } = createRequire(
   new URL("../../node_modules/@mdbase-dev/sdk/package.json", import.meta.url),
 )("yaml");
@@ -247,6 +249,8 @@ function browserDouble({
   csp = false,
   entrySource = source,
   missingSignIn = false,
+  signIn = true,
+  slowLoad = false,
   bodyText = "",
 } = {}) {
   const listeners = {},
@@ -258,6 +262,8 @@ function browserDouble({
     goto: async (url, options) => {
       events.push(url);
       assert.equal(options.waitUntil, "networkidle");
+      if (slowLoad)
+        throw Error("page.goto: Timeout 90000ms exceeded. https://private");
       if (pageError) listeners.pageerror(Error("private error never retained"));
       if (fence) listeners.console({ text: () => "readiness_fenced" });
       if (csp)
@@ -286,14 +292,19 @@ function browserDouble({
     getByRole: (role, options) => {
       assert.equal(role, "button");
       assert.match("Sign in", options.name);
-      assert.match("Connect to sync your work", options.name);
       assert.doesNotMatch("Sign in to another account", options.name);
       return {
         first: () => ({
           waitFor: async () => {
-            if (missingSignIn) throw Error("not visible");
+            assert.match("Connect to sync your work", options.name);
+            assert.match("Choose a collection", options.name);
+            if (missingSignIn) throw Error("locator.waitFor: Timeout 60000ms");
           },
         }),
+        count: async () => {
+          assert.doesNotMatch("Choose a collection", options.name);
+          return signIn ? 1 : 0;
+        },
       };
     },
     waitForTimeout: async () => {},
@@ -335,12 +346,23 @@ it("smoke checks a fresh source-bound entry and its first screen (sign-in or uns
   assert.equal(signedOut.signIn, true);
   const unsynced = await smoke(
     browserDouble({
+      signIn: false,
       bodyText:
         "Saved only in this browser\nConnect to sync your work\nNew task",
     }).chromium,
     source,
   );
   assert.deepEqual([unsynced.signIn, unsynced.unsynced], [false, true]);
+  // A fresh browser has saved nothing yet, so its unsynced start shows only
+  // the collection switcher, not the "Connect to sync your work" line.
+  const fresh = await smoke(
+    browserDouble({
+      signIn: false,
+      bodyText: "Choose a collection\nNew task\nScratchpad",
+    }).chromium,
+    source,
+  );
+  assert.deepEqual([fresh.signIn, fresh.unsynced], [false, true]);
   assert.ok(good.events.includes("Network.setCacheDisabled"));
   assert.ok(good.events.includes("closed"));
   assert.throws(
@@ -376,16 +398,50 @@ it("smoke checks a fresh source-bound entry and its first screen (sign-in or uns
       ),
     /invalid-source/,
   );
-  for (const options of [
-    { pageError: true },
-    { fence: true },
-    { missingSignIn: true },
-    { entrySource: "1".repeat(40) },
-    { bodyText: "Can't continue\nSet up this collection" },
-    { bodyText: "Saved only in this browser\nCouldn't load your views." },
+  // Every failure names its check with a fixed code, never page or error text.
+  for (const [options, reason] of [
+    [{ pageError: true }, "uncaught-page-error"],
+    [{ fence: true }, "readiness-fenced"],
+    [{ missingSignIn: true }, "first-screen-missing"],
+    [{ slowLoad: true }, "entry-load-failed"],
+    [{ entrySource: "1".repeat(40) }, "entry-source-mismatch"],
+    [
+      { bodyText: "Can't continue\nSet up this collection" },
+      "first-screen-blocked",
+    ],
+    [
+      { bodyText: "Saved only in this browser\nCouldn't load your views." },
+      "views-unavailable",
+    ],
   ]) {
     const bad = browserDouble(options);
-    await assert.rejects(smoke(bad.chromium, source));
+    await assert.rejects(smoke(bad.chromium, source), (error) => {
+      assert.equal(error.message, reason);
+      return true;
+    });
     assert.ok(bad.events.includes("closed"));
+  }
+});
+it("smoke CLI writes and prints a bounded failure reason", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tasknotes-smoke-cli-"));
+  try {
+    const receipt = join(dir, "smoke.json");
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [join(root, "scripts/publisher/smoke.mjs"), join(dir, "absent"), receipt],
+      {
+        env: { PATH: process.env.PATH, SOURCE_SHA: source, TARGET: "staging" },
+      },
+    ).catch((error) => error);
+    assert.equal(
+      stdout.trim(),
+      "TaskNotes smoke failed: browser-tool-unavailable",
+    );
+    assert.deepEqual(JSON.parse(await readFile(receipt, "utf8")), {
+      ok: false,
+      reason: "browser-tool-unavailable",
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
   }
 });
