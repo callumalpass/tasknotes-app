@@ -5949,6 +5949,10 @@ msgstr "Questa operazione rimuove solo la vista salvata. Le attività non verran
 msgid "This rule can also be edited with the visual controls."
 msgstr "Questa regola può essere modificata anche con i controlli visivi."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Questa ricerca riguarda più attività di quante se ne possano controllare in una volta. Aggiungi parole per restringerla."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Questa sezione"

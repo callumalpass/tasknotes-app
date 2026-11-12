@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "../test/render";
+import { mdbaseError } from "@mdbase-dev/sdk";
 import { afterEach, expect, it, vi } from "vitest";
 import { SearchScreen } from "./search-screen";
 const fixture = vi.hoisted(() => ({
@@ -95,4 +96,27 @@ it("names the records to fix when the account resolves to invalid or ambiguous r
   };
   chooseMine();
   expect(screen.getByText(/a\.md, b\.md/)).toBeVisible();
+});
+it("explains a search too large to check instead of offering a retry that cannot work", () => {
+  fixture.people = {
+    directory: { current: { status: "linked", personPath: "people/me.md" } },
+  };
+  fixture.query.mockReturnValue({
+    tasks: [],
+    loading: false,
+    refreshing: false,
+    retry: vi.fn(),
+    error: mdbaseError(
+      "too_large",
+      "ordinary selection exceeds its bounded source or retained-value query budget",
+      "query_budget_exceeded",
+    ),
+  });
+  render(<SearchScreen onOpen={vi.fn()} />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Assigned to me" }));
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This search covers more tasks than can be checked at once. Add words to narrow it.",
+  );
+  expect(screen.queryByText(/query budget/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Retry search" })).toBeNull();
 });

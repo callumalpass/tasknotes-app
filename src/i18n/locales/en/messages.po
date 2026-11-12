@@ -5949,6 +5949,10 @@ msgstr "This removes the saved view only. Your tasks won’t be deleted."
 msgid "This rule can also be edited with the visual controls."
 msgstr "This rule can also be edited with the visual controls."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "This search covers more tasks than can be checked at once. Add words to narrow it."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "This section"

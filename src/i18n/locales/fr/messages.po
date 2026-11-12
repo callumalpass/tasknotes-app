@@ -5950,6 +5950,10 @@ msgstr "Cela supprime uniquement la vue enregistrée. Vos tâches ne seront pas 
 msgid "This rule can also be edited with the visual controls."
 msgstr "Cette règle peut aussi être modifiée avec les commandes visuelles."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Cette recherche porte sur plus de tâches qu'il n'est possible d'en vérifier en une fois. Ajoutez des mots pour l'affiner."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Cette section"

@@ -5949,6 +5949,10 @@ msgstr "Dadurch wird nur die gespeicherte Ansicht entfernt. Ihre Aufgaben werden
 msgid "This rule can also be edited with the visual controls."
 msgstr "Diese Regel kann auch mit den visuellen Steuerelementen bearbeitet werden."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Diese Suche umfasst mehr Aufgaben, als auf einmal geprüft werden können. Fügen Sie Wörter hinzu, um sie einzugrenzen."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Dieser Abschnitt"

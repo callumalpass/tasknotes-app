@@ -5949,6 +5949,10 @@ msgstr "Будет удалено только сохранённое предс
 msgid "This rule can also be edited with the visual controls."
 msgstr "Это правило также можно изменить с помощью визуальных элементов управления."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Этот поиск охватывает больше задач, чем можно проверить за один раз. Добавьте слова, чтобы сузить его."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Этот раздел"

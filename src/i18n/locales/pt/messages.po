@@ -5949,6 +5949,10 @@ msgstr "Isso remove somente a visualização salva. Suas tarefas não serão exc
 msgid "This rule can also be edited with the visual controls."
 msgstr "Esta regra também pode ser editada com os controles visuais."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Esta pesquisa abrange mais tarefas do que é possível verificar de uma vez. Adicione palavras para refiná-la."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Esta seção"

@@ -5949,6 +5949,10 @@ msgstr "这只会移除已保存的视图，不会删除任务。"
 msgid "This rule can also be edited with the visual controls."
 msgstr "也可以使用可视化控件编辑此规则。"
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "此搜索涉及的任务超出一次可检查的数量。请添加字词以缩小范围。"
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "此分区"
