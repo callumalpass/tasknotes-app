@@ -43,9 +43,11 @@ names. Sharing a note does not invite somebody or grant collection access.
 
 The model supports custom assignee field mappings, preserves unresolved links on
 unrelated edits, uses `[]` to clear assignments, and inherits assignments when
-materialising occurrences. Assigned to me asks mdbase which tasks' assignee
-links resolve to your person record (`asFile()` in an ordinary query), then
-filters before repository pagination; the task editor labels each saved link
+materialising occurrences. Assigned to me pages through your person record's
+backlinks from mdbase's link index and keeps tasks whose link sits in the
+mapped assignee field, then filters before repository pagination. Its cost
+follows your assignments, not the collection, so it does not meet the request
+budget an ordinary query resolving every task's links would; the task editor labels each saved link
 with the record mdbase resolved it to. TaskNotes never reimplements resolution.
 Discovery uses the Connect SDK's `people.directory()`, which reads every Person
 implementation and page and resolves the account once for every app. Partial

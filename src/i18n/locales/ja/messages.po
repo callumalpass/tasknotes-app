@@ -5949,6 +5949,10 @@ msgstr "保存済みビューのみ削除します。タスクは削除されま
 msgid "This rule can also be edited with the visual controls."
 msgstr "このルールはビジュアル操作でも編集できます。"
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "この検索は一度に確認できる数を超えるタスクを対象にしています。語句を追加して絞り込んでください。"
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "このセクション"

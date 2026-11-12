@@ -5949,6 +5949,10 @@ msgstr "Esto solo elimina la vista guardada. Tus tareas no se eliminarán."
 msgid "This rule can also be edited with the visual controls."
 msgstr "Esta regla también se puede editar con los controles visuales."
 
+#: src/app/search-screen.tsx
+msgid "This search covers more tasks than can be checked at once. Add words to narrow it."
+msgstr "Esta búsqueda abarca más tareas de las que se pueden comprobar a la vez. Añade palabras para acotarla."
+
 #: src/i18n/ui-copy.ts
 msgid "This section"
 msgstr "Esta sección"

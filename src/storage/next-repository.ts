@@ -8,6 +8,7 @@ import type {
 import { Capacitor } from "@capacitor/core";
 import {
   MdbaseError,
+  isMdbaseError,
   toPlain,
   toValue,
   resolveRecordLinks,
@@ -1693,30 +1694,47 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal = this.signal(),
   ): Promise<Set<string> | undefined> {
     if (personPath === undefined) return undefined;
-    const paths = new Set<string>();
-    for (const provider of this.providers) {
-      const field = JSON.stringify(
+    // The person's backlinks come from the replica's link index, a page at a
+    // time, so the cost follows the person's referrers rather than every task.
+    // A query over the tasks would resolve each one's links under one request
+    // budget and refuse large collections. Resolution is the replica's: exact
+    // paths, never basenames.
+    const fields = new Map(
+      this.providers.map((provider) => [
+        provider.typeName,
         provider.model.config.fieldMapping.assignees,
-      );
-      const target = JSON.stringify(personPath);
-      for await (const page of this.client.pages(
-        {
-          types: [provider.typeName],
-          // The replica resolves links; compare exact paths, never basenames.
-          where: `${field} in record && record[${field}] != null && record[${field}].exists(link, link != null && link.asFile() != null && link.asFile().file.path == ${target})`,
-          limit: 1000,
-        },
-        undefined,
-        signal,
-      )) {
-        signal.throwIfAborted();
-        if (!page.complete)
-          throw nativeUnsupported(
-            "The replica has not supplied complete assignment matches.",
-          );
-        page.records.forEach((record) => paths.add(record.path));
+      ]),
+    );
+    const paths = new Set<string>();
+    let cursor: string | undefined;
+    do {
+      let page: wire.BacklinksResult;
+      try {
+        page = await this.client.backlinks(
+          { path: personPath },
+          { limit: 1000, signal, ...(cursor ? { cursor } : {}) },
+        );
+      } catch (reason) {
+        // No person record: nothing is assigned to it.
+        if (isMdbaseError(reason, "not_found")) return paths;
+        throw reason;
       }
-    }
+      signal.throwIfAborted();
+      if (!page.complete)
+        throw nativeUnsupported(
+          "The replica has not supplied complete assignment matches.",
+        );
+      for (const { record, links } of page.backlinks) {
+        const assigned = record.types.some((type) => {
+          const field = fields.get(type);
+          return (
+            field !== undefined && links.some((link) => link.field === field)
+          );
+        });
+        if (assigned) paths.add(record.path);
+      }
+      cursor = page.cursor;
+    } while (cursor);
     return paths;
   }
 

@@ -20,7 +20,7 @@ Settings → Language changes the interface and saves a successful explicit choi
 stored choice; Settings displays an error. Unavailable browser storage is
 best-effort. This does not change repository, authorization or offline behaviour.
 
-**Catalogue scope:** 1,465 active application messages. All eight QA-fixed v2
+**Catalogue scope:** 1,466 active application messages. All eight QA-fixed v2
 branches, their 13-ID v3 deltas and final two-ID v4 deltas are merged, with no
 missing authored targets. `Collection access is unavailable.` (`8fU7nk`) is the
 generic non-Error fallback; real authority diagnostics remain unchanged.
@@ -77,7 +77,7 @@ English fallback. Italian permits the reviewed UI terms Account, Agenda, Home an
 Wikilink, the literal template paths `Templates/Occurrence.md` and
 `Templates/Task.md`, the Italian word No, unit min, ISO examples P0D/P14D and two
 ICU/punctuation-only composition patterns. No English prose is allowlisted.
-Italian has all 1,465 authored messages. Integration corrects the selected-collection
+Italian has all 1,466 authored messages. Integration corrects the selected-collection
 meaning of the unlock notice and uses natural monthly-summary punctuation and
 elision (`Ogni mese, l'8° giorno dalla fine del mese`).
 

@@ -32,6 +32,7 @@ import {
   type HistoryKind,
 } from "./search-history";
 import { usePeople } from "./use-people";
+import { connectProblemFromError } from "../application/connect-problem";
 
 import type { Task, TaskSummary } from "../domain/task";
 
@@ -98,6 +99,8 @@ export function SearchScreen({
   );
   const hasMore = results.length > limit;
   const searching = assignedToMe || query.trim().length > 0;
+  // Too large is final for this search: retrying cannot change it.
+  const tooBroad = connectProblemFromError(error)?.code === "too_large";
   const waiting = query !== deferred;
   const chooseQuery = (value: string) => {
     setQuery(value);
@@ -242,15 +245,26 @@ export function SearchScreen({
       )}
       {!peopleBlocked && !waiting && error ? (
         <div className="operation-error-notice" role="alert">
-          <p>{t`Search could not be loaded. ${error.message}`}</p>
+          {tooBroad ? (
+            <p>
+              <Trans>
+                This search covers more tasks than can be checked at once. Add
+                words to narrow it.
+              </Trans>
+            </p>
+          ) : (
+            <p>{t`Search could not be loaded. ${error.message}`}</p>
+          )}
           {stale ? (
             <p>
               <Trans>Previously loaded results may be out of date.</Trans>
             </p>
           ) : null}
-          <button type="button" onClick={retry}>
-            <Trans>Retry search</Trans>
-          </button>
+          {tooBroad ? null : (
+            <button type="button" onClick={retry}>
+              <Trans>Retry search</Trans>
+            </button>
+          )}
         </div>
       ) : null}
       {peopleBlocked ? (
