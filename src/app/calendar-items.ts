@@ -47,6 +47,8 @@ export type TaskCalendarItem = CalendarItem<CalendarEventData>;
 
 export function calendarAgendaOrder(
   execution: TaskViewExecution,
+  /** In the agenda, a day opens with what is on all day before its tasks. */
+  eventsLead = false,
 ): ItemOrder<CalendarEventData> {
   const fallback = parseOrder<CalendarEventData>(
     "start,-duration,allDay,title",
@@ -55,6 +57,12 @@ export function calendarAgendaOrder(
     execution.rows.map((row, index) => [row.task.id, index]),
   );
   return (left, right) => {
+    if (eventsLead && left.allDay && right.allDay) {
+      const lead =
+        Number(Boolean(right.item.data?.google)) -
+        Number(Boolean(left.item.data?.google));
+      if (lead) return lead;
+    }
     const leftEntry = left.item.data?.metadata?.entry;
     const rightEntry = right.item.data?.metadata?.entry;
     if (

@@ -473,6 +473,33 @@ Today             Search       More
   and open the event editor from grid or Agenda entries. On phone Month, they
   also appear as separate controls in the selected-day list; they never become
   task checkboxes or inflate task counts.
+- In Agenda and the selected-day list a Google event reads as a row on the task
+  rows' grid: a 4px bar in its calendar's tone stands in the completion column
+  (outlined when tentative), then the title, then one quiet line of time,
+  location and calendar name. It has no filled background. All-day events open
+  each day, ahead of all-day tasks; timed events keep their place among timed
+  tasks.
+- An event says what it does on each of its days instead of repeating its
+  hours: "4pm – Fri 10:30am" where it starts (the date instead of the weekday
+  when it ends more than a week on), "All day · Day 2 of 3" in between, and
+  "Until 10:30am" where it ends. All-day events over several days count their
+  days the same way.
+- A Google calendar keeps the hue Google gives it, drawn at the lightness and
+  restraint of the app's own event tones so it reads on either theme; without a
+  colour from Google it takes a tone by its position. Until someone chooses
+  calendars, the primary one and those shown in Google Calendar are drawn, up
+  to the limit.
+- An invitation the person declined stays where Google keeps it, struck
+  through and unfilled, and says "Declined" before its time. Working-location
+  entries are not events and are not drawn. One calendar that cannot be read
+  shows the failure and leaves the other calendars' events in place.
+- A timed event lasting twenty-four hours or more is drawn with the all-day
+  entries in every layout, as Google Calendar draws it, and names its start
+  time where its bar begins. Its times change in the event editor, not by
+  dragging: a dragged all-day bar would lose its hours.
+- New event is a labelled calendar-plus control beside the calendar's
+  navigation; on phones and in the narrow Agenda bar it keeps its glyph and its
+  accessible name only, so the navigation stays on one row.
 - Agenda and calendar entries use proportional type and the same relative date
   labels as task rows. An entry on a task's due day, when the task is also
   scheduled, carries a quiet "Due" marker; logged time carries "Tracked time".

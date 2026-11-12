@@ -11,6 +11,9 @@ import { useCalendarEntries } from "./use-calendar-entries";
 import type { CalendarEventData, TaskCalendarItem } from "./calendar-items";
 import { compactAgendaDays } from "./calendar-agenda-days";
 
+/** Where React draws a row: a task's own controls, or one Google event. */
+const AGENDA_SLOTS = ".agenda-task-slot, .agenda-event-slot";
+
 /** React owns row contents; the calendar retains its scrolling and drag layer. */
 export function useCalendarAgenda({
   root,
@@ -75,18 +78,21 @@ export function useCalendarAgenda({
 
   function mount(arg: ItemArg<CalendarEventData>) {
     if (arg.variant !== "list" || arg.isMirror) return;
-    const slot = arg.el.querySelector<HTMLElement>(".agenda-task-slot");
+    const slot = arg.el.querySelector<HTMLElement>(AGENDA_SLOTS);
     if (!slot) return;
     // TaskRow supplies independent, named controls. The calendar wrapper must
-    // not become a second button surrounding them.
-    arg.el.removeAttribute("role");
-    arg.el.removeAttribute("tabindex");
-    arg.el.removeAttribute("aria-label");
+    // not become a second button surrounding them. An event row has no
+    // controls of its own, so its wrapper stays the one button that opens it.
+    if (slot.matches(".agenda-task-slot")) {
+      arg.el.removeAttribute("role");
+      arg.el.removeAttribute("tabindex");
+      arg.el.removeAttribute("aria-label");
+    }
     setSlots((current) => new Map(current).set(slot, arg));
   }
 
   function unmount({ el }: ItemArg<CalendarEventData>) {
-    const slot = el.querySelector<HTMLElement>(".agenda-task-slot");
+    const slot = el.querySelector<HTMLElement>(AGENDA_SLOTS);
     if (!slot) return;
     setSlots((current) => {
       if (!current.has(slot)) return current;

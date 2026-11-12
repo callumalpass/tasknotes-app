@@ -28,6 +28,10 @@ The browser suite is the small trust core, not a substitute for exercising the a
   event from Month, Week, Agenda and the phone Month day list; create an event,
   drag/resize a writable event, and check read-only calendars and failure states.
   Check spanning events and exclusive end dates without counting events as tasks.
+  Include a timed event across several days: its Agenda row on the first, a
+  middle and the last day, and its bar among the all-day entries in Week and Month.
+  Decline an invitation, add a working location and recolour a calendar in Google,
+  then check the struck-through row, the absent location entry and the colour.
   Demo task-calendar checks and mocked event tests do not prove real Google writes.
 - **Open and edit:** change title, notes and a custom property; switch adjacent
   tasks, close/reopen, and confirm the saved values. In LAB, check real confirmation

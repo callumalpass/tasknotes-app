@@ -17,6 +17,9 @@ const calendarSchema = z.object({
   name: z.string(),
   can_write: z.boolean(),
   is_primary: z.boolean(),
+  // A calendar service older than its ADR 0007 sends neither of these.
+  is_selected: z.boolean().optional(),
+  color: z.string().nullable().optional(),
 });
 const connectionSchema = z.object({
   id,
@@ -41,6 +44,10 @@ const eventSchema = z.discriminatedUnion("status", [
     description: z.string().nullable(),
     location: z.string().nullable(),
     recurrence: z.object({ series_id: eventId }).nullable(),
+    // Absent from an older service. Kept as text so a kind or an answer the
+    // service adds later cannot fail a page.
+    event_type: z.string().optional(),
+    self_response: z.string().nullable().optional(),
     start: boundarySchema,
     end: boundarySchema,
   }),
@@ -129,6 +136,23 @@ function base64Url(bytes: Uint8Array): string {
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
+}
+
+/**
+ * Until someone chooses: their primary calendar and the ones they show in
+ * Google Calendar, up to the limit.
+ */
+export function defaultSelection(
+  calendars: readonly GoogleCalendar[],
+): string[] {
+  return [
+    ...calendars.filter((calendar) => calendar.is_primary),
+    ...calendars.filter(
+      (calendar) => calendar.is_selected && !calendar.is_primary,
+    ),
+  ]
+    .slice(0, MAX_SELECTED_CALENDARS)
+    .map((calendar) => calendar.id);
 }
 
 function storedSelection(storage: Pick<Storage, "getItem">): string[] | null {
@@ -462,11 +486,9 @@ export class CalendarServiceClient {
       "/v1/calendars",
       z.object({ calendars: z.array(calendarSchema) }),
     );
-    const primary = calendars.filter((calendar) => calendar.is_primary);
     this.#publish({
       calendars,
-      selected:
-        storedSelection(this.storage) ?? primary.map((calendar) => calendar.id),
+      selected: storedSelection(this.storage) ?? defaultSelection(calendars),
     });
   }
 

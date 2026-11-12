@@ -68,6 +68,8 @@ Fine-pointer desktop Month uses 26px single-line bars, with overflow behind More
 Phone Month shows day indicators and the selected day's task rows below the
 grid. Google Calendar events remain visible and open their event editor from
 the calendar, Agenda or the selected-day list, subject to calendar permissions.
+In Agenda they read as rows among the day's tasks, and an event across several
+days says on each day whether it starts, continues or ends there.
 
 ## Scratchpad durability
 

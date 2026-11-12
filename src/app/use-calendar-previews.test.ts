@@ -73,3 +73,40 @@ it("leaves Day's wrapping all-day cards and library overflow count intact", () =
   expect(root.querySelector(".tnc-more")).toHaveTextContent("+4 more");
   expect(root.querySelector(".tnc-preview-more")).toBeNull();
 });
+
+it("does not redraw its previews for a month's measuring node, only for the calendar's own changes", async () => {
+  const root = document.createElement("div");
+  root.innerHTML = `<div class="tnc-dg-week">
+    <div class="tnc-dg-day" data-date="2026-11-05"></div>
+    <div class="tnc-dg-content">
+      <div class="tnc-more-layer"></div>
+      ${[0, 1, 2].map((level) => `<button class="tnc-item" style="top: calc(var(--tnc-dg-top-h) + ${level} * (var(--tnc-bar-h) + 2px))">Task ${level}</button>`).join("")}
+    </div>
+  </div>`;
+  vi.spyOn(
+    root.querySelector("[data-date]")!,
+    "getBoundingClientRect",
+  ).mockReturnValue(new DOMRect(0, 0, 100, 44));
+  root.querySelectorAll(".tnc-item").forEach((item) => {
+    vi.spyOn(item, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(2, 0, 96, 44),
+    );
+  });
+  renderHook(() => useCalendarPreviews({ current: root }, vi.fn()));
+  const more = root.querySelector(".tnc-preview-more");
+  expect(more).not.toBeNull();
+  const settled = () => new Promise((resolve) => setTimeout(resolve));
+
+  // Redrawing here would answer the month layout, which would measure again.
+  const measure = document.createElement("span");
+  measure.className = "tnc-dg-dots-more tnc-month-measure";
+  root.append(measure);
+  measure.remove();
+  await settled();
+  expect(root.querySelector(".tnc-preview-more")).toBe(more);
+
+  root.querySelector(".tnc-dg-content")!.append(document.createElement("i"));
+  await settled();
+  expect(root.querySelector(".tnc-preview-more")).not.toBe(more);
+  expect(root.querySelectorAll(".tnc-preview-more")).toHaveLength(1);
+});

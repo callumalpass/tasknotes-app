@@ -49,33 +49,28 @@ export function useGoogleEvents(range: { start: Date; end: Date }) {
     if (!client || !sessionId || !visibleKey) return;
     const controller = new AbortController();
     const { signal } = controller;
-    void Promise.all(
+    // One calendar that cannot be read does not take the others' events away.
+    void Promise.allSettled(
       visibleKey
         .split(",")
         .map((id) => client.events(id, new Date(start), new Date(end), signal)),
-    ).then(
-      (results) => {
-        if (signal.aborted) return;
-        setLoaded({
-          sessionId,
-          events: results.flatMap((result) => result.events),
-          omitted: results.reduce((sum, result) => sum + result.omitted, 0),
-          failure: null,
-        });
-      },
-      (reason: unknown) => {
-        if (signal.aborted) return;
-        setLoaded({
-          sessionId,
-          events: [],
-          omitted: 0,
-          failure:
-            reason instanceof CalendarServiceError
-              ? reason.failure
-              : "unavailable",
-        });
-      },
-    );
+    ).then((results) => {
+      if (signal.aborted) return;
+      const read = results.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : [],
+      );
+      const failed = results.find((result) => result.status === "rejected");
+      setLoaded({
+        sessionId,
+        events: read.flatMap((result) => result.events),
+        omitted: read.reduce((sum, result) => sum + result.omitted, 0),
+        failure: !failed
+          ? null
+          : failed.reason instanceof CalendarServiceError
+            ? failed.reason.failure
+            : "unavailable",
+      });
+    });
     return () => controller.abort();
   }, [sessionId, visibleKey, start, end, revision]);
 

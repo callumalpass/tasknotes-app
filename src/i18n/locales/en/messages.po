@@ -105,6 +105,7 @@ msgid "({left}) or ({right})"
 msgstr "({left}) or ({right})"
 
 #: src/app/task-calendar-view.tsx
+#: src/calendar-service/event-labels.ts
 msgid "(No title)"
 msgstr "(No title)"
 
@@ -1031,6 +1032,7 @@ msgid "All conditions match"
 msgstr "All conditions match"
 
 #: src/calendar-service/event-dialog.tsx
+#: src/calendar-service/event-labels.ts
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "All day"
@@ -2085,6 +2087,10 @@ msgstr "Dates and estimate"
 msgid "Day"
 msgstr "Day"
 
+#: src/calendar-service/event-labels.ts
+msgid "Day {day} of {days}"
+msgstr "Day {day} of {days}"
+
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
 msgstr "Day begins"
@@ -2101,6 +2107,11 @@ msgstr "Days"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Days from today"
+
+#: src/calendar-service/event-labels.ts
+#: src/calendar-service/event-row.tsx
+msgid "Declined"
+msgstr "Declined"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Default"
@@ -6240,6 +6251,10 @@ msgstr "Unskip"
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
 msgstr "Unskip occurrence"
+
+#: src/calendar-service/event-labels.ts
+msgid "Until {time}"
+msgstr "Until {time}"
 
 #: src/i18n/ui-copy.ts
 msgid "up"
