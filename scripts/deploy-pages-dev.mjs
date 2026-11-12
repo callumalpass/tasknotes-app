@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, readdir, rename, unlink, writeFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const developmentDeployments = Object.freeze({
@@ -183,13 +183,15 @@ export async function deployDevelopmentTaskNotes(
     environment,
     deployment,
   );
+  // Tests pass a scratch root: the restore below must never touch the real
+  // checkout while other processes (Vitest workers) read its package.json.
+  const root = dependencies.root ?? projectRoot;
   const restoreTargets = [
-    ...manifestTargets,
+    ...manifestTargets.map((target) =>
+      resolve(root, relative(projectRoot, target)),
+    ),
     ...(deployment.sdkArtifact
-      ? [
-          resolve(projectRoot, "package.json"),
-          resolve(projectRoot, "pnpm-lock.yaml"),
-        ]
+      ? [resolve(root, "package.json"), resolve(root, "pnpm-lock.yaml")]
       : []),
   ];
   const previousManifests = await Promise.all(
@@ -226,7 +228,7 @@ export async function deployDevelopmentTaskNotes(
           ? unlink(target).catch((error) => {
               if (error.code !== "ENOENT") throw error;
             })
-          : writeFile(target, previousManifests[index]),
+          : restoreFile(target, previousManifests[index]),
       ),
     );
   }
@@ -252,6 +254,25 @@ export async function deployDevelopmentTaskNotes(
   });
 
   console.log(`Development TaskNotes deployed: ${deployment.appOrigin}/`);
+}
+
+/** Put back a file's original bytes without ever exposing a truncated file.
+ * An unchanged file is left alone; a changed one is replaced by rename, which
+ * readers see as either the old or the new contents, never an empty file. */
+export async function restoreFile(target, bytes) {
+  const current = await readFile(target).catch((error) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (current !== null && current.equals(bytes)) return;
+  const temporary = `${target}.${process.pid}.restore`;
+  try {
+    await writeFile(temporary, bytes);
+    await rename(temporary, target);
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
 }
 
 async function verifyDevelopmentBuild(deployment = developmentDeployment) {

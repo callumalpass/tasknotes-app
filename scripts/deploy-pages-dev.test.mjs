@@ -1,4 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   candidateBDevelopmentDeployment,
@@ -8,7 +18,30 @@ import {
   developmentDeployments,
   developmentDeploymentEnvironment,
   requireBundledTrust,
+  restoreFile,
 } from "./deploy-pages-dev.mjs";
+
+const repositoryPackage = join(import.meta.dirname, "..", "package.json");
+const scratchRoots = [];
+
+/** A disposable checkout holding the files a LAB deployment swaps and restores. */
+async function scratchCheckout() {
+  const root = await mkdtemp(join(tmpdir(), "tasknotes-deploy-dev-"));
+  scratchRoots.push(root);
+  await mkdir(join(root, "public", ".well-known"), { recursive: true });
+  await mkdir(join(root, "src", "generated"), { recursive: true });
+  await writeFile(join(root, "package.json"), '{"name":"scratch"}\n');
+  await writeFile(join(root, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
+  await writeFile(join(root, "public", ".well-known", "mdbase-app.json"), "{}");
+  await writeFile(join(root, "src", "generated", "mdbase-app.json"), "{}");
+  return root;
+}
+
+afterEach(async () => {
+  await Promise.all(
+    scratchRoots.splice(0).map((root) => rm(root, { recursive: true })),
+  );
+});
 
 describe("TaskNotes development deployment", () => {
   it("defaults to the isolated LAB application and Connect authority", () => {
@@ -120,7 +153,9 @@ describe("TaskNotes development deployment", () => {
     const run = vi.fn(async () => undefined);
     const verifyBuild = vi.fn(async () => undefined);
 
-    await deployDevelopmentTaskNotes({}, { run, verifyBuild });
+    const root = await scratchCheckout();
+
+    await deployDevelopmentTaskNotes({}, { run, verifyBuild, root });
 
     expect(verifyBuild).toHaveBeenCalledOnce();
     expect(run).toHaveBeenCalledTimes(4);
@@ -148,6 +183,46 @@ describe("TaskNotes development deployment", () => {
         MDBASE_CONNECT_ORIGIN: developmentDeployment.connectOrigin,
       }),
     ]);
+  });
+
+  // #412: restoring the real package.json with a truncating write let a
+  // concurrent Vitest worker resolve it as an empty file.
+  it("restores swapped files in the given root without touching the repository", async () => {
+    const before = await stat(repositoryPackage);
+    const root = await scratchCheckout();
+    const original = await readFile(join(root, "package.json"));
+    const run = vi.fn(async (_command, arguments_) => {
+      if (arguments_[0] === "add")
+        await writeFile(join(root, "package.json"), '{"name":"swapped"}\n');
+    });
+
+    await deployDevelopmentTaskNotes(
+      {},
+      { run, verifyBuild: vi.fn(async () => undefined), root },
+    );
+
+    expect(await readFile(join(root, "package.json"))).toEqual(original);
+    const after = await stat(repositoryPackage);
+    expect(after.ino).toBe(before.ino);
+    expect(after.mtimeMs).toBe(before.mtimeMs);
+  });
+
+  it("replaces a changed file by rename and leaves an unchanged one alone", async () => {
+    const root = await scratchCheckout();
+    const target = join(root, "package.json");
+    const original = await readFile(target);
+    const untouched = await stat(target);
+
+    await restoreFile(target, original);
+    const unchanged = await stat(target);
+    expect(unchanged.ino).toBe(untouched.ino);
+    expect(unchanged.mtimeMs).toBe(untouched.mtimeMs);
+
+    await writeFile(target, '{"name":"swapped"}\n');
+    await restoreFile(target, original);
+    expect(await readFile(target)).toEqual(original);
+    // A new inode means the bytes arrived by rename, not by truncating in place.
+    expect((await stat(target)).ino).not.toBe(untouched.ino);
   });
 
   it("refuses a bundle whose SDK trusts another environment", () => {
