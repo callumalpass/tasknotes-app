@@ -121,6 +121,7 @@ export default defineConfig(({ mode }) => ({
     globals: true,
     maxWorkers: 4,
     setupFiles: "./src/test/setup.ts",
+    globalSetup: "./scripts/vitest-repository-guard.mjs",
     testTimeout: 10_000,
     restoreMocks: true,
   },
