@@ -162,7 +162,7 @@ describe("TaskNotes development deployment", () => {
     expect(run.mock.calls[0][1]).toEqual([
       "add",
       "--ignore-scripts",
-      "@mdbase-dev/sdk@file:vendor/sdk-475d1ea0-lab-beta166.tgz",
+      "@mdbase-dev/sdk@file:vendor/sdk-e8ffb806-lab-beta188.tgz",
     ]);
     expect(run.mock.calls[1][1]).toEqual(["build:assets"]);
     expect(run.mock.calls[2][1]).toEqual(
