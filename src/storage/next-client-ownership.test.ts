@@ -19,7 +19,14 @@ describe("native repository client lifetime (SDK stand-in, not native durability
       ownership,
     );
     try {
-      const note = await f.repository.getActiveScratchpad();
+      const unsaved = await f.repository.getActiveScratchpad();
+      const note = await f.repository.saveScratchpad({
+        id: unsaved.id,
+        path: unsaved.path,
+        revision: unsaved.revision,
+        baseBody: "",
+        body: "",
+      });
       const before = (await f.client.pendingWrites()).map(
         (w) => w.receipt.mutation,
       );

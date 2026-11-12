@@ -23,6 +23,13 @@ function saveInput(note: ScratchpadDocument, body = note.body) {
     body,
   };
 }
+/** The current note once stored: an empty collection's note is only written
+ * by its first save. */
+async function storedCurrent(f: Awaited<ReturnType<typeof fixture>>) {
+  return f.repository.saveScratchpad(
+    saveInput(await f.repository.getActiveScratchpad()),
+  );
+}
 function seed(
   f: Awaited<ReturnType<typeof fixture>>,
   id: string,
@@ -60,7 +67,7 @@ function imageInput(id: string, dateCreated = "2026-08-01T12:00:00Z") {
 describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
   it("restores original note/image pending metadata into a new repository over the borrowed client (not process/native durability proof)", async () => {
     const f = await fixture(true);
-    const note = await f.repository.getActiveScratchpad();
+    const note = await storedCurrent(f);
     const image = await f.repository.createScratchImage(
       imageInput("original-image"),
     );
@@ -108,7 +115,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
   it("captures notes and atomic transitions in the native pending lane without an ACK wait", async () => {
     const f = await fixture(true);
     const submit = vi.spyOn(f.client, "submit");
-    const first = await f.repository.getActiveScratchpad();
+    const first = await storedCurrent(f);
     expect(f.repository.writeState({ kind: "scratchpad", id: first.id })).toBe(
       "pending",
     );
@@ -155,7 +162,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
 
   it("an older creation ACK reads newer note bytes under the established identity rather than reapplying empty-body guards", async () => {
     const f = await fixture(true);
-    const first = await f.repository.getActiveScratchpad();
+    const first = await storedCurrent(f);
     const saved = await f.repository.saveScratchpad(
       saveInput(first, "- Newer pending bytes"),
     );
@@ -339,14 +346,47 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     await expect(f.repository.getActiveScratchpad()).rejects.toThrow();
     expect(submit).not.toHaveBeenCalled();
   });
-  it("creates only after a complete empty query, then reuses the current note", async () => {
+  it("opening an empty collection writes nothing; the first save creates the current note", async () => {
     const f = await fixture();
     const submit = vi.spyOn(f.client, "submit");
-    const current = await f.repository.getActiveScratchpad();
-    expect(current).toMatchObject({ state: "active", body: "" });
-    expect((await f.repository.getActiveScratchpad()).id).toBe(current.id);
+    const unsaved = await f.repository.getActiveScratchpad();
+    expect(unsaved).toMatchObject({ state: "active", body: "", revision: "" });
+    expect((await f.repository.getActiveScratchpad()).id).toBe(unsaved.id);
+    expect((await f.repository.listScratchFeed()).current.id).toBe(unsaved.id);
+    expect(await f.repository.getScratchpad(unsaved.id)).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+    const saved = await f.repository.saveScratchpad({
+      ...saveInput(unsaved, "- First"),
+      title: "Named",
+    });
+    expect(saved).toMatchObject({
+      state: "active",
+      body: "- First",
+      title: "Named",
+    });
+    expect(saved.revision).not.toBe("");
+    expect(await f.repository.getActiveScratchpad()).toEqual(saved);
+    expect(await f.repository.getScratchpad(saved.id)).toEqual(saved);
     expect(submit).toHaveBeenCalledOnce();
-    expect(await f.repository.getScratchpad(current.id)).toEqual(current);
+    // The unsaved note is gone once stored: saving it again is refused.
+    await expect(
+      f.repository.saveScratchpad(saveInput(unsaved, "- Again")),
+    ).rejects.toThrow();
+    expect(submit).toHaveBeenCalledOnce();
+  });
+
+  it("starting a new note from the unsaved one stores it first", async () => {
+    const f = await fixture();
+    const unsaved = await f.repository.getActiveScratchpad();
+    const result = await f.repository.startNewScratchpad(
+      saveInput(unsaved, "- Typed"),
+    );
+    expect(result.previous).toMatchObject({
+      state: "converted",
+      body: "- Typed",
+    });
+    expect(result.current).toMatchObject({ state: "active", body: "" });
+    expect((await f.repository.listScratchpads()).documents).toHaveLength(2);
   });
 
   it("reads the creation lifecycle's portable identity from the original native UUID", async () => {
@@ -363,7 +403,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
       return { ...record, frontmatter };
     });
     const submit = vi.spyOn(f.client, "submit");
-    await expect(f.repository.getActiveScratchpad()).resolves.toMatchObject({
+    await expect(storedCurrent(f)).resolves.toMatchObject({
       id: nativePortableId,
       state: "active",
     });
@@ -375,14 +415,18 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     const read = vi
       .spyOn(f.client, "get")
       .mockRejectedValueOnce(new Error("READ unavailable"));
-    await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+    const input = saveInput(
+      await f.repository.getActiveScratchpad(),
+      "- First",
+    );
+    await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
       code: "outcome_unknown",
     });
     const op = submit.mock.calls[0]![0][0]!;
     expect(op.kind).toBe("create");
     if (op.kind !== "create")
       throw new Error("Expected the original create admission");
-    const current = await f.repository.getActiveScratchpad();
+    const current = await f.repository.saveScratchpad(input);
     expect(current.state).toBe("active");
     expect(submit).toHaveBeenCalledOnce();
     // Original failure and exact foreground recovery retain the same UUID;
@@ -429,10 +473,14 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
           state: { ...record.state, confirmedSeq: NaN },
         };
       });
-      await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+      const input = saveInput(
+        await f.repository.getActiveScratchpad(),
+        "- First",
+      );
+      await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
         code: "outcome_unknown",
       });
-      await expect(f.repository.getActiveScratchpad()).rejects.toMatchObject({
+      await expect(f.repository.saveScratchpad(input)).rejects.toMatchObject({
         code: "outcome_unknown",
       });
       expect(submit).toHaveBeenCalledOnce();
@@ -506,7 +554,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
 
   it("archives the edited current note and creates its replacement in one CAS batch", async () => {
     const f = await fixture();
-    const current = await f.repository.getActiveScratchpad();
+    const current = await storedCurrent(f);
     const submit = vi.spyOn(f.client, "submit");
     const result = await f.repository.startNewScratchpad({
       ...saveInput(current, "- Final body"),
@@ -599,7 +647,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
 
   it("never deletes the current note or a stale historical revision", async () => {
     const f = await fixture();
-    const current = await f.repository.getActiveScratchpad();
+    const current = await storedCurrent(f);
     await expect(f.repository.deleteScratchpad(current)).rejects.toThrow(
       "Only a previous note",
     );
@@ -616,7 +664,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
 
   it("lost atomic-transition ACK recovery never submits a second replacement note", async () => {
     const f = await fixture();
-    const current = await f.repository.getActiveScratchpad();
+    const current = await storedCurrent(f);
     const input = saveInput(current, "- Final");
     const submit = f.client.submit.bind(f.client);
     const spy = vi
@@ -668,7 +716,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
 
   it("a late atomic rejection is visible and restores both notes without replacement submission", async () => {
     const f = await fixture();
-    const current = await f.repository.getActiveScratchpad();
+    const current = await storedCurrent(f);
     // Local capture no longer implies seed ACK. Isolate the transition from
     // that genuine first capture before rejecting its original batch below.
     f.replica.confirmAll();
