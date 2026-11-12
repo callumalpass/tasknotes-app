@@ -234,7 +234,9 @@ describe("Google events alongside task calendars", () => {
         isMirror: false,
         view: { type: mode === "listWeek" ? "list" : "month" },
       });
-      expect(content.textContent).toContain("Planning");
+      // The agenda leaves a slot for the event's row; a grid writes its title.
+      if (mode === "listWeek") expect(content).toHaveClass("agenda-event-slot");
+      else expect(content.textContent).toContain("Planning");
       expect(
         (content as HTMLElement).querySelector(".agenda-task-slot"),
       ).toBeNull();
@@ -249,6 +251,68 @@ describe("Google events alongside task calendars", () => {
     },
   );
 
+  it("reads an agenda event as a row under each of its days", () => {
+    const { item } = overlay();
+    const current = execution("2026-07-01");
+    current.view.presentation!.options.calendarView = "listWeek";
+    renderCalendar(current, vi.fn());
+    const el = document.createElement("div");
+    el.setAttribute("role", "button");
+    const arg = {
+      item,
+      el,
+      day: parseDay("2026-07-01"),
+      variant: "list",
+      timeText: "",
+      isMirror: false,
+      view: { type: "list" },
+    };
+    el.append((calendar.props!.listItemContent as (arg: unknown) => Node)(arg));
+    document.body.append(el);
+    act(() => (calendar.props!.itemDidMount as (arg: unknown) => void)(arg));
+    // The wrapper stays the one button that opens the event.
+    expect(el).toHaveAccessibleName("Planning, All day · Day 2 of 2, Work");
+    expect(el.querySelector(".google-event-row-title")).toHaveTextContent(
+      "Planning",
+    );
+    expect(el.querySelector(".google-event-row-meta")).toHaveTextContent(
+      "All day · Day 2 of 2Work",
+    );
+    el.remove();
+  });
+
+  it("says when a timed event of a day or more starts, where its bar begins", () => {
+    const { item } = overlay();
+    const event = {
+      ...item.data!.google!.event,
+      start: {
+        kind: "date_time" as const,
+        date_time: new Date(2026, 5, 30, 16).toISOString(),
+      },
+      end: {
+        kind: "date_time" as const,
+        date_time: new Date(2026, 6, 2, 10, 30).toISOString(),
+      },
+    };
+    const long = {
+      ...item,
+      data: { ...item.data!, google: { ...item.data!.google!, event } },
+    };
+    renderCalendar(execution("2026-07-01"), vi.fn());
+    const content = (isStart: boolean) =>
+      (calendar.props!.itemContent as (arg: unknown) => Node)({
+        item: long,
+        el: document.createElement("div"),
+        variant: "bar",
+        timeText: "",
+        isStart,
+        isMirror: false,
+        view: { type: "month" },
+      }).textContent;
+    expect(content(true)).toBe("4pm · Planning");
+    expect(content(false)).toBe("Planning");
+  });
+
   it("opens spanning Google events from a phone month's selected day", () => {
     vi.stubGlobal("matchMedia", () => ({
       matches: true,
@@ -256,19 +320,31 @@ describe("Google events alongside task calendars", () => {
       removeEventListener: vi.fn(),
     }));
     const { item, google } = overlay();
+    const finished = {
+      ...item.data!.google!.event,
+      id: "google-finished",
+      title: "Finished yesterday",
+      end: { kind: "date" as const, date: "2026-07-01" },
+    };
     google.items.push({
       ...item,
       id: "google:finished",
-      title: "Finished yesterday",
+      title: finished.title,
       start: "2026-06-30",
       end: "2026-07-01",
+      data: {
+        ...item.data!,
+        google: { ...item.data!.google!, event: finished },
+      },
     });
     const view = renderCalendar(execution("2026-07-01"), vi.fn());
     const inspector = within(view.container).getByRole("complementary", {
       name: "Selected day",
     });
     fireEvent.click(
-      within(inspector).getByRole("button", { name: /^Planning / }),
+      within(inspector).getByRole("button", {
+        name: "Planning, All day · Day 2 of 2, Work",
+      }),
     );
     expect(google.open).toHaveBeenCalledWith(item.data!.google);
     expect(within(inspector).queryByText("Finished yesterday")).toBeNull();

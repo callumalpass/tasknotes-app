@@ -105,6 +105,7 @@ msgid "({left}) or ({right})"
 msgstr "({left}) 或 ({right})"
 
 #: src/app/task-calendar-view.tsx
+#: src/calendar-service/event-labels.ts
 msgid "(No title)"
 msgstr "（无标题）"
 
@@ -1031,6 +1032,7 @@ msgid "All conditions match"
 msgstr "符合所有条件"
 
 #: src/calendar-service/event-dialog.tsx
+#: src/calendar-service/event-labels.ts
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "全天"
@@ -2085,6 +2087,10 @@ msgstr "日期和预计时长"
 msgid "Day"
 msgstr "日"
 
+#: src/calendar-service/event-labels.ts
+msgid "Day {day} of {days}"
+msgstr "第 {day} 天，共 {days} 天"
+
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
 msgstr "一天开始时间"
@@ -2101,6 +2107,11 @@ msgstr "天"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "距今天数"
+
+#: src/calendar-service/event-labels.ts
+#: src/calendar-service/event-row.tsx
+msgid "Declined"
+msgstr "已拒绝"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Default"
@@ -6240,6 +6251,10 @@ msgstr "取消跳过"
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
 msgstr "取消跳过重复项"
+
+#: src/calendar-service/event-labels.ts
+msgid "Until {time}"
+msgstr "至 {time}"
 
 #: src/i18n/ui-copy.ts
 msgid "up"

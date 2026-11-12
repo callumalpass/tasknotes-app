@@ -42,3 +42,23 @@ it("orders overdue calendar rows by the same effective date as daily lists, pres
     0,
   );
 });
+
+it("leads an agenda day with Google's all-day events, ahead of all-day tasks", () => {
+  const execution = { view: {}, rows: [] } as unknown as TaskViewExecution;
+  const entry = (google: boolean, allDay = true) =>
+    ({
+      allDay,
+      item: { data: google ? { google: {} } : {} },
+    }) as NormalizedItem<CalendarEventData>;
+  const order = calendarAgendaOrder(execution, true);
+  expect(order(entry(false), entry(true))).toBeGreaterThan(0);
+  expect(order(entry(true), entry(false))).toBeLessThan(0);
+  // Timed entries keep the calendar's own order, and so does every other mode.
+  expect(order(entry(false, false), entry(true, false))).toBe(
+    order(entry(false, false), entry(false, false)),
+  );
+  const elsewhere = calendarAgendaOrder(execution);
+  expect(elsewhere(entry(false), entry(true))).toBe(
+    elsewhere(entry(false), entry(false)),
+  );
+});

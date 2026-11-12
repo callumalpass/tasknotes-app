@@ -105,6 +105,7 @@ msgid "({left}) or ({right})"
 msgstr "({left}) или ({right})"
 
 #: src/app/task-calendar-view.tsx
+#: src/calendar-service/event-labels.ts
 msgid "(No title)"
 msgstr "(Без названия)"
 
@@ -1031,6 +1032,7 @@ msgid "All conditions match"
 msgstr "Все условия совпадают"
 
 #: src/calendar-service/event-dialog.tsx
+#: src/calendar-service/event-labels.ts
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "Весь день"
@@ -2085,6 +2087,10 @@ msgstr "Даты и оценка времени"
 msgid "Day"
 msgstr "День"
 
+#: src/calendar-service/event-labels.ts
+msgid "Day {day} of {days}"
+msgstr "День {day} из {days}"
+
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
 msgstr "Начало дня"
@@ -2101,6 +2107,11 @@ msgstr "Дни"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Дней от сегодня"
+
+#: src/calendar-service/event-labels.ts
+#: src/calendar-service/event-row.tsx
+msgid "Declined"
+msgstr "Отклонено"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Default"
@@ -6240,6 +6251,10 @@ msgstr "Восстановить пропущенное"
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
 msgstr "Восстановить пропущенное повторение"
+
+#: src/calendar-service/event-labels.ts
+msgid "Until {time}"
+msgstr "До {time}"
 
 #: src/i18n/ui-copy.ts
 msgid "up"

@@ -1,5 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useState } from "react";
+import { calendarTone } from "./calendar-tone";
 import { calendarServiceClient, MAX_SELECTED_CALENDARS } from "./client";
 import { calendarServiceFailureMessage } from "./failure-message";
 import { useCalendarService } from "./use-calendar-service";
@@ -125,7 +126,7 @@ export function CalendarServiceSettings() {
                 <i
                   aria-hidden="true"
                   style={{
-                    background: `var(--google-calendar-tone-${index % 6})`,
+                    background: calendarTone(calendar.color, index),
                   }}
                 />
                 <span>{calendar.name}</span>

@@ -1,5 +1,10 @@
 import { useEffect, useEffectEvent, type RefObject } from "react";
 import { calendarText } from "../i18n/calendar-locale";
+import {
+  MONTH_MEASURE_CLASS,
+  PREVIEW_MORE_CLASS,
+  onlyTouched,
+} from "./calendar-decorations";
 
 export function useCalendarPreviews(
   rootRef: RefObject<HTMLElement | null>,
@@ -15,7 +20,10 @@ export function useCalendarPreviews(
       boundCalendarPreviews(root, inspect, calendarText().more!);
       observer.observe(root, { childList: true, subtree: true });
     };
-    const observer = new MutationObserver(synchronize);
+    const observer = new MutationObserver((records) => {
+      // The month's measuring node comes and goes without moving an entry.
+      if (!onlyTouched(records, MONTH_MEASURE_CLASS)) synchronize();
+    });
     const resize =
       typeof ResizeObserver === "undefined"
         ? undefined
@@ -32,7 +40,7 @@ export function useCalendarPreviews(
 
 function resetPreviews(root: HTMLElement) {
   root
-    .querySelectorAll(".tnc-preview-more")
+    .querySelectorAll(`.${PREVIEW_MORE_CLASS}`)
     .forEach((button) => button.remove());
   root.querySelectorAll<HTMLElement>(".tnc-preview-hidden").forEach((item) => {
     item.classList.remove("tnc-preview-hidden");
@@ -84,7 +92,7 @@ export function boundCalendarPreviews(
         if (!hidden.length) return;
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "tnc-more tnc-preview-more";
+        button.className = `tnc-more ${PREVIEW_MORE_CLASS}`;
         button.textContent = moreLabel(hidden.length);
         button.style.left = `calc(${(index / cells.length) * 100}% + 2px)`;
         button.style.width = `calc(${100 / cells.length}% - 4px)`;

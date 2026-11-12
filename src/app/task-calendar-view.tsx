@@ -11,6 +11,7 @@ import { countLabel } from "../i18n/default-labels";
 import { TaskCalendar } from "@tasknotes/calendar/react";
 import { formatDay } from "@tasknotes/calendar";
 import {
+  CalendarPlus,
   Check,
   ChevronLeft,
   ChevronDown,
@@ -30,6 +31,19 @@ import {
   type TaskCalendarItem,
 } from "./calendar-items";
 import { GoogleEventDialog } from "../calendar-service/event-dialog";
+import {
+  eventSpan,
+  eventTouchesDay,
+  spansWholeDays,
+} from "../calendar-service/event-days";
+import {
+  eventClock,
+  eventDayLabel,
+  eventDescription,
+  eventRangeLabel,
+  type EventClock,
+} from "../calendar-service/event-labels";
+import { GoogleEventRow } from "../calendar-service/event-row";
 import { calendarServiceFailureMessage } from "../calendar-service/failure-message";
 import { useGoogleCalendarOverlay } from "../calendar-service/use-google-calendar-overlay";
 import { TaskActions } from "../components/task-actions";
@@ -318,20 +332,25 @@ export function TaskCalendarView({
   const selectedEntries = (entries.get(selected) ?? []).filter(
     (entry) => !entry.timeEntry && !entry.modelEntry.isOverdueOnToday,
   );
-  const selectedGoogleItems = google.items.filter((item) => {
-    const dayStart = dateFromStorage(selected)!;
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-    const start = item.allDay
-      ? dateFromStorage(calendarDay(item.start))!
-      : new Date(item.start);
-    const end = item.end
-      ? item.allDay
-        ? dateFromStorage(calendarDay(item.end))!
-        : new Date(item.end)
-      : start;
-    return start < dayEnd && (end > dayStart || start >= dayStart);
-  });
+  const eventLabels = useMemo<EventLabels>(() => {
+    const twelveHour = hour12(preferences.hourFormat);
+    return {
+      clock: eventClock(locale, twelveHour),
+      locale,
+      hour12: twelveHour,
+    };
+  }, [locale, preferences.hourFormat]);
+  // All-day events lead the day; the rest follow the clock.
+  const selectedGoogleItems = google.items
+    .flatMap((item) => {
+      const span = eventSpan(item.data!.google!.event);
+      return eventTouchesDay(span, selected) ? [{ item, span }] : [];
+    })
+    .sort(
+      (left, right) =>
+        Number(right.item.allDay) - Number(left.item.allDay) ||
+        left.span.start.getTime() - right.span.start.getTime(),
+    );
   const listMode = mode === "listWeek";
   const markers =
     legend.length && !listMode && mode !== "multiMonthYear" ? (
@@ -795,13 +814,19 @@ export function TaskCalendarView({
               </button>
               {google.writable.length ? (
                 <button
+                  aria-label={t`New event`}
+                  className="full-calendar-new-event"
                   type="button"
                   onClick={() => google.create(selected, selectedCreateValue)}
                 >
-                  <Trans>New event</Trans>
+                  <CalendarPlus aria-hidden="true" size={17} />
+                  <span>
+                    <Trans>New event</Trans>
+                  </span>
                 </button>
               ) : null}
               <button
+                className="full-calendar-today"
                 type="button"
                 onClick={() =>
                   agenda
@@ -943,7 +968,7 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
-              eventOrder={calendarAgendaOrder(execution)}
+              eventOrder={calendarAgendaOrder(execution, agenda)}
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>
@@ -1022,16 +1047,22 @@ export function TaskCalendarView({
               itemClassNames={({ item }) =>
                 item.data?.marker ? ["has-marker"] : []
               }
-              itemContent={(arg) => calendarEventContent(arg, configuration)}
+              itemContent={(arg) =>
+                calendarEventContent(arg, configuration, eventLabels)
+              }
               listItemContent={(arg) =>
                 agenda && !arg.isMirror && arg.item.data?.metadata
                   ? Object.assign(document.createElement("div"), {
                       className: "agenda-task-slot",
                     })
-                  : calendarEventContent(arg, configuration)
+                  : agenda && !arg.isMirror && arg.item.data?.google
+                    ? Object.assign(document.createElement("div"), {
+                        className: "agenda-event-slot",
+                      })
+                    : calendarEventContent(arg, configuration, eventLabels)
               }
               itemDidMount={(arg) => {
-                describeEvent(arg, configuration);
+                describeEvent(arg, configuration, eventLabels);
                 if (agenda) agendaRows.mount(arg);
               }}
               itemWillUnmount={agendaRows.unmount}
@@ -1073,8 +1104,21 @@ export function TaskCalendarView({
             />
             {[...agendaRows.slots].map(([slot, arg]) => {
               const item = items.find(({ id }) => id === arg.item.id);
-              const entry = item?.data?.metadata?.entry;
-              if (!item || !entry || !agenda) return null;
+              if (!item || !agenda) return null;
+              const event = item.data?.google;
+              if (event)
+                return createPortal(
+                  <GoogleEventRow
+                    {...event}
+                    day={formatDay(arg.day)}
+                    clock={eventLabels.clock}
+                    locale={locale}
+                  />,
+                  slot,
+                  `${arg.item.id}:${arg.day}`,
+                );
+              const entry = item.data?.metadata?.entry;
+              if (!entry) return null;
               const kind = localizedEntryKind(
                 calendarEntryKind(
                   item.data?.kind,
@@ -1164,31 +1208,30 @@ export function TaskCalendarView({
                 </Trans>
               </p>
             )}
-            {selectedGoogleItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="full-calendar-google-event"
-                aria-label={calendarEventLabel(item)}
-                style={{ "--c": item.color } as React.CSSProperties}
-                onClick={() => google.open(item.data!.google!)}
-              >
-                <span>{item.title || t`(No title)`}</span>
-                <small>
-                  {[
-                    !item.allDay
-                      ? new Intl.DateTimeFormat(locale, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        }).format(new Date(item.start))
-                      : null,
-                    item.data!.google!.calendar.name,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </small>
-              </button>
-            ))}
+            {selectedGoogleItems.map(({ item, span }) => {
+              const event = item.data!.google!;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="full-calendar-google-event"
+                  aria-label={eventDescription(
+                    event.event,
+                    event.calendar,
+                    eventDayLabel(span, selected, eventLabels.clock, locale),
+                  )}
+                  style={{ "--c": item.color } as React.CSSProperties}
+                  onClick={() => google.open(event)}
+                >
+                  <GoogleEventRow
+                    {...event}
+                    day={selected}
+                    clock={eventLabels.clock}
+                    locale={locale}
+                  />
+                </button>
+              );
+            })}
           </aside>
         ) : null}
         {phoneMonth ? markers : null}
@@ -1284,11 +1327,14 @@ function agendaTime(timeText: string, task: TaskSummary) {
 }
 
 function calendarEventContent(
-  { item, el, variant, timeText }: ItemArg<CalendarEventData>,
+  arg: ItemArg<CalendarEventData>,
   configuration: TaskCollectionConfiguration,
+  labels: EventLabels,
 ): Node {
+  const { item, el, variant } = arg;
   const doc = el.ownerDocument;
   const presentation = item.data;
+  const timeText = longEventTime(arg, labels) ?? arg.timeText;
   const marker = presentation?.marker;
   const node = (tag: string, className?: string, text?: string) => {
     const element = doc.createElement(tag);
@@ -1354,13 +1400,50 @@ function calendarEventContent(
   return fragment;
 }
 
+/**
+ * A timed event lasting a day or longer sits with the all-day entries, where
+ * the calendar writes no hours. Where it starts, it still says when: the hour
+ * in a month's bar, the whole stretch where a second line has room.
+ */
+function longEventTime(
+  { item, variant, isStart }: ItemArg<CalendarEventData>,
+  labels: EventLabels,
+): string | undefined {
+  const event = item.data?.google?.event;
+  if (!event || !isStart || variant === "list") return undefined;
+  const span = eventSpan(event);
+  if (!spansWholeDays(span)) return undefined;
+  return variant === "bar"
+    ? labels.clock(span.start)
+    : eventDayLabel(span, span.firstDay, labels.clock, labels.locale);
+}
+
 /** Names the entry for assistive technology; phone-month dots only take a priority colour. */
 function describeEvent(
-  { item, el, variant }: ItemArg<CalendarEventData>,
+  { item, el, variant, day }: ItemArg<CalendarEventData>,
   configuration: TaskCollectionConfiguration,
+  labels: EventLabels,
 ) {
   el.dataset.date = calendarDay(item.start);
   const presentation = item.data;
+  const google = presentation?.google;
+  if (google && variant !== "indicator") {
+    // An agenda row sits under its day, so it says what the event does that
+    // day; a grid entry stands alone and names its whole time.
+    const span = eventSpan(google.event);
+    el.setAttribute(
+      "aria-label",
+      eventDescription(
+        google.event,
+        google.calendar,
+        variant === "list"
+          ? eventDayLabel(span, formatDay(day), labels.clock, labels.locale)
+          : eventRangeLabel(span, labels.locale, labels.hour12),
+      ),
+    );
+    el.removeAttribute("title");
+    return;
+  }
   const marker = presentation?.marker;
   if (variant === "indicator") {
     // The day cell is the target and the day list holds the tasks; only an
@@ -1381,6 +1464,13 @@ function describeEvent(
     `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
   el.removeAttribute("title");
+}
+
+/** How event times are written: the calendar's clock and the display locale. */
+interface EventLabels {
+  clock: EventClock;
+  locale: string;
+  hour12: boolean | undefined;
 }
 
 function localizedEntryKind(kind: string | undefined): string | undefined {

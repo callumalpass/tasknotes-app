@@ -105,6 +105,7 @@ msgid "({left}) or ({right})"
 msgstr "({left}) または ({right})"
 
 #: src/app/task-calendar-view.tsx
+#: src/calendar-service/event-labels.ts
 msgid "(No title)"
 msgstr "(タイトルなし)"
 
@@ -1031,6 +1032,7 @@ msgid "All conditions match"
 msgstr "すべての条件に一致"
 
 #: src/calendar-service/event-dialog.tsx
+#: src/calendar-service/event-labels.ts
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "終日"
@@ -2085,6 +2087,10 @@ msgstr "日付と見積もり"
 msgid "Day"
 msgstr "日"
 
+#: src/calendar-service/event-labels.ts
+msgid "Day {day} of {days}"
+msgstr "{days}日中{day}日目"
+
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
 msgstr "1日の開始"
@@ -2101,6 +2107,11 @@ msgstr "日数"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "今日からの日数"
+
+#: src/calendar-service/event-labels.ts
+#: src/calendar-service/event-row.tsx
+msgid "Declined"
+msgstr "不参加"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Default"
@@ -6240,6 +6251,10 @@ msgstr "スキップを取り消す"
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
 msgstr "発生分のスキップを取り消す"
+
+#: src/calendar-service/event-labels.ts
+msgid "Until {time}"
+msgstr "{time}まで"
 
 #: src/i18n/ui-copy.ts
 msgid "up"

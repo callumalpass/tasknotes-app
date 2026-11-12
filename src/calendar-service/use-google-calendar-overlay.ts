@@ -9,13 +9,19 @@ import {
   calendarServiceClient,
   CalendarServiceError,
   type CalendarServiceFailure,
+  type EventBoundary,
   type GoogleCalendar,
   type GoogleEvent,
 } from "./client";
+import { calendarTone } from "./calendar-tone";
+import { eventSpan, shiftDay, spansWholeDays } from "./event-days";
 import { movedFields, newEventDraft, type EventDraft } from "./event-draft";
 import { useCalendarService, useGoogleEvents } from "./use-calendar-service";
 
-const TONES = 6;
+/** The person said no; Google still lists the event on their calendar. */
+export function isDeclined(event: GoogleEvent): boolean {
+  return event.self_response === "declined";
+}
 
 export type EventEditorRequest =
   | {
@@ -26,26 +32,35 @@ export type EventEditorRequest =
     }
   | { kind: "new"; draft: EventDraft; idempotencyKey: string };
 
-function googleItem(
+export function googleItem(
   event: GoogleEvent,
   calendar: GoogleCalendar,
-  tone: number,
+  /** The calendar's place among the person's calendars. */
+  index: number,
 ): TaskCalendarItem {
-  const { start, end } = event;
+  const span = eventSpan(event);
+  // A timed event lasting a day or more is drawn across its days like an
+  // all-day one. Dragging that bar would turn it into an all-day event and
+  // lose its hours, so its times change in the editor only.
+  const wholeDays = spansWholeDays(span);
+  const instant = (boundary: EventBoundary) =>
+    boundary.kind === "date" ? boundary.date : boundary.date_time;
+  const movable = calendar.can_write && !wholeDays;
   return {
     id: `google:${event.id}`,
     title: event.title ?? "",
-    start: start.kind === "date" ? start.date : start.date_time,
-    end: end.kind === "date" ? end.date : end.date_time,
-    allDay: start.kind === "date",
+    start: wholeDays ? span.firstDay : instant(event.start),
+    end: wholeDays ? shiftDay(span.lastDay, 1) : instant(event.end),
+    allDay: span.allDay || wholeDays,
     kind: "google",
-    color: `var(--google-calendar-tone-${tone})`,
-    editable: calendar.can_write,
-    startEditable: calendar.can_write,
-    durationEditable: calendar.can_write,
+    color: calendarTone(calendar.color, index),
+    editable: movable,
+    startEditable: movable,
+    durationEditable: movable,
     className: [
       "google-calendar-event",
       event.status === "tentative" ? "is-tentative" : "",
+      isDeclined(event) ? "is-declined" : "",
     ].filter(Boolean),
     data: {
       details: [],
@@ -53,6 +68,19 @@ function googleItem(
       google: { event, calendar },
     },
   };
+}
+
+/** The events to draw, each in its calendar's colour. */
+export function googleItems(
+  events: readonly GoogleEvent[],
+  calendars: readonly GoogleCalendar[],
+): TaskCalendarItem[] {
+  return events.flatMap((event) => {
+    // Where someone is working is a note on the day, not something to attend.
+    if (event.event_type === "working_location") return [];
+    const index = calendars.findIndex(({ id }) => id === event.calendar_id);
+    return index < 0 ? [] : [googleItem(event, calendars[index]!, index)];
+  });
 }
 
 /** Everything the task calendar needs to draw and change Google events. */
@@ -63,17 +91,10 @@ export function useGoogleCalendarOverlay(range: { start: Date; end: Date }) {
   const [editor, setEditor] = useState<EventEditorRequest | null>(null);
   const { calendars } = service;
   const { events } = loaded;
-  const items = useMemo(() => {
-    const tones = new Map(
-      calendars.map((calendar, index) => [calendar.id, index % TONES]),
-    );
-    return events.flatMap((event) => {
-      const calendar = calendars.find(({ id }) => id === event.calendar_id);
-      return calendar
-        ? [googleItem(event, calendar, tones.get(calendar.id)!)]
-        : [];
-    });
-  }, [calendars, events]);
+  const items = useMemo(
+    () => googleItems(events, calendars),
+    [calendars, events],
+  );
   const writable = calendars.filter(
     (calendar) => calendar.can_write && service.selected.includes(calendar.id),
   );

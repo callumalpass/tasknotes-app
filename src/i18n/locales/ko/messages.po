@@ -105,6 +105,7 @@ msgid "({left}) or ({right})"
 msgstr "({left}) 또는 ({right})"
 
 #: src/app/task-calendar-view.tsx
+#: src/calendar-service/event-labels.ts
 msgid "(No title)"
 msgstr "(제목 없음)"
 
@@ -1031,6 +1032,7 @@ msgid "All conditions match"
 msgstr "모든 조건 일치"
 
 #: src/calendar-service/event-dialog.tsx
+#: src/calendar-service/event-labels.ts
 #: src/i18n/calendar-locale.ts
 msgid "All day"
 msgstr "종일"
@@ -2085,6 +2087,10 @@ msgstr "날짜 및 예상 시간"
 msgid "Day"
 msgstr "일"
 
+#: src/calendar-service/event-labels.ts
+msgid "Day {day} of {days}"
+msgstr "{days}일 중 {day}일째"
+
 #: src/components/calendar-preferences.tsx
 msgid "Day begins"
 msgstr "하루 시작"
@@ -2101,6 +2107,11 @@ msgstr "일"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "오늘부터 일수"
+
+#: src/calendar-service/event-labels.ts
+#: src/calendar-service/event-row.tsx
+msgid "Declined"
+msgstr "거절함"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Default"
@@ -6240,6 +6251,10 @@ msgstr "건너뛰기 취소"
 #: src/components/task-actions.tsx
 msgid "Unskip occurrence"
 msgstr "반복 항목 건너뛰기 취소"
+
+#: src/calendar-service/event-labels.ts
+msgid "Until {time}"
+msgstr "{time}까지"
 
 #: src/i18n/ui-copy.ts
 msgid "up"

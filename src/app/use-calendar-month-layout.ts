@@ -1,4 +1,9 @@
 import { useEffect, useState, type RefObject } from "react";
+import {
+  MONTH_MEASURE_CLASS,
+  PREVIEW_MORE_CLASS,
+  onlyTouched,
+} from "./calendar-decorations";
 
 export function monthDotCapacity(width: number, countWidth: number): number {
   return Math.max(1, Math.floor((width - countWidth) / 8));
@@ -17,7 +22,7 @@ export function useCalendarMonthLayout(
       const box = host.querySelector<HTMLElement>(".tnc-dg-dots");
       const surface = host.querySelector<HTMLElement>(".full-calendar-surface");
       const count = host.ownerDocument.createElement("span");
-      count.className = "tnc-dg-dots-more";
+      count.className = `tnc-dg-dots-more ${MONTH_MEASURE_CLASS}`;
       count.style.cssText =
         "position:fixed;visibility:hidden;white-space:nowrap";
       count.textContent = `+${itemCount}`;
@@ -39,7 +44,9 @@ export function useCalendarMonthLayout(
     };
     const observe = () =>
       mutation.observe(host, { childList: true, subtree: true });
-    const mutation = new MutationObserver(() => {
+    const mutation = new MutationObserver((records) => {
+      // A preview's own buttons change neither the weeks nor the dots.
+      if (onlyTouched(records, PREVIEW_MORE_CLASS)) return;
       mutation.disconnect();
       measure();
       observe();

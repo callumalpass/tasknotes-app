@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CalendarServiceClient,
   CalendarServiceError,
+  defaultSelection,
+  MAX_SELECTED_CALENDARS,
   type GoogleEvent,
 } from "./client";
 import type { CalendarServiceHost } from "./host";
@@ -430,6 +432,49 @@ describe("CalendarServiceClient", () => {
     expect(queries.at(-1)!.get("end")).toBe("2027-01-01T00:00:00.000Z");
   });
 
+  it("reads what the service says about an event, and whatever it adds later", async () => {
+    const { client } = harness({
+      [`GET /v1/calendars/${CALENDAR}/events`]: () => [
+        200,
+        {
+          events: [
+            {
+              ...event("a"),
+              transparency: "transparent",
+              event_type: "working_location",
+              self_response: "declined",
+            },
+            {
+              ...event("b"),
+              event_type: "a_later_kind",
+              self_response: null,
+              a_later_field: { nested: true },
+            },
+            event("c"),
+          ],
+          omitted_count: 0,
+          next_cursor: null,
+        },
+      ],
+    });
+    const { events } = await client.events(
+      CALENDAR,
+      new Date("2026-11-01T00:00:00Z"),
+      new Date("2026-11-08T00:00:00Z"),
+      new AbortController().signal,
+    );
+    expect(
+      events.map(({ event_type, self_response }) => [
+        event_type,
+        self_response,
+      ]),
+    ).toEqual([
+      ["working_location", "declined"],
+      ["a_later_kind", null],
+      [undefined, undefined],
+    ]);
+  });
+
   it("drops a cancelled event from a range", async () => {
     const { client } = harness({
       [`GET /v1/calendars/${CALENDAR}/events`]: () => [
@@ -505,6 +550,32 @@ describe("CalendarServiceClient", () => {
       .catch((reason: unknown) => reason);
     expect(failure).toBeInstanceOf(CalendarServiceError);
     expect(failure).toMatchObject({ failure: "conflict" });
+  });
+
+  it("starts from the primary calendar and the ones shown in Google Calendar", () => {
+    const calendar = (name: string, extra: object = {}) => ({
+      id: crypto.randomUUID(),
+      name,
+      can_write: true,
+      is_primary: false,
+      ...extra,
+    });
+    const hidden = calendar("Hidden", { is_selected: false });
+    const shown = calendar("Shown", { is_selected: true });
+    const primary = calendar("Me", { is_primary: true, is_selected: true });
+    expect(defaultSelection([hidden, shown, primary])).toEqual([
+      primary.id,
+      shown.id,
+    ]);
+    // An older service says nothing about what Google shows.
+    expect(defaultSelection([calendar("Team"), primary])).toEqual([primary.id]);
+    const many = Array.from({ length: 8 }, (_, index) =>
+      calendar(`Shown ${index}`, { is_selected: true }),
+    );
+    expect(defaultSelection([...many, primary])).toEqual([
+      primary.id,
+      ...many.slice(0, MAX_SELECTED_CALENDARS - 1).map(({ id }) => id),
+    ]);
   });
 
   it("keeps a chosen selection across sessions and clears it on disconnect", async () => {
