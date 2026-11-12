@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCRATCHPAD_TYPE, type ScratchpadDocument } from "../domain/scratchpad";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { SCRATCH_IMAGE_TYPE } from "../domain/scratch-image";
-import { toValue } from "@mdbase-dev/sdk";
 import { NextTaskRepository } from "./next-repository";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
@@ -398,9 +397,10 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
       const record = await get(...args);
       if (!record.types.includes(SCRATCHPAD_TYPE)) return record;
-      const frontmatter = new Map(record.frontmatter);
-      frontmatter.set("id", toValue(nativePortableId));
-      return { ...record, frontmatter };
+      return {
+        ...record,
+        frontmatter: { ...record.frontmatter, id: nativePortableId },
+      };
     });
     const submit = vi.spyOn(f.client, "submit");
     await expect(storedCurrent(f)).resolves.toMatchObject({
@@ -494,9 +494,13 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
       const record = await get(...args);
       if (record.id === previous.id) return record;
-      const frontmatter = new Map(record.frontmatter);
-      frontmatter.set("id", toValue("91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9"));
-      return { ...record, frontmatter };
+      return {
+        ...record,
+        frontmatter: {
+          ...record.frontmatter,
+          id: "91ea8806-4b4e-4c50-8ae6-ddbd00fa38f9",
+        },
+      };
     });
     const result = await f.repository.startNewScratchpad(
       saveInput(current, "Final body"),
@@ -511,9 +515,10 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
     const get = f.client.get.bind(f.client);
     vi.spyOn(f.client, "get").mockImplementation(async (...args) => {
       const record = await get(...args);
-      const frontmatter = new Map(record.frontmatter);
-      frontmatter.set("id", toValue("changed-existing-id"));
-      return { ...record, frontmatter };
+      return {
+        ...record,
+        frontmatter: { ...record.frontmatter, id: "changed-existing-id" },
+      };
     });
     await expect(
       f.repository.saveScratchpad(saveInput(current, "Edit")),
@@ -540,7 +545,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
       title: "Edited",
       body: "- New body",
     });
-    const raw = await f.client.get(native.id, { body: true });
+    const raw = await f.client.get(native.id, { include: { body: true } });
     expect(raw.body).toBe(saved.body);
     await expect(
       f.repository.saveScratchpad(saveInput(current, "- Stale edit")),
@@ -620,7 +625,7 @@ describe("native Scratchpad (SDK stand-in, not Core/Noise/LAB)", () => {
       "2026-08-01T11:00:00Z",
       "- Winner",
     );
-    const before = await f.client.get(older.id, { body: true });
+    const before = await f.client.get(older.id, { include: { body: true } });
     const submit = vi.spyOn(f.client, "submit");
     expect((await f.repository.getActiveScratchpad()).id).toBe("newer");
     const previous = await f.repository.getScratchpad("older");

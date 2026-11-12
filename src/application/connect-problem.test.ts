@@ -58,16 +58,15 @@ it.each([
 
 it("keeps the original SDK write identity and does not make uncertain writes retryable", () => {
   const mutationId = "00000000-0000-4000-8000-000000000001";
-  const mutationIds = [mutationId];
   const error = new MdbaseError(
     mdbaseError("outcome_unknown", "Neutral diagnostic").toProblem(),
-    { mutationId, mutationIds },
+    { mutationId },
   );
   const operational = toOperationalError(error, "Save task");
   expect(operational.code).toBe("outcome-unknown");
   expect(operational.retryable).toBe(false);
   expect(operational.cause).toBe(error);
-  expect(operational.problem).toMatchObject({ mutationId, mutationIds });
+  expect(operational.problem).toMatchObject({ mutationId });
 });
 
 it("does not accept a legacy or lookalike problem carrier as an SDK failure", () => {

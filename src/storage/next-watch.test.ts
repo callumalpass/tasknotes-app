@@ -109,7 +109,7 @@ async function seed(f: Awaited<ReturnType<typeof fixture>>) {
     task,
     record: await f.client.find(
       { path: task.path },
-      { body: true, effective: true },
+      { include: { body: true, effective: true } },
     ),
   };
 }
@@ -196,19 +196,17 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       { wait: "pending" },
     );
     const staleRecord = await f.client.get(write.receipt.records![0]!.id, {
-      effective: true,
+      include: { effective: true },
     });
     expect(staleRecord.state.state).toBe("pending");
     f.replica.confirmAll();
     await f.client.delete(staleRecord);
     const control = heldWatch();
     let changes!: (batch: wire.ChangesResult) => void;
-    vi.spyOn(f.client, "watchChanges").mockImplementation(
-      (_cursor, callback) => {
-        changes = callback;
-        return control.watch;
-      },
-    );
+    vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+      changes = callback;
+      return control.watch;
+    });
     const opened = f.repository.initialize({ deferTaskIndex: true });
     control.active();
     await opened;
@@ -222,7 +220,9 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       .mockImplementation(original);
     expect(await f.repository.listSummaries()).toEqual([]);
     expect(pages).toHaveBeenCalledTimes(2);
-    expect(pages.mock.calls[0]![2]).toBe(pages.mock.calls[1]![2]); // original deadline/owner
+    expect(pages.mock.calls[0]![1]!.signal).toBe(
+      pages.mock.calls[1]![1]!.signal,
+    ); // original deadline/owner
     expect(
       f.repository.writeState({ kind: "task", id: task.id }),
     ).toBeUndefined();
@@ -236,12 +236,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const f = await fixture(),
         control = heldWatch();
       let changes!: (batch: wire.ChangesResult) => void;
-      vi.spyOn(f.client, "watchChanges").mockImplementation(
-        (_cursor, callback) => {
-          changes = callback;
-          return control.watch;
-        },
-      );
+      vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+        changes = callback;
+        return control.watch;
+      });
       const opened = f.repository.initialize({ deferTaskIndex: true });
       control.active();
       await opened;
@@ -302,7 +300,7 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     const current = heldWatch();
     let oldCallback!: (batch: wire.ChangesResult) => void;
     vi.spyOn(f.client, "watchChanges")
-      .mockImplementationOnce((_cursor, callback) => {
+      .mockImplementationOnce((callback) => {
         oldCallback = callback;
         return old.watch;
       })
@@ -329,12 +327,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     const f = await fixture();
     const control = heldWatch();
     let changes!: (batch: wire.ChangesResult) => void;
-    vi.spyOn(f.client, "watchChanges").mockImplementation(
-      (_cursor, callback) => {
-        changes = callback;
-        return control.watch;
-      },
-    );
+    vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+      changes = callback;
+      return control.watch;
+    });
     const describe = vi.spyOn(f.client, "describe");
     const opened = f.repository.initialize({ deferTaskIndex: true });
     control.active();
@@ -360,17 +356,15 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     const f = await fixture();
     const control = heldWatch();
     let changes!: (batch: wire.ChangesResult) => void;
-    vi.spyOn(f.client, "watchChanges").mockImplementation(
-      (_cursor, callback) => {
-        changes = callback;
-        return control.watch;
-      },
-    );
+    vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+      changes = callback;
+      return control.watch;
+    });
     const original = vi.mocked(f.client.describe).getMockImplementation()!;
     const describe = vi
       .spyOn(f.client, "describe")
-      .mockImplementationOnce(async (signal) => {
-        const result = await original(signal);
+      .mockImplementationOnce(async (options) => {
+        const result = await original(options);
         changes(batch);
         return result;
       })
@@ -379,7 +373,9 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     control.active();
     await opened;
     expect(describe).toHaveBeenCalledTimes(2);
-    expect(describe.mock.calls[0]![0]).toBe(describe.mock.calls[1]![0]);
+    expect(describe.mock.calls[0]![0]!.signal).toBe(
+      describe.mock.calls[1]![0]!.signal,
+    );
     await f.repository.initialize({ deferTaskIndex: true });
     expect(describe).toHaveBeenCalledTimes(2);
   });
@@ -390,12 +386,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const f = await fixture(),
         control = heldWatch();
       let changes!: (batch: wire.ChangesResult) => void;
-      vi.spyOn(f.client, "watchChanges").mockImplementation(
-        (_cursor, callback) => {
-          changes = callback;
-          return control.watch;
-        },
-      );
+      vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+        changes = callback;
+        return control.watch;
+      });
       const opened = f.repository.initialize({ deferTaskIndex: true });
       control.active();
       await opened;
@@ -405,7 +399,7 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
         const original = vi.mocked(f.client.describe).getMockImplementation()!;
         vi.mocked(f.client.describe).mockImplementation(async (input) => {
           count++;
-          signals.push(input && "aborted" in input ? input : input?.signal);
+          signals.push(input?.signal);
           const result = await original(input);
           if (count <= 6) changes(batch);
           return result;
@@ -413,9 +407,9 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
         changes(batch);
       } else {
         vi.spyOn(f.client, "pages").mockImplementation(
-          async function* (_query, _include, signal) {
+          async function* (_query, options) {
             count++;
-            signals.push(signal);
+            signals.push(options?.signal);
             yield { records: [], complete: true, asOf: 0 };
             if (count <= 6) changes(batch);
           },
@@ -438,12 +432,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const f = await fixture(),
         control = heldWatch();
       let changes!: (batch: wire.ChangesResult) => void;
-      vi.spyOn(f.client, "watchChanges").mockImplementation(
-        (_cursor, callback) => {
-          changes = callback;
-          return control.watch;
-        },
-      );
+      vi.spyOn(f.client, "watchChanges").mockImplementation((callback) => {
+        changes = callback;
+        return control.watch;
+      });
       const original = vi.mocked(f.client.describe).getMockImplementation()!;
       const describe = vi
         .spyOn(f.client, "describe")

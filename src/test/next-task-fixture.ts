@@ -1,11 +1,10 @@
-import {
-  connect,
-  toValue,
-  type Connector,
-  type MdbaseClient,
-  type PlainValue,
-  type wire,
+import type {
+  DescribeResult,
+  JsonValue,
+  MdbaseClient,
+  PlainValue,
 } from "@mdbase-dev/sdk";
+import { connect, type Connector } from "@mdbase-dev/sdk/thin-client";
 import {
   MemoryReplica,
   type MemoryRecord,
@@ -35,7 +34,7 @@ export async function nextTaskFixture(
   modelConfig?: TaskNotesMdbaseOptions["modelConfig"],
   connectorFactory?: (
     replica: MemoryReplica,
-    catalog: wire.DescribeResult,
+    catalog: DescribeResult,
   ) => Connector,
 ) {
   const replica = new MemoryReplica(options);
@@ -63,7 +62,7 @@ export async function attachTaskNotes(
     modelConfig?: TaskNotesMdbaseOptions["modelConfig"];
     connectorFactory?: (
       replica: MemoryReplica,
-      catalog: wire.DescribeResult,
+      catalog: DescribeResult,
     ) => Connector;
     /** Observe the link (benchmarks meter it) without replacing the stand-in. */
     wrapConnector?: (connector: Connector) => Connector;
@@ -79,7 +78,7 @@ export async function attachTaskNotes(
       contract: string;
       version: string;
       fields: Record<string, string>;
-      binding: Record<string, PlainValue>;
+      binding: Record<string, JsonValue>;
     }>;
   };
   const implementation = type.implements.find(
@@ -94,11 +93,11 @@ export async function attachTaskNotes(
     "_types/task.md",
     serializeMarkdownDocument(type, "Task type"),
   );
-  const catalog: wire.DescribeResult = {
+  const catalog: DescribeResult = {
     specVersion: "0.3.0",
     inclusion: { include: [] },
     issues: [],
-    settings: new Map(),
+    settings: {},
     types: [
       {
         name: "task",
@@ -107,8 +106,8 @@ export async function attachTaskNotes(
           {
             contract: "tasknotes.task",
             version: TASKNOTES_SPEC_VERSION,
-            fields: new Map(Object.entries(implementation.fields)),
-            binding: toValue(implementation.binding),
+            fields: implementation.fields,
+            binding: implementation.binding,
           },
         ],
       },
@@ -135,17 +134,16 @@ export async function attachTaskNotes(
     }));
   if (!connectorFactory)
     vi.spyOn(client, "describe").mockImplementation(async (input) => {
-      const signal = input && "aborted" in input ? input : input?.signal;
-      const resource = await client.resources.get("_types/task.md", signal);
+      const resource = await client.resources.get("_types/task.md", {
+        signal: input?.signal,
+      });
       const definition = parseFrontmatter(resource.text!)
         .frontmatter as unknown as typeof type;
       const current = definition.implements.find(
         (item) => item.contract === "tasknotes.task",
       )!;
-      catalog.types[0]!.implements[0]!.fields = new Map(
-        Object.entries(current.fields),
-      );
-      catalog.types[0]!.implements[0]!.binding = toValue(current.binding);
+      catalog.types[0]!.implements[0]!.fields = current.fields;
+      catalog.types[0]!.implements[0]!.binding = current.binding;
       return catalog;
     });
   const repository = new NextTaskRepository(
@@ -175,12 +173,7 @@ export function seedRecord(
 ) {
   return replica.seed({
     ...record,
-    frontmatter: Object.fromEntries(
-      Object.entries(record.frontmatter).map(([field, value]) => [
-        field,
-        toValue(value as PlainValue),
-      ]),
-    ),
+    frontmatter: record.frontmatter as Record<string, PlainValue>,
   });
 }
 

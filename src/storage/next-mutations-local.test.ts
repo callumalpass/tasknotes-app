@@ -1,9 +1,5 @@
-import {
-  connect,
-  MdbaseError,
-  type MdbaseClient,
-  type wire,
-} from "@mdbase-dev/sdk";
+import { MdbaseError, type MdbaseClient, type Receipt } from "@mdbase-dev/sdk";
+import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextMutations } from "./next-mutations";
@@ -38,8 +34,11 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     const f = await fixture(undefined, finalReads);
     const capture = (path: string) => {
       const recordId = crypto.randomUUID();
-      const local = async (_receipt: wire.Receipt, signal: AbortSignal) =>
-        f.client.get(recordId, { body: true, document: true }, signal);
+      const local = async (_receipt: Receipt, signal: AbortSignal) =>
+        f.client.get(recordId, {
+          include: { body: true, document: true },
+          signal,
+        });
       return f.mutations.run(
         {
           key: `create:${path}`,
@@ -85,13 +84,13 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     const recordId = crypto.randomUUID();
     const submit = vi.spyOn(f.client, "submit");
     let mid = "";
-    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+    const read = async (_receipt: Receipt, signal: AbortSignal) => {
       f.replica.reject(mid, {
         code: "conflict",
         recovery: "refresh",
         message: "Rejected at head",
       });
-      return f.client.get(recordId, { body: true }, signal);
+      return f.client.get(recordId, { include: { body: true }, signal });
     };
     await expect(
       f.mutations.runRecord(
@@ -124,11 +123,11 @@ describe("native local-result orchestration (protocol stand-in, not native quali
   it("uses a current-metadata ACK reader only after local delivery", async () => {
     const f = await fixture();
     const recordId = crypto.randomUUID();
-    const result = vi.fn((_receipt: wire.Receipt, signal: AbortSignal) =>
-      f.client.get(recordId, { body: true }, signal),
+    const result = vi.fn((_receipt: Receipt, signal: AbortSignal) =>
+      f.client.get(recordId, { include: { body: true }, signal }),
     );
-    const ack = vi.fn(async (_receipt: wire.Receipt, signal: AbortSignal) => {
-      await f.client.find(recordId, { body: true }, signal);
+    const ack = vi.fn(async (_receipt: Receipt, signal: AbortSignal) => {
+      await f.client.find(recordId, { include: { body: true }, signal });
     });
     await f.mutations.run(
       {
@@ -157,7 +156,7 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     const recordId = crypto.randomUUID();
     const submit = vi.spyOn(f.client, "submit");
     let reads = 0;
-    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+    const read = async (_receipt: Receipt, signal: AbortSignal) => {
       // The first READ is cancelled, as when a re-check aborted it.
       if (reads++ === 0)
         throw new MdbaseError({
@@ -165,7 +164,10 @@ describe("native local-result orchestration (protocol stand-in, not native quali
           recovery: "retry",
           message: "get cancelled",
         });
-      return f.client.get(recordId, { body: true, document: true }, signal);
+      return f.client.get(recordId, {
+        include: { body: true, document: true },
+        signal,
+      });
     };
     const record = await f.mutations.run(
       {
@@ -193,8 +195,11 @@ describe("native local-result orchestration (protocol stand-in, not native quali
       .spyOn(f.client, "receipt")
       .mockRejectedValue(Error("receipt unavailable"));
     const recordId = crypto.randomUUID();
-    const read = vi.fn((_receipt: wire.Receipt, signal: AbortSignal) =>
-      f.client.get(recordId, { body: true, document: true }, signal),
+    const read = vi.fn((_receipt: Receipt, signal: AbortSignal) =>
+      f.client.get(recordId, {
+        include: { body: true, document: true },
+        signal,
+      }),
     );
     let originalMutation = "";
     const submit = vi.fn(async (mutationId: string, signal: AbortSignal) => {
@@ -250,11 +255,13 @@ describe("native local-result orchestration (protocol stand-in, not native quali
     const reads: string[] = [];
     const f = await fixture(undefined, async (ids) => {
       for (const id of ids)
-        reads.push((await f.client.get(id, { body: true })).body ?? "");
+        reads.push(
+          (await f.client.get(id, { include: { body: true } })).body ?? "",
+        );
     });
     const nativeId = crypto.randomUUID();
-    const read = (_receipt: wire.Receipt, signal: AbortSignal) =>
-      f.client.get(nativeId, { body: true }, signal);
+    const read = (_receipt: Receipt, signal: AbortSignal) =>
+      f.client.get(nativeId, { include: { body: true }, signal });
     await f.mutations.runRecord(
       {
         key: "create",
@@ -268,7 +275,7 @@ describe("native local-result orchestration (protocol stand-in, not native quali
       },
       f.signal,
     );
-    const seen = await f.client.get(nativeId, { body: true });
+    const seen = await f.client.get(nativeId, { include: { body: true } });
     const second = await f.mutations.runRecord(
       {
         key: "edit",

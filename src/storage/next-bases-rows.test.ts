@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { wire } from "@mdbase-dev/sdk";
+import type { RecordView, wire } from "@mdbase-dev/sdk";
 import { readNativeRows, type NativeRowIdentity } from "./next-bases-rows";
 
 // Synthetic hydration consistency tests, not native READ/authority proof.
@@ -11,12 +11,12 @@ function identities(n: number): NativeRowIdentity[] {
     sourceRevision: "ab".repeat(32) as wire.Hash,
   }));
 }
-function record(row: NativeRowIdentity): wire.RecordView {
+function record(row: NativeRowIdentity): RecordView {
   return {
     id: row.record,
     path: row.path,
     revision: row.sourceRevision,
-    frontmatter: new Map(),
+    frontmatter: {},
     types: [],
     state: { state: "confirmed", confirmedSeq: 1 },
   };

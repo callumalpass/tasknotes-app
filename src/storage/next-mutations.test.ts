@@ -1,4 +1,5 @@
-import { connect, type MdbaseClient } from "@mdbase-dev/sdk";
+import type { MdbaseClient } from "@mdbase-dev/sdk";
+import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextMutations } from "./next-mutations";
@@ -189,7 +190,7 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
       async (id: string, signal: AbortSignal) => () => submit(id, signal),
     );
     const read = vi
-      .fn(async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => receipt)
+      .fn(async (receipt: import("@mdbase-dev/sdk").Receipt) => receipt)
       .mockRejectedValueOnce(new Error("Read unavailable"));
     const operation = { key: "accepted", prepare: prepared, confirmed: read };
     const failure = await f.mutations
@@ -230,7 +231,7 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
     const controller = new AbortController();
     const submit = create(f.client, "confirmed-before-abort.md");
     const original = vi.fn(
-      async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => {
+      async (receipt: import("@mdbase-dev/sdk").Receipt) => {
         if (!controller.signal.aborted) controller.abort();
         return receipt;
       },
@@ -253,7 +254,7 @@ describe("native mutation identity and receipt boundary (protocol stand-in)", ()
     });
     const prepare = vi.fn(operation.prepare);
     const replacementReader = vi.fn(
-      async (receipt: import("@mdbase-dev/sdk").wire.Receipt) => receipt,
+      async (receipt: import("@mdbase-dev/sdk").Receipt) => receipt,
     );
     const lookup = vi.spyOn(f.client, "receipt");
     expect(

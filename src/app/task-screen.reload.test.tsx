@@ -1,11 +1,11 @@
 import "fake-indexeddb/auto";
 
-import {
-  connect,
-  type MdbaseClient,
-  type WriteLedgerEntry,
-  type WriteLedgerStore,
+import type {
+  MdbaseClient,
+  WriteLedgerEntry,
+  WriteLedgerStore,
 } from "@mdbase-dev/sdk";
+import { connect } from "@mdbase-dev/sdk/thin-client";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 

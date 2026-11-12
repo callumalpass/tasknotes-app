@@ -1,9 +1,9 @@
+import type { MdbaseClient } from "@mdbase-dev/sdk";
 import {
   encode,
   type Connector,
   type FramePort,
-  type MdbaseClient,
-} from "@mdbase-dev/sdk";
+} from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { attachTaskNotes, taskQueryWhere } from "../src/test/next-task-fixture";
 

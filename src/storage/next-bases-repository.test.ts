@@ -251,9 +251,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     );
     const record = (
       await f.client.query({ types: ["task"], limit: 10 })
-    ).records.find(
-      (candidate) => candidate.frontmatter.get("id") === added.id,
-    )!;
+    ).records.find((candidate) => candidate.frontmatter.id === added.id)!;
     f.execute.mockResolvedValue({
       ...f.reply,
       rows: [
@@ -416,7 +414,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         ...f.record,
         id: row.record,
         path: row.path,
-        frontmatter: new Map([...f.record.frontmatter, ["id", row.record]]),
+        frontmatter: { ...f.record.frontmatter, id: row.record },
       };
     });
     f.source.mockResolvedValue({
@@ -488,7 +486,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         ...f.record,
         id: second.record,
         path: second.path,
-        frontmatter: new Map([...f.record.frontmatter, ["id", second.record]]),
+        frontmatter: { ...f.record.frontmatter, id: second.record },
       };
     });
     const result = await f.repository.executeView(f.view);

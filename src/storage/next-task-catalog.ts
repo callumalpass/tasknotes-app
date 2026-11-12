@@ -1,4 +1,4 @@
-import { toPlain, type MdbaseClient } from "@mdbase-dev/sdk";
+import type { MdbaseClient } from "@mdbase-dev/sdk";
 import { parseFrontmatter } from "@tasknotes/model/frontmatter";
 import { TASKNOTES_SETTINGS_TYPE } from "@tasknotes/model/settings";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
@@ -38,7 +38,7 @@ export async function nextTaskCatalog(
   signal: AbortSignal,
   options: { settings?: Readonly<Record<string, unknown>> } = {},
 ): Promise<NextTaskCatalog> {
-  const catalog = await client.describe(signal);
+  const catalog = await client.describe({ signal });
   signal.throwIfAborted();
   const contract = readableTaskNotesContract(catalog.contracts);
   if (!contract)
@@ -55,7 +55,7 @@ export async function nextTaskCatalog(
         `The type ${type.name} has ambiguous TaskNotes implementations.`,
       );
     const implementation = implementations[0]!;
-    const resource = await client.resources.get(type.path, signal);
+    const resource = await client.resources.get(type.path, { signal });
     signal.throwIfAborted();
     if (resource.state !== "confirmed")
       throw new TaskNotesModelRequiredError(
@@ -66,10 +66,7 @@ export async function nextTaskCatalog(
         `Mdbase did not return the task type source ${type.path}.`,
       );
     const definition = parseFrontmatter(resource.text).frontmatter;
-    const binding =
-      implementation.binding === undefined
-        ? {}
-        : toPlain(implementation.binding);
+    const binding = implementation.binding ?? {};
     if (!binding || typeof binding !== "object" || Array.isArray(binding))
       throw new Error(
         `The type ${type.name} has an invalid TaskNotes binding.`,
@@ -77,7 +74,7 @@ export async function nextTaskCatalog(
     providers.push({
       ...resolveTaskTypeDefinition(definition, {
         typeName: type.name,
-        fields: Object.fromEntries(implementation.fields),
+        fields: implementation.fields,
         configuration: binding,
         version: contract.version,
         settings: options.settings,

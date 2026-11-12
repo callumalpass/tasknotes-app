@@ -84,8 +84,8 @@ export async function qualifyNativeTaskNotesUi(options: {
       check(submitted.length === before + 1, "UI edit was resubmitted");
       const original = submitted[before]!;
       check(
-        (await client.receipt(original, AbortSignal.timeout(5000))).state ===
-          "pending",
+        (await client.receipt(original, { signal: AbortSignal.timeout(5000) }))
+          .state === "pending",
         "UI confirmation-blocking window not exercised",
       );
       await until(
@@ -97,8 +97,11 @@ export async function qualifyNativeTaskNotesUi(options: {
         locallySaved?.id === taskId &&
           locallySaved.title === UI_TITLE &&
           repository.writeState({ kind: "task", id: taskId }) === "pending" &&
-          (await client.receipt(original, AbortSignal.timeout(5000))).state ===
-            "pending" &&
+          (
+            await client.receipt(original, {
+              signal: AbortSignal.timeout(5000),
+            })
+          ).state === "pending" &&
           submitted.length === before + 1,
         "local UI state lacks original pending native READ/receipt",
       );
@@ -108,8 +111,8 @@ export async function qualifyNativeTaskNotesUi(options: {
         true,
       );
       check(
-        (await client.receipt(original, AbortSignal.timeout(5000))).state ===
-          "confirmed",
+        (await client.receipt(original, { signal: AbortSignal.timeout(5000) }))
+          .state === "confirmed",
         "UI Saved before original confirmation",
       );
       check(

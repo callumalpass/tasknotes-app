@@ -37,7 +37,6 @@ it("loads project records through the SDK with a Core-valid structured sort", as
         order_by: [{ field: "file.path", direction: "asc" }],
       }),
       expect.anything(),
-      expect.anything(),
     );
     await expect(checkQuery({ order_by: ["file.path"] })).rejects.toMatchObject(
       { code: "invalid_query", location: "order_by[0]" },

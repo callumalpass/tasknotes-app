@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  connect,
   MdbaseError,
   toPlain,
-  toValue,
+  type DescribeResult,
+  type JsonValue,
   type PlainValue,
-  type wire,
 } from "@mdbase-dev/sdk";
+import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import {
   buildTaskNotesMdbaseResources,
@@ -99,7 +99,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
       contract: string;
       version: string;
       fields: Record<string, string>;
-      binding: PlainValue;
+      binding: JsonValue;
     }>;
   };
   replica.seedResource(
@@ -110,9 +110,6 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     replica.seed({
       ...record,
       types: record.types ?? ["task"],
-      frontmatter: Object.fromEntries(
-        Object.entries(record.frontmatter).map(([k, v]) => [k, toValue(v)]),
-      ),
     });
   const client = await connect({
     connector: replica.connector(),
@@ -170,20 +167,21 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
       });
   };
   client.describe = async (input) => {
-    const signal = input && "aborted" in input ? input : input?.signal;
     available();
     control.operations.push("describe");
-    const resource = await client.resources.get("_types/task.md", signal);
+    const resource = await client.resources.get("_types/task.md", {
+      signal: input?.signal,
+    });
     const definition = parseFrontmatter(resource.text!)
       .frontmatter as unknown as typeof type;
     const impl = definition.implements.find(
       (i) => i.contract === "tasknotes.task",
     )!;
-    const result: wire.DescribeResult = {
+    const result: DescribeResult = {
       specVersion: "0.3.0",
       inclusion: { include: [] },
       issues: [],
-      settings: new Map(),
+      settings: {},
       types: [
         {
           name: "task",
@@ -192,8 +190,8 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
             {
               contract: "tasknotes.task",
               version: TASKNOTES_SPEC_VERSION,
-              fields: new Map(Object.entries(impl.fields)),
-              binding: toValue(impl.binding),
+              fields: impl.fields,
+              binding: impl.binding,
             },
           ],
         },
@@ -228,7 +226,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
           ? target.id
           : target.path;
     control.reads[id] = (control.reads[id] ?? 0) + 1;
-    if (control.holdRead === id && args[1]?.body === true) {
+    if (control.holdRead === id && args[1]?.include?.body === true) {
       control.prefetchReads[id] = (control.prefetchReads[id] ?? 0) + 1;
       control.pendingBodyReads[id] = (control.pendingBodyReads[id] ?? 0) + 1;
       try {
@@ -331,7 +329,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     const impl = type.implements.find((i) => i.contract === "tasknotes.task")!;
     const records = await query(
       { types: ["task"], limit: 1000 },
-      { body: true },
+      { include: { body: true } },
     );
     return {
       kind: "success",
@@ -348,13 +346,11 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
         cells: (input.viewProperties ?? ["note.title"]).map((key) => ({
           kind: "text" as const,
           value: String(
-            toPlain(
-              r.frontmatter.get(
-                key === "note.title"
-                  ? (impl.fields.title ?? "title")
-                  : key.replace(/^note\./, ""),
-              ) ?? null,
-            ) ?? "",
+            r.frontmatter[
+              key === "note.title"
+                ? (impl.fields.title ?? "title")
+                : key.replace(/^note\./, "")
+            ] ?? "",
           ),
         })),
       })),

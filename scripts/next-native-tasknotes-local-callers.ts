@@ -31,12 +31,14 @@ export async function qualifyNativeTaskNotesLocalCallers(options: {
     );
     const mutation = submitted[before]!;
     const pending = (
-      await client.pendingWrites(AbortSignal.timeout(5000))
+      await client.pendingWrites({ signal: AbortSignal.timeout(5000) })
     ).find((write) => write.receipt.mutation === mutation);
     const native = await client.get(
       { path: task.path },
-      { body: true, document: true, effective: true },
-      AbortSignal.timeout(5000),
+      {
+        include: { body: true, document: true, effective: true },
+        signal: AbortSignal.timeout(5000),
+      },
     );
     check(
       pending?.receipt.state === "pending" &&
@@ -55,11 +57,10 @@ export async function qualifyNativeTaskNotesLocalCallers(options: {
   }
   async function acknowledge(captured: Awaited<ReturnType<typeof record>>) {
     await confirm(captured.mutation);
-    const native = await client.get(
-      captured.native.id,
-      { body: true, document: true, effective: true },
-      AbortSignal.timeout(5000),
-    );
+    const native = await client.get(captured.native.id, {
+      include: { body: true, document: true, effective: true },
+      signal: AbortSignal.timeout(5000),
+    });
     const task = await repository.get(captured.task.id);
     check(
       native.id === captured.native.id &&
@@ -150,8 +151,10 @@ export async function qualifyNativeTaskNotesLocalCallers(options: {
     children.map((task) =>
       client.get(
         { path: task.path },
-        { document: true, effective: true },
-        AbortSignal.timeout(5000),
+        {
+          include: { document: true, effective: true },
+          signal: AbortSignal.timeout(5000),
+        },
       ),
     ),
   );
@@ -188,11 +191,10 @@ export async function qualifyNativeTaskNotesLocalCallers(options: {
     "existing occurrence was reminted or replacement-submitted",
   );
   for (let i = 0; i < witnesses.length; i++) {
-    const native = await client.get(
-      witnesses[i]!.id,
-      { document: true, effective: true },
-      AbortSignal.timeout(5000),
-    );
+    const native = await client.get(witnesses[i]!.id, {
+      include: { document: true, effective: true },
+      signal: AbortSignal.timeout(5000),
+    });
     check(
       native.id === witnesses[i]!.id &&
         native.path === witnesses[i]!.path &&

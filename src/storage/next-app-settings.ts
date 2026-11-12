@@ -1,9 +1,8 @@
 import {
   MdbaseError,
-  toPlain,
   type MdbaseClient,
   type PlainValue,
-  type wire,
+  type RecordView,
 } from "@mdbase-dev/sdk";
 import {
   tasknotesSettingsDefinition,
@@ -48,7 +47,7 @@ export function nativeTaskNotesSettingsStore(
   owner: () => AbortSignal,
 ): TaskNotesSettingsStore {
   const read = async (path: string, signal?: AbortSignal) => {
-    const record = await client.find({ path }, undefined, signal);
+    const record = await client.find({ path }, { signal });
     return record ? settingsRecord(record) : null;
   };
   const readCreated = async (path: string, signal: AbortSignal) => {
@@ -107,11 +106,6 @@ export function nativeTaskNotesSettingsStore(
   return new AppSettingsStore(port, tasknotesSettingsDefinition);
 }
 
-function settingsRecord(record: wire.RecordView): AppSettingsRecord {
-  return {
-    frontmatter: Object.fromEntries(
-      [...record.frontmatter].map(([key, value]) => [key, toPlain(value)]),
-    ),
-    revision: record.revision,
-  };
+function settingsRecord(record: RecordView): AppSettingsRecord {
+  return { frontmatter: record.frontmatter, revision: record.revision };
 }

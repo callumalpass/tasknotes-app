@@ -2,7 +2,8 @@ import {
   type MdbaseClient,
   type MdbasePeopleClient,
   type PeopleDirectory as NativePeopleDirectory,
-  type wire,
+  type QueryResult,
+  type RecordView,
 } from "@mdbase-dev/sdk";
 import { nextTaskFixture } from "../test/next-task-fixture";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -99,18 +100,18 @@ async function assignmentFixture() {
     title: "Assigned task",
     assignees: raw,
   });
-  const records: wire.RecordView[] = [];
+  const records: RecordView[] = [];
   for await (const page of f.client.pages({ types: ["task"] }))
     records.push(...page.records);
   const original = records.find((record) => record.path === task.path)!;
-  const projection: wire.QueryResult = {
+  const projection: QueryResult = {
     records: [
       {
         ...original,
-        values: new Map<string, (string | null)[]>([
-          ["raw", raw],
-          ["paths", ["people/Alex.md", "elsewhere/Alex.md", null, null]],
-        ]),
+        values: {
+          raw,
+          paths: ["people/Alex.md", "elsewhere/Alex.md", null, null],
+        },
       },
     ],
     columns: ["raw", "paths"],
@@ -126,22 +127,18 @@ function mockProjection(
 ) {
   const original = f.client.query.bind(f.client);
   const projection = vi.fn(read);
-  vi.spyOn(f.client, "query").mockImplementation(
-    (query, include, signal, options) => {
-      const selected =
-        Array.isArray(query.select) &&
-        query.select.some(
-          (column) =>
-            column !== null &&
-            typeof column === "object" &&
-            "name" in column &&
-            column.name === "paths",
-        );
-      return selected
-        ? projection(query, include, signal, options)
-        : original(query, include, signal, options);
-    },
-  );
+  vi.spyOn(f.client, "query").mockImplementation((query, options) => {
+    const selected =
+      Array.isArray(query.select) &&
+      query.select.some(
+        (column) =>
+          column !== null &&
+          typeof column === "object" &&
+          "name" in column &&
+          column.name === "paths",
+      );
+    return selected ? projection(query, options) : original(query, options);
+  });
   return projection;
 }
 
@@ -192,7 +189,7 @@ it.each(["unsupported", "incomplete"] as const)(
 
 it("rejects a late projection after the task generation changes", async () => {
   const { f, task, projection } = await assignmentFixture();
-  let finish!: (projection: wire.QueryResult) => void;
+  let finish!: (projection: QueryResult) => void;
   const query = mockProjection(
     f,
     () =>
@@ -211,7 +208,7 @@ it("rejects a late projection after the task generation changes", async () => {
 
 it("never publishes targets after the original caller cancels", async () => {
   const { f, task, projection } = await assignmentFixture();
-  let finish!: (projection: wire.QueryResult) => void;
+  let finish!: (projection: QueryResult) => void;
   const query = mockProjection(
     f,
     () =>
@@ -225,5 +222,5 @@ it("never publishes targets after the original caller cancels", async () => {
   controller.abort();
   finish(projection);
   await expect(pending).rejects.toThrow();
-  expect(query.mock.calls[0]![2]!.aborted).toBe(true);
+  expect(query.mock.calls[0]![1]!.signal!.aborted).toBe(true);
 });

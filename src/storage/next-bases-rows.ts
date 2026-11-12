@@ -1,4 +1,4 @@
-import type { wire } from "@mdbase-dev/sdk";
+import type { RecordView, wire } from "@mdbase-dev/sdk";
 
 export interface NativeRowIdentity {
   record: wire.Uuid;
@@ -13,9 +13,9 @@ export interface NativeRowIdentity {
  */
 export async function readNativeRows(
   rows: readonly NativeRowIdentity[],
-  read: (id: wire.Uuid, signal: AbortSignal) => Promise<wire.RecordView>,
+  read: (id: wire.Uuid, signal: AbortSignal) => Promise<RecordView>,
   owner: AbortSignal,
-): Promise<wire.RecordView[]> {
+): Promise<RecordView[]> {
   owner.throwIfAborted();
   const identities = rows.map(({ record, path, sourceRevision }) => ({
     record,
@@ -24,7 +24,7 @@ export async function readNativeRows(
   }));
   if (new Set(identities.map((row) => row.record)).size !== identities.length)
     throw new Error("Native view returned duplicate record identities.");
-  const result = new Array<wire.RecordView>(identities.length);
+  const result = new Array<RecordView>(identities.length);
   const stop = new AbortController();
   const signal = AbortSignal.any([owner, stop.signal]);
   let next = 0;

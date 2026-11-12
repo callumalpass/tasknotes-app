@@ -1,4 +1,5 @@
-import { connect, type MdbaseClient, type PlainValue } from "@mdbase-dev/sdk";
+import type { MdbaseClient, PlainValue } from "@mdbase-dev/sdk";
+import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -39,11 +40,11 @@ async function fixture() {
 }
 
 describe("native v2 TaskNotes record projection (protocol stand-in, not LAB)", () => {
-  it("decodes SDK maps and preserves portable TaskNotes identity separately from replica identity", async () => {
+  it("reads plain SDK values and preserves portable TaskNotes identity separately from replica identity", async () => {
     const f = await fixture();
-    const record = await f.client.get(f.id, { body: true });
+    const record = await f.client.get(f.id, { include: { body: true } });
     const task = nextTaskDocument(record, f.models)!;
-    expect(record.frontmatter).toBeInstanceOf(Map);
+    expect(record.frontmatter.title).toBe("Native SDK task");
     expect(task.id).toBe(f.portableId);
     expect(task.id).not.toBe(f.id);
     expect(task.path).toBe(f.source.path);
@@ -55,16 +56,18 @@ describe("native v2 TaskNotes record projection (protocol stand-in, not LAB)", (
 
   it("uses the replica's effective fields without computing collection defaults", async () => {
     const f = await fixture();
-    const record = await f.client.get(f.id, { body: true });
-    const effective = new Map(record.frontmatter);
-    effective.set("title", "Replica-resolved title");
+    const record = await f.client.get(f.id, { include: { body: true } });
+    const effective = {
+      ...record.frontmatter,
+      title: "Replica-resolved title",
+    };
     expect(nextTaskSummary({ ...record, effective }, f.models)!.title).toBe(
       "Replica-resolved title",
     );
     expect(nextTaskDocument({ ...record, effective }, f.models)!.title).toBe(
       "Replica-resolved title",
     );
-    expect(record.frontmatter.get("title")).toBe("Native SDK task");
+    expect(record.frontmatter.title).toBe("Native SDK task");
   });
 
   it("does not represent an unfetched body as empty", async () => {
@@ -81,12 +84,14 @@ describe("native v2 TaskNotes record projection (protocol stand-in, not LAB)", (
 
   it("accepts an explicitly fetched empty body", async () => {
     const f = await fixture();
-    const observed = await f.client.get(f.id, { body: true });
+    const observed = await f.client.get(f.id, { include: { body: true } });
     const write = await f.client.update(observed, { body: "" });
     await write.confirmed;
     expect(
-      nextTaskDocument(await f.client.get(f.id, { body: true }), f.models)!
-        .body,
+      nextTaskDocument(
+        await f.client.get(f.id, { include: { body: true } }),
+        f.models,
+      )!.body,
     ).toBe("");
   });
 
@@ -103,7 +108,7 @@ describe("native v2 TaskNotes record projection (protocol stand-in, not LAB)", (
 
   it("refuses ambiguous task implementations instead of selecting the first", async () => {
     const f = await fixture();
-    const record = await f.client.get(f.id, { body: true });
+    const record = await f.client.get(f.id, { include: { body: true } });
     const models = new Map([
       ["task", f.model],
       ["todo", f.model],

@@ -29,7 +29,7 @@ describe("operational errors", () => {
       code: "conflict",
       message: "Neutral diagnostic",
       recovery: "resolve_outcome",
-      details: new Map([["request_id", "exact-request"]]),
+      details: { request_id: "exact-request" },
     });
     const failure = toOperationalError(error, "create-task");
     expect(failure).toMatchObject({
@@ -37,7 +37,7 @@ describe("operational errors", () => {
       retryable: false,
       problem: {
         recovery: "resolve_outcome",
-        details: new Map([["request_id", "exact-request"]]),
+        details: { request_id: "exact-request" },
       },
     });
   });

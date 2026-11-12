@@ -227,8 +227,8 @@ test("packaged native assets are original bytes, not public application readines
   );
   // Node has no browser Worker host: its honest shell performs no IO.
   // This is not a claim that the browser entry is still unavailable.
-  const { MdbaseConnect } = await import("@mdbase-dev/sdk");
-  const entry = new MdbaseConnect({
+  const { createMdbase } = await import("@mdbase-dev/sdk");
+  const mdbase = createMdbase({
     id: "5cdfa020-c201-4da8-845a-f2cc9969eade",
     name: "TaskNotes",
     origin: "http://127.0.0.1:48218",
@@ -237,16 +237,13 @@ test("packaged native assets are original bytes, not public application readines
       await readFile(new URL("src/generated/mdbase-app.json", root), "utf8"),
     ),
   });
-  assert.equal(entry.application().getSnapshot().status, "blocked");
-  assert.equal(
-    entry.application().getSnapshot().problem,
-    "application_not_yet_available",
-  );
-  assert.equal(entry.connection("not-selected"), null);
-  assert.equal(entry.application().getSnapshot().selection.state, "none");
-  assert.equal(typeof entry.application().approve, "function");
-  assert.equal(typeof entry.application().reauthorize, "function");
-  assert.equal(typeof entry.application().chooseAnother, "function");
+  assert.equal(mdbase.getSnapshot().status, "blocked");
+  assert.equal(mdbase.getSnapshot().problem, "application_not_yet_available");
+  assert.equal(mdbase.connection("not-selected"), null);
+  assert.equal(mdbase.getSnapshot().selection.state, "none");
+  assert.equal(typeof mdbase.approve, "function");
+  assert.equal(typeof mdbase.reauthorize, "function");
+  assert.equal(typeof mdbase.chooseAnother, "function");
 });
 
 test("the unused protocol warning applies only to the exact first DEV cut", async () => {
