@@ -1,5 +1,4 @@
 import type { DescribeResult, MdbaseClient } from "@mdbase-dev/sdk";
-import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
@@ -18,11 +17,7 @@ async function fixture() {
     "_types/todo.md",
     "---\nname: todo\ncollection:\n  path:\n    folder: work\n---\nTask type source\n",
   );
-  const client = await connect({
-    connector: replica.connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
+  const client = await replica.client();
   clients.push(client);
   const catalog: DescribeResult = {
     specVersion: "0.3.0",

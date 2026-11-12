@@ -1,5 +1,4 @@
 import { MdbaseError, type MdbaseClient, type Receipt } from "@mdbase-dev/sdk";
-import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextMutations } from "./next-mutations";
@@ -14,11 +13,7 @@ async function fixture(
   readDelivered?: (ids: readonly string[]) => Promise<void>,
 ) {
   const replica = new MemoryReplica({ confirmDelayMs: null });
-  const client = await connect({
-    connector: replica.connector(),
-    app: { name: "local-mutation-order-test", version: "test" },
-    reconnect: false,
-  });
+  const client = await replica.client();
   clients.push(client);
   return {
     replica,

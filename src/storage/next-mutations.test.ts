@@ -1,5 +1,4 @@
 import type { MdbaseClient } from "@mdbase-dev/sdk";
-import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextMutations } from "./next-mutations";
@@ -12,11 +11,7 @@ afterEach(() => {
 
 async function fixture(confirmDelayMs: number | null = 0) {
   const replica = new MemoryReplica({ confirmDelayMs });
-  const client = await connect({
-    connector: replica.connector(),
-    app: { name: "next-mutations-test", version: "test" },
-    reconnect: false,
-  });
+  const client = await replica.client();
   clients.push(client);
   return {
     replica,

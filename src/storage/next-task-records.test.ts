@@ -1,5 +1,4 @@
 import type { MdbaseClient, PlainValue } from "@mdbase-dev/sdk";
-import { connect } from "@mdbase-dev/sdk/thin-client";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
@@ -13,11 +12,7 @@ afterEach(() => {
 async function fixture() {
   const model = new TaskNotesTaskModel();
   const models = new Map([["task", model]]);
-  const client = await connect({
-    connector: new MemoryReplica().connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
+  const client = await new MemoryReplica().client();
   clients.push(client);
   const portableId = crypto.randomUUID();
   const source = model.create(

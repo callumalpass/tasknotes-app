@@ -5,7 +5,6 @@ import type {
   WriteLedgerEntry,
   WriteLedgerStore,
 } from "@mdbase-dev/sdk";
-import { connect } from "@mdbase-dev/sdk/thin-client";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 
@@ -47,11 +46,7 @@ async function openPage(
 }
 
 const reconnect = (replica: Parameters<typeof attachTaskNotes>[0]) =>
-  connect({
-    connector: replica.connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
+  replica.client();
 
 async function titleField() {
   return screen.findByLabelText("Task title", { exact: true });
@@ -301,13 +296,7 @@ describe("TaskScreen across an immediate reload", () => {
       };
       const mdbase = await createTestMdbase();
       const replica = mdbase.fixture.replica();
-      const device = () =>
-        connect({
-          connector: replica.connector(),
-          app: { name: "tasknotes-test", version: "test" },
-          reconnect: false,
-          ledger,
-        });
+      const device = () => replica.client({ ledger });
       const firstClient = await device();
       const update = vi.spyOn(firstClient, "update");
       const first = await openPage(replica, firstClient, async (r) => {
