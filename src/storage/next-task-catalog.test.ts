@@ -1,4 +1,4 @@
-import { connect, type MdbaseClient, type wire } from "@mdbase-dev/sdk";
+import type { DescribeResult, MdbaseClient } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
@@ -17,17 +17,13 @@ async function fixture() {
     "_types/todo.md",
     "---\nname: todo\ncollection:\n  path:\n    folder: work\n---\nTask type source\n",
   );
-  const client = await connect({
-    connector: replica.connector(),
-    app: { name: "tasknotes-test", version: "test" },
-    reconnect: false,
-  });
+  const client = await replica.client();
   clients.push(client);
-  const catalog: wire.DescribeResult = {
+  const catalog: DescribeResult = {
     specVersion: "0.3.0",
     inclusion: { include: [] },
     issues: [],
-    settings: new Map(),
+    settings: {},
     types: [
       {
         name: "todo",
@@ -36,8 +32,8 @@ async function fixture() {
           {
             contract: "tasknotes.task",
             version: TASKNOTES_SPEC_VERSION,
-            fields: new Map([["title", "headline"]]),
-            binding: new Map(),
+            fields: { title: "headline" },
+            binding: {},
           },
         ],
       },
@@ -73,7 +69,9 @@ describe("native task catalog adapter (not LAB)", () => {
         { id: crypto.randomUUID() },
       ).path,
     ).toMatch(/^work\//);
-    expect(f.resources).toHaveBeenCalledWith("_types/todo.md", f.signal);
+    expect(f.resources).toHaveBeenCalledWith("_types/todo.md", {
+      signal: f.signal,
+    });
   });
 
   it.each(["digest", "version"] as const)(

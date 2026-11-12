@@ -36,7 +36,7 @@ const collectionId = (mdbase: TestMdbase, index: number) =>
 
 /** The Connect window is open; approving in it adds and opens `id`. */
 function approveAdded(mdbase: TestMdbase, id: string) {
-  const before = mdbase.fixture.application.getSnapshot();
+  const before = mdbase.fixture.mdbase.getSnapshot();
   act(() =>
     mdbase.fixture.controls.publishSnapshot({
       ...before,
@@ -51,7 +51,7 @@ function approveAdded(mdbase: TestMdbase, id: string) {
 function approvalAdds(
   mdbase: TestMdbase,
   id: string,
-  before = mdbase.fixture.application.getSnapshot(),
+  before = mdbase.fixture.mdbase.getSnapshot(),
 ) {
   const { controls } = mdbase.fixture;
   const collection = before.collections.find((c) => c.collectionId === id);
@@ -166,10 +166,9 @@ it.each(["choosing", "ready"] as const)(
       (options: Parameters<TestMdbase["addCollection"]>[0]) =>
         mdbase.addCollection(options),
     );
-    const addPrivateCollection = vi.fn(mdbase.addPrivateCollection);
     render(
       <TaskNotesApp
-        mdbase={{ ...mdbase, addCollection, addPrivateCollection }}
+        mdbase={{ ...mdbase, addCollection }}
         Workspace={SwitcherWorkspace as never}
       />,
     );
@@ -200,7 +199,6 @@ it.each(["choosing", "ready"] as const)(
         .observedActions()
         .find((call) => call.action === "approve")?.collectionId,
     ).toBeUndefined();
-    expect(addPrivateCollection).not.toHaveBeenCalled();
   },
 );
 

@@ -263,11 +263,11 @@ it.each([
     const f = await fixture();
     const log = vi.spyOn(console, "info").mockImplementation(() => {});
     const originalWatch = f.client.watchChanges.bind(f.client);
-    let onChanges: Parameters<typeof f.client.watchChanges>[1] | undefined;
+    let onChanges: Parameters<typeof f.client.watchChanges>[0] | undefined;
     vi.spyOn(f.client, "watchChanges").mockImplementation(
-      (cursor, listener) => {
+      (listener, options) => {
         onChanges = listener;
-        return originalWatch(cursor, listener);
+        return originalWatch(listener, options);
       },
     );
     const seed = await f.repository.create({ title: "Existing Today task" });

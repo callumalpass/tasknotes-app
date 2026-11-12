@@ -3,6 +3,7 @@ import "fake-indexeddb/auto";
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 
 import type { NextTaskRepository } from "../storage/next-repository";
+import type { PlainValue } from "@mdbase-dev/sdk";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
@@ -584,7 +585,7 @@ describe("TaskScreen with a change made in another tab", () => {
     const record = await fixture.client.get({ path: task.path });
     fixture.replica.editElsewhere(record.id, {
       frontmatter: {
-        ...Object.fromEntries(record.frontmatter),
+        ...record.frontmatter,
         title: input.title,
       },
       ...(input.body === undefined ? {} : { body: input.body }),
@@ -661,7 +662,10 @@ describe("TaskScreen with a refused native save", () => {
       id: record.id,
       path: record.path,
       types: record.types,
-      frontmatter: Object.fromEntries(record.frontmatter),
+      frontmatter: Object.fromEntries(record.frontmatter) as Record<
+        string,
+        PlainValue
+      >,
       body: "Edited elsewhere",
     });
     return { update, navigate, recordId: record.id };
@@ -688,7 +692,7 @@ describe("TaskScreen with a refused native save", () => {
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(update).toHaveBeenCalledOnce();
 
-    const latest = await f.client.get(recordId, { body: true });
+    const latest = await f.client.get(recordId, { include: { body: true } });
     fireEvent.click(screen.getByRole("button", { name: "Keep my edit" }));
     await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
     expect(update.mock.calls[1]![1]).toMatchObject({
@@ -701,9 +705,9 @@ describe("TaskScreen with a refused native save", () => {
         screen.queryByRole("alert", { name: "Edit not saved" }),
       ).not.toBeInTheDocument(),
     );
-    expect((await f.client.get(recordId, { body: true })).body).toBe(
-      "My local notes, extended",
-    );
+    expect(
+      (await f.client.get(recordId, { include: { body: true } })).body,
+    ).toBe("My local notes, extended");
   });
 
   it("shows other refusals without offering to re-apply, and discards to the latest", async () => {

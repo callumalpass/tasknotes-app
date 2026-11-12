@@ -2,7 +2,7 @@ import {
   MdbaseError,
   mdbaseError,
   toPlain,
-  toValue,
+  type PlainValue,
   type wire,
 } from "@mdbase-dev/sdk";
 import { nextTaskFixture } from "../test/next-task-fixture";
@@ -34,8 +34,8 @@ it("creates, updates and clears assignments through the actual mapped field with
   });
   const original = create.mock.calls[0]![0].id!;
   const created = await f.client.get(original);
-  expect(created.frontmatter.get("owners")).toEqual(["[[people/Alex.md]]"]);
-  expect(created.frontmatter.has("assignees")).toBe(false);
+  expect(created.frontmatter["owners"]).toEqual(["[[people/Alex.md]]"]);
+  expect(created.frontmatter).not.toHaveProperty("assignees");
   const changed = await f.repository.update(task.id, {
     assignees: ["[Sam](team/Sam.md)"],
   });
@@ -49,9 +49,9 @@ it("creates, updates and clears assignments through the actual mapped field with
   const cleared = await f.repository.update(task.id, { assignees: [] });
   expect(cleared.id).toBe(task.id);
   expect(cleared.assignees).toEqual([]);
-  expect(
-    (await f.client.get(original)).frontmatter.get("owners") ?? [],
-  ).toEqual([]);
+  expect((await f.client.get(original)).frontmatter["owners"] ?? []).toEqual(
+    [],
+  );
   expect(create).toHaveBeenCalledOnce();
 });
 
@@ -148,18 +148,16 @@ it("finds assignments on a collection larger than one query budget, from the per
       path: `tasks/t${String(i).padStart(4, "0")}.md`,
       types: ["task"],
       body,
-      frontmatter: Object.fromEntries(
-        Object.entries({
-          id: crypto.randomUUID(),
-          title: `Task ${i}`,
-          status: "open",
-          priority: "normal",
-          tags: ["task"],
-          dateCreated: "2026-11-01T00:00:00.000Z",
-          dateModified: "2026-11-01T00:00:00.000Z",
-          ...extra,
-        }).map(([key, value]) => [key, toValue(value as never)]),
-      ),
+      frontmatter: {
+        id: crypto.randomUUID(),
+        title: `Task ${i}`,
+        status: "open",
+        priority: "normal",
+        tags: ["task"],
+        dateCreated: "2026-11-01T00:00:00.000Z",
+        dateModified: "2026-11-01T00:00:00.000Z",
+        ...extra,
+      } as Record<string, PlainValue>,
     });
   const assigned = [3, 400, 801, 1102, 1199].map((i) =>
     seed(i, { owners: ["[[people/Me.md]]"] }),
@@ -175,7 +173,7 @@ it("finds assignments on a collection larger than one query budget, from the per
   // links reads every task under one request budget and refuses past 1,000.
   const originalPages = f.client.pages.bind(f.client);
   vi.spyOn(f.client, "pages").mockImplementation(
-    async function* (query, include, signal, options) {
+    async function* (query, options) {
       const tasks = f.replica.allRecords.filter((r) =>
         r.types.some((type) => query.types?.includes(type)),
       );
@@ -185,7 +183,7 @@ it("finds assignments on a collection larger than one query budget, from the per
           "ordinary selection exceeds its bounded source or retained-value query budget",
           "query_budget_exceeded",
         );
-      yield* originalPages(query, include, signal, options);
+      yield* originalPages(query, options);
     },
   );
   // Core's backlinks report the frontmatter field holding each link, which

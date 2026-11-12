@@ -391,7 +391,7 @@ it("preserves structured unknown acceptance and asks for exact recovery, not ord
   const create = vi.fn(async () => {
     throw mdbaseError("outcome_unknown", "Neutral diagnostic", {
       // The SDK code already marks this outcome unknown.
-      details: new Map([["request_id", "exact-request"]]),
+      details: { request_id: "exact-request" },
     });
   });
   render(
@@ -417,7 +417,7 @@ it("confirms an unconfirmed capture automatically with the retained exact intent
       intent!.authorityRequestId = "exact-request";
       throw mdbaseError("outcome_unknown", "Unconfirmed", {
         // The SDK code already marks this outcome unknown.
-        details: new Map([["request_id", "exact-request"]]),
+        details: { request_id: "exact-request" },
       });
     });
   render(

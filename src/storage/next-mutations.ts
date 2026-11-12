@@ -1,8 +1,9 @@
 import {
   MdbaseError,
   type MdbaseClient,
+  type Problem,
+  type Receipt,
   type Write,
-  type wire,
 } from "@mdbase-dev/sdk";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 
@@ -60,11 +61,11 @@ interface NativeMutation<Result> {
     id: string,
     signal: AbortSignal,
   ): Promise<(() => Promise<Write>) | { value: Result }>;
-  confirmed(receipt: wire.Receipt, signal: AbortSignal): Promise<Result>;
+  confirmed(receipt: Receipt, signal: AbortSignal): Promise<Result>;
   /** Opt-in genuine native local result, never an application projection. */
-  local?(receipt: wire.Receipt, signal: AbortSignal): Promise<Result>;
+  local?(receipt: Receipt, signal: AbortSignal): Promise<Result>;
   /** Delivered records may later be edited/deleted; ACK reads current metadata. */
-  ack?(receipt: wire.Receipt, signal: AbortSignal): Promise<void>;
+  ack?(receipt: Receipt, signal: AbortSignal): Promise<void>;
   /** Native record IDs retained by preparation, including deletes. */
   recordIds?(): readonly string[];
   /** Recovery only; never authorizes a replacement submission. */
@@ -83,14 +84,14 @@ interface RetainedWrite {
   delivered: boolean;
   /** The result READ failed: the next attempt observes this ID. */
   unknown: boolean;
-  receipt?: wire.Receipt;
+  receipt?: Receipt;
 }
 
 /** A rejected receipt is proof of non-admission, unlike a submit/read failure. */
 export class RejectedNextMutation extends MdbaseError {
   constructor(
     readonly mutationId: string,
-    problem?: wire.Problem,
+    problem?: Problem,
   ) {
     super(
       problem ?? {
@@ -112,8 +113,8 @@ export class NextMutations {
   private pending: {
     key: string;
     id: string;
-    receipt?: wire.Receipt;
-    confirmed(receipt: wire.Receipt, signal: AbortSignal): Promise<unknown>;
+    receipt?: Receipt;
+    confirmed(receipt: Receipt, signal: AbortSignal): Promise<unknown>;
   } | null = null;
 
   private localTail: Promise<void> = Promise.resolve();
@@ -161,7 +162,7 @@ export class NextMutations {
 
   private confirmedLater(
     entry: RetainedWrite,
-    receipt: wire.Receipt,
+    receipt: Receipt,
     owner: AbortSignal,
   ): void {
     void this.localQueue(async () => {
@@ -224,7 +225,7 @@ export class NextMutations {
         unknown: false,
       };
       this.retained.set(id, entry);
-      const observe = (receipt: wire.Receipt) => {
+      const observe = (receipt: Receipt) => {
         if (receipt.mutation !== id)
           throw new Error(
             "Mdbase returned a receipt for a different mutation.",
@@ -234,12 +235,12 @@ export class NextMutations {
           entry.recordIds.add(record.id);
         return receipt;
       };
-      const rejected = (problem?: wire.Problem) => {
+      const rejected = (problem?: Problem) => {
         this.retained.delete(id);
         return new RejectedNextMutation(id, problem);
       };
       const complete = async (
-        receipt: wire.Receipt,
+        receipt: Receipt,
         signal: AbortSignal,
       ): Promise<Result> => {
         if (receipt.state === "rejected") throw rejected(receipt.problem);
@@ -255,7 +256,7 @@ export class NextMutations {
         return value;
       };
       try {
-        let receipt: wire.Receipt;
+        let receipt: Receipt;
         if (submit) {
           const write = await submit();
           receipt = observe(write.receipt);
@@ -273,7 +274,7 @@ export class NextMutations {
               },
             );
         } else {
-          receipt = observe(await this.client.receipt(id, signal));
+          receipt = observe(await this.client.receipt(id, { signal }));
         }
         return await complete(receipt, signal);
       } catch (reason) {
@@ -299,7 +300,7 @@ export class NextMutations {
   private async reconcileLocal<Result>(
     id: string,
     ownerSignal: AbortSignal,
-    complete: (receipt: wire.Receipt, signal: AbortSignal) => Promise<Result>,
+    complete: (receipt: Receipt, signal: AbortSignal) => Promise<Result>,
   ): Promise<{ value: Result } | null> {
     if (ownerSignal.aborted) return null;
     const signal = AbortSignal.any([
@@ -311,7 +312,7 @@ export class NextMutations {
         await abortableDelay(Math.min(2_000, 100 * 2 ** attempt), signal);
       if (signal.aborted) break;
       try {
-        const receipt = await this.client.receipt(id, signal);
+        const receipt = await this.client.receipt(id, { signal });
         signal.throwIfAborted();
         if (receipt.state === "rejected")
           throw new RejectedNextMutation(id, receipt.problem);
@@ -364,23 +365,22 @@ export class NextMutations {
       signal.throwIfAborted();
       if (submit && typeof submit !== "function") return submit.value;
       this.pending = pending;
-      let receipt: wire.Receipt;
+      let receipt: Receipt;
       try {
         receipt =
           pending.receipt ??
           (recovering
-            ? await this.client.receipt(pending.id, signal)
+            ? await this.client.receipt(pending.id, { signal })
             : (await submit!()).receipt);
         if (receipt.mutation !== pending.id)
           throw new Error(
             "Mdbase returned a receipt for a different mutation.",
           );
         if (receipt.state === "pending")
-          receipt = await this.client.awaitReceipt(
-            pending.id,
-            TASKNOTES_REQUEST_BUDGETS.foregroundMs,
+          receipt = await this.client.awaitReceipt(pending.id, {
+            timeoutMs: TASKNOTES_REQUEST_BUDGETS.foregroundMs,
             signal,
-          );
+          });
       } catch (reason) {
         // An exception after submit/reconnect is not proof of non-admission.
         throw pendingRecoveryError(pending.id, reason);

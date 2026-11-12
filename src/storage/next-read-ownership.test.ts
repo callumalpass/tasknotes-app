@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { wire, type FramePort } from "@mdbase-dev/sdk";
+import { toValue, wire } from "@mdbase-dev/sdk";
+import type { FramePort } from "@mdbase-dev/sdk/thin-client";
 import {
   appLocalConnector,
   attachAppLocalFacade,
@@ -51,7 +52,24 @@ it.each(["superseded", "cancelled", "unavailable"] as const)(
                     wire.clientFrame.enc({
                       kind: "response",
                       id: frame.id,
-                      result: wire.describeResult.enc(catalog),
+                      result: wire.describeResult.enc({
+                        ...catalog,
+                        contracts: catalog.contracts.map((contract) => ({
+                          ...contract,
+                          schemas: undefined,
+                        })),
+                        settings: toValue(catalog.settings),
+                        types: catalog.types.map((type) => ({
+                          name: type.name,
+                          path: type.path,
+                          implements: type.implements.map((item) => ({
+                            contract: item.contract,
+                            version: item.version,
+                            fields: new Map(Object.entries(item.fields)),
+                            binding: toValue(item.binding ?? {}),
+                          })),
+                        })),
+                      }),
                     }),
                   );
                 if (holdDescribe) {

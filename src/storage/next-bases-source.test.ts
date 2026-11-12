@@ -16,7 +16,7 @@ async function fixture(options: Parameters<typeof nextTaskFixture>[0] = {}) {
   const f = await nextTaskFixture(options);
   fixtures.push(f);
   const seeded = f.replica.seed({ path: "tasks.base", body: document });
-  const record = await f.client.get(seeded.id, { document: true });
+  const record = await f.client.get(seeded.id, { include: { document: true } });
   const descriptor: AppBasesDescriptor = {
     record: record.id,
     sourceRevision: record.revision,
@@ -65,7 +65,8 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     f.source.mockImplementation(async () => ({
       kind: "success",
       view: await currentDescriptor(),
-      source: (await f.client.get(f.record.id, { document: true })).document!,
+      source: (await f.client.get(f.record.id, { include: { document: true } }))
+        .document!,
       clock,
       collectionRevision: f.record.revision,
     }));
@@ -95,7 +96,8 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     expect(result.rows).toEqual([]);
     expect(result.view.properties).toEqual([]);
     expect(
-      (await f.client.get(f.record.id, { document: true })).document,
+      (await f.client.get(f.record.id, { include: { document: true } }))
+        .document,
     ).toContain("order: []");
     expect(replace).toHaveBeenCalledOnce();
     expect(replace).toHaveBeenCalledWith(
@@ -186,7 +188,9 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       document,
       format: "obsidian.base",
     });
-    const record = await f.client.get(result.recordId!, { document: true });
+    const record = await f.client.get(result.recordId!, {
+      include: { document: true },
+    });
     expect(record.id).toBe(result.recordId);
     expect(record.path).toBe(result.path);
     expect(record.revision).toBe(result.revision);
@@ -428,11 +432,10 @@ describe("native view source boundaries (protocol stand-ins)", () => {
         signal: expect.any(AbortSignal),
       }),
     );
-    expect(get).toHaveBeenCalledWith(
-      f.record.id,
-      { document: true },
-      expect.any(AbortSignal),
-    );
+    expect(get).toHaveBeenCalledWith(f.record.id, {
+      include: { document: true },
+      signal: expect.any(AbortSignal),
+    });
     expect(result.document).toBe(changed);
     expect(result.revision).not.toBe(f.record.revision);
     expect(await f.repository.cachedViews()).toEqual([]);

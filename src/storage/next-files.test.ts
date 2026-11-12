@@ -153,7 +153,9 @@ describe("original SDK collection files adapter", () => {
     expect(api.get).not.toHaveBeenCalled();
     original.update({ mutation: id, state: "confirmed" });
     expect(await result).toMatchObject({ fileId: id, mediaType: "image/png" });
-    expect(api.get).toHaveBeenCalledWith(id, expect.any(AbortSignal));
+    expect(api.get).toHaveBeenCalledWith(id, {
+      signal: expect.any(AbortSignal),
+    });
     expect(api.upload.mock.calls[0][2]).toMatchObject({ transferId: id });
     expect(api.upload.mock.calls[0][2]).not.toHaveProperty("mediaType");
     expect(api.upload).toHaveBeenCalledOnce();

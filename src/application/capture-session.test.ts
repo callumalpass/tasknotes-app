@@ -74,7 +74,7 @@ describe("capture session lifetime", () => {
         intent!.authorityRequestId = "exact-request";
         throw mdbaseError("outcome_unknown", "Unconfirmed", {
           // The SDK code already marks this outcome unknown.
-          details: new Map([["request_id", "exact-request"]]),
+          details: { request_id: "exact-request" },
         });
       })
       .mockRejectedValueOnce(new Error("Receipt missing"));

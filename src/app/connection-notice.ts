@@ -33,7 +33,6 @@ type Observed = Partial<
     MdbaseSnapshot,
     | "phase"
     | "sync"
-    | "writes"
     | "transport"
     | "live"
     | "collections"
@@ -47,7 +46,7 @@ export function connectionNotice(
 ): ConnectionNotice | null {
   if (!snapshot || (snapshot.phase && snapshot.phase.kind !== "ready"))
     return null;
-  if (snapshot.writes?.saveState === "saved_on_device")
+  if (snapshot.sync?.writes?.saveState === "saved_on_device")
     return "saved_on_device";
   // Availability is an SDK fact, not an app storage choice or an inference
   // from a failed task/view operation. Access removal stays a different state.
@@ -65,7 +64,7 @@ export function connectionNotice(
     health === "unreachable" ||
     health === "server_busy" ||
     health === "rate_limited" ||
-    snapshot.sync?.kind === "offline" ||
+    snapshot.sync?.connection === "offline" ||
     (snapshot.sync?.live ?? snapshot.live) === false
   )
     return "reconnecting";

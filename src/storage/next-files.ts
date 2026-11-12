@@ -81,7 +81,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
     const original =
       options.ifRevision === undefined
         ? undefined
-        : await this.files.get({ path }, signal);
+        : await this.files.get({ path }, { signal });
     signal.throwIfAborted();
     if (original && original.digest !== options.ifRevision) throw changedFile();
     const input = ArrayBuffer.isView(source)
@@ -96,7 +96,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
       onProgress: progress(options.onProgress, "uploading"),
     });
     await settled(write.confirmed, signal);
-    const actual = await this.files.get(write.fileId, signal);
+    const actual = await this.files.get(write.fileId, { signal });
     signal.throwIfAborted();
     if (
       actual.id !== write.fileId ||
@@ -184,7 +184,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
     options: { mutationId?: string; signal?: AbortSignal } = {},
   ): Promise<CollectionFile> {
     const signal = this.signal(options.signal);
-    const original = await this.files.get(file.fileId, signal);
+    const original = await this.files.get(file.fileId, { signal });
     assertOriginal(original, file);
     signal.throwIfAborted();
     const write = await this.files.move(original, path, {
@@ -193,7 +193,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
       signal,
     });
     await settled(write.confirmed, signal);
-    const actual = await this.files.get(original.id, signal);
+    const actual = await this.files.get(original.id, { signal });
     assertOriginal(actual, { ...file, path });
     signal.throwIfAborted();
     return collectionFile(actual);
@@ -204,7 +204,7 @@ export class NextCollectionFileStore implements CollectionFileStore {
     options: { mutationId?: string; signal?: AbortSignal } = {},
   ): Promise<void> {
     const signal = this.signal(options.signal);
-    const original = await this.files.get(file.fileId, signal);
+    const original = await this.files.get(file.fileId, { signal });
     assertOriginal(original, file);
     signal.throwIfAborted();
     const write = await this.files.delete(original, {

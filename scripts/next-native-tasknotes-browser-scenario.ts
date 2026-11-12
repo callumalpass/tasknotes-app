@@ -1,6 +1,6 @@
 /** LOCAL TEST scenario: real NextTaskRepository over the actual native data
  * facade. No synthetic Describe, MemoryReplica, UI activation or shared data. */
-import type { MdbaseClient, wire } from "@mdbase-dev/sdk";
+import type { MdbaseClient, Receipt } from "@mdbase-dev/sdk";
 import {
   buildTaskNotesMdbaseResources,
   TASKNOTES_CONTRACT_DIGEST,
@@ -56,7 +56,9 @@ export async function qualifyNativeTaskNotes(options: {
     }
     if (!done) {
       const observed = submitted.length
-        ? await client.receipt(submitted.at(-1)!, AbortSignal.timeout(5000))
+        ? await client.receipt(submitted.at(-1)!, {
+            signal: AbortSignal.timeout(5000),
+          })
         : null;
       throw Error(
         `owned native TaskNotes: bounded drive exhausted; original receipt ${observed?.state ?? "not submitted"}; ${observed?.problem?.code ?? "no problem"}; preserve operation`,
@@ -68,9 +70,9 @@ export async function qualifyNativeTaskNotes(options: {
   const submitted: string[] = [],
     originalSubmit = client.submit.bind(client);
   client.submit = async (...args) => {
-    const writes = await originalSubmit(...args);
-    submitted.push(...writes.map((w) => w.receipt.mutation));
-    return writes;
+    const write = await originalSubmit(...args);
+    submitted.push(write.receipt.mutation);
+    return write;
   };
   try {
     if (mode === "fresh") {
@@ -110,7 +112,9 @@ export async function qualifyNativeTaskNotes(options: {
         );
       }
     }
-    const catalog = await client.describe(AbortSignal.timeout(5000));
+    const catalog = await client.describe({
+      signal: AbortSignal.timeout(5000),
+    });
     requireTest(
       catalog.contracts.some(
         (contract) =>
@@ -178,11 +182,10 @@ export async function qualifyNativeTaskNotes(options: {
       );
       // TASK is the original native record ID; the real catalog's on_create
       // lifecycle assigns the portable frontmatter ID. Preserve both identities.
-      const originalRecord = await client.get(
-        TASK,
-        { body: true, effective: true },
-        AbortSignal.timeout(5000),
-      );
+      const originalRecord = await client.get(TASK, {
+        include: { body: true, effective: true },
+        signal: AbortSignal.timeout(5000),
+      });
       requireTest(
         originalRecord.id === TASK &&
           originalRecord.path === created.path &&
@@ -203,10 +206,9 @@ export async function qualifyNativeTaskNotes(options: {
         createMutation,
         "create lost its original SDK mutation identity",
       );
-      const receipt = await client.receipt(
-        createMutation,
-        AbortSignal.timeout(5000),
-      );
+      const receipt = await client.receipt(createMutation, {
+        signal: AbortSignal.timeout(5000),
+      });
       requireTest(
         receipt.state === "pending" &&
           originalRecord.state.state === "pending" &&
@@ -219,7 +221,10 @@ export async function qualifyNativeTaskNotes(options: {
         "create did not return a genuine pending native READ/original MID",
       );
       const createAck = await driven(
-        client.awaitReceipt(createMutation, 5000, AbortSignal.timeout(5000)),
+        client.awaitReceipt(createMutation, {
+          timeoutMs: 5000,
+          signal: AbortSignal.timeout(5000),
+        }),
       );
       requireTest(
         createAck.mutation === createMutation &&
@@ -246,20 +251,18 @@ export async function qualifyNativeTaskNotes(options: {
         submitted.length === before + 1,
         "edit was resubmitted or no original mutation recorded",
       );
-      const updated: wire.Receipt = await client.receipt(
-        submitted.at(-1)!,
-        AbortSignal.timeout(5000),
-      );
+      const updated: Receipt = await client.receipt(submitted.at(-1)!, {
+        signal: AbortSignal.timeout(5000),
+      });
       requireTest(
         updated.state === "pending" &&
           repository.writeState({ kind: "task", id: portableId }) === "pending",
         "edit did not return before original authority confirmation",
       );
-      const editedRecord = await client.get(
-        TASK,
-        { body: true, document: true, effective: true },
-        AbortSignal.timeout(5000),
-      );
+      const editedRecord = await client.get(TASK, {
+        include: { body: true, document: true, effective: true },
+        signal: AbortSignal.timeout(5000),
+      });
       requireTest(
         editedRecord.id === TASK &&
           editedRecord.path === originalRecord.path &&
@@ -282,7 +285,9 @@ export async function qualifyNativeTaskNotes(options: {
       try {
         await reopened.initialize();
         const task = await reopened.get(portableId);
-        const pending = await client.pendingWrites(AbortSignal.timeout(5000));
+        const pending = await client.pendingWrites({
+          signal: AbortSignal.timeout(5000),
+        });
         requireTest(
           task?.id === portableId &&
             task.path === edited.path &&
@@ -297,11 +302,10 @@ export async function qualifyNativeTaskNotes(options: {
           "new repository lost original pending metadata/MID or submitted again",
         );
         const editAck = await driven(
-          client.awaitReceipt(
-            updated.mutation,
-            5000,
-            AbortSignal.timeout(5000),
-          ),
+          client.awaitReceipt(updated.mutation, {
+            timeoutMs: 5000,
+            signal: AbortSignal.timeout(5000),
+          }),
         );
         requireTest(
           editAck.mutation === updated.mutation &&
@@ -332,7 +336,10 @@ export async function qualifyNativeTaskNotes(options: {
         capture: (promise) => driven(promise, true),
         confirm: async (mutation) => {
           const receipt = await driven(
-            client.awaitReceipt(mutation, 5000, AbortSignal.timeout(5000)),
+            client.awaitReceipt(mutation, {
+              timeoutMs: 5000,
+              signal: AbortSignal.timeout(5000),
+            }),
           );
           requireTest(
             receipt.mutation === mutation && receipt.state === "confirmed",
@@ -341,11 +348,10 @@ export async function qualifyNativeTaskNotes(options: {
         },
       });
     }
-    const originalRecord = await client.get(
-      TASK,
-      { body: true, effective: true },
-      AbortSignal.timeout(5000),
-    );
+    const originalRecord = await client.get(TASK, {
+      include: { body: true, effective: true },
+      signal: AbortSignal.timeout(5000),
+    });
     requireTest(
       originalRecord.id === TASK,
       "original native record identity changed",

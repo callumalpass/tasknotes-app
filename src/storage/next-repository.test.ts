@@ -201,7 +201,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(record.id).toBe(s.nativeId);
     expect(record.revision).toMatch(/^sha256:/);
     expect(update.mock.calls[0]![1].ifRevision).toBe(record.revision);
-    expect((await f.client.get(s.nativeId)).frontmatter.get("id")).toBe(
+    expect((await f.client.get(s.nativeId)).frontmatter["id"]).toBe(
       s.portableId,
     );
   });
@@ -275,7 +275,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
           await f.repository.update(task.id, { [field]: values });
         const nativeId = create.mock.calls[0]![0].id!;
         const before = await f.client.get(nativeId);
-        expect(before.frontmatter.get(storedField)).toHaveLength(2);
+        expect(before.frontmatter[storedField]).toHaveLength(2);
         const submit = vi.spyOn(f.client, "submit");
 
         // Removing a non-final member still writes an array, not a deletion.
@@ -314,8 +314,8 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
           expect(op.unset ?? []).not.toContain(field);
         }
         const stored = await f.client.get(nativeId);
-        expect(stored.frontmatter.has(storedField)).toBe(!unset);
-        if (!unset) expect(stored.frontmatter.get(storedField)).toEqual([]);
+        expect(Object.hasOwn(stored.frontmatter, storedField)).toBe(!unset);
+        if (!unset) expect(stored.frontmatter[storedField]).toEqual([]);
         await f.repository.refresh();
         expect((await f.repository.get(task.id))?.[field]).toEqual([]);
         expect(create).toHaveBeenCalledOnce();
@@ -571,9 +571,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       cause: { code: "not_found" },
     });
     expect(spy).toHaveBeenCalledOnce();
-    expect((await f.client.get(replacementId, { body: true })).body).toBe(
-      "Replacement",
-    );
+    expect(
+      (await f.client.get(replacementId, { include: { body: true } })).body,
+    ).toBe("Replacement");
   });
 
   it("returns summaries without body reads and hydrates only requested documents", async () => {
@@ -590,7 +590,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       ),
     ).toEqual([]);
     expect((await f.repository.get(s.portableId))!.body).toBe("Original body");
-    expect(get.mock.calls.at(-1)![1]).toMatchObject({ body: true });
+    expect(get.mock.calls.at(-1)![1]).toMatchObject({
+      include: { body: true },
+    });
   });
 
   it("returns genuine local capture before ACK and deduplicates the original intent without another submit", async () => {
@@ -611,9 +613,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     const saved = await result;
     expect(done).toBe(true);
     expect(saved.id).toBe(intent.id);
-    expect((await f.client.get(intent.id, { body: true })).state.state).toBe(
-      "pending",
-    );
+    expect(
+      (await f.client.get(intent.id, { include: { body: true } })).state.state,
+    ).toBe("pending");
     const originalRequest = intent.authorityRequestId;
     expect(originalRequest).toBe(create.mock.calls[0]![1]!.mutationId);
     expect(
@@ -679,11 +681,13 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
         .filter(([target]) => target === intent.id)
         .map(([target]) => target),
     ).toEqual([intent.id, intent.id]);
-    expect(lookup).toHaveBeenCalledWith(requestId, expect.any(AbortSignal));
+    expect(lookup).toHaveBeenCalledWith(requestId, {
+      signal: expect.any(AbortSignal),
+    });
     expect(intent.authorityRequestId).toBe(requestId);
-    expect((await f.client.get(intent.id, { body: true })).state.state).toBe(
-      "pending",
-    );
+    expect(
+      (await f.client.get(intent.id, { include: { body: true } })).state.state,
+    ).toBe("pending");
     f.replica.confirmAll();
     await vi.waitFor(() => expect(intent.authorityRequestId).toBeUndefined());
     expect(create).toHaveBeenCalledOnce();

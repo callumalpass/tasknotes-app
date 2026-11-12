@@ -9,13 +9,15 @@ import { Capacitor } from "@capacitor/core";
 import {
   MdbaseError,
   isMdbaseError,
-  toPlain,
   toValue,
   resolveRecordLinks,
   type MdbaseClient,
   type MdbasePeopleClient,
   type ChangesWatch,
   type PlainValue,
+  type BacklinksResult,
+  type Receipt,
+  type RecordView,
   type UpdateInput as NativeUpdateInput,
   type wire,
   describeHold,
@@ -205,7 +207,7 @@ function createRecordOp(
 }
 
 function taskChanges(
-  record: wire.RecordView,
+  record: RecordView,
   current: Task,
   next: Task,
 ): NativeUpdateInput {
@@ -245,12 +247,6 @@ export function nativeUnsupported(message: string): MdbaseError {
     reason: "unsupported",
     message,
   });
-}
-
-function plainFields(fields: wire.FmMap): Record<string, unknown> {
-  return Object.fromEntries(
-    [...fields].map(([key, value]) => [key, toPlain(value)]),
-  );
 }
 
 /** Direct native SDK implementation of the application port.
@@ -377,7 +373,7 @@ export class NextTaskRepository implements TaskRepository {
         ?.records ?? []
     );
   }
-  private rememberWriteState(record: wire.RecordView): void {
+  private rememberWriteState(record: RecordView): void {
     if (record.state.hold || record.state.unresolved)
       this.conflictedRecords.add(record.id);
     else this.conflictedRecords.delete(record.id);
@@ -417,11 +413,10 @@ export class NextTaskRepository implements TaskRepository {
       signal: AbortSignal,
     ) => {
       for (const id of ids) {
-        const record = await client.find(
-          id,
-          { body: true, document: true, effective: true },
+        const record = await client.find(id, {
+          include: { body: true, document: true, effective: true },
           signal,
-        );
+        });
         signal.throwIfAborted();
         if (!record) {
           this.conflictedRecords.delete(id);
@@ -547,7 +542,7 @@ export class NextTaskRepository implements TaskRepository {
         !scope.signal.aborted &&
         scope === this.scope &&
         this.changesWatch === watch;
-      const watch = this.client.watchChanges(undefined, () => {
+      const watch = this.client.watchChanges(() => {
         if (current()) this.invalidateRemoteData(true);
       });
       this.changesWatch = watch;
@@ -709,11 +704,10 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const loading = (async () => {
       const snapshot = new Map<string, CachedTask>();
-      const records = new Map<string, wire.RecordView>();
+      const records = new Map<string, RecordView>();
       for await (const page of this.client.pages(
         { types: [...this.models.keys()], limit: 1000 },
-        { effective: true },
-        signal,
+        { include: { effective: true }, signal },
       )) {
         signal.throwIfAborted();
         if (!page.complete)
@@ -758,7 +752,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private decodeSummary(
-    record: wire.RecordView,
+    record: RecordView,
     remember = true,
   ): CachedTask | null {
     const task = nextTaskSummary(record, this.models);
@@ -776,7 +770,7 @@ export class NextTaskRepository implements TaskRepository {
     };
   }
 
-  private remember(record: wire.RecordView): Task {
+  private remember(record: RecordView): Task {
     this.rememberWriteState(record);
     const task = nextTaskDocument(record, this.models);
     if (!task)
@@ -808,11 +802,10 @@ export class NextTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     const entry = this.cache.get(id);
     if (!entry) throw new Error("The task is no longer available.");
-    const record = await this.client.get(
-      entry.recordId,
-      { body: true, effective: true },
+    const record = await this.client.get(entry.recordId, {
+      include: { body: true, effective: true },
       signal,
-    );
+    });
     signal.throwIfAborted();
     if (record.id !== entry.recordId)
       throw new Error(
@@ -882,17 +875,14 @@ export class NextTaskRepository implements TaskRepository {
     return this.cache.list(query, undefined, paths);
   }
 
-  private scratchpad(
-    record: wire.RecordView,
-    remember = true,
-  ): ScratchpadDocument {
+  private scratchpad(record: RecordView, remember = true): ScratchpadDocument {
     if (record.body === undefined)
       throw new Error("Mdbase did not return the complete scratchpad body.");
     const note = scratchpadFromRecord({
       path: record.path,
       revision: record.revision,
       types: record.types,
-      frontmatter: plainFields(record.frontmatter),
+      frontmatter: record.frontmatter,
       body: record.body,
     });
     if (remember) {
@@ -902,7 +892,7 @@ export class NextTaskRepository implements TaskRepository {
     return note;
   }
 
-  private requireUnprotectedRecord(record: wire.RecordView): void {
+  private requireUnprotectedRecord(record: RecordView): void {
     if (
       !Number.isSafeInteger(record.state.confirmedSeq) ||
       (record.state.state !== "pending" &&
@@ -921,7 +911,10 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
   ): Promise<void> {
     for (const [nativeId, portableId] of witnesses) {
-      const record = await this.client.find(nativeId, { body: true }, signal);
+      const record = await this.client.find(nativeId, {
+        include: { body: true },
+        signal,
+      });
       signal.throwIfAborted();
       if (!record) {
         // An admitted older change can now be absent after a newer deletion.
@@ -948,16 +941,13 @@ export class NextTaskRepository implements TaskRepository {
     this.emit("data");
   }
 
-  private async scratchpadRecords(
-    signal: AbortSignal,
-  ): Promise<wire.RecordView[]> {
-    const records: wire.RecordView[] = [];
+  private async scratchpadRecords(signal: AbortSignal): Promise<RecordView[]> {
+    const records: RecordView[] = [];
     const identities = new Set<string>();
     // Query every note: an incomplete narrowed answer must never create a note.
     for await (const page of this.client.pages(
       { types: [SCRATCHPAD_TYPE], limit: 1000 },
-      { body: true },
-      signal,
+      { include: { body: true }, signal },
     )) {
       signal.throwIfAborted();
       if (!page.complete)
@@ -980,9 +970,9 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private findScratchpad(
-    records: wire.RecordView[],
+    records: RecordView[],
     reference: { id: string; path?: string },
-  ): wire.RecordView {
+  ): RecordView {
     const record = records.find(
       (record) => this.scratchpad(record).id === reference.id,
     );
@@ -993,12 +983,12 @@ export class NextTaskRepository implements TaskRepository {
     return record;
   }
 
-  private currentScratchpad(records: wire.RecordView[]): wire.RecordView {
+  private currentScratchpad(records: RecordView[]): RecordView {
     const notes = records.map((record) => ({
       path: record.path,
       revision: record.revision,
       types: record.types,
-      frontmatter: plainFields(record.frontmatter),
+      frontmatter: record.frontmatter,
       body: record.body,
     }));
     const current = activeScratchpads(notes)[0];
@@ -1014,7 +1004,10 @@ export class NextTaskRepository implements TaskRepository {
     portableId: string,
     signal: AbortSignal,
   ): Promise<ScratchpadDocument> {
-    const record = await this.client.get(nativeId, { body: true }, signal);
+    const record = await this.client.get(nativeId, {
+      include: { body: true },
+      signal,
+    });
     signal.throwIfAborted();
     if (record.id !== nativeId)
       throw new Error("The saved scratchpad's native identity changed.");
@@ -1029,12 +1022,15 @@ export class NextTaskRepository implements TaskRepository {
 
   private async createdScratchpad(
     nativeId: string,
-    receipt: wire.Receipt,
+    receipt: Receipt,
     signal: AbortSignal,
     allowPending = false,
     body = "",
   ): Promise<ScratchpadDocument> {
-    const record = await this.client.get(nativeId, { body: true }, signal);
+    const record = await this.client.get(nativeId, {
+      include: { body: true },
+      signal,
+    });
     signal.throwIfAborted();
     const admitted = receipt.records?.find((item) => item.id === nativeId);
     if (
@@ -1089,7 +1085,7 @@ export class NextTaskRepository implements TaskRepository {
     let target: { nativeId: string; portableId: string };
     let recordIds: string[] = [];
     const witnesses = new Map<string, string>();
-    const read = async (_: wire.Receipt, requestSignal: AbortSignal) => {
+    const read = async (_: Receipt, requestSignal: AbortSignal) => {
       const current = await this.savedScratchpad(
         target.nativeId,
         target.portableId,
@@ -1142,12 +1138,10 @@ export class NextTaskRepository implements TaskRepository {
             ),
           ];
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal: requestSignal,
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal: requestSignal,
+            });
         },
         local: read,
         confirmed: read,
@@ -1168,7 +1162,7 @@ export class NextTaskRepository implements TaskRepository {
     let portableId: string | undefined;
     const witnesses = new Map<string, string>();
     const read = async (
-      receipt: wire.Receipt,
+      receipt: Receipt,
       requestSignal: AbortSignal,
       local = false,
     ) => {
@@ -1270,12 +1264,10 @@ export class NextTaskRepository implements TaskRepository {
             ifRevision: record.revision,
           });
           return async () =>
-            (
-              await this.client.submit([op], {
-                mutationId,
-                signal: requestSignal,
-              })
-            )[0]!;
+            this.client.submit([op], {
+              mutationId,
+              signal: requestSignal,
+            });
         },
         confirmed: async (_, requestSignal) => {
           const note = await this.savedScratchpad(
@@ -1306,7 +1298,7 @@ export class NextTaskRepository implements TaskRepository {
     let previousId: string;
     let next: { nativeId: string; portableId?: string };
     const read = async (
-      receipt: wire.Receipt,
+      receipt: Receipt,
       requestSignal: AbortSignal,
       local = false,
     ) => {
@@ -1369,12 +1361,10 @@ export class NextTaskRepository implements TaskRepository {
             createRecordOp(next.nativeId, SCRATCHPAD_TYPE, values),
           ];
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal: requestSignal,
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal: requestSignal,
+            });
         },
         local: (receipt, requestSignal) => read(receipt, requestSignal, true),
         confirmed: read,
@@ -1448,12 +1438,10 @@ export class NextTaskRepository implements TaskRepository {
             }),
           ];
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal: requestSignal,
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal: requestSignal,
+            });
         },
         confirmed: async (_, requestSignal) => {
           const previous = await this.savedScratchpad(
@@ -1506,15 +1494,13 @@ export class NextTaskRepository implements TaskRepository {
             ifRevision: record.revision,
           };
           return async () =>
-            (
-              await this.client.submit([op], {
-                mutationId,
-                signal: requestSignal,
-              })
-            )[0]!;
+            this.client.submit([op], {
+              mutationId,
+              signal: requestSignal,
+            });
         },
         confirmed: async (_, requestSignal) => {
-          if (await this.client.find(nativeId, undefined, requestSignal))
+          if (await this.client.find(nativeId, { signal: requestSignal }))
             throw new Error(
               "The original scratchpad deletion is not visible in the native layer.",
             );
@@ -1533,12 +1519,12 @@ export class NextTaskRepository implements TaskRepository {
     return { archived: result.previous, active: result.current };
   }
 
-  private scratchImage(record: wire.RecordView, remember = true): ScratchImage {
+  private scratchImage(record: RecordView, remember = true): ScratchImage {
     const image = scratchImageFromRecord({
       path: record.path,
       revision: record.revision,
       types: record.types,
-      frontmatter: plainFields(record.frontmatter),
+      frontmatter: record.frontmatter,
     });
     if (remember) {
       this.rememberWriteState(record);
@@ -1549,13 +1535,12 @@ export class NextTaskRepository implements TaskRepository {
 
   private async scratchImageRecords(
     signal: AbortSignal,
-  ): Promise<wire.RecordView[]> {
-    const records: wire.RecordView[] = [];
+  ): Promise<RecordView[]> {
+    const records: RecordView[] = [];
     const identities = new Set<string>();
     for await (const page of this.client.pages(
       { types: [SCRATCH_IMAGE_TYPE], limit: 1000 },
-      undefined,
-      signal,
+      { signal },
     )) {
       signal.throwIfAborted();
       if (!page.complete)
@@ -1666,11 +1651,9 @@ export class NextTaskRepository implements TaskRepository {
             );
         },
         confirmed: async (_, requestSignal) => {
-          const record = await this.client.get(
-            nativeId,
-            undefined,
-            requestSignal,
-          );
+          const record = await this.client.get(nativeId, {
+            signal: requestSignal,
+          });
           requestSignal.throwIfAborted();
           if (record.id !== nativeId)
             throw new Error("The saved image's native identity changed.");
@@ -1729,7 +1712,7 @@ export class NextTaskRepository implements TaskRepository {
             });
         },
         confirmed: async (_, requestSignal) => {
-          if (await this.client.find(nativeId, undefined, requestSignal))
+          if (await this.client.find(nativeId, { signal: requestSignal }))
             throw new Error(
               "The original image metadata deletion is not visible in the native layer.",
             );
@@ -1802,7 +1785,7 @@ export class NextTaskRepository implements TaskRepository {
     const paths = new Set<string>();
     let cursor: string | undefined;
     do {
-      let page: wire.BacklinksResult;
+      let page: BacklinksResult;
       try {
         page = await this.client.backlinks(
           { path: personPath },
@@ -1847,8 +1830,7 @@ export class NextTaskRepository implements TaskRepository {
             where: `file.body.lower().contains(${JSON.stringify(token)})`,
             limit: 1000,
           },
-          undefined,
-          signal,
+          { signal },
         )) {
           signal.throwIfAborted();
           if (!page.complete)
@@ -1920,11 +1902,10 @@ export class NextTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     const entry = this.cache.get(id);
     if (!entry) return null;
-    const record = await this.client.find(
-      entry.recordId,
-      { effective: true },
+    const record = await this.client.find(entry.recordId, {
+      include: { effective: true },
       signal,
-    );
+    });
     signal.throwIfAborted();
     if (!record) {
       this.cache.delete(id);
@@ -1983,14 +1964,13 @@ export class NextTaskRepository implements TaskRepository {
         limit: Math.max(completionLimit(request) * 4, 48),
         order_by: [{ field: "file.path", direction: "asc" }],
       },
-      { effective: true },
-      signal,
+      { include: { effective: true }, signal },
     );
     signal.throwIfAborted();
     const records: CollectionRecord[] = result.records.map((r) => ({
       path: r.path,
-      label: String(plainFields(r.effective ?? r.frontmatter).title ?? r.path),
-      frontmatter: plainFields(r.effective ?? r.frontmatter),
+      label: String((r.effective ?? r.frontmatter).title ?? r.path),
+      frontmatter: r.effective ?? r.frontmatter,
       types: r.types,
     }));
     return usedValuesFirst(
@@ -2020,11 +2000,10 @@ export class NextTaskRepository implements TaskRepository {
       const refused = this.refusedWrite(intent.id);
       if (refused && refused.problem?.code !== "outcome_unknown")
         throw new RejectedNextMutation(refused.mutationId, refused.problem);
-      const record = await this.client.get(
-        intent.id,
-        { body: true, document: true, effective: true },
-        this.signal(),
-      );
+      const record = await this.client.get(intent.id, {
+        include: { body: true, document: true, effective: true },
+        signal: this.signal(),
+      });
       owner.throwIfAborted();
       return this.remember(record);
     }
@@ -2085,28 +2064,25 @@ export class NextTaskRepository implements TaskRepository {
                     include: { body: true, document: true, effective: true },
                   },
                 );
-              return (
-                await this.client.submit(
-                  [
-                    createRecordOp(intent.id, provider.typeName, task),
-                    ...rolling.ops,
-                  ],
-                  {
-                    mutationId,
-                    signal,
-                    wait: "pending",
-                    include: { body: true, document: true, effective: true },
-                  },
-                )
-              )[0]!;
+              return this.client.submit(
+                [
+                  createRecordOp(intent.id, provider.typeName, task),
+                  ...rolling.ops,
+                ],
+                {
+                  mutationId,
+                  signal,
+                  wait: "pending",
+                  include: { body: true, document: true, effective: true },
+                },
+              );
             };
           },
           confirmed: async (receipt, signal) => {
-            const record = await this.client.get(
-              intent.id,
-              { body: true, effective: true },
+            const record = await this.client.get(intent.id, {
+              include: { body: true, effective: true },
               signal,
-            );
+            });
             signal.throwIfAborted();
             const saved = this.remember(record);
             if (
@@ -2190,7 +2166,7 @@ export class NextTaskRepository implements TaskRepository {
   ): Promise<Task> {
     for (const path of taskPathCandidates(task.path)) {
       if (plannedPaths.has(path)) continue;
-      const occupied = await this.client.find({ path }, undefined, signal);
+      const occupied = await this.client.find({ path }, { signal });
       signal.throwIfAborted();
       if (!occupied) return path === task.path ? task : { ...task, path };
     }
@@ -2200,7 +2176,10 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private async template(path: string, signal: AbortSignal): Promise<string> {
-    const record = await this.client.get({ path }, { document: true }, signal);
+    const record = await this.client.get(
+      { path },
+      { include: { document: true }, signal },
+    );
     signal.throwIfAborted();
     if (record.document === undefined)
       throw new Error("The replica did not supply the template source.");
@@ -2250,25 +2229,22 @@ export class NextTaskRepository implements TaskRepository {
             ...rolling.ops,
           ];
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal,
-                wait: "pending",
-                include: { body: true, document: true, effective: true },
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal,
+              wait: "pending",
+              include: { body: true, document: true, effective: true },
+            });
         },
         confirmed: async (_receipt, signal) => {
           if (!recordId)
             throw new Error(
               "The confirmed task identity cannot be resolved. Refresh before continuing.",
             );
-          const record = await this.client.get(
-            recordId,
-            { body: true, effective: true },
+          const record = await this.client.get(recordId, {
+            include: { body: true, effective: true },
             signal,
-          );
+          });
           signal.throwIfAborted();
           const task = this.remember(record);
           if (task.occurrenceMaterialization === "rolling")
@@ -2462,23 +2438,20 @@ export class NextTaskRepository implements TaskRepository {
           // Related task updates and the requested next occurrence are one atomic
           // native mutation, not a partially acknowledged multi-request cascade.
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal,
-                wait: "pending",
-                include: { body: true, document: true, effective: true },
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal,
+              wait: "pending",
+              include: { body: true, document: true, effective: true },
+            });
         },
         confirmed: async (_receipt, signal) => {
           const records = await Promise.all(
             targets.map((recordId) =>
-              this.client.get(
-                recordId,
-                { body: true, effective: true },
+              this.client.get(recordId, {
+                include: { body: true, effective: true },
                 signal,
-              ),
+              }),
             ),
           );
           signal.throwIfAborted();
@@ -2552,11 +2525,10 @@ export class NextTaskRepository implements TaskRepository {
             );
         },
         confirmed: async (_r, signal) => {
-          const record = await this.client.get(
-            recordId,
-            { body: true, effective: true },
+          const record = await this.client.get(recordId, {
+            include: { body: true, effective: true },
             signal,
-          );
+          });
           signal.throwIfAborted();
           const task = this.remember(record);
           this.emit("data");
@@ -2635,25 +2607,22 @@ export class NextTaskRepository implements TaskRepository {
           // One atomic mutation; a retry cannot repeat the archive patch before
           // recovering an uncertain rename. The update carries the observed CAS.
           return async () =>
-            (
-              await this.client.submit(ops, {
-                mutationId,
-                signal,
-                wait: "pending",
-                include: { body: true, document: true, effective: true },
-              })
-            )[0]!;
+            this.client.submit(ops, {
+              mutationId,
+              signal,
+              wait: "pending",
+              include: { body: true, document: true, effective: true },
+            });
         },
         confirmed: async (_r, signal) => {
           if (!recordId)
             throw new Error(
               "The archived native record identity was not retained.",
             );
-          const record = await this.client.get(
-            recordId,
-            { body: true, effective: true },
+          const record = await this.client.get(recordId, {
+            include: { body: true, effective: true },
             signal,
-          );
+          });
           signal.throwIfAborted();
           const saved = this.remember(record);
           this.emit("data");
@@ -2723,7 +2692,7 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The original deletion identity is unavailable; preserve its recovery request.",
             );
-          const record = await this.client.find(recordId, undefined, signal);
+          const record = await this.client.find(recordId, { signal });
           signal.throwIfAborted();
           if (record)
             throw new Error(
@@ -2802,7 +2771,7 @@ export class NextTaskRepository implements TaskRepository {
         reason: "Task model settings need definition management access.",
       };
     try {
-      await this.client.resources.get(source, signal);
+      await this.client.resources.get(source, { signal });
       signal.throwIfAborted();
       return {
         writable: true as const,
@@ -2877,7 +2846,7 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "Task type selection changed. Reload before editing its settings.",
             );
-          const resource = await this.client.resources.get(source, signal);
+          const resource = await this.client.resources.get(source, { signal });
           if (resource.text === undefined)
             throw new Error("The replica did not supply the task type source.");
           const parsed = parseFrontmatter(resource.text);
@@ -2937,7 +2906,7 @@ export class NextTaskRepository implements TaskRepository {
       for await (const views of iterateNativeDiscovery(async (continuation) => {
         const result = await this.client.listAppBasesViews(
           { captureTimezone: timezone, limit: 128, continuation },
-          signal,
+          { signal },
         );
         if (result.kind === "refusal") throw new MdbaseError(result.problem);
         return result;
@@ -3053,7 +3022,7 @@ export class NextTaskRepository implements TaskRepository {
     const revision = this.dataRevision;
     const result = await this.client.readAppBasesViewSource(
       { ...nativeViewSelection(descriptor), captureTimezone: timezone },
-      signal,
+      { signal },
     );
     if (result.kind === "refusal") throw new MdbaseError(result.problem);
     if (
@@ -3152,7 +3121,7 @@ export class NextTaskRepository implements TaskRepository {
           captureTimezone: timezone,
           ...(window === undefined ? {} : { window }),
         },
-        signal,
+        { signal },
       );
       if (result.kind === "refusal") {
         if (
@@ -3217,7 +3186,11 @@ export class NextTaskRepository implements TaskRepository {
       );
       const records = await readNativeRows(
         result.rows,
-        (id, current) => this.client.get(id, { effective: true }, current),
+        (id, current) =>
+          this.client.get(id, {
+            include: { effective: true },
+            signal: current,
+          }),
         signal,
       );
       signal.throwIfAborted();
@@ -3233,11 +3206,7 @@ export class NextTaskRepository implements TaskRepository {
         {
           results: records.map((record, index) => ({
             path: record.path,
-            effectiveFrontmatter: Object.fromEntries(
-              [...(record.effective ?? record.frontmatter)].map(
-                ([key, value]) => [key, toPlain(value)],
-              ),
-            ),
+            effectiveFrontmatter: record.effective ?? record.frontmatter,
             types: [...record.types],
             values: values[index]!,
           })),
@@ -3320,7 +3289,7 @@ export class NextTaskRepository implements TaskRepository {
     const document = input.document;
     viewSourceRecord(path, document);
     let recordId: string | undefined;
-    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+    const read = async (_receipt: Receipt, signal: AbortSignal) => {
       if (!recordId)
         throw new Error("The original native source identity is unavailable.");
       const record = await this.client.views.getSourceRecord(recordId, {
@@ -3339,7 +3308,7 @@ export class NextTaskRepository implements TaskRepository {
         recordIds: () => (recordId ? [recordId] : []),
         prepare: async (mutationId, signal) => {
           this.requireViewSourceGrant("records.edit");
-          if (await this.client.find({ path }, undefined, signal))
+          if (await this.client.find({ path }, { signal }))
             throw new Error("A record already occupies this view source path.");
           signal.throwIfAborted();
           this.requireViewSourceGrant("records.edit");
@@ -3369,8 +3338,8 @@ export class NextTaskRepository implements TaskRepository {
     input: UpdateTaskViewSourceInput,
     waitForConfirmation = false,
   ): Promise<TaskViewSourceDocument> {
-    let target: wire.RecordView | undefined;
-    const read = async (_receipt: wire.Receipt, signal: AbortSignal) => {
+    let target: RecordView | undefined;
+    const read = async (_receipt: Receipt, signal: AbortSignal) => {
       if (!target)
         throw new Error("The original native source identity is unavailable.");
       const record = await this.client.views.getSourceRecord(target.id, {
@@ -3441,7 +3410,7 @@ export class NextTaskRepository implements TaskRepository {
         ...(waitForConfirmation
           ? {}
           : {
-              local: async (receipt: wire.Receipt, signal: AbortSignal) => {
+              local: async (receipt: Receipt, signal: AbortSignal) => {
                 const source = await read(receipt, signal);
                 if (source.document !== input.document)
                   throw new Error(
@@ -3463,7 +3432,7 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
   private sourceDocument(
-    record: wire.RecordView,
+    record: RecordView,
     path: string,
   ): TaskViewSourceDocument {
     if (record.path === path) this.rememberWriteState(record);
@@ -3489,7 +3458,7 @@ export class NextTaskRepository implements TaskRepository {
     };
   }
   async deleteViewSource(path: string, ifRevision?: string) {
-    let target: wire.RecordView | undefined;
+    let target: RecordView | undefined;
     await this.mutations.runRecord(
       {
         recordIds: () => (target ? [target.id] : []),
@@ -3539,7 +3508,7 @@ export class NextTaskRepository implements TaskRepository {
             throw nativeUnsupported(
               "The original native source identity is unavailable.",
             );
-          const record = await this.client.find(target.id, undefined, signal);
+          const record = await this.client.find(target.id, { signal });
           signal.throwIfAborted();
           if (record)
             throw new Error(

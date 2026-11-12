@@ -36,7 +36,7 @@ it("paints the gate's starting screen from index.html before any script runs", a
   const { container } = render(<TaskNotesApp mdbase={mdbase} />);
   act(() =>
     mdbase.fixture.controls.publishSnapshot({
-      ...mdbase.fixture.application.getSnapshot(),
+      ...mdbase.fixture.mdbase.getSnapshot(),
       status: "starting",
     } as never),
   );

@@ -17,7 +17,6 @@ export type ApplicationConnectProblem = ReturnType<MdbaseError["toProblem"]> & {
     | "internal"
     | "unknown";
   mutationId?: MdbaseError["mutationId"];
-  mutationIds?: MdbaseError["mutationIds"];
 };
 
 const REPLICA_CATEGORIES: Record<
@@ -50,6 +49,5 @@ export function connectProblemFromError(
     ...error.toProblem(),
     category: REPLICA_CATEGORIES[error.code],
     mutationId: error.mutationId,
-    mutationIds: error.mutationIds,
   };
 }
