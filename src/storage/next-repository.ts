@@ -173,6 +173,17 @@ import {
   usedValuesFirst,
 } from "./completions";
 
+/** A note's save input for its stored state. */
+function stored(note: ScratchpadDocument): SaveScratchpadInput {
+  return {
+    id: note.id,
+    path: note.path,
+    revision: note.revision,
+    baseBody: note.body,
+    body: note.body,
+  };
+}
+
 function createRecordOp(
   id: string,
   type: string,
@@ -1021,6 +1032,7 @@ export class NextTaskRepository implements TaskRepository {
     receipt: wire.Receipt,
     signal: AbortSignal,
     allowPending = false,
+    body = "",
   ): Promise<ScratchpadDocument> {
     const record = await this.client.get(nativeId, { body: true }, signal);
     signal.throwIfAborted();
@@ -1043,40 +1055,46 @@ export class NextTaskRepository implements TaskRepository {
     // Native on_create may assign the portable ID. Decode its actual result
     // only for this original creation; existing-note witnesses stay exact.
     const note = this.scratchpad(record, false);
-    if (note.state !== "active" || note.body !== "")
+    if (note.state !== "active" || note.body !== body)
       throw new Error("The created scratchpad changed before its result READ.");
     return this.scratchpad(record);
   }
 
+  /** The current note before anything is written in it (revision ""). A
+   * collection without an active note gets this instead of a stored empty one,
+   * so opening the Scratchpad writes nothing: on a fresh browser an empty note
+   * would be work before connecting. Its first change creates the record. */
+  private unsavedScratchpad: ScratchpadDocument | null = null;
+
+  private unsaved(): ScratchpadDocument {
+    if (!this.unsavedScratchpad) {
+      const values = newScratchpadValues();
+      this.unsavedScratchpad = scratchpadFromRecord({
+        path: values.path,
+        revision: "",
+        types: [SCRATCHPAD_TYPE],
+        frontmatter: values.frontmatter as Record<string, PlainValue>,
+        body: values.body,
+      });
+    }
+    return this.unsavedScratchpad;
+  }
+
+  private isUnsaved(note: { id: string; revision: string }): boolean {
+    return note.revision === "" && note.id === this.unsavedScratchpad?.id;
+  }
+
   getActiveScratchpad(): Promise<ScratchpadDocument> {
     const signal = this.signal();
-    let target:
-      | { nativeId: string; created: true; portableId?: string }
-      | { nativeId: string; portableId: string };
+    let target: { nativeId: string; portableId: string };
     let recordIds: string[] = [];
     const witnesses = new Map<string, string>();
-    const read = async (
-      receipt: wire.Receipt,
-      requestSignal: AbortSignal,
-      local = false,
-    ) => {
-      const current =
-        "created" in target && !target.portableId
-          ? await this.createdScratchpad(
-              target.nativeId,
-              receipt,
-              requestSignal,
-              local,
-            )
-          : await this.savedScratchpad(
-              target.nativeId,
-              target.portableId!,
-              requestSignal,
-            );
-      // Only the first original creation READ may accept a native-assigned ID.
-      // Later ACKs read current bytes under that exact established witness.
-      target.portableId = current.id;
-      witnesses.set(target.nativeId, current.id);
+    const read = async (_: wire.Receipt, requestSignal: AbortSignal) => {
+      const current = await this.savedScratchpad(
+        target.nativeId,
+        target.portableId,
+        requestSignal,
+      );
       this.reached();
       this.emit("data");
       return current;
@@ -1093,24 +1111,8 @@ export class NextTaskRepository implements TaskRepository {
             !records.some(
               (record) => this.scratchpad(record).state === "active",
             )
-          ) {
-            const values = newScratchpadValues();
-            target = {
-              nativeId: crypto.randomUUID(),
-              created: true,
-            };
-            recordIds = [target.nativeId];
-            return () =>
-              this.client.create(
-                {
-                  id: target.nativeId,
-                  type: SCRATCHPAD_TYPE,
-                  ...values,
-                  frontmatter: values.frontmatter as Record<string, PlainValue>,
-                },
-                { mutationId, signal: requestSignal },
-              );
-          }
+          )
+            return { value: this.unsaved() };
           const current = this.currentScratchpad(records);
           const duplicates = records.filter(
             (record) =>
@@ -1147,6 +1149,72 @@ export class NextTaskRepository implements TaskRepository {
               })
             )[0]!;
         },
+        local: read,
+        confirmed: read,
+      },
+      signal,
+    );
+  }
+
+  /** Store the unsaved current note with its first content. */
+  private createScratchpad(
+    input: SaveScratchpadInput,
+  ): Promise<ScratchpadDocument> {
+    const signal = this.signal();
+    const captured = structuredClone(input);
+    const unsaved = this.unsaved();
+    assertScratchpadRebase(unsaved, captured);
+    const nativeId = crypto.randomUUID();
+    let portableId: string | undefined;
+    const witnesses = new Map<string, string>();
+    const read = async (
+      receipt: wire.Receipt,
+      requestSignal: AbortSignal,
+      local = false,
+    ) => {
+      const current = portableId
+        ? await this.savedScratchpad(nativeId, portableId, requestSignal)
+        : await this.createdScratchpad(
+            nativeId,
+            receipt,
+            requestSignal,
+            local,
+            captured.body,
+          );
+      // Only the first original creation READ may accept a native-assigned ID.
+      // Later ACKs read current bytes under that exact established witness.
+      portableId = current.id;
+      witnesses.set(nativeId, current.id);
+      if (this.unsavedScratchpad === unsaved) this.unsavedScratchpad = null;
+      this.reached();
+      this.emit("data");
+      return current;
+    };
+    return this.mutations.run(
+      {
+        key: JSON.stringify(["scratchpad:create", captured]),
+        recordIds: () => [nativeId],
+        ack: (_, signal) =>
+          this.readScratchWriteRecords(witnesses, "scratchpad", signal),
+        prepare: async (mutationId, requestSignal) => {
+          const now = new Date().toISOString();
+          return () =>
+            this.client.create(
+              {
+                id: nativeId,
+                type: SCRATCHPAD_TYPE,
+                path: unsaved.path,
+                frontmatter: scratchpadFrontmatter(unsaved, {
+                  ...(captured.title !== undefined
+                    ? { title: captured.title }
+                    : {}),
+                  dateModified: now,
+                }) as Record<string, PlainValue>,
+                body: captured.body,
+              },
+              { mutationId, signal: requestSignal },
+            );
+        },
         local: (receipt, requestSignal) => read(receipt, requestSignal, true),
         confirmed: read,
       },
@@ -1170,6 +1238,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   saveScratchpad(input: SaveScratchpadInput): Promise<ScratchpadDocument> {
+    if (this.isUnsaved(input)) return this.createScratchpad(input);
     const signal = this.signal();
     const captured = structuredClone(input);
     let nativeId: string;
@@ -1223,7 +1292,15 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
-  startNewScratchpad(input: StartNewScratchpadInput) {
+  async startNewScratchpad(input: StartNewScratchpadInput) {
+    return this.startNew(
+      this.isUnsaved(input)
+        ? stored(await this.createScratchpad(input))
+        : input,
+    );
+  }
+
+  private startNew(input: StartNewScratchpadInput) {
     const signal = this.signal();
     const captured = structuredClone(input);
     let previousId: string;
@@ -1306,7 +1383,24 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
-  reactivateScratchpad(input: ReactivateScratchpadInput) {
+  async reactivateScratchpad(input: ReactivateScratchpadInput) {
+    return this.reactivate(
+      this.isUnsaved(input.current)
+        ? {
+            ...input,
+            current: stored(
+              await this.createScratchpad({
+                ...input.current,
+                baseBody: "",
+                body: "",
+              }),
+            ),
+          }
+        : input,
+    );
+  }
+
+  private reactivate(input: ReactivateScratchpadInput) {
     const signal = this.signal();
     const captured = structuredClone(input);
     let previousId: string;

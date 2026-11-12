@@ -287,16 +287,14 @@ describe("ScratchpadScreen", () => {
 
     write(view, "- [ ] Draft [[Plan");
 
+    // The first save creates the note.
     await waitFor(async () => {
       expect(await repository.getActiveScratchpad()).toMatchObject({
         body: "- [ ] Draft [[Plan\n",
       });
       expect(screen.getByText("Saved")).toBeVisible();
     });
-    expect(updateOp).toHaveBeenLastCalledWith(
-      expect.anything(),
-      expect.objectContaining({ body: "- [ ] Draft [[Plan\n" }),
-    );
+    expect(updateOp).not.toHaveBeenCalled();
 
     write(view, "- [ ] Draft [[Plan]]");
 
@@ -304,8 +302,12 @@ describe("ScratchpadScreen", () => {
       expect(await repository.getActiveScratchpad()).toMatchObject({
         body: "- [ ] Draft [[Plan]]\n",
       });
-      expect(updateOp).toHaveBeenCalledTimes(2);
+      expect(updateOp).toHaveBeenCalledOnce();
     });
+    expect(updateOp).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ body: "- [ ] Draft [[Plan]]\n" }),
+    );
     expect(screen.queryByText("Not saved")).toBeNull();
   });
 
@@ -483,7 +485,33 @@ describe("ScratchpadScreen", () => {
     await act(async () => void (await repository.refresh()));
   }
 
+  it("opens a fresh collection without writing; the first edit stores the note", async () => {
+    const submit = vi.spyOn(fixture.client, "submit");
+    renderScratchpad();
+    const view = await currentOutline();
+    await pause(100);
+    // On a fresh browser any write before connecting is work to bring in.
+    expect(submit).not.toHaveBeenCalled();
+    expect(storedRecords()).toEqual([]);
+
+    write(view, "- [ ] First");
+    await waitFor(() =>
+      expect(storedRecords()).toEqual([
+        expect.objectContaining({ body: "- [ ] First\n" }),
+      ]),
+    );
+    expect(screen.queryByText("Not saved")).toBeNull();
+  });
+
   it("shows a note title changed in another tab", async () => {
+    const unsaved = await repository.getActiveScratchpad();
+    await repository.saveScratchpad({
+      id: unsaved.id,
+      path: unsaved.path,
+      revision: unsaved.revision,
+      baseBody: "",
+      body: "",
+    });
     renderScratchpad();
     const title = await screen.findByRole(
       "textbox",
