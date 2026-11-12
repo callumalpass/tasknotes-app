@@ -96,10 +96,11 @@ describe("ScratchpadScreen", () => {
     return onOpenTask;
   }
 
-  function mockVerifiedImageUpload() {
+  function mockVerifiedImageUpload(uploadGate?: Promise<void>) {
     return vi
       .spyOn(repository.files, "upload")
       .mockImplementation(async (path, source, options) => {
+        await uploadGate;
         const blob = source as Blob;
         const digest = await crypto.subtle.digest(
           "SHA-256",
@@ -611,7 +612,11 @@ describe("ScratchpadScreen", () => {
   });
 
   it("uploads selected images and closes the capture panel after success", async () => {
-    const uploadFile = mockVerifiedImageUpload();
+    let releaseUpload!: () => void;
+    const uploadGate = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    const uploadFile = mockVerifiedImageUpload(uploadGate);
     renderScratchpad();
     await currentOutline();
     fireEvent.click(screen.getByRole("button", { name: "Add image" }));
@@ -620,10 +625,25 @@ describe("ScratchpadScreen", () => {
       "upload.png",
       { type: "image/png" },
     );
+    const hashing = vi.spyOn(crypto.subtle, "digest");
+    const imageHashes = () =>
+      hashing.mock.calls.flatMap((call, index) =>
+        (call[1] as ArrayBuffer).byteLength === image.size
+          ? [hashing.mock.results[index]!.value as Promise<ArrayBuffer>]
+          : [],
+      );
 
     fireEvent.change(screen.getByLabelText("Upload images"), {
       target: { files: [image, image] },
     });
+
+    // Coalescing covers uploads in flight; it is not time-based (#215). Keep
+    // the upload open until both preflight hashes have resolved and the second
+    // add has seen the first in flight, instead of racing native crypto.
+    await waitFor(() => expect(imageHashes()).toHaveLength(2), WAIT);
+    await Promise.all(imageHashes());
+    await pause(0);
+    releaseUpload();
 
     await screen.findByText(
       "Image added",
