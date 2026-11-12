@@ -65,7 +65,6 @@ export function connectionNotice(
     health === "server_busy" ||
     health === "rate_limited" ||
     snapshot.sync?.connection === "offline" ||
-    snapshot.sync?.connection === "reconnecting" ||
     (snapshot.sync?.live ?? snapshot.live) === false
   )
     return "reconnecting";
