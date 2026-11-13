@@ -32,6 +32,14 @@ The browser suite is the small trust core, not a substitute for exercising the a
   middle and the last day, and its bar among the all-day entries in Week and Month.
   Decline an invitation, add a working location and recolour a calendar in Google,
   then check the struck-through row, the absent location entry and the colour.
+  Leave one invitation unanswered and answer another maybe; mark a timed event
+  free; add focus time and out-of-office time; check each reads apart from an
+  accepted meeting in Agenda and Week. Open an event with a video call: Join
+  meeting names the call's host and opens it outside the app, and Open in
+  Google Calendar opens that event. Change an event in Google, switch away for
+  over a minute and return: the change appears without a reload. Revoke
+  TaskNotes Calendar's access in the Google account: the calendar asks to
+  reconnect, and Settings shows Needs reconnecting.
   Demo task-calendar checks and mocked event tests do not prove real Google writes.
 - **Open and edit:** change title, notes and a custom property; switch adjacent
   tasks, close/reopen, and confirm the saved values. In LAB, check real confirmation

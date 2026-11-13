@@ -1,9 +1,15 @@
-import { Trans } from "@lingui/react/macro";
 import { useLingui } from "@lingui/react";
-import { MapPin, Repeat } from "lucide-react";
+import { MapPin, Repeat, Video } from "lucide-react";
 import type { GoogleCalendar, GoogleEvent } from "./client";
 import { eventSpan } from "./event-days";
-import { eventDayLabel, eventTitle, type EventClock } from "./event-labels";
+import {
+  eventDayLabel,
+  eventNotes,
+  eventStateClasses,
+  eventTitle,
+  type EventClock,
+} from "./event-labels";
+import { eventLinks } from "./event-links";
 
 /**
  * One Google event on one day, read like a task row: the title, then when,
@@ -26,29 +32,25 @@ export function GoogleEventRow({
 }) {
   // Subscribes the row's copy to a language change.
   useLingui();
-  const declined = event.self_response === "declined";
   return (
     <span
-      className={[
-        "google-event-row",
-        event.status === "tentative" ? "is-tentative" : "",
-        declined ? "is-declined" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={["google-event-row", ...eventStateClasses(event)].join(" ")}
     >
       <span className="google-event-row-tone" aria-hidden="true" />
       <span className="google-event-row-reading">
         <span className="google-event-row-title">
           {eventTitle(event)}
           {event.recurrence ? <Repeat aria-hidden="true" size={13} /> : null}
+          {eventLinks(event).join ? (
+            <Video aria-hidden="true" size={14} />
+          ) : null}
         </span>
         <span className="google-event-row-meta">
-          {declined ? (
-            <span className="google-event-row-response">
-              <Trans>Declined</Trans>
+          {eventNotes(event).map((note) => (
+            <span className="google-event-row-note" key={note}>
+              {note}
             </span>
-          ) : null}
+          ))}
           <span className="google-event-row-time">
             {eventDayLabel(eventSpan(event), day, clock, locale)}
           </span>

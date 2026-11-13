@@ -2109,7 +2109,6 @@ msgid "Days from today"
 msgstr "距今天数"
 
 #: src/calendar-service/event-labels.ts
-#: src/calendar-service/event-row.tsx
 msgid "Declined"
 msgstr "已拒绝"
 
@@ -2549,6 +2548,10 @@ msgstr "预计时长（分钟）"
 msgid "Estimate and work sessions"
 msgstr "预计时长和工作会话"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Event links"
+msgstr "活动链接"
+
 #: src/components/recurrence-field.tsx
 msgid "Every"
 msgstr "每"
@@ -2728,6 +2731,10 @@ msgstr "第一个"
 msgid "Fixed date and time"
 msgstr "固定日期和时间"
 
+#: src/calendar-service/event-labels.ts
+msgid "Focus time"
+msgstr "专注时间"
+
 #: src/app/command-palette-model.ts
 msgid "Focused task"
 msgstr "当前焦点任务"
@@ -2759,6 +2766,10 @@ msgstr "第四个"
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
 msgstr "第四个"
+
+#: src/calendar-service/event-labels.ts
+msgid "Free"
+msgstr "空闲"
 
 #: src/components/task-date-panel.tsx
 msgid "Fri 3pm, next week, Dec 12"
@@ -2831,6 +2842,14 @@ msgstr "Google 日历正忙，请稍后重试。"
 #: src/calendar-service/failure-message.ts
 msgid "Google Calendar is unavailable right now. Try again."
 msgstr "Google 日历目前不可用，请重试。"
+
+#: src/app/task-calendar-view.tsx
+msgid "Google Calendar needs reconnecting. Reconnect in Settings to see events."
+msgstr "需要重新连接 Google 日历。请在设置中重新连接以查看活动。"
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar needs reconnecting. Reconnect in Settings."
+msgstr "需要重新连接 Google 日历。请在设置中重新连接。"
 
 #: src/calendar-service/failure-message.ts
 msgid "Google didn’t complete the authorization. Try again."
@@ -3038,6 +3057,10 @@ msgstr "斜体"
 #: src/i18n/ui-copy.ts
 msgid "item"
 msgstr "项目"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Join meeting"
+msgstr "加入会议"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
@@ -3358,6 +3381,10 @@ msgstr "匹配模式"
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
 msgstr "在 {0} 中匹配"
+
+#: src/calendar-service/event-labels.ts
+msgid "Maybe"
+msgstr "待定"
 
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
@@ -3884,6 +3911,10 @@ msgstr "无"
 msgid "Not ({condition})"
 msgstr "非 ({condition})"
 
+#: src/calendar-service/event-labels.ts
+msgid "Not answered"
+msgstr "未回复"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "不可用"
@@ -4062,6 +4093,10 @@ msgstr "优先打开"
 msgid "Open image"
 msgstr "打开图片"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Open in Google Calendar"
+msgstr "在 Google 日历中打开"
+
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
 msgstr "在 Planner 中打开"
@@ -4132,6 +4167,10 @@ msgstr "整理"
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
 msgstr "其他"
+
+#: src/calendar-service/event-labels.ts
+msgid "Out of office"
+msgstr "不在办公室"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"

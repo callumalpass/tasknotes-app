@@ -2109,7 +2109,6 @@ msgid "Days from today"
 msgstr "Дней от сегодня"
 
 #: src/calendar-service/event-labels.ts
-#: src/calendar-service/event-row.tsx
 msgid "Declined"
 msgstr "Отклонено"
 
@@ -2549,6 +2548,10 @@ msgstr "Оценка (минуты)"
 msgid "Estimate and work sessions"
 msgstr "Оценка и рабочие сеансы"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Event links"
+msgstr "Ссылки события"
+
 #: src/components/recurrence-field.tsx
 msgid "Every"
 msgstr "Каждые"
@@ -2728,6 +2731,10 @@ msgstr "Первый"
 msgid "Fixed date and time"
 msgstr "Фиксированные дата и время"
 
+#: src/calendar-service/event-labels.ts
+msgid "Focus time"
+msgstr "Время для сосредоточенной работы"
+
 #: src/app/command-palette-model.ts
 msgid "Focused task"
 msgstr "Выбранная задача"
@@ -2759,6 +2766,10 @@ msgstr "четвёртый"
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
 msgstr "Четвёртый"
+
+#: src/calendar-service/event-labels.ts
+msgid "Free"
+msgstr "Свободен"
 
 #: src/components/task-date-panel.tsx
 msgid "Fri 3pm, next week, Dec 12"
@@ -2831,6 +2842,14 @@ msgstr "Google Календарь занят. Повторите попытку 
 #: src/calendar-service/failure-message.ts
 msgid "Google Calendar is unavailable right now. Try again."
 msgstr "Google Календарь сейчас недоступен. Повторите попытку."
+
+#: src/app/task-calendar-view.tsx
+msgid "Google Calendar needs reconnecting. Reconnect in Settings to see events."
+msgstr "Google Календарь нужно подключить заново. Сделайте это в настройках, чтобы видеть события."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar needs reconnecting. Reconnect in Settings."
+msgstr "Google Календарь нужно подключить заново. Сделайте это в настройках."
 
 #: src/calendar-service/failure-message.ts
 msgid "Google didn’t complete the authorization. Try again."
@@ -3038,6 +3057,10 @@ msgstr "Курсив"
 #: src/i18n/ui-copy.ts
 msgid "item"
 msgstr "элемент"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Join meeting"
+msgstr "Присоединиться к встрече"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
@@ -3358,6 +3381,10 @@ msgstr "Режим соответствия"
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
 msgstr "Совпадение в разделе «{0}»"
+
+#: src/calendar-service/event-labels.ts
+msgid "Maybe"
+msgstr "Возможно"
 
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
@@ -3884,6 +3911,10 @@ msgstr "Нет"
 msgid "Not ({condition})"
 msgstr "Не ({condition})"
 
+#: src/calendar-service/event-labels.ts
+msgid "Not answered"
+msgstr "Без ответа"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "Недоступно"
@@ -4062,6 +4093,10 @@ msgstr "Открывать первым"
 msgid "Open image"
 msgstr "Открыть изображение"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Open in Google Calendar"
+msgstr "Открыть в Google Календаре"
+
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
 msgstr "Открыть в Planner"
@@ -4132,6 +4167,10 @@ msgstr "Упорядочить"
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
 msgstr "Другое"
+
+#: src/calendar-service/event-labels.ts
+msgid "Out of office"
+msgstr "Нет на месте"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"

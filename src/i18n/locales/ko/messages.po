@@ -2109,7 +2109,6 @@ msgid "Days from today"
 msgstr "오늘부터 일수"
 
 #: src/calendar-service/event-labels.ts
-#: src/calendar-service/event-row.tsx
 msgid "Declined"
 msgstr "거절함"
 
@@ -2549,6 +2548,10 @@ msgstr "예상 시간(분)"
 msgid "Estimate and work sessions"
 msgstr "예상 시간 및 작업 세션"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Event links"
+msgstr "일정 링크"
+
 #: src/components/recurrence-field.tsx
 msgid "Every"
 msgstr "매"
@@ -2728,6 +2731,10 @@ msgstr "첫 번째"
 msgid "Fixed date and time"
 msgstr "고정 날짜 및 시간"
 
+#: src/calendar-service/event-labels.ts
+msgid "Focus time"
+msgstr "집중 시간"
+
 #: src/app/command-palette-model.ts
 msgid "Focused task"
 msgstr "포커스된 작업"
@@ -2759,6 +2766,10 @@ msgstr "네 번째"
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
 msgstr "네 번째"
+
+#: src/calendar-service/event-labels.ts
+msgid "Free"
+msgstr "한가함"
 
 #: src/components/task-date-panel.tsx
 msgid "Fri 3pm, next week, Dec 12"
@@ -2831,6 +2842,14 @@ msgstr "Google 캘린더가 사용 중입니다. 잠시 후 다시 시도하세�
 #: src/calendar-service/failure-message.ts
 msgid "Google Calendar is unavailable right now. Try again."
 msgstr "지금은 Google 캘린더를 사용할 수 없습니다. 다시 시도하세요."
+
+#: src/app/task-calendar-view.tsx
+msgid "Google Calendar needs reconnecting. Reconnect in Settings to see events."
+msgstr "Google 캘린더를 다시 연결해야 합니다. 일정을 보려면 설정에서 다시 연결하세요."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar needs reconnecting. Reconnect in Settings."
+msgstr "Google 캘린더를 다시 연결해야 합니다. 설정에서 다시 연결하세요."
 
 #: src/calendar-service/failure-message.ts
 msgid "Google didn’t complete the authorization. Try again."
@@ -3038,6 +3057,10 @@ msgstr "기울임꼴"
 #: src/i18n/ui-copy.ts
 msgid "item"
 msgstr "항목"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Join meeting"
+msgstr "회의 참여"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
@@ -3358,6 +3381,10 @@ msgstr "일치 방식"
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
 msgstr "{0}에서 일치"
+
+#: src/calendar-service/event-labels.ts
+msgid "Maybe"
+msgstr "미정"
 
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
@@ -3884,6 +3911,10 @@ msgstr "없음"
 msgid "Not ({condition})"
 msgstr "({condition}) 아님"
 
+#: src/calendar-service/event-labels.ts
+msgid "Not answered"
+msgstr "미응답"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "사용할 수 없음"
@@ -4062,6 +4093,10 @@ msgstr "첫 번째로 열기"
 msgid "Open image"
 msgstr "이미지 열기"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Open in Google Calendar"
+msgstr "Google 캘린더에서 열기"
+
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
 msgstr "Planner에서 열기"
@@ -4132,6 +4167,10 @@ msgstr "정리"
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
 msgstr "기타"
+
+#: src/calendar-service/event-labels.ts
+msgid "Out of office"
+msgstr "부재중"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"

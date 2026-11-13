@@ -2109,7 +2109,6 @@ msgid "Days from today"
 msgstr "Dias a partir de hoje"
 
 #: src/calendar-service/event-labels.ts
-#: src/calendar-service/event-row.tsx
 msgid "Declined"
 msgstr "Recusado"
 
@@ -2549,6 +2548,10 @@ msgstr "Estimativa (minutos)"
 msgid "Estimate and work sessions"
 msgstr "Estimativa e sessões de trabalho"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Event links"
+msgstr "Links do evento"
+
 #: src/components/recurrence-field.tsx
 msgid "Every"
 msgstr "A cada"
@@ -2728,6 +2731,10 @@ msgstr "Primeiro"
 msgid "Fixed date and time"
 msgstr "Data e hora fixas"
 
+#: src/calendar-service/event-labels.ts
+msgid "Focus time"
+msgstr "Horário de concentração"
+
 #: src/app/command-palette-model.ts
 msgid "Focused task"
 msgstr "Tarefa em foco"
@@ -2759,6 +2766,10 @@ msgstr "quarto"
 #: src/components/recurrence-field.tsx
 msgid "Fourth"
 msgstr "Quarto"
+
+#: src/calendar-service/event-labels.ts
+msgid "Free"
+msgstr "Disponível"
 
 #: src/components/task-date-panel.tsx
 msgid "Fri 3pm, next week, Dec 12"
@@ -2831,6 +2842,14 @@ msgstr "O Google Agenda está ocupado. Tente novamente em instantes."
 #: src/calendar-service/failure-message.ts
 msgid "Google Calendar is unavailable right now. Try again."
 msgstr "O Google Agenda está indisponível no momento. Tente novamente."
+
+#: src/app/task-calendar-view.tsx
+msgid "Google Calendar needs reconnecting. Reconnect in Settings to see events."
+msgstr "O Google Agenda precisa ser reconectado. Reconecte em Configurações para ver os eventos."
+
+#: src/calendar-service/failure-message.ts
+msgid "Google Calendar needs reconnecting. Reconnect in Settings."
+msgstr "O Google Agenda precisa ser reconectado. Reconecte em Configurações."
 
 #: src/calendar-service/failure-message.ts
 msgid "Google didn’t complete the authorization. Try again."
@@ -3038,6 +3057,10 @@ msgstr "Itálico"
 #: src/i18n/ui-copy.ts
 msgid "item"
 msgstr "elemento"
+
+#: src/calendar-service/event-dialog.tsx
+msgid "Join meeting"
+msgstr "Entrar na reunião"
 
 #: src/app/views/projects-view.tsx
 msgid "Jump to project"
@@ -3358,6 +3381,10 @@ msgstr "Modo de correspondência"
 #: src/app/search-match-context.ts
 msgid "Matched in {0}"
 msgstr "Correspondência em {0}"
+
+#: src/calendar-service/event-labels.ts
+msgid "Maybe"
+msgstr "Talvez"
 
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
@@ -3884,6 +3911,10 @@ msgstr "Nenhum"
 msgid "Not ({condition})"
 msgstr "Não ({condition})"
 
+#: src/calendar-service/event-labels.ts
+msgid "Not answered"
+msgstr "Sem resposta"
+
 #: src/app/more-screen.tsx
 msgid "Not available"
 msgstr "Indisponível"
@@ -4062,6 +4093,10 @@ msgstr "Abrir primeiro"
 msgid "Open image"
 msgstr "Abrir imagem"
 
+#: src/calendar-service/event-dialog.tsx
+msgid "Open in Google Calendar"
+msgstr "Abrir no Google Agenda"
+
 #: src/app/views/planner-view-handoff.tsx
 msgid "Open in Planner"
 msgstr "Abrir no Planner"
@@ -4132,6 +4167,10 @@ msgstr "Organizar"
 #: src/app/views/virtual-task-list.tsx
 msgid "Other"
 msgstr "Outro"
+
+#: src/calendar-service/event-labels.ts
+msgid "Out of office"
+msgstr "Fora do escritório"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Outdent"

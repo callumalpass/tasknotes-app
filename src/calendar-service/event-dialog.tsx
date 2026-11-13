@@ -1,4 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
+import { ArrowUpRight, Video } from "lucide-react";
 import { useRef, useState } from "react";
 import { useOverlay } from "../components/overlays/use-overlay";
 import { TaskNotesSelectField } from "../components/tasknotes-controls";
@@ -19,6 +20,7 @@ import {
   withAllDay,
   type EventDraft,
 } from "./event-draft";
+import { eventLinks } from "./event-links";
 import { calendarServiceFailureMessage } from "./failure-message";
 import type { EventEditorRequest } from "./use-google-calendar-overlay";
 
@@ -103,6 +105,7 @@ export function GoogleEventDialog({
   }
 
   const inputType = draft.allDay ? "date" : "datetime-local";
+  const links = event ? eventLinks(event) : null;
   return (
     <div className="recurring-scope-layer">
       <button
@@ -128,6 +131,37 @@ export function GoogleEventDialog({
           </h2>
           <small>{existing?.calendar.name}</small>
         </header>
+        {links?.join || links?.google ? (
+          <nav
+            aria-label={t({ message: "Event links" })}
+            className="google-event-links"
+          >
+            {links.join ? (
+              <a
+                className="secondary-action"
+                href={links.join.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <Video aria-hidden="true" size={18} />
+                <span>{t({ message: "Join meeting" })}</span>
+                {/* The link comes with the invitation, so say where it leads. */}
+                <small>{links.join.host}</small>
+              </a>
+            ) : null}
+            {links.google ? (
+              <a
+                className="text-action"
+                href={links.google}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <span>{t({ message: "Open in Google Calendar" })}</span>
+                <ArrowUpRight aria-hidden="true" size={16} />
+              </a>
+            ) : null}
+          </nav>
+        ) : null}
         <form
           onSubmit={(submit) => {
             submit.preventDefault();

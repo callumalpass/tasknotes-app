@@ -25,6 +25,8 @@ export function calendarServiceFailureMessage(
       return t`Allow popups for TaskNotes to sign in with Google.`;
     case "rate_limited":
       return t`Google Calendar is busy. Try again shortly.`;
+    case "reconnect_required":
+      return t`Google Calendar needs reconnecting. Reconnect in Settings.`;
     case "session_expired":
       return t`Your Google Calendar session ended. Sign in again in Settings.`;
     case "unavailable":

@@ -76,7 +76,55 @@ export function eventTitle(event: GoogleEvent): string {
   return event.title || t`(No title)`;
 }
 
-/** An accessible name: what, when, where and whose calendar. */
+/** A timed event Google marks free: it is on the calendar without holding the time. */
+export function isFree(event: GoogleEvent): boolean {
+  return event.transparency === "transparent" && event.start.kind !== "date";
+}
+
+/**
+ * How an event is drawn when it is not plainly a meeting the person is going
+ * to. Filled means the time is held; the less sure that is, the less ink.
+ */
+export function eventStateClasses(event: GoogleEvent): string[] {
+  const answer = event.self_response;
+  if (answer === "declined") return ["is-declined"];
+  return [
+    answer === "needs_action" ? "is-unanswered" : "",
+    event.status === "tentative" || answer === "tentative"
+      ? "is-tentative"
+      : "",
+    isFree(event) ? "is-free" : "",
+    event.event_type === "out_of_office" ? "is-out-of-office" : "",
+  ].filter(Boolean);
+}
+
+/**
+ * What sets an event apart from a meeting the person is going to: their answer
+ * to the invitation, then the kind of time it is.
+ */
+export function eventNotes(event: GoogleEvent): string[] {
+  const answer =
+    event.self_response === "declined"
+      ? t`Declined`
+      : event.self_response === "needs_action"
+        ? t`Not answered`
+        : event.self_response === "tentative"
+          ? t`Maybe`
+          : "";
+  const kind =
+    event.event_type === "out_of_office"
+      ? t`Out of office`
+      : event.event_type === "focus_time"
+        ? t`Focus time`
+        : isFree(event) && event.self_response !== "declined"
+          ? t`Free`
+          : "";
+  // Google titles these events with their kind unless the person renames them.
+  const title = event.title?.trim().toLowerCase();
+  return [answer, kind].filter((note) => note && note.toLowerCase() !== title);
+}
+
+/** An accessible name: what, how it stands, when, where and whose calendar. */
 export function eventDescription(
   event: GoogleEvent,
   calendar: GoogleCalendar,
@@ -84,7 +132,7 @@ export function eventDescription(
 ): string {
   return [
     eventTitle(event),
-    event.self_response === "declined" ? t`Declined` : "",
+    ...eventNotes(event),
     when,
     event.location,
     calendar.name,
