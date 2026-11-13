@@ -69,11 +69,11 @@ importers:
         specifier: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
         version: file:vendor/mdbase-dev-obsidian-runtime-app-storage-0.0.0-07ae574c-991106d7.tgz
       '@mdbase-dev/sdk':
-        specifier: file:vendor/sdk-ea1275ab-production-beta202.tgz
-        version: file:vendor/sdk-ea1275ab-production-beta202.tgz
+        specifier: file:vendor/sdk-65fd9232-production-beta203.tgz
+        version: file:vendor/sdk-65fd9232-production-beta203.tgz
       '@mdbase-dev/ui':
         specifier: 0.1.0-beta.166
-        version: 0.1.0-beta.166(@codemirror/commands@6.11.0)(@codemirror/language@6.12.4)(@codemirror/state@6.7.1)(@codemirror/view@6.43.9)(@lezer/common@1.5.2)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@0.1.0-beta.166(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-ea1275ab-production-beta202.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.1.0-beta.166(@codemirror/commands@6.11.0)(@codemirror/language@6.12.4)(@codemirror/state@6.7.1)(@codemirror/view@6.43.9)(@lezer/common@1.5.2)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@0.1.0-beta.166(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-65fd9232-production-beta203.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@sqlite.org/sqlite-wasm':
         specifier: 3.53.4-build2
         version: 3.53.4-build2
@@ -1038,9 +1038,9 @@ packages:
     version: 0.0.0
     engines: {node: '>=20'}
 
-  '@mdbase-dev/sdk@file:vendor/sdk-ea1275ab-production-beta202.tgz':
-    resolution: {integrity: sha512-uNBCVCbXZnyu0aG4YkIk16L7kOkE5mAHpJG2OBgJe5vv4S71pgNcGH/GoN2pKpI9C/N72I6G0WmJMRNrwykEIQ==, tarball: file:vendor/sdk-ea1275ab-production-beta202.tgz}
-    version: 0.1.0-beta.202
+  '@mdbase-dev/sdk@file:vendor/sdk-65fd9232-production-beta203.tgz':
+    resolution: {integrity: sha512-Q2/rYOi+SoJAWhYgoa/fib0jkII/sGrp/c94iXT7WBTlvsmnjSXq/T+C98xquu9ExndWf4/mRQ9/YCwGDfOzPQ==, tarball: file:vendor/sdk-65fd9232-production-beta203.tgz}
+    version: 0.1.0-beta.203
     engines: {node: '>=20'}
     bundledDependencies:
       - '@mdbase-dev/connect-protocol'
@@ -5326,13 +5326,13 @@ snapshots:
     dependencies:
       '@sqlite.org/sqlite-wasm': 3.53.4-build2
 
-  '@mdbase-dev/sdk@file:vendor/sdk-ea1275ab-production-beta202.tgz':
+  '@mdbase-dev/sdk@file:vendor/sdk-65fd9232-production-beta203.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
       '@noble/hashes': 2.4.0
 
-  '@mdbase-dev/ui@0.1.0-beta.166(@codemirror/commands@6.11.0)(@codemirror/language@6.12.4)(@codemirror/state@6.7.1)(@codemirror/view@6.43.9)(@lezer/common@1.5.2)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@0.1.0-beta.166(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-ea1275ab-production-beta202.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@mdbase-dev/ui@0.1.0-beta.166(@codemirror/commands@6.11.0)(@codemirror/language@6.12.4)(@codemirror/state@6.7.1)(@codemirror/view@6.43.9)(@lezer/common@1.5.2)(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(@mdbase-dev/i18n@0.1.0-beta.166(@lingui/core@6.9.0(@babel/core@7.29.7))(@lingui/react@6.9.0(@babel/core@7.29.7)(react@19.2.8))(react@19.2.8)(rolldown@1.1.5))(@mdbase-dev/sdk@file:vendor/sdk-65fd9232-production-beta203.tgz)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@fontsource/azeret-mono': 5.3.0
       '@fontsource/ibm-plex-sans': 5.3.0
@@ -5346,7 +5346,7 @@ snapshots:
       '@codemirror/state': 6.7.1
       '@codemirror/view': 6.43.9
       '@lezer/common': 1.5.2
-      '@mdbase-dev/sdk': file:vendor/sdk-ea1275ab-production-beta202.tgz
+      '@mdbase-dev/sdk': file:vendor/sdk-65fd9232-production-beta203.tgz
       react-dom: 19.2.8(react@19.2.8)
 
   '@messageformat/date-skeleton@1.1.0': {}
