@@ -25,13 +25,18 @@ const phase = (problem: string) =>
   }) as Pick<MdbaseSnapshot, "phase">;
 
 it("names the code behind the generic copy, and nothing for actionable problems", () => {
-  // An unclassified code reads "Something went wrong" (issue #436).
-  expect(describeError("replica_open_failed")?.title).toBe(
+  // Connect core refuses setup with this code when a plain file holds a path
+  // the type pack manages; the SDK has no copy for it (issue #436).
+  expect(describeError("collection_setup_namespace_conflict")?.title).toBe(
     "Something went wrong",
   );
-  expect(openProblemReference(phase("replica_open_failed"))).toEqual({
-    code: "replica_open_failed",
-    developerMessage: expect.stringContaining("replica_open_failed"),
+  expect(
+    openProblemReference(phase("collection_setup_namespace_conflict")),
+  ).toEqual({
+    code: "collection_setup_namespace_conflict",
+    developerMessage: expect.stringContaining(
+      "collection_setup_namespace_conflict",
+    ),
   });
   expect(openProblemReference(phase("internal"))?.code).toBe("internal");
   // Warnings and information already say what to do.
@@ -53,7 +58,7 @@ it("shows the SDK's code under the shared problem screen", async () => {
     mdbase.fixture.controls.publishSnapshot({
       ...before,
       status: "blocked",
-      problem: "replica_open_failed",
+      problem: "collection_setup_namespace_conflict",
     } as never),
   );
   expect(
@@ -61,9 +66,9 @@ it("shows the SDK's code under the shared problem screen", async () => {
   ).toBeVisible();
   expect(screen.getByText("Something went wrong")).toBeVisible();
   fireEvent.click(screen.getByText("Technical details"));
-  expect(screen.getByText("replica_open_failed")).toBeVisible();
+  expect(screen.getByText("collection_setup_namespace_conflict")).toBeVisible();
   expect(warn).toHaveBeenCalledWith(
-    expect.stringContaining("replica_open_failed"),
+    expect.stringContaining("collection_setup_namespace_conflict"),
     expect.any(String),
   );
   warn.mockRestore();
