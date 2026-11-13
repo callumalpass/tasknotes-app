@@ -196,6 +196,7 @@ describe("Google events alongside task calendars", () => {
     calendar.google = {
       enabled: true,
       signedIn: true,
+      reconnect: false,
       items: [item],
       writable: [googleCalendar],
       events: [event],

@@ -493,6 +493,24 @@ Today             Search       More
   through and unfilled, and says "Declined" before its time. Working-location
   entries are not events and are not drawn. One calendar that cannot be read
   shows the failure and leaves the other calendars' events in place.
+- Fill means the time is held. An invitation not yet answered is an outline in
+  its calendar's tone and says "Not answered"; one answered maybe is drawn as a
+  tentative event and says "Maybe". A timed event Google marks free has a
+  lighter fill and says "Free"; all-day events, free by default, are left
+  alone. Out-of-office time is hatched, a broken bar in Agenda, and says "Out
+  of office"; focus time says "Focus time". A note is left out when the title
+  already says it. These notes sit before the time in a row and in the
+  accessible name.
+- An event with a video call shows a small camera beside its title, and its
+  editor offers "Join meeting" with the host the link leads to, since the link
+  comes with the invitation. "Open in Google Calendar" leads only to Google
+  Calendar's own pages. Both open outside the app. Rows stay one control: the
+  links are in the editor, not in the row.
+- Events are read again when the person returns to the app after a minute or
+  more away, and every five minutes while a calendar is in front of them. A
+  later read that cannot reach Google leaves what is shown in place.
+- When Google access has lapsed the calendar says so once and points to
+  Settings, where the connection shows "Needs reconnecting".
 - A timed event lasting twenty-four hours or more is drawn with the all-day
   entries in every layout, as Google Calendar draws it, and names its start
   time where its bar begins. Its times change in the event editor, not by

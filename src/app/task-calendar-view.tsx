@@ -909,7 +909,14 @@ export function TaskCalendarView({
               {mutationError}
             </p>
           ) : null}
-          {google.failure ? (
+          {google.reconnect ? (
+            <p className="section-copy" role="status">
+              <Trans>
+                Google Calendar needs reconnecting. Reconnect in Settings to see
+                events.
+              </Trans>
+            </p>
+          ) : google.failure ? (
             <p className="inline-error" role="alert">
               {calendarServiceFailureMessage(google.failure)}
             </p>

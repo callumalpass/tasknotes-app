@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { renderHook, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GoogleEvent } from "./client";
 
 const WORK = "6f0e9a52-3a55-4c5e-9d1c-3d8c6d6c3f11";
@@ -82,6 +82,92 @@ describe("events of the selected calendars", () => {
     events.mockRejectedValue(new TypeError("network"));
     const { result } = renderHook(() => useGoogleEvents(range));
     await waitFor(() => expect(result.current.failure).toBe("unavailable"));
+    expect(result.current.events).toEqual([]);
+  });
+});
+
+describe("keeping shown events current", () => {
+  const read = (title: string) =>
+    events.mockImplementation((id: string) =>
+      Promise.resolve({ events: [{ ...event(id), title }], omitted: 0 }),
+    );
+  const titles = (result: { current: ReturnType<typeof useGoogleEvents> }) =>
+    result.current.events.map(({ title }) => title);
+  /** Lets the reads in flight land; the test's clock stands still meanwhile. */
+  const settle = () =>
+    act(async () => {
+      for (let turn = 0; turn < 10; turn++) await Promise.resolve();
+    });
+  const comeBack = async () => {
+    act(() => void window.dispatchEvent(new Event("focus")));
+    await settle();
+  };
+  const pass = async (milliseconds: number) => {
+    act(() => void vi.advanceTimersByTime(milliseconds));
+    await settle();
+  };
+  async function shown(title: string) {
+    read(title);
+    const { result } = renderHook(() => useGoogleEvents(range));
+    await settle();
+    expect(titles(result)).toEqual([title, title]);
+    return result;
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    events.mockReset();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("reads again when the person returns after a minute away, not before", async () => {
+    const result = await shown("Before");
+    read("After");
+
+    vi.setSystemTime(Date.now() + 59_000);
+    await comeBack();
+    expect(events).toHaveBeenCalledTimes(2);
+
+    vi.setSystemTime(Date.now() + 1_000);
+    await comeBack();
+    expect(events).toHaveBeenCalledTimes(4);
+    expect(titles(result)).toEqual(["After", "After"]);
+  });
+
+  it("reads again every five minutes while shown, and never while hidden", async () => {
+    const result = await shown("Before");
+    read("After");
+
+    await pass(4 * 60_000);
+    expect(events).toHaveBeenCalledTimes(2);
+    const visibility = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    await pass(10 * 60_000);
+    expect(events).toHaveBeenCalledTimes(2);
+
+    visibility.mockReturnValue("visible");
+    await pass(60_000);
+    expect(events).toHaveBeenCalledTimes(4);
+    expect(titles(result)).toEqual(["After", "After"]);
+    visibility.mockRestore();
+  });
+
+  it("leaves what is shown when a later read cannot reach Google", async () => {
+    const result = await shown("Before");
+
+    events.mockRejectedValue(new TypeError("offline"));
+    vi.setSystemTime(Date.now() + 120_000);
+    await comeBack();
+    expect(events).toHaveBeenCalledTimes(4);
+    expect(titles(result)).toEqual(["Before", "Before"]);
+    expect(result.current.failure).toBeNull();
+
+    // Lapsed access is not a passing fault: it is said at once.
+    events.mockRejectedValue(new CalendarServiceError("reconnect_required"));
+    vi.setSystemTime(Date.now() + 120_000);
+    await comeBack();
+    expect(result.current.failure).toBe("reconnect_required");
     expect(result.current.events).toEqual([]);
   });
 });

@@ -7,7 +7,12 @@ import {
   shiftDay,
   spansWholeDays,
 } from "./event-days";
-import { eventClock, eventDayLabel, eventDescription } from "./event-labels";
+import {
+  eventClock,
+  eventDayLabel,
+  eventDescription,
+  eventNotes,
+} from "./event-labels";
 import { googleItem, googleItems } from "./use-google-calendar-overlay";
 
 const base = {
@@ -198,6 +203,84 @@ describe("a Google event as a calendar item", () => {
         googleItem({ ...event, self_response }, calendar, 0).className,
       ).not.toContain("is-declined");
     }
+  });
+
+  it("draws an invitation by the person's answer and names it", () => {
+    const event = timed(at(14, 9), at(14, 10));
+    const drawn = (self_response: string | null, status = "confirmed") =>
+      googleItem(
+        { ...event, status: status as "confirmed", self_response },
+        calendar,
+        0,
+      ).className;
+    expect(drawn("needs_action")).toEqual([
+      "google-calendar-event",
+      "is-unanswered",
+    ]);
+    expect(drawn("tentative")).toEqual([
+      "google-calendar-event",
+      "is-tentative",
+    ]);
+    expect(drawn(null, "tentative")).toEqual([
+      "google-calendar-event",
+      "is-tentative",
+    ]);
+    expect(drawn("accepted")).toEqual(["google-calendar-event"]);
+    expect(drawn("an_answer_added_later")).toEqual(["google-calendar-event"]);
+    expect(eventNotes({ ...event, self_response: "needs_action" })).toEqual([
+      "Not answered",
+    ]);
+    expect(eventNotes({ ...event, self_response: "tentative" })).toEqual([
+      "Maybe",
+    ]);
+    expect(eventNotes({ ...event, self_response: "accepted" })).toEqual([]);
+  });
+
+  it("draws time marked free, focus time and out of office apart from meetings", () => {
+    const event = timed(at(14, 9), at(14, 10));
+    const free = { ...event, transparency: "transparent" };
+    expect(googleItem(free, calendar, 0).className).toContain("is-free");
+    expect(eventNotes(free)).toEqual(["Free"]);
+    // An all-day event is free by default in Google and holds no hours anyway.
+    const holiday = {
+      ...base,
+      start: on("2026-11-14"),
+      end: on("2026-11-15"),
+      transparency: "transparent",
+    };
+    expect(googleItem(holiday, calendar, 0).className).toEqual([
+      "google-calendar-event",
+    ]);
+    expect(eventNotes(holiday)).toEqual([]);
+    // Declined says enough.
+    expect(eventNotes({ ...free, self_response: "declined" })).toEqual([
+      "Declined",
+    ]);
+    expect(
+      googleItem({ ...free, self_response: "declined" }, calendar, 0).className,
+    ).toEqual(["google-calendar-event", "is-declined"]);
+
+    const away = { ...event, title: "Leave", event_type: "out_of_office" };
+    expect(googleItem(away, calendar, 0).className).toContain(
+      "is-out-of-office",
+    );
+    expect(eventDescription(away, calendar, "9am – 10am")).toBe(
+      "Leave, Out of office, 9am – 10am, Home",
+    );
+    expect(
+      eventNotes({ ...event, title: "Deep work", event_type: "focus_time" }),
+    ).toEqual(["Focus time"]);
+    // Google's own title for these already says what they are.
+    expect(
+      eventNotes({ ...event, title: " Focus time", event_type: "focus_time" }),
+    ).toEqual([]);
+    expect(
+      eventNotes({
+        ...away,
+        title: "Out of office",
+        self_response: "needs_action",
+      }),
+    ).toEqual(["Not answered"]);
   });
 
   it("leaves out working locations and events of calendars it does not know", () => {

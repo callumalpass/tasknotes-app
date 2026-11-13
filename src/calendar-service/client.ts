@@ -48,6 +48,9 @@ const eventSchema = z.discriminatedUnion("status", [
     // service adds later cannot fail a page.
     event_type: z.string().optional(),
     self_response: z.string().nullable().optional(),
+    transparency: z.string().optional(),
+    web_link: z.string().nullable().optional(),
+    conference_link: z.string().nullable().optional(),
     start: boundarySchema,
     end: boundarySchema,
   }),
@@ -105,6 +108,7 @@ export type CalendarServiceFailure =
   | "pagination"
   | "popup_blocked"
   | "rate_limited"
+  | "reconnect_required"
   | "session_expired"
   | "unavailable";
 
@@ -124,9 +128,21 @@ export interface CalendarServiceSnapshot {
   selected: string[];
 }
 
-function failureForStatus(status: number): CalendarServiceFailure {
+const errorSchema = z.object({ code: z.string() });
+
+async function failureFor(response: Response): Promise<CalendarServiceFailure> {
+  const { status } = response;
   if (status === 404) return "not_found";
-  if (status === 409) return "conflict";
+  if (status === 409) {
+    // A stale event and lapsed Google access both answer 409; only the code
+    // tells them apart. A service that predates the code says "conflict".
+    const error = errorSchema.safeParse(
+      await response.json().catch(() => null),
+    );
+    return error.success && error.data.code === "reconnect_required"
+      ? "reconnect_required"
+      : "conflict";
+  }
   if (status === 429) return "rate_limited";
   return status >= 400 && status < 500 ? "invalid_request" : "unavailable";
 }
@@ -295,12 +311,26 @@ export class CalendarServiceClient {
       this.forget();
       throw new CalendarServiceError("session_expired");
     }
-    if (!response.ok)
-      throw new CalendarServiceError(failureForStatus(response.status));
+    if (!response.ok) {
+      const failure = await failureFor(response);
+      session.signal.throwIfAborted();
+      if (failure === "reconnect_required") this.#lapsed();
+      throw new CalendarServiceError(failure);
+    }
     if (!schema) return undefined as T;
     const value = schema.parse(await response.json());
     session.signal.throwIfAborted();
     return value;
+  }
+
+  /** Google withdrew access: nothing can be read until the person reconnects. */
+  #lapsed() {
+    const { connection } = this.#snapshot;
+    if (connection)
+      this.#publish({
+        connection: { ...connection, status: "reconnect_required" },
+        calendars: [],
+      });
   }
 
   async #run(action: () => Promise<void>) {

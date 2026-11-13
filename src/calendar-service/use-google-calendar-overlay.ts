@@ -16,12 +16,8 @@ import {
 import { calendarTone } from "./calendar-tone";
 import { eventSpan, shiftDay, spansWholeDays } from "./event-days";
 import { movedFields, newEventDraft, type EventDraft } from "./event-draft";
+import { eventStateClasses } from "./event-labels";
 import { useCalendarService, useGoogleEvents } from "./use-calendar-service";
-
-/** The person said no; Google still lists the event on their calendar. */
-export function isDeclined(event: GoogleEvent): boolean {
-  return event.self_response === "declined";
-}
 
 export type EventEditorRequest =
   | {
@@ -57,11 +53,7 @@ export function googleItem(
     editable: movable,
     startEditable: movable,
     durationEditable: movable,
-    className: [
-      "google-calendar-event",
-      event.status === "tentative" ? "is-tentative" : "",
-      isDeclined(event) ? "is-declined" : "",
-    ].filter(Boolean),
+    className: ["google-calendar-event", ...eventStateClasses(event)],
     data: {
       details: [],
       recurring: Boolean(event.recurrence),
@@ -123,6 +115,8 @@ export function useGoogleCalendarOverlay(range: { start: Date; end: Date }) {
   return {
     enabled: calendarServiceClient !== null,
     signedIn: service.sessionId !== null,
+    /** Google withdrew access; nothing is read until the person reconnects. */
+    reconnect: service.connection?.status === "reconnect_required",
     items,
     writable,
     events,

@@ -448,6 +448,8 @@ describe("CalendarServiceClient", () => {
               ...event("b"),
               event_type: "a_later_kind",
               self_response: null,
+              web_link: "https://www.google.com/calendar/event?eid=abc",
+              conference_link: null,
               a_later_field: { nested: true },
             },
             event("c"),
@@ -472,6 +474,17 @@ describe("CalendarServiceClient", () => {
       ["working_location", "declined"],
       ["a_later_kind", null],
       [undefined, undefined],
+    ]);
+    expect(
+      events.map(({ transparency, web_link, conference_link }) => [
+        transparency,
+        web_link,
+        conference_link,
+      ]),
+    ).toEqual([
+      ["transparent", undefined, undefined],
+      [undefined, "https://www.google.com/calendar/event?eid=abc", null],
+      [undefined, undefined, undefined],
     ]);
   });
 
@@ -550,6 +563,49 @@ describe("CalendarServiceClient", () => {
       .catch((reason: unknown) => reason);
     expect(failure).toBeInstanceOf(CalendarServiceError);
     expect(failure).toMatchObject({ failure: "conflict" });
+  });
+
+  it("tells lapsed Google access from a conflict and stops showing calendars", async () => {
+    const path = `/v1/calendars/${CALENDAR}/events`;
+    const { client } = harness({
+      ...signInRoutes,
+      [`GET ${path}`]: () => [409, { code: "reconnect_required", message: "" }],
+      [`PATCH ${path}/e1_a`]: () => [409, { code: "conflict", message: "" }],
+    });
+    await signIn(client);
+    expect(client.getSnapshot().calendars).toHaveLength(2);
+
+    await expect(
+      client.updateEvent(event("a"), { title: "New" }),
+    ).rejects.toMatchObject({ failure: "conflict" });
+    expect(client.getSnapshot().connection?.status).toBe("active");
+
+    await expect(
+      client.events(
+        CALENDAR,
+        new Date("2026-11-01T00:00:00Z"),
+        new Date("2026-11-08T00:00:00Z"),
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ failure: "reconnect_required" });
+    expect(client.getSnapshot()).toMatchObject({
+      sessionId: "session-1",
+      connection: { id: CONNECTION, status: "reconnect_required" },
+      calendars: [],
+    });
+  });
+
+  it("says Google access lapsed when the calendars cannot be listed", async () => {
+    const { client } = harness({
+      ...signInRoutes,
+      "GET /v1/calendars": () => [409, { code: "reconnect_required" }],
+    });
+    await signIn(client);
+    expect(client.getSnapshot()).toMatchObject({
+      failure: "reconnect_required",
+      connection: { status: "reconnect_required" },
+      calendars: [],
+    });
   });
 
   it("starts from the primary calendar and the ones shown in Google Calendar", () => {
