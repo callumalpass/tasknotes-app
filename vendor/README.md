@@ -25,9 +25,9 @@ their source commit, byte size, and SHA-512 digest.
 Current snapshots were packed from sibling checkouts after their full test
 suites passed:
 
-- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.19` from
-  mdbase-contracts PR #18, not yet published at mdbase.dev, so
-  `pnpm contracts:sync` fails until it is; see `vendor/mdbase-contracts`)
+- `../mdbase-contracts` (`tasknotes.task` pack `0.3.0-rc.20` from
+  mdbase-contracts PR #22, published at mdbase.dev; `pnpm contracts:sync`
+  refreshes it; see `vendor/mdbase-contracts`)
 - `../tasknotes-model` (`0.3.0-rc.20` from tasknotes-model PR #25, unpublished;
   replace with the registry version once it is published)
 - `../tasknotes-nlp-core` (`0.3.0` at `abe88d9`, span-based parsing with input offsets)

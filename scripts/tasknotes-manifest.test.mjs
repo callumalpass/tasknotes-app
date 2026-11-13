@@ -127,12 +127,27 @@ describe("TaskNotes mdbase manifest", () => {
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
-      10,
+      12,
     );
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.19");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.20");
+    // rc.20 keeps the tasknotes.task contracts earlier packs replaced in
+    // place, so a task type outside the pack that still implements one does
+    // not block setup.
+    expect(
+      manifest.provisions.type_packs[0].manifest.resources
+        .filter((resource) => resource.kind === "contract")
+        .map((resource) => resource.target),
+    ).toEqual(
+      expect.arrayContaining([
+        "_contracts/tasknotes.task.md",
+        "_contracts/tasknotes.task/0.3.0-rc.3.md",
+        "_contracts/tasknotes.task/0.3.0-rc.4.md",
+        "_contracts/tasknotes.task/0.3.0-rc.6.md",
+      ]),
+    );
     const taskSeed = manifest.provisions.type_packs[0].manifest.resources.find(
       (resource) => resource.kind === "type",
     );
