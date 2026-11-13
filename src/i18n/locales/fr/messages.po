@@ -2540,6 +2540,11 @@ msgstr "Saisissez le code affiché dans la fenêtre Google"
 msgid "Enter to set {0}"
 msgstr "Entrée pour définir {0}"
 
+#. placeholder {0}: reference.code
+#: src/app/open-problem-details.tsx
+msgid "Error code: <0>{0}</0>"
+msgstr "Code d’erreur : <0>{0}</0>"
+
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
@@ -5727,6 +5732,7 @@ msgstr "Les tâches sans date arrivent ici."
 msgid "Tasks, tags, projects"
 msgstr "Tâches, étiquettes, projets"
 
+#: src/app/open-problem-details.tsx
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx

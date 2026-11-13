@@ -23,6 +23,7 @@ import {
 import { followNativeSignInReturn } from "../native/sign-in";
 import { tasknotesMarkUrl } from "./assets";
 import type { OpenedCollection } from "./opened-collection";
+import { OpenProblemDetails } from "./open-problem-details";
 import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
 
@@ -111,7 +112,7 @@ export function TaskNotesApp({
     [mdbase, unsynced],
   );
   return (
-    <CollectionGate {...ui} extraActions={signedOutExplainer}>
+    <CollectionGate {...ui} extraActions={(view) => gateExtras(view, mdbase)}>
       {(connection) => (
         <LoadedReadyCollection
           arming={arming}
@@ -152,8 +153,14 @@ function WorkspaceLoading() {
   );
 }
 
-const signedOutExplainer = (view: CollectionView) =>
-  view.kind === "signed_out" ? <MdbaseExplainer /> : null;
+/** Signed out: what mdbase is. A problem: how to report it, with the SDK's
+ * code (issue #436: the shared copy for an unclassified code names no cause). */
+function gateExtras(view: CollectionView, mdbase: Mdbase) {
+  if (view.kind === "signed_out") return <MdbaseExplainer />;
+  if (view.kind === "problem" || view.kind === "unavailable")
+    return <OpenProblemDetails mdbase={mdbase} />;
+  return null;
+}
 
 function MdbaseExplainer() {
   return (

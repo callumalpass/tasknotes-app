@@ -2539,6 +2539,11 @@ msgstr "输入 Google 窗口中显示的代码"
 msgid "Enter to set {0}"
 msgstr "按 Enter 设为 {0}"
 
+#. placeholder {0}: reference.code
+#: src/app/open-problem-details.tsx
+msgid "Error code: <0>{0}</0>"
+msgstr "错误代码：<0>{0}</0>"
+
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
@@ -5726,6 +5731,7 @@ msgstr "没有日期的任务会出现在这里。"
 msgid "Tasks, tags, projects"
 msgstr "任务、标签、项目"
 
+#: src/app/open-problem-details.tsx
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
