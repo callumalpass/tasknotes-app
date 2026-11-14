@@ -26,7 +26,21 @@ function e2eFixtureInputs(mode: string): Record<string, string> {
   );
 }
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ command, mode, isPreview }) => ({
+  resolve: {
+    alias:
+      command === "serve" && mode !== "test" && !isPreview
+        ? [
+            {
+              find: /^\.\.\/generated\/mdbase-app\.json$/,
+              replacement: resolve(
+                import.meta.dirname,
+                "src/generated/mdbase-app.development.json",
+              ),
+            },
+          ]
+        : [],
+  },
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __APP_BUILD_REVISION__: JSON.stringify(

@@ -8,9 +8,14 @@ The browser suite is the small trust core, not a substitute for exercising the a
 - Pin the build/commit and record the URL, browser/device, viewport and locale.
 - During development, use a loopback app with `?demo=60`. For arbitrary collection
   options, use `?demo=60&many-options` (12 statuses and priorities).
-- Demo servers regenerate the app manifest with loopback URLs. Restore the
-  tracked production manifest before unit/release checks or syncing their source
-  to the remote builder; do not commit development-generated manifests.
+- `pnpm dev` and `pnpm dev:e2e` generate loopback manifests only at the ignored
+  `src/generated/mdbase-app.development.json` and
+  `public/.well-known/mdbase-app.json` paths. Only the Vite dev server aliases
+  the app's manifest import to the development file; neither command changes
+  tracked files. Unit tests, CI and builds use the committed production manifest
+  at `src/generated/mdbase-app.json`, which Cloud Ops also reads at pinned commits.
+  Builds regenerate and validate their target manifest; `pnpm deploy:dev`
+  snapshots and restores both production output paths after its LAB build.
 - After deployment, use only the explicitly selected LAB and its disposable test
   collection. Demo mode alone does not validate LAB storage or synchronization.
 - Never cross into production or staging. Do not put credentials in notes,

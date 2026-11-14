@@ -20,7 +20,13 @@ const targets = [
     ".well-known",
     "mdbase-app.json",
   ),
-  resolve(import.meta.dirname, "..", "src", "generated", "mdbase-app.json"),
+  resolve(
+    import.meta.dirname,
+    "..",
+    "src",
+    "generated",
+    development ? "mdbase-app.development.json" : "mdbase-app.json",
+  ),
 ];
 
 const manifest = await buildTaskNotesManifest({

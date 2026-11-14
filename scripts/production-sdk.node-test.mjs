@@ -29,7 +29,7 @@ const stage = {
   sqlite: member("native/sqlite3.wasm"),
   sqliteInitializer: member("native/sqlite3.js"),
 };
-test("production input matches the beta141 trust asset and the beta149 published SDK", async () => {
+test("production input matches the pinned trust asset and current published SDK", async () => {
   assert.equal(
     pin.trustAssetSha256,
     "7912e40838213e60b65848350d319a48019021317b112e3326429b250f0133d7",
@@ -41,10 +41,12 @@ test("production input matches the beta141 trust asset and the beta149 published
     pin.trustAssetSha256,
   );
   assert.equal(
+    createHash("sha256")
+      .update(read(`vendor/${sdk.artifact}`))
+      .digest("hex"),
     sdk.sha256,
-    "663ae01a63eb0fd348e0c164fd4e8d8f530218107caa0538aa0c37924c3609e6",
   );
-  assert.equal(sdk.sourceCommit, "147416ca5eb2df443f01c1bf75bbfee6d6cc9abe");
+  assert.match(sdk.sourceCommit, /^[a-f0-9]{40}$/);
   assertSdkDependency(
     pin,
     sdk,
@@ -101,6 +103,7 @@ test("trust, provenance and every original native asset are checked", () => {
     /^const metadata = (\{.*\});$/m.exec(files.packagedTrust)[1],
   );
   const provenance = JSON.parse(files.provenance);
+  assert.equal(provenance.commit, sdk.sourceCommit);
   assertPackagedSdk(pin, files);
   for (const [field, value] of [
     ["runtime", files.runtime.subarray(1)],

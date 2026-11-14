@@ -1,0 +1,869 @@
+{
+  "node": "v22.22.0",
+  "cpu": "AMD EPYC 9B14",
+  "rounds": 7,
+  "revision": "working-tree",
+  "sdkVersion": "file:vendor/sdk-2c7193a4-production-beta206.tgz",
+  "bodyBytesPerRecord": 2048,
+  "environment": "SDK MemoryReplica over the in-process frame port; real SDK client and CBOR frames, no native Core query engine, Noise, relay or network latency",
+  "results": [
+    {
+      "size": 10000,
+      "durationMs": 30901.47,
+      "setupMs": 1822.61,
+      "retainedAfterInitializeMiB": 13.64,
+      "retainedAfterQueriesMiB": 14.61,
+      "measurements": {
+        "initialize": {
+          "medianMs": 1052.28,
+          "p95Ms": 1052.28,
+          "work": [
+            {
+              "requests": 28,
+              "records": 10000,
+              "responseBytes": 4840198,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "firstDetail": {
+          "medianMs": 2.26,
+          "p95Ms": 2.26,
+          "work": [
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            }
+          ]
+        },
+        "cachedDetail": {
+          "medianMs": 0.27,
+          "p95Ms": 1.45,
+          "work": [
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2488,
+              "bodyBytes": 2048
+            }
+          ]
+        },
+        "unchangedRefresh": {
+          "medianMs": 684.97,
+          "p95Ms": 780.86,
+          "work": [
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 13,
+              "records": 10000,
+              "responseBytes": 4301355,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "listZero": {
+          "medianMs": 0,
+          "p95Ms": 0.22,
+          "work": [
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "list300": {
+          "medianMs": 0.15,
+          "p95Ms": 17.12,
+          "work": [
+            {
+              "requests": 3,
+              "records": 0,
+              "responseBytes": 20895,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchBody": {
+          "medianMs": 1285.53,
+          "p95Ms": 1461.72,
+          "work": [
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169360,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 20,
+              "records": 20000,
+              "responseBytes": 5169375,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchColdRare": {
+          "medianMs": 1033.02,
+          "p95Ms": 1033.02,
+          "work": [
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchRare": {
+          "medianMs": 1016.37,
+          "p95Ms": 1044.06,
+          "work": [
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 21,
+              "records": 20001,
+              "responseBytes": 5169656,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "singleRecordRefresh": {
+          "medianMs": 655.58,
+          "p95Ms": 840.74,
+          "work": [
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 19,
+              "records": 10002,
+              "responseBytes": 4322849,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "listAfterMutation": {
+          "medianMs": 1.29,
+          "p95Ms": 1.29,
+          "work": [
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "hydrate300": {
+          "medianMs": 36.47,
+          "p95Ms": 36.47,
+          "work": [
+            {
+              "requests": 300,
+              "records": 300,
+              "responseBytes": 746352,
+              "bodyBytes": 614400
+            }
+          ]
+        },
+        "editHydrated": {
+          "medianMs": 7.84,
+          "p95Ms": 7.84,
+          "work": [
+            {
+              "requests": 5,
+              "records": 2,
+              "responseBytes": 9930,
+              "bodyBytes": 4096
+            }
+          ]
+        },
+        "acceptedMetadataEdit": {
+          "medianMs": 864.82,
+          "p95Ms": 864.82,
+          "work": [
+            {
+              "requests": 21,
+              "records": 10002,
+              "responseBytes": 4311817,
+              "bodyBytes": 4096
+            }
+          ]
+        }
+      }
+    },
+    {
+      "size": 50000,
+      "durationMs": 234698.33,
+      "setupMs": 3688.09,
+      "retainedAfterInitializeMiB": 60.44,
+      "retainedAfterQueriesMiB": 64.44,
+      "measurements": {
+        "initialize": {
+          "medianMs": 4128.79,
+          "p95Ms": 4128.79,
+          "work": [
+            {
+              "requests": 108,
+              "records": 50000,
+              "responseBytes": 24386278,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "firstDetail": {
+          "medianMs": 1.63,
+          "p95Ms": 1.63,
+          "work": [
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            }
+          ]
+        },
+        "cachedDetail": {
+          "medianMs": 0.92,
+          "p95Ms": 1.08,
+          "work": [
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            },
+            {
+              "requests": 1,
+              "records": 1,
+              "responseBytes": 2493,
+              "bodyBytes": 2048
+            }
+          ]
+        },
+        "unchangedRefresh": {
+          "medianMs": 4135.03,
+          "p95Ms": 4424.46,
+          "work": [
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646595,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646595,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646615,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646648,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646648,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646648,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 53,
+              "records": 50000,
+              "responseBytes": 21646648,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "listZero": {
+          "medianMs": 0,
+          "p95Ms": 0.18,
+          "work": [
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "list300": {
+          "medianMs": 0.06,
+          "p95Ms": 22.21,
+          "work": [
+            {
+              "requests": 3,
+              "records": 0,
+              "responseBytes": 20898,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchBody": {
+          "medianMs": 10543.72,
+          "p95Ms": 14126.98,
+          "work": [
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 100,
+              "records": 100000,
+              "responseBytes": 26115940,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchColdRare": {
+          "medianMs": 10412.56,
+          "p95Ms": 10412.56,
+          "work": [
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "searchRare": {
+          "medianMs": 10522.96,
+          "p95Ms": 10805.87,
+          "work": [
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 101,
+              "records": 100001,
+              "responseBytes": 26116219,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "singleRecordRefresh": {
+          "medianMs": 4602,
+          "p95Ms": 5327.07,
+          "work": [
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            },
+            {
+              "requests": 59,
+              "records": 50002,
+              "responseBytes": 21668129,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "listAfterMutation": {
+          "medianMs": 6.5,
+          "p95Ms": 6.5,
+          "work": [
+            {
+              "requests": 0,
+              "records": 0,
+              "responseBytes": 0,
+              "bodyBytes": 0
+            }
+          ]
+        },
+        "hydrate300": {
+          "medianMs": 35.18,
+          "p95Ms": 35.18,
+          "work": [
+            {
+              "requests": 300,
+              "records": 300,
+              "responseBytes": 747849,
+              "bodyBytes": 614400
+            }
+          ]
+        },
+        "editHydrated": {
+          "medianMs": 13.33,
+          "p95Ms": 13.33,
+          "work": [
+            {
+              "requests": 5,
+              "records": 2,
+              "responseBytes": 9943,
+              "bodyBytes": 4096
+            }
+          ]
+        },
+        "acceptedMetadataEdit": {
+          "medianMs": 4066.84,
+          "p95Ms": 4066.84,
+          "work": [
+            {
+              "requests": 61,
+              "records": 50002,
+              "responseBytes": 21657111,
+              "bodyBytes": 4096
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
