@@ -9,6 +9,7 @@ export function useOverlay({
   onDismiss,
   initialFocus,
   returnFocusRef,
+  restoreFocusRef,
 }: {
   open: boolean;
   rootRef: RefObject<HTMLElement | null>;
@@ -17,6 +18,8 @@ export function useOverlay({
   onDismiss(reason: "escape" | "outside"): void;
   initialFocus?(): HTMLElement | null;
   returnFocusRef?: RefObject<HTMLElement | null>;
+  /** Read on close: false leaves focus where the caller put it. */
+  restoreFocusRef?: RefObject<boolean>;
 }) {
   const callbacks = useRef({ onDismiss, initialFocus });
   useLayoutEffect(() => {
@@ -24,7 +27,7 @@ export function useOverlay({
   });
   useLayoutEffect(() => {
     if (!open || !rootRef.current) return;
-    return registerOverlay({
+    const release = registerOverlay({
       root: rootRef.current,
       modal,
       dismissOnTab,
@@ -32,5 +35,6 @@ export function useOverlay({
       initialFocus: () => callbacks.current.initialFocus?.() ?? null,
       returnFocus: returnFocusRef?.current,
     });
-  }, [open, modal, dismissOnTab, rootRef, returnFocusRef]);
+    return () => release(restoreFocusRef?.current ?? true);
+  }, [open, modal, dismissOnTab, rootRef, returnFocusRef, restoreFocusRef]);
 }

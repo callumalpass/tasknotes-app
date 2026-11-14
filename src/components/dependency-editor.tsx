@@ -13,7 +13,6 @@ import type {
   FieldCompletion,
 } from "../domain/completion";
 import type { TaskDependency, TaskDependencyRelType } from "../domain/task";
-import type { TaskRelationships } from "../domain/task-relationships";
 
 const RELATIONSHIP_TYPES: Array<{
   value: TaskDependencyRelType;
@@ -136,57 +135,6 @@ export function DependencyEditor({
           ))}
         </div>
       ) : null}
-    </section>
-  );
-}
-
-export function RelatedWork({
-  relationships,
-}: {
-  relationships: TaskRelationships;
-}) {
-  const { t } = useLingui();
-  const groups = [
-    {
-      label: t({ message: "Blocking" }),
-      tasks: relationships.blocking,
-    },
-    {
-      label: t({ message: "Subtasks" }),
-      tasks: relationships.subtasks,
-    },
-  ];
-
-  if (!groups.some((group) => group.tasks.length)) return null;
-  return (
-    <section className="related-work" aria-labelledby="related-work-title">
-      <h2 id="related-work-title">
-        <Trans>Related work</Trans>
-      </h2>
-      <div className="related-work-groups">
-        {groups.map((group) =>
-          group.tasks.length ? (
-            <div className="related-work-group" key={group.label}>
-              <span>{group.label}</span>
-              <ul>
-                {group.tasks.map((task) => (
-                  <li key={task.id}>
-                    <span>{task.title}</span>
-                    <small>
-                      {task.completed
-                        ? t({
-                            message: "Complete",
-                            context: "related task completion state",
-                          })
-                        : task.status}
-                    </small>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null,
-        )}
-      </div>
     </section>
   );
 }

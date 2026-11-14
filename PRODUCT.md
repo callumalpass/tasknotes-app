@@ -58,9 +58,12 @@ scrolls to and focuses the overdue section. Phone rows keep the title and
 compact supporting metadata together; a separate properties control opens the
 editable property sheet instead of crowding the row with individual controls.
 
-Task detail puts editable status, priority, Scheduled, Due and project chips
-below the title, then Notes, Subtasks and Attachments. More properties starts
-collapsed without removing secondary or custom fields. Attachments accept files
+Task detail puts one property list below the title: status, priority,
+Scheduled, Due and project always, and every other property, including custom
+fields, once it has a value. Empty ones are one step away under Add property,
+so a task shows what it actually uses. Notes follow as one reading-and-editing
+surface, then Subtasks and Attachments, which stay a single row of actions
+until the task has some. Attachments accept files
 the collection supports; safe raster images retain previews and Insert, while
 other files, including SVG, are download-only. Detach keeps the collection file.
 

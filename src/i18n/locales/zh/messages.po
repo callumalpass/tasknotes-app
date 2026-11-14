@@ -456,6 +456,22 @@ msgstr "{deadlines, plural, other {# 个截止日期也已移动}}"
 msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
 msgstr "{deadlines, plural, other {# 个截止日期已过}}"
 
+#: src/components/reminder-editor.tsx
+msgid "{duration} after due"
+msgstr "截止后 {duration}"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} after scheduled"
+msgstr "计划后 {duration}"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before due"
+msgstr "截止前 {duration}"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before scheduled"
+msgstr "计划前 {duration}"
+
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "预计 {estimate} 分钟"
@@ -504,7 +520,7 @@ msgstr "{label} 数量"
 msgid "{label} column"
 msgstr "{label} 列"
 
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "{label} 日期"
@@ -527,8 +543,8 @@ msgstr "{label} 已移动。"
 msgid "{label} suggestions"
 msgstr "{label} 建议"
 
+#: src/app/task-property-list.tsx
 #: src/components/task-date-panel.tsx
-#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "{label} 时间"
@@ -734,7 +750,7 @@ msgstr "{0}的操作"
 msgid "Active"
 msgstr "活跃"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
@@ -846,6 +862,7 @@ msgid "Add formula"
 msgstr "添加公式"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/task-attachments.tsx
 msgid "Add image"
 msgstr "添加图片"
 
@@ -864,6 +881,10 @@ msgstr "添加优先级"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "添加投影"
+
+#: src/app/task-property-list.tsx
+msgid "Add property"
+msgstr "添加属性"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -996,7 +1017,7 @@ msgstr "高级重复设置"
 msgid "Advanced recurrence rule"
 msgstr "高级重复规则"
 
-#: src/app/task-editor-draft.ts
+#: src/app/task-property-list.tsx
 msgid "Advanced repeat"
 msgstr "高级重复"
 
@@ -1155,6 +1176,7 @@ msgstr "排列任务"
 msgid "Ascending"
 msgstr "升序"
 
+#: src/app/task-property-list.tsx
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
 msgstr "负责人"
@@ -1221,11 +1243,12 @@ msgstr "之前"
 msgid "Blocked"
 msgstr "受阻"
 
+#: src/app/task-property-list.tsx
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
 msgstr "被阻止于"
 
-#: src/components/dependency-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Blocking"
 msgstr "阻止其他任务"
 
@@ -1412,7 +1435,7 @@ msgstr "选择人员…"
 msgid "Choose a property"
 msgstr "选择属性"
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 msgid "Choose a value"
 msgstr "选择值"
 
@@ -1532,6 +1555,7 @@ msgstr "关闭 {0}"
 msgid "Close {accessibleName} calendar"
 msgstr "关闭 {accessibleName} 日历"
 
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
 msgstr "关闭 {ariaLabel}"
@@ -1639,10 +1663,6 @@ msgstr "{name}的颜色"
 msgid "Color theme"
 msgstr "颜色主题"
 
-#: src/app/task-custom-field.tsx
-msgid "Comma-separated values"
-msgstr "逗号分隔的值"
-
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
@@ -1669,11 +1689,6 @@ msgstr "完成"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
-msgid "Complete"
-msgstr "完成"
-
-#: src/components/dependency-editor.tsx
-msgctxt "related task completion state"
 msgid "Complete"
 msgstr "完成"
 
@@ -1762,10 +1777,6 @@ msgstr "计算属性名称 {0}"
 msgid "Computed property scope {0}"
 msgstr "计算属性范围 {0}"
 
-#: src/app/task-screen.tsx
-msgid "Computer, Errands"
-msgstr "电脑、差事"
-
 #: src/components/expression-builder.tsx
 msgid "Condition"
 msgstr "条件"
@@ -1836,7 +1847,7 @@ msgid "contexts"
 msgstr "上下文"
 
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -2046,7 +2057,6 @@ msgid "Dark"
 msgstr "深色"
 
 #: src/components/recurrence-field.tsx
-#: src/components/reminder-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
@@ -2327,7 +2337,8 @@ msgstr "TaskNotes 可以离线使用吗？"
 msgid "done"
 msgstr "已完成"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2379,6 +2390,7 @@ msgstr "截止日期"
 
 #: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
@@ -2445,14 +2457,16 @@ msgstr "之前的笔记"
 msgid "Earlier rules take priority."
 msgstr "较早的规则优先。"
 
+#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "编辑"
 
+#. placeholder {0}: String(label)
+#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
-#. placeholder {0}: detail.label
-#. placeholder {0}: props.label
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -2497,10 +2511,6 @@ msgstr "可编辑"
 msgid "Editor for {0}"
 msgstr "{0}的编辑器"
 
-#: src/app/task-screen.tsx
-msgid "Editor mode"
-msgstr "编辑器模式"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "空项目"
@@ -2544,7 +2554,7 @@ msgstr "按 Enter 设为 {0}"
 msgid "Error code: <0>{0}</0>"
 msgstr "错误代码：<0>{0}</0>"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
 msgstr "预计时长（分钟）"
@@ -2994,10 +3004,6 @@ msgstr "缩进"
 #: src/components/task-attachments.tsx
 msgid "Insert"
 msgstr "插入"
-
-#: src/components/task-attachments.tsx
-msgid "Insert in Notes"
-msgstr "插入到笔记中"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
@@ -3473,10 +3479,6 @@ msgstr "更多"
 msgid "More actions for {0}"
 msgstr "{0}的更多操作"
 
-#: src/app/task-screen.tsx
-msgid "More properties"
-msgstr "更多属性"
-
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "更多任务操作"
@@ -3787,7 +3789,7 @@ msgid "No computed properties."
 msgstr "没有计算属性。"
 
 #: src/app/bulk-task-actions.tsx
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "无日期"
@@ -3840,14 +3842,6 @@ msgstr "没有投影"
 msgid "No recovery key is held on this device."
 msgstr "此设备未持有恢复密钥。"
 
-#: src/components/reminder-editor.tsx
-msgid "No reminders set."
-msgstr "未设置提醒。"
-
-#: src/app/task-editor-draft.ts
-msgid "No repeat or reminder"
-msgstr "无重复规则或提醒"
-
 #: src/app/views/kanban-columns.ts
 msgid "No status"
 msgstr "无状态"
@@ -3893,7 +3887,7 @@ msgstr "此重复模式中没有即将到来的日期。"
 msgid "No upcoming tasks here."
 msgstr "这里没有即将到来的任务。"
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
@@ -3990,10 +3984,6 @@ msgstr "此处无法使用通知"
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
 msgstr "系统设置中已关闭 TaskNotes 的通知。请在系统设置中开启通知以接收提醒。"
-
-#: src/components/reminder-editor.tsx
-msgid "Notify at a fixed time or relative to this task."
-msgstr "在固定时间或相对于此任务的时间发送通知。"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
@@ -4253,10 +4243,6 @@ msgstr "Planner 是一个独立应用。保存此视图，然后选择“在 Pla
 msgid "Planner will open this saved view."
 msgstr "Planner 将打开此已保存视图。"
 
-#: src/app/task-screen.tsx
-msgid "Preview"
-msgstr "预览"
-
 #: src/app/view-editor.tsx
 msgid "Preview "
 msgstr "预览"
@@ -4316,7 +4302,7 @@ msgid "Priorities"
 msgstr "优先级"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/app/view-sort-choices.tsx
@@ -4361,7 +4347,7 @@ msgstr "私有集合需要你的桌面设备保持在线。"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
 msgstr "项目"
@@ -4538,20 +4524,12 @@ msgid "Refreshing…"
 msgstr "正在刷新…"
 
 #: src/components/dependency-editor.tsx
-msgid "Related work"
-msgstr "相关工作"
-
-#: src/components/dependency-editor.tsx
 msgid "Relationship"
 msgstr "关系"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
 msgstr "关系"
-
-#: src/components/reminder-editor.tsx
-msgid "Relative"
-msgstr "相对"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
@@ -4592,7 +4570,7 @@ msgid "Reminder time"
 msgstr "提醒时间"
 
 #: src/app/settings-sections.ts
-#: src/components/reminder-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Reminders"
 msgstr "提醒"
 
@@ -4720,14 +4698,11 @@ msgstr "已重新排序“{title}”"
 msgid "Reordered {0}."
 msgstr "已重新排序 {0}。"
 
+#: src/app/task-property-list.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
 msgstr "重复"
-
-#: src/app/task-screen.tsx
-msgid "Repeat and reminders"
-msgstr "重复与提醒"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
@@ -4917,10 +4892,6 @@ msgstr "保存"
 msgid "Save {0}"
 msgstr "保存 {0}"
 
-#: src/components/reminder-editor.tsx
-msgid "Save a fixed or relative reminder in this task."
-msgstr "在此任务中保存固定时间或相对时间的提醒。"
-
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
 msgstr "保存并重新加载 TaskNotes"
@@ -5036,6 +5007,7 @@ msgid "scheduled"
 msgstr "计划日期"
 
 #: src/app/calendar-row-details.ts
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
@@ -5109,6 +5081,7 @@ msgstr "随手记存储不可用。"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
 msgstr "搜索"
@@ -5452,7 +5425,7 @@ msgid "Starts"
 msgstr "开始"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5529,7 +5502,6 @@ msgid "Subtask title"
 msgstr "子任务标题"
 
 #: src/app/task-subtasks.tsx
-#: src/components/dependency-editor.tsx
 #: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "子任务"
@@ -5577,7 +5549,7 @@ msgstr "标签"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5657,7 +5629,7 @@ msgstr "任务列表"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "未找到任务。它可能已被删除或移动。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "任务属性"
@@ -5913,7 +5885,7 @@ msgstr "主题、随手记和日历"
 msgid "These choices apply as soon as you make them and don’t change the collection."
 msgstr "这些选项会立即生效，不会更改集合。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
 msgstr "这些日期将修改重复任务，包括将来的各次任务。"
 
@@ -6064,12 +6036,11 @@ msgstr "此视图使用了不可用的排序方式。"
 msgid "This weekend"
 msgstr "本周末"
 
-#: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
 msgstr "时间"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
@@ -6202,10 +6173,6 @@ msgstr "请尝试重新加载此视图。如果问题仍然存在，请编辑其
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
 msgstr "试试 tomorrow 9am、#tag、@context、+project。"
-
-#: src/components/reminder-editor.tsx
-msgid "Type"
-msgstr "类型"
 
 #: src/components/task-capture.tsx
 msgid "Type {example} in the task title."
@@ -6350,7 +6317,7 @@ msgstr "使用已配置的截止日期字段。"
 msgid "Use the configured scheduled field."
 msgstr "使用已配置的计划日期字段。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "Use the occurrence actions above to change this state."
 msgstr "使用上方的重复项操作来更改此状态。"
 
@@ -6464,6 +6431,10 @@ msgstr "mdbase 是什么？"
 msgid "What needs doing?"
 msgstr "有什么待办事项？"
 
+#: src/components/reminder-editor.tsx
+msgid "When due"
+msgstr "截止时"
+
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "由我选择"
@@ -6471,6 +6442,10 @@ msgstr "由我选择"
 #: src/components/task-date-panel.tsx
 msgid "When it has to be done"
 msgstr "必须完成的时间"
+
+#: src/components/reminder-editor.tsx
+msgid "When scheduled"
+msgstr "计划时"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
@@ -6500,10 +6475,6 @@ msgstr "工作会话"
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "正在处理中…"
-
-#: src/app/task-screen.tsx
-msgid "Write"
-msgstr "书写"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"

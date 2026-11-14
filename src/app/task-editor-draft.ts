@@ -2,10 +2,9 @@ import { t as translate } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
 import { t } from "@lingui/core/macro";
 import { countLabel, type CountKind } from "../i18n/default-labels";
-import { recurrenceLabel, formatRelativeTaskDate } from "../i18n/presentation";
+import { formatRelativeTaskDate } from "../i18n/presentation";
 import { linkDisplayLabel } from "../domain/completion";
 import { isEmptyFieldValue } from "../domain/custom-field-value";
-import { recurrencePreset } from "../domain/recurrence-rule";
 import { activeTimeEntry, type Task } from "../domain/task";
 import {
   occurrenceTask,
@@ -146,21 +145,6 @@ export function timeSummary(task: Task, estimate?: number): string {
     values.push(countLabel(task.timeEntries.length, "session"));
   if (estimate) values.push(t`${estimate}m estimate`);
   return values.join(" · ") || t`Estimate and work sessions`;
-}
-
-export function repeatSummary(draft: Draft): string {
-  const values: string[] = [];
-  if (draft.recurrence) {
-    const preset = recurrencePreset(draft.recurrence);
-    values.push(
-      preset === "advanced"
-        ? t({ message: "Advanced repeat" })
-        : recurrenceLabel(draft.recurrence),
-    );
-  }
-  if (draft.reminders.length)
-    values.push(countLabel(draft.reminders.length, "reminder"));
-  return values.join(" · ") || t`No repeat or reminder`;
 }
 
 export { isEmptyFieldValue } from "../domain/custom-field-value";

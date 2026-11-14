@@ -5,12 +5,13 @@ import {
   Download,
   File as FileIcon,
   FileImage,
+  ImagePlus,
   Paperclip,
   LoaderCircle,
-  NotebookPen,
   Unlink,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   AttachmentService,
@@ -28,12 +29,15 @@ export function TaskAttachments({
   store,
   beforeMutation,
   onInsertInline,
+  insertSlot,
 }: {
   task: TaskSummary;
   service: AttachmentService;
   store: CollectionFileStore;
   beforeMutation(): Promise<void>;
   onInsertInline(reference: string): Promise<void>;
+  /** Where the notes keep their Add image action; beside Attach file without one. */
+  insertSlot?: HTMLElement | null;
 }) {
   const { t } = useLingui();
   const attachInputId = useId();
@@ -152,46 +156,73 @@ export function TaskAttachments({
 
   if (!service.available()) return null;
 
+  const empty = !items.length && !error && !loadError;
+  const insertControls = (
+    <>
+      <input
+        accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
+        disabled={busy}
+        id={insertInputId}
+        type="file"
+        onChange={(event) => {
+          selectFile(event.target.files?.[0], true);
+          event.currentTarget.value = "";
+        }}
+      />
+      <label className="text-action" htmlFor={insertInputId}>
+        <ImagePlus aria-hidden="true" size={16} /> <Trans>Add image</Trans>
+      </label>
+    </>
+  );
+  const attachFile = (
+    <span className="task-attachment-add-actions">
+      <input
+        disabled={busy}
+        id={attachInputId}
+        type="file"
+        onChange={(event) => {
+          selectFile(event.target.files?.[0], false);
+          event.currentTarget.value = "";
+        }}
+      />
+      <label className="text-action" htmlFor={attachInputId}>
+        <Paperclip aria-hidden="true" size={16} /> <Trans>Attach file</Trans>
+      </label>
+      {insertSlot === undefined ? insertControls : null}
+    </span>
+  );
+  const portaledInsert = insertSlot
+    ? createPortal(
+        <span className="task-attachment-add-actions">{insertControls}</span>,
+        insertSlot,
+      )
+    : null;
+
+  // With nothing attached, the section is only its action, beside Add subtask.
+  if (empty)
+    return (
+      <section
+        className="task-attachments is-compact"
+        aria-label={t`Attachments`}
+      >
+        {attachFile}
+        {portaledInsert}
+      </section>
+    );
+
   return (
     <section
-      className={`task-attachments${!items.length && !loading && !error && !loadError ? " is-empty" : ""}`}
+      className="task-attachments"
       aria-labelledby="task-attachments-title"
     >
+      {portaledInsert}
       <header className="task-attachments-heading">
         <div>
           <h2 id="task-attachments-title">
             <Trans>Attachments</Trans>
           </h2>
         </div>
-        <div className="task-attachment-add-actions">
-          <input
-            disabled={busy}
-            id={attachInputId}
-            type="file"
-            onChange={(event) => {
-              selectFile(event.target.files?.[0], false);
-              event.currentTarget.value = "";
-            }}
-          />
-          <label className="text-action" htmlFor={attachInputId}>
-            <Paperclip aria-hidden="true" size={16} />{" "}
-            <Trans>Attach file</Trans>
-          </label>
-          <input
-            accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp"
-            disabled={busy}
-            id={insertInputId}
-            type="file"
-            onChange={(event) => {
-              selectFile(event.target.files?.[0], true);
-              event.currentTarget.value = "";
-            }}
-          />
-          <label className="text-action" htmlFor={insertInputId}>
-            <NotebookPen aria-hidden="true" size={16} />{" "}
-            <Trans>Insert in Notes</Trans>
-          </label>
-        </div>
+        {attachFile}
       </header>
 
       {error || loadError ? (

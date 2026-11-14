@@ -65,14 +65,11 @@ describe("TaskScreen", () => {
     expect(screen.getByLabelText("Notes")).toBeVisible();
     expect(
       screen
-        .getByText("More properties", { selector: "strong" })
+        .getByRole("region", { name: "Task properties" })
         .compareDocumentPosition(
           screen.getByRole("heading", { name: "Notes" }),
         ),
-    ).toBe(Node.DOCUMENT_POSITION_PRECEDING);
-    expect(
-      screen.queryByRole("heading", { name: "Task properties" }),
-    ).not.toBeInTheDocument();
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.getByRole("combobox", { name: "Status" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Priority" })).toBeVisible();
     expect(
@@ -80,17 +77,36 @@ describe("TaskScreen", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Due date" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Edit Project" })).toBeVisible();
-    fireEvent.click(
-      screen.getByText("More properties", { selector: "strong" }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Edit Tags" }));
-    const tags = screen.getByRole("combobox", { name: "Tags" });
-    expect(tags).toHaveFocus();
+    // Empty optional properties wait under Add property instead of filling the pane.
+    expect(screen.queryByRole("button", { name: "Edit Tags" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Add property" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Tags" }));
+    const tags = await screen.findByRole("combobox", { name: "Tags" });
+    await waitFor(() => expect(tags).toHaveFocus());
     fireEvent.change(tags, { target: { value: "research" } });
     fireEvent.keyDown(tags, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByRole("button", { name: "Edit Tags" })).toHaveTextContent(
+      "research",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     await waitFor(() => expect(back).toHaveBeenCalled());
     expect((await repository.get(task.id))?.tags).toContain("research");
+  });
+
+  it("reads saved notes as text until someone edits them", async () => {
+    renderTask();
+    const notes = await screen.findByLabelText("Notes");
+    expect(screen.queryByRole("button", { name: "Edit Notes" })).toBeNull();
+    fireEvent.change(notes, { target: { value: "A **bold** plan" } });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByText("bold")).toBeVisible();
+    expect(screen.queryByLabelText("Notes")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Notes" }));
+    await waitFor(() => expect(screen.getByLabelText("Notes")).toHaveFocus());
+    expect(screen.getByLabelText("Notes")).toHaveValue("A **bold** plan");
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByText("bold")).toBeVisible();
   });
 
   it("saves pending notes before navigating to the next task", async () => {
@@ -432,7 +448,7 @@ describe("TaskScreen", () => {
       type: "image/png",
     });
 
-    fireEvent.change(await screen.findByLabelText("Insert in Notes"), {
+    fireEvent.change(await screen.findByLabelText("Add image"), {
       target: { files: [file] },
     });
     await waitFor(() => expect(uploadSpy).toHaveBeenCalled());

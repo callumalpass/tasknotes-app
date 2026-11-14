@@ -1,100 +1,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { CalendarDays, X } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { X } from "lucide-react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import {
-  combineTaskDateTime,
-  formatTaskDate,
-  taskDatePart,
-  taskTimePart,
-  type UpdateTaskInput,
-} from "../domain/task";
+import type { UpdateTaskInput } from "../domain/task";
 import type { Draft } from "../app/task-editor-draft";
 import { TaskDatePanel } from "./task-date-panel";
-import { TaskNotesTimePicker } from "./tasknotes-controls";
 import { useOverlay } from "./overlays/use-overlay";
 import "./task-detail-dates.css";
 
 type DateTarget = "scheduled" | "due";
-
-export function TaskDetailDates({
-  compact = false,
-  draft,
-  onChange,
-}: {
-  compact?: boolean;
-  draft: Pick<Draft, DateTarget>;
-  onChange(patch: Partial<Draft>): void;
-}) {
-  const { t } = useLingui();
-  const [target, setTarget] = useState<DateTarget | null>(null);
-  const trigger = useRef<HTMLButtonElement | null>(null);
-  return (
-    <>
-      {(["scheduled", "due"] as const).map((field) => {
-        const label = field === "scheduled" ? t`Scheduled` : t`Due`;
-        const date = taskDatePart(draft[field]);
-        return (
-          <div
-            className={`form-field date-time-field tasknotes-control-field${date ? "" : " is-empty"}`}
-            key={field}
-          >
-            <span>{label}</span>
-            <div>
-              <button
-                aria-description={date ? formatTaskDate(date) : t`No date`}
-                aria-expanded={target === field}
-                aria-haspopup="dialog"
-                aria-label={t`${label} date`}
-                className="tasknotes-control-trigger tasknotes-date-trigger"
-                data-value={date}
-                type="button"
-                onClick={(event) => {
-                  trigger.current = event.currentTarget;
-                  setTarget(target === field ? null : field);
-                }}
-              >
-                <CalendarDays aria-hidden="true" size={16} strokeWidth={1.65} />
-                <span className={date ? undefined : "is-placeholder"}>
-                  {compact ? `${label}: ` : ""}
-                  {date
-                    ? formatTaskDate(compact ? draft[field]! : date)
-                    : t`No date`}
-                </span>
-              </button>
-              {date && !compact ? (
-                <TaskNotesTimePicker
-                  ariaLabel={t`${label} time`}
-                  value={taskTimePart(draft[field]) || undefined}
-                  onChange={(time) =>
-                    onChange({ [field]: combineTaskDateTime(date, time) })
-                  }
-                />
-              ) : null}
-            </div>
-          </div>
-        );
-      })}
-      {target ? (
-        <TaskDatePopover
-          key={target}
-          draft={draft}
-          showTime={compact}
-          target={target}
-          trigger={trigger}
-          onClose={() => setTarget(null)}
-          onApply={(input) => {
-            const patch: Partial<Draft> = {};
-            for (const field of ["scheduled", "due"] as const)
-              if (field in input) patch[field] = input[field] ?? undefined;
-            onChange(patch);
-            setTarget(null);
-          }}
-        />
-      ) : null}
-    </>
-  );
-}
 
 /** The date tool anchored to a trigger, for any surface that sets a date. */
 export function TaskDatePopover({

@@ -406,14 +406,26 @@ Today             Search       More
 - Scheduled and Due retain visible labels, including when both dates occur on
   a row. Routine status/priority defaults recede; custom meaningful values stay
   available. Completion circles do not use a legacy default status color.
-- Task detail leads with a title-level completion control, then compact wrapping
-  chips for status, priority, Scheduled, Due, and project. Each chip opens its
-  existing editor; long values truncate without widening the pane. Notes follow
-  immediately, then Subtasks and Attachments. More properties starts collapsed
-  and retains every secondary and custom field. Existing notes open as rendered Markdown; clicking the text or choosing
-  Write opens the source. Empty notes open ready for writing. Save status is
-  quiet proportional text beside the task actions. Without attachments,
-  Attachments collapses to one row holding its heading and add actions.
+- Task detail leads with a title-level completion control, then one property
+  list: icon, label and value per row, with the value as the control. Status,
+  Priority, Scheduled, Due and Project always show; Status and Priority take
+  the collection's own colours and work at any count. Repeat, Reminders, Time,
+  Tags, Contexts, Assigned to, Blocked by and custom fields show once they hold
+  a value (required custom fields always show) and otherwise wait under Add
+  property. A row shown when the task opened, or added since, stays while it is
+  emptied. Single choices open their select or date tool; lists open a picker
+  that closes with Done or Escape and keeps what was typed; editors with several
+  parts (Repeat, Reminders, Time, Assigned to, Blocked by) expand beneath their
+  row with a one-line summary when collapsed. Each reminder is one line with an
+  optional description; presets add 5 minutes to 1 day before the due or
+  scheduled date, and Fixed date and time adds an absolute reminder. Long values
+  truncate without widening the pane. Notes follow the list as one surface:
+  existing notes read as rendered Markdown, clicking the text or Edit opens the
+  source, and leaving the field or Done returns to reading. Empty notes open
+  ready for writing. Add image sits beside the Notes heading. Save status is
+  quiet proportional text beside the task actions. Subtasks and Attachments the
+  task does not have yet share one quiet row of actions (Add subtask, Attach
+  file); each becomes a full section once it has content.
   Attach file accepts any file the collection can store. Non-image attachments
   show a quiet file icon, a truncating filename, size and Download; they are
   never embedded in Notes or opened as active content in the app. Raster image

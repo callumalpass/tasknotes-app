@@ -456,6 +456,22 @@ msgstr "{deadlines, plural, other {期限も#件移動しました}}"
 msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
 msgstr "{deadlines, plural, other {# 件の期限が過ぎています}}"
 
+#: src/components/reminder-editor.tsx
+msgid "{duration} after due"
+msgstr "期限の{duration}後"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} after scheduled"
+msgstr "予定の{duration}後"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before due"
+msgstr "期限の{duration}前"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before scheduled"
+msgstr "予定の{duration}前"
+
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "見積もり {estimate}分"
@@ -504,7 +520,7 @@ msgstr "{label}の量"
 msgid "{label} column"
 msgstr "{label}列"
 
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "{label}の日付"
@@ -527,8 +543,8 @@ msgstr "{label}を移動しました。"
 msgid "{label} suggestions"
 msgstr "{label}の候補"
 
+#: src/app/task-property-list.tsx
 #: src/components/task-date-panel.tsx
-#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "{label}の時刻"
@@ -734,7 +750,7 @@ msgstr "{0}の操作"
 msgid "Active"
 msgstr "有効"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
@@ -846,6 +862,7 @@ msgid "Add formula"
 msgstr "数式を追加"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/task-attachments.tsx
 msgid "Add image"
 msgstr "画像を追加"
 
@@ -864,6 +881,10 @@ msgstr "優先度を追加"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "プロジェクションを追加"
+
+#: src/app/task-property-list.tsx
+msgid "Add property"
+msgstr "プロパティを追加"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -996,7 +1017,7 @@ msgstr "詳細な繰り返し"
 msgid "Advanced recurrence rule"
 msgstr "詳細な繰り返しルール"
 
-#: src/app/task-editor-draft.ts
+#: src/app/task-property-list.tsx
 msgid "Advanced repeat"
 msgstr "詳細な繰り返し"
 
@@ -1155,6 +1176,7 @@ msgstr "タスクを並べ替え"
 msgid "Ascending"
 msgstr "昇順"
 
+#: src/app/task-property-list.tsx
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
 msgstr "担当者"
@@ -1221,11 +1243,12 @@ msgstr "前"
 msgid "Blocked"
 msgstr "ブロック中"
 
+#: src/app/task-property-list.tsx
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
 msgstr "ブロックされているタスク"
 
-#: src/components/dependency-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Blocking"
 msgstr "ブロック中"
 
@@ -1412,7 +1435,7 @@ msgstr "人物を選択…"
 msgid "Choose a property"
 msgstr "プロパティを選択"
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 msgid "Choose a value"
 msgstr "値を選択"
 
@@ -1532,6 +1555,7 @@ msgstr "{0}を閉じる"
 msgid "Close {accessibleName} calendar"
 msgstr "{accessibleName}カレンダーを閉じる"
 
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
 msgstr "{ariaLabel}を閉じる"
@@ -1639,10 +1663,6 @@ msgstr "{name}の色"
 msgid "Color theme"
 msgstr "カラーテーマ"
 
-#: src/app/task-custom-field.tsx
-msgid "Comma-separated values"
-msgstr "カンマ区切りの値"
-
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
@@ -1669,11 +1689,6 @@ msgstr "完了"
 
 #: src/app/views/kanban-view.tsx
 msgctxt "board column: completed tasks"
-msgid "Complete"
-msgstr "完了"
-
-#: src/components/dependency-editor.tsx
-msgctxt "related task completion state"
 msgid "Complete"
 msgstr "完了"
 
@@ -1762,10 +1777,6 @@ msgstr "計算プロパティ名 {0}"
 msgid "Computed property scope {0}"
 msgstr "計算プロパティの範囲 {0}"
 
-#: src/app/task-screen.tsx
-msgid "Computer, Errands"
-msgstr "パソコン、用事"
-
 #: src/components/expression-builder.tsx
 msgid "Condition"
 msgstr "条件"
@@ -1836,7 +1847,7 @@ msgid "contexts"
 msgstr "コンテキスト"
 
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -2046,7 +2057,6 @@ msgid "Dark"
 msgstr "ダーク"
 
 #: src/components/recurrence-field.tsx
-#: src/components/reminder-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
@@ -2327,7 +2337,8 @@ msgstr "TaskNotesはオフラインで使えますか？"
 msgid "done"
 msgstr "完了"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2379,6 +2390,7 @@ msgstr "期限"
 
 #: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
@@ -2445,14 +2457,16 @@ msgstr "以前のノート"
 msgid "Earlier rules take priority."
 msgstr "先のルールが優先されます。"
 
+#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "編集"
 
+#. placeholder {0}: String(label)
+#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
-#. placeholder {0}: detail.label
-#. placeholder {0}: props.label
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -2497,10 +2511,6 @@ msgstr "編集可能"
 msgid "Editor for {0}"
 msgstr "{0}のエディター"
 
-#: src/app/task-screen.tsx
-msgid "Editor mode"
-msgstr "エディターモード"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "空の項目"
@@ -2544,7 +2554,7 @@ msgstr "Enter で {0} に設定"
 msgid "Error code: <0>{0}</0>"
 msgstr "エラーコード: <0>{0}</0>"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
 msgstr "見積もり（分）"
@@ -2994,10 +3004,6 @@ msgstr "インデント"
 #: src/components/task-attachments.tsx
 msgid "Insert"
 msgstr "挿入"
-
-#: src/components/task-attachments.tsx
-msgid "Insert in Notes"
-msgstr "ノートに挿入"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
@@ -3473,10 +3479,6 @@ msgstr "その他"
 msgid "More actions for {0}"
 msgstr "{0}のその他の操作"
 
-#: src/app/task-screen.tsx
-msgid "More properties"
-msgstr "その他のプロパティ"
-
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "その他のタスク操作"
@@ -3787,7 +3789,7 @@ msgid "No computed properties."
 msgstr "計算プロパティはありません。"
 
 #: src/app/bulk-task-actions.tsx
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "日付なし"
@@ -3840,14 +3842,6 @@ msgstr "プロジェクションはありません"
 msgid "No recovery key is held on this device."
 msgstr "このデバイスに復元キーは保持されていません。"
 
-#: src/components/reminder-editor.tsx
-msgid "No reminders set."
-msgstr "リマインダーは設定されていません。"
-
-#: src/app/task-editor-draft.ts
-msgid "No repeat or reminder"
-msgstr "繰り返しまたはリマインダーなし"
-
 #: src/app/views/kanban-columns.ts
 msgid "No status"
 msgstr "ステータスなし"
@@ -3893,7 +3887,7 @@ msgstr "このパターンの今後の日付はありません。"
 msgid "No upcoming tasks here."
 msgstr "ここに今後のタスクはありません。"
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
@@ -3990,10 +3984,6 @@ msgstr "ここでは通知を利用できません"
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
 msgstr "システム設定でTaskNotesの通知がオフになっています。リマインダーを受け取るには、設定で通知をオンにしてください。"
-
-#: src/components/reminder-editor.tsx
-msgid "Notify at a fixed time or relative to this task."
-msgstr "指定した時刻またはこのタスクを基準に通知します。"
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
@@ -4253,10 +4243,6 @@ msgstr "Plannerは別のアプリです。このビューを保存してから�
 msgid "Planner will open this saved view."
 msgstr "保存済みビューをPlannerで開きます。"
 
-#: src/app/task-screen.tsx
-msgid "Preview"
-msgstr "プレビュー"
-
 #: src/app/view-editor.tsx
 msgid "Preview "
 msgstr "プレビュー "
@@ -4316,7 +4302,7 @@ msgid "Priorities"
 msgstr "優先度"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/app/view-sort-choices.tsx
@@ -4361,7 +4347,7 @@ msgstr "プライベートコレクションを利用するには、パソコン
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
 msgstr "プロジェクト"
@@ -4538,20 +4524,12 @@ msgid "Refreshing…"
 msgstr "更新中…"
 
 #: src/components/dependency-editor.tsx
-msgid "Related work"
-msgstr "関連する作業"
-
-#: src/components/dependency-editor.tsx
 msgid "Relationship"
 msgstr "関係"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
 msgstr "関係"
-
-#: src/components/reminder-editor.tsx
-msgid "Relative"
-msgstr "相対"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
@@ -4592,7 +4570,7 @@ msgid "Reminder time"
 msgstr "リマインダーの時刻"
 
 #: src/app/settings-sections.ts
-#: src/components/reminder-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Reminders"
 msgstr "リマインダー"
 
@@ -4720,14 +4698,11 @@ msgstr "「{title}」を並べ替えました"
 msgid "Reordered {0}."
 msgstr "{0}を並べ替えました。"
 
+#: src/app/task-property-list.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
 msgstr "繰り返し"
-
-#: src/app/task-screen.tsx
-msgid "Repeat and reminders"
-msgstr "繰り返しとリマインダー"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
@@ -4917,10 +4892,6 @@ msgstr "保存"
 msgid "Save {0}"
 msgstr "{0}を保存"
 
-#: src/components/reminder-editor.tsx
-msgid "Save a fixed or relative reminder in this task."
-msgstr "このタスクに固定または相対リマインダーを保存します。"
-
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
 msgstr "保存してTaskNotesを再読み込み"
@@ -5036,6 +5007,7 @@ msgid "scheduled"
 msgstr "予定"
 
 #: src/app/calendar-row-details.ts
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
@@ -5109,6 +5081,7 @@ msgstr "スクラッチパッドの保存を利用できません。"
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
 msgstr "検索"
@@ -5452,7 +5425,7 @@ msgid "Starts"
 msgstr "開始"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5529,7 +5502,6 @@ msgid "Subtask title"
 msgstr "サブタスク名"
 
 #: src/app/task-subtasks.tsx
-#: src/components/dependency-editor.tsx
 #: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "サブタスク"
@@ -5577,7 +5549,7 @@ msgstr "タグ"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5657,7 +5629,7 @@ msgstr "タスクリスト"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "タスクが見つかりません。削除または移動された可能性があります。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "タスクのプロパティ"
@@ -5913,7 +5885,7 @@ msgstr "テーマ、スクラッチパッド、カレンダー"
 msgid "These choices apply as soon as you make them and don’t change the collection."
 msgstr "これらの選択はすぐに適用され、コレクションは変更されません。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
 msgstr "これらの日付は、今後の回を含む繰り返しタスク全体を編集します。"
 
@@ -6064,12 +6036,11 @@ msgstr "このビューでは利用できない並べ替えが使われていま
 msgid "This weekend"
 msgstr "今週末"
 
-#: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
 msgstr "時刻"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
@@ -6202,10 +6173,6 @@ msgstr "もう一度ビューを読み込んでください。問題が続く場
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
 msgstr "tomorrow 9am、#tag、@context、+project を試してください。"
-
-#: src/components/reminder-editor.tsx
-msgid "Type"
-msgstr "種類"
 
 #: src/components/task-capture.tsx
 msgid "Type {example} in the task title."
@@ -6350,7 +6317,7 @@ msgstr "設定済みの期限フィールドを使用します。"
 msgid "Use the configured scheduled field."
 msgstr "設定済みの予定日フィールドを使用します。"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "Use the occurrence actions above to change this state."
 msgstr "この状態を変更するには、上の発生分の操作を使用してください。"
 
@@ -6464,6 +6431,10 @@ msgstr "mdbaseとは何ですか？"
 msgid "What needs doing?"
 msgstr "何をする必要がありますか？"
 
+#: src/components/reminder-editor.tsx
+msgid "When due"
+msgstr "期限時"
+
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "選択したとき"
@@ -6471,6 +6442,10 @@ msgstr "選択したとき"
 #: src/components/task-date-panel.tsx
 msgid "When it has to be done"
 msgstr "完了しなければならない日"
+
+#: src/components/reminder-editor.tsx
+msgid "When scheduled"
+msgstr "予定時"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
@@ -6500,10 +6475,6 @@ msgstr "作業セッション"
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "処理中…"
-
-#: src/app/task-screen.tsx
-msgid "Write"
-msgstr "書く"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"
