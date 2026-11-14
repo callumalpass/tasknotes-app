@@ -240,11 +240,12 @@ export class TaskNotesTaskModel {
       this.config.statuses,
       this.config.priorities,
     );
-    const task = this.completeTaskInfo(mapped, input.path, input.body);
-    // A record keeps a status the collection's vocabulary doesn't list, such
-    // as one another client defined. Reading it never fails; see assertValid.
-    this.assertValid(task, task.status);
-    return task;
+    // Reading never validates. A record can break a rule (a status the
+    // vocabulary doesn't list, a completed task with no completedDate) and it
+    // is still the user's task: refusing it here made every list that holds
+    // it fail (#446). Writes check rules, keeping the problems a record
+    // already has; see assertValid.
+    return this.completeTaskInfo(mapped, input.path, input.body);
   }
 
   create(
@@ -483,7 +484,7 @@ export class TaskNotesTaskModel {
       plannedTask,
       now,
     );
-    this.assertValid(updatedTask, original.status);
+    this.assertValid(updatedTask, original);
     this.assertCustomFields(updatedTask.customProperties);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
@@ -516,7 +517,7 @@ export class TaskNotesTaskModel {
       edit.timezone,
       [this.config.fieldMapping.scheduled, this.config.fieldMapping.due],
     );
-    this.assertValid(plan.updatedTask, current.status);
+    this.assertValid(plan.updatedTask, this.taskInfo(current));
     this.assertCustomFields(plan.updatedTask.customProperties);
     const revision = current.revision + 1;
     // Apply the exact patch LAST: the generic mapper intentionally omits some
@@ -1013,20 +1014,28 @@ export class TaskNotesTaskModel {
   }
 
   /**
-   * `keptStatus` is a stored status the vocabulary need not list: the record
-   * already holds it, so reading it or saving other fields beside it is
-   * allowed. Choosing an unlisted status is still refused.
+   * Refuse a task that breaks a rule. `kept` is the record before an edit:
+   * an error it already had, with the same code, field and message, is
+   * allowed, so a task with a status the vocabulary doesn't list, or a
+   * completed task with no completedDate, can still be renamed or moved.
+   * An edit that introduces a problem, such as choosing an unlisted status,
+   * is still refused.
    */
-  private assertValid(task: Partial<TaskInfo>, keptStatus?: string): void {
-    const validation = evaluateCoreValidation(task, this.config.statuses);
-    const issues = validation.issues.filter(
-      (issue) =>
-        issue.severity !== "error" ||
-        !(
-          issue.code === "invalid_status" &&
-          keptStatus !== undefined &&
-          task.status === keptStatus
-        ),
+  private assertValid(task: Partial<TaskInfo>, kept?: Partial<TaskInfo>): void {
+    const key = (issue: TaskValidationIssue) =>
+      `${issue.code}\u0000${issue.field ?? ""}\u0000${issue.message}`;
+    const existing = new Set(
+      kept
+        ? evaluateCoreValidation(kept, this.config.statuses)
+            .issues.filter((issue) => issue.severity === "error")
+            .map(key)
+        : [],
+    );
+    const issues = evaluateCoreValidation(
+      task,
+      this.config.statuses,
+    ).issues.filter(
+      (issue) => issue.severity !== "error" || !existing.has(key(issue)),
     );
     if (issues.some((issue) => issue.severity === "error"))
       throw new TaskNotesValidationError(issues);
@@ -1123,7 +1132,7 @@ export class TaskNotesTaskModel {
   }
 
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
-    this.assertValid(updated, current.status);
+    this.assertValid(updated, this.taskInfo(current));
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
     if (updated.completedDate === undefined)

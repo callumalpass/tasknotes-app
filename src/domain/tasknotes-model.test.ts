@@ -73,6 +73,39 @@ describe("TaskNotes task model app boundary", () => {
     ).toThrow('Unknown status "someday"');
   });
 
+  // #446: one record breaking a rule made every list holding it fail.
+  it("reads and edits a completed task with no completedDate, refusing only new problems", () => {
+    const created = model.create({ title: "Old done" }, { id: "old-done" });
+    const frontmatter: Record<string, unknown> = {
+      ...model.toggle(created).frontmatter,
+    };
+    delete frontmatter.completedDate;
+    const input = { path: created.path, frontmatter, body: "" };
+    const task = model.read(input);
+    expect(task.completed).toBe(true);
+    expect(task.completedDate).toBeUndefined();
+    expect(model.readSummary(input).id).toBe("old-done");
+
+    const renamed = model.update(task, { title: "Renamed" });
+    expect(renamed.title).toBe("Renamed");
+    expect(renamed.frontmatter.completedDate).toBeUndefined();
+    expect(() => model.update(task, { status: "someday" })).toThrow(
+      'Unknown status "someday"',
+    );
+    expect(() => model.update(task, { due: "2026-02-30" })).toThrow(/due/);
+  });
+
+  it("reads a task whose stored date is invalid", () => {
+    const created = model.create({ title: "Bad date" }, { id: "bad-date" });
+    const input = {
+      path: created.path,
+      frontmatter: { ...created.frontmatter, dateModified: "yesterday" },
+      body: "",
+    };
+    expect(() => model.read(input)).not.toThrow();
+    expect(() => model.readSummary(input)).not.toThrow();
+  });
+
   it("persists the first planned date for a due-only repeating task", () => {
     const task = model.create(
       {
