@@ -6,6 +6,7 @@ coverage/
 playwright-report/
 test-results/
 /public/.well-known/mdbase-app.json
+/src/generated/mdbase-app.json
 .DS_Store
 android/.gradle/
 android/app/build/

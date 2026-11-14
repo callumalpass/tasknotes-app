@@ -12,6 +12,7 @@
     "i18n:check": "mdbase-i18n check --compose 'node_modules/@mdbase-dev/ui/dist/locales/{locale}/messages.json'",
     "i18n:source": "mdbase-i18n source",
     "contracts:sync": "node scripts/sync-canonical-task-pack.mjs",
+    "postinstall": "pnpm manifest",
     "manifest": "node scripts/write-manifest.mjs",
     "manifest:dev": "node scripts/write-manifest.mjs --development",
     "manifest:validate": "node scripts/validate-manifest.mjs public/.well-known/mdbase-app.json",

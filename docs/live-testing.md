@@ -8,9 +8,10 @@ The browser suite is the small trust core, not a substitute for exercising the a
 - Pin the build/commit and record the URL, browser/device, viewport and locale.
 - During development, use a loopback app with `?demo=60`. For arbitrary collection
   options, use `?demo=60&many-options` (12 statuses and priorities).
-- Demo servers regenerate the app manifest with loopback URLs. Restore the
-  tracked production manifest before unit/release checks or syncing their source
-  to the remote builder; do not commit development-generated manifests.
+- Demo servers regenerate the ignored app manifests with loopback URLs.
+  `pnpm install` generates the default production manifests for fresh checkouts;
+  run `pnpm manifest` before unit/release checks after local development. Builds
+  always regenerate and validate the manifest for their target environment.
 - After deployment, use only the explicitly selected LAB and its disposable test
   collection. Demo mode alone does not validate LAB storage or synchronization.
 - Never cross into production or staging. Do not put credentials in notes,
