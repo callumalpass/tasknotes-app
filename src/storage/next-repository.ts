@@ -295,6 +295,11 @@ export class NextTaskRepository implements TaskRepository {
         (slot.execution ? JSON.stringify(slot.execution).length : 0)),
   );
   private nativeViews = new Map<string, AppBasesDescriptor>();
+  /** The one native discovery pass in flight, shared by every caller. */
+  private discovery: {
+    pending: Promise<TaskViewDocument[]>;
+    signal: AbortSignal;
+  } | null = null;
   private readonly sourceRecords = new Map<string, string>();
   /** Records whose current read carries a hold or an unresolved conflict. */
   private readonly conflictedRecords = new Set<string>();
@@ -2894,7 +2899,46 @@ export class NextTaskRepository implements TaskRepository {
   async listViews(): Promise<TaskViewDocument[]> {
     return this.discoverNativeViews(this.signal());
   }
+  /** The replica keeps ONE discovery cursor per session, and a new discovery
+   * replaces it: the older pass's next page is refused as stale. Discovery
+   * also pages through every record, so on a relayed collection one pass is
+   * many round trips. Overlapping callers (navigation, its refresh when the
+   * change watch starts, a view execution after invalidation) therefore join
+   * the pass in flight rather than retiring each other until the foreground
+   * budget expires (#449). A joined pass stays current: every local data
+   * event retires its cut and it rereads before it resolves. */
   private async discoverNativeViews(
+    signal: AbortSignal,
+  ): Promise<TaskViewDocument[]> {
+    for (;;) {
+      signal.throwIfAborted();
+      if (!this.discovery) {
+        const pending = this.runNativeDiscovery(signal).finally(() => {
+          if (this.discovery?.pending === pending) this.discovery = null;
+        });
+        this.discovery = { pending, signal };
+      }
+      const run = this.discovery;
+      try {
+        const catalog = await untilAborted(run.pending, signal);
+        signal.throwIfAborted();
+        return structuredClone(catalog);
+      } catch (reason) {
+        signal.throwIfAborted();
+        // A shared pass belongs to its initiating caller. Only that caller's
+        // abort lets another caller start a pass under its own deadline;
+        // refusals and channel loss reach every caller unchanged.
+        if (
+          !run.signal.aborted ||
+          (reason !== run.signal.reason &&
+            (!(reason instanceof MdbaseError) || reason.code !== "cancelled"))
+        )
+          throw reason;
+        if (this.discovery === run) this.discovery = null;
+      }
+    }
+  }
+  private async runNativeDiscovery(
     signal: AbortSignal,
   ): Promise<TaskViewDocument[]> {
     return this.readCurrentGeneration(signal, async () => {
@@ -2968,7 +3012,7 @@ export class NextTaskRepository implements TaskRepository {
       );
       for (const key of this.viewExecutions.keys())
         if (!live.has(key)) this.viewExecutions.delete(key);
-      return structuredClone(this.viewCatalog);
+      return this.viewCatalog;
     });
   }
   private viewExecutionSignature(view: TaskView, timezone: string): string {
@@ -3643,6 +3687,22 @@ export class NextTaskRepository implements TaskRepository {
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }
+}
+
+/** Settle with `pending`, or reject as soon as this caller's own signal
+ * aborts; a shared read keeps running for its other callers. */
+function untilAborted<Result>(
+  pending: Promise<Result>,
+  signal: AbortSignal,
+): Promise<Result> {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise<Result>((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    pending.then(resolve, reject).finally(() => {
+      signal.removeEventListener("abort", abort);
+    });
+  });
 }
 
 function collectionChanged(): MdbaseError {
