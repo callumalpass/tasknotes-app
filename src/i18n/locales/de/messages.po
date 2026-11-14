@@ -2539,6 +2539,11 @@ msgstr "Gib den im Google-Fenster angezeigten Code ein"
 msgid "Enter to set {0}"
 msgstr "Eingabetaste setzt {0}"
 
+#. placeholder {0}: reference.code
+#: src/app/open-problem-details.tsx
+msgid "Error code: <0>{0}</0>"
+msgstr "Fehlercode: <0>{0}</0>"
+
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
@@ -5726,6 +5731,7 @@ msgstr "Aufgaben ohne Datum landen hier."
 msgid "Tasks, tags, projects"
 msgstr "Aufgaben, Tags, Projekte"
 
+#: src/app/open-problem-details.tsx
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx

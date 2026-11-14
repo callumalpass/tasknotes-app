@@ -2539,6 +2539,11 @@ msgstr "Google 창에 표시된 코드를 입력하세요"
 msgid "Enter to set {0}"
 msgstr "Enter 키로 {0} 설정"
 
+#. placeholder {0}: reference.code
+#: src/app/open-problem-details.tsx
+msgid "Error code: <0>{0}</0>"
+msgstr "오류 코드: <0>{0}</0>"
+
 #: src/app/task-screen.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
@@ -5726,6 +5731,7 @@ msgstr "날짜가 없는 작업은 여기에 표시됩니다."
 msgid "Tasks, tags, projects"
 msgstr "작업, 태그, 프로젝트"
 
+#: src/app/open-problem-details.tsx
 #: src/components/app-error-boundary.tsx
 #: src/components/operation-error-notice.tsx
 #: src/components/view-execution-error-notice.tsx
