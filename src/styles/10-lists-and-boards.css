@@ -642,32 +642,6 @@
   background: var(--accent-soft);
 }
 
-.view-offer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 16px;
-  margin: 0 0 16px;
-  padding: 4px 0 4px 12px;
-  color: var(--ink-soft);
-  font-size: var(--type-supporting);
-  border-left: 2px solid var(--accent);
-}
-
-.view-offer p {
-  margin: 0;
-}
-
-.view-offer > div {
-  display: flex;
-  gap: 8px;
-}
-
-.view-offer .quiet {
-  color: var(--ink-muted);
-}
-
 .view-note {
   margin: -8px 0 18px;
   color: var(--ink-muted);

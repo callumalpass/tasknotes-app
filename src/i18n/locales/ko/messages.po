@@ -958,7 +958,6 @@ msgstr "추가됨"
 msgid "Added tag {value} to {tasks}"
 msgstr "태그 {value} 추가함: {tasks}"
 
-#: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
 msgstr "추가 중"
@@ -3927,7 +3926,6 @@ msgid "Not connected"
 msgstr "연결되지 않음"
 
 #: src/app/more-screen.tsx
-#: src/app/views/project-property-offer.tsx
 msgid "Not now"
 msgstr "나중에"
 
@@ -5263,10 +5261,6 @@ msgstr "종일 영역 표시"
 msgid "Show current time"
 msgstr "현재 시간 표시"
 
-#: src/app/views/project-property-offer.tsx
-msgid "Show each task’s project on Today?"
-msgstr "오늘 뷰에 각 작업의 프로젝트를 표시할까요?"
-
 #: src/app/search-screen.tsx
 msgid "Show fewer"
 msgstr "간략히 표시"
@@ -5286,10 +5280,6 @@ msgstr "더 많은 날짜 보기"
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "결과 더 보기"
-
-#: src/app/views/project-property-offer.tsx
-msgid "Show projects"
-msgstr "프로젝트 표시"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
@@ -5872,10 +5862,6 @@ msgstr "작업은 컬렉션에 남아 있습니다. 다시 시도하세요."
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "뷰 변경"
-
-#: src/app/views/project-property-offer.tsx
-msgid "The view could not be updated. {error}"
-msgstr "뷰를 업데이트하지 못했습니다. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
