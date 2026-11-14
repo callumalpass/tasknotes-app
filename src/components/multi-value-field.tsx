@@ -141,9 +141,11 @@ export function MultiValueField({
   }
 
   function addQuery() {
+    const answered = answeredQuery === query;
     // A single choice never commits what was typed in place of a match still loading.
-    if (onPick && answeredQuery !== query) return;
-    const option = options[activeIndex];
+    if (onPick && !answered) return;
+    // Suggestions answering an earlier query never replace what was typed since.
+    const option = answered ? options[activeIndex] : undefined;
     if (option) add(option.value, option.label);
     else add(query.replace(/,$/, ""));
   }
