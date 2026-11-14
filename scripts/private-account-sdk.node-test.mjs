@@ -129,9 +129,15 @@ test("production dependency replaces STAGING while its original custody remains 
   assert.equal(facts.source, "eaa4e697fc1198f32fc3714f377342a24c56d985");
   assert.equal(facts.sourceTree, "71ddecbca5dd54b5153d6bcd500cc89ce189474e");
   assert.equal(facts.archive, "sdk-dev-eaa4e697-staging.tgz");
+  const trustPin = JSON.parse(
+    await readFile(new URL("vendor/production-trust.pin.json", root), "utf8"),
+  );
+  const production = JSON.parse(
+    await readFile(new URL(`vendor/${trustPin.sdkPin}`, root), "utf8"),
+  );
   assert.equal(
     pkg.dependencies["@mdbase-dev/sdk"],
-    "file:vendor/sdk-2c7193a4-production-beta206.tgz",
+    `file:vendor/${production.artifact}`,
   );
   assert.equal(
     facts.dependencies[0].file,
