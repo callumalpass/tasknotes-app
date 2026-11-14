@@ -120,15 +120,35 @@ describe("bulk edits", () => {
       true,
     );
   });
-  it("keeps scheduled times and leaves Due alone", () => {
-    const { tasks } = fixture();
-    expect(
-      planTaskChange(tasks[0], { kind: "schedule", date: "2026-11-08" }),
-    ).toEqual({
-      input: { scheduled: "2026-11-08T10:30:00Z" },
-      undo: { scheduled: "2026-11-01T10:30:00Z" },
-    });
-  });
+  it.each([
+    ["2026-11-01", "2026-11-08"],
+    ["2026-03-07", "2026-03-08"], // Los Angeles enters DST.
+    ["2026-10-03", "2026-10-04"], // Melbourne enters DST.
+  ])(
+    "keeps local scheduled time from %s to %s and leaves Due alone",
+    (from, to) => {
+      const task = model.create(
+        {
+          title: "Timed task",
+          scheduled: `${from}T10:30`,
+          due: "2026-11-30T17:00",
+        },
+        { id: "timed-task" },
+      );
+      // Inputs are local wall times; the model stores canonical UTC instants.
+      // Construct the expected instant independently for the chosen local day.
+      const [year, month, day] = to.split("-").map(Number);
+      const scheduled = new Date(year, month - 1, day, 10, 30)
+        .toISOString()
+        .replace(".000Z", "Z");
+      const change = planTaskChange(task, { kind: "schedule", date: to });
+      expect(change).toEqual({
+        input: { scheduled },
+        undo: { scheduled: task.scheduled },
+      });
+      expect(model.update(task, change.input).due).toBe(task.due);
+    },
+  );
   it("does not write stale selections or overwrite edits made after a bulk write", async () => {
     const { tasks, current, port, updateTask } = fixture();
     current.set("a", { ...tasks[0], revision: 99 });
