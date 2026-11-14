@@ -299,7 +299,7 @@ jobs:
           node "$cli" pages deploy artifact/publish --no-bundle --project-name tasknotes-app --branch "$branch" --commit-hash "$SOURCE_SHA" --commit-dirty=false > "$RUNNER_TEMP/tasknotes-upload/wrangler-output.txt" 2>&1
       - name: Resolve actual full deployment UUID before served checks
         id: deployment
-        timeout-minutes: 1
+        timeout-minutes: 3
         if: always() && steps.compatibility.outputs.ready == 'true' && (steps.upload.outcome == 'success' || steps.upload.outcome == 'failure' || steps.upload.outcome == 'cancelled')
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
