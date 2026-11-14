@@ -31,7 +31,7 @@ describe("TaskAttachments", () => {
     const setup = await fixture();
     render(<TaskAttachments {...setup} store={setup.repository.files!} />);
     expect(screen.getByLabelText("Attach file")).not.toHaveAttribute("accept");
-    expect(screen.getByLabelText("Insert in Notes")).toHaveAttribute(
+    expect(screen.getByLabelText("Add image")).toHaveAttribute(
       "accept",
       expect.stringContaining("image/png"),
     );

@@ -22,12 +22,24 @@ test("detail properties are directly editable and adjacent navigation saves note
     ).toBeVisible();
   for (const name of ["Scheduled date", "Due date", "Edit Project"])
     await expect(pane.getByRole("button", { name, exact: true })).toBeVisible();
-  await pane.getByText("More properties", { exact: true }).click();
+  await pane.getByRole("button", { name: "Add property", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Reminders", exact: true }).click();
+  await expect(
+    pane.getByRole("button", { name: "Edit Reminders", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await pane.getByRole("button", { name: "Edit Tags", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Tags", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
   await expect(
     pane.getByRole("button", { name: "Edit Tags", exact: true }),
-  ).toBeVisible();
-  await pane.getByText("More properties", { exact: true }).click();
-  await pane.getByRole("button", { name: "Write", exact: true }).click();
+  ).toBeFocused();
+  const editNotes = pane.getByRole("button", {
+    name: "Edit Notes",
+    exact: true,
+  });
+  if (await editNotes.isVisible()) await editNotes.click();
   const notes = pane.getByRole("textbox", { name: "Notes", exact: true });
   await notes.fill("A note saved before browsing.");
   await page.keyboard.press("j");
@@ -73,6 +85,8 @@ test("inline subtasks create, complete and open without losing the parent draft"
     name: "Task details",
     exact: true,
   });
+  // Without subtasks the section is a single action until it is used.
+  await pane.getByRole("button", { name: "Add subtask", exact: true }).click();
   await pane
     .getByRole("textbox", { name: "Subtask title", exact: true })
     .fill("Collect planning questions");
@@ -107,6 +121,7 @@ test("a list row counts its subtasks and opens them in place", async ({
     name: "Task details",
     exact: true,
   });
+  await pane.getByRole("button", { name: "Add subtask", exact: true }).click();
   for (const title of ["Collect planning questions", "Book the room"]) {
     await pane
       .getByRole("textbox", { name: "Subtask title", exact: true })

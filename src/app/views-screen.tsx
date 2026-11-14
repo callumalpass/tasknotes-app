@@ -21,7 +21,6 @@ import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty, starterViewKind } from "../domain/default-view-source";
-import { ProjectPropertyOffer } from "./views/project-property-offer";
 import { kanbanPropertyRole } from "../domain/kanban";
 import {
   kanbanColumnLabel,
@@ -1636,18 +1635,6 @@ export function ViewsScreen({
             reason={error}
             onEdit={() => selected && setEditing({ view: selected })}
             onRetry={retryExecution}
-          />
-        ) : null}
-        {selected && !editing ? (
-          <ProjectPropertyOffer
-            hasProjects={Boolean(
-              presentedExecution?.rows.some(
-                ({ task }) => task.projects.length > 0,
-              ),
-            )}
-            scope={sectionScope}
-            view={selected}
-            onChanged={onViewsChanged}
           />
         ) : null}
         {presentedExecution?.hasMore ? (

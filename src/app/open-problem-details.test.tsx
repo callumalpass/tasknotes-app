@@ -25,20 +25,15 @@ const phase = (problem: string) =>
   }) as Pick<MdbaseSnapshot, "phase">;
 
 it("names the code behind the generic copy, and nothing for actionable problems", () => {
-  // Connect core refuses setup with this code when a plain file holds a path
-  // the type pack manages; the SDK has no copy for it (issue #436).
-  expect(describeError("collection_setup_namespace_conflict")?.title).toBe(
-    "Something went wrong",
-  );
-  expect(
-    openProblemReference(phase("collection_setup_namespace_conflict")),
-  ).toEqual({
-    code: "collection_setup_namespace_conflict",
-    developerMessage: expect.stringContaining(
-      "collection_setup_namespace_conflict",
-    ),
+  // An error-severity problem whose copy names no cause: the code is the only
+  // thing support can act on. Use a code the SDK keeps on its generic copy;
+  // specific codes gain their own copy over time (as
+  // collection_setup_namespace_conflict did for issue #436).
+  expect(describeError("internal")?.severity).toBe("error");
+  expect(openProblemReference(phase("internal"))).toEqual({
+    code: "internal",
+    developerMessage: describeError("internal")?.developerMessage ?? null,
   });
-  expect(openProblemReference(phase("internal"))?.code).toBe("internal");
   // Warnings and information already say what to do.
   expect(openProblemReference(phase("device_offline"))).toBeNull();
   expect(openProblemReference(phase("setup_required"))).toBeNull();
@@ -58,17 +53,17 @@ it("shows the SDK's code under the shared problem screen", async () => {
     mdbase.fixture.controls.publishSnapshot({
       ...before,
       status: "blocked",
-      problem: "collection_setup_namespace_conflict",
+      problem: "internal",
     } as never),
   );
   expect(
     await screen.findByRole("heading", { name: "Can't open Vault" }),
   ).toBeVisible();
-  expect(screen.getByText("Something went wrong")).toBeVisible();
+  expect(screen.getByText(describeError("internal")!.title)).toBeVisible();
   fireEvent.click(screen.getByText("Technical details"));
-  expect(screen.getByText("collection_setup_namespace_conflict")).toBeVisible();
+  expect(screen.getByText("internal")).toBeVisible();
   expect(warn).toHaveBeenCalledWith(
-    expect.stringContaining("collection_setup_namespace_conflict"),
+    expect.stringContaining("internal"),
     expect.any(String),
   );
   warn.mockRestore();

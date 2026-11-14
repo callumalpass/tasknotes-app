@@ -29,12 +29,26 @@ export function TaskSubtasks({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  // Without subtasks the section is one action until someone starts adding.
+  const [adding, setAdding] = useState(false);
   const intent = useRef<TaskCreateIntent | null>(null);
   const pending = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const completed = subtasks.filter((task) => task.completed).length;
   const total = subtasks.length;
   const link = taskRecordLink(task, configuration.linkWriteFormat);
+  if (!total && !error && !failure && !adding)
+    return (
+      <button
+        className="task-extra-action"
+        disabled={!link}
+        type="button"
+        onClick={() => setAdding(true)}
+      >
+        <Plus size={16} aria-hidden="true" />
+        <Trans>Add subtask</Trans>
+      </button>
+    );
   return (
     <section className="task-subtasks" aria-labelledby="task-subtasks-title">
       <header>
@@ -102,9 +116,13 @@ export function TaskSubtasks({
         <input
           ref={input}
           aria-label={t({ message: "Subtask title" })}
+          autoFocus={adding && !total}
           placeholder={t({ message: "Add a subtask…" })}
           value={title}
           disabled={busy || !link}
+          onBlur={() => {
+            if (!title.trim() && !total && !busy) setAdding(false);
+          }}
           onChange={(event) => setTitle(event.target.value)}
         />
         {title.trim() ? (

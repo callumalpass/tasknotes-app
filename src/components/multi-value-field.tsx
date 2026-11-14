@@ -20,8 +20,10 @@ export function MultiValueField({
   valueLabels,
   valueLabel = linkDisplayLabel,
   usedFirst = false,
+  autoFocus = false,
   onChange,
   onPick,
+  onEscape,
 }: {
   label: string;
   field: string;
@@ -33,9 +35,12 @@ export function MultiValueField({
   valueLabel?(value: string): string;
   /** Before anything is typed, list only values the collection already uses. */
   usedFirst?: boolean;
+  autoFocus?: boolean;
   onChange?(values: string[]): void;
   /** Makes this a single choice: a pick commits at once instead of adding a chip. */
   onPick?(value: string, label: string): void;
+  /** Escape leaves the surrounding picker instead of only closing suggestions. */
+  onEscape?(): void;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -136,9 +141,11 @@ export function MultiValueField({
   }
 
   function addQuery() {
+    const answered = answeredQuery === query;
     // A single choice never commits what was typed in place of a match still loading.
-    if (onPick && answeredQuery !== query) return;
-    const option = options[activeIndex];
+    if (onPick && !answered) return;
+    // Suggestions answering an earlier query never replace what was typed since.
+    const option = answered ? options[activeIndex] : undefined;
     if (option) add(option.value, option.label);
     else add(query.replace(/,$/, ""));
   }
@@ -172,7 +179,11 @@ export function MultiValueField({
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      if (open) setOpen(false);
+      if (onEscape) {
+        // A typed value is kept, as it is when the field loses focus.
+        if (query.trim() && !onPick) add(query);
+        onEscape();
+      } else if (open) setOpen(false);
       else event.currentTarget.blur();
     }
   }
@@ -212,6 +223,7 @@ export function MultiValueField({
           aria-controls={`${id}-options`}
           aria-expanded={showOptions}
           autoComplete="off"
+          autoFocus={autoFocus}
           id={`${id}-input`}
           placeholder={values.length && !onPick ? "" : placeholder}
           ref={inputRef}

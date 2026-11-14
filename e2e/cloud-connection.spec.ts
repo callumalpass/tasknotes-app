@@ -538,11 +538,6 @@ test("edits a contract-defined task without collapsing custom status or fields t
     "doing",
   );
   await expect(page.getByRole("combobox", { name: "Status" })).toBeVisible();
-  await expect(page.getByLabel("Energy level")).toBeHidden();
-  await page
-    .locator("details.task-form-section > summary")
-    .filter({ hasText: /^More properties$/ })
-    .click();
   await expect(
     page.getByRole("combobox", { name: "Priority" }),
   ).toHaveAttribute("data-value", "now");
@@ -601,10 +596,6 @@ test("edits the captured migrated numeric property through the held client", asy
   await openFixture(page, { records: [captured], typeDefinition: definition });
   await page
     .getByRole("button", { name: captured.frontmatter.summary, exact: true })
-    .click();
-  await page
-    .locator("details.task-form-section > summary")
-    .filter({ hasText: /^More properties$/ })
     .click();
   await expect(page.getByLabel("Effort", { exact: true })).toHaveValue("0.5");
   await page.getByLabel("Effort", { exact: true }).fill("2");

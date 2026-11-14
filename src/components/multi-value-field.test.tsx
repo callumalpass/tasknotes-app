@@ -72,6 +72,19 @@ it("keeps free-form entry and keyboard removal lightweight", async () => {
   );
 });
 
+it("commits typed text rather than a suggestion answering an earlier query", async () => {
+  // Suggestions for the empty query arrive first; the typed text's own answer has not.
+  const complete = async ({ query }: { query?: string }) =>
+    query ? [] : [{ kind: "value" as const, value: "task", label: "task" }];
+  render(<Harness complete={complete} />);
+  const input = screen.getByRole("combobox", { name: "Projects" });
+  fireEvent.focus(input);
+  await screen.findByRole("option", { name: "task" });
+  fireEvent.change(input, { target: { value: "research" } });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(screen.getByTestId("values")).toHaveTextContent('["research"]');
+});
+
 function Harness({
   complete,
   initialValues = [],
