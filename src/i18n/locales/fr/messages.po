@@ -959,7 +959,6 @@ msgstr "Ajouté"
 msgid "Added tag {value} to {tasks}"
 msgstr "Étiquette {value} ajoutée : {tasks}"
 
-#: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
 msgstr "Ajout en cours"
@@ -3928,7 +3927,6 @@ msgid "Not connected"
 msgstr "Non connecté"
 
 #: src/app/more-screen.tsx
-#: src/app/views/project-property-offer.tsx
 msgid "Not now"
 msgstr "Pas maintenant"
 
@@ -5264,10 +5262,6 @@ msgstr "Afficher la zone « Toute la journée »"
 msgid "Show current time"
 msgstr "Afficher l’heure actuelle"
 
-#: src/app/views/project-property-offer.tsx
-msgid "Show each task’s project on Today?"
-msgstr "Afficher le projet de chaque tâche dans Today ?"
-
 #: src/app/search-screen.tsx
 msgid "Show fewer"
 msgstr "Afficher moins"
@@ -5287,10 +5281,6 @@ msgstr "Afficher plus de jours"
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "Afficher plus de résultats"
-
-#: src/app/views/project-property-offer.tsx
-msgid "Show projects"
-msgstr "Afficher les projets"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
@@ -5873,10 +5863,6 @@ msgstr "La tâche reste dans la collection. Réessayez."
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "La modification de la vue"
-
-#: src/app/views/project-property-offer.tsx
-msgid "The view could not be updated. {error}"
-msgstr "Impossible de mettre à jour la vue. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"

@@ -958,7 +958,6 @@ msgstr "Added"
 msgid "Added tag {value} to {tasks}"
 msgstr "Added tag {value} to {tasks}"
 
-#: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
 msgstr "Adding"
@@ -3927,7 +3926,6 @@ msgid "Not connected"
 msgstr "Not connected"
 
 #: src/app/more-screen.tsx
-#: src/app/views/project-property-offer.tsx
 msgid "Not now"
 msgstr "Not now"
 
@@ -5263,10 +5261,6 @@ msgstr "Show all-day area"
 msgid "Show current time"
 msgstr "Show current time"
 
-#: src/app/views/project-property-offer.tsx
-msgid "Show each task’s project on Today?"
-msgstr "Show each task’s project on Today?"
-
 #: src/app/search-screen.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
@@ -5286,10 +5280,6 @@ msgstr "Show more days"
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "Show more results"
-
-#: src/app/views/project-property-offer.tsx
-msgid "Show projects"
-msgstr "Show projects"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
@@ -5872,10 +5862,6 @@ msgstr "The task remains in the collection. Try again."
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "The view change"
-
-#: src/app/views/project-property-offer.tsx
-msgid "The view could not be updated. {error}"
-msgstr "The view could not be updated. {error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"

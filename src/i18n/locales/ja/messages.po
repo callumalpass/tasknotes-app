@@ -958,7 +958,6 @@ msgstr "追加しました"
 msgid "Added tag {value} to {tasks}"
 msgstr "タグ {value} を追加しました: {tasks}"
 
-#: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
 msgstr "追加中"
@@ -3927,7 +3926,6 @@ msgid "Not connected"
 msgstr "未接続"
 
 #: src/app/more-screen.tsx
-#: src/app/views/project-property-offer.tsx
 msgid "Not now"
 msgstr "後で"
 
@@ -5263,10 +5261,6 @@ msgstr "終日領域を表示"
 msgid "Show current time"
 msgstr "現在時刻を表示"
 
-#: src/app/views/project-property-offer.tsx
-msgid "Show each task’s project on Today?"
-msgstr "各タスクのプロジェクトを今日のビューに表示しますか？"
-
 #: src/app/search-screen.tsx
 msgid "Show fewer"
 msgstr "表示を減らす"
@@ -5286,10 +5280,6 @@ msgstr "さらに日付を表示"
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "結果をさらに表示"
-
-#: src/app/views/project-property-offer.tsx
-msgid "Show projects"
-msgstr "プロジェクトを表示"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
@@ -5872,10 +5862,6 @@ msgstr "タスクはコレクションに残っています。もう一度お試
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "ビューの変更"
-
-#: src/app/views/project-property-offer.tsx
-msgid "The view could not be updated. {error}"
-msgstr "ビューを更新できませんでした。{error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"

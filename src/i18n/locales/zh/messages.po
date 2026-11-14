@@ -958,7 +958,6 @@ msgstr "已添加"
 msgid "Added tag {value} to {tasks}"
 msgstr "已添加标签 {value}：{tasks}"
 
-#: src/app/views/project-property-offer.tsx
 #: src/components/task-capture.tsx
 msgid "Adding"
 msgstr "正在添加"
@@ -3927,7 +3926,6 @@ msgid "Not connected"
 msgstr "未连接"
 
 #: src/app/more-screen.tsx
-#: src/app/views/project-property-offer.tsx
 msgid "Not now"
 msgstr "暂不"
 
@@ -5263,10 +5261,6 @@ msgstr "显示全天区域"
 msgid "Show current time"
 msgstr "显示当前时间"
 
-#: src/app/views/project-property-offer.tsx
-msgid "Show each task’s project on Today?"
-msgstr "是否在“今天”视图中显示每个任务所属的项目？"
-
 #: src/app/search-screen.tsx
 msgid "Show fewer"
 msgstr "显示较少"
@@ -5286,10 +5280,6 @@ msgstr "显示更多日期"
 #: src/app/search-screen.tsx
 msgid "Show more results"
 msgstr "显示更多结果"
-
-#: src/app/views/project-property-offer.tsx
-msgid "Show projects"
-msgstr "显示项目"
 
 #: src/components/calendar-preferences.tsx
 msgid "Show tracked time"
@@ -5872,10 +5862,6 @@ msgstr "任务仍在集合中。请重试。"
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "视图更改"
-
-#: src/app/views/project-property-offer.tsx
-msgid "The view could not be updated. {error}"
-msgstr "无法更新视图。{error}"
 
 #: src/app/more-screen.tsx
 msgid "Theme, Scratchpad, and calendar"
