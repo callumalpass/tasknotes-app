@@ -456,6 +456,22 @@ msgstr "{deadlines, plural, one {también se movió # fecha límite} many {tambi
 msgid "{deadlines, plural, one {# due date has passed} other {# due dates have passed}}"
 msgstr "{deadlines, plural, one {# fecha de vencimiento pasada} many {# fechas de vencimiento pasadas} other {# fechas de vencimiento pasadas}}"
 
+#: src/components/reminder-editor.tsx
+msgid "{duration} after due"
+msgstr "{duration} después del vencimiento"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} after scheduled"
+msgstr "{duration} después de la fecha programada"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before due"
+msgstr "{duration} antes del vencimiento"
+
+#: src/components/reminder-editor.tsx
+msgid "{duration} before scheduled"
+msgstr "{duration} antes de la fecha programada"
+
 #: src/app/task-editor-draft.ts
 msgid "{estimate}m estimate"
 msgstr "Estimación de {estimate} min"
@@ -504,7 +520,7 @@ msgstr "Cantidad de {label}"
 msgid "{label} column"
 msgstr "Columna {label}"
 
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} date"
 msgstr "Fecha de {label}"
@@ -527,8 +543,8 @@ msgstr "Se movió {label}."
 msgid "{label} suggestions"
 msgstr "Sugerencias de {label}"
 
+#: src/app/task-property-list.tsx
 #: src/components/task-date-panel.tsx
-#: src/components/task-detail-dates.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "{label} time"
 msgstr "Hora de {label}"
@@ -734,7 +750,7 @@ msgstr "Acciones para {0}"
 msgid "Active"
 msgstr "Activas"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-form.tsx
 #: src/app/views/view-catalog.tsx
 #: src/components/global-task-capture.tsx
@@ -846,6 +862,7 @@ msgid "Add formula"
 msgstr "Añadir fórmula"
 
 #: src/app/scratchpad-screen.tsx
+#: src/components/task-attachments.tsx
 msgid "Add image"
 msgstr "Añadir imagen"
 
@@ -864,6 +881,10 @@ msgstr "Añadir prioridad"
 #: src/app/view-editor-form.tsx
 msgid "Add projection"
 msgstr "Añadir proyección"
+
+#: src/app/task-property-list.tsx
+msgid "Add property"
+msgstr "Añadir una propiedad"
 
 #: src/components/reminder-editor.tsx
 msgid "Add reminder"
@@ -996,7 +1017,7 @@ msgstr "Recurrencia avanzada"
 msgid "Advanced recurrence rule"
 msgstr "Regla de recurrencia avanzada"
 
-#: src/app/task-editor-draft.ts
+#: src/app/task-property-list.tsx
 msgid "Advanced repeat"
 msgstr "Repetición avanzada"
 
@@ -1155,6 +1176,7 @@ msgstr "Ordenar tareas"
 msgid "Ascending"
 msgstr "Ascendente"
 
+#: src/app/task-property-list.tsx
 #: src/components/assignee-editor.tsx
 msgid "Assigned to"
 msgstr "Asignada a"
@@ -1221,11 +1243,12 @@ msgstr "Antes"
 msgid "Blocked"
 msgstr "Bloqueada"
 
+#: src/app/task-property-list.tsx
 #: src/components/dependency-editor.tsx
 msgid "Blocked by"
 msgstr "Bloqueada por"
 
-#: src/components/dependency-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Blocking"
 msgstr "Bloqueando"
 
@@ -1412,7 +1435,7 @@ msgstr "Elige una persona…"
 msgid "Choose a property"
 msgstr "Elige una propiedad"
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 msgid "Choose a value"
 msgstr "Elige un valor"
 
@@ -1532,6 +1555,7 @@ msgstr "Cerrar {0}"
 msgid "Close {accessibleName} calendar"
 msgstr "Cerrar calendario de {accessibleName}"
 
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Close {ariaLabel}"
 msgstr "Cerrar {ariaLabel}"
@@ -1639,10 +1663,6 @@ msgstr "Color de {name}"
 msgid "Color theme"
 msgstr "Tema de color"
 
-#: src/app/task-custom-field.tsx
-msgid "Comma-separated values"
-msgstr "Valores separados por comas"
-
 #: src/app/keyboard-shortcuts.ts
 #: src/components/command-palette.tsx
 msgid "Command palette"
@@ -1671,11 +1691,6 @@ msgstr "Completar"
 msgctxt "board column: completed tasks"
 msgid "Complete"
 msgstr "Completadas"
-
-#: src/components/dependency-editor.tsx
-msgctxt "related task completion state"
-msgid "Complete"
-msgstr "Completada"
 
 #: src/app/palette-commands.ts
 msgid "Complete “{title}”"
@@ -1762,10 +1777,6 @@ msgstr "Nombre de la propiedad calculada {0}"
 msgid "Computed property scope {0}"
 msgstr "Alcance de la propiedad calculada {0}"
 
-#: src/app/task-screen.tsx
-msgid "Computer, Errands"
-msgstr "Ordenador, recados"
-
 #: src/components/expression-builder.tsx
 msgid "Condition"
 msgstr "Condición"
@@ -1836,7 +1847,7 @@ msgid "contexts"
 msgstr "contextos"
 
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -2046,7 +2057,6 @@ msgid "Dark"
 msgstr "Oscuro"
 
 #: src/components/recurrence-field.tsx
-#: src/components/reminder-editor.tsx
 #: src/components/task-vocabulary-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Date"
@@ -2327,7 +2337,8 @@ msgstr "¿TaskNotes funciona sin conexión?"
 msgid "done"
 msgstr "completadas"
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2379,6 +2390,7 @@ msgstr "vencimiento"
 
 #: src/app/calendar-row-details.ts
 #: src/app/task-calendar-view.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-capture.tsx
@@ -2445,14 +2457,16 @@ msgstr "Notas anteriores"
 msgid "Earlier rules take priority."
 msgstr "Las reglas anteriores tienen prioridad."
 
+#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "Editar"
 
+#. placeholder {0}: String(label)
+#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
-#. placeholder {0}: detail.label
-#. placeholder {0}: props.label
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
+#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -2497,10 +2511,6 @@ msgstr "Se puede editar"
 msgid "Editor for {0}"
 msgstr "Editor de {0}"
 
-#: src/app/task-screen.tsx
-msgid "Editor mode"
-msgstr "Modo de edición"
-
 #: src/i18n/ui-copy.ts
 msgid "empty item"
 msgstr "elemento vacío"
@@ -2544,7 +2554,7 @@ msgstr "Intro para fijar {0}"
 msgid "Error code: <0>{0}</0>"
 msgstr "Código de error: <0>{0}</0>"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-capture.tsx
 msgid "Estimate (minutes)"
 msgstr "Estimación (minutos)"
@@ -2994,10 +3004,6 @@ msgstr "Aumentar sangría"
 #: src/components/task-attachments.tsx
 msgid "Insert"
 msgstr "Insertar"
-
-#: src/components/task-attachments.tsx
-msgid "Insert in Notes"
-msgstr "Insertar en Notas"
 
 #: src/app/more-screen.tsx
 msgid "Install app"
@@ -3473,10 +3479,6 @@ msgstr "Más"
 msgid "More actions for {0}"
 msgstr "Más acciones para {0}"
 
-#: src/app/task-screen.tsx
-msgid "More properties"
-msgstr "Más propiedades"
-
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "Más acciones de tarea"
@@ -3787,7 +3789,7 @@ msgid "No computed properties."
 msgstr "No hay propiedades calculadas."
 
 #: src/app/bulk-task-actions.tsx
-#: src/components/task-detail-dates.tsx
+#: src/app/task-property-list.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "No date"
 msgstr "Sin fecha"
@@ -3840,14 +3842,6 @@ msgstr "No hay proyecciones"
 msgid "No recovery key is held on this device."
 msgstr "No hay ninguna clave de recuperación en este dispositivo."
 
-#: src/components/reminder-editor.tsx
-msgid "No reminders set."
-msgstr "No hay recordatorios configurados."
-
-#: src/app/task-editor-draft.ts
-msgid "No repeat or reminder"
-msgstr "Sin repetición ni recordatorio"
-
 #: src/app/views/kanban-columns.ts
 msgid "No status"
 msgstr "Sin estado"
@@ -3893,7 +3887,7 @@ msgstr "No hay próximas fechas en este patrón."
 msgid "No upcoming tasks here."
 msgstr "No hay próximas tareas aquí."
 
-#: src/app/task-custom-field.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/kanban-columns.ts
 #: src/components/task-property-editor.tsx
 msgid "No value"
@@ -3990,10 +3984,6 @@ msgstr "Las notificaciones no están disponibles aquí"
 #: src/app/more-screen.tsx
 msgid "Notifications are turned off for TaskNotes in system settings. Turn them on there to receive reminders."
 msgstr "Las notificaciones de TaskNotes están desactivadas en la configuración del sistema. Actívalas allí para recibir recordatorios."
-
-#: src/components/reminder-editor.tsx
-msgid "Notify at a fixed time or relative to this task."
-msgstr "Recibe una notificación a una hora fija o relativa a esta tarea."
 
 #: src/components/tasknotes-controls.tsx
 msgid "Now"
@@ -4253,10 +4243,6 @@ msgstr "Planner es una aplicación independiente. Guarda esta vista y luego elig
 msgid "Planner will open this saved view."
 msgstr "Planner abrirá esta vista guardada."
 
-#: src/app/task-screen.tsx
-msgid "Preview"
-msgstr "Vista previa"
-
 #: src/app/view-editor.tsx
 msgid "Preview "
 msgstr "Vista previa "
@@ -4316,7 +4302,7 @@ msgid "Priorities"
 msgstr "Prioridades"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/app/view-sort-choices.tsx
@@ -4361,7 +4347,7 @@ msgstr "Las colecciones privadas necesitan que tu ordenador esté conectado a In
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/calendar-row-details.ts
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-actions.tsx
 msgid "Project"
 msgstr "Proyecto"
@@ -4538,20 +4524,12 @@ msgid "Refreshing…"
 msgstr "Actualizando…"
 
 #: src/components/dependency-editor.tsx
-msgid "Related work"
-msgstr "Trabajo relacionado"
-
-#: src/components/dependency-editor.tsx
 msgid "Relationship"
 msgstr "Relación"
 
 #: src/components/task-actions.tsx
 msgid "Relationships"
 msgstr "Relaciones"
-
-#: src/components/reminder-editor.tsx
-msgid "Relative"
-msgstr "Relativo"
 
 #: src/components/reminder-editor.tsx
 msgid "Relative to"
@@ -4592,7 +4570,7 @@ msgid "Reminder time"
 msgstr "Hora del recordatorio"
 
 #: src/app/settings-sections.ts
-#: src/components/reminder-editor.tsx
+#: src/app/task-property-list.tsx
 msgid "Reminders"
 msgstr "Recordatorios"
 
@@ -4720,14 +4698,11 @@ msgstr "“{title}” reordenada"
 msgid "Reordered {0}."
 msgstr "Se reordenó {0}."
 
+#: src/app/task-property-list.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-capture.tsx
 msgid "Repeat"
 msgstr "Repetir"
-
-#: src/app/task-screen.tsx
-msgid "Repeat and reminders"
-msgstr "Repetición y recordatorios"
 
 #: src/components/recurrence-field.tsx
 msgid "Repeat frequency"
@@ -4917,10 +4892,6 @@ msgstr "Guardar"
 msgid "Save {0}"
 msgstr "Guardar {0}"
 
-#: src/components/reminder-editor.tsx
-msgid "Save a fixed or relative reminder in this task."
-msgstr "Guarda un recordatorio fijo o relativo en esta tarea."
-
 #: src/components/app-update-notice.tsx
 msgid "Save and reload TaskNotes"
 msgstr "Guardar y volver a cargar TaskNotes"
@@ -5036,6 +5007,7 @@ msgid "scheduled"
 msgstr "programada"
 
 #: src/app/calendar-row-details.ts
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/components/reminder-editor.tsx
 #: src/components/task-actions.tsx
@@ -5109,6 +5081,7 @@ msgstr "El almacenamiento del bloc de notas no está disponible."
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 #: src/app/search-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Search"
 msgstr "Buscar"
@@ -5452,7 +5425,7 @@ msgid "Starts"
 msgstr "Empieza"
 
 #: src/app/bulk-task-actions.tsx
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5529,7 +5502,6 @@ msgid "Subtask title"
 msgstr "Título de la subtarea"
 
 #: src/app/task-subtasks.tsx
-#: src/components/dependency-editor.tsx
 #: src/components/task-row.tsx
 msgid "Subtasks"
 msgstr "Subtareas"
@@ -5577,7 +5549,7 @@ msgstr "etiquetas"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/view-editor-fields.ts
 #: src/app/view-editor-form.tsx
 #: src/components/task-actions.tsx
@@ -5657,7 +5629,7 @@ msgstr "Listas de tareas"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "No se encontró la tarea. Es posible que se haya eliminado o movido."
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "Propiedades de la tarea"
@@ -5913,7 +5885,7 @@ msgstr "Tema, bloc de notas y calendario"
 msgid "These choices apply as soon as you make them and don’t change the collection."
 msgstr "Estas opciones se aplican en cuanto las eliges y no cambian la colección."
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
 msgstr "Estas fechas editan la tarea recurrente, incluidas las repeticiones futuras."
 
@@ -6064,12 +6036,11 @@ msgstr "Esta vista usa una ordenación que no está disponible."
 msgid "This weekend"
 msgstr "Este fin de semana"
 
-#: src/components/reminder-editor.tsx
 #: src/components/tasknotes-controls.tsx
 msgid "Time"
 msgstr "Hora"
 
-#: src/app/task-screen.tsx
+#: src/app/task-property-list.tsx
 #: src/app/task-time-tracking.tsx
 msgctxt "time tracking duration"
 msgid "Time"
@@ -6202,10 +6173,6 @@ msgstr "Intenta cargar la vista de nuevo. Si el problema continúa, edita su con
 #: src/components/task-capture.tsx
 msgid "Try tomorrow 9am, #tag, @context, +project."
 msgstr "Prueba tomorrow 9am, #tag, @context, +project."
-
-#: src/components/reminder-editor.tsx
-msgid "Type"
-msgstr "Tipo"
 
 #: src/components/task-capture.tsx
 msgid "Type {example} in the task title."
@@ -6350,7 +6317,7 @@ msgstr "Usa el campo de vencimiento configurado."
 msgid "Use the configured scheduled field."
 msgstr "Usa el campo de fecha programada configurado."
 
-#: src/app/task-core-properties.tsx
+#: src/app/task-property-list.tsx
 msgid "Use the occurrence actions above to change this state."
 msgstr "Usa las acciones de repetición anteriores para cambiar este estado."
 
@@ -6464,6 +6431,10 @@ msgstr "¿Qué es mdbase?"
 msgid "What needs doing?"
 msgstr "¿Qué hay que hacer?"
 
+#: src/components/reminder-editor.tsx
+msgid "When due"
+msgstr "Al vencer"
+
 #: src/app/occurrence-policy-field.tsx
 msgid "When I choose"
 msgstr "Cuando elijo"
@@ -6471,6 +6442,10 @@ msgstr "Cuando elijo"
 #: src/components/task-date-panel.tsx
 msgid "When it has to be done"
 msgstr "Cuándo debe estar hecha"
+
+#: src/components/reminder-editor.tsx
+msgid "When scheduled"
+msgstr "En la fecha programada"
 
 #: src/components/task-model-settings.tsx
 msgid "When the previous one is completed"
@@ -6500,10 +6475,6 @@ msgstr "Sesión de trabajo"
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "Procesando…"
-
-#: src/app/task-screen.tsx
-msgid "Write"
-msgstr "Escribir"
 
 #: src/components/scratchpad-note-editor.tsx
 msgid "Writing tools"

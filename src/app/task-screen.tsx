@@ -1,5 +1,4 @@
 import { t as translate } from "@lingui/core/macro";
-import { OccurrencePolicyField } from "./occurrence-policy-field";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { ArrowLeft, X } from "lucide-react";
 import { useTaskReloadGuard } from "../pwa/use-task-reload";
@@ -20,8 +19,7 @@ import {
 } from "react";
 import { attachmentPathFromReference } from "@tasknotes/model/attachments";
 
-import { TaskDetailProperties } from "./task-detail-properties";
-import { TaskCoreProperties, InlineList } from "./task-core-properties";
+import { TaskPropertyList } from "./task-property-list";
 import { TaskSubtasks } from "./task-subtasks";
 import { useTaskDetailKeys } from "./use-task-detail-keys";
 import { markedPriorityColorOf } from "../domain/task-configuration";
@@ -47,32 +45,16 @@ import { useRecordWriteReview } from "../components/record-write-status-context"
 import { WriteRejectionNotice } from "../components/write-rejection-notice";
 import { RecoveredEditNotice } from "../components/recovered-edit-notice";
 import { AttachmentService } from "../application/attachments/attachment-service";
-import { DependencyEditor, RelatedWork } from "../components/dependency-editor";
 import { OperationErrorNotice } from "../components/operation-error-notice";
-import { RecurrenceField } from "../components/recurrence-field";
-import { AssigneeEditor } from "../components/assignee-editor";
-import { ReminderEditor } from "../components/reminder-editor";
-import { activeTimeEntry } from "../domain/task";
 import { recordMatchesLink } from "../domain/completion";
 import {
   useRepository,
   useTask,
   useTaskRelationships,
 } from "./repository-context";
-import { TimeTrackingField } from "./task-time-tracking";
 import { rememberOpenedTask } from "./search-history";
-import {
-  ListField,
-  TaskFormSection,
-  TaskPaneNavigation,
-} from "./task-editor-layout";
-import {
-  formatOccurrenceDate,
-  repeatSummary,
-  timeSummary,
-  toDraft,
-  type Draft,
-} from "./task-editor-draft";
+import { TaskPaneNavigation } from "./task-editor-layout";
+import { formatOccurrenceDate, toDraft, type Draft } from "./task-editor-draft";
 import {
   changedFields,
   followIncomingDraft,
@@ -249,6 +231,9 @@ function TaskEditor({
     draft.body.trim() ? "preview" : "write",
   );
   const notesInputRef = useRef<HTMLTextAreaElement>(null);
+  const [notesInsertSlot, setNotesInsertSlot] = useState<HTMLElement | null>(
+    null,
+  );
   const relationships = useMemo(
     () => ({
       ...repositoryRelationships,
@@ -851,6 +836,7 @@ function TaskEditor({
   }
 
   const retrySaveLabel = saveError ?? translate({ message: "Tap to retry." });
+  const notesLabel = t({ message: "Notes" });
   return (
     <section
       className="screen task-screen"
@@ -1112,13 +1098,27 @@ function TaskEditor({
           </p>
         ) : null}
 
-        <TaskCoreProperties
+        <TaskPropertyList
+          task={task}
           draft={draft}
           configuration={configuration}
           projectLabels={projectLabels}
+          relationships={relationships}
           occurrenceNote={Boolean(task.occurrenceDate)}
           seriesDates={Boolean(occurrenceDate && draft.recurrence)}
           completeField={completeField}
+          completeDependencyField={completeDependencyField}
+          time={{
+            busy: timeAction,
+            error: timeError,
+            onRemove: (index) =>
+              void runTimeAction(() => removeTimeEntry(task.id, index)),
+            onReplace: (entries) =>
+              void runTimeAction(() => replaceTimeEntries(task.id, entries)),
+            onStart: (description) =>
+              void runTimeAction(() => startTimeTracking(task.id, description)),
+            onStop: () => void runTimeAction(() => stopTimeTracking(task.id)),
+          }}
           onChange={change}
         />
 
@@ -1127,21 +1127,35 @@ function TaskEditor({
             <h2 id="task-notes-title" tabIndex={-1}>
               <Trans>Notes</Trans>
             </h2>
-            <div aria-label={t({ message: "Editor mode" })} role="group">
-              <button
-                aria-pressed={notesMode === "write"}
-                type="button"
-                onClick={() => setNotesMode("write")}
-              >
-                <Trans>Write</Trans>
-              </button>
-              <button
-                aria-pressed={notesMode === "preview"}
-                type="button"
-                onClick={() => setNotesMode("preview")}
-              >
-                <Trans>Preview</Trans>
-              </button>
+            <div className="notes-field-actions">
+              <span className="notes-insert-slot" ref={setNotesInsertSlot} />
+              {draft.body.trim() ? (
+                notesMode === "write" ? (
+                  <button
+                    className="notes-mode-action"
+                    type="button"
+                    // Pressing Done must not first blur the field into preview.
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setNotesMode("preview")}
+                  >
+                    <Trans>Done</Trans>
+                  </button>
+                ) : (
+                  <button
+                    className="notes-mode-action"
+                    type="button"
+                    aria-label={t`Edit ${String(notesLabel)}`}
+                    onClick={() => {
+                      setNotesMode("write");
+                      window.requestAnimationFrame(() =>
+                        notesInputRef.current?.focus(),
+                      );
+                    }}
+                  >
+                    <Trans>Edit</Trans>
+                  </button>
+                )
+              ) : null}
             </div>
           </header>
           {notesMode === "write" ? (
@@ -1154,6 +1168,11 @@ function TaskEditor({
               rows={3}
               value={draft.body}
               onChange={(event) => change({ body: event.target.value })}
+              onBlur={() => {
+                // Leaving the notes shows them as they read; switching windows does not.
+                if (!document.hasFocus()) return;
+                if (draftRef.current.body.trim()) setNotesMode("preview");
+              }}
             />
           ) : (
             <Suspense
@@ -1170,7 +1189,7 @@ function TaskEditor({
                 )
               }
             >
-              {/* Keyboard users switch with Write; pointer users click the text. */}
+              {/* Keyboard users choose Edit; pointer users click the text. */}
               <div
                 className="notes-preview-surface"
                 onClick={(event) => {
@@ -1192,161 +1211,37 @@ function TaskEditor({
           )}
         </section>
 
-        <TaskSubtasks
-          task={task}
-          subtasks={relationships.subtasks}
-          loading={relationshipsLoading}
-          error={relationshipsError}
-          beforeMutation={flushBeforeAttachmentMutation}
-          onOpen={
-            onNavigate
-              ? (child) =>
-                  void leave(() =>
-                    onNavigate(
-                      { id: child.id },
-                      relationships.subtasks.map((task) => ({ id: task.id })),
-                    ),
-                  )
-              : undefined
-          }
-        />
-
-        {repository.files ? (
-          <TaskAttachments
-            beforeMutation={flushBeforeAttachmentMutation}
-            onInsertInline={insertAttachmentInline}
-            service={attachmentService}
-            store={repository.files}
+        <div className="task-detail-extras">
+          <TaskSubtasks
             task={task}
+            subtasks={relationships.subtasks}
+            loading={relationshipsLoading}
+            error={relationshipsError}
+            beforeMutation={flushBeforeAttachmentMutation}
+            onOpen={
+              onNavigate
+                ? (child) =>
+                    void leave(() =>
+                      onNavigate(
+                        { id: child.id },
+                        relationships.subtasks.map((task) => ({ id: task.id })),
+                      ),
+                    )
+                : undefined
+            }
           />
-        ) : null}
 
-        <TaskFormSection title={t({ message: "More properties" })} summary="">
-          <InlineList
-            label={t({ message: "Tags" })}
-            values={draft.tags.filter((tag) => tag !== "task")}
-            field="tags"
-            completion={
-              configuration.fieldCompletions.tags ?? { kind: "values" }
-            }
-            completeField={completeField}
-            onChange={(tags) => change({ tags: ["task", ...tags] })}
-          />
-          <ListField
-            field={configuration.fieldMapping.contexts}
-            label={t({ message: "Contexts" })}
-            placeholder={t({ message: "Computer, Errands" })}
-            values={draft.contexts}
-            completion={
-              configuration.fieldCompletions[
-                configuration.fieldMapping.contexts
-              ] ?? { kind: "values" }
-            }
-            completeField={completeField}
-            onChange={(contexts) => change({ contexts })}
-          />
-          <AssigneeEditor
-            taskId={task.id}
-            linkWriteFormat={configuration.linkWriteFormat}
-            values={draft.assignees ?? []}
-            onChange={(assignees) => change({ assignees })}
-          />
-          <DependencyEditor
-            completeField={completeDependencyField}
-            dependencies={draft.blockedBy}
-            field={configuration.fieldMapping.blockedBy}
-            labels={
-              new Map(
-                relationships.blockedBy.flatMap(({ dependency, task }) =>
-                  task ? [[dependency.uid, task.title] as const] : [],
-                ),
-              )
-            }
-            onChange={(blockedBy) => change({ blockedBy })}
-          />
-          <RelatedWork relationships={{ ...relationships, subtasks: [] }} />
-          <TaskDetailProperties
-            draft={draft}
-            configuration={configuration}
-            projectLabels={projectLabels}
-            occurrenceNote={Boolean(task.occurrenceDate)}
-            seriesDates={Boolean(occurrenceDate && draft.recurrence)}
-            completeField={completeField}
-            onChange={change}
-          />
-          <TaskFormSection
-            defaultOpen={Boolean(activeTimeEntry(task.timeEntries))}
-            summary={timeSummary(task, draft.timeEstimate)}
-            title={t({ message: "Time", context: "time tracking duration" })}
-          >
-            <label className="form-field time-estimate-field">
-              <span>
-                <Trans>Estimate (minutes)</Trans>
-              </span>
-              <input
-                inputMode="numeric"
-                min="0"
-                type="number"
-                value={draft.timeEstimate ?? ""}
-                onChange={(event) =>
-                  change({
-                    timeEstimate: event.target.value
-                      ? Number(event.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </label>
-            <TimeTrackingField
-              busy={timeAction}
-              entries={task.timeEntries}
-              error={timeError}
-              onRemove={(index) =>
-                runTimeAction(() => removeTimeEntry(task.id, index))
-              }
-              onReplace={(entries) =>
-                runTimeAction(() => replaceTimeEntries(task.id, entries))
-              }
-              onStart={(description) =>
-                runTimeAction(() => startTimeTracking(task.id, description))
-              }
-              onStop={() => runTimeAction(() => stopTimeTracking(task.id))}
+          {repository.files ? (
+            <TaskAttachments
+              beforeMutation={flushBeforeAttachmentMutation}
+              insertSlot={notesInsertSlot}
+              onInsertInline={insertAttachmentInline}
+              service={attachmentService}
+              store={repository.files}
+              task={task}
             />
-          </TaskFormSection>
-
-          <TaskFormSection
-            summary={repeatSummary(draft)}
-            title={t({ message: "Repeat and reminders" })}
-          >
-            <RecurrenceField
-              anchor={draft.recurrenceAnchor}
-              scheduled={draft.scheduled}
-              due={draft.due}
-              value={draft.recurrence}
-              onAnchorChange={(recurrenceAnchor) =>
-                change({ recurrenceAnchor })
-              }
-              onChange={(recurrence) => change({ recurrence })}
-            />
-            {draft.recurrence && !task.occurrenceDate ? (
-              <OccurrencePolicyField
-                futureHorizon={draft.occurrenceFutureHorizon}
-                materialization={draft.occurrenceMaterialization ?? "manual"}
-                nextTrigger={draft.occurrenceNextTrigger ?? "completion"}
-                pastHorizon={draft.occurrencePastHorizon}
-                template={draft.occurrenceTemplate}
-                onChange={(patch) => change(patch)}
-              />
-            ) : null}
-            <ReminderEditor
-              deliveryMode="mdbase"
-              due={draft.due}
-              reminders={draft.reminders}
-              scheduled={draft.scheduled}
-              onChange={(reminders) => change({ reminders })}
-            />
-          </TaskFormSection>
-        </TaskFormSection>
+          ) : null}
+        </div>
 
         <TaskRecordFile
           linkFormat={configuration.linkWriteFormat}

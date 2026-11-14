@@ -1,7 +1,7 @@
 import { useLingui, Trans } from "@lingui/react/macro";
 import { t as translate } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
-import { Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -12,12 +12,16 @@ import {
 } from "../domain/reminder";
 import {
   TaskNotesDatePicker,
-  TaskNotesSelectField,
+  TaskNotesSelect,
   TaskNotesTimePicker,
 } from "./tasknotes-controls";
 
 import type { TaskReminder } from "../domain/task";
 
+/**
+ * Reminders as short lines: each reads as "30 minutes before Due" through its
+ * own controls, so one reminder never needs a form of stacked fields.
+ */
 export function ReminderEditor({
   reminders,
   scheduled,
@@ -38,14 +42,6 @@ export function ReminderEditor({
     onChange([...reminders, reminder]);
   }
 
-  function addDefault() {
-    add(
-      defaultAnchor
-        ? relativeReminder(defaultAnchor, "-PT15M", "15 minutes before")
-        : absoluteReminder(),
-    );
-  }
-
   return (
     <div className="reminder-editor">
       {deliveryMode === "local" ? (
@@ -61,51 +57,6 @@ export function ReminderEditor({
               </Trans>
             </p>
           </div>
-        </div>
-      ) : null}
-      <div className="reminder-editor-heading">
-        <div>
-          <span className="field-label">
-            <Trans>Reminders</Trans>
-          </span>
-          <p>
-            {deliveryMode === "mdbase"
-              ? t({
-                  message: "Notify at a fixed time or relative to this task.",
-                })
-              : t({
-                  message: "Save a fixed or relative reminder in this task.",
-                })}
-          </p>
-        </div>
-        <button className="text-action" type="button" onClick={addDefault}>
-          <Plus aria-hidden="true" size={16} />
-          <Trans>Add reminder</Trans>
-        </button>
-      </div>
-
-      {defaultAnchor ? (
-        <div
-          className="reminder-quick-actions"
-          aria-label={t({ message: "Quick reminders" })}
-        >
-          {[
-            ["5m", "-PT5M", "5 minutes before"],
-            ["15m", "-PT15M", "15 minutes before"],
-            ["1h", "-PT1H", "1 hour before"],
-            ["1d", "-P1D", "1 day before"],
-          ].map(([label, offset, description]) => (
-            <button
-              key={offset}
-              type="button"
-              aria-label={quickReminderLabel(offset, defaultAnchor)}
-              onClick={() =>
-                add(relativeReminder(defaultAnchor, offset, description))
-              }
-            >
-              {quickReminderDuration(label)}
-            </button>
-          ))}
         </div>
       ) : null}
 
@@ -131,11 +82,67 @@ export function ReminderEditor({
             />
           ))}
         </div>
-      ) : (
-        <p className="reminder-empty">
-          <Trans>No reminders set.</Trans>
-        </p>
-      )}
+      ) : null}
+
+      <div className="reminder-add">
+        {defaultAnchor ? (
+          <div
+            className="reminder-quick-actions"
+            role="group"
+            aria-label={t({ message: "Quick reminders" })}
+          >
+            {[
+              ["5m", "-PT5M", "5 minutes before"],
+              ["15m", "-PT15M", "15 minutes before"],
+              ["1h", "-PT1H", "1 hour before"],
+              ["1d", "-P1D", "1 day before"],
+            ].map(([label, offset, description]) => (
+              <button
+                key={offset}
+                type="button"
+                aria-label={quickReminderLabel(offset, defaultAnchor)}
+                onClick={() =>
+                  add(relativeReminder(defaultAnchor, offset, description))
+                }
+              >
+                {quickReminderDuration(label)}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div className="reminder-add-actions">
+          {defaultAnchor ? (
+            <button
+              className="text-action"
+              type="button"
+              onClick={() =>
+                add(
+                  relativeReminder(
+                    defaultAnchor,
+                    "-PT15M",
+                    "15 minutes before",
+                  ),
+                )
+              }
+            >
+              <Plus aria-hidden="true" size={16} />
+              <Trans>Add reminder</Trans>
+            </button>
+          ) : null}
+          <button
+            className="text-action"
+            type="button"
+            onClick={() => add(absoluteReminder())}
+          >
+            <CalendarClock aria-hidden="true" size={16} />
+            {defaultAnchor ? (
+              <Trans>Fixed date and time</Trans>
+            ) : (
+              <Trans>Add reminder</Trans>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -156,51 +163,9 @@ function ReminderRow({
   onRemove(): void;
 }) {
   const { t } = useLingui();
-  const relativeAvailable =
-    Boolean(scheduled || due) || reminder.type === "relative";
-
-  function changeType(type: string) {
-    if (type === reminder.type) return;
-    onChange(
-      type === "relative"
-        ? relativeReminder(
-            due ? "due" : "scheduled",
-            "-PT15M",
-            reminder.description,
-            reminder.id,
-          )
-        : absoluteReminder(reminder.id, reminder.description),
-    );
-  }
-
   return (
     <section className="reminder-row" aria-label={t`Reminder ${index + 1}`}>
-      <div className="reminder-row-heading">
-        <strong>
-          <Trans>Reminder {index + 1}</Trans>
-        </strong>
-        <button
-          className="text-action danger"
-          type="button"
-          aria-label={t`Remove reminder ${index + 1}`}
-          onClick={onRemove}
-        >
-          <Trash2 aria-hidden="true" size={16} />
-          <Trans>Remove</Trans>
-        </button>
-      </div>
-      <div className="field-grid metadata-fields reminder-fields">
-        <TaskNotesSelectField
-          label={t({ message: "Type" })}
-          options={[
-            ...(relativeAvailable
-              ? [{ value: "relative", label: t({ message: "Relative" }) }]
-              : []),
-            { value: "absolute", label: t({ message: "Fixed date and time" }) },
-          ]}
-          value={reminder.type}
-          onChange={changeType}
-        />
+      <div className="reminder-line">
         {reminder.type === "relative" ? (
           <RelativeReminderFields
             due={due}
@@ -212,21 +177,27 @@ function ReminderRow({
           <AbsoluteReminderFields reminder={reminder} onChange={onChange} />
         )}
       </div>
-      <label className="form-field reminder-description">
-        <span>
-          <Trans>Description</Trans>
-        </span>
-        <input
-          placeholder={t({ message: "Optional notification text" })}
-          value={reminder.description ?? ""}
-          onChange={(event) =>
-            onChange({
-              ...reminder,
-              description: event.target.value || undefined,
-            })
-          }
-        />
-      </label>
+      <button
+        className="icon-action reminder-remove"
+        type="button"
+        aria-label={t`Remove reminder ${index + 1}`}
+        title={t({ message: "Remove" })}
+        onClick={onRemove}
+      >
+        <X aria-hidden="true" size={16} />
+      </button>
+      <input
+        aria-label={t({ message: "Description" })}
+        className="reminder-description"
+        placeholder={t({ message: "Optional notification text" })}
+        value={reminder.description ?? ""}
+        onChange={(event) =>
+          onChange({
+            ...reminder,
+            description: event.target.value || undefined,
+          })
+        }
+      />
     </section>
   );
 }
@@ -249,6 +220,7 @@ function RelativeReminderFields({
   const [direction, setDirection] = useState<ReminderOffsetDirection>(
     initial.direction,
   );
+  const relatedTo = reminder.relatedTo ?? (due ? "due" : "scheduled");
 
   function commit(
     nextAmount = amount,
@@ -257,7 +229,7 @@ function RelativeReminderFields({
   ) {
     onChange(
       relativeReminder(
-        reminder.relatedTo ?? (due ? "due" : "scheduled"),
+        relatedTo,
         reminderOffset({
           amount: nextAmount,
           unit: nextUnit,
@@ -271,51 +243,21 @@ function RelativeReminderFields({
 
   return (
     <>
-      <TaskNotesSelectField
-        label={t({ message: "Relative to" })}
-        options={[
-          ...(due ? [{ value: "due", label: t({ message: "Due" }) }] : []),
-          ...(scheduled
-            ? [{ value: "scheduled", label: t({ message: "Scheduled" }) }]
-            : []),
-          ...(!due && reminder.relatedTo === "due"
-            ? [{ value: "due", label: t({ message: "Due (not set)" }) }]
-            : []),
-          ...(!scheduled && reminder.relatedTo === "scheduled"
-            ? [
-                {
-                  value: "scheduled",
-                  label: t({ message: "Scheduled (not set)" }),
-                },
-              ]
-            : []),
-        ]}
-        value={reminder.relatedTo ?? (due ? "due" : "scheduled")}
-        onChange={(relatedTo) =>
-          onChange({
-            ...reminder,
-            relatedTo: relatedTo as "due" | "scheduled",
-          })
-        }
+      <input
+        aria-label={t({ message: "Amount" })}
+        className="reminder-amount"
+        inputMode="numeric"
+        min="0"
+        type="number"
+        value={amount}
+        onChange={(event) => {
+          const next = Math.max(0, Number(event.target.value) || 0);
+          setAmount(next);
+          commit(next, unit, direction);
+        }}
       />
-      <label className="form-field">
-        <span>
-          <Trans>Amount</Trans>
-        </span>
-        <input
-          inputMode="numeric"
-          min="0"
-          type="number"
-          value={amount}
-          onChange={(event) => {
-            const next = Math.max(0, Number(event.target.value) || 0);
-            setAmount(next);
-            commit(next, unit, direction);
-          }}
-        />
-      </label>
-      <TaskNotesSelectField
-        label={t({ message: "Unit" })}
+      <TaskNotesSelect
+        ariaLabel={t({ message: "Unit" })}
         options={[
           { value: "minutes", label: t({ message: "Minutes" }) },
           { value: "hours", label: t({ message: "Hours" }) },
@@ -328,8 +270,8 @@ function RelativeReminderFields({
           commit(amount, next, direction);
         }}
       />
-      <TaskNotesSelectField
-        label={t({ message: "Direction" })}
+      <TaskNotesSelect
+        ariaLabel={t({ message: "Direction" })}
         options={[
           { value: "before", label: t({ message: "Before" }) },
           { value: "after", label: t({ message: "After" }) },
@@ -340,6 +282,33 @@ function RelativeReminderFields({
           setDirection(next);
           commit(amount, unit, next);
         }}
+      />
+      <TaskNotesSelect
+        ariaLabel={t({ message: "Relative to" })}
+        options={[
+          ...(due ? [{ value: "due", label: t({ message: "Due" }) }] : []),
+          ...(scheduled
+            ? [{ value: "scheduled", label: t({ message: "Scheduled" }) }]
+            : []),
+          ...(!due && relatedTo === "due"
+            ? [{ value: "due", label: t({ message: "Due (not set)" }) }]
+            : []),
+          ...(!scheduled && relatedTo === "scheduled"
+            ? [
+                {
+                  value: "scheduled",
+                  label: t({ message: "Scheduled (not set)" }),
+                },
+              ]
+            : []),
+        ]}
+        value={relatedTo}
+        onChange={(next) =>
+          onChange({
+            ...reminder,
+            relatedTo: next as "due" | "scheduled",
+          })
+        }
       />
     </>
   );
@@ -369,36 +338,60 @@ function AbsoluteReminderFields({
 
   return (
     <>
-      <div className="form-field tasknotes-control-field">
-        <span>
-          <Trans>Date</Trans>
-        </span>
-        <TaskNotesDatePicker
-          ariaLabel={t({ message: "Reminder date" })}
-          value={date}
-          onChange={(value) => {
-            const next = value ?? date;
-            setDate(next);
-            commit(next, time);
-          }}
-        />
-      </div>
-      <div className="form-field tasknotes-control-field">
-        <span>
-          <Trans>Time</Trans>
-        </span>
-        <TaskNotesTimePicker
-          ariaLabel={t({ message: "Reminder time" })}
-          value={time}
-          onChange={(value) => {
-            const next = value ?? time;
-            setTime(next);
-            commit(date, next);
-          }}
-        />
-      </div>
+      <TaskNotesDatePicker
+        ariaLabel={t({ message: "Reminder date" })}
+        value={date}
+        onChange={(value) => {
+          const next = value ?? date;
+          setDate(next);
+          commit(next, time);
+        }}
+      />
+      <TaskNotesTimePicker
+        ariaLabel={t({ message: "Reminder time" })}
+        value={time}
+        onChange={(value) => {
+          const next = value ?? time;
+          setTime(next);
+          commit(date, next);
+        }}
+      />
     </>
   );
+}
+
+/** One reminder in a few words, for a property summary. */
+export function reminderSummary(reminder: TaskReminder): string {
+  if (reminder.type === "absolute") {
+    const instant = reminder.absoluteTime
+      ? new Date(reminder.absoluteTime)
+      : null;
+    if (!instant || Number.isNaN(instant.valueOf())) return "";
+    return new Intl.DateTimeFormat(appLocale(), {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(instant);
+  }
+  const { amount, unit, direction } = editableReminderOffset(reminder.offset);
+  const due = reminder.relatedTo !== "scheduled";
+  if (amount === 0)
+    return due
+      ? translate({ message: "When due" })
+      : translate({ message: "When scheduled" });
+  const duration = new Intl.NumberFormat(appLocale(), {
+    style: "unit",
+    unit: unit === "minutes" ? "minute" : unit === "hours" ? "hour" : "day",
+    unitDisplay: "narrow",
+  }).format(amount);
+  if (direction === "before")
+    return due
+      ? translate`${duration} before due`
+      : translate`${duration} before scheduled`;
+  return due
+    ? translate`${duration} after due`
+    : translate`${duration} after scheduled`;
 }
 
 function quickReminderLabel(

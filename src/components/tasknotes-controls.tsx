@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -1074,7 +1075,7 @@ const ANCHORED_PROPERTIES = [
  * below the anchor, flips above when that side has more room, and stays
  * inside the visual viewport. Phone sheets keep their stylesheet placement.
  */
-function useAnchoredPopover({
+export function useAnchoredPopover({
   open,
   present,
   anchorRef,
@@ -1248,7 +1249,7 @@ function fixedContainingBlockOrigin(element: HTMLElement): {
   return { left: 0, top: 0 };
 }
 
-function PopoverScrim({
+export function PopoverScrim({
   label,
   open,
   onClose,
@@ -1270,24 +1271,35 @@ function PopoverScrim({
   );
 }
 
-function useDismissablePopover<T extends HTMLElement>(
+export function useDismissablePopover<T extends HTMLElement>(
   triggerRef: RefObject<T | null>,
 ): {
   open: boolean;
   present: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   rootRef: RefObject<HTMLDivElement | null>;
+  /** Closes without returning focus, for a choice that moves focus elsewhere. */
+  closeAway(): void;
 } {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const restoreFocus = useRef(true);
+  useLayoutEffect(() => {
+    if (open) restoreFocus.current = true;
+  }, [open]);
   useOverlay({
     open,
     rootRef,
     returnFocusRef: triggerRef,
+    restoreFocusRef: restoreFocus,
     onDismiss: () => setOpen(false),
   });
   const present = usePresence(open, rootRef);
-  return { open, present, setOpen, rootRef };
+  const closeAway = useCallback(() => {
+    restoreFocus.current = false;
+    setOpen(false);
+  }, []);
+  return { open, present, setOpen, rootRef, closeAway };
 }
 
 function firstEnabledIndex(options: readonly TaskNotesOption[]): number {

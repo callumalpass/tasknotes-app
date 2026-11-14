@@ -1253,30 +1253,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-.reminder-editor-heading,
-.reminder-row-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.reminder-editor-heading p,
-.reminder-empty {
-  margin: 4px 0 0;
-  color: var(--ink-muted);
-  font-size: var(--type-supporting);
-}
-
-.reminder-editor-heading .text-action,
-.reminder-row-heading .text-action {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-}
-
 .reminder-quick-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1315,27 +1291,12 @@
   border-bottom: 0;
 }
 
-.reminder-row-heading strong {
-  font-size: var(--type-body);
-}
-
-.reminder-fields {
-  padding: 18px 0 0;
-}
-
-.reminder-description {
-  display: block;
-  padding-top: 18px;
-}
-
-.dependency-editor,
-.related-work {
+.dependency-editor {
   padding: 24px 0 22px;
   border-bottom: 1px solid var(--line);
 }
 
-.dependency-editor-heading h2,
-.related-work h2 {
+.dependency-editor-heading h2 {
   margin: 0;
   font-size: var(--type-body);
   font-weight: 600;
@@ -1373,41 +1334,6 @@
   padding-bottom: 0;
 }
 
-.related-work-groups {
-  display: grid;
-  gap: 20px;
-  margin-top: 16px;
-}
-
-.related-work-group > span {
-  color: var(--ink-muted);
-  font-size: var(--type-label);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.related-work-group ul {
-  margin: 7px 0 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.related-work-group li {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--line);
-}
-
-.related-work-group li small {
-  color: var(--ink-muted);
-  text-transform: capitalize;
-}
-
 .notes-field {
   display: block;
   padding: var(--space-xl) 0;
@@ -1435,27 +1361,47 @@
   font-weight: 600;
 }
 
-.notes-field-heading > div {
+/* Notes are one surface: Add image and Edit or Done sit quietly beside the heading. */
+.notes-field-actions {
   display: flex;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
+  align-items: center;
+  gap: 2px 4px;
+  margin-inline-end: -6px;
 }
 
-.notes-field-heading button {
-  min-height: 44px;
-  padding: 0 9px;
+.notes-insert-slot:empty {
+  display: none;
+}
+
+.notes-insert-slot > .task-attachment-add-actions {
+  margin-inline: 0;
+}
+
+.notes-mode-action {
+  min-height: var(--control-min-size);
+  padding: 0 6px;
   color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--type-supporting);
   background: transparent;
   border: 0;
-  border-bottom: 2px solid transparent;
-  /* Square lower corners keep the selected underline straight. */
-  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  border-radius: var(--radius-control);
   cursor: pointer;
 }
 
-.notes-field-heading button[aria-pressed="true"] {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+.notes-mode-action:hover {
+  color: var(--ink);
+}
+
+.notes-mode-action:focus-visible {
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.notes-preview-surface {
+  cursor: text;
 }
 
 .notes-field textarea {
@@ -1484,22 +1430,69 @@
   margin-bottom: 14px;
 }
 
-/* Without images the section is one row: its heading and add actions. */
-.task-attachments.is-empty {
-  padding: var(--space-sm) 0;
-}
-
-.task-attachments.is-empty > .task-attachments-heading {
-  flex-direction: row;
+/*
+ * Subtasks and attachments the task does not have yet share one quiet row of
+ * actions; each becomes a full section once it has something to show.
+ */
+.task-detail-extras {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0;
+  gap: 2px 4px;
 }
 
-.task-attachments.is-empty .task-attachment-add-actions {
-  flex: 0 1 auto;
-  min-width: 0;
+.task-detail-extras > :not(.task-extra-action, .task-attachments.is-compact) {
+  flex: 1 0 100%;
+}
+
+.task-detail-extras:has(> .task-extra-action, > .task-attachments.is-compact) {
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The compact pieces come first so the full sections run beneath them. */
+.task-detail-extras > :is(.task-extra-action, .task-attachments.is-compact) {
+  order: -1;
+}
+
+.task-attachments.is-compact {
+  padding: 0;
+  border: 0;
+}
+
+.task-attachments.is-compact .task-attachment-add-actions {
+  justify-content: flex-start;
+}
+
+.task-extra-action {
+  display: inline-flex;
+  min-height: var(--control-min-size);
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: -6px;
+  padding: 0 6px;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--type-supporting);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.task-extra-action:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.task-extra-action:focus-visible {
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.task-extra-action:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .task-attachments-heading h2,
@@ -1818,28 +1811,11 @@
   color: var(--ink-muted);
 }
 
-.task-form-section {
-  border-bottom: 1px solid var(--line);
-}
-
-.task-form-section > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  min-height: 64px;
-  padding: var(--space-md) 0;
-  cursor: pointer;
-  list-style: none;
-}
-
-.capture-details-section > summary::-webkit-details-marker,
-.task-form-section > summary::-webkit-details-marker {
+.capture-details-section > summary::-webkit-details-marker {
   display: none;
 }
 
-.capture-details-section > summary::after,
-.task-form-section > summary::after {
+.capture-details-section > summary::after {
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
@@ -1851,68 +1827,8 @@
   transition: transform 150ms var(--ease-out);
 }
 
-.capture-details-section[open] > summary::after,
-.task-form-section[open] > summary::after {
+.capture-details-section[open] > summary::after {
   transform: rotate(225deg);
-}
-
-.task-form-section > summary > span {
-  display: inline-grid;
-  gap: 3px;
-  max-width: calc(100% - 22px);
-  vertical-align: middle;
-}
-
-.task-form-section > summary strong {
-  font-size: var(--task-section-size, 15px);
-  font-weight: 600;
-}
-
-.task-form-section > summary small {
-  overflow: hidden;
-  color: var(--ink-muted);
-  font-size: var(--type-supporting);
-  font-weight: 400;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.task-form-section-content {
-  padding: 0 0 var(--space-xl) var(--space-lg);
-  border-left: 1px solid var(--line);
-}
-
-.task-form-section-content > .choice-field,
-.task-form-section-content > .field-grid,
-.task-form-section-content > .time-tracking,
-.task-form-section-content > .repeat-fields,
-.task-form-section-content > .reminder-editor {
-  border-bottom: 0;
-}
-
-.task-form-section-content > .choice-field:first-child,
-.task-form-section-content > .field-grid:first-child,
-.task-form-section-content > .repeat-fields:first-child {
-  padding-top: 4px;
-}
-
-/* The disclosure owns its bottom gap; its final field group must not add it twice. */
-.task-form-section-content > :is(.field-grid, .choice-field):last-child {
-  padding-bottom: 0;
-}
-
-.task-form-section-content > .time-estimate-field {
-  display: block;
-  width: min(100%, 14rem);
-  padding-top: 4px;
-}
-
-.task-form-section-content > .time-tracking {
-  padding-bottom: 0;
-}
-
-.task-form-section-content .custom-fields .field-grid {
-  border-bottom: 0;
 }
 
 /* The task's file is quiet reference: muted mono path, muted actions that
@@ -2110,134 +2026,10 @@
   cursor: pointer;
 }
 
-/* Primary task properties read as a quiet list, with editors on their values. */
 .task-pane-navigation {
   display: flex;
   align-items: center;
   margin-inline-end: auto;
-}
-
-.task-core-properties {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: start;
-  gap: 4px 8px;
-  padding-block: 16px;
-}
-
-.task-core-properties > .form-field,
-.task-core-properties > .task-inline-property {
-  display: flex;
-  min-width: 0;
-  max-width: 100%;
-  gap: 0;
-}
-
-.task-core-properties > .form-field > span,
-.task-core-properties > .task-inline-property > span {
-  display: none;
-}
-
-.task-core-properties > .form-field > .tasknotes-select {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.task-core-properties > .field-help {
-  flex-basis: 100%;
-}
-
-.task-inline-property {
-  display: grid;
-  grid-template-columns: minmax(5.5rem, 0.32fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  font-size: 15px;
-}
-
-.task-inline-property > span {
-  margin: 0;
-  padding: 8px 0;
-  color: var(--ink-muted);
-  font-size: 12px;
-}
-
-.task-property-value {
-  min-height: 44px;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--ink-soft);
-  font: inherit;
-  text-align: start;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.task-core-properties .tasknotes-control-trigger,
-.task-core-properties .task-property-value {
-  min-height: 44px;
-  max-width: 100%;
-  padding: 7px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 14px;
-}
-
-.task-core-properties .tasknotes-control-trigger > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.task-core-properties .tasknotes-control-trigger:hover,
-.task-property-value:hover {
-  background: var(--paper-soft);
-}
-
-.task-core-properties .date-time-field > div {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0 4px;
-  min-width: 0;
-}
-
-.task-core-properties .date-time-field > div > * {
-  min-width: 0;
-}
-
-/* A time is short and exact, so the date gives way before the time clips. */
-.task-core-properties .date-time-field > div > .tasknotes-time-picker {
-  flex: none;
-}
-
-.task-core-properties .tasknotes-date-trigger,
-.task-core-properties .tasknotes-time-trigger {
-  gap: 6px;
-  font-size: inherit;
-}
-
-.task-property-value[hidden] {
-  display: none;
-}
-.task-property-empty {
-  color: var(--ink-muted);
-}
-.task-inline-property-editor {
-  min-width: 0;
-  padding-inline-start: 8px;
-}
-.task-inline-property-editor .multi-value-field > label {
-  display: none;
-}
-.task-inline-property-editor .text-action {
-  font-size: var(--type-supporting);
 }
 
 .task-screen .title-field {
@@ -2251,12 +2043,6 @@
 .task-screen .notes-field-heading {
   gap: 12px;
   margin-bottom: 4px;
-}
-.task-screen .notes-field-heading > div {
-  border: 0;
-}
-.task-screen .notes-field-heading button {
-  font-size: var(--type-supporting);
 }
 .task-screen .notes-field textarea {
   min-height: 64px;
@@ -2353,27 +2139,7 @@
   font-size: var(--type-supporting);
 }
 
-@media (max-width: 839px) {
-  .task-inline-property {
-    min-height: 44px;
-  }
-  .task-core-properties .tasknotes-control-trigger,
-  .task-property-value {
-    min-height: 44px;
-  }
-  .task-inline-property > span {
-    padding-block: 8px;
-  }
-}
-
 @media (max-width: 360px) {
-  .task-inline-property {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-  .task-inline-property > span {
-    padding-block: 6px 0;
-  }
   .task-subtasks form {
     flex-wrap: wrap;
   }
