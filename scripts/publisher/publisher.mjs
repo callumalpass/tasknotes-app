@@ -140,6 +140,18 @@ export async function assertExistingProject({
     productionBranch: body.result.production_branch,
   };
 }
+// The deployments list can lag a just-finished upload or rate-limit concurrent publishes, so
+// capture re-reads it (GET only, never re-uploading) within a fixed bound and stays fail-closed.
+export const CAPTURE_DELAYS = [5000, 10000, 15000, 30000, 45000];
+export const CAPTURE_READ_TIMEOUT = 10000;
+const captureBudget = CAPTURE_DELAYS.reduce((sum, delay) => sum + delay, 0);
+const deploymentUuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+const retryAfterMs = (value) => {
+  if (/^\d+$/.test(value ?? "")) return Number(value) * 1000;
+  const at = Date.parse(value ?? "");
+  return Number.isFinite(at) ? Math.max(0, at - Date.now()) : 0;
+};
+const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 export async function captureDeployment({
   output,
   target,
@@ -147,6 +159,7 @@ export async function captureDeployment({
   accountId,
   apiToken,
   fetchImpl = fetch,
+  sleep = wait,
 }) {
   need(
     /^[a-f0-9]{32}$/.test(accountId ?? "") && apiToken,
@@ -155,33 +168,57 @@ export async function captureDeployment({
   const prefix = deploymentPrefix(output),
     url = `https://${prefix}.tasknotes-app.pages.dev`;
   const branch = deploymentFor(target).branch;
-  const response = await fetchImpl(
-    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/pages/projects/tasknotes-app/deployments?per_page=20`,
-    {
-      redirect: "error",
-      signal: AbortSignal.timeout(30000),
-      headers: { Authorization: `Bearer ${apiToken}` },
-    },
-  );
-  need(response.ok, "deployment UUID lookup failed");
-  const body = await response.json();
-  const matches =
-    body.success && Array.isArray(body.result)
-      ? body.result.filter(
-          (d) =>
-            d.url === url &&
-            d.deployment_trigger?.metadata?.commit_hash === sha &&
-            d.deployment_trigger?.metadata?.branch === branch,
-        )
-      : [];
-  need(
-    matches.length === 1 &&
-      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(
-        matches[0]?.id ?? "",
-      ),
-    "actual deployment UUID/source/channel mismatch",
-  );
-  return { id: matches[0].id, url, sourceSha: sha, pagesBranch: branch };
+  const lookupFailed = "deployment UUID lookup failed",
+    mismatch = "actual deployment UUID/source/channel mismatch";
+  let slept = 0;
+  for (const delay of [...CAPTURE_DELAYS, null]) {
+    let status,
+      retryAfter = null,
+      body;
+    try {
+      const response = await fetchImpl(
+        `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/pages/projects/tasknotes-app/deployments?per_page=20`,
+        {
+          redirect: "error",
+          signal: AbortSignal.timeout(CAPTURE_READ_TIMEOUT),
+          headers: { Authorization: `Bearer ${apiToken}` },
+        },
+      );
+      status = response.status;
+      retryAfter = response.headers?.get("retry-after") ?? null;
+      if (response.ok) body = await response.json();
+    } catch {
+      status = 0; // No response, a timeout or an unreadable body is transient.
+    }
+    const transient = status === 0 || status === 429 || status >= 500;
+    need(transient || (status >= 200 && status < 300), lookupFailed);
+    let refusal = lookupFailed;
+    if (!transient) {
+      const matches =
+        body?.success && Array.isArray(body.result)
+          ? body.result.filter(
+              (d) =>
+                d.url === url &&
+                d.deployment_trigger?.metadata?.commit_hash === sha &&
+                d.deployment_trigger?.metadata?.branch === branch,
+            )
+          : [];
+      // Ambiguity or a malformed id is a real conflict, never lag: refuse at once.
+      need(matches.length <= 1, mismatch);
+      if (matches.length === 1) {
+        need(deploymentUuid.test(matches[0].id ?? ""), mismatch);
+        return { id: matches[0].id, url, sourceSha: sha, pagesBranch: branch };
+      }
+      refusal = mismatch;
+    }
+    need(delay !== null, refusal);
+    const pause = Math.min(
+      Math.max(delay, transient ? retryAfterMs(retryAfter) : 0),
+      captureBudget - slept,
+    );
+    slept += pause;
+    await sleep(pause);
+  }
 }
 export function createReceipt({
   plan,
