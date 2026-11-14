@@ -162,7 +162,7 @@ describe("TaskNotes development deployment", () => {
     expect(run.mock.calls[0][1]).toEqual([
       "add",
       "--ignore-scripts",
-      "@mdbase-dev/sdk@file:vendor/sdk-e8ffb806-lab-beta188.tgz",
+      `@mdbase-dev/sdk@file:${developmentDeployment.sdkArtifact}`,
     ]);
     expect(run.mock.calls[1][1]).toEqual(["build:assets"]);
     expect(run.mock.calls[2][1]).toEqual(
@@ -206,6 +206,57 @@ describe("TaskNotes development deployment", () => {
     expect(after.ino).toBe(before.ino);
     expect(after.mtimeMs).toBe(before.mtimeMs);
   });
+
+  it.each(["success", "build", "verification"])(
+    "restores both production manifests after %s without changing the dev manifest",
+    async (outcome) => {
+      const root = await scratchCheckout();
+      const targets = [
+        "public/.well-known/mdbase-app.json",
+        "src/generated/mdbase-app.json",
+        "package.json",
+        "pnpm-lock.yaml",
+      ];
+      const originals = await Promise.all(
+        targets.map((target) => readFile(join(root, target))),
+      );
+      const development = join(
+        root,
+        "src/generated/mdbase-app.development.json",
+      );
+      await writeFile(development, '{"homepage":"http://127.0.0.1:4173/"}');
+      const originalDevelopment = await readFile(development);
+      const run = vi.fn(async (_command, arguments_) => {
+        if (arguments_[0] !== "build:assets") return;
+        await Promise.all(
+          targets.map((target) => writeFile(join(root, target), "swapped")),
+        );
+        if (outcome === "build") throw new Error("build failed");
+      });
+      const verifyBuild = vi.fn(async () => {
+        if (outcome === "verification") throw new Error("verification failed");
+      });
+      const deployment = deployDevelopmentTaskNotes(
+        {},
+        { run, verifyBuild, root },
+      );
+      if (outcome === "success") await deployment;
+      else await expect(deployment).rejects.toThrow(`${outcome} failed`);
+      expect(
+        await Promise.all(
+          targets.map((target) => readFile(join(root, target))),
+        ),
+      ).toEqual(originals);
+      expect(await readFile(development)).toEqual(originalDevelopment);
+      if (outcome !== "success") {
+        expect(
+          run.mock.calls.some(([, arguments_]) =>
+            arguments_.includes("deploy"),
+          ),
+        ).toBe(false);
+      }
+    },
+  );
 
   it("replaces a changed file by rename and leaves an unchanged one alone", async () => {
     const root = await scratchCheckout();
