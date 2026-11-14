@@ -42,9 +42,9 @@ test("production input matches the beta141 trust asset and the beta149 published
   );
   assert.equal(
     sdk.sha256,
-    "a6947870a0f5172151cba94bb200fecb933541833ba378a3f9f2ec106b2e078b",
+    "663ae01a63eb0fd348e0c164fd4e8d8f530218107caa0538aa0c37924c3609e6",
   );
-  assert.equal(sdk.sourceCommit, "90e03df5a7014f153455fc4699ec224cc2781426");
+  assert.equal(sdk.sourceCommit, "147416ca5eb2df443f01c1bf75bbfee6d6cc9abe");
   assertSdkDependency(
     pin,
     sdk,
