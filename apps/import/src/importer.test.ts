@@ -5,9 +5,26 @@ import {
   type RecordView,
 } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
-import { runImport, MdbaseTaskRepository } from "./storage/task-repository";
+import {
+  runImport,
+  MdbaseTaskRepository,
+  type ImportConnection,
+} from "./storage/task-repository";
 import { makePlan } from "./plan";
 import { exampleSource, exampleTarget } from "./example";
+
+it("accepts the narrow borrowed client without SDK instance identity", async () => {
+  const records: ImportConnection = client;
+  const repository = new MdbaseTaskRepository({
+    records,
+    isCurrent: () => true,
+  });
+  const plan = (await plans()).slice(0, 1);
+  const report = await repository.importTasks(plan, () => {});
+  expect(report).toEqual([
+    expect.objectContaining({ sourceId: plan[0].sourceId, status: "created" }),
+  ]);
+});
 
 it("never starts the next create after the borrowed app collection changes", async () => {
   let current = true;
