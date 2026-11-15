@@ -10,10 +10,15 @@ commit and its vendor inputs.
   archive named by `package.json`. The automated repin writes these inputs.
   Staging publication selects the authenticated staging archive for this same
   production release; it does not use a historical vendored staging SDK.
+  Coordinate the importer's root workspace catalog and lockfile on repins:
+  `pnpm check:workspace` requires its npm SDK version and integrity to match this
+  production original. Do not copy the archive into `apps/import` or retarget the
+  importer when preparing the main app's staging/LAB installation.
 - LAB SDK: `scripts/deploy-pages-dev.mjs` selects its isolated LAB archive.
 - `package.json` and `pnpm-lock.yaml` identify the protocol, native app-storage,
-  browser, NLP and spec archives still installed from this directory. Model,
-  shared UI and i18n dependencies now use exact registry versions.
+  browser, NLP and spec archives still installed from this directory. The model
+  uses the shared exact registry catalog in `pnpm-workspace.yaml`; shared UI and
+  i18n dependencies use exact registry versions.
 - `native-app-storage.json` and `mdbase-browser.pin.json` retain the current
   archive integrity and embedded WASM pins. Native app storage exposes only
   the app-storage subpath and uses the pinned SQLite WASM with OPFS sahpool.

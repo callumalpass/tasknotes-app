@@ -1,7 +1,13 @@
 import { createContext, useContext } from "react";
 import type { CollectionUiOptions } from "@mdbase-dev/ui/collections";
+import type { TaskRepository } from "tasknotes-import/task-repository";
 
 export interface CollectionGateContextValue {
+  importDestination?: {
+    id: string;
+    name: string;
+    repository(): Promise<TaskRepository>;
+  };
   /** The shared collection UI's options; null outside mdbase (the demo). */
   collectionUi: CollectionUiOptions | null;
   /** Close this collection and show the list. */

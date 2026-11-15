@@ -93,6 +93,33 @@ pnpm test:e2e
 pnpm test:production-smoke
 ```
 
+### Todoist importer workspace
+
+Todoist import is a lazy feature at `https://app.tasknotes.dev/import`, also
+available from Settings → Collection. It uses the app's existing mdbase session
+and selected collection, with explicit preview and destination confirmation.
+The tested engine lives in [`apps/import`](apps/import/README.md); its old shell
+is retained as a regression harness. Both share the root lockfile, model catalog and canonical
+contract provision. `pnpm check:workspace` rejects SDK/model drift: the importer
+uses the exact npm SDK publication matching the main app's authenticated
+vendored original, including its integrity. The main app retains its original
+archive-based publisher and separate staging/LAB inputs.
+
+```sh
+pnpm import:dev
+rpnpm import:check
+pnpm import:test:e2e # local browser checks, after building apps/import/dist
+```
+
+`pnpm verify` checks the main app including its integrated import UI.
+`pnpm verify:workspace` also checks the engine and regression shell. CI checks
+both packages on every PR. Engine changes affect the main bundle and do not skip
+native builds. The integrated route ships through the existing app publisher;
+there is no separate importer publisher. This source change does not deploy the
+route or redirect/retire the old standalone site.
+
+### Main app deployment
+
 Publish the current working tree to the isolated TaskNotes LAB surface with:
 
 ```sh

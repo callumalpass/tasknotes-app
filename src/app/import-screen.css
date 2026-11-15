@@ -1,0 +1,70 @@
+.import-screen fieldset {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  justify-items: start;
+}
+.import-screen label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.import-screen label:not(:has(input[type="checkbox"])) {
+  display: grid;
+  gap: 4px;
+  color: var(--ink-soft);
+}
+.import-screen button,
+.import-screen select,
+.import-screen input:not([type="checkbox"]) {
+  min-height: 44px;
+  max-width: 100%;
+}
+.import-screen select,
+.import-screen input:not([type="checkbox"]) {
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper-raised);
+  font-size: var(--type-field);
+}
+.import-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.import-priorities {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  width: 100%;
+}
+.import-tasks {
+  max-height: 22rem;
+  overflow: auto;
+}
+.import-tasks label {
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.import-preview {
+  padding-left: 20px;
+}
+.import-preview li {
+  margin-block: 16px;
+}
+.import-preview code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.import-screen pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.import-screen [role="alert"] {
+  color: var(--danger);
+}

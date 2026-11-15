@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { it } from "node:test";
+import { parse } from "yaml";
 import { exactUiVersion, loadOriginals, productionPin } from "./originals.mjs";
 import { prepareInstall } from "./install-inputs.mjs";
 const root = new URL("../../", import.meta.url).pathname;
@@ -75,6 +76,10 @@ it("derives frozen staging SDK and all UI peer resolutions without touching othe
       before.dependencies["@mdbase-dev/sdk"];
     assert.deepEqual(after, before);
     const staged = await readFile(join(temp, "pnpm-lock.yaml"), "utf8");
+    assert.deepEqual(
+      parse(staged).importers["apps/import"],
+      parse(lock).importers["apps/import"],
+    );
     assert.ok(!staged.includes(spec));
     assert.ok(staged.includes(sdk.sri));
     assert.equal(

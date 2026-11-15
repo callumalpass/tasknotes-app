@@ -6,6 +6,17 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
+it("opens and navigates the integrated import route without losing app query state", () => {
+  window.history.replaceState(null, "", "/import?demo=60");
+  const { result } = renderHook(() => useWorkspaceNavigation([]));
+  expect(result.current.route).toEqual({ page: "import" });
+  act(() => result.current.navigate({ page: "home" }));
+  act(() => result.current.navigate({ page: "import" }));
+  expect(window.location.pathname + window.location.search).toBe(
+    "/import?demo=60",
+  );
+});
+
 it("keeps one panel entry when choosing another task", () => {
   window.history.replaceState(null, "", "/");
   const { result } = renderHook(() => useWorkspaceNavigation([]));

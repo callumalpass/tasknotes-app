@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env*
+!.env.example
+.wrangler/
+playwright-report/
+test-results/
+src/generated/
+public/.well-known/
+public/oauth/
+
+.dev.vars*
+!.dev.vars.example

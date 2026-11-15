@@ -83,11 +83,20 @@ function HeldCollection({
     };
     return {
       collectionUi: ui,
+      importDestination: {
+        id: connection.id,
+        name: connection.displayName ?? connection.id,
+        repository: async () => {
+          const { MdbaseTaskRepository } =
+            await import("tasknotes-import/storage/task-repository");
+          return new MdbaseTaskRepository(connection);
+        },
+      },
       changeCollection: () => run(() => mdbase.chooseAnother()),
       reauthorizeCurrentCollection: () =>
         run(() => mdbase.approve(collectionId)),
     };
-  }, [collectionId, mdbase, ui]);
+  }, [collectionId, connection, mdbase, ui]);
 
   const notice = useConnectionNotice(mdbase);
 

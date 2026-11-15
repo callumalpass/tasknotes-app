@@ -4,9 +4,13 @@ import { resolve } from "node:path";
 const dist = resolve(import.meta.dirname, "..", "dist");
 const index = resolve(dist, "index.html");
 const callbackDirectory = resolve(dist, "auth", "mdbase", "callback");
-const staticRouteDirectories = ["more", "scratchpad", "search", "views"].map(
-  (route) => resolve(dist, route),
-);
+const staticRouteDirectories = [
+  "more",
+  "scratchpad",
+  "search",
+  "views",
+  "import",
+].map((route) => resolve(dist, route));
 
 await Promise.all([
   mkdir(callbackDirectory, { recursive: true }),
@@ -21,6 +25,9 @@ const rootBase = (process.env.VITE_BASE_PATH ?? "/") === "/";
 await Promise.all([
   ...(rootBase ? [] : [copyFile(index, resolve(dist, "404.html"))]),
   copyFile(index, resolve(dist, "auth", "mdbase", "callback.html")),
+  mkdir(resolve(dist, "import", "todoist"), { recursive: true }).then(() =>
+    copyFile(index, resolve(dist, "import", "todoist", "callback.html")),
+  ),
   copyFile(index, resolve(callbackDirectory, "index.html")),
   ...staticRouteDirectories.map((directory) =>
     copyFile(index, resolve(directory, "index.html")),
@@ -38,6 +45,9 @@ function pagesRedirects() {
     "/auth/mdbase/callback",
     "/auth/mdbase/callback/",
     "/more",
+    "/import",
+    "/import/",
+    "/import/todoist/callback",
     "/more/*",
     "/scratchpad",
     "/scratchpad/",

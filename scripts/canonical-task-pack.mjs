@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
+import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 
 export const TASKNOTES_CONTRACT_CATALOG_URL =
   "https://mdbase.dev/contracts/packs/tasknotes.task/0.3.0-rc.21.json";
@@ -9,8 +12,8 @@ export const TASKNOTES_CONTRACT_CATALOG_DIGEST =
 export const TASKNOTES_APP_TYPE_PACK_VERSION = "0.3.0-rc.21";
 
 export const TASKNOTES_CONTRACT_VENDOR_PATH = resolve(
-  process.cwd(),
-  "vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.21.json",
+  dirname(fileURLToPath(import.meta.url)),
+  "../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.21.json",
 );
 
 export async function loadCanonicalTaskNotesTypePack() {
@@ -24,10 +27,16 @@ export async function loadCanonicalTaskNotesTypePack() {
   const provision = JSON.parse(document);
   if (
     provision.manifest?.id !== "tasknotes.task" ||
-    provision.manifest?.version !== TASKNOTES_APP_TYPE_PACK_VERSION
+    provision.manifest?.version !== TASKNOTES_APP_TYPE_PACK_VERSION ||
+    !provision.provides?.some(
+      (contract) =>
+        contract.id === "tasknotes.task" &&
+        contract.version === TASKNOTES_SPEC_VERSION &&
+        contract.digest === TASKNOTES_CONTRACT_DIGEST,
+    )
   ) {
     throw new Error(
-      "The vendored TaskNotes catalog provision has the wrong identity.",
+      "The vendored TaskNotes catalog provision does not match its identity or model contract.",
     );
   }
   return provision;

@@ -7,6 +7,39 @@ the sole durable collection boundary. The selected authority may be hosted or
 exposed by a connected computer; that topology is an mdbase concern, not a
 TaskNotes storage mode.
 
+## Application boundaries
+
+The application remains at the repository root. Its lazy `/import` screen uses
+the same mdbase session, reviewed collection setup and selected collection.
+`apps/import` exports the tested planning/source engine and narrow storage
+adapter. Its original browser shell remains a regression harness, not a second
+production deployment. Native shells link to web import rather than starting
+Todoist OAuth inside Capacitor.
+
+Both task editing and importing have explicit provider-neutral repository boundaries.
+The importer's smaller port supports destination discovery, create-only imports
+and original-mutation recovery; its SDK adapter deliberately does not implement
+the main editor's task/scratchpad/files port. Authentication and reviewed setup
+approval remain SDK-owned. There is no provider-specific import path or extra
+durable replica.
+
+The shared maintenance boundary is the root workspace lockfile, model catalog,
+authenticated SDK version/integrity and canonical contract provision, not the
+apps' UI or application internals. The main app keeps its authenticated archive
+and protected staging/LAB publisher. The regression harness uses byte-matching
+published production SDK inputs; the integrated adapter borrows the main app's
+actual connection and never creates an SDK session of its own. Import tests
+remain required in CI, and engine-only PRs no longer skip native builds.
+
+Todoist's read-only public-client metadata lives at `/oauth/todoist-client.json`.
+Its callback `/import/todoist/callback` removes OAuth parameters before the app
+starts, exchanges its one-time PKCE transaction once and retains only source
+data in memory. The main mdbase identity and callback are unchanged. Navigating
+away cancels future creates, not an already captured write. Switching collection
+invalidates the borrowed adapter before another create. Uncertain writes block
+replay; the report recovers only its own original mutation identities. After a
+reload, use the app's shared pending-write review before importing again.
+
 ## Data flow
 
 ```text

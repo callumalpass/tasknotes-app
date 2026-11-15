@@ -42,3 +42,23 @@ await Promise.all(
     await writeFile(target, serialized);
   }),
 );
+
+const basePath = process.env.VITE_BASE_PATH ?? "/";
+const todoistOrigin = new URL(appUrl).origin;
+const metadata = {
+  client_id: `${todoistOrigin}${basePath}oauth/todoist-client.json`,
+  client_name: "TaskNotes",
+  client_uri: `${todoistOrigin}${basePath}import`,
+  redirect_uris: [`${todoistOrigin}${basePath}import/todoist/callback`],
+  grant_types: ["authorization_code"],
+  response_types: ["code"],
+  token_endpoint_auth_method: "none",
+  scope: "data:read",
+};
+await mkdir(resolve(import.meta.dirname, "../public/oauth"), {
+  recursive: true,
+});
+await writeFile(
+  resolve(import.meta.dirname, "../public/oauth/todoist-client.json"),
+  `${JSON.stringify(metadata, null, 2)}\n`,
+);

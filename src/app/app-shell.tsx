@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import {
   useCallback,
+  lazy,
+  Suspense,
   useContext,
   useEffect,
   useId,
@@ -129,6 +131,12 @@ import {
 import type { ProjectShortcut } from "../domain/project-shortcuts";
 import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
+
+const ImportScreen = lazy(() =>
+  import("./import-screen").then((module) => ({
+    default: module.ImportScreen,
+  })),
+);
 
 export function AppShell() {
   const { t } = useLingui();
@@ -535,8 +543,13 @@ export function AppShell() {
           <ScratchpadScreen
             onOpenTask={(task) => navigate({ page: "task", id: task.id })}
           />
+        ) : workspacePage === "import" ? (
+          <Suspense fallback={<LoadingRows />}>
+            <ImportScreen />
+          </Suspense>
         ) : workspacePage === "more" ? (
           <MoreScreen
+            onImport={() => navigate({ page: "import" })}
             calendarPreferences={calendarPreferences}
             section={workspace.page === "more" ? workspace.section : undefined}
             onCalendarPreferencesChange={updateCalendarPreferences}

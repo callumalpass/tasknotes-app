@@ -26,7 +26,7 @@ person can see.
 ## What is sent
 
 The application block is the product `tasknotes`, a fixed screen identifier
-(`home`, `search`, `scratchpad`, `views`, `task`, `more`, `opening`,
+(`home`, `search`, `scratchpad`, `views`, `task`, `more`, `import`, `opening`,
 `failure`), the build revision (version plus short commit) and the
 environment. View keys, task ids, titles, paths and raw errors are never
 passed. Diagnostics and a screenshot are included only when the person opts
