@@ -1123,10 +1123,6 @@ msgstr "应用语言"
 msgid "App update"
 msgstr "应用更新"
 
-#: src/app/more-screen.tsx
-msgid "Appearance"
-msgstr "外观"
-
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
 msgstr "应用规则"
@@ -1634,11 +1630,6 @@ msgstr "集合"
 msgid "Collection access is unavailable."
 msgstr "无法访问集合。"
 
-#: src/app/settings-sections.ts
-#: src/components/task-model-settings.tsx
-msgid "Collection behavior"
-msgstr "集合行为"
-
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
 msgstr "集合连接"
@@ -1915,6 +1906,10 @@ msgstr "复制任务链接"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "复制标题"
+
+#: src/app/more-screen.tsx
+msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
+msgstr "将你在 Todoist 中的进行中任务复制到此集合。Todoist 本身不会被更改。"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
@@ -3050,6 +3045,10 @@ msgstr "导入报告"
 msgid "Import selected tasks"
 msgstr "导入所选任务"
 
+#: src/app/more-screen.tsx
+msgid "Import tasks"
+msgstr "导入任务"
+
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
 msgstr "在导航中"
@@ -3247,6 +3246,14 @@ msgstr "键盘快捷键"
 #: src/i18n/language-settings.tsx
 msgid "Language"
 msgstr "语言"
+
+#: src/app/more-screen.tsx
+msgid "Language and appearance"
+msgstr "语言和外观"
+
+#: src/app/more-screen.tsx
+msgid "Language, theme, and calendar"
+msgstr "语言、主题和日历"
 
 #: src/i18n/presentation.ts
 msgid "last"
@@ -5053,10 +5060,6 @@ msgid "Saved view"
 msgstr "已保存的视图"
 
 #: src/components/task-model-settings.tsx
-msgid "Saved with the collection and used by every app that opens it."
-msgstr "与集合一起保存，并供每个打开该集合的应用使用。"
-
-#: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
 msgstr "已与集合一起保存。"
 
@@ -5563,6 +5566,10 @@ msgstr "状态：{0}"
 msgid "Statuses"
 msgstr "状态"
 
+#: src/app/more-screen.tsx
+msgid "Statuses, priorities, and custom fields"
+msgstr "状态、优先级和自定义字段"
+
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
@@ -5743,7 +5750,9 @@ msgstr "任务列表"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "未找到任务。它可能已被删除或移动。"
 
+#: src/app/settings-sections.ts
 #: src/app/task-property-list.tsx
+#: src/components/task-model-settings.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "任务属性"
@@ -5998,14 +6007,6 @@ msgstr "任务仍在集合中。请重试。"
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "视图更改"
-
-#: src/app/more-screen.tsx
-msgid "Theme, Scratchpad, and calendar"
-msgstr "主题、随手记和日历"
-
-#: src/app/more-screen.tsx
-msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr "这些选项会立即生效，不会更改集合。"
 
 #: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
@@ -6605,6 +6606,13 @@ msgstr "维基链接"
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
 msgstr "工作会话"
+
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#: src/app/settings-sections.ts
+#: src/components/task-model-settings.tsx
+msgid "Workflow"
+msgstr "工作流程"
 
 #: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx

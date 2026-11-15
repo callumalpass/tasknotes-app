@@ -9,8 +9,9 @@ import {
   Download,
   Info,
   KeyRound,
-  ListChecks,
   MonitorSmartphone,
+  Tags,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { App } from "@capacitor/app";
@@ -53,9 +54,9 @@ import { useCollectionGate } from "./collection-context";
 import { changeNotificationLabel } from "./notification-label";
 import { useCollectionSummary, useRepository } from "./repository-context";
 import {
+  SETTINGS_SECTION_GROUPS,
   settingsSectionId,
   settingsSectionLabels,
-  visibleSettingsSection,
   type SettingsSection,
 } from "./settings-sections";
 import { storageExplanation } from "./storage-trust";
@@ -65,10 +66,11 @@ import type { CalendarPreferences } from "./calendar-preferences";
 
 const sectionIcons: Record<SettingsSection, LucideIcon> = {
   collection: Cloud,
+  properties: Tags,
+  behavior: Workflow,
   account: KeyRound,
   reminders: Bell,
   device: MonitorSmartphone,
-  behavior: ListChecks,
   about: Info,
 };
 
@@ -98,27 +100,13 @@ export function MoreScreen({
   const notice = useContext(ConnectionNoticeContext);
   const reminders = useReminderSettings();
   const install = useInstallPrompt();
-  const unsavedBehavior = useUnsavedTaskModelDraft(repository);
-  const sections: SettingsSection[] = [
-    "collection",
-    ...(privateAccount ? (["account"] as const) : []),
-    "reminders",
-    "device",
-    "behavior",
-    "about",
-  ];
-  const current = section && sections.includes(section) ? section : undefined;
-
-  // Desktop shows every section, so a section route scrolls to it.
-  useEffect(() => {
-    if (narrow || !current) return;
-    const frame = requestAnimationFrame(() => {
-      const target = document.getElementById(settingsSectionId(current));
-      target?.scrollIntoView?.({ block: "start" });
-      target?.focus({ preventScroll: true });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [current, narrow]);
+  const unsaved = useUnsavedTaskModelDraft(repository);
+  const available = (key: SettingsSection) =>
+    key !== "account" || Boolean(privateAccount);
+  const groups = SETTINGS_SECTION_GROUPS.map((group) =>
+    group.filter(available),
+  ).filter((group) => group.length > 0);
+  const current = section && available(section) ? section : undefined;
 
   const summaries: Record<SettingsSection, ReactNode> = {
     collection: [
@@ -133,21 +121,26 @@ export function MoreScreen({
     ]
       .filter(Boolean)
       .join(" · "),
-    account: translate({ message: "Private collection recovery" }),
-    reminders: reminders.label,
-    device: translate({ message: "Theme, Scratchpad, and calendar" }),
-    behavior: unsavedBehavior ? (
-      <span className="settings-unsaved">
-        <Trans>Unsaved changes</Trans>
-      </span>
+    properties: unsaved.properties ? (
+      <UnsavedLabel />
+    ) : (
+      translate({ message: "Statuses, priorities, and custom fields" })
+    ),
+    behavior: unsaved.behavior ? (
+      <UnsavedLabel />
     ) : (
       translate({ message: "New tasks, repeating tasks, and archive" })
     ),
+    account: translate({ message: "Private collection recovery" }),
+    reminders: reminders.label,
+    device: translate({ message: "Language, theme, and calendar" }),
     about: translate`Version ${__APP_VERSION__}`,
   };
 
   const panels: Record<SettingsSection, () => ReactNode> = {
     collection: () => <CollectionSettings onImport={onImport} />,
+    properties: () => <TaskModelSettingsEditor part="properties" />,
+    behavior: () => <TaskModelSettingsEditor part="behavior" />,
     account: () =>
       privateAccount ? (
         <PrivateAccountSettings account={privateAccount} />
@@ -159,7 +152,6 @@ export function MoreScreen({
         onCalendarPreferencesChange={onCalendarPreferencesChange}
       />
     ),
-    behavior: () => <TaskModelSettingsEditor />,
     about: () => <AboutSettings install={install} />,
   };
 
@@ -187,6 +179,7 @@ export function MoreScreen({
     );
   }
 
+  const shown = current ?? "collection";
   return (
     <section
       className="screen settings-screen"
@@ -203,38 +196,38 @@ export function MoreScreen({
           aria-label={translate({ message: "Settings sections" })}
           className="settings-overview"
         >
-          <ul>
-            {sections.map((key) => {
-              const Icon = sectionIcons[key];
-              return (
-                <li key={key}>
-                  <button type="button" onClick={() => onSection(key)}>
-                    <Icon aria-hidden="true" size={20} strokeWidth={1.6} />
-                    <span>
-                      <strong>{settingsSectionLabels[key]}</strong>
-                      <small>{summaries[key]}</small>
-                    </span>
-                    <ChevronRight aria-hidden="true" size={18} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          {groups.map((group) => (
+            <ul key={group.join(" ")}>
+              {group.map((key) => {
+                const Icon = sectionIcons[key];
+                return (
+                  <li key={key}>
+                    <button type="button" onClick={() => onSection(key)}>
+                      <Icon aria-hidden="true" size={20} strokeWidth={1.6} />
+                      <span>
+                        <strong>{settingsSectionLabels[key]}</strong>
+                        <small>{summaries[key]}</small>
+                      </span>
+                      <ChevronRight aria-hidden="true" size={18} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ))}
         </nav>
       ) : (
         <div className="settings-layout">
           <SettingsIndex
-            current={current}
-            sections={sections}
-            unsavedBehavior={unsavedBehavior}
+            current={shown}
+            groups={groups}
+            unsaved={unsaved}
             onSection={(key) => onSection(key, true)}
           />
           <div className="settings-panels">
-            {sections.map((key) => (
-              <SettingsPanel key={key} section={key}>
-                {panels[key]()}
-              </SettingsPanel>
-            ))}
+            <SettingsPanel key={shown} section={shown}>
+              {panels[shown]()}
+            </SettingsPanel>
           </div>
         </div>
       )}
@@ -242,100 +235,75 @@ export function MoreScreen({
   );
 }
 
+function UnsavedLabel() {
+  return (
+    <span className="settings-unsaved">
+      <Trans>Unsaved changes</Trans>
+    </span>
+  );
+}
+
 function SettingsIndex({
   current,
-  sections,
-  unsavedBehavior,
+  groups,
+  unsaved,
   onSection,
 }: {
-  current?: SettingsSection;
-  sections: SettingsSection[];
-  unsavedBehavior: boolean;
+  current: SettingsSection;
+  groups: SettingsSection[][];
+  unsaved: { properties: boolean; behavior: boolean };
   onSection(section: SettingsSection): void;
 }) {
-  const [visible, setVisible] = useState<SettingsSection | undefined>(current);
-  const sectionKeys = sections.join(" ");
-  useEffect(() => {
-    const elements = sectionKeys.split(" ").flatMap((key) => {
-      const element = document.getElementById(
-        settingsSectionId(key as SettingsSection),
-      );
-      return element ? [{ key: key as SettingsSection, element }] : [];
-    });
-    const update = () =>
-      setVisible(
-        visibleSettingsSection(
-          elements.map(({ key, element }) => ({
-            key,
-            top: element.getBoundingClientRect().top,
-          })),
-          window.innerHeight,
-        ),
-      );
-    const observer =
-      typeof IntersectionObserver === "function"
-        ? new IntersectionObserver(update, { rootMargin: "0px 0px -70% 0px" })
-        : null;
-    for (const { element } of elements) observer?.observe(element);
-    document.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
-    return () => {
-      observer?.disconnect();
-      document.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
-    };
-  }, [sectionKeys]);
-  const active = visible ?? current ?? sections[0];
   return (
     <nav
       aria-label={translate({ message: "Settings sections" })}
       className="settings-index"
     >
-      <ul>
-        {sections.map((key) => (
-          <li key={key}>
-            <a
-              aria-current={active === key ? "location" : undefined}
-              href={`#${settingsSectionId(key)}`}
-              onClick={(event) => {
-                event.preventDefault();
-                setVisible(key);
-                onSection(key);
-                // Navigation resets scroll; return to the section even when
-                // the route already names it.
-                requestAnimationFrame(() =>
-                  document
-                    .getElementById(settingsSectionId(key))
-                    ?.scrollIntoView?.({ block: "start" }),
-                );
-              }}
-            >
-              {settingsSectionLabels[key]}
-              {key === "behavior" && unsavedBehavior ? (
-                <span
-                  className="settings-unsaved-dot"
-                  title={translate({ message: "Unsaved changes" })}
+      {groups.map((group) => (
+        <ul key={group.join(" ")}>
+          {group.map((key) => {
+            const Icon = sectionIcons[key];
+            const changed =
+              (key === "properties" || key === "behavior") && unsaved[key];
+            return (
+              <li key={key}>
+                <button
+                  aria-current={current === key ? "page" : undefined}
+                  type="button"
+                  onClick={() => onSection(key)}
                 >
-                  <span className="visually-hidden">
-                    {" "}
-                    <Trans>(unsaved changes)</Trans>
-                  </span>
-                </span>
-              ) : null}
-            </a>
-          </li>
-        ))}
-      </ul>
+                  <Icon aria-hidden="true" size={17} strokeWidth={1.7} />
+                  <span>{settingsSectionLabels[key]}</span>
+                  {changed ? (
+                    <span
+                      className="settings-unsaved-dot"
+                      title={translate({ message: "Unsaved changes" })}
+                    >
+                      <span className="visually-hidden">
+                        {" "}
+                        <Trans>(unsaved changes)</Trans>
+                      </span>
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ))}
     </nav>
   );
 }
 
 const sectionScopes: Partial<Record<SettingsSection, string>> = {
-  get device() {
-    return translate({ message: "This device only" });
+  get properties() {
+    return translate({ message: "Shared with everyone using this collection" });
   },
   get behavior() {
     return translate({ message: "Shared with everyone using this collection" });
+  },
+  get device() {
+    return translate({ message: "This device only" });
   },
 };
 
@@ -360,7 +328,7 @@ function SettingsPanel({
       {titled ? (
         <header className="settings-section-header">
           <h2 id={`${id}-title`}>{settingsSectionLabels[section]}</h2>
-          {scope ? <span className="settings-scope">{scope}</span> : null}
+          {scope ? <p className="settings-scope">{scope}</p> : null}
         </header>
       ) : scope ? (
         <p className="settings-scope">{scope}</p>
@@ -468,7 +436,18 @@ function CollectionSettings({ onImport }: { onImport?: () => void }) {
         </div>
       </div>
       {onImport && !Capacitor.isNativePlatform() && (
-        <div className="settings-actions">
+        <div className="setting-row settings-import-row">
+          <div className="setting-row-text">
+            <span>
+              <Trans>Import tasks</Trans>
+            </span>
+            <small>
+              <Trans>
+                Copy your active Todoist tasks into this collection. Todoist
+                itself is not changed.
+              </Trans>
+            </small>
+          </div>
           <button className="secondary-action" type="button" onClick={onImport}>
             <Trans>Import from Todoist</Trans>
           </button>
@@ -734,17 +713,11 @@ function DeviceSettings({
 }) {
   return (
     <div className="device-settings">
-      <p className="section-copy">
-        <Trans>
-          These choices apply as soon as you make them and don’t change the
-          collection.
-        </Trans>
-      </p>
-      <LanguageSettings />
       <div className="settings-group">
         <h3>
-          <Trans>Appearance</Trans>
+          <Trans>Language and appearance</Trans>
         </h3>
+        <LanguageSettings />
         <div className="setting-row">
           <span>
             <Trans>Color theme</Trans>
@@ -956,7 +929,10 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
         </h3>
         <details className="help-topic">
           <summary>
-            <Trans>Does TaskNotes work offline?</Trans>
+            <span>
+              <Trans>Does TaskNotes work offline?</Trans>
+            </span>
+            <ChevronDown aria-hidden="true" size={17} />
           </summary>
           <p>
             <Trans>
@@ -968,7 +944,10 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
         </details>
         <details className="help-topic">
           <summary>
-            <Trans>Can I change collections later?</Trans>
+            <span>
+              <Trans>Can I change collections later?</Trans>
+            </span>
+            <ChevronDown aria-hidden="true" size={17} />
           </summary>
           <p>
             <Trans>

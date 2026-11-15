@@ -8,8 +8,11 @@ import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { TaskModelSettingsEditor } from "./task-model-settings";
 
+type Part = "properties" | "behavior";
+
 async function renderEditor(
   prepare?: (fixture: Awaited<ReturnType<typeof nextTaskFixture>>) => void,
+  part: Part = "behavior",
 ) {
   const fixture = await nextTaskFixture();
   const { repository } = fixture;
@@ -17,15 +20,17 @@ async function renderEditor(
   await repository.initialize();
   const journal = new MemoryMutationJournal();
   // Leaving Settings unmounts the editor; the collection stays open.
-  const tree = (editor: boolean) => (
+  const tree = (editor: boolean, shown: Part = part) => (
     <RepositoryProvider mutationJournal={journal} repository={repository}>
-      {editor ? <TaskModelSettingsEditor /> : null}
+      {editor ? <TaskModelSettingsEditor key={shown} part={shown} /> : null}
     </RepositoryProvider>
   );
   const view = render(tree(true));
   await waitFor(() =>
     expect(
-      screen.getByRole("combobox", { name: "Default priority" }),
+      part === "behavior"
+        ? screen.getByRole("combobox", { name: "Default priority" })
+        : screen.getByRole("button", { name: "Add status" }),
     ).toBeEnabled(),
   );
   return { view, tree, repository };
@@ -47,7 +52,7 @@ describe("TaskModelSettingsEditor", () => {
         mutationJournal={new MemoryMutationJournal()}
         repository={repository}
       >
-        <TaskModelSettingsEditor />
+        <TaskModelSettingsEditor part="behavior" />
       </RepositoryProvider>,
     );
 
@@ -130,7 +135,10 @@ describe("TaskModelSettingsEditor", () => {
   });
 
   it("adds a status and a custom field to the collection", async () => {
-    const { repository } = await renderEditor();
+    const { repository, view, tree } = await renderEditor(
+      undefined,
+      "properties",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Add status" }));
     const names = screen.getAllByRole("textbox", { name: "Status name" });
     fireEvent.change(names.at(-1)!, { target: { value: "Waiting on reply" } });
@@ -156,14 +164,45 @@ describe("TaskModelSettingsEditor", () => {
       expect.objectContaining({ key: "client", displayName: "Client" }),
     );
     // The saved status is now offered as a default for new tasks.
+    view.rerender(tree(true, "behavior"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "Default status" }),
+      ).toBeEnabled(),
+    );
     fireEvent.click(screen.getByRole("combobox", { name: "Default status" }));
     expect(
       screen.getByRole("option", { name: "Waiting on reply" }),
     ).toBeVisible();
   });
 
+  it("carries an unsaved change between the two sections and saves it from either", async () => {
+    const { repository, view, tree } = await renderEditor(
+      undefined,
+      "properties",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add status" }));
+    fireEvent.change(
+      screen.getAllByRole("textbox", { name: "Status name" }).at(-1)!,
+      { target: { value: "Blocked" } },
+    );
+    view.rerender(tree(true, "behavior"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Save changes" }),
+      ).toBeEnabled(),
+    );
+    save();
+    await waitFor(() =>
+      expect(screen.getByText("Saved with the collection.")).toBeVisible(),
+    );
+    expect(
+      (await repository.taskConfiguration()).statuses.map(({ label }) => label),
+    ).toContain("Blocked");
+  });
+
   it("asks for a name before saving a new priority", async () => {
-    const { repository } = await renderEditor();
+    const { repository } = await renderEditor(undefined, "properties");
     const before = await repository.taskConfiguration();
     fireEvent.click(screen.getByRole("button", { name: "Add priority" }));
     save();
@@ -177,7 +216,7 @@ describe("TaskModelSettingsEditor", () => {
     const { repository } = await renderEditor(({ replica }) => {
       seedTask(replica, { title: "Still here", status: "in-progress" });
       seedTask(replica, { title: "And here", status: "in-progress" });
-    });
+    }, "properties");
     const configuration = await repository.taskConfiguration();
     const label = (value: string) =>
       configuration.statuses.find((status) => status.value === value)!.label;

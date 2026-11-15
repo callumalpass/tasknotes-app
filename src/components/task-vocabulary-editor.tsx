@@ -120,12 +120,14 @@ function OptionRows<Entry extends Named>({
                   if (isDefault) onDefault(value);
                 }}
               />
-              <code>{entry.value}</code>
-              {isDefault ? (
-                <small>
-                  <Trans>Default</Trans>
-                </small>
-              ) : null}
+              <span className="vocabulary-meta">
+                <code>{entry.value}</code>
+                {isDefault ? (
+                  <small>
+                    <Trans>Default</Trans>
+                  </small>
+                ) : null}
+              </span>
             </span>
             {extra?.(entry, change)}
             <span className="vocabulary-actions">

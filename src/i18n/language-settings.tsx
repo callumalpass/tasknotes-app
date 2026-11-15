@@ -7,13 +7,10 @@ export function LanguageSettings() {
   const { t } = useLingui();
   const [failed, setFailed] = useState(false);
   return (
-    <div className="settings-group">
-      <h3>
-        <Trans>Language</Trans>
-      </h3>
+    <>
       <div className="setting-row language-setting-row">
         <span>
-          <Trans>App language</Trans>
+          <Trans>Language</Trans>
         </span>
         <div className="settings-select-shell">
           <LanguagePicker
@@ -33,6 +30,6 @@ export function LanguageSettings() {
           </Trans>
         </p>
       ) : null}
-    </div>
+    </>
   );
 }

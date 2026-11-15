@@ -255,24 +255,33 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
-- Settings groups choices by who they affect: Collection, Account (when a
-  private account exists), Reminders, On this device, Collection behavior
-  (shared through the collection), and About & help. Device and shared
-  sections name their scope. Phones show the sections as a list, each opening
-  as its own page at `/more/<section>`; wider screens show every section with
-  a section index, sticky beside the panels from 1100px. Collection leads with
-  one card holding the collection name, connection state, counts, Refresh now,
-  and Change collection. How tasks are stored, the location, the mdbase format,
+- Settings groups choices by who they affect, in three clusters: the shared
+  collection (Collection, Task properties, Workflow), this person and device
+  (Reminders, On this device, and Account when a private account exists), and
+  About & help. Every screen size shows one section at a time. Phones list
+  the clusters as grouped rows, each opening as its own page at
+  `/more/<section>`; wider screens keep a section index beside the open
+  section, as wrapping tabs below 1100px and a sticky column with hairlines
+  between clusters from 1100px. A section names its scope once, in a plain
+  muted sentence under its title, when it is shared or device-only.
+  Collection leads with one card holding the collection name, connection
+  state, counts, Refresh now, and Change collection, then Import tasks as an
+  ordinary setting row. How tasks are stored, the location, the mdbase format,
   a link to manage collections in mdbase Connect, and refresh diagnostics sit
   in a disclosure that remembers its state. About & help says TaskNotes is one
   of the mdbase apps and links out to them. The iOS app hides both links,
   because both pages lead to mdbase's paid plans.
-  Immediately applied on/off settings use switches. Collection behavior is an
-  explicitly saved form grouped as New tasks, Repeating tasks, Archive, and
-  Links and time tracking; a field appears only when the choice that enables it
-  is on. Its unsaved draft survives leaving Settings, is marked in the section
-  index or list, and a sticky bar offers Discard and Save changes. Install
-  appears once as a dismissible banner and remains under About. Settings has
+  On this device uses label-beside-control rows on every width except the
+  very narrowest. Immediately applied on/off settings use switches. The
+  collection's shared settings are one explicitly saved draft edited in two
+  sections: Task properties (statuses, priorities, custom fields) and Workflow
+  (New tasks, Repeating tasks, Archive, and Links and time tracking). A field
+  appears only when the choice that enables it is on. The draft survives
+  leaving Settings, each section with unsaved changes is marked in the index
+  or list, and either section's sticky bar offers Discard and Save changes for
+  the whole draft. Status and priority rows keep their name fields one width,
+  with the stored value and Default tag in a fixed column. Install appears
+  once as a dismissible banner and remains under About. Settings has
   no capture control of its own.
 - Projects shows a project count beside a compact native "Jump to project"
   picker rather than a full-width field. A sidebar project opens its own page,
