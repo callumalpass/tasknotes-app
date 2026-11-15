@@ -19,6 +19,8 @@ const hash = (bytes, algorithm = "sha256") =>
     .update(bytes)
     .digest(algorithm === "sha512" ? "base64" : "hex");
 const json = async (path) => JSON.parse(await readFile(path, "utf8"));
+// The shared UI pin is an exact npm version, beta (0.1.0-beta.N) or plain (0.1.0 on).
+export const exactUiVersion = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 export const digestNames = ["TASKNOTES_TRUST_ASSET_SHA256"];
 export function protectedHashes(env = process.env) {
   assert.match(
@@ -240,7 +242,7 @@ export async function loadOriginals({
   }
   const pkg = await json(join(repoRoot, "package.json")),
     version = pkg.dependencies["@mdbase-dev/ui"];
-  assert.match(version, /^\d+\.\d+\.\d+-[\w.]+$/);
+  assert.match(version, exactUiVersion);
   const uiEntry = lock
     .split(`\n  '@mdbase-dev/ui@${version}':\n`)[1]
     ?.split(/\n {2}[^ ]/)[0];
