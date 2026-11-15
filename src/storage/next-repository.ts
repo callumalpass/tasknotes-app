@@ -836,6 +836,8 @@ export class NextTaskRepository implements TaskRepository {
       const before = new Map(
         [...this.cache].map(([id, value]) => [id, JSON.stringify(value.task)]),
       );
+      const compared = this.hasLoadedIndex;
+      const model = this.modelSignature();
       await this.indexLoading;
       signal.throwIfAborted();
       if (
@@ -855,7 +857,15 @@ export class NextTaskRepository implements TaskRepository {
       const removed = [...before.keys()].filter(
         (id) => !this.cache.has(id),
       ).length;
-      this.emit("data");
+      // The change watch, not a refresh, retires READ cuts when the collection
+      // moves. A refresh that reread the same tasks and model, or that loaded
+      // the task index for the first time, leaves reads in flight current.
+      // Retiring them restarted the view discovery pass, many round trips on a
+      // relayed collection, at the post-start and every periodic refresh
+      // (#436). Screens still hear "data" so they reload.
+      if ((compared && (changed || removed)) || this.modelSignature() !== model)
+        this.emit("data");
+      else this.notify("data");
       return {
         scanned: this.cache.size,
         changed,
@@ -3684,8 +3694,23 @@ export class NextTaskRepository implements TaskRepository {
   }
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") this.invalidateDataGeneration();
+    this.notify(kind);
+  }
+  /** Tells listeners without retiring the current data generation. */
+  private notify(kind: RepositoryChange["kind"]) {
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
+  }
+  /** The task model a refresh rereads, to tell whether it changed. */
+  private modelSignature(): string {
+    return JSON.stringify([
+      this.settingsType,
+      this.providers.map((provider) => [
+        provider.typeName,
+        provider.sourcePath,
+        provider.model.configuration(),
+      ]),
+    ]);
   }
 }
 

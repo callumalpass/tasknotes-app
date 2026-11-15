@@ -4,7 +4,11 @@ import type {
   AppBasesDescriptor,
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import {
+  attachTaskNotes,
+  nextTaskFixture,
+  seedTask,
+} from "../test/next-task-fixture";
 import type { TaskViewExecution } from "../domain/view";
 import * as timezone from "../domain/runtime-timezone";
 
@@ -619,10 +623,10 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
   it("rereads discovery at once when a local data event retires its cut", async () => {
     const f = await fixture();
     f.list.mockClear();
-    // A refresh finishing during discovery (as the post-start refresh does)
-    // emits a data event, which retires the cut this discovery was reading.
+    // A local write finishing during discovery emits a data event, which
+    // retires the cut this discovery was reading.
     f.list.mockImplementationOnce(async () => {
-      await f.repository.refresh();
+      await f.repository.create({ title: "Written during discovery" });
       return {
         kind: "success" as const,
         views: [descriptor],
@@ -631,19 +635,100 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         continuation: null,
       };
     });
-    const data = vi.fn();
+    let retired = Number.NaN;
     f.repository.subscribe((change) => {
-      if (change?.kind === "data") data();
+      if (change?.kind === "data") retired = performance.now();
     });
-    const started = performance.now();
     const documents = await f.repository.listViews();
-    const elapsed = performance.now() - started;
-    expect(data).toHaveBeenCalled();
+    const elapsed = performance.now() - retired;
     expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
     expect(f.list).toHaveBeenCalledTimes(2);
     // The new generation already exists; the 250 ms refusal pacing would
     // only delay the first view.
     expect(elapsed).toBeLessThan(240);
+  });
+  it("a refresh that rereads an unchanged collection does not restart discovery", async () => {
+    const f = await fixture();
+    // Load the task index first: this is the periodic refresh case.
+    await f.repository.refresh();
+    const pages = 13;
+    let refreshed = false;
+    f.list.mockReset().mockImplementation(async ({ continuation }) => {
+      const page = continuation ? continuation[0]! + 1 : 1;
+      // The post-start and periodic refreshes land while discovery pages
+      // through a relayed collection (#436).
+      if (page === 2 && !refreshed) {
+        refreshed = true;
+        await f.repository.refresh();
+      }
+      return {
+        kind: "success" as const,
+        views: page === pages ? [descriptor] : [],
+        clock,
+        collectionRevision: revision,
+        continuation: page === pages ? null : Uint8Array.of(page),
+      };
+    });
+    const data = vi.fn();
+    f.repository.subscribe((change) => {
+      if (change?.kind === "data") data();
+    });
+    const documents = await f.repository.listViews();
+    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    // Screens still hear that the refresh finished...
+    expect(data).toHaveBeenCalled();
+    // ...but the pass in flight was not retired and read again.
+    expect(f.list).toHaveBeenCalledTimes(pages);
+  });
+  it("the first task index load does not restart discovery either", async () => {
+    const f = await fixture();
+    const reloaded = await attachTaskNotes(f.replica);
+    fixtures.push(reloaded);
+    const list = vi.spyOn(reloaded.client, "listAppBasesViews");
+    let refreshed = false;
+    list.mockImplementation(async ({ continuation }) => {
+      const page = continuation ? continuation[0]! + 1 : 1;
+      // The post-start refresh loads the deferred index for the first time.
+      if (page === 2 && !refreshed) {
+        refreshed = true;
+        await reloaded.repository.refresh();
+      }
+      return {
+        kind: "success" as const,
+        views: page === 3 ? [descriptor] : [],
+        clock,
+        collectionRevision: revision,
+        continuation: page === 3 ? null : Uint8Array.of(page),
+      };
+    });
+    await reloaded.repository.initialize({ deferTaskIndex: true });
+    const documents = await reloaded.repository.listViews();
+    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    expect(list).toHaveBeenCalledTimes(3);
+  });
+  it("a refresh that finds a changed task still retires discovery in flight", async () => {
+    const f = await fixture();
+    await f.repository.refresh();
+    let seeded = false;
+    f.list.mockReset().mockImplementation(async ({ continuation }) => {
+      const page = continuation ? continuation[0]! + 1 : 1;
+      if (page === 2 && !seeded) {
+        seeded = true;
+        seedTask(f.replica, { title: "Written by another app" });
+        await f.repository.refresh();
+      }
+      return {
+        kind: "success" as const,
+        views: page === 3 ? [descriptor] : [],
+        clock,
+        collectionRevision: revision,
+        continuation: page === 3 ? null : Uint8Array.of(page),
+      };
+    });
+    const documents = await f.repository.listViews();
+    expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    // Two pages of the retired pass, then a full pass of three.
+    expect(f.list).toHaveBeenCalledTimes(5);
   });
   it("propagates native refusal and pre-cancellation without fallback or hydration", async () => {
     const f = await fixture();
