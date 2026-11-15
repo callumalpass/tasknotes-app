@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 import { verifyServedBytes } from "../lib/native-publish-bytes.mjs";
 import { assertTrustedHeaders } from "../lib/native-publish-hosting.mjs";
 export const headersPolicy =
-  "/*\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()\n\n/.well-known/mdbase-app.json\n  Cache-Control: no-store\n\n/service-worker.js\n  Cache-Control: no-cache\n\n/offline-assets.json\n  Cache-Control: no-cache\n\n/manifest.webmanifest\n  Cache-Control: no-cache\n\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n";
+  "/*\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()\n\n/.well-known/mdbase-app.json\n  Cache-Control: no-store\n\n/oauth/todoist-client.json\n  Cache-Control: no-store\n\n/import/todoist/callback\n  Cache-Control: no-store\n\n/service-worker.js\n  Cache-Control: no-cache\n\n/offline-assets.json\n  Cache-Control: no-cache\n\n/manifest.webmanifest\n  Cache-Control: no-cache\n\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n";
 export const redirectsPolicy =
-  "/auth/mdbase/callback / 200\n/auth/mdbase/callback/ / 200\n/more / 200\n/more/* / 200\n/scratchpad / 200\n/scratchpad/ / 200\n/search / 200\n/search/ / 200\n/task/* / 200\n/views / 200\n/views/* / 200\n";
+  "/auth/mdbase/callback / 200\n/auth/mdbase/callback/ / 200\n/more / 200\n/import / 200\n/import/ / 200\n/import/todoist/callback / 200\n/more/* / 200\n/scratchpad / 200\n/scratchpad/ / 200\n/search / 200\n/search/ / 200\n/task/* / 200\n/views / 200\n/views/* / 200\n";
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const controlNames = new Set(["_headers", "_redirects", "_routes.json"]);
 const isControl = (path) => controlNames.has(path.split("/").at(-1));
