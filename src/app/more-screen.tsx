@@ -512,7 +512,8 @@ function CollectionSettings({ onImport }: { onImport?: () => void }) {
 type ReminderSettingsState = ReturnType<typeof useReminderSettings>;
 
 function useReminderSettings() {
-  const { reauthorizeCurrentCollection } = useCollectionGate();
+  const { collectionUi, reauthorizeCurrentCollection } = useCollectionGate();
+  const mdbase = collectionUi?.mdbase;
   const { reminderAuthority, repository } = useRepository();
   const delivers = reminderAuthority !== "none";
   const [status, setStatus] = useState<MdbaseNotificationStatus>({
@@ -567,6 +568,16 @@ function useReminderSettings() {
       void listener?.then((handle) => handle?.remove()).catch(() => undefined);
     };
   }, [delivers]);
+
+  // Approval finishes in Connect's popup and grants timers to the open
+  // connection in place: recheck when the SDK reports it, not only on reload.
+  const awaitingApproval = status.state === "reauthorization_required";
+  useEffect(() => {
+    if (!delivers || !awaitingApproval || !mdbase) return;
+    return mdbase.subscribe(() => {
+      if (!busyRef.current) setRevision((value) => value + 1);
+    });
+  }, [awaitingApproval, delivers, mdbase]);
 
   const retry = useCallback(() => {
     if (busyRef.current) return;

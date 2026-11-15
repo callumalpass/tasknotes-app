@@ -26,6 +26,9 @@ const fixture = vi.hoisted(() => ({
   summaryError: null as Error | null,
   resume: null as ((event: { isActive: boolean }) => void) | null,
   remove: vi.fn(async () => undefined),
+  collectionUi: null as null | {
+    mdbase: { subscribe(listener: () => void): () => void };
+  },
 }));
 vi.mock("../native/mdbase-notifications", () => ({
   mdbaseNotifications: {
@@ -67,7 +70,7 @@ vi.mock("./repository-context", () => ({
 }));
 vi.mock("./collection-context", () => ({
   useCollectionGate: () => ({
-    collectionUi: null,
+    collectionUi: fixture.collectionUi,
     changeCollection: vi.fn(),
     reauthorizeCurrentCollection: fixture.reauthorize,
   }),
@@ -102,6 +105,7 @@ beforeEach(() => {
   fixture.summaryError = null;
   fixture.resume = null;
   fixture.remove.mockClear();
+  fixture.collectionUi = null;
   window.localStorage.clear();
   // jsdom has no layout, so it does not implement scrollIntoView.
   Element.prototype.scrollIntoView = () => undefined;
@@ -202,6 +206,37 @@ it("delegates notification access review to the original SDK collection gate", a
   );
   expect(fixture.reauthorize).toHaveBeenCalledOnce();
   expect(fixture.enable).not.toHaveBeenCalled();
+});
+
+it("rechecks reminders when approval finishes without a reload", async () => {
+  const listeners = new Set<() => void>();
+  fixture.collectionUi = {
+    mdbase: {
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    },
+  };
+  fixture.status.mockResolvedValue({
+    state: "reauthorization_required",
+    optedIn: false,
+  });
+  render(settings("reminders"));
+  await screen.findByRole("button", { name: "Review notification access" });
+  expect(listeners.size).toBe(1);
+
+  // Connect's popup granted timers to the open connection.
+  fixture.status.mockResolvedValue({ state: "off", optedIn: false });
+  act(() => listeners.forEach((listener) => listener()));
+  expect(
+    await screen.findByRole("switch", { name: "Task reminders" }),
+  ).not.toBeChecked();
+  expect(
+    screen.queryByRole("button", { name: "Review notification access" }),
+  ).toBeNull();
+  // Once approved, ordinary SDK updates no longer recheck.
+  expect(listeners.size).toBe(0);
 });
 
 it("does not load or authorize reminders without delivery authority", () => {
