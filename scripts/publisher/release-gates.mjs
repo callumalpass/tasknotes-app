@@ -1,3 +1,4 @@
+import { sdkVersionAtLeast } from "./sdk-version.mjs";
 // Workflow-owned #1223 admission. Smoke does not qualify Cloud-copy setup or wasm.
 export const minimumSdkCommit = "c42d004e3e4985df2cf54829c693f0e864972d2e";
 // Enabled only after distinct Cloud-copy upgraded-plugin-type completion/reopen
@@ -14,10 +15,9 @@ export async function assertSdkFloor(
   pin,
   { fetchImpl = fetch, token = process.env.GITHUB_TOKEN } = {},
 ) {
-  const version = /^0\.1\.0-beta\.(\d+)$/.exec(pin.version ?? "");
+  // Every plain SDK version (0.1.0 and later) is above the beta.158 floor.
   if (
-    !version ||
-    Number(version[1]) < 158 ||
+    !sdkVersionAtLeast(pin.version, "0.1.0-beta.158") ||
     !/^[a-f0-9]{40}$/.test(pin.sourceCommit ?? "")
   )
     throw Error("TaskNotes #1223 requires pinned beta.158 or later");

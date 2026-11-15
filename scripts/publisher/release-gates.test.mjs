@@ -18,7 +18,17 @@ it("requires actual beta.158+ pinned authenticated producer to contain the setup
     return Response.json({ status: "ahead" });
   };
   await assertSdkFloor(pin, { fetchImpl });
-  for (const version of ["0.1.0-beta.157", "latest", "^0.1.0-beta.158"])
+  for (const version of ["0.1.0-beta.212", "0.1.0", "0.1.1", "0.2.0", "1.0.0"])
+    await assertSdkFloor({ ...pin, version }, { fetchImpl });
+  for (const version of [
+    "0.1.0-beta.157",
+    "latest",
+    "^0.1.0-beta.158",
+    "^0.1.0",
+    "0.0.9",
+    "0.1.0-rc.1",
+    "00.1.0",
+  ])
     await assert.rejects(assertSdkFloor({ ...pin, version }, { fetchImpl }));
   for (const status of ["behind", "diverged"])
     await assert.rejects(

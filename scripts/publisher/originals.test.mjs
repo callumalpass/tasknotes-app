@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { it } from "node:test";
-import { loadOriginals, productionPin } from "./originals.mjs";
+import { exactUiVersion, loadOriginals, productionPin } from "./originals.mjs";
 import { prepareInstall } from "./install-inputs.mjs";
 const root = new URL("../../", import.meta.url).pathname;
 it("authenticates production npm provenance, protected raw trust and ALL installed frozen originals", async () => {
@@ -107,4 +107,10 @@ it("derives frozen staging SDK and all UI peer resolutions without touching othe
   } finally {
     await rm(temp, { recursive: true, force: true });
   }
+});
+it("accepts beta and plain exact UI pins only", () => {
+  for (const version of ["0.1.0-beta.166", "0.1.0", "0.2.1"])
+    assert.match(version, exactUiVersion);
+  for (const version of ["^0.1.0", "latest", "0.1", "0.1.0 "])
+    assert.doesNotMatch(version, exactUiVersion);
 });

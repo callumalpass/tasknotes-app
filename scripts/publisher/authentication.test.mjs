@@ -422,3 +422,89 @@ for (const name of ["sdk-staging.tgz", "sdk-staging.tgz.sigstore.json"])
     );
     assert.deepEqual(seen, [data.metadata]);
   });
+// The SDK GitHub release is a prerelease for a beta pin and a full release for
+// a plain version; anything else is refused before any asset is read.
+const releaseFor = (version, prerelease) => {
+  const tag = "sdk-v" + version,
+    bytes = Buffer.from("staging"),
+    proof = Buffer.from("{}");
+  const assets = [
+    ["sdk-staging.tgz", bytes],
+    ["sdk-staging.tgz.sigstore.json", proof],
+  ].map(([name, content], index) => ({
+    id: 100 + index,
+    name,
+    digest: "sha256:" + createHash("sha256").update(content).digest("hex"),
+    browser_download_url: `https://github.com/${repository}/releases/download/${tag}/${name}`,
+  }));
+  const metadata = `https://api.github.com/repos/${repository}/releases/tags/${tag}`;
+  const release = { tag_name: tag, prerelease, draft: false, assets };
+  const fetchImpl = async (url) => {
+    if (url === metadata) return Response.json(release);
+    const asset = assets.find(
+      (asset) =>
+        url ===
+        `https://api.github.com/repos/${repository}/releases/assets/${asset.id}`,
+    );
+    assert.ok(asset, "only the exact asset endpoint may be requested");
+    return new Response(asset.id === 100 ? bytes : proof);
+  };
+  return { bytes, assets, fetchImpl };
+};
+for (const [version, prerelease] of [
+  ["0.1.0-beta.212", true],
+  ["0.1.0", false],
+  ["0.2.3", false],
+])
+  it(`requires the exact release kind for SDK ${version}`, async () => {
+    const accepted = releaseFor(version, prerelease);
+    const result = await stagingArchive(
+      { ...pin, version },
+      { fetchImpl: accepted.fetchImpl, token: "t0", run: () => {} },
+    );
+    assert.deepEqual(result.bytes, accepted.bytes);
+    assert.deepEqual(
+      await archiveBytes(
+        accepted.assets[0].browser_download_url,
+        accepted.fetchImpl,
+        "t0",
+      ),
+      accepted.bytes,
+    );
+    const refused = releaseFor(version, !prerelease);
+    const message = prerelease
+      ? /exact SDK prerelease required/
+      : /exact SDK release required/;
+    await assert.rejects(
+      stagingArchive(
+        { ...pin, version },
+        { fetchImpl: refused.fetchImpl, token: "t0", run: () => {} },
+      ),
+      message,
+    );
+    await assert.rejects(
+      archiveBytes(
+        refused.assets[0].browser_download_url,
+        refused.fetchImpl,
+        "t0",
+      ),
+      message,
+    );
+  });
+for (const version of ["0.1.0-rc.1", "0.0.9", "01.0.0", "latest"])
+  it(`refuses an SDK release that is not an exact pin (${version})`, async () => {
+    for (const prerelease of [true, false]) {
+      const { fetchImpl, assets } = releaseFor(version, prerelease);
+      await assert.rejects(
+        stagingArchive(
+          { ...pin, version },
+          { fetchImpl, token: "t0", run: () => {} },
+        ),
+        /SDK authentication refusal: exact SDK/,
+      );
+      await assert.rejects(
+        archiveBytes(assets[0].browser_download_url, fetchImpl, "t0"),
+        /SDK authentication refusal: exact SDK/,
+      );
+    }
+  });
