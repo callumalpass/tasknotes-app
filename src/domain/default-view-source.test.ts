@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import {
+  basesProperty,
   defaultNavigationViewKeys,
   taskNotesDefaultBaseSources,
   newViewSourcePath,
@@ -56,17 +57,17 @@ describe("TaskNotes starter views", () => {
       'file.hasTag("retired") != true',
     );
     expect(today.views[0].order).toEqual([
-      'note["Task title"]',
-      'note["Start day"]',
-      'note["Due day"]',
-      'note["Project links"]',
-      'note["tags"]',
+      "Task title",
+      "Start day",
+      "Due day",
+      "Project links",
+      "tags",
     ]);
     expect(today.views[0].sort[0]).toEqual({
-      property: 'note["Rank key"]',
+      property: "Rank key",
       direction: "DESC",
     });
-    expect(today.properties['note["Rank key"]']).toEqual({
+    expect(today.properties["Rank key"]).toEqual({
       displayName: "Manual order",
       hidden: true,
     });
@@ -74,6 +75,14 @@ describe("TaskNotes starter views", () => {
       'file.hasTag("retired") == true',
     ]);
     expect(JSON.stringify(sources)).not.toContain('note[\\"status\\"]');
+    const projects = parse(sources[4].document).views[0];
+    expect(projects.groupBy).toEqual({
+      property: "Project links",
+      direction: "ASC",
+    });
+    expect(projects.filters.and).toContain(
+      'note["Project links"].isEmpty() == false',
+    );
     expect(configuration).toEqual(before);
   });
 
@@ -454,5 +463,13 @@ describe("starterViewKind", () => {
         source: { path: "Work/today.base" },
       } as typeof view),
     ).toBeNull();
+  });
+});
+
+describe("basesProperty", () => {
+  it("writes note fields as Obsidian property ids, not expressions", () => {
+    expect(basesProperty("status")).toBe("status");
+    expect(basesProperty("Task title")).toBe("Task title");
+    expect(basesProperty("file.name")).toBe("note.file.name");
   });
 });

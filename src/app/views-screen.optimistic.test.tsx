@@ -822,9 +822,10 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
     ).toHaveAttribute("aria-pressed", "true"),
   );
   expect(updateViewSource).toHaveBeenCalledOnce();
-  expect(source.document.indexOf("note.tasknotes_manual_order")).toBeLessThan(
-    source.document.indexOf("note.due"),
-  );
+  expect(source.document).toContain("property: tasknotes_manual_order");
+  expect(
+    source.document.indexOf("property: tasknotes_manual_order"),
+  ).toBeLessThan(source.document.indexOf("note.due"));
   expect(source.document.indexOf("note.due")).toBeLessThan(
     source.document.indexOf("note.priority"),
   );
@@ -839,7 +840,7 @@ it("toggles manual order at the top while preserving fallback sorts", async () =
   fireEvent.click(screen.getByRole("button", { name: "Manual order" }));
   await waitFor(() => expect(updateViewSource).toHaveBeenCalledTimes(2));
   expect(updateViewSource).toHaveBeenCalledTimes(2);
-  expect(source.document).not.toContain("note.tasknotes_manual_order");
+  expect(source.document).not.toContain("tasknotes_manual_order");
   expect(source.document.indexOf("note.due")).toBeLessThan(
     source.document.indexOf("note.priority"),
   );
@@ -958,7 +959,7 @@ it("offers manual order from a writable kanban view", async () => {
   await startReordering();
 
   await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
-  expect(source.document).toContain("note.tasknotes_manual_order");
+  expect(source.document).toContain("property: tasknotes_manual_order");
 });
 
 it.each(["pointer", "keyboard"])(
