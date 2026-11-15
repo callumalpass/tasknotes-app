@@ -29,6 +29,7 @@
     "build:e2e": "pnpm i18n:check && pnpm manifest && pnpm manifest:validate:local && tsc -b && vite build --mode e2e && node scripts/write-static-routes.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
+    "typecheck:staging-alias": "node scripts/ci/staging-alias-typecheck.mjs",
     "lint": "eslint .",
     "test": "vitest run",
     "test:release": "node --test scripts/*.node-test.mjs && pnpm test:publisher",
