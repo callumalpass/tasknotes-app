@@ -544,7 +544,7 @@ test("supports demo attachments and collection settings", async ({ page }) => {
   await openNavigationItem(page, "Settings");
   await page
     .getByRole("navigation", { name: "Settings sections" })
-    .getByText("Collection behavior", { exact: true })
+    .getByText("Workflow", { exact: true })
     .click();
   await page.getByRole("combobox", { name: "Default priority" }).click();
   await page.getByRole("option", { name: "High", exact: true }).click();
@@ -563,7 +563,7 @@ test("a status and a custom field added in Settings reach the task editor", asyn
   await openNavigationItem(page, "Settings");
   await page
     .getByRole("navigation", { name: "Settings sections" })
-    .getByText("Collection behavior", { exact: true })
+    .getByText("Task properties", { exact: true })
     .click();
 
   await page.getByRole("button", { name: "Add status", exact: true }).click();

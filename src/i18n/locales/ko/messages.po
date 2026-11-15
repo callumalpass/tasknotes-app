@@ -1123,10 +1123,6 @@ msgstr "앱 언어"
 msgid "App update"
 msgstr "앱 업데이트"
 
-#: src/app/more-screen.tsx
-msgid "Appearance"
-msgstr "모양"
-
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
 msgstr "규칙 적용"
@@ -1634,11 +1630,6 @@ msgstr "컬렉션"
 msgid "Collection access is unavailable."
 msgstr "컬렉션에 접근할 수 없습니다."
 
-#: src/app/settings-sections.ts
-#: src/components/task-model-settings.tsx
-msgid "Collection behavior"
-msgstr "컬렉션 동작"
-
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
 msgstr "컬렉션 연결"
@@ -1915,6 +1906,10 @@ msgstr "작업 링크 복사"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "제목 복사"
+
+#: src/app/more-screen.tsx
+msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
+msgstr "Todoist의 진행 중인 작업을 이 컬렉션으로 복사합니다. Todoist 자체는 변경되지 않습니다."
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
@@ -3050,6 +3045,10 @@ msgstr "가져오기 보고서"
 msgid "Import selected tasks"
 msgstr "선택한 작업 가져오기"
 
+#: src/app/more-screen.tsx
+msgid "Import tasks"
+msgstr "작업 가져오기"
+
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
 msgstr "탐색 메뉴에 있음"
@@ -3247,6 +3246,14 @@ msgstr "키보드 단축키"
 #: src/i18n/language-settings.tsx
 msgid "Language"
 msgstr "언어"
+
+#: src/app/more-screen.tsx
+msgid "Language and appearance"
+msgstr "언어 및 모양"
+
+#: src/app/more-screen.tsx
+msgid "Language, theme, and calendar"
+msgstr "언어, 테마 및 캘린더"
 
 #: src/i18n/presentation.ts
 msgid "last"
@@ -5053,10 +5060,6 @@ msgid "Saved view"
 msgstr "저장된 뷰"
 
 #: src/components/task-model-settings.tsx
-msgid "Saved with the collection and used by every app that opens it."
-msgstr "컬렉션에 저장되며 이를 여는 모든 앱에서 사용됩니다."
-
-#: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
 msgstr "컬렉션에 저장되었습니다."
 
@@ -5563,6 +5566,10 @@ msgstr "상태: {0}"
 msgid "Statuses"
 msgstr "상태"
 
+#: src/app/more-screen.tsx
+msgid "Statuses, priorities, and custom fields"
+msgstr "상태, 우선순위 및 사용자 지정 필드"
+
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
@@ -5743,7 +5750,9 @@ msgstr "작업 목록"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "작업을 찾을 수 없습니다. 삭제되었거나 이동되었을 수 있습니다."
 
+#: src/app/settings-sections.ts
 #: src/app/task-property-list.tsx
+#: src/components/task-model-settings.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "작업 속성"
@@ -5998,14 +6007,6 @@ msgstr "작업은 컬렉션에 남아 있습니다. 다시 시도하세요."
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "뷰 변경"
-
-#: src/app/more-screen.tsx
-msgid "Theme, Scratchpad, and calendar"
-msgstr "테마, 스크래치패드 및 캘린더"
-
-#: src/app/more-screen.tsx
-msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr "선택 사항은 즉시 적용되며 컬렉션을 변경하지 않습니다."
 
 #: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
@@ -6605,6 +6606,13 @@ msgstr "위키링크"
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
 msgstr "작업 세션"
+
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#: src/app/settings-sections.ts
+#: src/components/task-model-settings.tsx
+msgid "Workflow"
+msgstr "워크플로"
 
 #: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx

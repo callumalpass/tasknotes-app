@@ -1124,10 +1124,6 @@ msgstr "Langue de l’application"
 msgid "App update"
 msgstr "Mise à jour de l’application"
 
-#: src/app/more-screen.tsx
-msgid "Appearance"
-msgstr "Apparence"
-
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
 msgstr "Appliquer la règle"
@@ -1635,11 +1631,6 @@ msgstr "Collection"
 msgid "Collection access is unavailable."
 msgstr "L’accès à la collection est indisponible."
 
-#: src/app/settings-sections.ts
-#: src/components/task-model-settings.tsx
-msgid "Collection behavior"
-msgstr "Comportement de la collection"
-
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
 msgstr "Connexion à la collection"
@@ -1916,6 +1907,10 @@ msgstr "Copier le lien de la tâche"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "Copier le titre"
+
+#: src/app/more-screen.tsx
+msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
+msgstr "Copie vos tâches Todoist actives dans cette collection. Todoist lui-même n’est pas modifié."
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
@@ -3051,6 +3046,10 @@ msgstr "Rapport d’importation"
 msgid "Import selected tasks"
 msgstr "Importer les tâches sélectionnées"
 
+#: src/app/more-screen.tsx
+msgid "Import tasks"
+msgstr "Importer des tâches"
+
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
 msgstr "Dans la navigation"
@@ -3248,6 +3247,14 @@ msgstr "Raccourcis clavier"
 #: src/i18n/language-settings.tsx
 msgid "Language"
 msgstr "Langue"
+
+#: src/app/more-screen.tsx
+msgid "Language and appearance"
+msgstr "Langue et apparence"
+
+#: src/app/more-screen.tsx
+msgid "Language, theme, and calendar"
+msgstr "Langue, thème et calendrier"
 
 #: src/i18n/presentation.ts
 msgid "last"
@@ -5054,10 +5061,6 @@ msgid "Saved view"
 msgstr "Vue enregistrée"
 
 #: src/components/task-model-settings.tsx
-msgid "Saved with the collection and used by every app that opens it."
-msgstr "Enregistrés avec la collection et utilisés par toutes les applications qui l’ouvrent."
-
-#: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
 msgstr "Enregistré dans la collection."
 
@@ -5564,6 +5567,10 @@ msgstr "Statut : {0}"
 msgid "Statuses"
 msgstr "Statuts"
 
+#: src/app/more-screen.tsx
+msgid "Statuses, priorities, and custom fields"
+msgstr "Statuts, priorités et champs personnalisés"
+
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
@@ -5744,7 +5751,9 @@ msgstr "Listes de tâches"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "Tâche introuvable. Elle a peut-être été supprimée ou déplacée."
 
+#: src/app/settings-sections.ts
 #: src/app/task-property-list.tsx
+#: src/components/task-model-settings.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "Propriétés de la tâche"
@@ -5999,14 +6008,6 @@ msgstr "La tâche reste dans la collection. Réessayez."
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "La modification de la vue"
-
-#: src/app/more-screen.tsx
-msgid "Theme, Scratchpad, and calendar"
-msgstr "Thème, Bloc-notes et calendrier"
-
-#: src/app/more-screen.tsx
-msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr "Ces choix s’appliquent dès que vous les faites et ne modifient pas la collection."
 
 #: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
@@ -6606,6 +6607,13 @@ msgstr "Liens wiki"
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
 msgstr "Session de travail"
+
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#: src/app/settings-sections.ts
+#: src/components/task-model-settings.tsx
+msgid "Workflow"
+msgstr "Flux de travail"
 
 #: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx

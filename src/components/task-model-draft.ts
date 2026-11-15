@@ -95,11 +95,27 @@ export function useTaskModelDraft(
   return { draft, original, dirty, change, discard };
 }
 
-export function useUnsavedTaskModelDraft(repository: object): boolean {
-  return useSyncExternalStore(
+/** The draft fields edited under Settings → Task properties. */
+export const TASK_PROPERTY_DRAFT_KEYS: readonly (keyof TaskModelSettingsDraft)[] =
+  ["statuses", "priorities", "customFields"];
+
+/**
+ * Which Settings sections hold unsaved changes. The draft is saved as one, but
+ * it is edited in two sections, so each can say whether it was changed.
+ */
+export function useUnsavedTaskModelDraft(repository: object): {
+  properties: boolean;
+  behavior: boolean;
+} {
+  const patch = useSyncExternalStore(
     subscribe,
-    () => Object.keys(patches.get(repository) ?? EMPTY).length > 0,
+    () => patches.get(repository) ?? EMPTY,
   );
+  const keys = Object.keys(patch) as (keyof TaskModelSettingsDraft)[];
+  return {
+    properties: keys.some((key) => TASK_PROPERTY_DRAFT_KEYS.includes(key)),
+    behavior: keys.some((key) => !TASK_PROPERTY_DRAFT_KEYS.includes(key)),
+  };
 }
 
 function changedKeys(

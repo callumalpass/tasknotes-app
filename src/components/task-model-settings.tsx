@@ -90,7 +90,17 @@ const linkFormatOptions = [
   },
 ] as const;
 
-export function TaskModelSettingsEditor() {
+/**
+ * The collection's shared task settings, edited in two Settings sections:
+ * `properties` (statuses, priorities, custom fields) and `behavior` (new,
+ * repeating and archived tasks, links and time tracking). Both edit one draft
+ * and either section's save bar saves all of it.
+ */
+export function TaskModelSettingsEditor({
+  part,
+}: {
+  part: "properties" | "behavior";
+}) {
   const { t } = useLingui();
   const { configuration, repository, updateTaskModelSettings } =
     useRepository();
@@ -241,14 +251,6 @@ export function TaskModelSettingsEditor() {
       className="task-model-settings"
       onSubmit={(event) => void save(event)}
     >
-      <p className="section-copy">
-        <Trans>
-          Saved with the collection and used by every app that opens it.
-        </Trans>
-      </p>
-      {access?.source && !/contract/i.test(access.source) ? (
-        <p className="settings-source">{access.source}</p>
-      ) : null}
       {!access ? (
         <p className="settings-read-only" role="status">
           <Trans>Checking collection settings…</Trans>
@@ -257,299 +259,331 @@ export function TaskModelSettingsEditor() {
         <p className="settings-read-only" role="status">
           {access.reason}
         </p>
-      ) : !appWritable && appReason ? (
+      ) : part === "behavior" && !appWritable && appReason ? (
         <p className="settings-read-only" role="status">
           {appReason}
         </p>
       ) : null}
       <fieldset disabled={!writable || saveState === "saving"}>
         <legend className="visually-hidden">
-          <Trans>Collection behavior</Trans>
+          {part === "properties"
+            ? translate({ message: "Task properties" })
+            : translate({
+                message: "Workflow",
+                comment:
+                  "Settings section: how the collection handles new, repeating, and archived tasks",
+              })}
         </legend>
 
-        <SettingsGroup title={translate({ message: "New tasks" })}>
-          <div className="task-model-settings-grid">
-            <TaskNotesSelectField
-              label={translate({ message: "Default status" })}
-              options={draft.statuses.map(({ value, label, color }) => ({
-                value,
-                label: label.trim() || value,
-                color,
-              }))}
-              value={draft.defaultStatus}
-              onChange={(defaultStatus) => update({ defaultStatus })}
-            />
-            <TaskNotesSelectField
-              label={translate({ message: "Default priority" })}
-              options={draft.priorities.map(({ value, label, color }) => ({
-                value,
-                label: label.trim() || value,
-                color,
-              }))}
-              value={draft.defaultPriority}
-              onChange={(defaultPriority) => update({ defaultPriority })}
-            />
-          </div>
-          <fieldset className="settings-app-fields" disabled={!appWritable}>
-            <SettingCheckbox
-              checked={draft.templatingEnabled}
-              label={translate({ message: "Start new tasks from a template" })}
-              onChange={(templatingEnabled) => update({ templatingEnabled })}
-            />
-            {draft.templatingEnabled ? (
-              <label className="form-field settings-dependent-field">
-                <span>
-                  <Trans>Template file</Trans>
-                </span>
-                <input
-                  placeholder={translate({ message: "Templates/Task.md" })}
-                  value={draft.templatePath}
-                  onChange={(event) =>
-                    update({ templatePath: event.target.value })
-                  }
-                />
-              </label>
-            ) : null}
-          </fieldset>
-        </SettingsGroup>
-
-        <SettingsGroup title={translate({ message: "Statuses" })}>
-          <StatusListEditor
-            defaultStatus={draft.defaultStatus}
-            statuses={draft.statuses}
-            onChange={(statuses) => update({ statuses })}
-            onDefault={(defaultStatus) => update({ defaultStatus })}
-          />
-        </SettingsGroup>
-
-        <SettingsGroup title={translate({ message: "Priorities" })}>
-          <PriorityListEditor
-            defaultPriority={draft.defaultPriority}
-            priorities={draft.priorities}
-            onChange={(priorities) => update({ priorities })}
-            onDefault={(defaultPriority) => update({ defaultPriority })}
-          />
-        </SettingsGroup>
-
-        <SettingsGroup title={translate({ message: "Custom fields" })}>
-          <CustomFieldListEditor
-            fields={draft.customFields}
-            reservedKeys={[
-              ...Object.keys(configuration.fieldMapping),
-              ...Object.values(configuration.fieldMapping),
-              "id",
-              "tags",
-              "type",
-              "types",
-            ]}
-            onChange={(customFields) => update({ customFields })}
-          />
-        </SettingsGroup>
-
-        <SettingsGroup title={translate({ message: "Repeating tasks" })}>
-          <div className="settings-field-with-hint">
-            <TaskNotesSelectField
-              ariaDescribedBy={`${ids}-materialization`}
-              label={translate({ message: "Create a task file for each date" })}
-              options={materializationOptions}
-              value={draft.defaultMaterialization}
-              onChange={(value) =>
-                update({
-                  defaultMaterialization:
-                    value as TaskModelSettingsDraft["defaultMaterialization"],
-                })
-              }
-            />
-            <p className="setting-hint" id={`${ids}-materialization`}>
-              {materialization?.description}
-            </p>
-          </div>
-          {draft.defaultMaterialization === "on_completion" ? (
-            <SettingCheckbox
-              checked={draft.defaultNextTrigger === "completion_or_skip"}
-              label={translate({
-                message:
-                  "Also create the next file when an occurrence is skipped",
-              })}
-              onChange={(skip) =>
-                update({
-                  defaultNextTrigger: skip
-                    ? "completion_or_skip"
-                    : "completion",
-                })
-              }
-            />
-          ) : null}
-          {draft.defaultMaterialization === "rolling" ? (
-            <div className="task-model-settings-grid settings-dependent-field">
-              <DurationField
-                label={translate({ message: "Keep files for past dates" })}
-                value={draft.pastHorizon}
-                onChange={(pastHorizon) => update({ pastHorizon })}
+        {part === "properties" ? (
+          <>
+            <SettingsGroup title={translate({ message: "Statuses" })}>
+              <StatusListEditor
+                defaultStatus={draft.defaultStatus}
+                statuses={draft.statuses}
+                onChange={(statuses) => update({ statuses })}
+                onDefault={(defaultStatus) => update({ defaultStatus })}
               />
-              <DurationField
-                label={translate({ message: "Create files ahead" })}
-                value={draft.futureHorizon}
-                onChange={(futureHorizon) => update({ futureHorizon })}
-              />
-            </div>
-          ) : null}
-          <SettingCheckbox
-            checked={draft.maintainDueDateOffset}
-            description={translate({
-              message:
-                "A task scheduled Monday and due Wednesday stays two days apart on each repeat.",
-            })}
-            label={translate({
-              message: "Keep the gap between scheduled and due dates",
-            })}
-            onChange={(maintainDueDateOffset) =>
-              update({ maintainDueDateOffset })
-            }
-          />
-          <fieldset className="settings-app-fields" disabled={!appWritable}>
-            <SettingCheckbox
-              checked={draft.resetCheckboxesOnRecurrence}
-              label={translate({
-                message: "Clear checklist items in the note on each repeat",
-              })}
-              onChange={(resetCheckboxesOnRecurrence) =>
-                update({ resetCheckboxesOnRecurrence })
-              }
-            />
-          </fieldset>
-        </SettingsGroup>
+            </SettingsGroup>
 
-        <SettingsGroup title={translate({ message: "Archive" })}>
-          <fieldset className="settings-app-fields" disabled={!appWritable}>
-            <SettingCheckbox
-              checked={draft.moveOnArchive}
-              label={translate({
-                message: "Move archived task files into a folder",
-              })}
-              onChange={(moveOnArchive) => update({ moveOnArchive })}
-            />
-            {draft.moveOnArchive ? (
-              <label className="form-field settings-dependent-field">
-                <span>
-                  <Trans>Archive folder</Trans>
-                </span>
-                <input
-                  value={draft.archiveFolder}
-                  onChange={(event) =>
-                    update({ archiveFolder: event.target.value })
-                  }
+            <SettingsGroup title={translate({ message: "Priorities" })}>
+              <PriorityListEditor
+                defaultPriority={draft.defaultPriority}
+                priorities={draft.priorities}
+                onChange={(priorities) => update({ priorities })}
+                onDefault={(defaultPriority) => update({ defaultPriority })}
+              />
+            </SettingsGroup>
+
+            <SettingsGroup title={translate({ message: "Custom fields" })}>
+              <CustomFieldListEditor
+                fields={draft.customFields}
+                reservedKeys={[
+                  ...Object.keys(configuration.fieldMapping),
+                  ...Object.values(configuration.fieldMapping),
+                  "id",
+                  "tags",
+                  "type",
+                  "types",
+                ]}
+                onChange={(customFields) => update({ customFields })}
+              />
+            </SettingsGroup>
+          </>
+        ) : (
+          <>
+            <SettingsGroup title={translate({ message: "New tasks" })}>
+              <div className="task-model-settings-grid">
+                <TaskNotesSelectField
+                  label={translate({ message: "Default status" })}
+                  options={draft.statuses.map(({ value, label, color }) => ({
+                    value,
+                    label: label.trim() || value,
+                    color,
+                  }))}
+                  value={draft.defaultStatus}
+                  onChange={(defaultStatus) => update({ defaultStatus })}
                 />
-              </label>
-            ) : null}
-            <section
-              aria-labelledby={`${ids}-auto-archive`}
-              className="status-automation-settings"
-            >
-              <h4 id={`${ids}-auto-archive`}>
-                <Trans>Archive automatically</Trans>
-              </h4>
-              <p className="setting-hint">
-                <Trans>
-                  Archive a task once it has been in a chosen status for a
-                  while. Repeating tasks are never archived automatically.
-                </Trans>
-              </p>
-              <div className="status-automation-list">
-                {configuration.statuses.map((status) => {
-                  const automation = draft.statusAutomation[status.value] ?? {
-                    autoArchive: false,
-                    autoArchiveDelay: 5,
-                  };
-                  const inputId = `${ids}-archive-${status.value}`;
-                  function automate(patch: Partial<typeof automation>): void {
-                    update({
-                      statusAutomation: {
-                        ...draft.statusAutomation,
-                        [status.value]: { ...automation, ...patch },
-                      },
-                    });
-                  }
-                  return (
-                    <div className="status-automation-row" key={status.value}>
-                      <div className="task-model-toggle">
-                        <input
-                          checked={automation.autoArchive}
-                          id={inputId}
-                          type="checkbox"
-                          onChange={(event) =>
-                            automate({ autoArchive: event.target.checked })
-                          }
-                        />
-                        <label htmlFor={inputId}>{status.label}</label>
-                      </div>
-                      {automation.autoArchive ? (
-                        <label className="auto-archive-delay">
-                          <span>
-                            <Trans>after</Trans>
-                          </span>
-                          <input
-                            aria-label={translate`${status.label} auto-archive delay in minutes`}
-                            min="0"
-                            step="1"
-                            type="number"
-                            value={automation.autoArchiveDelay}
-                            onChange={(event) =>
-                              automate({
-                                autoArchiveDelay: Math.max(
-                                  0,
-                                  Number.parseInt(event.target.value, 10) || 0,
-                                ),
-                              })
-                            }
-                          />
-                          <span>
-                            <Trans>min</Trans>
-                          </span>
-                        </label>
-                      ) : null}
-                    </div>
-                  );
-                })}
+                <TaskNotesSelectField
+                  label={translate({ message: "Default priority" })}
+                  options={draft.priorities.map(({ value, label, color }) => ({
+                    value,
+                    label: label.trim() || value,
+                    color,
+                  }))}
+                  value={draft.defaultPriority}
+                  onChange={(defaultPriority) => update({ defaultPriority })}
+                />
               </div>
-            </section>
-          </fieldset>
-        </SettingsGroup>
+              <fieldset className="settings-app-fields" disabled={!appWritable}>
+                <SettingCheckbox
+                  checked={draft.templatingEnabled}
+                  label={translate({
+                    message: "Start new tasks from a template",
+                  })}
+                  onChange={(templatingEnabled) =>
+                    update({ templatingEnabled })
+                  }
+                />
+                {draft.templatingEnabled ? (
+                  <label className="form-field settings-dependent-field">
+                    <span>
+                      <Trans>Template file</Trans>
+                    </span>
+                    <input
+                      placeholder={translate({ message: "Templates/Task.md" })}
+                      value={draft.templatePath}
+                      onChange={(event) =>
+                        update({ templatePath: event.target.value })
+                      }
+                    />
+                  </label>
+                ) : null}
+              </fieldset>
+            </SettingsGroup>
 
-        <SettingsGroup
-          title={translate({ message: "Links and time tracking" })}
-        >
-          <fieldset className="settings-app-fields" disabled={!appWritable}>
-            <div className="settings-field-with-hint">
-              <TaskNotesSelectField
-                ariaDescribedBy={`${ids}-links`}
-                label={translate({ message: "Link format" })}
-                options={linkFormatOptions}
-                value={draft.writeFormat}
-                onChange={(value) =>
-                  update({
-                    writeFormat: value as TaskModelSettingsDraft["writeFormat"],
-                  })
+            <SettingsGroup title={translate({ message: "Repeating tasks" })}>
+              <div className="settings-field-with-hint">
+                <TaskNotesSelectField
+                  ariaDescribedBy={`${ids}-materialization`}
+                  label={translate({
+                    message: "Create a task file for each date",
+                  })}
+                  options={materializationOptions}
+                  value={draft.defaultMaterialization}
+                  onChange={(value) =>
+                    update({
+                      defaultMaterialization:
+                        value as TaskModelSettingsDraft["defaultMaterialization"],
+                    })
+                  }
+                />
+                <p className="setting-hint" id={`${ids}-materialization`}>
+                  {materialization?.description}
+                </p>
+              </div>
+              {draft.defaultMaterialization === "on_completion" ? (
+                <SettingCheckbox
+                  checked={draft.defaultNextTrigger === "completion_or_skip"}
+                  label={translate({
+                    message:
+                      "Also create the next file when an occurrence is skipped",
+                  })}
+                  onChange={(skip) =>
+                    update({
+                      defaultNextTrigger: skip
+                        ? "completion_or_skip"
+                        : "completion",
+                    })
+                  }
+                />
+              ) : null}
+              {draft.defaultMaterialization === "rolling" ? (
+                <div className="task-model-settings-grid settings-dependent-field">
+                  <DurationField
+                    label={translate({ message: "Keep files for past dates" })}
+                    value={draft.pastHorizon}
+                    onChange={(pastHorizon) => update({ pastHorizon })}
+                  />
+                  <DurationField
+                    label={translate({ message: "Create files ahead" })}
+                    value={draft.futureHorizon}
+                    onChange={(futureHorizon) => update({ futureHorizon })}
+                  />
+                </div>
+              ) : null}
+              <SettingCheckbox
+                checked={draft.maintainDueDateOffset}
+                description={translate({
+                  message:
+                    "A task scheduled Monday and due Wednesday stays two days apart on each repeat.",
+                })}
+                label={translate({
+                  message: "Keep the gap between scheduled and due dates",
+                })}
+                onChange={(maintainDueDateOffset) =>
+                  update({ maintainDueDateOffset })
                 }
               />
-              <p className="setting-hint" id={`${ids}-links`}>
-                <Trans>
-                  Used when TaskNotes writes links to projects, people, and
-                  other tasks, for example{" "}
-                </Trans>
-                <code>{linkFormat?.description}</code>.
-              </p>
-            </div>
-            <SettingCheckbox
-              checked={draft.autoStopOnComplete}
-              label={translate({
-                message: "Stop a running timer when its task is completed",
-              })}
-              onChange={(autoStopOnComplete) => update({ autoStopOnComplete })}
-            />
-          </fieldset>
-        </SettingsGroup>
+              <fieldset className="settings-app-fields" disabled={!appWritable}>
+                <SettingCheckbox
+                  checked={draft.resetCheckboxesOnRecurrence}
+                  label={translate({
+                    message: "Clear checklist items in the note on each repeat",
+                  })}
+                  onChange={(resetCheckboxesOnRecurrence) =>
+                    update({ resetCheckboxesOnRecurrence })
+                  }
+                />
+              </fieldset>
+            </SettingsGroup>
+
+            <SettingsGroup title={translate({ message: "Archive" })}>
+              <fieldset className="settings-app-fields" disabled={!appWritable}>
+                <SettingCheckbox
+                  checked={draft.moveOnArchive}
+                  label={translate({
+                    message: "Move archived task files into a folder",
+                  })}
+                  onChange={(moveOnArchive) => update({ moveOnArchive })}
+                />
+                {draft.moveOnArchive ? (
+                  <label className="form-field settings-dependent-field">
+                    <span>
+                      <Trans>Archive folder</Trans>
+                    </span>
+                    <input
+                      value={draft.archiveFolder}
+                      onChange={(event) =>
+                        update({ archiveFolder: event.target.value })
+                      }
+                    />
+                  </label>
+                ) : null}
+                <section
+                  aria-labelledby={`${ids}-auto-archive`}
+                  className="status-automation-settings"
+                >
+                  <h4 id={`${ids}-auto-archive`}>
+                    <Trans>Archive automatically</Trans>
+                  </h4>
+                  <p className="setting-hint">
+                    <Trans>
+                      Archive a task once it has been in a chosen status for a
+                      while. Repeating tasks are never archived automatically.
+                    </Trans>
+                  </p>
+                  <div className="status-automation-list">
+                    {configuration.statuses.map((status) => {
+                      const automation = draft.statusAutomation[
+                        status.value
+                      ] ?? {
+                        autoArchive: false,
+                        autoArchiveDelay: 5,
+                      };
+                      const inputId = `${ids}-archive-${status.value}`;
+                      function automate(
+                        patch: Partial<typeof automation>,
+                      ): void {
+                        update({
+                          statusAutomation: {
+                            ...draft.statusAutomation,
+                            [status.value]: { ...automation, ...patch },
+                          },
+                        });
+                      }
+                      return (
+                        <div
+                          className="status-automation-row"
+                          key={status.value}
+                        >
+                          <div className="task-model-toggle">
+                            <input
+                              checked={automation.autoArchive}
+                              id={inputId}
+                              type="checkbox"
+                              onChange={(event) =>
+                                automate({ autoArchive: event.target.checked })
+                              }
+                            />
+                            <label htmlFor={inputId}>{status.label}</label>
+                          </div>
+                          {automation.autoArchive ? (
+                            <label className="auto-archive-delay">
+                              <span>
+                                <Trans>after</Trans>
+                              </span>
+                              <input
+                                aria-label={translate`${status.label} auto-archive delay in minutes`}
+                                min="0"
+                                step="1"
+                                type="number"
+                                value={automation.autoArchiveDelay}
+                                onChange={(event) =>
+                                  automate({
+                                    autoArchiveDelay: Math.max(
+                                      0,
+                                      Number.parseInt(event.target.value, 10) ||
+                                        0,
+                                    ),
+                                  })
+                                }
+                              />
+                              <span>
+                                <Trans>min</Trans>
+                              </span>
+                            </label>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              </fieldset>
+            </SettingsGroup>
+
+            <SettingsGroup
+              title={translate({ message: "Links and time tracking" })}
+            >
+              <fieldset className="settings-app-fields" disabled={!appWritable}>
+                <div className="settings-field-with-hint">
+                  <TaskNotesSelectField
+                    ariaDescribedBy={`${ids}-links`}
+                    label={translate({ message: "Link format" })}
+                    options={linkFormatOptions}
+                    value={draft.writeFormat}
+                    onChange={(value) =>
+                      update({
+                        writeFormat:
+                          value as TaskModelSettingsDraft["writeFormat"],
+                      })
+                    }
+                  />
+                  <p className="setting-hint" id={`${ids}-links`}>
+                    <Trans>
+                      Used when TaskNotes writes links to projects, people, and
+                      other tasks, for example{" "}
+                    </Trans>
+                    <code>{linkFormat?.description}</code>.
+                  </p>
+                </div>
+                <SettingCheckbox
+                  checked={draft.autoStopOnComplete}
+                  label={translate({
+                    message: "Stop a running timer when its task is completed",
+                  })}
+                  onChange={(autoStopOnComplete) =>
+                    update({ autoStopOnComplete })
+                  }
+                />
+              </fieldset>
+            </SettingsGroup>
+          </>
+        )}
       </fieldset>
+      {access?.source && !/contract/i.test(access.source) ? (
+        <p className="settings-source">{access.source}</p>
+      ) : null}
       {error ? (
         <OperationErrorNotice
           action={translate({ message: "Saving collection behavior" })}

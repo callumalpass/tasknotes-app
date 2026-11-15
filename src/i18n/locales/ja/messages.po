@@ -1123,10 +1123,6 @@ msgstr "アプリの言語"
 msgid "App update"
 msgstr "アプリの更新"
 
-#: src/app/more-screen.tsx
-msgid "Appearance"
-msgstr "外観"
-
 #: src/components/recurrence-field.tsx
 msgid "Apply rule"
 msgstr "ルールを適用"
@@ -1634,11 +1630,6 @@ msgstr "コレクション"
 msgid "Collection access is unavailable."
 msgstr "コレクションにアクセスできません。"
 
-#: src/app/settings-sections.ts
-#: src/components/task-model-settings.tsx
-msgid "Collection behavior"
-msgstr "コレクションの動作"
-
 #: src/components/collection-availability.tsx
 msgid "Collection connection"
 msgstr "コレクション接続"
@@ -1915,6 +1906,10 @@ msgstr "タスクのリンクをコピー"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "タイトルをコピー"
+
+#: src/app/more-screen.tsx
+msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
+msgstr "Todoistの未完了タスクをこのコレクションにコピーします。Todoist側は変更されません。"
 
 #: src/components/recurrence-field.tsx
 msgid "Correct the rule before it can be scheduled."
@@ -3050,6 +3045,10 @@ msgstr "インポートレポート"
 msgid "Import selected tasks"
 msgstr "選択したタスクをインポート"
 
+#: src/app/more-screen.tsx
+msgid "Import tasks"
+msgstr "タスクをインポート"
+
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
 msgstr "ナビゲーション内"
@@ -3247,6 +3246,14 @@ msgstr "キーボードショートカット"
 #: src/i18n/language-settings.tsx
 msgid "Language"
 msgstr "言語"
+
+#: src/app/more-screen.tsx
+msgid "Language and appearance"
+msgstr "言語と外観"
+
+#: src/app/more-screen.tsx
+msgid "Language, theme, and calendar"
+msgstr "言語、テーマ、カレンダー"
 
 #: src/i18n/presentation.ts
 msgid "last"
@@ -5053,10 +5060,6 @@ msgid "Saved view"
 msgstr "保存済みビュー"
 
 #: src/components/task-model-settings.tsx
-msgid "Saved with the collection and used by every app that opens it."
-msgstr "コレクションとともに保存され、コレクションを開くすべてのアプリで使えます。"
-
-#: src/components/task-model-settings.tsx
 msgid "Saved with the collection."
 msgstr "コレクションに保存しました。"
 
@@ -5563,6 +5566,10 @@ msgstr "ステータス: {0}"
 msgid "Statuses"
 msgstr "ステータス"
 
+#: src/app/more-screen.tsx
+msgid "Statuses, priorities, and custom fields"
+msgstr "ステータス、優先度、カスタムフィールド"
+
 #: src/app/running-timer.tsx
 #: src/app/task-time-tracking.tsx
 msgid "Stop"
@@ -5743,7 +5750,9 @@ msgstr "タスクリスト"
 msgid "Task not found. It may have been deleted or moved."
 msgstr "タスクが見つかりません。削除または移動された可能性があります。"
 
+#: src/app/settings-sections.ts
 #: src/app/task-property-list.tsx
+#: src/components/task-model-settings.tsx
 #: src/components/task-properties-sheet.tsx
 msgid "Task properties"
 msgstr "タスクのプロパティ"
@@ -5998,14 +6007,6 @@ msgstr "タスクはコレクションに残っています。もう一度お試
 #: src/app/views-screen.tsx
 msgid "The view change"
 msgstr "ビューの変更"
-
-#: src/app/more-screen.tsx
-msgid "Theme, Scratchpad, and calendar"
-msgstr "テーマ、スクラッチパッド、カレンダー"
-
-#: src/app/more-screen.tsx
-msgid "These choices apply as soon as you make them and don’t change the collection."
-msgstr "これらの選択はすぐに適用され、コレクションは変更されません。"
 
 #: src/app/task-property-list.tsx
 msgid "These dates edit the repeating task, including future occurrences."
@@ -6605,6 +6606,13 @@ msgstr "ウィキリンク"
 #: src/app/task-time-tracking.tsx
 msgid "Work session"
 msgstr "作業セッション"
+
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#. Settings section: how the collection handles new, repeating, and archived tasks
+#: src/app/settings-sections.ts
+#: src/components/task-model-settings.tsx
+msgid "Workflow"
+msgstr "ワークフロー"
 
 #: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx
