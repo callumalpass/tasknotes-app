@@ -73,13 +73,19 @@ export function taskNotesDefaultBaseDocument(
   configuration: TaskCollectionConfiguration,
 ): string {
   const fields = configuration.fieldMapping;
-  const status = note(fields.status);
+  // Filters are expressions, so they read fields as `note["name"]`. `order`,
+  // `sort`, `groupBy` and `properties` take property ids instead, which
+  // Obsidian shows as an unknown property when written in expression form.
   const scheduled = note(fields.scheduled);
   const due = note(fields.due);
-  const priority = note(fields.priority);
   const projects = note(fields.projects);
-  const title = note(fields.title);
-  const tags = note("tags");
+  const status = basesProperty(fields.status);
+  const scheduledId = basesProperty(fields.scheduled);
+  const dueId = basesProperty(fields.due);
+  const priority = basesProperty(fields.priority);
+  const projectsId = basesProperty(fields.projects);
+  const title = basesProperty(fields.title);
+  const tags = basesProperty("tags");
   const manualOrder = basesProperty(fields.sortOrder);
   const todayFilter = todayTaskFilter(scheduled, due);
 
@@ -98,7 +104,7 @@ export function taskNotesDefaultBaseDocument(
           filters: {
             and: [...activeTaskFilters(configuration), todayFilter],
           },
-          order: [title, scheduled, due, projects, tags],
+          order: [title, scheduledId, dueId, projectsId, tags],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: priority, direction: "ASC" },
@@ -110,7 +116,7 @@ export function taskNotesDefaultBaseDocument(
           type: "tasknotesCalendar",
           name: "Upcoming",
           filters: { and: activeTaskFilters(configuration) },
-          order: [status, scheduled, due, priority],
+          order: [status, scheduledId, dueId, priority],
           sort: [{ property: manualOrder, direction: "DESC" }],
           options: {
             calendarView: "listWeek",
@@ -127,7 +133,7 @@ export function taskNotesDefaultBaseDocument(
           type: "tasknotesCalendar",
           name: "Calendar",
           filters: { and: activeTaskFilters(configuration) },
-          order: [status, scheduled, due, priority],
+          order: [status, scheduledId, dueId, priority],
           sort: [{ property: manualOrder, direction: "DESC" }],
           options: {
             calendarView: "dayGridMonth",
@@ -149,19 +155,19 @@ export function taskNotesDefaultBaseDocument(
               `${projects}.isEmpty() == false`,
             ],
           },
-          order: [title, scheduled, due],
+          order: [title, scheduledId, dueId],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: title, direction: "ASC" },
           ],
-          groupBy: { property: projects, direction: "ASC" },
+          groupBy: { property: projectsId, direction: "ASC" },
           options: { create: false },
         },
         {
           type: "tasknotesTaskList",
           name: "Archive",
           filters: { and: [archivedTaskFilter(configuration)] },
-          order: [title, scheduled, due],
+          order: [title, scheduledId, dueId],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: title, direction: "ASC" },
@@ -178,7 +184,7 @@ export function taskNotesDefaultBaseDocument(
               `${due}.isEmpty()`,
             ],
           },
-          order: [title, priority, projects, tags],
+          order: [title, priority, projectsId, tags],
           sort: [
             { property: manualOrder, direction: "DESC" },
             { property: title, direction: "ASC" },
@@ -437,11 +443,14 @@ function note(field: string): string {
   return `note[${literal(field)}]`;
 }
 
-/** An Obsidian Bases property reference for a note field. */
+/**
+ * An Obsidian Bases property id for a note field, as used by `order`, `sort`,
+ * `groupBy` and `properties`. Obsidian writes note properties bare; a name
+ * containing a dot needs the `note.` prefix so it is not read as `file.` or
+ * `formula.`. Expression syntax such as `note["status"]` is not an id.
+ */
 export function basesProperty(field: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_-]*$/.test(field)
-    ? `note.${field}`
-    : note(field);
+  return field.includes(".") ? `note.${field}` : field;
 }
 
 function literal(value: string): string {
