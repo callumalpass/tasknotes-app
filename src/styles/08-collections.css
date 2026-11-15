@@ -348,3 +348,11 @@
   width: 100%;
   color: var(--ink-soft);
 }
+
+/* Shared tooltips. The kit measures a tooltip at its static position beside
+ * the trigger before placing it, so beside a control at the window's edge it
+ * shrinks to the leftover space and breaks its label mid-word ("Clos e").
+ * Size it to its content; the kit's max-width still keeps it on screen. */
+.mdbase-tooltip {
+  width: max-content;
+}
