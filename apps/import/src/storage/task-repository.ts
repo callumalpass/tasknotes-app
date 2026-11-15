@@ -1,8 +1,4 @@
-import {
-  type MdbaseClient,
-  type MdbaseApplicationConnection,
-  type Receipt,
-} from "@mdbase-dev/sdk";
+import { type MdbaseClient, type Receipt } from "@mdbase-dev/sdk";
 import { importedIdentity, type PlannedTask } from "../plan";
 import { discoverTypes } from "../destination";
 import type { ImportReport, TaskRepository } from "../task-repository";
@@ -177,10 +173,10 @@ export async function runImport(
 
 export class MdbaseTaskRepository implements TaskRepository {
   constructor(
-    private readonly connection: Pick<
-      MdbaseApplicationConnection,
-      "records" | "isCurrent"
-    >,
+    private readonly connection: {
+      records: ImportConnection;
+      isCurrent(): boolean;
+    },
   ) {}
 
   isCurrent() {
