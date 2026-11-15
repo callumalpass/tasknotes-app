@@ -263,7 +263,10 @@ Today             Search       More
   a section index, sticky beside the panels from 1100px. Collection leads with
   one card holding the collection name, connection state, counts, Refresh now,
   and Change collection. How tasks are stored, the location, the mdbase format,
-  and refresh diagnostics sit in a disclosure that remembers its state.
+  a link to manage collections in mdbase Connect, and refresh diagnostics sit
+  in a disclosure that remembers its state. About & help says TaskNotes is one
+  of the mdbase apps and links out to them. The iOS app hides both links,
+  because both pages lead to mdbase's paid plans.
   Immediately applied on/off settings use switches. Collection behavior is an
   explicitly saved form grouped as New tasks, Repeating tasks, Archive, and
   Links and time tracking; a field appears only when the choice that enables it
