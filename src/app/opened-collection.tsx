@@ -10,14 +10,18 @@ import {
 import { RepositoryProvider } from "./repository-context";
 
 import type { TaskRepository } from "../application/ports/task-repository";
+import type { ReminderAuthority } from "../native/notifications";
 
 export function OpenedCollection({
   actions,
   discardPendingRecovery,
+  reminderAuthority = "none",
   repository,
 }: {
   actions: CollectionGateContextValue;
   discardPendingRecovery(): Promise<void>;
+  /** "connect" when mdbase delivers this collection's reminders. */
+  reminderAuthority?: ReminderAuthority;
   repository: TaskRepository;
 }) {
   const mutationJournal = useMemo(() => new IndexedDbMutationJournal(), []);
@@ -39,7 +43,7 @@ export function OpenedCollection({
       <RepositoryProvider
         mutationJournal={mutationJournal}
         discardPendingRecovery={discardPendingRecovery}
-        reminderAuthority="none"
+        reminderAuthority={reminderAuthority}
         repository={repository}
       >
         <AppShell />

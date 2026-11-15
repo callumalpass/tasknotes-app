@@ -25,7 +25,9 @@ import {
   type Hold,
   type SyncStatus,
   type WriteLedgerEntry,
+  type TimersApi,
 } from "@mdbase-dev/sdk";
+import { desiredTaskTimers } from "../domain/reminder-timers";
 import {
   parseFrontmatter,
   serializeMarkdownDocument,
@@ -252,6 +254,14 @@ export function nativeUnsupported(message: string): MdbaseError {
 /** Direct native SDK implementation of the application port.
  * Unsupported native metadata is explicit, never reconstructed in the app.
  */
+/** Must match the `task.reminder` criterion in scripts/tasknotes-manifest.mjs. */
+export const REMINDER_TIMER_CRITERION = "task.reminder";
+export const REMINDER_TIMER_NAMESPACE = "task-reminders";
+/** Connect's per-reconcile limit; the earliest reminders are kept. */
+const MAX_REMINDER_TIMERS = 10_000;
+const REMINDER_TIMER_RESEND_MS = 10 * 60_000;
+export type ReminderTimers = Pick<TimersApi, "reconcile">;
+
 export class NextTaskRepository implements TaskRepository {
   readonly files: NextCollectionFileStore;
   readonly defaultViewSourceCreation = "explicit-only" as const;
@@ -396,6 +406,18 @@ export class NextTaskRepository implements TaskRepository {
   private settingsType = false;
   private readonly clientOwnership: "owned" | "borrowed";
   private readonly peopleClient?: Pick<MdbasePeopleClient, "directory">;
+  private readonly reminderTimers?: () => ReminderTimers | undefined;
+  /** The last set Connect accepted, so an unchanged set is not resent. */
+  private lastReminderTimers?: {
+    timers: ReminderTimers;
+    snapshot: string;
+    at: number;
+  };
+  private reminderReconciliation?: {
+    scope: AbortController;
+    requested: number;
+    promise: Promise<void>;
+  };
 
   constructor(
     private readonly client: MdbaseClient,
@@ -405,10 +427,13 @@ export class NextTaskRepository implements TaskRepository {
       /** Host-owned clients survive this adapter's disposal; default remains owned. */
       clientOwnership?: "owned" | "borrowed";
       peopleClient?: Pick<MdbasePeopleClient, "directory">;
+      /** The connection's timer access, absent until notification access is approved. */
+      timers?: () => ReminderTimers | undefined;
     } = {},
   ) {
     this.clientOwnership = options.clientOwnership ?? "owned";
     this.peopleClient = options.peopleClient;
+    this.reminderTimers = options.timers;
     this.files = new NextCollectionFileStore(
       client.files,
       () => this.scope.signal,
@@ -876,6 +901,77 @@ export class NextTaskRepository implements TaskRepository {
       this.noteOperationFailure(reason, signal);
       throw reason;
     }
+  }
+
+  /**
+   * Replace this collection's reminder timers with one per future reminder
+   * on an open task. Calls made while one runs share it and trigger one more
+   * pass, so the last pass always sees the latest tasks. Without timer access
+   * (notification access not approved) there is nothing to reconcile.
+   */
+  reconcileReminders(): Promise<void> {
+    const timers = this.reminderTimers?.();
+    if (!timers) return Promise.resolve();
+    const active = this.reminderReconciliation;
+    if (active && active.scope === this.scope) {
+      active.requested++;
+      return active.promise;
+    }
+    const run = {
+      scope: this.scope,
+      requested: 1,
+      promise: Promise.resolve(),
+    };
+    run.promise = (async () => {
+      let completed = 0;
+      while (completed < run.requested) {
+        const target = run.requested;
+        const signal = run.scope.signal;
+        signal.throwIfAborted();
+        const tasks = await this.listSummaries({
+          status: "open",
+          archived: "exclude",
+        });
+        const desired = (await desiredTaskTimers(tasks))
+          .sort((a, b) => Date.parse(a.fireAt) - Date.parse(b.fireAt))
+          .slice(0, MAX_REMINDER_TIMERS);
+        signal.throwIfAborted();
+        // Foreground refreshes ask often; resend an unchanged set only
+        // occasionally, to repair a set another device replaced.
+        const snapshot = JSON.stringify(desired);
+        const last = this.lastReminderTimers;
+        if (
+          last?.timers === timers &&
+          last.snapshot === snapshot &&
+          Date.now() - last.at < REMINDER_TIMER_RESEND_MS
+        ) {
+          completed = target;
+          continue;
+        }
+        // A full desired-state replace: retrying after an unknown outcome is
+        // safe, and timers of deleted or completed tasks are cancelled.
+        await timers.reconcile(
+          {
+            namespace: REMINDER_TIMER_NAMESPACE,
+            criterionId: REMINDER_TIMER_CRITERION,
+            timers: desired,
+          },
+          {
+            signal: AbortSignal.any([
+              signal,
+              AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.backgroundMs),
+            ]),
+          },
+        );
+        this.lastReminderTimers = { timers, snapshot, at: Date.now() };
+        completed = target;
+      }
+    })().finally(() => {
+      if (this.reminderReconciliation === run)
+        this.reminderReconciliation = undefined;
+    });
+    this.reminderReconciliation = run;
+    return run.promise;
   }
 
   async listSummaries(

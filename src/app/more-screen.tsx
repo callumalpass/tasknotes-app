@@ -36,6 +36,7 @@ import { CalendarPreferencesEditor } from "../components/calendar-preferences";
 import { OperationErrorNotice } from "../components/operation-error-notice";
 import { SettingsSwitch } from "../components/settings-controls";
 import type { MdbaseNotificationStatus } from "../native/mdbase-notifications";
+import { reconcileTaskNotifications } from "../native/notifications";
 import { requestPwaInstall, usePwaInstall } from "../pwa/install";
 import {
   applyThemePreference,
@@ -512,7 +513,7 @@ type ReminderSettingsState = ReturnType<typeof useReminderSettings>;
 
 function useReminderSettings() {
   const { reauthorizeCurrentCollection } = useCollectionGate();
-  const { reminderAuthority } = useRepository();
+  const { reminderAuthority, repository } = useRepository();
   const delivers = reminderAuthority !== "none";
   const [status, setStatus] = useState<MdbaseNotificationStatus>({
     state: "checking",
@@ -584,11 +585,15 @@ function useReminderSettings() {
     try {
       const { mdbaseNotifications } =
         await import("../native/mdbase-notifications");
-      setStatus(
-        enabled
-          ? await mdbaseNotifications.enable()
-          : await mdbaseNotifications.disable(),
-      );
+      const next = enabled
+        ? await mdbaseNotifications.enable()
+        : await mdbaseNotifications.disable();
+      setStatus(next);
+      // Timers set before access was approved were skipped; schedule them now.
+      if (next.state === "enabled")
+        void reconcileTaskNotifications(repository, reminderAuthority).catch(
+          () => undefined,
+        );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {

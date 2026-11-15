@@ -108,6 +108,7 @@ function HeldCollection({
       <Workspace
         actions={actions}
         repository={repository}
+        reminderAuthority="connect"
         discardPendingRecovery={preserveOriginalPending}
       />
     </ConnectionNoticeContext.Provider>
@@ -124,7 +125,11 @@ function useHeldRepository(
       connection.records,
       connection.displayName,
       connection.scope.account,
-      { clientOwnership: "borrowed", peopleClient: connection.people },
+      {
+        clientOwnership: "borrowed",
+        peopleClient: connection.people,
+        timers: () => connection.timers,
+      },
     );
     // Only app-owned stages: no invented native/Worker durations or extra reads.
     registerStartupTiming(created);
