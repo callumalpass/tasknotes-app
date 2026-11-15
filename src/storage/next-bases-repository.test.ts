@@ -521,6 +521,101 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       expect(performance.now() - started).toBeGreaterThanOrEqual(240);
     },
   );
+  it("overlapping discoveries share one native cursor instead of retiring each other", async () => {
+    const f = await fixture();
+    // The native replica holds ONE discovery cursor per session and scans
+    // every record, 64 at a time, so a 765-record collection pages 13 times.
+    // A second discovery started meanwhile replaces that cursor, and the
+    // first one's next page is refused as stale. Each page here costs a
+    // relay round trip (#449).
+    const pages = 13;
+    const roundTripMs = 40;
+    let cursor = 0;
+    const stale = {
+      code: "conflict",
+      recovery: "refresh",
+      reason: "view_discovery_stale",
+      message: "discovery changed or expired; start fresh discovery",
+    } as const;
+    f.list.mockReset().mockImplementation(async ({ continuation }) => {
+      await new Promise((resolve) => setTimeout(resolve, roundTripMs / 2));
+      let token: number;
+      let page: number;
+      if (!continuation) {
+        token = ++cursor;
+        page = 1;
+      } else {
+        [token, page] = [continuation[0]!, continuation[1]! + 1];
+        if (token !== cursor) {
+          await new Promise((resolve) => setTimeout(resolve, roundTripMs / 2));
+          return { kind: "refusal" as const, problem: stale };
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, roundTripMs / 2));
+      return {
+        kind: "success" as const,
+        views: page === pages ? [descriptor] : [],
+        clock,
+        collectionRevision: revision,
+        continuation: page === pages ? null : Uint8Array.of(token, page),
+      };
+    });
+    const started = performance.now();
+    // Navigation discovery, its rerun after the change watch becomes
+    // active, and a later caller that asks while both are still paging.
+    const later = new Promise((resolve) => setTimeout(resolve, 150)).then(() =>
+      f.repository.listViews(),
+    );
+    const catalogs = await Promise.race([
+      Promise.all([f.repository.listViews(), f.repository.listViews(), later]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("discovery livelock")), 4_000),
+      ),
+    ]);
+    for (const catalog of catalogs)
+      expect(catalog[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    // One shared pass of 13 pages serves every overlapping caller.
+    expect(f.list).toHaveBeenCalledTimes(pages);
+    expect(performance.now() - started).toBeLessThan(roundTripMs * pages + 500);
+  });
+  it("a joined discovery continues under its own deadline when the pass's owner aborts", async () => {
+    const f = await fixture();
+    // A write retires the catalog, so the next execution rediscovers.
+    await f.repository.create({ title: "Retires the catalog" });
+    await vi.waitFor(async () =>
+      expect(await f.repository.cachedViews()).toEqual([]),
+    );
+    f.list.mockReset();
+    // The owner's first page is answered only by the owner's own abort.
+    f.list.mockImplementationOnce(
+      (_input, options) =>
+        new Promise((_, reject) => {
+          const signal = options!.signal!;
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        }),
+    );
+    f.list.mockResolvedValue({
+      kind: "success",
+      views: [descriptor],
+      clock,
+      collectionRevision: revision,
+      continuation: null,
+    });
+    const owner = new AbortController();
+    const executions = f.repository.iterateView(f.view, {
+      signal: owner.signal,
+    });
+    const execution = executions[Symbol.asyncIterator]().next();
+    await vi.waitFor(() => expect(f.list).toHaveBeenCalledOnce());
+    const joined = f.repository.listViews();
+    owner.abort(new Error("view closed"));
+    await expect(execution).rejects.toThrow("view closed");
+    const catalog = await joined;
+    expect(catalog[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+    expect(f.list).toHaveBeenCalledTimes(2);
+  });
   it("rereads discovery at once when a local data event retires its cut", async () => {
     const f = await fixture();
     f.list.mockClear();

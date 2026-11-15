@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RecordView, wire } from "@mdbase-dev/sdk";
-import { readNativeRows, type NativeRowIdentity } from "./next-bases-rows";
+import {
+  NATIVE_ROW_FANOUT,
+  readNativeRows,
+  type NativeRowIdentity,
+} from "./next-bases-rows";
 
 // Synthetic hydration consistency tests, not native READ/authority proof.
 function identities(n: number): NativeRowIdentity[] {
@@ -40,7 +44,9 @@ describe("selected native row hydration", () => {
   });
 
   it("uses fixed bounded fanout for a larger native selection", async () => {
-    const rows = identities(25);
+    // The SDK's readMany bound: through a relayed connected computer each
+    // batch of gets costs a round trip (#449).
+    const rows = identities(40);
     const actual = new Map(rows.map((row) => [row.record, record(row)]));
     let active = 0;
     let peak = 0;
@@ -56,8 +62,9 @@ describe("selected native row hydration", () => {
       },
       signal(),
     );
-    expect(peak).toBe(8);
-    expect(calls).toBe(25);
+    expect(peak).toBe(16);
+    expect(NATIVE_ROW_FANOUT).toBe(16);
+    expect(calls).toBe(40);
     expect(result).toEqual(rows.map(record));
   });
 
@@ -86,7 +93,7 @@ describe("selected native row hydration", () => {
   });
 
   it("stops later reads and settles in-flight readers when a READ fails", async () => {
-    const rows = identities(20);
+    const rows = identities(40);
     const failure = new Error("native READ refused");
     let calls = 0;
     await expect(
@@ -105,7 +112,7 @@ describe("selected native row hydration", () => {
         signal(),
       ),
     ).rejects.toBe(failure);
-    expect(calls).toBeLessThanOrEqual(8);
+    expect(calls).toBeLessThanOrEqual(NATIVE_ROW_FANOUT);
   });
 
   it("checks cancellation before and after awaiting a selected record", async () => {

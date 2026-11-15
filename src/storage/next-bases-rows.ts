@@ -6,6 +6,10 @@ export interface NativeRowIdentity {
   sourceRevision: wire.Hash;
 }
 
+/** Gets in flight while hydrating rows: the SDK's `readMany` bound. Through a
+ * relayed connected computer every batch costs a round trip (#449). */
+export const NATIVE_ROW_FANOUT = 16;
+
 /** Hydrate only selected native IDs using the original held client's READ.
  * No path lookup, full task-index load, body fallback, re-sort or row omission.
  * Native execution and each subsequent READ retain their own authority fences;
@@ -52,7 +56,10 @@ export async function readNativeRows(
   // Fixed bounded fanout, independent of result size. Wait for all readers to
   // settle on failure so none can write into a returned partial execution.
   const outcomes = await Promise.allSettled(
-    Array.from({ length: Math.min(8, identities.length) }, worker),
+    Array.from(
+      { length: Math.min(NATIVE_ROW_FANOUT, identities.length) },
+      worker,
+    ),
   );
   owner.throwIfAborted();
   const failed = outcomes.find((outcome) => outcome.status === "rejected");
