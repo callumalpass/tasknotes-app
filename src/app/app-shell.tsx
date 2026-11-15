@@ -342,8 +342,7 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    // The next entry has no reminder authority. Do not load a legacy owner or
-    // register/listen to notifications just because its workspace rendered.
+    // Only collections whose reminders mdbase delivers listen for wake-ups.
     if (reminderAuthority !== "connect") return;
     let active = true;
     let stop: (() => void) | undefined;
