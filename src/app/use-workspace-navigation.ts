@@ -16,7 +16,7 @@ import {
 } from "./navigation-transition";
 
 export type Route =
-  | { page: "home" | "search" | "scratchpad" }
+  | { page: "home" | "search" | "scratchpad" | "import" }
   | { page: "more"; section?: SettingsSection }
   | { page: "views"; key?: string }
   | { page: "task"; id: string; occurrence?: string };
@@ -233,6 +233,7 @@ function parseRoute(): Route {
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
+  if (path === "/import") return { page: "import" };
   if (path === "/scratchpad") return { page: "scratchpad" };
   if (path === "/more") return { page: "more" };
   const settings = /^\/more\/([^/]+)$/.exec(path);

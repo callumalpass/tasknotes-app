@@ -15,6 +15,27 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  importer-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm import:check
+      - run: pnpm --filter tasknotes-import exec playwright install --with-deps chromium
+      - run: pnpm import:test:e2e
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: tasknotes-import-browser-results
+          path: apps/import/test-results/
+          retention-days: 7
+
   # Retire the old github.io site without changing either Cloudflare publisher.
   legacy-github-pages:
     if: github.event_name == 'push'

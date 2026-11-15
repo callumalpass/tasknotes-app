@@ -8,6 +8,12 @@
 /.well-known/mdbase-app.json
   Cache-Control: no-store
 
+/oauth/todoist-client.json
+  Cache-Control: no-store
+
+/import/todoist/callback
+  Cache-Control: no-store
+
 /service-worker.js
   Cache-Control: no-cache
 

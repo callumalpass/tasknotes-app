@@ -1418,6 +1418,10 @@ msgstr "选择已提交，但可能仍在等待同步；请检查已确认、待
 msgid "Choose"
 msgstr "选择"
 
+#: src/app/import-screen.tsx
+msgid "Choose a connected collection before importing."
+msgstr "导入前，请选择已连接的集合。"
+
 #: src/components/task-model-settings.tsx
 msgid "Choose a default that is still in the list."
 msgstr "请选择仍在列表中的默认值。"
@@ -1474,6 +1478,7 @@ msgstr "选择要转换为任务的内容"
 msgid "Choose which tasks belong in this view."
 msgstr "选择要包含在此视图中的任务。"
 
+#: src/app/import-screen.tsx
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "选择…"
@@ -1496,6 +1501,10 @@ msgstr "每次重复时取消勾选笔记中的清单项"
 msgid "Clear due date"
 msgstr "清除截止日期"
 
+#: src/app/import-screen.tsx
+msgid "Clear loaded Todoist data"
+msgstr "清除已加载的 Todoist 数据"
+
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
 msgstr "清除最近的搜索记录"
@@ -1517,6 +1526,7 @@ msgstr "清除计划日期"
 msgid "Clear search"
 msgstr "清除搜索"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "清除选择"
@@ -1619,6 +1629,10 @@ msgstr "收起侧边栏 (M)"
 #: src/app/settings-sections.ts
 msgid "Collection"
 msgstr "集合"
+
+#: src/app/import-screen.tsx
+msgid "Collection access is unavailable."
+msgstr "无法访问集合。"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1820,6 +1834,10 @@ msgstr "冲突的更改"
 msgid "Connect calendars"
 msgstr "连接日历"
 
+#: src/app/import-screen.tsx
+msgid "Connect Todoist"
+msgstr "连接 Todoist"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1921,6 +1939,10 @@ msgstr "无法确认你所选操作的结果。请刷新并检查当前受保护
 msgid "Could not load projects."
 msgstr "无法加载项目。"
 
+#: src/app/import-screen.tsx
+msgid "Could not load Todoist tasks."
+msgstr "无法加载 Todoist 任务。"
+
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
@@ -2017,6 +2039,7 @@ msgstr "完成后创建下一次"
 msgid "Create view"
 msgstr "创建视图"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "已创建"
@@ -2116,6 +2139,10 @@ msgstr "天"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "距今天数"
+
+#: src/app/import-screen.tsx
+msgid "Deadlines become due dates."
+msgstr "最终期限将设为截止日期。"
 
 #: src/calendar-service/event-labels.ts
 msgid "Declined"
@@ -2229,6 +2256,15 @@ msgstr "描述"
 #: src/components/task-row.tsx
 msgid "Deselect {0}"
 msgstr "取消选择 {0}"
+
+#: src/app/import-screen.tsx
+msgid "Destination changed. Preview the import again."
+msgstr "目标已更改。请重新预览导入内容。"
+
+#. placeholder {0}: destination.name
+#: src/app/import-screen.tsx
+msgid "Destination: {0}"
+msgstr "目标：{0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
@@ -2362,6 +2398,10 @@ msgstr "下载"
 msgid "Download {0}"
 msgstr "下载 {0}"
 
+#: src/app/import-screen.tsx
+msgid "Download report"
+msgstr "下载报告"
+
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
 msgstr "拖动可在列之间移动。可使用左右方向键。"
@@ -2420,6 +2460,7 @@ msgstr "截止日期：{0}"
 msgid "Due and scheduled"
 msgstr "截止日期和计划日期"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Due date"
 msgstr "截止日期"
@@ -2621,6 +2662,10 @@ msgstr "任务的补充上下文"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
 msgstr "保存在每个任务文件中的额外属性。在此移除字段不会删除文件中已有的值。"
+
+#: src/app/import-screen.tsx
+msgid "Failed"
+msgstr "失败"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Field name"
@@ -2948,6 +2993,10 @@ msgstr "任务的存储方式"
 msgid "How to install"
 msgstr "安装方法"
 
+#: src/app/import-screen.tsx
+msgid "I reviewed these tasks and the destination."
+msgstr "我已核对这些任务及导入目标。"
+
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
 msgstr "我已保存恢复密钥"
@@ -2975,6 +3024,31 @@ msgstr "图片预览不可用"
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
 msgstr "离线时图片不可用"
+
+#: src/app/import-screen.tsx
+msgid "Import could not continue."
+msgstr "无法继续导入。"
+
+#: src/app/import-screen.tsx
+msgid "Import folder"
+msgstr "导入文件夹"
+
+#: src/app/import-screen.tsx
+#: src/app/more-screen.tsx
+msgid "Import from Todoist"
+msgstr "从 Todoist 导入"
+
+#: src/app/import-screen.tsx
+msgid "Import from Todoist in the web app."
+msgstr "请在网页版应用中从 Todoist 导入。"
+
+#: src/app/import-screen.tsx
+msgid "Import report"
+msgstr "导入报告"
+
+#: src/app/import-screen.tsx
+msgid "Import selected tasks"
+msgstr "导入所选任务"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
@@ -3386,6 +3460,10 @@ msgstr "Markdown 链接"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown 链接"
+
+#: src/app/import-screen.tsx
+msgid "Markdown preview"
+msgstr "Markdown 预览"
 
 #: src/components/task-complete-on-panel.tsx
 msgid "Marks that day’s occurrence as done."
@@ -3949,6 +4027,10 @@ msgstr "未保存 · 检查"
 msgid "Not saved. Review your edit."
 msgstr "未保存。请检查你的编辑。"
 
+#: src/app/import-screen.tsx
+msgid "Not started"
+msgstr "尚未开始"
+
 #. placeholder {0}: descriptions.join("; ")
 #: src/components/expression-builder.tsx
 msgid "Not: {0}"
@@ -4257,6 +4339,10 @@ msgstr "Planner 将打开此已保存视图。"
 msgid "Preview "
 msgstr "预览"
 
+#: src/app/import-screen.tsx
+msgid "Preview import"
+msgstr "预览导入"
+
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
 msgstr "预览任务"
@@ -4460,6 +4546,10 @@ msgstr "记录你完成它的日期。"
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "恢复账户访问权限"
+
+#: src/app/import-screen.tsx
+msgid "Recover original writes"
+msgstr "恢复原始写入操作"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -4856,6 +4946,10 @@ msgstr "供分组和显示字段使用的可复用值。"
 msgid "Review access"
 msgstr "检查访问权限"
 
+#: src/app/import-screen.tsx
+msgid "Review import"
+msgstr "核对导入内容"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "检查通知权限"
@@ -4879,6 +4973,10 @@ msgstr "查看严格模式"
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
 msgstr "检查 TaskNotes 的访问权限"
+
+#: src/app/import-screen.tsx
+msgid "Review the import before continuing."
+msgstr "请先核对导入内容再继续。"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
@@ -5051,6 +5149,7 @@ msgstr "计划日期：{0}"
 msgid "Scheduled {tasks} for {0}"
 msgstr "已安排到 {0}：{tasks}"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Scheduled date"
 msgstr "计划日期"
@@ -5139,6 +5238,7 @@ msgstr "查看“即将到来”"
 msgid "Select {0}"
 msgstr "选择 {0}"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "全选"
@@ -5347,6 +5447,10 @@ msgstr "跳过重复项"
 msgid "Skip to content"
 msgstr "跳到内容"
 
+#: src/app/import-screen.tsx
+msgid "Skipped"
+msgstr "已跳过"
+
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
 msgstr "已跳过的重复任务实例"
@@ -5467,6 +5571,14 @@ msgstr "停止"
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
 msgstr "任务完成后停止正在运行的计时器"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task"
+msgstr "处理完当前任务后停止"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task before leaving."
+msgstr "请在当前任务处理完成后停止导入，再离开此页面。"
 
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -5644,6 +5756,10 @@ msgstr "任务提醒"
 msgid "Task title"
 msgstr "任务标题"
 
+#: src/app/import-screen.tsx
+msgid "Task type"
+msgstr "任务类型"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "任务： "
@@ -5700,6 +5816,10 @@ msgstr "任务是 mdbase v0.3 格式的可移植 Markdown 记录。"
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0}的任务"
+
+#: src/app/import-screen.tsx
+msgid "Tasks stay unchanged in Todoist. Imports only create new records."
+msgstr "Todoist 中的任务保持不变。导入只会创建新记录。"
 
 #: src/app/view-empty-state.tsx
 msgid "Tasks with no date land here."
@@ -6126,6 +6246,14 @@ msgstr "今天 · {label}"
 msgid "Today is clear"
 msgstr "今天已无待办"
 
+#: src/app/import-screen.tsx
+msgid "Todoist API priority {priority}"
+msgstr "Todoist API 优先级 {priority}"
+
+#: src/app/import-screen.tsx
+msgid "Todoist task dates"
+msgstr "Todoist 任务日期"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Toggle sidebar"
@@ -6191,6 +6319,10 @@ msgstr "{name}的类型"
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "未分配"
+
+#: src/app/import-screen.tsx
+msgid "Uncertain"
+msgstr "结果不确定"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
@@ -6474,6 +6606,7 @@ msgstr "维基链接"
 msgid "Work session"
 msgstr "工作会话"
 
+#: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "正在处理中…"

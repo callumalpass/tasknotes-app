@@ -127,6 +127,7 @@ export default defineConfig(({ command, mode, isPreview }) => ({
     environment: "jsdom",
     // Publisher node:test suites run separately via test:publisher (with crypto).
     exclude: [
+      "**/apps/**",
       "**/.claude/**",
       "**/e2e/**",
       "**/node_modules/**",

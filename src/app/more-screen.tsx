@@ -80,11 +80,13 @@ const CalendarServiceSettings = import.meta.env.VITE_TASKNOTES_CALENDAR_ORIGIN
   : null;
 
 export function MoreScreen({
+  onImport,
   calendarPreferences,
   section,
   onCalendarPreferencesChange,
   onSection,
 }: {
+  onImport?(): void;
   calendarPreferences: CalendarPreferences;
   section?: SettingsSection;
   onCalendarPreferencesChange(value: CalendarPreferences): void;
@@ -145,7 +147,7 @@ export function MoreScreen({
   };
 
   const panels: Record<SettingsSection, () => ReactNode> = {
-    collection: () => <CollectionSettings />,
+    collection: () => <CollectionSettings onImport={onImport} />,
     account: () =>
       privateAccount ? (
         <PrivateAccountSettings account={privateAccount} />
@@ -368,7 +370,7 @@ function SettingsPanel({
   );
 }
 
-function CollectionSettings() {
+function CollectionSettings({ onImport }: { onImport?: () => void }) {
   const {
     info,
     stats,
@@ -465,6 +467,13 @@ function CollectionSettings() {
           )}
         </div>
       </div>
+      {onImport && !Capacitor.isNativePlatform() && (
+        <div className="settings-actions">
+          <button className="secondary-action" type="button" onClick={onImport}>
+            <Trans>Import from Todoist</Trans>
+          </button>
+        </div>
+      )}
       {connection.heldEdits?.length ? (
         <div className="settings-group">
           <h3>

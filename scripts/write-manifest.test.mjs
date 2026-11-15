@@ -68,6 +68,27 @@ function generate(root, development) {
 }
 
 describe("manifest output isolation", () => {
+  it("generates read-only Todoist metadata for the main app without replacing its mdbase identity", async () => {
+    const root = await scratchCheckout();
+    generate(root, false);
+    const metadata = JSON.parse(
+      await readFile(resolve(root, "public/oauth/todoist-client.json"), "utf8"),
+    );
+    expect(metadata).toMatchObject({
+      client_id: "https://app.tasknotes.dev/oauth/todoist-client.json",
+      client_uri: "https://app.tasknotes.dev/import",
+      redirect_uris: ["https://app.tasknotes.dev/import/todoist/callback"],
+      token_endpoint_auth_method: "none",
+      scope: "data:read",
+    });
+    const manifest = JSON.parse(
+      await readFile(resolve(root, "src/generated/mdbase-app.json"), "utf8"),
+    );
+    expect(manifest.id).toBe("dev.tasknotes.app");
+    expect(manifest.redirect_uris).toContain(
+      "https://app.tasknotes.dev/auth/mdbase/callback",
+    );
+  });
   it("leaves the committed production manifest untouched during development", async () => {
     const root = await scratchCheckout();
     const productionPath = resolve(root, "src/generated/mdbase-app.json");

@@ -1,5 +1,5 @@
 export type NativeRoute =
-  | { page: "home" | "search" | "scratchpad" }
+  | { page: "home" | "search" | "scratchpad" | "import" }
   | { page: "more"; section?: string }
   | { page: "views"; key?: string }
   | { page: "task"; id: string };

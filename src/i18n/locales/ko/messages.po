@@ -1418,6 +1418,10 @@ msgstr "선택 내용을 제출했습니다. 아직 동기화 대기 중일 수 
 msgid "Choose"
 msgstr "선택"
 
+#: src/app/import-screen.tsx
+msgid "Choose a connected collection before importing."
+msgstr "가져오기 전에 연결된 컬렉션을 선택하세요."
+
 #: src/components/task-model-settings.tsx
 msgid "Choose a default that is still in the list."
 msgstr "목록에 남아 있는 기본값을 선택하세요."
@@ -1474,6 +1478,7 @@ msgstr "작업으로 만들 항목 선택"
 msgid "Choose which tasks belong in this view."
 msgstr "이 뷰에 포함할 작업을 선택하세요."
 
+#: src/app/import-screen.tsx
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "선택…"
@@ -1496,6 +1501,10 @@ msgstr "반복할 때마다 노트의 체크박스 초기화"
 msgid "Clear due date"
 msgstr "마감일 지우기"
 
+#: src/app/import-screen.tsx
+msgid "Clear loaded Todoist data"
+msgstr "불러온 Todoist 데이터 지우기"
+
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
 msgstr "최근 검색 지우기"
@@ -1517,6 +1526,7 @@ msgstr "예정일 지우기"
 msgid "Clear search"
 msgstr "검색 지우기"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "선택 항목 지우기"
@@ -1619,6 +1629,10 @@ msgstr "사이드바 접기 (M)"
 #: src/app/settings-sections.ts
 msgid "Collection"
 msgstr "컬렉션"
+
+#: src/app/import-screen.tsx
+msgid "Collection access is unavailable."
+msgstr "컬렉션에 접근할 수 없습니다."
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1820,6 +1834,10 @@ msgstr "충돌하는 변경 사항"
 msgid "Connect calendars"
 msgstr "캘린더 연결"
 
+#: src/app/import-screen.tsx
+msgid "Connect Todoist"
+msgstr "Todoist 연결"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1921,6 +1939,10 @@ msgstr "선택 결과를 확인하지 못했습니다. 다시 시도하기 전�
 msgid "Could not load projects."
 msgstr "프로젝트를 불러오지 못했습니다."
 
+#: src/app/import-screen.tsx
+msgid "Could not load Todoist tasks."
+msgstr "Todoist 작업을 불러오지 못했습니다."
+
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
@@ -2017,6 +2039,7 @@ msgstr "완료 후 다음 항목 만들기"
 msgid "Create view"
 msgstr "뷰 만들기"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "만들었습니다"
@@ -2116,6 +2139,10 @@ msgstr "일"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "오늘부터 일수"
+
+#: src/app/import-screen.tsx
+msgid "Deadlines become due dates."
+msgstr "기한은 마감일로 변환됩니다."
 
 #: src/calendar-service/event-labels.ts
 msgid "Declined"
@@ -2229,6 +2256,15 @@ msgstr "설명"
 #: src/components/task-row.tsx
 msgid "Deselect {0}"
 msgstr "{0} 선택 해제"
+
+#: src/app/import-screen.tsx
+msgid "Destination changed. Preview the import again."
+msgstr "대상이 변경되었습니다. 가져오기 미리 보기를 다시 확인하세요."
+
+#. placeholder {0}: destination.name
+#: src/app/import-screen.tsx
+msgid "Destination: {0}"
+msgstr "대상: {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
@@ -2362,6 +2398,10 @@ msgstr "다운로드"
 msgid "Download {0}"
 msgstr "{0} 다운로드"
 
+#: src/app/import-screen.tsx
+msgid "Download report"
+msgstr "보고서 다운로드"
+
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
 msgstr "드래그하여 열 사이로 이동합니다. 왼쪽 및 오른쪽 화살표 키를 사용할 수 있습니다."
@@ -2420,6 +2460,7 @@ msgstr "마감 {0}"
 msgid "Due and scheduled"
 msgstr "마감 및 예정"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Due date"
 msgstr "마감일"
@@ -2621,6 +2662,10 @@ msgstr "작업의 추가 컨텍스트"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
 msgstr "각 작업 파일에 저장되는 추가 속성입니다. 여기서 필드를 삭제해도 파일에 이미 있는 값은 그대로 남습니다."
+
+#: src/app/import-screen.tsx
+msgid "Failed"
+msgstr "실패"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Field name"
@@ -2948,6 +2993,10 @@ msgstr "작업 저장 방식"
 msgid "How to install"
 msgstr "설치 방법"
 
+#: src/app/import-screen.tsx
+msgid "I reviewed these tasks and the destination."
+msgstr "이 작업들과 대상 위치를 확인했습니다."
+
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
 msgstr "복구 키를 저장했습니다"
@@ -2975,6 +3024,31 @@ msgstr "이미지 미리보기를 사용할 수 없습니다."
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
 msgstr "오프라인에서는 이미지를 사용할 수 없습니다."
+
+#: src/app/import-screen.tsx
+msgid "Import could not continue."
+msgstr "가져오기를 계속하지 못했습니다."
+
+#: src/app/import-screen.tsx
+msgid "Import folder"
+msgstr "가져오기 폴더"
+
+#: src/app/import-screen.tsx
+#: src/app/more-screen.tsx
+msgid "Import from Todoist"
+msgstr "Todoist에서 가져오기"
+
+#: src/app/import-screen.tsx
+msgid "Import from Todoist in the web app."
+msgstr "웹 앱에서 Todoist 데이터를 가져오세요."
+
+#: src/app/import-screen.tsx
+msgid "Import report"
+msgstr "가져오기 보고서"
+
+#: src/app/import-screen.tsx
+msgid "Import selected tasks"
+msgstr "선택한 작업 가져오기"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
@@ -3386,6 +3460,10 @@ msgstr "Markdown 링크"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown 링크"
+
+#: src/app/import-screen.tsx
+msgid "Markdown preview"
+msgstr "Markdown 미리 보기"
 
 #: src/components/task-complete-on-panel.tsx
 msgid "Marks that day’s occurrence as done."
@@ -3949,6 +4027,10 @@ msgstr "저장되지 않음 · 검토"
 msgid "Not saved. Review your edit."
 msgstr "저장되지 않았습니다. 편집 내용을 검토하세요."
 
+#: src/app/import-screen.tsx
+msgid "Not started"
+msgstr "시작 전"
+
 #. placeholder {0}: descriptions.join("; ")
 #: src/components/expression-builder.tsx
 msgid "Not: {0}"
@@ -4257,6 +4339,10 @@ msgstr "Planner에서 이 저장된 뷰를 엽니다."
 msgid "Preview "
 msgstr "미리보기 "
 
+#: src/app/import-screen.tsx
+msgid "Preview import"
+msgstr "가져오기 미리 보기"
+
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
 msgstr "작업 미리보기"
@@ -4460,6 +4546,10 @@ msgstr "완료한 날짜를 기록합니다."
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "계정 접근 복구"
+
+#: src/app/import-screen.tsx
+msgid "Recover original writes"
+msgstr "원래 쓰기 작업 복구"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -4856,6 +4946,10 @@ msgstr "그룹화 및 표시 필드에서 재사용할 값입니다."
 msgid "Review access"
 msgstr "접근 권한 검토"
 
+#: src/app/import-screen.tsx
+msgid "Review import"
+msgstr "가져오기 검토"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "알림 접근 검토"
@@ -4879,6 +4973,10 @@ msgstr "엄격 모드 검토"
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
 msgstr "TaskNotes 접근 권한 검토"
+
+#: src/app/import-screen.tsx
+msgid "Review the import before continuing."
+msgstr "계속하기 전에 가져올 내용을 검토하세요."
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
@@ -5051,6 +5149,7 @@ msgstr "{0} 예정"
 msgid "Scheduled {tasks} for {0}"
 msgstr "{0}(으)로 예약됨: {tasks}"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Scheduled date"
 msgstr "예정일"
@@ -5139,6 +5238,7 @@ msgstr "예정 보기"
 msgid "Select {0}"
 msgstr "{0} 선택"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "모두 선택"
@@ -5347,6 +5447,10 @@ msgstr "반복 항목 건너뛰기"
 msgid "Skip to content"
 msgstr "콘텐츠로 건너뛰기"
 
+#: src/app/import-screen.tsx
+msgid "Skipped"
+msgstr "건너뜀"
+
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
 msgstr "건너뛴 반복 항목"
@@ -5467,6 +5571,14 @@ msgstr "중지"
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
 msgstr "작업이 완료되면 실행 중인 타이머 중지"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task"
+msgstr "현재 작업 처리 후 중지"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task before leaving."
+msgstr "나가기 전에 현재 작업 처리가 끝난 뒤 가져오기를 중지하세요."
 
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -5644,6 +5756,10 @@ msgstr "작업 리마인더"
 msgid "Task title"
 msgstr "작업 제목"
 
+#: src/app/import-screen.tsx
+msgid "Task type"
+msgstr "작업 유형"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "작업: "
@@ -5700,6 +5816,10 @@ msgstr "작업은 mdbase v0.3 형식의 이식 가능한 Markdown 레코드입�
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0} 작업"
+
+#: src/app/import-screen.tsx
+msgid "Tasks stay unchanged in Todoist. Imports only create new records."
+msgstr "Todoist의 작업은 변경되지 않습니다. 가져오기는 새 레코드만 만듭니다."
 
 #: src/app/view-empty-state.tsx
 msgid "Tasks with no date land here."
@@ -6126,6 +6246,14 @@ msgstr "오늘 · {label}"
 msgid "Today is clear"
 msgstr "오늘은 할 일이 없습니다."
 
+#: src/app/import-screen.tsx
+msgid "Todoist API priority {priority}"
+msgstr "Todoist API 우선순위 {priority}"
+
+#: src/app/import-screen.tsx
+msgid "Todoist task dates"
+msgstr "Todoist 작업 날짜"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Toggle sidebar"
@@ -6191,6 +6319,10 @@ msgstr "{name} 유형"
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "미할당"
+
+#: src/app/import-screen.tsx
+msgid "Uncertain"
+msgstr "결과 불확실"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
@@ -6474,6 +6606,7 @@ msgstr "위키링크"
 msgid "Work session"
 msgstr "작업 세션"
 
+#: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "작업 중…"

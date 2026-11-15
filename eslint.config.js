@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["android", "dist", "coverage", "ios/App/App/public"],
+    ignores: ["android", "apps", "dist", "coverage", "ios/App/App/public"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

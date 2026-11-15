@@ -17,6 +17,7 @@ import { AppUpdateNotice } from "./components/app-update-notice";
 import { ReturningUserNotice } from "./components/returning-user-notice";
 import { initializePwaInstall } from "./pwa/install";
 import { initializePwaUpdate } from "./pwa/update";
+import { captureTodoistReturn } from "./cloud/todoist-return";
 import {
   clearTaskNotesServiceWorkerForDevelopment,
   registerTaskNotesServiceWorker,
@@ -28,6 +29,7 @@ import "./accessibility.css";
 // The Private collection grant window returns here: hand its result to the
 // waiting original SDK owner, without starting a second mdbase owner. That owner
 // closes this SAME popup only after verified completion and original custody ACK.
+captureTodoistReturn(new URL(window.location.href));
 const grantReturn = isAppGrantReturn(new URL(window.location.href));
 if (grantReturn) {
   void deliverAppGrantReturn(new URL(window.location.href)).catch(

@@ -1418,6 +1418,10 @@ msgstr "選択を送信しました。同期待ちの可能性があります。
 msgid "Choose"
 msgstr "選択"
 
+#: src/app/import-screen.tsx
+msgid "Choose a connected collection before importing."
+msgstr "インポートする前に、接続済みのコレクションを選択してください。"
+
 #: src/components/task-model-settings.tsx
 msgid "Choose a default that is still in the list."
 msgstr "一覧に残っている既定値を選んでください。"
@@ -1474,6 +1478,7 @@ msgstr "タスクにする項目を選択"
 msgid "Choose which tasks belong in this view."
 msgstr "このビューに含めるタスクを選択します。"
 
+#: src/app/import-screen.tsx
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "選択…"
@@ -1496,6 +1501,10 @@ msgstr "繰り返しのたびにノートのチェックボックスをリセッ
 msgid "Clear due date"
 msgstr "期限日をクリア"
 
+#: src/app/import-screen.tsx
+msgid "Clear loaded Todoist data"
+msgstr "読み込んだTodoistデータを消去"
+
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
 msgstr "最近の検索をクリア"
@@ -1517,6 +1526,7 @@ msgstr "予定日をクリア"
 msgid "Clear search"
 msgstr "検索をクリア"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "選択をクリア"
@@ -1619,6 +1629,10 @@ msgstr "サイドバーを折りたたむ (M)"
 #: src/app/settings-sections.ts
 msgid "Collection"
 msgstr "コレクション"
+
+#: src/app/import-screen.tsx
+msgid "Collection access is unavailable."
+msgstr "コレクションにアクセスできません。"
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1820,6 +1834,10 @@ msgstr "競合する変更"
 msgid "Connect calendars"
 msgstr "カレンダーを接続"
 
+#: src/app/import-screen.tsx
+msgid "Connect Todoist"
+msgstr "Todoistに接続"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1921,6 +1939,10 @@ msgstr "選択の結果を確認できませんでした。再試行する前に
 msgid "Could not load projects."
 msgstr "プロジェクトを読み込めませんでした。"
 
+#: src/app/import-screen.tsx
+msgid "Could not load Todoist tasks."
+msgstr "Todoistのタスクを読み込めませんでした。"
+
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
@@ -2017,6 +2039,7 @@ msgstr "完了後に次を作成"
 msgid "Create view"
 msgstr "ビューを作成"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "作成済み"
@@ -2116,6 +2139,10 @@ msgstr "日数"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "今日からの日数"
+
+#: src/app/import-screen.tsx
+msgid "Deadlines become due dates."
+msgstr "締め切り日は期限日として取り込まれます。"
 
 #: src/calendar-service/event-labels.ts
 msgid "Declined"
@@ -2229,6 +2256,15 @@ msgstr "説明"
 #: src/components/task-row.tsx
 msgid "Deselect {0}"
 msgstr "{0} の選択を解除"
+
+#: src/app/import-screen.tsx
+msgid "Destination changed. Preview the import again."
+msgstr "インポート先が変更されました。もう一度インポートをプレビューしてください。"
+
+#. placeholder {0}: destination.name
+#: src/app/import-screen.tsx
+msgid "Destination: {0}"
+msgstr "インポート先: {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
@@ -2362,6 +2398,10 @@ msgstr "ダウンロード"
 msgid "Download {0}"
 msgstr "{0}をダウンロード"
 
+#: src/app/import-screen.tsx
+msgid "Download report"
+msgstr "レポートをダウンロード"
+
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
 msgstr "ドラッグして列間を移動します。左右の矢印キーも使えます。"
@@ -2420,6 +2460,7 @@ msgstr "期限 {0}"
 msgid "Due and scheduled"
 msgstr "期限と予定"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Due date"
 msgstr "期限日"
@@ -2621,6 +2662,10 @@ msgstr "タスクの追加コンテキスト"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
 msgstr "各タスクのファイルに保存される追加のプロパティです。ここでフィールドを削除しても、ファイルにある値はそのまま残ります。"
+
+#: src/app/import-screen.tsx
+msgid "Failed"
+msgstr "失敗"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Field name"
@@ -2948,6 +2993,10 @@ msgstr "タスクの保存方法"
 msgid "How to install"
 msgstr "インストール方法"
 
+#: src/app/import-screen.tsx
+msgid "I reviewed these tasks and the destination."
+msgstr "これらのタスクとインポート先を確認しました。"
+
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
 msgstr "復元キーを保存しました"
@@ -2975,6 +3024,31 @@ msgstr "画像プレビューを利用できません"
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
 msgstr "オフラインでは画像を利用できません"
+
+#: src/app/import-screen.tsx
+msgid "Import could not continue."
+msgstr "インポートを続行できませんでした。"
+
+#: src/app/import-screen.tsx
+msgid "Import folder"
+msgstr "インポート先フォルダー"
+
+#: src/app/import-screen.tsx
+#: src/app/more-screen.tsx
+msgid "Import from Todoist"
+msgstr "Todoistからインポート"
+
+#: src/app/import-screen.tsx
+msgid "Import from Todoist in the web app."
+msgstr "Todoistからのインポートはウェブアプリで行ってください。"
+
+#: src/app/import-screen.tsx
+msgid "Import report"
+msgstr "インポートレポート"
+
+#: src/app/import-screen.tsx
+msgid "Import selected tasks"
+msgstr "選択したタスクをインポート"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
@@ -3386,6 +3460,10 @@ msgstr "Markdownリンク"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdownリンク"
+
+#: src/app/import-screen.tsx
+msgid "Markdown preview"
+msgstr "Markdownプレビュー"
 
 #: src/components/task-complete-on-panel.tsx
 msgid "Marks that day’s occurrence as done."
@@ -3949,6 +4027,10 @@ msgstr "未保存 · 確認"
 msgid "Not saved. Review your edit."
 msgstr "未保存です。編集内容を確認してください。"
 
+#: src/app/import-screen.tsx
+msgid "Not started"
+msgstr "未開始"
+
 #. placeholder {0}: descriptions.join("; ")
 #: src/components/expression-builder.tsx
 msgid "Not: {0}"
@@ -4257,6 +4339,10 @@ msgstr "保存済みビューをPlannerで開きます。"
 msgid "Preview "
 msgstr "プレビュー "
 
+#: src/app/import-screen.tsx
+msgid "Preview import"
+msgstr "インポートをプレビュー"
+
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
 msgstr "タスクをプレビュー"
@@ -4460,6 +4546,10 @@ msgstr "完了した日を記録します。"
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "アカウントアクセスを復元"
+
+#: src/app/import-screen.tsx
+msgid "Recover original writes"
+msgstr "元の書き込み処理を復旧"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -4856,6 +4946,10 @@ msgstr "グループ化と表示フィールドに再利用できる値。"
 msgid "Review access"
 msgstr "アクセスを確認"
 
+#: src/app/import-screen.tsx
+msgid "Review import"
+msgstr "インポート内容の確認"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "通知へのアクセスを確認"
@@ -4879,6 +4973,10 @@ msgstr "厳格モードを確認"
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
 msgstr "TaskNotesのアクセスを確認"
+
+#: src/app/import-screen.tsx
+msgid "Review the import before continuing."
+msgstr "続行する前にインポート内容を確認してください。"
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
@@ -5051,6 +5149,7 @@ msgstr "予定 {0}"
 msgid "Scheduled {tasks} for {0}"
 msgstr "{0} に予定しました: {tasks}"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Scheduled date"
 msgstr "予定日"
@@ -5139,6 +5238,7 @@ msgstr "近日中を見る"
 msgid "Select {0}"
 msgstr "{0} を選択"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "すべて選択"
@@ -5347,6 +5447,10 @@ msgstr "発生分をスキップ"
 msgid "Skip to content"
 msgstr "コンテンツにスキップ"
 
+#: src/app/import-screen.tsx
+msgid "Skipped"
+msgstr "スキップ済み"
+
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
 msgstr "スキップした繰り返しタスク"
@@ -5467,6 +5571,14 @@ msgstr "停止"
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
 msgstr "タスク完了時に実行中のタイマーを停止"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task"
+msgstr "現在のタスクの処理後に停止"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task before leaving."
+msgstr "この画面を離れる前に、現在のタスクの処理後にインポートを停止してください。"
 
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -5644,6 +5756,10 @@ msgstr "タスクのリマインダー"
 msgid "Task title"
 msgstr "タスク名"
 
+#: src/app/import-screen.tsx
+msgid "Task type"
+msgstr "タスクの種類"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "タスク："
@@ -5700,6 +5816,10 @@ msgstr "タスクはmdbase v0.3形式の持ち運び可能なMarkdownレコー�
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "{0}のタスク"
+
+#: src/app/import-screen.tsx
+msgid "Tasks stay unchanged in Todoist. Imports only create new records."
+msgstr "Todoist内のタスクは変更されません。インポートでは新しいレコードのみを作成します。"
 
 #: src/app/view-empty-state.tsx
 msgid "Tasks with no date land here."
@@ -6126,6 +6246,14 @@ msgstr "今日 · {label}"
 msgid "Today is clear"
 msgstr "今日はタスクがありません"
 
+#: src/app/import-screen.tsx
+msgid "Todoist API priority {priority}"
+msgstr "Todoist APIの優先度 {priority}"
+
+#: src/app/import-screen.tsx
+msgid "Todoist task dates"
+msgstr "Todoistのタスクの日付"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Toggle sidebar"
@@ -6191,6 +6319,10 @@ msgstr "{name}の種類"
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "未割り当て"
+
+#: src/app/import-screen.tsx
+msgid "Uncertain"
+msgstr "結果不明"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
@@ -6474,6 +6606,7 @@ msgstr "ウィキリンク"
 msgid "Work session"
 msgstr "作業セッション"
 
+#: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "処理中…"

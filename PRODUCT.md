@@ -23,6 +23,18 @@ Success means that capture, review, editing, and completion are clear and
 dependable; collection availability is understandable; and users continue to
 trust that their information is portable beyond the application.
 
+## Importing existing tasks
+
+The web app provides Todoist import at `/import` and under Settings → Collection.
+It reuses the selected collection and the app's connection/setup flow. Import is
+a reviewed, one-way migration of active tasks, not synchronization: Todoist is
+read-only, existing destination records are never overwritten, and unsupported
+conversions block rather than silently dropping meaning. Users explicitly map
+priorities and dates, review Markdown and the destination, then approve creates.
+Cancellation stops after the captured write settles; uncertain results require
+checking the original mutation, never replay. Native users use web import until
+native OAuth has been qualified.
+
 ## Brand Personality
 
 Practical, portable, and quietly precise. The application should feel

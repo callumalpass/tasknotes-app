@@ -70,6 +70,15 @@ The browser suite is the small trust core, not a substitute for exercising the a
 
 ## Evidence and follow-up
 
+For Todoist import, open `/import?demo=60` and the Collection settings entry on
+desktop and a narrow phone viewport. Demo mode must never invent a destination
+or enable writes. The integrated unit suite covers reviewed consent, changed
+definitions, cancellation and original-mutation recovery using a synthetic
+repository; the engine suite separately exercises the native SDK MemoryReplica.
+Neither proves a real Todoist consent exchange or hosted/computer-backed import.
+Live import acceptance needs a separately selected LAB build and disposable
+fixtures. A production-only SDK original must not be retargeted to LAB by URL.
+
 Record the exact build, scenario and starting data, actions, expected/actual result,
 screenshots actually inspected, console/network errors and any saved-record checks.
 Separate local demo, emulated phone, native device and LAB evidence; list untested

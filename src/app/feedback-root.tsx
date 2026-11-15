@@ -25,6 +25,7 @@ export type FeedbackView =
   | "views"
   | "task"
   | "more"
+  | "import"
   | "failure";
 
 export interface FeedbackConfiguration {

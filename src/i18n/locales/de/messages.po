@@ -1418,6 +1418,10 @@ msgstr "Auswahl übermittelt. Die Synchronisierung steht möglicherweise noch au
 msgid "Choose"
 msgstr "Auswählen"
 
+#: src/app/import-screen.tsx
+msgid "Choose a connected collection before importing."
+msgstr "Wählen Sie vor dem Import eine verbundene Sammlung aus."
+
 #: src/components/task-model-settings.tsx
 msgid "Choose a default that is still in the list."
 msgstr "Wählen Sie einen Standard, der noch in der Liste steht."
@@ -1474,6 +1478,7 @@ msgstr "Wählen Sie aus, was zu einer Aufgabe wird"
 msgid "Choose which tasks belong in this view."
 msgstr "Wählen Sie aus, welche Aufgaben zu dieser Ansicht gehören."
 
+#: src/app/import-screen.tsx
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "Auswählen…"
@@ -1496,6 +1501,10 @@ msgstr "Die Kontrollkästchen in der Notiz bei jeder Wiederholung zurücksetzen"
 msgid "Clear due date"
 msgstr "Fälligkeitsdatum löschen"
 
+#: src/app/import-screen.tsx
+msgid "Clear loaded Todoist data"
+msgstr "Geladene Todoist-Daten verwerfen"
+
 #: src/app/search-screen.tsx
 msgid "Clear recent searches"
 msgstr "Letzte Suchanfragen löschen"
@@ -1517,6 +1526,7 @@ msgstr "Planungsdatum löschen"
 msgid "Clear search"
 msgstr "Suche leeren"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Clear selection"
 msgstr "Auswahl aufheben"
@@ -1619,6 +1629,10 @@ msgstr "Seitenleiste einklappen (M)"
 #: src/app/settings-sections.ts
 msgid "Collection"
 msgstr "Sammlung"
+
+#: src/app/import-screen.tsx
+msgid "Collection access is unavailable."
+msgstr "Der Zugriff auf die Sammlung ist nicht verfügbar."
 
 #: src/app/settings-sections.ts
 #: src/components/task-model-settings.tsx
@@ -1820,6 +1834,10 @@ msgstr "Widersprüchliche Änderungen"
 msgid "Connect calendars"
 msgstr "Kalender verbinden"
 
+#: src/app/import-screen.tsx
+msgid "Connect Todoist"
+msgstr "Todoist verbinden"
+
 #: src/app/more-screen.tsx
 #: src/calendar-service/settings.tsx
 msgid "Connected"
@@ -1921,6 +1939,10 @@ msgstr "Das Ergebnis Ihrer Auswahl konnte nicht bestätigt werden. Aktualisieren
 msgid "Could not load projects."
 msgstr "Projekte konnten nicht geladen werden."
 
+#: src/app/import-screen.tsx
+msgid "Could not load Todoist tasks."
+msgstr "Die Todoist-Aufgaben konnten nicht geladen werden."
+
 #. placeholder {0}: row.task.title
 #. placeholder {1}: message(reason)
 #: src/app/views-screen.tsx
@@ -2017,6 +2039,7 @@ msgstr "Nächstes Vorkommen nach Abschluss erstellen"
 msgid "Create view"
 msgstr "Ansicht erstellen"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Created"
 msgstr "Erstellt"
@@ -2116,6 +2139,10 @@ msgstr "Tage"
 #: src/components/expression-builder.tsx
 msgid "Days from today"
 msgstr "Tage ab heute"
+
+#: src/app/import-screen.tsx
+msgid "Deadlines become due dates."
+msgstr "Fristen werden als Fälligkeitsdaten übernommen."
 
 #: src/calendar-service/event-labels.ts
 msgid "Declined"
@@ -2229,6 +2256,15 @@ msgstr "Beschreibung"
 #: src/components/task-row.tsx
 msgid "Deselect {0}"
 msgstr "{0} abwählen"
+
+#: src/app/import-screen.tsx
+msgid "Destination changed. Preview the import again."
+msgstr "Das Importziel hat sich geändert. Zeigen Sie die Importvorschau erneut an."
+
+#. placeholder {0}: destination.name
+#: src/app/import-screen.tsx
+msgid "Destination: {0}"
+msgstr "Ziel: {0}"
 
 #: src/components/task-attachments.tsx
 msgid "Detach"
@@ -2362,6 +2398,10 @@ msgstr "Herunterladen"
 msgid "Download {0}"
 msgstr "{0} herunterladen"
 
+#: src/app/import-screen.tsx
+msgid "Download report"
+msgstr "Bericht herunterladen"
+
 #: src/app/views/kanban-view.tsx
 msgid "Drag to move between columns. Use left and right arrow keys."
 msgstr "Zum Verschieben zwischen Spalten ziehen. Verwenden Sie die Pfeiltasten nach links und rechts."
@@ -2420,6 +2460,7 @@ msgstr "Fällig {0}"
 msgid "Due and scheduled"
 msgstr "Fälligkeits- und Planungsdatum"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Due date"
 msgstr "Fälligkeit"
@@ -2621,6 +2662,10 @@ msgstr "Zusätzlicher Kontext für die Aufgabe"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Extra properties kept in each task’s file. Removing a field here leaves any values already in the files."
 msgstr "Zusätzliche Eigenschaften, die in der Datei jeder Aufgabe stehen. Wenn Sie hier ein Feld entfernen, bleiben vorhandene Werte in den Dateien erhalten."
+
+#: src/app/import-screen.tsx
+msgid "Failed"
+msgstr "Fehlgeschlagen"
 
 #: src/components/task-vocabulary-editor.tsx
 msgid "Field name"
@@ -2948,6 +2993,10 @@ msgstr "Aufgabenspeicherung"
 msgid "How to install"
 msgstr "Installationsanleitung"
 
+#: src/app/import-screen.tsx
+msgid "I reviewed these tasks and the destination."
+msgstr "Ich habe diese Aufgaben und das Importziel überprüft."
+
 #: src/components/private-account-settings.tsx
 msgid "I saved my recovery key"
 msgstr "Ich habe meinen Wiederherstellungsschlüssel gespeichert"
@@ -2975,6 +3024,31 @@ msgstr "Bildvorschau nicht verfügbar"
 #: src/components/markdown-preview.tsx
 msgid "Image unavailable offline"
 msgstr "Bild ist offline nicht verfügbar"
+
+#: src/app/import-screen.tsx
+msgid "Import could not continue."
+msgstr "Der Import konnte nicht fortgesetzt werden."
+
+#: src/app/import-screen.tsx
+msgid "Import folder"
+msgstr "Importordner"
+
+#: src/app/import-screen.tsx
+#: src/app/more-screen.tsx
+msgid "Import from Todoist"
+msgstr "Aus Todoist importieren"
+
+#: src/app/import-screen.tsx
+msgid "Import from Todoist in the web app."
+msgstr "Importieren Sie aus Todoist in der Web-App."
+
+#: src/app/import-screen.tsx
+msgid "Import report"
+msgstr "Importbericht"
+
+#: src/app/import-screen.tsx
+msgid "Import selected tasks"
+msgstr "Ausgewählte Aufgaben importieren"
 
 #: src/app/views/view-catalog.tsx
 msgid "In navigation"
@@ -3386,6 +3460,10 @@ msgstr "Markdown-Link"
 #: src/components/task-model-settings.tsx
 msgid "Markdown links"
 msgstr "Markdown-Links"
+
+#: src/app/import-screen.tsx
+msgid "Markdown preview"
+msgstr "Markdown-Vorschau"
 
 #: src/components/task-complete-on-panel.tsx
 msgid "Marks that day’s occurrence as done."
@@ -3949,6 +4027,10 @@ msgstr "Nicht gespeichert · Prüfen"
 msgid "Not saved. Review your edit."
 msgstr "Nicht gespeichert. Überprüfen Sie Ihre Änderung."
 
+#: src/app/import-screen.tsx
+msgid "Not started"
+msgstr "Nicht gestartet"
+
 #. placeholder {0}: descriptions.join("; ")
 #: src/components/expression-builder.tsx
 msgid "Not: {0}"
@@ -4257,6 +4339,10 @@ msgstr "Planner öffnet diese gespeicherte Ansicht."
 msgid "Preview "
 msgstr "Vorschau "
 
+#: src/app/import-screen.tsx
+msgid "Preview import"
+msgstr "Importvorschau anzeigen"
+
 #: src/app/view-editor.tsx
 msgid "Preview tasks"
 msgstr "Aufgaben in der Vorschau anzeigen"
@@ -4460,6 +4546,10 @@ msgstr "Hält den Tag fest, an dem Sie sie erledigt haben."
 #: src/components/private-account-settings.tsx
 msgid "Recover account access"
 msgstr "Kontozugriff wiederherstellen"
+
+#: src/app/import-screen.tsx
+msgid "Recover original writes"
+msgstr "Ursprüngliche Schreibvorgänge wiederherstellen"
 
 #: src/components/task-capture.tsx
 msgid "Recover task"
@@ -4856,6 +4946,10 @@ msgstr "Wiederverwendbare Werte für Gruppierung und angezeigte Felder."
 msgid "Review access"
 msgstr "Zugriff überprüfen"
 
+#: src/app/import-screen.tsx
+msgid "Review import"
+msgstr "Import überprüfen"
+
 #: src/app/more-screen.tsx
 msgid "Review notification access"
 msgstr "Benachrichtigungszugriff überprüfen"
@@ -4879,6 +4973,10 @@ msgstr "Strikten Modus überprüfen"
 #: src/app/app-shell.tsx
 msgid "Review TaskNotes’ access"
 msgstr "Zugriff von TaskNotes überprüfen"
+
+#: src/app/import-screen.tsx
+msgid "Review the import before continuing."
+msgstr "Überprüfen Sie den Import, bevor Sie fortfahren."
 
 #: src/app/views-screen.tsx
 msgid "Review the task before making another change."
@@ -5051,6 +5149,7 @@ msgstr "Geplant {0}"
 msgid "Scheduled {tasks} for {0}"
 msgstr "Für {0} geplant: {tasks}"
 
+#: src/app/import-screen.tsx
 #: src/app/view-sort-choices.tsx
 msgid "Scheduled date"
 msgstr "Geplantes Datum"
@@ -5139,6 +5238,7 @@ msgstr "Upcoming anzeigen"
 msgid "Select {0}"
 msgstr "{0} auswählen"
 
+#: src/app/import-screen.tsx
 #: src/app/scratchpad-note.tsx
 msgid "Select all"
 msgstr "Alle auswählen"
@@ -5347,6 +5447,10 @@ msgstr "Vorkommen überspringen"
 msgid "Skip to content"
 msgstr "Zum Inhalt springen"
 
+#: src/app/import-screen.tsx
+msgid "Skipped"
+msgstr "Übersprungen"
+
 #: src/app/view-editor-form.tsx
 msgid "Skipped recurring instances"
 msgstr "Übersprungene wiederkehrende Vorkommen"
@@ -5467,6 +5571,14 @@ msgstr "Anhalten"
 #: src/components/task-model-settings.tsx
 msgid "Stop a running timer when its task is completed"
 msgstr "Laufenden Timer beenden, wenn die Aufgabe abgeschlossen ist"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task"
+msgstr "Nach der aktuellen Aufgabe stoppen"
+
+#: src/app/import-screen.tsx
+msgid "Stop after the current task before leaving."
+msgstr "Stoppen Sie den Import nach der aktuellen Aufgabe, bevor Sie die Seite verlassen."
 
 #: src/app/palette-commands.ts
 #: src/components/task-actions.tsx
@@ -5644,6 +5756,10 @@ msgstr "Aufgabenerinnerungen"
 msgid "Task title"
 msgstr "Aufgabentitel"
 
+#: src/app/import-screen.tsx
+msgid "Task type"
+msgstr "Aufgabentyp"
+
 #: src/components/task-capture.tsx
 msgid "Task: "
 msgstr "Aufgabe: "
@@ -5700,6 +5816,10 @@ msgstr "Aufgaben sind portable Markdown-Datensätze im Format mdbase v0.3."
 #: src/app/use-calendar-overflow.ts
 msgid "Tasks for {0}"
 msgstr "Aufgaben für {0}"
+
+#: src/app/import-screen.tsx
+msgid "Tasks stay unchanged in Todoist. Imports only create new records."
+msgstr "Die Aufgaben bleiben in Todoist unverändert. Beim Import werden nur neue Datensätze erstellt."
 
 #: src/app/view-empty-state.tsx
 msgid "Tasks with no date land here."
@@ -6126,6 +6246,14 @@ msgstr "Heute · {label}"
 msgid "Today is clear"
 msgstr "Für heute sind keine Aufgaben mehr offen"
 
+#: src/app/import-screen.tsx
+msgid "Todoist API priority {priority}"
+msgstr "Todoist-API-Priorität {priority}"
+
+#: src/app/import-screen.tsx
+msgid "Todoist task dates"
+msgstr "Datumsangaben der Todoist-Aufgaben"
+
 #: src/app/keyboard-shortcuts.ts
 #: src/app/palette-commands.ts
 msgid "Toggle sidebar"
@@ -6191,6 +6319,10 @@ msgstr "Typ von {name}"
 #: src/components/assignee-editor.tsx
 msgid "Unassigned"
 msgstr "Nicht zugewiesen"
+
+#: src/app/import-screen.tsx
+msgid "Uncertain"
+msgstr "Ergebnis ungewiss"
 
 #: src/components/task-capture.tsx
 msgid "Understanding…"
@@ -6474,6 +6606,7 @@ msgstr "Wikilinks"
 msgid "Work session"
 msgstr "Arbeitssitzung"
 
+#: src/app/import-screen.tsx
 #: src/components/private-account-settings.tsx
 msgid "Working…"
 msgstr "Wird ausgeführt…"
