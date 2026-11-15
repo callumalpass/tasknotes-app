@@ -17,7 +17,8 @@ commit and its vendor inputs.
 - `native-app-storage.json` and `mdbase-browser.pin.json` retain the current
   archive integrity and embedded WASM pins. Native app storage exposes only
   the app-storage subpath and uses the pinned SQLite WASM with OPFS sahpool.
-- `mdbase-contracts/` holds the canonical contract packs, including superseded
+- `mdbase-contracts/` pins `tasknotes.task` 0.3.0-rc.21 (mdbase-contracts #23)
+  and holds the canonical contract packs, including superseded
   task contracts the manifest still provides. Refresh with `pnpm contracts:sync`.
   `obsidian-base-1.0.0.json` is also read by the native browser scenario.
 

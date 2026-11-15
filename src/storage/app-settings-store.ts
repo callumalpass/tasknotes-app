@@ -1,5 +1,5 @@
 /**
- * One app's collection-scope settings record (mdbase.app-settings 1.0.0),
+ * One app's collection-scope settings record (mdbase.app-settings 2.0.0),
  * modelled on mdbase Reader's store: read by path, defaults when it is
  * missing, created on the first save, then patched field by field against the
  * revision that was read. Nothing here creates the record on read or rewrites
@@ -15,8 +15,10 @@ import {
   appSettingsPath,
   conflictingAppSettings,
   defaultAppSettings,
+  legacyAppSettingsPath,
   newAppSettingsFrontmatter,
   resolveAppSettings,
+  resolveAppSettingsPath,
   type AppSettingsChanges,
   type AppSettingsDefinition,
   type ResolvedAppSettings,
@@ -54,6 +56,7 @@ export interface AppSettingsRecordPort {
 }
 
 export interface AppSettingsSnapshot<Values extends object> {
+  readonly path: string;
   /** `loading` until the first read, `failed` when it could not be read: defaults apply. */
   readonly status: "loading" | "ready" | "failed";
   readonly settings: ResolvedAppSettings<Values>;
@@ -84,7 +87,6 @@ export const APP_SETTINGS_CONFLICT_MESSAGE =
   "These settings were changed somewhere else. Review them and save again.";
 
 export class AppSettingsStore<Values extends object> {
-  readonly path: string;
   #snapshot: AppSettingsSnapshot<Values>;
   /** Set when a write was refused for lack of access; it holds for this store. */
   #refused: string | undefined;
@@ -93,11 +95,15 @@ export class AppSettingsStore<Values extends object> {
     private readonly port: AppSettingsRecordPort,
     private readonly definition: AppSettingsDefinition<Values>,
   ) {
-    this.path = appSettingsPath(definition.app);
     this.#snapshot = {
+      path: appSettingsPath(definition.app),
       status: "loading",
       settings: defaultAppSettings(definition),
     };
+  }
+
+  get path(): string {
+    return this.#snapshot.path;
   }
 
   getSnapshot(): AppSettingsSnapshot<Values> {
@@ -113,25 +119,50 @@ export class AppSettingsStore<Values extends object> {
 
   /** Read the record again. A read failure gives defaults, read-only. */
   async reload(signal?: AbortSignal): Promise<AppSettingsSnapshot<Values>> {
+    let path = appSettingsPath(this.definition.app);
     // No record: the defaults. The first save creates it, never a read.
     const missing = () =>
       this.#withRefusal({
+        path,
         status: "ready",
         settings: defaultAppSettings(this.definition),
       });
     let snapshot: AppSettingsSnapshot<Values>;
     try {
-      const record = await this.port.read(this.path, signal);
-      snapshot = record ? this.#resolved(record) : missing();
+      const current = await this.#read(path, signal);
+      let legacy: AppSettingsRecord | null = null;
+      if (!current) {
+        path = legacyAppSettingsPath(this.definition.app);
+        legacy = await this.#read(path, signal);
+      }
+      path = resolveAppSettingsPath(this.definition.app, {
+        currentExists: current !== null,
+        legacyExists: legacy !== null,
+      });
+      const record = current ?? legacy;
+      snapshot = record ? this.#resolved(record, path) : missing();
     } catch (reason) {
       signal?.throwIfAborted();
-      snapshot =
-        this.port.classify(reason) === "not_found"
-          ? missing()
-          : this.#failed(message(reason, "The settings could not be read."));
+      snapshot = this.#failed(
+        message(reason, "The settings could not be read."),
+        path,
+      );
     }
     this.#snapshot = snapshot;
     return snapshot;
+  }
+
+  async #read(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<AppSettingsRecord | null> {
+    try {
+      return await this.port.read(path, signal);
+    } catch (reason) {
+      signal?.throwIfAborted();
+      if (this.port.classify(reason) === "not_found") return null;
+      throw reason;
+    }
   }
 
   /**
@@ -198,7 +229,7 @@ export class AppSettingsStore<Values extends object> {
         if (!Object.keys(patch).length) return { ok: true, snapshot: latest };
         record = await this.port.update(
           {
-            path: this.path,
+            path: latest.path,
             ...(latest.revision ? { revision: latest.revision } : {}),
             patch,
           },
@@ -207,7 +238,7 @@ export class AppSettingsStore<Values extends object> {
       } else {
         const frontmatter = newAppSettingsFrontmatter(this.definition, changes);
         record = await this.port.create(
-          { path: this.path, type: this.definition.type, frontmatter },
+          { path: latest.path, type: this.definition.type, frontmatter },
           signal,
         );
       }
@@ -224,21 +255,26 @@ export class AppSettingsStore<Values extends object> {
         ? { raced: text }
         : this.#refusal("failed", text);
     }
-    this.#snapshot = this.#resolved(record);
+    this.#snapshot = this.#resolved(record, latest.path);
     return { ok: true, snapshot: this.#snapshot };
   }
 
-  #resolved(record: AppSettingsRecord): AppSettingsSnapshot<Values> {
+  #resolved(
+    record: AppSettingsRecord,
+    path: string,
+  ): AppSettingsSnapshot<Values> {
     return this.#withRefusal({
+      path,
       status: "ready",
-      settings: resolveAppSettings(this.definition, record.frontmatter),
+      settings: resolveAppSettings(this.definition, record.frontmatter, path),
       frontmatter: record.frontmatter,
       ...(record.revision ? { revision: record.revision } : {}),
     });
   }
 
-  #failed(problem: string): AppSettingsSnapshot<Values> {
+  #failed(problem: string, path: string): AppSettingsSnapshot<Values> {
     return {
+      path,
       status: "failed",
       settings: { ...defaultAppSettings(this.definition), readOnly: problem },
       problem,

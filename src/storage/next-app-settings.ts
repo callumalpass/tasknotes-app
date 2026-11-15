@@ -80,6 +80,7 @@ export function nativeTaskNotesSettingsStore(
         {
           key: JSON.stringify(["settings:update", input]),
           prepare: async (mutationId, signal) => {
+            const record = await client.get({ path: input.path }, { signal });
             const set: Record<string, PlainValue> = {};
             const unset: string[] = [];
             for (const [key, value] of Object.entries(input.patch)) {
@@ -88,7 +89,7 @@ export function nativeTaskNotesSettingsStore(
             }
             return () =>
               client.update(
-                { path: input.path },
+                record,
                 {
                   patch: set,
                   ...(unset.length ? { unset } : {}),
