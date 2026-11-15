@@ -385,7 +385,7 @@ export class NextTaskRepository implements TaskRepository {
       this.listeners.forEach((listener) => listener({ kind: "data" }));
   });
   private changesWatch: ChangesWatch | null = null;
-  /** The TaskNotes settings record (_settings/dev.tasknotes.md). */
+  /** The TaskNotes settings record, saved at the path it was read from. */
   private readonly settings: TaskNotesSettingsStore;
   /** Whether the collection defines the tasknotes-settings type. */
   private settingsType = false;

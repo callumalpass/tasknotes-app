@@ -64,8 +64,8 @@ describe("TaskNotes mdbase manifest", () => {
         version: "0.3.0-rc.6",
         digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       }),
-      expect.objectContaining({ id: "tasknotes.settings", version: "1.0.0" }),
-      expect.objectContaining({ id: "mdbase.app-settings", version: "1.0.0" }),
+      expect.objectContaining({ id: "tasknotes.settings", version: "1.1.0" }),
+      expect.objectContaining({ id: "mdbase.app-settings", version: "2.0.0" }),
       expect.objectContaining({ id: "obsidian.base", version: "1.0.0" }),
       expect.objectContaining({ id: "mdbase.view", version: "1.0.0" }),
     ]);
@@ -127,12 +127,12 @@ describe("TaskNotes mdbase manifest", () => {
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
-      12,
+      14,
     );
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.20");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.21");
     // rc.20 keeps the tasknotes.task contracts earlier packs replaced in
     // place, so a task type outside the pack that still implements one does
     // not block setup.
@@ -146,6 +146,10 @@ describe("TaskNotes mdbase manifest", () => {
         "_contracts/tasknotes.task/0.3.0-rc.3.md",
         "_contracts/tasknotes.task/0.3.0-rc.4.md",
         "_contracts/tasknotes.task/0.3.0-rc.6.md",
+        "_contracts/mdbase.app-settings/1.0.0.md",
+        "_contracts/tasknotes.settings/1.0.0.md",
+        "_contracts/mdbase.app-settings/2.0.0.md",
+        "_contracts/tasknotes.settings/1.1.0.md",
       ]),
     );
     const taskSeed = manifest.provisions.type_packs[0].manifest.resources.find(
@@ -163,6 +167,32 @@ describe("TaskNotes mdbase manifest", () => {
         `sha256:${createHash("sha256").update(baseline.document).digest("hex")}`,
       );
     }
+    const settingsSeed =
+      manifest.provisions.type_packs[0].manifest.resources.find(
+        (resource) => resource.target === "_types/tasknotes-settings.md",
+      );
+    const settingsDocument = manifest.provisions.type_packs[0].resources.find(
+      (resource) => resource.source === settingsSeed.source,
+    ).document;
+    expect(parse(settingsDocument.split("---\n")[1])).toMatchObject({
+      name: "tasknotes-settings",
+      version: 2,
+      implements: [
+        expect.objectContaining({
+          contract: "mdbase.app-settings",
+          version: "2.0.0",
+        }),
+        expect.objectContaining({
+          contract: "tasknotes.settings",
+          version: "1.1.0",
+        }),
+      ],
+    });
+    expect(
+      settingsSeed.upgrade_from.map(
+        (baseline) => parse(baseline.document.split("---\n")[1]).version,
+      ),
+    ).toEqual([1]);
     expect(manifest.provisions.type_packs[1]).toMatchObject({
       manifest: {
         id: "tasknotes.scratch",

@@ -586,6 +586,8 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(
       get.mock.calls.filter(
         ([ref]) =>
+          JSON.stringify(ref) !==
+            '{"path":"_mdbase/settings/dev.tasknotes.md"}' &&
           JSON.stringify(ref) !== '{"path":"_settings/dev.tasknotes.md"}',
       ),
     ).toEqual([]);
