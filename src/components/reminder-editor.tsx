@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import {
   editableReminderOffset,
+  generatedReminderDescription,
   reminderOffset,
   type ReminderOffsetDirection,
   type ReminderOffsetUnit,
@@ -92,17 +93,23 @@ export function ReminderEditor({
             aria-label={t({ message: "Quick reminders" })}
           >
             {[
-              ["5m", "-PT5M", "5 minutes before"],
-              ["15m", "-PT15M", "15 minutes before"],
-              ["1h", "-PT1H", "1 hour before"],
-              ["1d", "-P1D", "1 day before"],
-            ].map(([label, offset, description]) => (
+              ["5m", "-PT5M"],
+              ["15m", "-PT15M"],
+              ["1h", "-PT1H"],
+              ["1d", "-P1D"],
+            ].map(([label, offset]) => (
               <button
                 key={offset}
                 type="button"
                 aria-label={quickReminderLabel(offset, defaultAnchor)}
                 onClick={() =>
-                  add(relativeReminder(defaultAnchor, offset, description))
+                  add(
+                    relativeReminder(
+                      defaultAnchor,
+                      offset,
+                      generatedReminderDescription(offset),
+                    ),
+                  )
                 }
               >
                 {quickReminderDuration(label)}
@@ -120,7 +127,7 @@ export function ReminderEditor({
                   relativeReminder(
                     defaultAnchor,
                     "-PT15M",
-                    "15 minutes before",
+                    generatedReminderDescription("-PT15M"),
                   ),
                 )
               }
@@ -227,15 +234,19 @@ function RelativeReminderFields({
     nextUnit = unit,
     nextDirection = direction,
   ) {
+    const next = reminderOffset({
+      amount: nextAmount,
+      unit: nextUnit,
+      direction: nextDirection,
+    });
     onChange(
       relativeReminder(
         relatedTo,
-        reminderOffset({
-          amount: nextAmount,
-          unit: nextUnit,
-          direction: nextDirection,
-        }),
-        reminder.description,
+        next,
+        // Generated text follows the offset; text the person wrote stays.
+        reminder.description === generatedReminderDescription(reminder.offset)
+          ? generatedReminderDescription(next)
+          : reminder.description,
         reminder.id,
       ),
     );

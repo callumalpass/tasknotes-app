@@ -36,6 +36,17 @@ export function editableReminderOffset(value?: string): EditableReminderOffset {
   };
 }
 
+/**
+ * The notification text a quick reminder is created with ("15 minutes before",
+ * "1 hour before"). It is stored task data, so it stays English and
+ * untranslated; the editor rewrites it only while it still matches the offset.
+ */
+export function generatedReminderDescription(offset?: string): string {
+  const { amount, unit, direction } = editableReminderOffset(offset);
+  const noun = unit.slice(0, -1);
+  return `${amount} ${amount === 1 ? noun : unit} ${direction}`;
+}
+
 export function reminderFireTime(
   task: Pick<TaskSummary, "due" | "scheduled">,
   reminder: TaskReminder,

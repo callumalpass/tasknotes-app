@@ -86,6 +86,60 @@ describe("ReminderEditor", () => {
     );
   });
 
+  it("keeps generated notification text in step with the offset, but never custom text", () => {
+    const changed = vi.fn();
+    render(
+      <ReminderEditor
+        due="2026-08-06T17:00:00+10:00"
+        reminders={[
+          {
+            id: "generated",
+            type: "relative",
+            relatedTo: "due",
+            offset: "-PT15M",
+            description: "15 minutes before",
+          },
+          {
+            id: "custom",
+            type: "relative",
+            relatedTo: "due",
+            offset: "-PT15M",
+            description: "Leave for the train",
+          },
+        ]}
+        onChange={changed}
+      />,
+    );
+
+    fireEvent.change(
+      within(screen.getByRole("region", { name: "Reminder 1" })).getByLabelText(
+        "Amount",
+      ),
+      { target: { value: "2" } },
+    );
+    expect(changed.mock.lastCall?.[0][0]).toEqual(
+      expect.objectContaining({
+        id: "generated",
+        offset: "-PT2M",
+        description: "2 minutes before",
+      }),
+    );
+
+    fireEvent.change(
+      within(screen.getByRole("region", { name: "Reminder 2" })).getByLabelText(
+        "Amount",
+      ),
+      { target: { value: "2" } },
+    );
+    expect(changed.mock.lastCall?.[0][1]).toEqual(
+      expect.objectContaining({
+        id: "custom",
+        offset: "-PT2M",
+        description: "Leave for the train",
+      }),
+    );
+  });
+
   it("emits JSON-safe fixed reminder edits without losing identity or description", async () => {
     const changed = vi.fn();
     render(

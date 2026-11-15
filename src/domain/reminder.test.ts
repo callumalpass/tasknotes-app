@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   editableReminderOffset,
+  generatedReminderDescription,
   reminderFireTime,
   reminderOffset,
 } from "./reminder";
@@ -21,6 +22,14 @@ describe("task reminders", () => {
       unit: "days",
       direction: "before",
     });
+  });
+
+  it("describes an offset as the text quick reminders are created with", () => {
+    expect(generatedReminderDescription("-PT15M")).toBe("15 minutes before");
+    expect(generatedReminderDescription("-PT1H")).toBe("1 hour before");
+    expect(generatedReminderDescription("-P1D")).toBe("1 day before");
+    expect(generatedReminderDescription("PT2H")).toBe("2 hours after");
+    expect(generatedReminderDescription("-PT1M")).toBe("1 minute before");
   });
 
   it("resolves relative reminders against due and scheduled task times", () => {

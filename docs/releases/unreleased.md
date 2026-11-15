@@ -1,5 +1,9 @@
 # Unreleased
 
+- Show reminders as ready as soon as notification access is approved in mdbase, instead of still asking for approval until the page is reloaded.
+
+- Keep a reminder's generated notification text in step with its time: changing "15 minutes before" to 2 minutes now reads "2 minutes before". Text you wrote yourself is never changed.
+
 - Send task reminders again. Once notification access is approved and reminders are turned on, mdbase delivers each reminder at its time, even when TaskNotes is closed. Reminders on completed, archived or deleted tasks are cancelled.
 
 - Show your tasks about a quarter of a second sooner when TaskNotes opens. Saved views no longer wait out a fixed delay when the app's own startup refresh changes the collection while they load.
