@@ -4,6 +4,7 @@ test("opens /import in the app shell and never invents a demo destination", asyn
   page,
 }) => {
   await page.goto("/import?demo=60");
+  await page.locator(".app-shell").waitFor();
   await expect(
     page.getByRole("heading", { name: "Import from Todoist" }),
   ).toBeVisible();
@@ -31,6 +32,7 @@ test("Settings opens the integrated import route without opening a second app", 
   page,
 }) => {
   await page.goto("/more/collection?demo=60");
+  await page.locator(".app-shell").waitFor();
   await page
     .getByRole("button", { name: "Import from Todoist", exact: true })
     .click();
@@ -45,6 +47,7 @@ test("the integrated import surface stays usable on a narrow phone viewport", as
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/import?demo=60");
+  await page.locator(".app-shell").waitFor();
   await expect(
     page.getByRole("heading", { name: "Import from Todoist" }),
   ).toBeVisible();
