@@ -496,6 +496,13 @@ function CollectionSettings() {
               Tasks are portable Markdown records in the mdbase v0.3 format.
             </Trans>
           </p>
+          {showEcosystemLinks() ? (
+            <p className="section-copy">
+              <ExternalLink href={CONNECT_URL}>
+                <Trans>Manage your collections in mdbase Connect</Trans>
+              </ExternalLink>
+            </p>
+          ) : null}
           {info ? (
             <code className="collection-path">{info.location}</code>
           ) : null}
@@ -865,6 +872,37 @@ function InstallBanner({ install }: { install: InstallPrompt }) {
   );
 }
 
+const CONNECT_URL = "https://connect.mdbase.dev/";
+const MDBASE_URL = "https://mdbase.dev/";
+
+// Both pages reach mdbase's paid plans, which App Store rules keep out of the
+// iOS app; web and Android show the links.
+function showEcosystemLinks(): boolean {
+  return !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios");
+}
+
+function ExternalLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      className="settings-external-link"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {children}
+      {/* Text, not an icon, so the non-breaking space keeps the arrow on the
+          label's last line. */}
+      <span aria-hidden="true">{"\u00a0\u2197"}</span>
+    </a>
+  );
+}
+
 function AboutSettings({ install }: { install: InstallPrompt }) {
   return (
     <>
@@ -885,6 +923,23 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
           </div>
           {install.dismissed ? <InstallFeedback install={install} /> : null}
         </>
+      ) : null}
+      {showEcosystemLinks() ? (
+        <div className="settings-group settings-ecosystem">
+          <h3>
+            <Trans>Part of mdbase</Trans>
+          </h3>
+          <p className="section-copy">
+            <Trans>
+              TaskNotes is one of the mdbase apps. Your tasks are Markdown files
+              in your collection, so other mdbase apps and editors like Obsidian
+              can open them too.
+            </Trans>
+          </p>
+          <ExternalLink href={MDBASE_URL}>
+            <Trans>Explore mdbase apps</Trans>
+          </ExternalLink>
+        </div>
       ) : null}
       <div className="settings-group">
         <h3>

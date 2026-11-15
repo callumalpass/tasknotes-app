@@ -969,6 +969,32 @@
   font-size: var(--type-supporting);
 }
 
+/* Inline so a wrapped label keeps its arrow after the last word; the vertical
+   padding enlarges the target without moving the text. */
+.settings-external-link {
+  display: inline;
+  padding: 12px 0;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.settings-external-link:hover {
+  text-decoration: underline;
+}
+
+.settings-ecosystem > .settings-external-link {
+  display: inline-block;
+}
+
+.settings-ecosystem .section-copy {
+  padding-top: 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  line-height: 1.5;
+}
+
 .help-topic {
   border-bottom: 1px solid var(--line);
 }

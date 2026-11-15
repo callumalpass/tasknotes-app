@@ -255,6 +255,31 @@ it("remembers whether storage details are open", () => {
   ).toHaveAttribute("aria-expanded", "true");
 });
 
+it("links to mdbase from storage details and About", () => {
+  render(settings());
+  fireEvent.click(screen.getByRole("button", { name: "How tasks are stored" }));
+  expect(
+    screen.getByRole("link", {
+      name: "Manage your collections in mdbase Connect",
+    }),
+  ).toHaveAttribute("href", "https://connect.mdbase.dev/");
+  const about = screen.getByRole("region", { name: "About & help" });
+  const explore = within(about).getByRole("link", {
+    name: "Explore mdbase apps",
+  });
+  expect(explore).toHaveAttribute("href", "https://mdbase.dev/");
+  expect(explore).toHaveAttribute("target", "_blank");
+  expect(explore).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+it("keeps mdbase links out of the iOS app", () => {
+  vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
+  vi.spyOn(Capacitor, "getPlatform").mockReturnValue("ios");
+  render(settings());
+  fireEvent.click(screen.getByRole("button", { name: "How tasks are stored" }));
+  expect(screen.queryByRole("link", { name: /mdbase/ })).toBeNull();
+});
+
 it("offers retry after a failed permission check and only enables on explicit opt-in", async () => {
   fixture.status.mockRejectedValueOnce(
     new Error("Checking notification permission timed out. Try again."),

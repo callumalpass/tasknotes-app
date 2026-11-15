@@ -2594,6 +2594,10 @@ msgstr "Развернуть боковую панель"
 msgid "Expand sidebar (M)"
 msgstr "Развернуть боковую панель (M)"
 
+#: src/app/more-screen.tsx
+msgid "Explore mdbase apps"
+msgstr "Другие приложения mdbase"
+
 #: src/app/view-editor-form.tsx
 msgid "Expression"
 msgstr "Выражение"
@@ -3347,6 +3351,10 @@ msgstr "Управление"
 #: src/components/view-options.tsx
 msgid "Manage views"
 msgstr "Управление представлениями"
+
+#: src/app/more-screen.tsx
+msgid "Manage your collections in mdbase Connect"
+msgstr "Управлять коллекциями в mdbase Connect"
 
 #: src/app/view-editor-fields.ts
 #: src/app/views-screen.tsx
@@ -4181,6 +4189,10 @@ msgstr "P0D"
 #: src/app/occurrence-policy-field.tsx
 msgid "P14D"
 msgstr "P14D"
+
+#: src/app/more-screen.tsx
+msgid "Part of mdbase"
+msgstr "Часть mdbase"
 
 #: src/components/private-account-settings.tsx
 msgid "Password strength: "
@@ -5647,6 +5659,10 @@ msgstr "TaskNotes не удалось открыть запрос на уста�
 #: src/app/app-shell.tsx
 msgid "TaskNotes could not open."
 msgstr "Не удалось открыть TaskNotes."
+
+#: src/app/more-screen.tsx
+msgid "TaskNotes is one of the mdbase apps. Your tasks are Markdown files in your collection, so other mdbase apps and editors like Obsidian can open them too."
+msgstr "TaskNotes — одно из приложений mdbase. Ваши задачи — это файлы Markdown в вашей коллекции, поэтому их могут открывать и другие приложения mdbase, и редакторы вроде Obsidian."
 
 #: src/components/operation-error-notice.tsx
 msgid "TaskNotes keeps checking automatically while the collection is connected. You can keep working."
