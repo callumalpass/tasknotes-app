@@ -39,6 +39,25 @@
   min-height: 0;
 }
 
+/* The kit styles every button in the form as a bordered text button, which
+ * outranks the header's icon button and, with the touch minimum below, draws
+ * Close as a tall pill. Draw it as TaskNotes' borderless 44px icon action. */
+.mdbase-feedback-dialog .mdbase-dialog-header .mdbase-icon-button {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  padding: 0;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+}
+
+.mdbase-feedback-dialog
+  .mdbase-dialog-header
+  .mdbase-icon-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--color-selected);
+}
+
 /* Touch-sized controls inside the form. */
 .mdbase-feedback-dialog :is(button, .mdbase-feedback-upload) {
   min-height: var(--control-min-size);
