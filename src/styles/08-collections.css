@@ -275,6 +275,61 @@
   --mdbase-collections-control-height: var(--control-min-size);
 }
 
+/* Gate footer: Report a problem, Choose a different collection, Manage access
+ * and Sign out are one kind of control: TaskNotes' text action, at the same
+ * size, weight and touch target, underlined only on hover. */
+.mdbase-collections-footer
+  :is(
+    .mdbase-collections-button.is-quiet,
+    .mdbase-collections-link,
+    .failure-feedback
+  ) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-min-size);
+  margin: 0;
+  padding: 0 2px;
+  color: var(--accent);
+  font-size: var(--type-body);
+  font-weight: 700;
+  line-height: inherit;
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+.mdbase-collections-footer
+  :is(
+    .mdbase-collections-button.is-quiet,
+    .mdbase-collections-link,
+    .failure-feedback
+  ):hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.mdbase-collections-footer .failure-feedback .mdbase-feedback-bug {
+  width: 20px;
+  height: 20px;
+}
+
+/* A problem's extras join the footer's row instead of forming a taller block
+ * beside it; Technical details takes its own line under the actions. */
+.mdbase-collections-footer-extra:has(> .open-problem-details),
+.mdbase-collections-footer .open-problem-details {
+  display: contents;
+}
+
+.mdbase-collections-footer .technical-details {
+  flex-basis: 100%;
+  order: 1;
+  margin-top: 0;
+}
+
+.mdbase-collections-footer:has(.open-problem-details)
+  .mdbase-collections-account {
+  order: 2;
+}
+
 /* "What is mdbase?" sits beside Sign in and opens below it. */
 .mdbase-collections-actions > .mdbase-explainer {
   margin-top: 0;
