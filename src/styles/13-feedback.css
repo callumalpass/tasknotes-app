@@ -11,6 +11,34 @@
   --font-size-caption: var(--type-supporting);
 }
 
+/* The kit's feedback.css lands in an earlier stylesheet than the shared
+ * dialog rules, so `.mdbase-dialog` overrides the panel's geometry and the
+ * form shows as a short box pinned to the top. Restate the kit's full-height
+ * panel at the edge of the window with both classes. */
+.mdbase-dialog.mdbase-feedback-dialog {
+  inset: 0 0 0 auto;
+  width: 440px;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-left: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-canvas);
+}
+
+/* The shared dialog body is a grid that grows with its content, so the
+ * form's scrolling region never gets a bounded height: once a screenshot is
+ * attached the details and the Send button are clipped below the window.
+ * Make the body a flex column that fills the panel so the form's body
+ * scrolls and its actions stay pinned at the bottom. */
+.mdbase-feedback-dialog > .mdbase-dialog-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 /* Touch-sized controls inside the form. */
 .mdbase-feedback-dialog :is(button, .mdbase-feedback-upload) {
   min-height: var(--control-min-size);
