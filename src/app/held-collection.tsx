@@ -40,9 +40,22 @@ export function ReadyCollection(props: {
   ui: CollectionUiOptions;
   Workspace?: Workspace;
 }) {
-  // The SDK keeps one connection object per collection generation: a new
-  // generation is a new lifetime; re-renders and re-checks keep the workspace.
-  return <HeldCollection key={props.connection.generation} {...props} />;
+  // Each connection object is one lifetime: re-renders and re-checks keep the
+  // workspace. A new object is a new lifetime even in the same generation:
+  // after an approval changes reminder access the SDK hands new ports onto the
+  // same replica, and the old connection's ports close.
+  return <HeldCollection key={connectionKey(props.connection)} {...props} />;
+}
+
+const connectionKeys = new WeakMap<MdbaseApplicationConnection, number>();
+let lastConnectionKey = 0;
+function connectionKey(connection: MdbaseApplicationConnection): number {
+  let key = connectionKeys.get(connection);
+  if (key === undefined) {
+    key = ++lastConnectionKey;
+    connectionKeys.set(connection, key);
+  }
+  return key;
 }
 
 function HeldCollection({
