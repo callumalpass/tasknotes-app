@@ -255,6 +255,12 @@ Today             Search       More
   source paths are quiet metadata, and search plus All/In navigation/Editable
   filters keep large collections manageable. Secondary edit, duplicate, and
   delete operations live in an overflow menu rather than competing with the row.
+- A view file discovery cannot read (malformed YAML, an unusable `views`
+  value) hides only its own views. The views notice names each such file by its
+  collection-relative path in muted mono, in place of "No views yet", and clears
+  once the fixed file is rediscovered. Where the collection's computer cannot
+  skip such files yet, the refusal says a view file is at fault rather than only
+  "Couldn't load your views".
 - Settings groups choices by who they affect, in three clusters: the shared
   collection (Collection, Task properties, Workflow), this person and device
   (Reminders, On this device, and Account when a private account exists), and

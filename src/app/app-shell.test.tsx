@@ -32,6 +32,60 @@ it("keeps the view failure visible while retry is pending and prevents duplicate
   expect(retry).not.toHaveBeenCalled();
 });
 
+it("names view files discovery could not read instead of saying there are no views", () => {
+  render(
+    <ViewDiscoveryNotice
+      outcome="empty"
+      unreadablePaths={["TaskNotes/Views/tasks-default.base"]}
+      refreshing={false}
+      onRetry={vi.fn()}
+      onCreate={vi.fn()}
+      onStarterViewsAdded={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Couldn't read this view file, so its views aren't shown:",
+  );
+  expect(screen.getByRole("listitem")).toHaveTextContent(
+    "TaskNotes/Views/tasks-default.base",
+  );
+  expect(screen.queryByText("No views yet.")).toBeNull();
+});
+
+it("counts several unreadable view files alongside loaded views", () => {
+  render(
+    <ViewDiscoveryNotice
+      outcome="ok"
+      unreadablePaths={["Views/a.base", "Views/b.base"]}
+      refreshing={false}
+      onRetry={vi.fn()}
+      onCreate={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Couldn't read 2 view files, so their views aren't shown:",
+  );
+  expect(
+    screen.getAllByRole("listitem").map((item) => item.textContent),
+  ).toEqual(["Views/a.base", "Views/b.base"]);
+});
+
+it("says a view file is at fault when an older replica refuses all views", () => {
+  render(
+    <ViewDiscoveryNotice
+      outcome="error"
+      failure="unreadable_source"
+      refreshing={false}
+      onRetry={vi.fn()}
+      onCreate={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Couldn't load your views because a view file can't be read.",
+  );
+  expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+});
+
 it("separates reviewing the current collection's access from choosing another", () => {
   const changeCollection = vi.fn();
   const reauthorizeCurrentCollection = vi.fn();

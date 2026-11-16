@@ -1,4 +1,4 @@
-import { MdbaseError } from "@mdbase-dev/sdk";
+import { MdbaseError, mdbaseError } from "@mdbase-dev/sdk";
 import {
   logViewDiscovery,
   VIEW_DISCOVERY_DIAGNOSTIC,
@@ -37,12 +37,14 @@ it("emits only fixed own keys and correlated typed categories, never exception c
     "reason",
     "stage",
     "timings",
+    "unreadableCount",
     "viewCount",
   ]);
   expect(value).toEqual({
     outcome: "error",
     stage: "discovery",
     viewCount: null,
+    unreadableCount: null,
     code: "forbidden",
     reason: "insufficient_access",
     published: true,
@@ -61,6 +63,17 @@ it("rejects arbitrary and category-mismatched reasons", () => {
   );
   expect(value.reason).toBeNull();
   expect(text).not.toContain("SECRET");
+});
+it.each([
+  ["invalid_request", "view_metadata_unavailable"],
+  ["invalid_request", "view_unsupported_construct"],
+  ["invalid_request", "query_budget_exceeded"],
+  ["unavailable", "bases_contract_not_installed"],
+] as const)("keeps the native discovery refusal %s/%s", (code, reason) => {
+  // An unreadable view file refused discovery as invalid_request with a null
+  // reason in the log, hiding which kind of refusal it was.
+  const { value } = report(mdbaseError(code, "SECRET", reason));
+  expect(value).toMatchObject({ code, reason });
 });
 it("does not borrow typed fields from plain objects or arbitrary exception messages", () => {
   const { value, text } = report({
@@ -81,6 +94,7 @@ it.each(["ok", "empty"] as const)(
       outcome,
       stage: "discovery",
       viewCount: outcome === "ok" ? 1 : 0,
+      unreadableCount: 2,
       error: Error("SECRET"),
       published: false,
       totalMs: Infinity,
@@ -88,6 +102,7 @@ it.each(["ok", "empty"] as const)(
     });
     expect(JSON.parse(String(log.mock.calls[0]![1]))).toMatchObject({
       outcome,
+      unreadableCount: 2,
       code: null,
       reason: null,
       published: false,

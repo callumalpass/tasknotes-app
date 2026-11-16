@@ -118,6 +118,11 @@ msgstr "(modifications non enregistrées)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Ajout de l’image…} one {Ajout de # image…} other {Ajout de # images…}}"
 
+#. placeholder {0}: paths.length
+#: src/app/app-shell.tsx
+msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
+msgstr "{0, plural, =1 {Impossible de lire ce fichier de vues ; ses vues ne sont pas affichées :} one {Impossible de lire # fichier de vues ; ses vues ne sont pas affichées :} other {Impossible de lire # fichiers de vues ; leurs vues ne sont pas affichées :}}"
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
@@ -1956,6 +1961,10 @@ msgstr "Impossible d’ajouter les vues de départ."
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
 msgstr "Copie impossible"
+
+#: src/app/app-shell.tsx
+msgid "Couldn't load your views because a view file can't be read."
+msgstr "Impossible de charger vos vues : un fichier de vues est illisible."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

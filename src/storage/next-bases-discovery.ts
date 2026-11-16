@@ -73,3 +73,47 @@ export async function* iterateNativeDiscovery<T extends NativeViewIdentity>(
     yield page.views;
   } while (continuation !== null);
 }
+
+/** A source discovery skipped because the replica could not read it. */
+export interface UnreadableViewSource {
+  record: wire.Uuid;
+  path: string;
+  sourceRevision: wire.Hash;
+  reason: string;
+  detail: string;
+}
+
+/** A discovery page's `unreadable` list (SDK `bases-discovery-unreadable-v1`
+ * request version 2). The vendored SDK may predate the field, so it is read
+ * structurally; a page without it named nothing. Malformed entries refuse the
+ * page rather than being dropped, as a malformed view would. */
+export function unreadableViewSources(page: object): UnreadableViewSource[] {
+  if (!("unreadable" in page) || page.unreadable === undefined) return [];
+  const entries: unknown = page.unreadable;
+  if (!Array.isArray(entries))
+    throw new Error("Native view discovery sent malformed unreadable sources.");
+  return entries.map((entry: unknown) => {
+    const source = entry as Partial<
+      Record<keyof UnreadableViewSource, unknown>
+    >;
+    if (
+      typeof entry !== "object" ||
+      entry === null ||
+      typeof source.record !== "string" ||
+      typeof source.path !== "string" ||
+      typeof source.sourceRevision !== "string" ||
+      typeof source.reason !== "string" ||
+      typeof source.detail !== "string"
+    )
+      throw new Error(
+        "Native view discovery sent a malformed unreadable source.",
+      );
+    return {
+      record: source.record,
+      path: source.path,
+      sourceRevision: source.sourceRevision,
+      reason: source.reason,
+      detail: source.detail,
+    };
+  });
+}

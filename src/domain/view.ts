@@ -47,6 +47,10 @@ export interface TaskViewDocument {
   name: string;
   source: TaskView["source"];
   views: TaskView[];
+  /** Discovery could not read this source (malformed YAML or an unusable
+   * `views` value), so it has no views until the file is fixed. `reason` and
+   * `detail` are the replica's machine-readable codes, never shown as copy. */
+  unreadable?: { reason: string; detail: string };
 }
 
 export interface TaskViewProperty {

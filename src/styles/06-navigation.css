@@ -20,6 +20,18 @@
   white-space: normal;
 }
 
+/* Collection-relative paths of view files discovery could not read. */
+.view-discovery-sources {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-mono-detail);
+  overflow-wrap: anywhere;
+}
+
 .bottom-navigation {
   position: fixed;
   z-index: 10;

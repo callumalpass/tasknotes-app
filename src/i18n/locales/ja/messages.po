@@ -118,6 +118,11 @@ msgstr "（未保存の変更）"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {画像を追加しています…} other {画像を#件追加しています…}}"
 
+#. placeholder {0}: paths.length
+#: src/app/app-shell.tsx
+msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
+msgstr "{0, plural, =1 {このビューファイルを読み取れないため、そのビューは表示されません:} other {#件のビューファイルを読み取れないため、それらのビューは表示されません:}}"
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
@@ -1955,6 +1960,10 @@ msgstr "初期ビューを追加できませんでした。"
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
 msgstr "コピーできませんでした"
+
+#: src/app/app-shell.tsx
+msgid "Couldn't load your views because a view file can't be read."
+msgstr "ビューファイルを読み取れないため、ビューを読み込めませんでした。"
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

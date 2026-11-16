@@ -2,7 +2,7 @@ import { TaskSelectionProvider } from "./task-selection";
 import { useLingui as useI18n } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Trans } from "@lingui/react/macro";
-import { t as translate } from "@lingui/core/macro";
+import { plural, t as translate } from "@lingui/core/macro";
 import {
   ClockAlert,
   PanelLeftClose,
@@ -116,7 +116,10 @@ import {
 } from "./navigation-views";
 import { transitionSidebar } from "./navigation-transition";
 import { TaskScreen, warmMarkdownPreview } from "./task-screen";
-import { useNavigationViews } from "./use-navigation-views";
+import {
+  useNavigationViews,
+  type ViewDiscoveryFailure,
+} from "./use-navigation-views";
 import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
 import { warmCalendarView } from "./views/calendar-view-presentation";
@@ -192,6 +195,8 @@ export function AppShell() {
     documents,
     views,
     discovery,
+    discoveryFailure,
+    unreadableViewPaths,
     refreshing: discoveringViews,
     navigationViews,
     navigationKeys,
@@ -428,6 +433,8 @@ export function AppShell() {
   const discoveryNotice = (
     <ViewDiscoveryNotice
       outcome={discovery}
+      failure={discoveryFailure}
+      unreadablePaths={unreadableViewPaths}
       refreshing={discoveringViews}
       onRetry={() => void refreshViews()}
       onStarterViewsAdded={refreshViews}
@@ -759,12 +766,17 @@ export function AppShell() {
 
 export function ViewDiscoveryNotice({
   outcome,
+  failure = null,
+  unreadablePaths = [],
   refreshing,
   onRetry,
   onCreate,
   onStarterViewsAdded,
 }: {
   outcome: "loading" | "ok" | "empty" | "error";
+  failure?: ViewDiscoveryFailure | null;
+  /** View files discovery skipped; named instead of the empty-views notice. */
+  unreadablePaths?: readonly string[];
   refreshing: boolean;
   onRetry(): void;
   onCreate(): void;
@@ -774,6 +786,8 @@ export function ViewDiscoveryNotice({
   const waitingForComputer =
     useContext(ConnectionNoticeContext) === "waiting_for_computer";
   if (waitingForComputer && outcome === "error") return null;
+  if ((outcome === "ok" || outcome === "empty") && unreadablePaths.length)
+    return <UnreadableViewsNotice paths={unreadablePaths} />;
   if (outcome === "empty" && onStarterViewsAdded)
     return (
       <EmptyViewsNotice
@@ -790,9 +804,14 @@ export function ViewDiscoveryNotice({
       aria-busy={refreshing}
     >
       <p role={outcome === "error" ? "alert" : "status"}>
-        {outcome === "error"
-          ? translate({ message: "Couldn't load your views." })
-          : translate({ message: "No views yet." })}
+        {outcome !== "error"
+          ? translate({ message: "No views yet." })
+          : failure === "unreadable_source"
+            ? translate({
+                message:
+                  "Couldn't load your views because a view file can't be read.",
+              })
+            : translate({ message: "Couldn't load your views." })}
       </p>
       <button
         className="text-action"
@@ -806,6 +825,31 @@ export function ViewDiscoveryNotice({
             : translate({ message: "Retry" })
           : translate({ message: "Create a view" })}
       </button>
+    </section>
+  );
+}
+
+/** Discovery skipped these files; every other view still loaded. The notice
+ * clears itself when a fixed file is rediscovered on the next data change. */
+function UnreadableViewsNotice({ paths }: { paths: readonly string[] }) {
+  return (
+    <section
+      className="view-discovery-notice"
+      aria-label={translate({ message: "Views availability" })}
+    >
+      <p role="status">
+        {plural(paths.length, {
+          1: "Couldn't read this view file, so its views aren't shown:",
+          other: "Couldn't read # view files, so their views aren't shown:",
+        })}
+      </p>
+      <ul className="view-discovery-sources">
+        {paths.map((path) => (
+          <li key={path} translate="no">
+            {path}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

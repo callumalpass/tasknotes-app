@@ -118,6 +118,11 @@ msgstr "（有未保存的更改）"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {正在添加图片…} other {正在添加 # 张图片…}}"
 
+#. placeholder {0}: paths.length
+#: src/app/app-shell.tsx
+msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
+msgstr "{0, plural, =1 {无法读取此视图文件，因此不显示其中的视图：} other {无法读取 # 个视图文件，因此不显示其中的视图：}}"
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
@@ -1955,6 +1960,10 @@ msgstr "无法添加初始视图。"
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
 msgstr "无法复制"
+
+#: src/app/app-shell.tsx
+msgid "Couldn't load your views because a view file can't be read."
+msgstr "无法加载你的视图，因为有一个视图文件无法读取。"
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

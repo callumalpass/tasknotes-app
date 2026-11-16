@@ -378,6 +378,44 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     expect(catalog[0]!.views[0]!.id).toBe("1");
     expect(f.genericList).not.toHaveBeenCalled();
   });
+  it("names an unreadable view file as a source without views", async () => {
+    // F5: a prepended `---` block made one view file two YAML documents, and
+    // discovery refused the whole collection.
+    const f = await fixture();
+    const broken = {
+      record: "00000000-0000-0000-0000-000000000002",
+      path: "TaskNotes/Views/tasks-default.base",
+      sourceRevision: "sha256:" + "cd".repeat(32),
+      reason: "view_metadata_unavailable",
+      detail: "base_raw_frontmatter_unavailable",
+    };
+    // The vendored SDK may predate `unreadable`; pages carry it structurally.
+    const page = {
+      kind: "success" as const,
+      views: [descriptor],
+      unreadable: [broken],
+      clock,
+      collectionRevision: revision,
+      continuation: null,
+    };
+    f.list.mockClear().mockResolvedValueOnce(page);
+    const catalog = await f.repository.listViews();
+    expect(f.list.mock.calls[0]![0]).toMatchObject({ reportUnreadable: true });
+    expect(catalog.map((document) => document.source.path)).toEqual([
+      "tasks.base",
+      "TaskNotes/Views/tasks-default.base",
+    ]);
+    expect(catalog[1]).toMatchObject({
+      id: broken.record,
+      views: [],
+      source: { revision: broken.sourceRevision, format: "obsidian.base" },
+      unreadable: {
+        reason: "view_metadata_unavailable",
+        detail: "base_raw_frontmatter_unavailable",
+      },
+    });
+    expect(catalog[0]!.unreadable).toBeUndefined();
+  });
   it("does not publish a partial catalog after captured-cut drift", async () => {
     const f = await fixture();
     const before = await f.repository.cachedViews();

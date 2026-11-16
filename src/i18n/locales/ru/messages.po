@@ -118,6 +118,11 @@ msgstr "(несохранённые изменения)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Добавление изображения…} one {Добавление # изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
 
+#. placeholder {0}: paths.length
+#: src/app/app-shell.tsx
+msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
+msgstr "{0, plural, =1 {Не удалось прочитать этот файл представлений, поэтому его представления не показаны:} one {Не удалось прочитать # файл представлений, поэтому их представления не показаны:} few {Не удалось прочитать # файла представлений, поэтому их представления не показаны:} many {Не удалось прочитать # файлов представлений, поэтому их представления не показаны:} other {Не удалось прочитать # файла представлений, поэтому их представления не показаны:}}"
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
@@ -1955,6 +1960,10 @@ msgstr "Не удалось добавить начальные представ
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
 msgstr "Не удалось скопировать"
+
+#: src/app/app-shell.tsx
+msgid "Couldn't load your views because a view file can't be read."
+msgstr "Не удалось загрузить представления: один из файлов представлений не читается."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
