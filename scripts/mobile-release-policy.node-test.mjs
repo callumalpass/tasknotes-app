@@ -355,3 +355,58 @@ test("a store-line read tolerates a just-dispatched run that is briefly unreadab
   );
   assert.equal(down.reads(), 8);
 });
+
+test("a store-line status read that never completes cancels the run and reports a read timeout", async () => {
+  const queued = {
+    path: ".github/workflows/tasknotes-store-line.yml",
+    head_branch: "main",
+    event: "workflow_dispatch",
+    run_attempt: 1,
+    status: "queued",
+  };
+  const make = (cancelFails) => {
+    const calls = [];
+    const transport = (path, options) => {
+      calls.push([path, options]);
+      if (path.endsWith("/dispatches")) return { workflow_run_id: 7 };
+      if (path.endsWith("/cancel")) {
+        if (cancelFails) throw new Error("release-evidence-unavailable");
+        return {};
+      }
+      return queued;
+    };
+    return { transport, calls };
+  };
+  const readArtifact = async () => {
+    throw new Error("artifact must not be read");
+  };
+  const wait = async () => {};
+  for (const cancelFails of [false, true]) {
+    const status = make(cancelFails);
+    await assert.rejects(
+      storeLine("android", "status", undefined, {
+        transport: status.transport,
+        readArtifact,
+        wait,
+      }),
+      { message: "store-line-read-timeout" },
+    );
+    const cancels = status.calls.filter(([path]) => path.endsWith("/cancel"));
+    assert.equal(cancels.length, 1);
+    assert.match(cancels[0][0], /\/actions\/runs\/7\/cancel$/);
+    assert.ok(cancels[0][1].body);
+  }
+  const stop = make(false);
+  await assert.rejects(
+    storeLine("android", "stop", "app-publication-failed", {
+      transport: stop.transport,
+      readArtifact,
+      wait,
+    }),
+    { message: "store-line-outcome-unknown" },
+  );
+  assert.equal(
+    stop.calls.filter(([path]) => path.endsWith("/cancel")).length,
+    0,
+  );
+});
