@@ -25,8 +25,18 @@ import {
 } from "./navigation-views";
 import { startupTiming } from "../observability/startup-timing";
 
+import { MdbaseError } from "@mdbase-dev/sdk";
+
 import type { TaskView, TaskViewDocument } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
+
+/** A replica that cannot report unreadable sources refuses discovery with
+ * these reasons when one view file cannot be read. */
+const UNREADABLE_SOURCE_REASONS: ReadonlySet<string> = new Set([
+  "view_metadata_unavailable",
+  "view_unsupported_construct",
+]);
+export type ViewDiscoveryFailure = "unreadable_source" | "other";
 
 interface ViewCatalog {
   documents: TaskViewDocument[] | null;
@@ -44,6 +54,10 @@ export function useNavigationViews(): {
   homeKey?: string;
   loading: boolean;
   discovery: "loading" | ViewDiscoveryOutcome;
+  /** Why the latest discovery failed; null unless `discovery` is "error". */
+  discoveryFailure: ViewDiscoveryFailure | null;
+  /** View files the latest discovery could not read, by path. */
+  unreadableViewPaths: string[];
   refreshing: boolean;
   refresh(): Promise<void>;
   toggleNavigationView(key: string): void;
@@ -65,6 +79,8 @@ export function useNavigationViews(): {
   const [discovery, setDiscovery] = useState<"loading" | ViewDiscoveryOutcome>(
     "loading",
   );
+  const [discoveryFailure, setDiscoveryFailure] =
+    useState<ViewDiscoveryFailure | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(() => {
@@ -78,6 +94,7 @@ export function useNavigationViews(): {
       const started = performance.now();
       let outcome: ViewDiscoveryOutcome = "error";
       let viewCount: number | null = null;
+      let unreadableCount: number | null = null;
       let stage: "metadata" | "discovery" = "metadata";
       let discoveryMs: number | null = null;
       let failure: unknown;
@@ -135,6 +152,9 @@ export function useNavigationViews(): {
           discoveryMs = performance.now() - readStarted;
         }
         viewCount = flattenViewDocuments(providerDocuments).length;
+        unreadableCount = providerDocuments.filter(
+          (document) => document.unreadable,
+        ).length;
         outcome = viewCount ? "ok" : "empty";
         if (request !== sequence.value) return;
         endStartupDiscovery?.();
@@ -142,6 +162,7 @@ export function useNavigationViews(): {
           resolveNavigationViewCatalog(info, providerDocuments, false)!,
         );
         setDiscovery(outcome);
+        setDiscoveryFailure(null);
         published = true;
       } catch (reason) {
         failure = reason;
@@ -160,12 +181,19 @@ export function useNavigationViews(): {
           error: translate({ message: "Couldn't load your views." }),
         }));
         setDiscovery("error");
+        setDiscoveryFailure(
+          reason instanceof MdbaseError &&
+            UNREADABLE_SOURCE_REASONS.has(reason.reason ?? "")
+            ? "unreadable_source"
+            : "other",
+        );
         published = true;
       } finally {
         if (request === sequence.value) setRefreshing(false);
         logViewDiscovery({
           outcome,
           viewCount,
+          unreadableCount,
           stage,
           error: failure,
           published,
@@ -220,6 +248,13 @@ export function useNavigationViews(): {
     () => (catalog.documents ? flattenViewDocuments(catalog.documents) : null),
     [catalog.documents],
   );
+  const unreadableViewPaths = useMemo(
+    () =>
+      (catalog.documents ?? []).flatMap((document) =>
+        document.unreadable ? [document.source.path] : [],
+      ),
+    [catalog.documents],
+  );
   const navigationViews = useMemo(
     () =>
       catalog.navigationKeys.flatMap((key) => {
@@ -251,6 +286,8 @@ export function useNavigationViews(): {
     homeKey: catalog.navigationKeys[0],
     loading: catalog.documents === null && discovery !== "error",
     discovery,
+    discoveryFailure: discovery === "error" ? discoveryFailure : null,
+    unreadableViewPaths,
     refreshing,
     refresh,
     toggleNavigationView,

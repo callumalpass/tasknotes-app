@@ -118,6 +118,11 @@ msgstr "(nicht gespeicherte Änderungen)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Bild wird hinzugefügt…} other {# Bilder werden hinzugefügt…}}"
 
+#. placeholder {0}: paths.length
+#: src/app/app-shell.tsx
+msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
+msgstr "{0, plural, =1 {Diese Ansichtsdatei konnte nicht gelesen werden, daher werden ihre Ansichten nicht angezeigt:} other {# Ansichtsdateien konnten nicht gelesen werden, daher werden ihre Ansichten nicht angezeigt:}}"
+
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
 msgid "{0, plural, =1 {Image added} other {# images added}}"
@@ -1955,6 +1960,10 @@ msgstr "Startansichten konnten nicht hinzugefügt werden."
 #: src/components/task-record-file.tsx
 msgid "Couldn’t copy"
 msgstr "Kopieren fehlgeschlagen"
+
+#: src/app/app-shell.tsx
+msgid "Couldn't load your views because a view file can't be read."
+msgstr "Ihre Ansichten konnten nicht geladen werden, weil eine Ansichtsdatei nicht lesbar ist."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

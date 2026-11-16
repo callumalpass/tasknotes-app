@@ -3,6 +3,7 @@ import type { wire } from "@mdbase-dev/sdk";
 import {
   iterateNativeDiscovery,
   nativeViewSelection,
+  unreadableViewSources,
   type NativeDiscoveryPage,
   type NativeViewIdentity,
 } from "./next-bases-discovery";
@@ -116,5 +117,31 @@ describe("native discovery sequencing", () => {
       return page([{ ...source }]);
     }, current.signal)[Symbol.asyncIterator]();
     await expect(after.next()).rejects.toThrow();
+  });
+});
+
+describe("unreadableViewSources", () => {
+  const entry = {
+    record: "00000000-0000-0000-0000-000000000002",
+    path: "Views/broken.base",
+    sourceRevision: "sha256:" + "cd".repeat(32),
+    reason: "view_metadata_unavailable",
+    detail: "base_views_shape",
+  };
+  it("reads nothing from a page of an SDK without the field", () => {
+    expect(unreadableViewSources(page([source]))).toEqual([]);
+  });
+  it("copies only the named fields", () => {
+    expect(
+      unreadableViewSources({ unreadable: [{ ...entry, extra: true }] }),
+    ).toEqual([entry]);
+  });
+  it.each([
+    { unreadable: "Views/broken.base" },
+    { unreadable: [null] },
+    { unreadable: [{ ...entry, path: 7 }] },
+    { unreadable: [{ ...entry, detail: undefined }] },
+  ])("refuses a malformed list %#", (value) => {
+    expect(() => unreadableViewSources(value)).toThrow();
   });
 });

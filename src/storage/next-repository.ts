@@ -91,6 +91,8 @@ import { runtimeTimezone } from "../domain/runtime-timezone";
 import {
   iterateNativeDiscovery,
   nativeViewSelection,
+  unreadableViewSources,
+  type UnreadableViewSource,
 } from "./next-bases-discovery";
 import { readNativeRows } from "./next-bases-rows";
 import { nativeCellValue } from "./next-bases-values";
@@ -3076,14 +3078,24 @@ export class NextTaskRepository implements TaskRepository {
       const descriptors = new Map<string, AppBasesDescriptor>();
       const documents = new Map<string, TaskViewDocument>();
       const timezone = runtimeTimezone();
+      const unreadable: UnreadableViewSource[] = [];
       for await (const views of iterateNativeDiscovery(async (continuation) => {
         // Each page is one relayed round trip with its own deadline; the
         // number of pages grows with the collection's size (#436).
-        const result = await this.client.listAppBasesViews(
-          { captureTimezone: timezone, limit: 128, continuation },
-          { signal: this.requestSignal(signal) },
-        );
+        const request = {
+          captureTimezone: timezone,
+          limit: 128,
+          continuation,
+          // One malformed view file must not hide every view. A replica that
+          // grants `bases-discovery-unreadable-v1` skips and names it; an
+          // older SDK or replica refuses the discovery as before.
+          reportUnreadable: true,
+        };
+        const result = await this.client.listAppBasesViews(request, {
+          signal: this.requestSignal(signal),
+        });
         if (result.kind === "refusal") throw new MdbaseError(result.problem);
+        unreadable.push(...unreadableViewSources(result));
         return result;
       }, signal)) {
         this.assertCurrentData(revision);
@@ -3131,6 +3143,21 @@ export class NextTaskRepository implements TaskRepository {
             },
           });
         }
+      }
+      for (const source of unreadable) {
+        if (documents.has(source.record)) continue;
+        documents.set(source.record, {
+          id: source.record,
+          name: source.path,
+          source: {
+            path: source.path,
+            revision: source.sourceRevision,
+            format: "obsidian.base",
+            writable: this.hasViewSourceGrant("records.edit"),
+          },
+          views: [],
+          unreadable: { reason: source.reason, detail: source.detail },
+        });
       }
       signal.throwIfAborted();
       this.assertCurrentData(revision);
