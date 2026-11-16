@@ -11,6 +11,7 @@ import {
 } from "../test/next-task-fixture";
 import type { TaskViewExecution } from "../domain/view";
 import * as timezone from "../domain/runtime-timezone";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 
 // Explicit native-result stand-ins. Memory fixture supplies task metadata only;
 // never native execution/catalog/authority/startup or actual WASM proof.
@@ -619,6 +620,73 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     const catalog = await joined;
     expect(catalog[0]!.views.map((view) => view.name)).toEqual(["Same"]);
     expect(f.list).toHaveBeenCalledTimes(2);
+  });
+  describe("discovery longer than one foreground budget (#436)", () => {
+    const budgets = TASKNOTES_REQUEST_BUDGETS as { foregroundMs: number };
+    const foregroundMs = budgets.foregroundMs;
+    afterEach(() => {
+      budgets.foregroundMs = foregroundMs;
+    });
+    // Discovery reads every record, one relayed round trip per page, so a
+    // large vault pages for longer than one foreground budget. Each page is
+    // bounded on its own; the pass as a whole is not.
+    function paged(f: Awaited<ReturnType<typeof fixture>>, pages: number) {
+      f.list.mockReset().mockImplementation(async ({ continuation }) => {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        const page = continuation ? continuation[0]! + 1 : 1;
+        return {
+          kind: "success" as const,
+          views: page === pages ? [descriptor] : [],
+          clock,
+          collectionRevision: revision,
+          continuation: page === pages ? null : Uint8Array.of(page),
+        };
+      });
+    }
+    it("lists views when every page fits its own budget", async () => {
+      const f = await fixture();
+      budgets.foregroundMs = 400;
+      paged(f, 5);
+      const started = performance.now();
+      const documents = await f.repository.listViews();
+      expect(performance.now() - started).toBeGreaterThan(400);
+      expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
+      expect(f.list).toHaveBeenCalledTimes(5);
+    });
+    it("a view that must rediscover first still executes", async () => {
+      const f = await fixture();
+      // A write retires the catalog, so the next execution rediscovers.
+      await f.repository.create({ title: "Retires the catalog" });
+      await vi.waitFor(async () =>
+        expect(await f.repository.cachedViews()).toEqual([]),
+      );
+      budgets.foregroundMs = 400;
+      paged(f, 5);
+      f.execute.mockClear();
+      const execution = await f.repository.executeView(f.view);
+      expect(execution.rows).toHaveLength(1);
+      expect(f.list).toHaveBeenCalledTimes(5);
+      expect(f.execute).toHaveBeenCalledOnce();
+    });
+    it("a page that outlives its own budget still fails", async () => {
+      const f = await fixture();
+      budgets.foregroundMs = 300;
+      f.list.mockReset().mockImplementation(
+        (_input, options) =>
+          new Promise((_, reject) => {
+            const signal = options!.signal!;
+            signal.addEventListener("abort", () => reject(signal.reason), {
+              once: true,
+            });
+          }),
+      );
+      const started = performance.now();
+      await expect(f.repository.listViews()).rejects.toMatchObject({
+        name: "TimeoutError",
+      });
+      expect(performance.now() - started).toBeLessThan(1_500);
+      expect(f.list).toHaveBeenCalledOnce();
+    });
   });
   it("rereads discovery at once when a local data event retires its cut", async () => {
     const f = await fixture();
