@@ -1510,3 +1510,24 @@ test("the Play recheck CLI writes only the bounded refusal receipt", async () =>
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("a store-line read timeout before any write retries quietly but still stops after a write", async () => {
+  for (const target of ["google-play", "app-store"]) {
+    const platform = target === "google-play" ? "android" : "ios";
+    for (const [writeStarted, expected] of [
+      [false, []],
+      [true, [[platform, "stop", "app-publication-failed"]]],
+    ]) {
+      const receipt = { target, write_started: writeStarted };
+      const holds = [];
+      await recordFailure(
+        receipt,
+        new Error("store-line-read-timeout"),
+        async (record) => Object.assign(receipt, record),
+        async (...args) => holds.push(args),
+      );
+      assert.equal(receipt.reason, "store-line-read-timeout");
+      assert.deepEqual(holds, expected);
+    }
+  }
+});

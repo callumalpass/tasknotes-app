@@ -237,6 +237,18 @@ export async function storeLine(
     }
     await wait(5000);
   }
+  if (operation === "status") {
+    // A status read never writes the line, so a run that never completes (for
+    // example one GitHub leaves queued without a job) proves nothing was
+    // written. Cancel it best-effort and report a retryable read timeout; a
+    // stop whose outcome is unknown must still be reported as unknown.
+    try {
+      transport(`repos/${OPS}/actions/runs/${id}/cancel`, { body: {} }, true);
+    } catch {
+      // The read timeout stands whether or not the cancel lands.
+    }
+    throw new Error("store-line-read-timeout");
+  }
   throw new Error("store-line-outcome-unknown");
 }
 
