@@ -539,11 +539,22 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private signal(extra?: AbortSignal): AbortSignal {
+    return this.requestSignal(this.lifetimeSignal(extra));
+  }
+  /** The owner's lifetime without a deadline, for a READ whose request count
+   * grows with the collection. View discovery reads every record, one relayed
+   * round trip per page, so one foreground deadline over the whole pass would
+   * refuse every attempt once a vault is large enough (#436). Such a READ
+   * bounds each request with `requestSignal` instead. */
+  private lifetimeSignal(extra?: AbortSignal): AbortSignal {
     if (this.disposed)
       throw new Error("The native collection instance has been disposed.");
+    return AbortSignal.any([this.scope.signal, ...(extra ? [extra] : [])]);
+  }
+  /** One request's foreground deadline under a longer-lived owner. */
+  private requestSignal(signal: AbortSignal): AbortSignal {
     return AbortSignal.any([
-      this.scope.signal,
-      ...(extra ? [extra] : []),
+      signal,
       AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.foregroundMs),
     ]);
   }
@@ -637,6 +648,9 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
     read: () => Promise<Result>,
   ): Promise<Result> {
+    // A lifetime-owned READ has no overall deadline, so refusals that no
+    // local change explains are bounded here as they were by the deadline.
+    let unexplainedSince: number | null = null;
     for (;;) {
       signal.throwIfAborted();
       if (this.changeWindow.unsettled) await this.changeWindow.quiet(signal);
@@ -661,8 +675,16 @@ export class NextTaskRepository implements TaskRepository {
         // When a local change event retired it, the new generation already
         // exists: reread at once (a coalesced native change still waits for
         // its quiet window above). Pace only a refusal no local event explains.
-        if (this.dataRevision === generation)
+        if (this.dataRevision !== generation) unexplainedSince = null;
+        else {
+          unexplainedSince ??= performance.now();
+          if (
+            performance.now() - unexplainedSince >=
+            TASKNOTES_REQUEST_BUDGETS.foregroundMs
+          )
+            throw reason;
           await waitForChangeWindow(250, signal);
+        }
       }
     }
   }
@@ -3003,7 +3025,7 @@ export class NextTaskRepository implements TaskRepository {
     return structuredClone(this.viewCatalog);
   }
   async listViews(): Promise<TaskViewDocument[]> {
-    return this.discoverNativeViews(this.signal());
+    return this.discoverNativeViews(this.lifetimeSignal());
   }
   /** The replica keeps ONE discovery cursor per session, and a new discovery
    * replaces it: the older pass's next page is refused as stale. Discovery
@@ -3048,15 +3070,18 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
   ): Promise<TaskViewDocument[]> {
     return this.readCurrentGeneration(signal, async () => {
-      await this.initializeModel(signal);
+      // A fixed number of requests: one foreground deadline.
+      await this.initializeModel(this.requestSignal(signal));
       const revision = this.dataRevision;
       const descriptors = new Map<string, AppBasesDescriptor>();
       const documents = new Map<string, TaskViewDocument>();
       const timezone = runtimeTimezone();
       for await (const views of iterateNativeDiscovery(async (continuation) => {
+        // Each page is one relayed round trip with its own deadline; the
+        // number of pages grows with the collection's size (#436).
         const result = await this.client.listAppBasesViews(
           { captureTimezone: timezone, limit: 128, continuation },
-          { signal },
+          { signal: this.requestSignal(signal) },
         );
         if (result.kind === "refusal") throw new MdbaseError(result.problem);
         return result;
@@ -3239,7 +3264,7 @@ export class NextTaskRepository implements TaskRepository {
     repairDefaults = true,
   ): Promise<TaskViewExecution> {
     return this.readCurrentGeneration(signal, async () => {
-      await this.initializeModel(signal);
+      await this.initializeModel(this.requestSignal(signal));
       signal.throwIfAborted();
       // A data push can invalidate discovery before the selected view reloads.
       // Rediscover through the original client, then enforce the same exact
@@ -3260,7 +3285,7 @@ export class NextTaskRepository implements TaskRepository {
       this.viewExecutions.set(view.key, slot);
       const selected = await this.readNativeSource(
         descriptor,
-        signal,
+        this.requestSignal(signal),
         timezone,
       );
       this.assertCurrentData(revision);
@@ -3271,7 +3296,7 @@ export class NextTaskRepository implements TaskRepository {
           captureTimezone: timezone,
           ...(window === undefined ? {} : { window }),
         },
-        { signal },
+        { signal: this.requestSignal(signal) },
       );
       if (result.kind === "refusal") {
         if (
@@ -3383,14 +3408,16 @@ export class NextTaskRepository implements TaskRepository {
       return normalized;
     });
   }
+  /** A view may have to rediscover first (any data event retires the
+   * catalog), so it is lifetime-owned and every request has its own deadline. */
   async executeView(view: TaskView): Promise<TaskViewExecution> {
-    return this.executeNativeView(view, this.signal());
+    return this.executeNativeView(view, this.lifetimeSignal());
   }
   async *iterateView(
     view: TaskView,
     options: { signal?: AbortSignal; cumulative?: boolean } = {},
   ): AsyncIterable<TaskViewExecution> {
-    const signal = this.signal(options.signal);
+    const signal = this.lifetimeSignal(options.signal);
     if (!options.cumulative) {
       yield await this.executeNativeView(view, signal);
       return;
