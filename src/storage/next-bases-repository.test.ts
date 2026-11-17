@@ -48,6 +48,7 @@ async function fixture() {
   const genericSource = vi.spyOn(f.client.views, "readSource");
   const list = vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
     kind: "success",
+    unreadable: [],
     views: [descriptor],
     clock,
     collectionRevision: revision,
@@ -292,6 +293,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       );
       f.list.mockResolvedValue({
         kind: "success",
+        unreadable: [],
         views:
           drift === "missing"
             ? []
@@ -358,6 +360,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       .mockClear()
       .mockResolvedValueOnce({
         kind: "success",
+        unreadable: [],
         views: [],
         clock,
         collectionRevision: revision,
@@ -365,6 +368,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       })
       .mockResolvedValueOnce({
         kind: "success",
+        unreadable: [],
         views: [descriptor],
         clock,
         collectionRevision: revision,
@@ -422,6 +426,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     f.list
       .mockResolvedValueOnce({
         kind: "success",
+        unreadable: [],
         views: [{ ...descriptor, ordinal: 2 }],
         clock,
         collectionRevision: revision,
@@ -429,6 +434,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       })
       .mockResolvedValueOnce({
         kind: "success",
+        unreadable: [],
         views: [],
         clock: { ...clock, instant: 2 },
         collectionRevision: revision,
@@ -597,6 +603,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       await new Promise((resolve) => setTimeout(resolve, roundTripMs / 2));
       return {
         kind: "success" as const,
+        unreadable: [],
         views: page === pages ? [descriptor] : [],
         clock,
         collectionRevision: revision,
@@ -641,6 +648,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     );
     f.list.mockResolvedValue({
       kind: "success",
+      unreadable: [],
       views: [descriptor],
       clock,
       collectionRevision: revision,
@@ -674,6 +682,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         const page = continuation ? continuation[0]! + 1 : 1;
         return {
           kind: "success" as const,
+          unreadable: [],
           views: page === pages ? [descriptor] : [],
           clock,
           collectionRevision: revision,
@@ -735,6 +744,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       await f.repository.create({ title: "Written during discovery" });
       return {
         kind: "success" as const,
+        unreadable: [],
         views: [descriptor],
         clock,
         collectionRevision: revision,
@@ -769,6 +779,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       }
       return {
         kind: "success" as const,
+        unreadable: [],
         views: page === pages ? [descriptor] : [],
         clock,
         collectionRevision: revision,
@@ -801,6 +812,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       }
       return {
         kind: "success" as const,
+        unreadable: [],
         views: page === 3 ? [descriptor] : [],
         clock,
         collectionRevision: revision,
@@ -825,6 +837,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       }
       return {
         kind: "success" as const,
+        unreadable: [],
         views: page === 3 ? [descriptor] : [],
         clock,
         collectionRevision: revision,

@@ -99,6 +99,7 @@ it("shows a visible discovery refusal with Retry instead of an empty catalog or 
   });
   discovery.mockResolvedValue({
     kind: "success",
+    unreadable: [],
     views: [],
     continuation: null,
     clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
@@ -166,6 +167,7 @@ it.each(["active", "starting"] as const)(
             }
           : {
               kind: "success",
+              unreadable: [],
               views: [],
               continuation: null,
               clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
@@ -303,6 +305,7 @@ it.each([
           });
         return {
           kind: "success",
+          unreadable: [],
           views: [view],
           clock,
           collectionRevision: revision,
