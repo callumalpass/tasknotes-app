@@ -224,7 +224,9 @@ it("rechecks reminders when approval finishes without a reload", async () => {
   });
   render(settings("reminders"));
   await screen.findByRole("button", { name: "Review notification access" });
-  expect(listeners.size).toBe(1);
+  // Subscribing and releasing both happen in passive effects, which can run
+  // after the screen they follow is already painted.
+  await waitFor(() => expect(listeners.size).toBe(1));
 
   // Connect's popup granted timers to the open connection.
   fixture.status.mockResolvedValue({ state: "off", optedIn: false });
@@ -236,7 +238,7 @@ it("rechecks reminders when approval finishes without a reload", async () => {
     screen.queryByRole("button", { name: "Review notification access" }),
   ).toBeNull();
   // Once approved, ordinary SDK updates no longer recheck.
-  expect(listeners.size).toBe(0);
+  await waitFor(() => expect(listeners.size).toBe(0));
 });
 
 it("does not load or authorize reminders without delivery authority", () => {

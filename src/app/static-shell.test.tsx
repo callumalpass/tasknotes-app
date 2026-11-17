@@ -45,8 +45,8 @@ it("paints the gate's starting screen from index.html before any script runs", a
   expect(outline(shell)).toEqual(outline(gate));
   for (const name of ["data-layout", "data-phase"])
     expect(shell.getAttribute(name)).toBe(gate.getAttribute(name));
-  expect(shell.querySelector(".wordmark-label")!.textContent).toBe(
-    gate.querySelector(".wordmark-label")!.textContent,
+  expect(shell.querySelector(".mdbase-opening-name")!.textContent).toBe(
+    gate.querySelector(".mdbase-opening-name")!.textContent,
   );
   // The sentence is translated interface copy, so the shell only holds its
   // line open: the mark must not move when the app writes it.
