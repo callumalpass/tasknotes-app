@@ -1185,7 +1185,7 @@ export function ScratchpadNote({
         <div className="scratchpad-error" role="alert">
           <span>{error}</span>
           <button type="button" onClick={() => void load()}>
-            <Trans>Reload</Trans>
+            <Trans context="scratchpad: load notes again">Reload</Trans>
           </button>
         </div>
       ) : null}

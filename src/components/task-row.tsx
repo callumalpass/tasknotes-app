@@ -360,7 +360,7 @@ export function TaskRow({
       data-swipe-hint={
         swipe.offset > 0
           ? displayedTask.completed
-            ? t({ message: "Reopen" })
+            ? t({ message: "Reopen", context: "task action: mark incomplete" })
             : t({ message: "Complete" })
           : swipe.offset < 0
             ? t({ message: "Actions" })
@@ -419,7 +419,7 @@ export function TaskRow({
             ? selection.selected
               ? t`Deselect ${task.title}`
               : t`Select ${task.title}`
-            : `${displayedTask.completed ? t({ message: "Reopen" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`
+            : `${displayedTask.completed ? t({ message: "Reopen", context: "task action: mark incomplete" }) : t({ message: "Complete" })} ${task.title}${distinctStatus ? `, ${status?.label ?? displayedTask.status}` : ""}`
         }
         aria-pressed={selecting ? selection.selected : displayedTask.completed}
         aria-busy={pending}
