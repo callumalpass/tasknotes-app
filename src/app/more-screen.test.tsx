@@ -235,8 +235,9 @@ it("rechecks reminders when approval finishes without a reload", async () => {
   expect(
     screen.queryByRole("button", { name: "Review notification access" }),
   ).toBeNull();
-  // Once approved, ordinary SDK updates no longer recheck.
-  expect(listeners.size).toBe(0);
+  // Once approved, ordinary SDK updates no longer recheck. The subscription is
+  // released by a passive effect cleanup, which can run after the switch paints.
+  await waitFor(() => expect(listeners.size).toBe(0));
 });
 
 it("does not load or authorize reminders without delivery authority", () => {
