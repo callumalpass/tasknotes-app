@@ -15,6 +15,7 @@ import {
 import { readAppleLive, playReviewBlock } from "./store-status.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
 import { androidVersionCode } from "./publish-google-play.mjs";
+import { uploadRefusalReason } from "./testflight-upload-refusal.mjs";
 
 export const platforms = { "google-play": "android", "app-store": "ios" };
 // Mirrors mdbase-dev/mdbase-cloud-ops bin/lib/cd_retry.py STORE_INFRASTRUCTURE_REASONS at 224c0b0e7ca3bc7952fd468f16ffed08b7030c62.
@@ -309,11 +310,24 @@ export async function releaseTarget({ target, source, runId, save, services }) {
   await save({ version, outcome: "building", write_started: true });
   const buildWorkflow =
     platform === "android" ? "android.yml" : "ios-release.yml";
-  const sourceRunId = await services.dispatch(
-    buildWorkflow,
-    { source_sha: source, version },
-    save,
-  );
+  let sourceRunId;
+  try {
+    sourceRunId = await services.dispatch(
+      buildWorkflow,
+      { source_sha: source, version },
+      save,
+    );
+  } catch (error) {
+    // A failed iOS build run may retain a fixed TestFlight upload refusal
+    // class. It explains the stop but does not change it: the upload may
+    // already have reached Apple, so write evidence and the reason stay.
+    const reason =
+      platform === "ios" && error.runId && services.uploadRefusal
+        ? await services.uploadRefusal(error.runId)
+        : null;
+    if (reason) await save({ boundary_reason: reason });
+    throw error;
+  }
   const qualified = await services.qualify(platform, sourceRunId);
   requirePolicy(
     qualified.source === source && qualified.version === version,
@@ -428,6 +442,20 @@ async function main() {
                 "store-target-result.json",
               ),
               sourceRunId,
+            );
+          } catch {
+            return null;
+          }
+        },
+        uploadRefusal: async (runId) => {
+          try {
+            return uploadRefusalReason(
+              await artifactJson(
+                runId,
+                "testflight-upload-result",
+                "testflight-upload-result.json",
+              ),
+              runId,
             );
           } catch {
             return null;
