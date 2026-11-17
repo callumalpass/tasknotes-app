@@ -90,6 +90,9 @@ remain available only to the submission step. Main-only admission must not
 require a separate person to approve deployment. The submission always uses
 `AFTER_APPROVAL`, never phased or manual release. Review pending is a quiet wait;
 a rejected review or failed build/upload stops only `tasknotes-app-store`.
+A failed TestFlight upload retains only a fixed refusal class
+(`testflight-upload-result`, see `docs/mobile-store-automation.md`), never the
+altool log.
 
 Validate generated metadata without calling Apple with
 `TASKNOTES_IOS_VERSION=1.0.13 node scripts/submit-app-store.mjs --validate`.

@@ -216,6 +216,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to TestFlight
+        id: testflight
         if: env.TASKNOTES_IOS_UPLOAD == 'true'
         run: |
           api_keys_dir="$RUNNER_TEMP/private_keys"
@@ -237,9 +238,20 @@ jobs:
           upload_status="$?"
           set -e
           if [ "$upload_status" -ne 0 ] || ! grep -q "No errors uploading" "$upload_log"; then
+            # Keep the raw log on the runner; retain only a fixed refusal class.
+            node "$GITHUB_WORKSPACE/scripts/testflight-upload-refusal.mjs" "$upload_log" "$upload_status" || true
             echo "TestFlight did not confirm a successful upload." >&2
             exit 1
           fi
+
+      - name: Retain TestFlight upload refusal
+        if: failure() && steps.testflight.outcome == 'failure' && hashFiles('testflight-upload-result.json') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: testflight-upload-result
+          path: testflight-upload-result.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Remove temporary signing material
         if: always()

@@ -139,6 +139,21 @@ and that reason, but keeps `write_started: true` because the TestFlight upload
 is already a store write, so the line still stops with
 `app-publication-failed`. A failure after a write attempt retains nothing.
 
+When `ios-release.yml` cannot confirm a TestFlight upload, the altool log stays
+on the runner because it can name the team, key and delivery. The job prints and
+retains only `{outcome: "testflight-upload-refused", reason, run_id}` as
+`testflight-upload-result`. The reason is a fixed class:
+`testflight-build-number-duplicate`, `testflight-version-train-closed`,
+`testflight-upload-limit`, `testflight-agreement-required`,
+`testflight-auth-refused`, `testflight-service-unavailable`,
+`testflight-transport`, `testflight-validation-itms-<code>`,
+`testflight-success-unconfirmed`, `testflight-upload-log-missing` or
+`testflight-upload-unclassified`. For a failed `ios-release.yml` run, the
+coordinator reads the receipt bound to that exact run and saves it as
+`boundary_reason`. The upload may already have reached Apple, so
+`write_started: true`, the `store-build-or-publication-failed` reason and the
+`app-publication-failed` stop do not change.
+
 A failed build, upload, signing/digest check, rejected review, or unknown dispatch stops the
 selected store through those existing `app-stop` records. Unknown child writes
 are never cancelled or redispatched automatically. Clear requires every

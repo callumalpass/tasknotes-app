@@ -24,6 +24,10 @@ import {
 } from "./mobile-release-policy.mjs";
 import { parse } from "yaml";
 import { androidVersionCode } from "./publish-google-play.mjs";
+import {
+  uploadRefusal,
+  uploadRefusalReason,
+} from "./testflight-upload-refusal.mjs";
 
 const source = "a".repeat(40);
 const status = {
@@ -1569,6 +1573,60 @@ test("an App Store publisher failure without a bound receipt keeps the generic s
     );
     assert.equal(receipt.write_started, true);
     assert.equal(receipt.boundary_outcome, "failed");
+    assert.equal(receipt.reason, "store-build-or-publication-failed");
+    assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+  }
+});
+
+function failedIosBuild(uploadRefusal) {
+  const fixtureValue = fixture("app-store");
+  fixtureValue.services.dispatch = (workflow, inputs, save) =>
+    dispatch(workflow, inputs, save, (path) =>
+      path.endsWith("/dispatches")
+        ? { workflow_run_id: 88 }
+        : {
+            id: 88,
+            path: `.github/workflows/${workflow}`,
+            head_branch: "main",
+            event: "workflow_dispatch",
+            run_attempt: 1,
+            status: "completed",
+            conclusion: "failure",
+          },
+    );
+  fixtureValue.services.uploadRefusal = async (runId) => {
+    assert.equal(runId, 88);
+    return uploadRefusalReason(await uploadRefusal(), runId);
+  };
+  return fixtureValue;
+}
+
+test("a failed TestFlight upload names its fixed class but keeps the write and the stop", async () => {
+  const { receipt, holds } = await attempt(
+    failedIosBuild(async () => uploadRefusal("testflight-upload-limit", 88)),
+    "app-store",
+  );
+  assert.equal(receipt.boundary, "ios-release.yml");
+  assert.equal(receipt.boundary_outcome, "failed");
+  assert.equal(receipt.boundary_reason, "testflight-upload-limit");
+  assert.equal(receipt.child_run_id, 88);
+  assert.equal(receipt.write_started, true);
+  assert.equal(receipt.reason, "store-build-or-publication-failed");
+  assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+});
+
+test("a failed iOS build without a bound upload receipt records no class", async () => {
+  for (const refusal of [
+    async () => null,
+    async () => uploadRefusal("testflight-upload-limit", 89),
+    async () => ({ outcome: "upload-refused", reason: "raw", run_id: 88 }),
+  ]) {
+    const { receipt, holds } = await attempt(
+      failedIosBuild(refusal),
+      "app-store",
+    );
+    assert.equal(receipt.boundary_reason, undefined);
+    assert.equal(receipt.write_started, true);
     assert.equal(receipt.reason, "store-build-or-publication-failed");
     assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
   }
