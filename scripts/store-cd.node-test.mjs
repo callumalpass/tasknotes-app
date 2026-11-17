@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -16,7 +16,13 @@ import {
   releaseTarget,
   recordFailure,
   storeInfrastructureReasons,
+  appleStatusBoundary,
+  appleStatusReason,
+  failureReason,
+  readAppleStatus,
 } from "./store-cd.mjs";
+import { createStatusClient } from "./app-store-status.mjs";
+import { readAppleLive } from "./store-status.mjs";
 import { verifyArchive } from "./download-mobile-build.mjs";
 import {
   recheckRefusal,
@@ -1652,4 +1658,274 @@ test("the App Store publisher retains a receipt only on success or a pre-write r
     upload[0].if,
     "success() || (steps.submit.outcome == 'failure' && hashFiles('store-target-result.json') != '')",
   );
+});
+
+// Status-read failures built by the real App Store client, so the slugs it
+// attaches (not its human messages) drive the receipt.
+const statusKey = generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey;
+const secretMessage = "SECRET-DETAIL /v1/apps/123 body";
+async function appleStatusFailure(fetchImpl, credentials) {
+  const client = createStatusClient(
+    credentials ?? {
+      keyId: "TESTKEY",
+      issuerId: "test-issuer",
+      privateKey: statusKey,
+    },
+    { fetchImpl, sleepImpl: async () => {} },
+  );
+  const receipt = {
+    schema: "tasknotes/store-cd/1",
+    target: "app-store",
+    source,
+    run_id: 42,
+    outcome: "qualifying",
+    write_started: false,
+  };
+  const save = async (record) => Object.assign(receipt, record);
+  const holds = [];
+  const outcomes = [];
+  try {
+    await readAppleStatus(save, async () => {
+      outcomes.push(receipt.boundary_outcome);
+      return readAppleLive(client);
+    });
+    assert.fail("status read unexpectedly succeeded");
+  } catch (error) {
+    await recordFailure(receipt, error, save, async (...args) =>
+      holds.push(args),
+    );
+  }
+  return { receipt, holds, outcomes };
+}
+const httpFailure =
+  (status, code = secretMessage) =>
+  async () =>
+    new Response(JSON.stringify({ errors: [{ code }] }), { status });
+
+test("App Store status transport failures retry quietly at a recorded read boundary", async () => {
+  const timeout = Object.assign(new Error(secretMessage), {
+    name: "TimeoutError",
+  });
+  const network = new TypeError("fetch failed", {
+    cause: Object.assign(new Error(secretMessage), { code: "ECONNRESET" }),
+  });
+  for (const [fetchImpl, reason] of [
+    [
+      async () => {
+        throw timeout;
+      },
+      "store-status-timeout",
+    ],
+    [
+      async () => {
+        throw network;
+      },
+      "store-status-transport-failed",
+    ],
+    [
+      httpFailure(500, "UNEXPECTED_ERROR"),
+      "store-status-transport-unavailable",
+    ],
+    [httpFailure(503), "store-status-transport-unavailable"],
+    [httpFailure(500), "store-status-transport-unavailable"],
+    [httpFailure(429), "store-status-transport-unavailable"],
+  ]) {
+    assert.ok(storeInfrastructureReasons.includes(reason));
+    const { receipt, holds, outcomes } = await appleStatusFailure(fetchImpl);
+    assert.deepEqual(outcomes, ["reading"]);
+    assert.deepEqual(receipt, {
+      schema: "tasknotes/store-cd/1",
+      target: "app-store",
+      source,
+      run_id: 42,
+      outcome: "stopped",
+      write_started: false,
+      boundary: appleStatusBoundary,
+      boundary_outcome: "failed",
+      reason,
+    });
+    assert.deepEqual(holds, []);
+    assert.doesNotMatch(JSON.stringify(receipt), /SECRET|\/v1\//);
+  }
+});
+
+test("App Store status auth, config and contract failures stop with step-specific slugs", async () => {
+  const noKey = { keyId: "TESTKEY", issuerId: "test-issuer", privateKey: "" };
+  const unexpected = async () =>
+    new Response(
+      JSON.stringify({
+        data: [{}],
+        links: { next: "https://example.invalid/v1/x" },
+      }),
+    );
+  const repeated = async () =>
+    new Response(
+      JSON.stringify({
+        data: [],
+        links: { next: "https://api.appstoreconnect.apple.com/v1/apps/x" },
+      }),
+    );
+  const unparseable = async () => new Response("{not json");
+  const malformed = async () => new Response(JSON.stringify({}));
+  for (const [fetchImpl, credentials, reason] of [
+    [httpFailure(401), undefined, "app-store-status-read-http-401"],
+    [httpFailure(403), undefined, "app-store-status-read-http-403"],
+    [httpFailure(404), undefined, "app-store-status-read-http-404"],
+    [httpFailure(503), noKey, "app-store-status-auth-key-invalid"],
+    [unexpected, undefined, "app-store-status-pagination-url-unexpected"],
+    [repeated, undefined, "app-store-status-pagination-repeated"],
+    [unparseable, undefined, "app-store-status-read-unparseable"],
+    [malformed, undefined, "app-store-status-read-failed-typeerror"],
+  ]) {
+    assert.ok(!storeInfrastructureReasons.includes(reason));
+    const { receipt, holds } = await appleStatusFailure(fetchImpl, credentials);
+    assert.equal(receipt.reason, reason);
+    assert.equal(receipt.boundary, appleStatusBoundary);
+    assert.equal(receipt.boundary_outcome, "failed");
+    assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+    assert.doesNotMatch(JSON.stringify(receipt), /SECRET|\/v1\/|example/);
+  }
+});
+
+test("unclassified status errors name only an allowlisted class", () => {
+  class Custom extends Error {}
+  for (const [error, reason] of [
+    [new TypeError(secretMessage), "app-store-status-read-failed-typeerror"],
+    [new RangeError(secretMessage), "app-store-status-read-failed-rangeerror"],
+    [
+      new SyntaxError(secretMessage),
+      "app-store-status-read-failed-syntaxerror",
+    ],
+    [new Error(secretMessage), "app-store-status-read-failed-error"],
+    [
+      Object.assign(new Custom(secretMessage), { name: "CustomError" }),
+      "app-store-status-read-failed-other",
+    ],
+    [
+      Object.assign(new Error("x"), { refusal: "Not A Slug" }),
+      "app-store-status-read-failed-error",
+    ],
+    [
+      new Error("x", { cause: { refusal: "app-store-config-missing" } }),
+      "app-store-status-config-missing",
+    ],
+    [secretMessage, "app-store-status-read-failed-other"],
+    [undefined, "app-store-status-read-failed-other"],
+  ])
+    assert.equal(appleStatusReason(error), reason);
+});
+
+test("a successful status read settles its boundary so later pre-write policy stops stay quiet", async () => {
+  const receipt = {
+    schema: "tasknotes/store-cd/1",
+    target: "app-store",
+    source,
+    run_id: 42,
+    write_started: false,
+  };
+  const save = async (record) => Object.assign(receipt, record);
+  const status = { versions: [] };
+  assert.equal(await readAppleStatus(save, async () => status), status);
+  assert.equal(receipt.boundary, appleStatusBoundary);
+  assert.equal(receipt.boundary_outcome, "success");
+  for (const reason of ["app-line-stopped", "exact-main-ci-required"]) {
+    const holds = [];
+    await recordFailure(
+      { ...receipt },
+      new Error(reason),
+      async () => {},
+      async (...args) => holds.push(args),
+    );
+    assert.deepEqual(holds, []);
+  }
+  for (const boundary_outcome of ["reading", "failed"]) {
+    const holds = [];
+    await recordFailure(
+      { ...receipt, boundary_outcome },
+      new Error("app-line-stopped"),
+      async () => {},
+      async (...args) => holds.push(args),
+    );
+    assert.equal(holds.length, 1);
+  }
+});
+
+test("failure reasons prefer a carried slug, then a slug message, then the cause's slug", () => {
+  const tagged = (refusal, message = secretMessage, options) =>
+    Object.assign(new Error(message, options), { refusal });
+  for (const [error, reason] of [
+    [tagged("app-store-read-timeout"), "app-store-read-timeout"],
+    [tagged("app-store-read-timeout", "other-slug"), "app-store-read-timeout"],
+    [new Error("exact-main-ci-required"), "exact-main-ci-required"],
+    [
+      new Error("store-rejected", { cause: tagged("app-store-read-network") }),
+      "store-rejected",
+    ],
+    [
+      new Error(secretMessage, { cause: tagged("app-store-read-network") }),
+      "app-store-read-network",
+    ],
+    [tagged("Has Spaces"), "store-evidence-unavailable"],
+    [tagged(42), "store-evidence-unavailable"],
+    [new Error(secretMessage), "store-evidence-unavailable"],
+    [
+      new Error(secretMessage, {
+        cause: new Error("nested", { cause: tagged("app-store-read-network") }),
+      }),
+      "store-evidence-unavailable",
+    ],
+    [undefined, "store-evidence-unavailable"],
+  ])
+    assert.equal(failureReason(error), reason);
+  assert.equal(
+    failureReason(new Error(secretMessage), "release-evidence-unavailable"),
+    "release-evidence-unavailable",
+  );
+});
+
+test("recordFailure keeps a carried slug and never the human message", async () => {
+  const receipt = { target: "app-store", write_started: false };
+  const holds = [];
+  await recordFailure(
+    receipt,
+    Object.assign(new Error(secretMessage), {
+      refusal: "app-store-config-missing",
+    }),
+    async (record) => Object.assign(receipt, record),
+    async (...args) => holds.push(args),
+  );
+  assert.equal(receipt.reason, "app-store-config-missing");
+  assert.doesNotMatch(JSON.stringify(receipt), /SECRET/);
+  assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+});
+
+test("a carried App Store read HTTP slug keeps 5xx/429 quiet and 4xx a stop", async () => {
+  for (const [slug, reason, held] of [
+    ["app-store-read-http-500", "store-status-transport-unavailable", false],
+    ["app-store-read-http-502", "store-status-transport-unavailable", false],
+    ["app-store-read-http-429", "store-status-transport-unavailable", false],
+    ["app-store-read-http-401", "app-store-status-read-http-401", true],
+    ["app-store-read-http-403", "app-store-status-read-http-403", true],
+    ["app-store-read-http-409", "app-store-status-read-http-409", true],
+  ]) {
+    const receipt = { target: "app-store", write_started: false };
+    const save = async (record) => Object.assign(receipt, record);
+    const holds = [];
+    const error = await readAppleStatus(save, async () => {
+      throw Object.assign(new Error(secretMessage), { refusal: slug });
+    }).then(
+      () => assert.fail("status read unexpectedly succeeded"),
+      (failure) => failure,
+    );
+    await recordFailure(receipt, error, save, async (...args) =>
+      holds.push(args),
+    );
+    assert.equal(receipt.reason, reason);
+    assert.equal(receipt.boundary, appleStatusBoundary);
+    assert.deepEqual(
+      holds,
+      held ? [["ios", "stop", "app-publication-failed"]] : [],
+    );
+    assert.doesNotMatch(JSON.stringify(receipt), /SECRET/);
+  }
 });
