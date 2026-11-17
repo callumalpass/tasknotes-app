@@ -22,8 +22,14 @@ const reasons: Readonly<Record<string, readonly string[]>> = {
     "source_changed",
     "catalog_changed",
     "view_discovery_stale",
+    // The record inventory failed a consistency check (tasknotes-app#436).
+    "concurrent_modification",
   ],
-  forbidden: ["insufficient_access"],
+  forbidden: [
+    "insufficient_access",
+    "view_requires_keyed_device",
+    "view_full_collection_required",
+  ],
   cancelled: ["superseded"],
   unavailable: [
     "timeout",
@@ -32,6 +38,9 @@ const reasons: Readonly<Record<string, readonly string[]>> = {
     "session_closed",
     "fenced",
     "bases_contract_not_installed",
+    // Native Bases read refusals that are not evaluation failures.
+    "view_metadata_unavailable",
+    "view_read_not_ready",
   ],
 };
 const codes = new Set([

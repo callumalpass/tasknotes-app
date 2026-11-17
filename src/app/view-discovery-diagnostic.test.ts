@@ -69,6 +69,13 @@ it.each([
   ["invalid_request", "view_unsupported_construct"],
   ["invalid_request", "query_budget_exceeded"],
   ["unavailable", "bases_contract_not_installed"],
+  ["unavailable", "view_metadata_unavailable"],
+  ["unavailable", "view_read_not_ready"],
+  ["forbidden", "view_requires_keyed_device"],
+  ["forbidden", "view_full_collection_required"],
+  // A Cloud copy's discovery failed as conflict with a null reason
+  // (tasknotes-app#436), hiding which check refused it.
+  ["conflict", "concurrent_modification"],
 ] as const)("keeps the native discovery refusal %s/%s", (code, reason) => {
   // An unreadable view file refused discovery as invalid_request with a null
   // reason in the log, hiding which kind of refusal it was.
