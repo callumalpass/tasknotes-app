@@ -123,6 +123,7 @@ it.each(["superseded", "cancelled", "unavailable"] as const)(
       const task = await f.repository.create({ title: "Original task" });
       vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
         kind: "success",
+        unreadable: [],
         views: [],
         continuation: null,
         clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },

@@ -28,6 +28,7 @@ async function fixture(options: Parameters<typeof nextTaskFixture>[0] = {}) {
   };
   const list = vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
     kind: "success",
+    unreadable: [],
     views: [descriptor],
     clock,
     collectionRevision: record.revision,
@@ -57,6 +58,7 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     });
     f.list.mockImplementation(async () => ({
       kind: "success",
+      unreadable: [],
       views: [await currentDescriptor()],
       clock,
       collectionRevision: f.record.revision,
@@ -383,6 +385,7 @@ describe("native view source boundaries (protocol stand-ins)", () => {
     ).rejects.toMatchObject({ reason: "unsupported" });
     f.list.mockResolvedValue({
       kind: "success",
+      unreadable: [],
       views: [
         { ...f.descriptor, record: "00000000-0000-0000-0000-000000000002" },
         f.descriptor,

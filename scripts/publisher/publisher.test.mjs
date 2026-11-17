@@ -10,6 +10,7 @@ import { describe, it } from "node:test";
 
 import { assertDispatch, assertCheckout, assertAncestor } from "./refs.mjs";
 import { productionPin } from "./originals.mjs";
+import { sdkReleaseIsPrerelease } from "./sdk-version.mjs";
 import { authenticateProduction, stagingArchive } from "./authentication.mjs";
 import { capturePrevious, rollback } from "./rollback.mjs";
 import { assertArtifactMetadata, assertArtifactRun } from "./artifact.mjs";
@@ -157,7 +158,7 @@ it("pins staging to the production version and verifies both release digests and
   const prefix = `https://github.com/mdbase-dev/mdbase-connect/releases/download/sdk-v${pin.version}/`;
   const release = {
     tag_name: "sdk-v" + pin.version,
-    prerelease: true,
+    prerelease: sdkReleaseIsPrerelease(pin.version),
     draft: false,
     assets: [
       {

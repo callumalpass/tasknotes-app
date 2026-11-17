@@ -21,6 +21,7 @@ const { parse } = createRequire(
 )("yaml");
 import { prepareInstall } from "./install-inputs.mjs";
 import { compareInstalled, productionPin } from "./originals.mjs";
+import { sdkReleaseIsPrerelease } from "./sdk-version.mjs";
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 it("authenticates staging installation without weakening original digest or installed-member gates", async (context) => {
@@ -84,7 +85,7 @@ it("authenticates staging installation without weakening original digest or inst
     if (request === metadata)
       return Response.json({
         tag_name: tag,
-        prerelease: true,
+        prerelease: sdkReleaseIsPrerelease(pin.version),
         draft: false,
         assets: [
           {

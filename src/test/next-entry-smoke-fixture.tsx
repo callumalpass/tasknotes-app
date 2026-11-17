@@ -285,6 +285,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     control.operations.push("bases-discovery");
     return {
       kind: "success",
+      unreadable: [],
       views,
       clock,
       collectionRevision: revision,
