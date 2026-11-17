@@ -334,15 +334,16 @@ export async function releaseTarget({ target, source, runId, save, services }) {
       save,
     );
   } catch (error) {
-    // Only a completed failed Play publisher whose bound receipt says its
-    // read-only recheck refused proves no Play write; anything else stays a stop.
-    const reason =
-      platform === "android" && error.runId
-        ? await services.refusal(error.runId, sourceRunId)
-        : null;
+    // Only a completed failed publisher whose bound receipt says it refused
+    // before any store write can name its reason; anything else stays a stop.
+    // The iOS TestFlight upload already counts as a write, so an App Store
+    // refusal keeps write_started and only records why the publisher refused.
+    const reason = error.runId
+      ? await services.refusal(error.runId, sourceRunId)
+      : null;
     if (!reason) throw error;
     await save({
-      write_started: false,
+      ...(platform === "android" ? { write_started: false } : {}),
       boundary_outcome: "refused-before-write",
     });
     throw new Error(reason, { cause: error });

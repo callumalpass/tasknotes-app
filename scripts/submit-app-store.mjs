@@ -577,7 +577,90 @@ async function releaseMetadata(version) {
   }
 }
 
-async function main() {
+// Fixed refusal reasons for failures that happen before any App Store Connect
+// write. Only these bounded slugs leave the job; messages and response bodies
+// stay in the process.
+const refusalReasons = [
+  [
+    "Timed out waiting for the exact build",
+    "app-store-build-processing-timeout",
+  ],
+  ["Selected build is invalid", "app-store-build-invalid"],
+  ["Build needs App Store eligibility", "app-store-build-not-eligible"],
+  ["Multiple builds matched", "app-store-build-ambiguous"],
+  ["Expected a positive build number", "app-store-build-number-invalid"],
+  ["Unexpected app bundle ID", "app-store-bundle-mismatch"],
+  [
+    "This workflow updates an existing public app",
+    "app-store-no-public-version",
+  ],
+  [
+    "Store version is attached to a different build",
+    "app-store-version-build-mismatch",
+  ],
+  [
+    "Existing submitted version does not match",
+    "app-store-submitted-version-policy-mismatch",
+  ],
+  [
+    "Saved app review credentials do not match",
+    "app-store-review-account-mismatch",
+  ],
+  [
+    "App review credentials require both",
+    "app-store-review-account-config-invalid",
+  ],
+  ["Release notes must cover exactly", "app-store-locales-mismatch"],
+  [
+    "App review contact information is incomplete",
+    "app-store-review-contact-incomplete",
+  ],
+  [
+    "Draft review submission contains unrelated items",
+    "app-store-draft-submission-unrelated",
+  ],
+];
+
+export function refusalReason(error) {
+  const message = typeof error?.message === "string" ? error.message : "";
+  const attention =
+    /^Store version needs manual attention: ([A-Z][A-Z0-9_]{0,63})$/.exec(
+      message,
+    );
+  if (attention)
+    return `app-store-version-needs-attention-${attention[1].toLowerCase().replaceAll("_", "-")}`;
+  const read = /^App Store Connect GET \S+: HTTP (\d{3}) /.exec(message);
+  if (read) return `app-store-read-http-${read[1]}`;
+  return (
+    refusalReasons.find(([prefix]) => message.startsWith(prefix))?.[1] ??
+    "app-store-precheck-refused"
+  );
+}
+
+// Count every request that is not a GET before it leaves the process, so a
+// refusal can prove that no App Store Connect write was even attempted.
+export function trackWrites(client) {
+  const tracked = {
+    writeAttempted: false,
+    request(path, method = "GET", data) {
+      if (method !== "GET") tracked.writeAttempted = true;
+      return client.request(path, method, data);
+    },
+    list: (path) => client.list(path),
+  };
+  return tracked;
+}
+
+// Retain a bounded receipt only while no write was attempted, matching the
+// Play recheck. After any write attempt nothing is retained, so the
+// coordinator keeps its write-started stop.
+export async function refusalReceipt(error, client, sourceRunId) {
+  if (client && client.writeAttempted !== false) return null;
+  const { recheckRefusal } = await import("./mobile-release-policy.mjs");
+  return recheckRefusal(refusalReason(error), sourceRunId);
+}
+
+async function main(tracker) {
   const version = requireValue(
     process.env.TASKNOTES_IOS_VERSION,
     "TASKNOTES_IOS_VERSION",
@@ -589,23 +672,26 @@ async function main() {
     releaseType: "AFTER_APPROVAL",
   };
   if (process.argv.includes("--validate")) return;
-  const client = createClient({
-    keyId: requireValue(
-      process.env.APP_STORE_PUBLISH_KEY_ID,
-      "APP_STORE_PUBLISH_KEY_ID",
-    ),
-    issuerId: requireValue(
-      process.env.APP_STORE_PUBLISH_ISSUER_ID,
-      "APP_STORE_PUBLISH_ISSUER_ID",
-    ),
-    privateKey: Buffer.from(
-      requireValue(
-        process.env.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64,
-        "APP_STORE_PUBLISH_PRIVATE_KEY_BASE64",
+  const client = trackWrites(
+    createClient({
+      keyId: requireValue(
+        process.env.APP_STORE_PUBLISH_KEY_ID,
+        "APP_STORE_PUBLISH_KEY_ID",
       ),
-      "base64",
-    ).toString("utf8"),
-  });
+      issuerId: requireValue(
+        process.env.APP_STORE_PUBLISH_ISSUER_ID,
+        "APP_STORE_PUBLISH_ISSUER_ID",
+      ),
+      privateKey: Buffer.from(
+        requireValue(
+          process.env.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64,
+          "APP_STORE_PUBLISH_PRIVATE_KEY_BASE64",
+        ),
+        "base64",
+      ).toString("utf8"),
+    }),
+  );
+  tracker.client = client;
   const result = await submitAppStore({
     client,
     version,
@@ -638,7 +724,8 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
-  main().catch(async (error) => {
+  const tracker = {};
+  main(tracker).catch(async (error) => {
     if (error.message === "earlier-store-version-in-flight") {
       const qualified = JSON.parse(
         await readFile("mobile-release-qualified.json", "utf8"),
@@ -651,10 +738,25 @@ if (
         }) + "\n",
       );
     } else {
-      console.error(
-        "App Store submission refused; inspect the target outcome.",
-      );
       process.exitCode = 1;
+      const receipt = await refusalReceipt(
+        error,
+        tracker.client,
+        process.env.SOURCE_RUN_ID,
+      );
+      if (receipt) {
+        console.error(
+          `App Store submission refused before any write: ${receipt.reason}`,
+        );
+        await writeFile(
+          "store-target-result.json",
+          JSON.stringify(receipt) + "\n",
+        ).catch(() => {});
+      } else {
+        console.error(
+          "App Store submission refused; inspect the target outcome.",
+        );
+      }
     }
   });
 }

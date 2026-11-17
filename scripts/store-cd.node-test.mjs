@@ -115,8 +115,8 @@ function unobservableFixture() {
   return fixtureValue;
 }
 
-async function attempt(fixtureValue) {
-  const receipt = { target: "google-play", write_started: false };
+async function attempt(fixtureValue, target = "google-play") {
+  const receipt = { target, write_started: false };
   const holds = [];
   try {
     await fixtureValue.run();
@@ -1530,4 +1530,68 @@ test("a store-line read timeout before any write retries quietly but still stops
       assert.deepEqual(holds, expected);
     }
   }
+});
+
+function failedAppStorePublisher(refusal) {
+  const fixtureValue = failedPlayPublisher(fixture("app-store"), refusal);
+  const play = fixtureValue.services.dispatch;
+  fixtureValue.services.dispatch = (workflow, inputs, save) =>
+    workflow === "ios-release.yml"
+      ? play("android.yml", inputs, save).then(() => 77)
+      : play(workflow, inputs, save);
+  return fixtureValue;
+}
+
+test("an App Store refusal before any submission write names its reason but keeps the TestFlight write", async () => {
+  const { receipt, holds } = await attempt(
+    failedAppStorePublisher(async () =>
+      recheckRefusal("app-store-build-not-eligible", 77),
+    ),
+    "app-store",
+  );
+  assert.equal(receipt.boundary, "app-store-submit.yml");
+  assert.equal(receipt.boundary_outcome, "refused-before-write");
+  // The TestFlight upload is already a store write; only the reason changes.
+  assert.equal(receipt.write_started, true);
+  assert.equal(receipt.reason, "app-store-build-not-eligible");
+  assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+});
+
+test("an App Store publisher failure without a bound receipt keeps the generic stop", async () => {
+  for (const refusal of [
+    async () => null,
+    async () => recheckRefusal("app-store-build-not-eligible", 78),
+    async () => ({ outcome: "submitted", source }),
+  ]) {
+    const { receipt, holds } = await attempt(
+      failedAppStorePublisher(refusal),
+      "app-store",
+    );
+    assert.equal(receipt.write_started, true);
+    assert.equal(receipt.boundary_outcome, "failed");
+    assert.equal(receipt.reason, "store-build-or-publication-failed");
+    assert.deepEqual(holds, [["ios", "stop", "app-publication-failed"]]);
+  }
+});
+
+test("the App Store publisher retains a receipt only on success or a pre-write refusal", async () => {
+  const workflow = parse(
+    await readFile(
+      new URL("../.github/workflows/app-store-submit.yml", import.meta.url),
+      "utf8",
+    ),
+  );
+  const steps = workflow.jobs.submit.steps;
+  const submit = steps.findIndex((step) => step.id === "submit");
+  assert.equal(steps[submit].run, "node scripts/submit-app-store.mjs --submit");
+  assert.equal(steps[submit].env.SOURCE_RUN_ID, "${{ inputs.source_run_id }}");
+  const upload = steps.filter((step) =>
+    step.uses?.startsWith("actions/upload-artifact@"),
+  );
+  assert.equal(upload.length, 1);
+  assert.ok(steps.indexOf(upload[0]) > submit);
+  assert.equal(
+    upload[0].if,
+    "success() || (steps.submit.outcome == 'failure' && hashFiles('store-target-result.json') != '')",
+  );
 });

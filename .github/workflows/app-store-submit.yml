@@ -70,15 +70,20 @@ jobs:
         run: node --test scripts/submit-app-store.node-test.mjs scripts/app-store-source-run.node-test.mjs
 
       - name: Check or submit the public release
+        id: submit
         if: env.STORE_PENDING != 'true'
         env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
           APP_STORE_PUBLISH_KEY_ID: ${{ vars.APP_STORE_PUBLISH_KEY_ID }}
           APP_STORE_PUBLISH_ISSUER_ID: ${{ vars.APP_STORE_PUBLISH_ISSUER_ID }}
           APP_STORE_PUBLISH_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_PUBLISH_PRIVATE_KEY_BASE64 }}
           APP_REVIEW_DEMO_ACCOUNT_NAME: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_NAME }}
           APP_REVIEW_DEMO_ACCOUNT_PASSWORD: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_PASSWORD }}
         run: node scripts/submit-app-store.mjs --submit
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      # A refusal before any App Store Connect write retains its bounded
+      # receipt; a failure after a write attempt writes no file and uploads nothing.
+      - if: success() || (steps.submit.outcome == 'failure' && hashFiles('store-target-result.json') != '')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: store-target-result
           path: store-target-result.json
