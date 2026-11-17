@@ -75,7 +75,11 @@ The coordinator allocates a numeric marketing version strictly newer than the
 observed live version (next patch, or a greater package version). With the
 2026-11-09 status snapshot's package/live **1.0.12**, the first new submission is
 **1.0.13** on each store. The signed build receives that version; no product
-manifest edit or release tag is necessary. Android version codes remain the
+manifest edit or release tag is necessary. The bundled web build takes the same
+version and its source commit from `TASKNOTES_STORE_VERSION` and
+`TASKNOTES_STORE_SOURCE`, so More → About and the feedback report's
+`build_revision` read `1.0.45-602fa92ec588`, never the frozen package.json
+version (#492). Android version codes remain the
 fixed configured base plus the Android workflow run number and must exceed all
 store artifact codes. iOS build numbers remain the iOS release run number.
 A retained successful same-source/live-version receipt makes subsequent ticks
