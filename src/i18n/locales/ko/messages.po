@@ -4653,6 +4653,7 @@ msgstr "기준"
 
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
+msgctxt "scratchpad: load notes again"
 msgid "Reload"
 msgstr "다시 불러오기"
 
@@ -4770,6 +4771,7 @@ msgid "Rendering…"
 msgstr "렌더링 중…"
 
 #: src/components/task-row.tsx
+msgctxt "task action: mark incomplete"
 msgid "Reopen"
 msgstr "다시 열기"
 

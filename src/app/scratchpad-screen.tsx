@@ -867,7 +867,7 @@ export function ScratchpadScreen({
         <div className="scratchpad-error" role="alert">
           {error}
           <button type="button" onClick={() => void loadStream()}>
-            <Trans>Reload</Trans>
+            <Trans context="scratchpad: load notes again">Reload</Trans>
           </button>
         </div>
       ) : null}

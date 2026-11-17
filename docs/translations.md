@@ -128,9 +128,13 @@ unchanged. Requalify this bundler integration when replacing the npm pins.
 
 ## Published shared packages
 
-Both `@mdbase-dev/i18n` and `@mdbase-dev/ui` use the exact npm version
-`0.1.0-beta.149`, not a dist-tag or range. The lockfile records registry integrity;
-release tests verify both exact pins and installed versions. The vendored kit/UI
+Both `@mdbase-dev/i18n` and `@mdbase-dev/ui` are pinned in `package.json` to the
+same exact npm version, never a dist-tag or range. The release automation moves the
+pin; the lockfile records registry integrity, and release tests verify the pin's
+shape, lockfile agreement, sha512 registry resolution and installed versions without
+naming a release, so a repin needs no hand edits. When a new UI release adds a message
+whose English source matches app copy for a different concept, composition fails
+closed; give the app message a semantic context rather than overriding the library. The vendored kit/UI
 archives, provenance manifests and archive-only checks have been removed.
 
 The published tarballs were compared with the previous `24e9f5d0` builds:

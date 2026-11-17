@@ -4654,6 +4654,7 @@ msgstr "Par rapport à"
 
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
+msgctxt "scratchpad: load notes again"
 msgid "Reload"
 msgstr "Recharger"
 
@@ -4771,6 +4772,7 @@ msgid "Rendering…"
 msgstr "Rendu en cours…"
 
 #: src/components/task-row.tsx
+msgctxt "task action: mark incomplete"
 msgid "Reopen"
 msgstr "Rouvrir"
 
