@@ -1,13 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { generateKeyPairSync, verify } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   APP_ID,
   BUNDLE_ID,
   createClient,
   createToken,
+  refusalReason,
+  refusalReceipt,
   submitAppStore,
+  trackWrites,
   validateMetadata,
   waitForBuild,
 } from "./submit-app-store.mjs";
@@ -634,4 +641,135 @@ test("retries transient reads but not writes; redacts error details", async () =
   calls = 0;
   await assert.rejects(client.request("appStoreVersions", "POST", {}));
   assert.equal(calls, 1);
+});
+
+test("pre-write refusals map to fixed bounded reasons", () => {
+  for (const [message, reason] of [
+    [
+      "Build needs App Store eligibility or an export-compliance declaration; resolve in App Store Connect",
+      "app-store-build-not-eligible",
+    ],
+    [
+      "Timed out waiting for the exact build to finish processing; rerun only the submission job later",
+      "app-store-build-processing-timeout",
+    ],
+    [
+      "Store version needs manual attention: DEVELOPER_REJECTED",
+      "app-store-version-needs-attention-developer-rejected",
+    ],
+    [
+      "App Store Connect GET /v1/builds: HTTP 401 (NOT_AUTHORIZED). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.",
+      "app-store-read-http-401",
+    ],
+    ["Something unexpected: details", "app-store-precheck-refused"],
+  ])
+    assert.equal(refusalReason(new Error(message)), reason);
+});
+
+test("a refusal receipt is retained only while no write was attempted", async () => {
+  const client = trackWrites({
+    request: async () => ({}),
+    list: async () => [],
+  });
+  const error = new Error("Selected build is invalid, expired, or mismatched");
+  await client.request("apps/x");
+  await client.list("apps");
+  assert.deepEqual(await refusalReceipt(error, client, "42"), {
+    outcome: "refused-before-write",
+    reason: "app-store-build-invalid",
+    source_run_id: 42,
+  });
+  // Credentials can fail before any client exists; that is also pre-write.
+  assert.equal(
+    (await refusalReceipt(error, undefined, "42")).reason,
+    "app-store-build-invalid",
+  );
+  assert.equal(await refusalReceipt(error, client, undefined), null);
+  await client.request("appStoreVersions", "POST", {}).catch(() => {});
+  assert.equal(client.writeAttempted, true);
+  assert.equal(await refusalReceipt(error, client, "42"), null);
+});
+
+test("a write that throws before reaching Apple still counts as attempted", async () => {
+  const client = trackWrites({
+    request: async () => {
+      throw new Error("network");
+    },
+    list: async () => [],
+  });
+  await assert.rejects(client.request("reviewSubmissions", "POST", {}));
+  assert.equal(await refusalReceipt(new Error("network"), client, "42"), null);
+});
+
+test("submitAppStore routes every write through the tracked client", async () => {
+  const f = fixture();
+  const client = trackWrites(f.client);
+  await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata,
+    commit: false,
+    env: {},
+  });
+  assert.equal(client.writeAttempted, false);
+  await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata,
+    commit: true,
+    env: {},
+  });
+  assert.equal(client.writeAttempted, true);
+});
+
+test("the submission CLI writes only the bounded pre-write refusal receipt", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "tasknotes-app-store-"));
+  try {
+    for (const [sourceRunId, written] of [
+      ["42", true],
+      [undefined, false],
+    ]) {
+      await rm(join(directory, "store-target-result.json"), { force: true });
+      const result = spawnSync(
+        process.execPath,
+        [
+          fileURLToPath(new URL("./submit-app-store.mjs", import.meta.url)),
+          "--submit",
+        ],
+        {
+          cwd: directory,
+          encoding: "utf8",
+          env: {
+            PATH: process.env.PATH,
+            ...(sourceRunId ? { SOURCE_RUN_ID: sourceRunId } : {}),
+          },
+        },
+      );
+      assert.equal(result.status, 1);
+      assert.equal(
+        result.stderr,
+        written
+          ? "App Store submission refused before any write: app-store-precheck-refused\n"
+          : "App Store submission refused; inspect the target outcome.\n",
+      );
+      const receipt = await readFile(
+        join(directory, "store-target-result.json"),
+        "utf8",
+      ).catch(() => null);
+      assert.deepEqual(
+        receipt && JSON.parse(receipt),
+        written
+          ? {
+              outcome: "refused-before-write",
+              reason: "app-store-precheck-refused",
+              source_run_id: 42,
+            }
+          : null,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

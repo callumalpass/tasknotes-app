@@ -129,6 +129,16 @@ reason then follows the retry rule above; any other reason still stops the line.
 A missing, extra-field or mismatched receipt keeps `write_started: true` and the
 `store-build-or-publication-failed` stop.
 
+The App Store submitter retains the same bounded receipt when it refuses before
+attempting any App Store Connect write (every non-GET request counts as an
+attempt, even one that never reaches Apple). Its reason is a fixed slug such as
+`app-store-build-not-eligible`, `app-store-build-processing-timeout` or
+`app-store-version-needs-attention-<state>`; messages and response bodies never
+leave the job. The coordinator records `boundary_outcome: refused-before-write`
+and that reason, but keeps `write_started: true` because the TestFlight upload
+is already a store write, so the line still stops with
+`app-publication-failed`. A failure after a write attempt retains nothing.
+
 A failed build, upload, signing/digest check, rejected review, or unknown dispatch stops the
 selected store through those existing `app-stop` records. Unknown child writes
 are never cancelled or redispatched automatically. Clear requires every
