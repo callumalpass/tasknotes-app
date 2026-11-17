@@ -4952,6 +4952,10 @@ msgstr "重试，或撤销以将任务恢复到此处。"
 msgid "Retrying…"
 msgstr "正在重试…"
 
+#: src/main.tsx
+msgid "Return to the TaskNotes app"
+msgstr "返回 TaskNotes 应用"
+
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
 msgstr "供筛选、分组、排序和字段使用的可复用值。"

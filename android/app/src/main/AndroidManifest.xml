@@ -32,6 +32,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="dev.tasknotes.app" android:host="auth" android:pathPrefix="/mdbase/callback" />
+                <data android:scheme="dev.tasknotes.app" android:host="auth" android:path="/mdbase/grant" />
             </intent-filter>
 
         </activity>

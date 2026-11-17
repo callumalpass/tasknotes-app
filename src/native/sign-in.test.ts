@@ -65,3 +65,30 @@ it("cold return also wakes the original SDK owner", async () => {
   expect(mdbase.setForeground).toHaveBeenCalledWith(true);
   stop();
 });
+it("declares the grant return the manifest lists for Private collections", () => {
+  expect(nativeSignIn.grantReturnUrl).toBe(
+    "https://app.tasknotes.dev/auth/mdbase/callback?via=app",
+  );
+});
+it("hands a Private grant to the waiting SDK flow and wakes it (#492)", async () => {
+  let returned!: (event: { url: string }) => void;
+  native.addListener.mockImplementation((_name, listener) => {
+    returned = listener;
+    return Promise.resolve({ remove: async () => {} });
+  });
+  native.close.mockClear();
+  const deliver = vi.fn(async () => {});
+  const mdbase = { setForeground: vi.fn() } as unknown as Mdbase;
+  const stop = followNativeSignInReturn(mdbase, deliver);
+  returned({
+    url: "dev.tasknotes.app://auth/mdbase/grant?code=c0de&state=st4te",
+  });
+  expect(deliver).toHaveBeenCalledExactlyOnceWith(
+    "https://app.tasknotes.dev/auth/mdbase/callback?via=app&code=c0de&state=st4te",
+  );
+  expect(native.close).toHaveBeenCalledOnce();
+  expect(mdbase.setForeground).toHaveBeenCalledExactlyOnceWith(true);
+  returned({ url: "dev.tasknotes.app://auth/mdbase/grant?code=c0de" });
+  expect(deliver).toHaveBeenCalledOnce();
+  stop();
+});

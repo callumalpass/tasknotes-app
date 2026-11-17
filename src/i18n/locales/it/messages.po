@@ -4952,6 +4952,10 @@ msgstr "Riprova oppure annulla per ripristinare l'attività qui."
 msgid "Retrying…"
 msgstr "Nuovo tentativo in corso…"
 
+#: src/main.tsx
+msgid "Return to the TaskNotes app"
+msgstr "Torna all’app TaskNotes"
+
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
 msgstr "Valori riutilizzabili per filtri, raggruppamento, ordinamento e campi."

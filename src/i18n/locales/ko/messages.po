@@ -4952,6 +4952,10 @@ msgstr "다시 시도하거나 실행 취소하여 작업을 여기로 복원하
 msgid "Retrying…"
 msgstr "다시 시도 중…"
 
+#: src/main.tsx
+msgid "Return to the TaskNotes app"
+msgstr "TaskNotes 앱으로 돌아가기"
+
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."
 msgstr "필터, 그룹화, 정렬 및 필드에서 재사용할 값입니다."

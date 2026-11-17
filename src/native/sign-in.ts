@@ -1,12 +1,18 @@
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import type { Mdbase } from "@mdbase-dev/sdk";
+import manifest from "../generated/mdbase-app.json";
+import { grantCallbackFromHandoff, nativeGrantReturnUrl } from "./grant-return";
 
 export const TASKNOTES_NATIVE_RETURN_URL =
   "dev.tasknotes.app://auth/mdbase/callback";
 
+const grantReturnUrl = nativeGrantReturnUrl(manifest);
+
 export const nativeSignIn = {
   returnUrl: TASKNOTES_NATIVE_RETURN_URL,
+  // Private collection grants come back through the web page's hand-off (#492).
+  ...(grantReturnUrl ? { grantReturnUrl } : {}),
   open: (url: string) => Browser.open({ url }),
   close: () => Browser.close(),
 };
@@ -29,11 +35,22 @@ export function isNativeSignInReturn(value: string): boolean {
   }
 }
 
-/** Warm and cold returns wake the SAME SDK owner; never exchange URL codes. */
-export function followNativeSignInReturn(mdbase: Mdbase): () => void {
+/** Warm and cold returns wake the SAME SDK owner. Sign-in URL codes are never
+ * exchanged here; a Private grant's hand-off goes to the SDK flow waiting for
+ * it, which checks its state and holds the only PKCE verifier. */
+export function followNativeSignInReturn(
+  mdbase: Mdbase,
+  deliverGrant: (url: string) => Promise<void> = async (url) =>
+    (await import("@mdbase-dev/sdk/app-grant")).deliverAppGrantCallback(url),
+): () => void {
   let active = true;
   const returned = (url: string) => {
-    if (!active || !isNativeSignInReturn(url)) return;
+    if (!active) return;
+    const grant = grantReturnUrl
+      ? grantCallbackFromHandoff(url, grantReturnUrl)
+      : null;
+    if (grant) void deliverGrant(grant).catch(() => undefined);
+    else if (!isNativeSignInReturn(url)) return;
     void Browser.close().catch(() => undefined);
     mdbase.setForeground(true);
   };
