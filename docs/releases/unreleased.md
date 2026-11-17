@@ -1,5 +1,7 @@
 # Unreleased
 
+- Keep each task's ID in the property your collection's task type maps it to, such as `tasknote_id`, instead of always writing `id`. A plain `id` property is then left as your own data. Collections that use `id` are unchanged (tasknotes#2574, requested by @minchinweb).
+
 - Show reminders as ready as soon as notification access is approved in mdbase, instead of still asking for approval until the page is reloaded.
 
 - Keep a reminder's generated notification text in step with its time: changing "15 minutes before" to 2 minutes now reads "2 minutes before". Text you wrote yourself is never changed.
