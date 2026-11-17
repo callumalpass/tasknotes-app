@@ -661,9 +661,199 @@ test("pre-write refusals map to fixed bounded reasons", () => {
       "App Store Connect GET /v1/builds: HTTP 401 (NOT_AUTHORIZED). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.",
       "app-store-read-http-401",
     ],
-    ["Something unexpected: details", "app-store-precheck-refused"],
+    ["Something unexpected: details", "app-store-precheck-refused-error"],
   ])
     assert.equal(refusalReason(new Error(message)), reason);
+});
+
+const rejectsWith = async (promise, reason) =>
+  assert.equal(
+    refusalReason(
+      await promise.then(
+        () => assert.fail("expected refusal"),
+        (e) => e,
+      ),
+    ),
+    reason,
+  );
+
+test("hung or failed reads retry with backoff, then refuse with a bounded slug", async () => {
+  const timeout = () =>
+    new DOMException("The operation timed out.", "TimeoutError");
+  const abort = () => new DOMException("aborted", "AbortError");
+  const network = () =>
+    new TypeError("fetch failed", {
+      cause: Object.assign(new Error("connect ECONNRESET 10.0.0.1"), {
+        code: "ECONNRESET",
+      }),
+    });
+  const undici = () =>
+    Object.assign(new Error("Connect Timeout Error"), {
+      name: "ConnectTimeoutError",
+      code: "UND_ERR_CONNECT_TIMEOUT",
+    });
+  for (const [failure, reason] of [
+    [timeout, "app-store-read-timeout"],
+    [abort, "app-store-read-timeout"],
+    [undici, "app-store-read-timeout"],
+    [network, "app-store-read-network"],
+  ]) {
+    let calls = 0;
+    const delays = [];
+    const client = createClient(credentials, {
+      sleepImpl: async (ms) => delays.push(ms),
+      fetchImpl: async () => {
+        calls++;
+        throw failure();
+      },
+    });
+    await rejectsWith(client.request("apps"), reason);
+    assert.equal(calls, 5);
+    assert.deepEqual(delays, [1000, 2000, 4000, 8000]);
+  }
+  // A transient failure followed by success returns the read.
+  let calls = 0;
+  const client = createClient(credentials, {
+    sleepImpl: async () => {},
+    fetchImpl: async () => {
+      if (++calls < 3) throw calls === 1 ? timeout() : network();
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { id: "1" } }),
+      };
+    },
+  });
+  assert.deepEqual(await client.request("apps"), { data: { id: "1" } });
+  assert.equal(calls, 3);
+});
+
+test("a hung body read is retried like a hung request", async () => {
+  let calls = 0;
+  const client = createClient(credentials, {
+    sleepImpl: async () => {},
+    fetchImpl: async () => {
+      calls++;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => {
+          throw new DOMException("timed out", "TimeoutError");
+        },
+      };
+    },
+  });
+  await rejectsWith(client.request("apps"), "app-store-read-timeout");
+  assert.equal(calls, 5);
+});
+
+test("writes are never retried on network or timeout errors", async () => {
+  for (const method of ["POST", "PATCH"]) {
+    for (const failure of [
+      () => new TypeError("fetch failed"),
+      () => new DOMException("timed out", "TimeoutError"),
+    ]) {
+      let calls = 0;
+      let slept = 0;
+      const client = createClient(credentials, {
+        sleepImpl: async () => slept++,
+        fetchImpl: async () => {
+          calls++;
+          throw failure();
+        },
+      });
+      await assert.rejects(client.request("appStoreVersions", method, {}));
+      assert.equal(calls, 1);
+      assert.equal(slept, 0);
+    }
+  }
+});
+
+test("unparseable responses and pagination faults refuse with bounded slugs", async () => {
+  const client = createClient(credentials, {
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => JSON.parse("<html>secret</html>"),
+    }),
+  });
+  await rejectsWith(client.request("apps"), "app-store-read-unparseable");
+  const offsite = createClient(credentials, {
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [],
+        links: { next: "https://evil.test/v1/apps" },
+      }),
+    }),
+  });
+  await rejectsWith(
+    offsite.list("apps"),
+    "app-store-pagination-url-unexpected",
+  );
+  const looping = createClient(credentials, {
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [], links: { next: "apps" } }),
+    }),
+  });
+  await rejectsWith(looping.list("apps"), "app-store-pagination-repeated");
+});
+
+test("an unusable signing key refuses as an invalid auth key before any request", async () => {
+  let calls = 0;
+  const client = createClient(
+    { ...credentials, privateKey: "not a key" },
+    { fetchImpl: async () => calls++ },
+  );
+  await rejectsWith(client.request("apps"), "app-store-auth-key-invalid");
+  assert.equal(calls, 0);
+});
+
+test("metadata validation failures share one bounded slug", () => {
+  for (const broken of [
+    [{ ...metadata }, "1.0"],
+    [{ ...metadata, version: "1.0.5" }, "1.0.4"],
+    [{ ...metadata, draft: true }, "1.0.4"],
+    [{ ...metadata, releaseType: "MANUAL" }, "1.0.4"],
+    [{ ...metadata, copyright: " " }, "1.0.4"],
+    [{ ...metadata, reviewNotes: "x".repeat(4001) }, "1.0.4"],
+    [{ ...metadata, whatsNew: [] }, "1.0.4"],
+    [{ ...metadata, whatsNew: {} }, "1.0.4"],
+    [{ ...metadata, whatsNew: { EN: "x" } }, "1.0.4"],
+    [{ ...metadata, whatsNew: { "en-AU": "" } }, "1.0.4"],
+  ]) {
+    let error;
+    try {
+      validateMetadata(...broken);
+    } catch (caught) {
+      error = caught;
+    }
+    assert.equal(refusalReason(error), "app-store-metadata-invalid");
+  }
+});
+
+test("unclassified failures name only a fixed error class", () => {
+  for (const [error, reason] of [
+    [
+      new TypeError("x of undefined /home/secret"),
+      "app-store-precheck-refused-typeerror",
+    ],
+    [new RangeError("secret"), "app-store-precheck-refused-rangeerror"],
+    [new SyntaxError("secret"), "app-store-precheck-refused-syntaxerror"],
+    [
+      Object.assign(new Error("secret"), { name: "SecretError" }),
+      "app-store-precheck-refused-other",
+    ],
+    [
+      Object.assign(new Error("x"), { refusal: "not-a-known-slug" }),
+      "app-store-precheck-refused-error",
+    ],
+    [undefined, "app-store-precheck-refused-other"],
+  ])
+    assert.equal(refusalReason(error), reason);
 });
 
 test("a refusal receipt is retained only while no write was attempted", async () => {
@@ -751,7 +941,7 @@ test("the submission CLI writes only the bounded pre-write refusal receipt", asy
       assert.equal(
         result.stderr,
         written
-          ? "App Store submission refused before any write: app-store-precheck-refused\n"
+          ? "App Store submission refused before any write: app-store-config-missing\n"
           : "App Store submission refused; inspect the target outcome.\n",
       );
       const receipt = await readFile(
@@ -763,7 +953,7 @@ test("the submission CLI writes only the bounded pre-write refusal receipt", asy
         written
           ? {
               outcome: "refused-before-write",
-              reason: "app-store-precheck-refused",
+              reason: "app-store-config-missing",
               source_run_id: 42,
             }
           : null,
