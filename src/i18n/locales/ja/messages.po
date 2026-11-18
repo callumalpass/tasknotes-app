@@ -120,8 +120,8 @@ msgstr "{0, plural, =1 {画像を追加しています…} other {画像を#件�
 
 #. placeholder {0}: paths.length
 #: src/app/app-shell.tsx
-msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
-msgstr "{0, plural, =1 {このビューファイルを読み取れないため、そのビューは表示されません:} other {#件のビューファイルを読み取れないため、それらのビューは表示されません:}}"
+msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
+msgstr "{0, plural, =1 {このファイルを読み取れないため、含まれるビューは表示されません:} other {#件のファイルを読み取れないため、含まれるビューは表示されません:}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -1962,8 +1962,8 @@ msgid "Couldn’t copy"
 msgstr "コピーできませんでした"
 
 #: src/app/app-shell.tsx
-msgid "Couldn't load your views because a view file can't be read."
-msgstr "ビューファイルを読み取れないため、ビューを読み込めませんでした。"
+msgid "Couldn't load your views because a file in this collection can't be read."
+msgstr "このコレクションのファイルを読み取れないため、ビューを読み込めませんでした。"
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

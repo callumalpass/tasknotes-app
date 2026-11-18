@@ -44,7 +44,7 @@ it("names view files discovery could not read instead of saying there are no vie
     />,
   );
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Couldn't read this view file, so its views aren't shown:",
+    "Couldn't read this file, so any views in it aren't shown:",
   );
   expect(screen.getByRole("listitem")).toHaveTextContent(
     "TaskNotes/Views/tasks-default.base",
@@ -63,7 +63,7 @@ it("counts several unreadable view files alongside loaded views", () => {
     />,
   );
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Couldn't read 2 view files, so their views aren't shown:",
+    "Couldn't read 2 files, so any views in them aren't shown:",
   );
   expect(
     screen.getAllByRole("listitem").map((item) => item.textContent),
@@ -81,7 +81,7 @@ it("says a view file is at fault when an older replica refuses all views", () =>
     />,
   );
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Couldn't load your views because a view file can't be read.",
+    "Couldn't load your views because a file in this collection can't be read.",
   );
   expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
 });
