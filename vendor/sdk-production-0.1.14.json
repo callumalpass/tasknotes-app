@@ -1,20 +1,20 @@
 {
   "schema": "tnapp/production-sdk-original/1",
-  "artifact": "sdk-e433a42f-production-0.1.7.tgz",
-  "version": "0.1.7",
-  "sourceCommit": "e433a42fa6c09dbc44436afe0a01654c1d7d2bce",
+  "artifact": "sdk-99c11742-production-0.1.14.tgz",
+  "version": "0.1.14",
+  "sourceCommit": "99c11742f1c416c6382a2645a74a242380beb9aa",
   "environment": "production",
-  "bytes": 4897508,
-  "sha256": "4ce7919a801d48ae39fe907cb8b1af586902b4d20cb6900777c3b56fc5a1888f",
-  "sri": "sha512-1mDVyKXWNHzi7mkrrFIIGxfLh4fD1ypEjDFSpuTf95NLojFJqJUos0l+gP+ps0W4wJgy6Zp9sslnR7+TyXS/6Q==",
+  "bytes": 4900478,
+  "sha256": "65be97cf80f35212c72f1991ebc8053bf9e4f3cc2c9d44f44c9f5d911ee5a37b",
+  "sri": "sha512-yWNUmF0c0GlvDfQmroW/lrs/Uzj1CleKpcwP7NZLFRnbs74IQ+r7LJUgB3LuVbbeDKJ2bIX0cat0Z7F3I7VJbw==",
   "publication": {
     "repository": "mdbase-dev/mdbase-connect",
     "workflow": ".github/workflows/publish-sdk-npm.yml",
-    "ref": "refs/tags/v0.1.7",
-    "npm": "@mdbase-dev/sdk@0.1.7",
-    "integrity": "sha512-1mDVyKXWNHzi7mkrrFIIGxfLh4fD1ypEjDFSpuTf95NLojFJqJUos0l+gP+ps0W4wJgy6Zp9sslnR7+TyXS/6Q==",
-    "tarball": "https://registry.npmjs.org/@mdbase-dev/sdk/-/sdk-0.1.7.tgz",
-    "attestations": "https://registry.npmjs.org/-/npm/v1/attestations/@mdbase-dev%2fsdk@0.1.7"
+    "ref": "refs/tags/v0.1.14",
+    "npm": "@mdbase-dev/sdk@0.1.14",
+    "integrity": "sha512-yWNUmF0c0GlvDfQmroW/lrs/Uzj1CleKpcwP7NZLFRnbs74IQ+r7LJUgB3LuVbbeDKJ2bIX0cat0Z7F3I7VJbw==",
+    "tarball": "https://registry.npmjs.org/@mdbase-dev/sdk/-/sdk-0.1.14.tgz",
+    "attestations": "https://registry.npmjs.org/-/npm/v1/attestations/@mdbase-dev%2fsdk@0.1.14"
   },
   "trust": {
     "package": "@mdbase-dev/sdk",
@@ -26,12 +26,12 @@
     "sourceVersion": "0.1.0-beta.141"
   },
   "runtime": {
-    "sha256": "31d8cda0e72a21107b5ad0b8bf48d68e9829f8842b0055e7a6fa7c7f2eff3988",
-    "bytes": 3981261,
-    "maxBytes": 3981261,
+    "sha256": "cba629850dfc71280d50dcad3f5f79f186f7ee3930d288f1d9ad03d70f556bec",
+    "bytes": 3981232,
+    "maxBytes": 3981232,
     "source": {
       "repository": "mdbase-dev/mdbase-connect",
-      "commit": "eada920017111ad18c44498d56f715c074a7a9e9"
+      "commit": "e0b0fe302125005eb093a0afe565aec364816b16"
     }
   },
   "packagedTrustModuleSha256": "cf9690968d68b3c1eed2356ccfa2c72198b2f8cf07b9b24b1bb7be499b05bffb",
