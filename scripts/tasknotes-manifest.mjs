@@ -58,7 +58,14 @@ export async function buildTaskNotesManifest({
     icon: `${identityUrl}/icon.png`,
     redirect_uris: [
       `${identityUrl}/auth/mdbase/callback`,
-      ...(!webOnly ? ["dev.tasknotes.app://auth/mdbase/callback"] : []),
+      ...(!webOnly
+        ? [
+            "dev.tasknotes.app://auth/mdbase/callback",
+            // A Private collection grant approved in the system browser returns
+            // here, and this page hands the result back to the app (#492).
+            `${identityUrl}/auth/mdbase/callback?via=app`,
+          ]
+        : []),
     ],
     installation_origins: TASKNOTES_INSTALLATION_ORIGINS,
     requirements: {

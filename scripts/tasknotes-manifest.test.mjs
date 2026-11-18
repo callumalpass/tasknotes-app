@@ -349,9 +349,11 @@ describe("TaskNotes mdbase manifest", () => {
       mode: "managed_fcm",
       firebase_project_id: "tasknotes-production",
     });
-    expect(manifest.redirect_uris).toContain(
+    expect(manifest.redirect_uris).toEqual([
+      "https://tasks.example/auth/mdbase/callback",
       "dev.tasknotes.app://auth/mdbase/callback",
-    );
+      "https://tasks.example/auth/mdbase/callback?via=app",
+    ]);
   });
 
   it("keeps local identity and callback URLs on the same origin", async () => {
