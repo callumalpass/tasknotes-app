@@ -15,6 +15,7 @@ import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
 import {
   mapTaskFromFrontmatter,
   mapTaskToFrontmatter,
+  toUserField,
 } from "@tasknotes/model/mapping";
 import {
   applyFrontmatterPatch,
@@ -202,7 +203,7 @@ export class TaskNotesTaskModel {
   summaryFields(): string[] {
     return [
       ...new Set([
-        "id",
+        toUserField(this.config.fieldMapping, "id"),
         "mobileRevision",
         "tags",
         ...Object.values(this.config.fieldMapping),
@@ -983,7 +984,7 @@ export class TaskNotesTaskModel {
       )
         ? { [this.config.fieldMapping.skippedInstances]: [] }
         : {}),
-      id,
+      [toUserField(this.config.fieldMapping, "id")]: id,
       mobileRevision: revision,
     };
   }

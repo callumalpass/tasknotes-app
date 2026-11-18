@@ -10,8 +10,8 @@ catalogs:
       specifier: 0.1.17
       version: 0.1.17
     '@tasknotes/model':
-      specifier: 0.3.0
-      version: 0.3.0
+      specifier: 0.3.1
+      version: 0.3.1
 
 importers:
 
@@ -94,7 +94,7 @@ importers:
         version: 0.1.10(react@19.2.8)
       '@tasknotes/model':
         specifier: 'catalog:'
-        version: 0.3.0
+        version: 0.3.1
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -254,7 +254,7 @@ importers:
         version: 0.1.17
       '@tasknotes/model':
         specifier: 'catalog:'
-        version: 0.3.0
+        version: 0.3.1
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -1831,8 +1831,8 @@ packages:
       react:
         optional: true
 
-  '@tasknotes/model@0.3.0':
-    resolution: {integrity: sha512-F7JfLCszUgMOfRCFVW+rfV97IP5fmWpc/ZNCZ+GyzwZAnxggGgLVvJIArn+biiwCAdbr8Fk0lXxMIu2/HRarqw==}
+  '@tasknotes/model@0.3.1':
+    resolution: {integrity: sha512-LEFpiTO4o37Z83JqzfvsI5GSjgOVYKyjIrIjiJylVk/bcQJgoUp/NgN+EsvOPNlxSqJRJk2QQHjf9gW7/MeNhA==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -6635,7 +6635,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@0.3.0':
+  '@tasknotes/model@0.3.1':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.1

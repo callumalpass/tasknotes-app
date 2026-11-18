@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { buildCalendarEntries } from "@tasknotes/model/calendar";
+import { DEFAULT_FIELD_MAPPING } from "@tasknotes/model/mapping";
 
 import { calendarOccurrenceChoice } from "./calendar-edit";
 import { TaskNotesTaskModel } from "./tasknotes-model";
@@ -1020,3 +1021,30 @@ function priority(value: string, label: string, weight: number) {
 function canonicalLocal(value: string): string {
   return new Date(value).toISOString().replace(".000Z", "Z");
 }
+
+// tasknotes#2574: a collection's type can store the stable ID under another
+// property, freeing `id` for the user's own data.
+describe("a remapped task ID", () => {
+  const model = new TaskNotesTaskModel({
+    fieldMapping: { ...DEFAULT_FIELD_MAPPING, id: "tasknote_id" },
+  });
+
+  it("writes, reads and keeps the ID under the mapped property", () => {
+    const created = model.create({ title: "Remapped" }, { id: "abc" });
+    expect(created.id).toBe("abc");
+    expect(created.frontmatter.tasknote_id).toBe("abc");
+    expect(created.frontmatter).not.toHaveProperty("id");
+
+    const task = model.read({
+      path: created.path,
+      frontmatter: { ...created.frontmatter, id: "mine" },
+      body: "",
+    });
+    expect(task.id).toBe("abc");
+
+    const updated = model.update(task, { title: "Renamed" });
+    expect(updated.frontmatter.tasknote_id).toBe("abc");
+    expect(updated.frontmatter.id).toBe("mine");
+    expect(model.summaryFields()).toContain("tasknote_id");
+  });
+});
