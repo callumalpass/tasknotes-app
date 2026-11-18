@@ -120,8 +120,8 @@ msgstr "{0, plural, =1 {Adicionando imagem…} one {Adicionando # imagem…} oth
 
 #. placeholder {0}: paths.length
 #: src/app/app-shell.tsx
-msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
-msgstr "{0, plural, =1 {Não foi possível ler este arquivo de visualizações, então as visualizações dele não são exibidas:} one {Não foi possível ler # arquivo de visualizações, então as visualizações dele não são exibidas:} other {Não foi possível ler # arquivos de visualizações, então as visualizações deles não são exibidas:}}"
+msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
+msgstr "{0, plural, =1 {Não foi possível ler este arquivo, então as visualizações que ele contém não são exibidas:} one {Não foi possível ler # arquivo, então as visualizações que ele contém não são exibidas:} other {Não foi possível ler # arquivos, então as visualizações que eles contêm não são exibidas:}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -1962,8 +1962,8 @@ msgid "Couldn’t copy"
 msgstr "Não foi possível copiar"
 
 #: src/app/app-shell.tsx
-msgid "Couldn't load your views because a view file can't be read."
-msgstr "Não foi possível carregar suas visualizações porque um arquivo de visualizações não pode ser lido."
+msgid "Couldn't load your views because a file in this collection can't be read."
+msgstr "Não foi possível carregar suas visualizações porque um arquivo desta coleção não pode ser lido."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

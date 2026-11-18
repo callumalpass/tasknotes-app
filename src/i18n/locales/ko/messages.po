@@ -120,8 +120,8 @@ msgstr "{0, plural, =1 {이미지 추가 중…} other {이미지 #개 추가 �
 
 #. placeholder {0}: paths.length
 #: src/app/app-shell.tsx
-msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
-msgstr "{0, plural, =1 {이 뷰 파일을 읽을 수 없어 해당 뷰가 표시되지 않습니다:} other {뷰 파일 #개를 읽을 수 없어 해당 뷰가 표시되지 않습니다:}}"
+msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
+msgstr "{0, plural, =1 {이 파일을 읽을 수 없어 포함된 뷰가 표시되지 않습니다:} other {파일 #개를 읽을 수 없어 포함된 뷰가 표시되지 않습니다:}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -1962,8 +1962,8 @@ msgid "Couldn’t copy"
 msgstr "복사하지 못했습니다."
 
 #: src/app/app-shell.tsx
-msgid "Couldn't load your views because a view file can't be read."
-msgstr "뷰 파일을 읽을 수 없어 뷰를 불러오지 못했습니다."
+msgid "Couldn't load your views because a file in this collection can't be read."
+msgstr "이 컬렉션의 파일을 읽을 수 없어 뷰를 불러오지 못했습니다."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts

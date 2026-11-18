@@ -120,8 +120,8 @@ msgstr "{0, plural, =1 {Добавление изображения…} one {Д�
 
 #. placeholder {0}: paths.length
 #: src/app/app-shell.tsx
-msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
-msgstr "{0, plural, =1 {Не удалось прочитать этот файл представлений, поэтому его представления не показаны:} one {Не удалось прочитать # файл представлений, поэтому их представления не показаны:} few {Не удалось прочитать # файла представлений, поэтому их представления не показаны:} many {Не удалось прочитать # файлов представлений, поэтому их представления не показаны:} other {Не удалось прочитать # файла представлений, поэтому их представления не показаны:}}"
+msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
+msgstr "{0, plural, =1 {Не удалось прочитать этот файл, поэтому представления в нём не показаны:} one {Не удалось прочитать # файл, поэтому представления в них не показаны:} few {Не удалось прочитать # файла, поэтому представления в них не показаны:} many {Не удалось прочитать # файлов, поэтому представления в них не показаны:} other {Не удалось прочитать # файла, поэтому представления в них не показаны:}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -1962,8 +1962,8 @@ msgid "Couldn’t copy"
 msgstr "Не удалось скопировать"
 
 #: src/app/app-shell.tsx
-msgid "Couldn't load your views because a view file can't be read."
-msgstr "Не удалось загрузить представления: один из файлов представлений не читается."
+msgid "Couldn't load your views because a file in this collection can't be read."
+msgstr "Не удалось загрузить представления: один из файлов этой коллекции не читается."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
