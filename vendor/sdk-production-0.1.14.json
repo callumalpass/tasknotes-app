@@ -1,20 +1,20 @@
 {
   "schema": "tnapp/production-sdk-original/1",
-  "artifact": "sdk-e59b80a7-production-0.1.13.tgz",
-  "version": "0.1.13",
-  "sourceCommit": "e59b80a7ce33141c6fdb86d2863fc7ec5c8cb023",
+  "artifact": "sdk-99c11742-production-0.1.14.tgz",
+  "version": "0.1.14",
+  "sourceCommit": "99c11742f1c416c6382a2645a74a242380beb9aa",
   "environment": "production",
-  "bytes": 4900477,
-  "sha256": "5010f6263664fe5cb40676e0ce140dd27a03f809f79879e9a54e3f86eaa359df",
-  "sri": "sha512-y8aPNB7P87EEecaMMivFIEQ3XIbF7ks2gUGLci0/NENspzbvUS4AjjjmEbCkzGvFtmO2cf505ETvaRJjRc3jBA==",
+  "bytes": 4900478,
+  "sha256": "65be97cf80f35212c72f1991ebc8053bf9e4f3cc2c9d44f44c9f5d911ee5a37b",
+  "sri": "sha512-yWNUmF0c0GlvDfQmroW/lrs/Uzj1CleKpcwP7NZLFRnbs74IQ+r7LJUgB3LuVbbeDKJ2bIX0cat0Z7F3I7VJbw==",
   "publication": {
     "repository": "mdbase-dev/mdbase-connect",
     "workflow": ".github/workflows/publish-sdk-npm.yml",
-    "ref": "refs/tags/v0.1.13",
-    "npm": "@mdbase-dev/sdk@0.1.13",
-    "integrity": "sha512-y8aPNB7P87EEecaMMivFIEQ3XIbF7ks2gUGLci0/NENspzbvUS4AjjjmEbCkzGvFtmO2cf505ETvaRJjRc3jBA==",
-    "tarball": "https://registry.npmjs.org/@mdbase-dev/sdk/-/sdk-0.1.13.tgz",
-    "attestations": "https://registry.npmjs.org/-/npm/v1/attestations/@mdbase-dev%2fsdk@0.1.13"
+    "ref": "refs/tags/v0.1.14",
+    "npm": "@mdbase-dev/sdk@0.1.14",
+    "integrity": "sha512-yWNUmF0c0GlvDfQmroW/lrs/Uzj1CleKpcwP7NZLFRnbs74IQ+r7LJUgB3LuVbbeDKJ2bIX0cat0Z7F3I7VJbw==",
+    "tarball": "https://registry.npmjs.org/@mdbase-dev/sdk/-/sdk-0.1.14.tgz",
+    "attestations": "https://registry.npmjs.org/-/npm/v1/attestations/@mdbase-dev%2fsdk@0.1.14"
   },
   "trust": {
     "package": "@mdbase-dev/sdk",
