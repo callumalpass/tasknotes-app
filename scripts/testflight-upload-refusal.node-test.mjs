@@ -119,14 +119,14 @@ test("the iOS release keeps the upload log private and retains the refusal class
   // App Store Connect, not the altool wording, decides success.
   assert.match(
     run,
-    /node "\$GITHUB_WORKSPACE\/scripts\/testflight-upload\.mjs" confirm "\$upload_log" "\$upload_status"\n/,
+    /node "\$RUNNER_TEMP\/workflow-tools\/scripts\/testflight-upload\.mjs" confirm "\$upload_log" "\$upload_status"\n/,
   );
   assert.doesNotMatch(run, /No errors uploading|\|\| true/);
   const preflight = steps.findIndex((step) => step.id === "build_number");
   assert.ok(preflight > 0 && preflight < upload);
   assert.equal(
     steps[preflight].run,
-    'node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" preflight',
+    'node "$RUNNER_TEMP/workflow-tools/scripts/testflight-upload.mjs" preflight',
   );
   assert.ok(
     preflight <
