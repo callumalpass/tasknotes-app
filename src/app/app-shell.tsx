@@ -775,7 +775,8 @@ export function ViewDiscoveryNotice({
 }: {
   outcome: "loading" | "ok" | "empty" | "error";
   failure?: ViewDiscoveryFailure | null;
-  /** View files discovery skipped; named instead of the empty-views notice. */
+  /** Files discovery skipped (whether they hold views is unknown); named
+   * instead of the empty-views notice. */
   unreadablePaths?: readonly string[];
   refreshing: boolean;
   onRetry(): void;
@@ -809,7 +810,7 @@ export function ViewDiscoveryNotice({
           : failure === "unreadable_source"
             ? translate({
                 message:
-                  "Couldn't load your views because a view file can't be read.",
+                  "Couldn't load your views because a file in this collection can't be read.",
               })
             : translate({ message: "Couldn't load your views." })}
       </p>
@@ -829,7 +830,9 @@ export function ViewDiscoveryNotice({
   );
 }
 
-/** Discovery skipped these files; every other view still loaded. The notice
+/** Discovery skipped these files: any record it cannot read, plain notes
+ * included, since it cannot tell whether one held views. Every other view
+ * still loaded. The notice
  * clears itself when a fixed file is rediscovered on the next data change. */
 function UnreadableViewsNotice({ paths }: { paths: readonly string[] }) {
   return (
@@ -839,8 +842,8 @@ function UnreadableViewsNotice({ paths }: { paths: readonly string[] }) {
     >
       <p role="status">
         {plural(paths.length, {
-          1: "Couldn't read this view file, so its views aren't shown:",
-          other: "Couldn't read # view files, so their views aren't shown:",
+          1: "Couldn't read this file, so any views in it aren't shown:",
+          other: "Couldn't read # files, so any views in them aren't shown:",
         })}
       </p>
       <ul className="view-discovery-sources">

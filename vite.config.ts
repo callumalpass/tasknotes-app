@@ -4,11 +4,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { lingui } from "@lingui/vite-plugin";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import { buildIdentity } from "./scripts/build-identity.ts";
 import { uiCatalogueImports } from "./scripts/vite-ui-catalogues.ts";
 
 const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
+const build = buildIdentity(version, process.env);
 
 /** Browser-test fixture pages, built only in e2e mode so the e2e suite can
  * run against a built preview (pull-request and Pages checks), not just the
@@ -42,12 +44,8 @@ export default defineConfig(({ command, mode, isPreview }) => ({
         : [],
   },
   define: {
-    __APP_VERSION__: JSON.stringify(version),
-    __APP_BUILD_REVISION__: JSON.stringify(
-      /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
-        ? `${version}-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}`
-        : version,
-    ),
+    __APP_VERSION__: JSON.stringify(build.version),
+    __APP_BUILD_REVISION__: JSON.stringify(build.revision),
   },
   base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [
@@ -79,9 +77,8 @@ export default defineConfig(({ command, mode, isPreview }) => ({
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : chunk.name === "app" &&
-                /^[a-f0-9]{40}$/.test(process.env.TASKNOTES_BUILD_COMMIT ?? "")
-              ? `assets/index-tasknotes-${process.env.TASKNOTES_BUILD_COMMIT!.slice(0, 12)}.js`
+            : chunk.name === "app" && build.commit
+              ? `assets/index-tasknotes-${build.commit.slice(0, 12)}.js`
               : "assets/[name]-[hash].js",
       },
     },

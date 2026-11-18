@@ -120,8 +120,8 @@ msgstr "{0, plural, =1 {Bild wird hinzugefügt…} other {# Bilder werden hinzug
 
 #. placeholder {0}: paths.length
 #: src/app/app-shell.tsx
-msgid "{0, plural, =1 {Couldn't read this view file, so its views aren't shown:} other {Couldn't read # view files, so their views aren't shown:}}"
-msgstr "{0, plural, =1 {Diese Ansichtsdatei konnte nicht gelesen werden, daher werden ihre Ansichten nicht angezeigt:} other {# Ansichtsdateien konnten nicht gelesen werden, daher werden ihre Ansichten nicht angezeigt:}}"
+msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
+msgstr "{0, plural, =1 {Diese Datei konnte nicht gelesen werden, daher werden darin enthaltene Ansichten nicht angezeigt:} other {# Dateien konnten nicht gelesen werden, daher werden darin enthaltene Ansichten nicht angezeigt:}}"
 
 #. placeholder {0}: created.length
 #: src/app/scratchpad-screen.tsx
@@ -1962,8 +1962,8 @@ msgid "Couldn’t copy"
 msgstr "Kopieren fehlgeschlagen"
 
 #: src/app/app-shell.tsx
-msgid "Couldn't load your views because a view file can't be read."
-msgstr "Ihre Ansichten konnten nicht geladen werden, weil eine Ansichtsdatei nicht lesbar ist."
+msgid "Couldn't load your views because a file in this collection can't be read."
+msgstr "Ihre Ansichten konnten nicht geladen werden, weil eine Datei dieser Sammlung nicht lesbar ist."
 
 #: src/app/app-shell.tsx
 #: src/app/use-navigation-views.ts
@@ -4951,6 +4951,10 @@ msgstr "Versuchen Sie es erneut oder machen Sie den Vorgang rückgängig, um die
 #: src/app/app-shell.tsx
 msgid "Retrying…"
 msgstr "Wird erneut versucht…"
+
+#: src/main.tsx
+msgid "Return to the TaskNotes app"
+msgstr "Zurück zur TaskNotes-App"
 
 #: src/app/view-editor-form.tsx
 msgid "Reusable values for filters, grouping, sorting, and fields."

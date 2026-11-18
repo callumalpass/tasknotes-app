@@ -9,6 +9,7 @@
   },
   "include": [
     "vite.config.ts",
+    "scripts/build-identity.ts",
     "scripts/vite-ui-catalogues.ts",
     "capacitor.config.ts",
     "playwright.config.ts"
