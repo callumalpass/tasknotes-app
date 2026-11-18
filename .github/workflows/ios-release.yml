@@ -129,6 +129,11 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Check build number is unused in App Store Connect
+        id: build_number
+        if: env.TASKNOTES_IOS_UPLOAD == 'true'
+        run: node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" preflight
+
       - name: Restore Firebase configuration
         run: >-
           printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" |
@@ -237,15 +242,13 @@ jobs:
             > "$upload_log" 2>&1
           upload_status="$?"
           set -e
-          if [ "$upload_status" -ne 0 ] || ! grep -q "No errors uploading" "$upload_log"; then
-            # Keep the raw log on the runner; retain only a fixed refusal class.
-            node "$GITHUB_WORKSPACE/scripts/testflight-upload-refusal.mjs" "$upload_log" "$upload_status" || true
-            echo "TestFlight did not confirm a successful upload." >&2
-            exit 1
-          fi
+          # App Store Connect decides: after altool exits 0 the exact build must
+          # become visible through the API. The raw log stays on the runner;
+          # only a fixed refusal class is printed and retained.
+          node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" confirm "$upload_log" "$upload_status"
 
       - name: Retain TestFlight upload refusal
-        if: failure() && steps.testflight.outcome == 'failure' && hashFiles('testflight-upload-result.json') != ''
+        if: failure() && (steps.testflight.outcome == 'failure' || steps.build_number.outcome == 'failure') && hashFiles('testflight-upload-result.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: testflight-upload-result

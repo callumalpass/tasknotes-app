@@ -1,10 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 import { parse } from "yaml";
 import {
   UPLOAD_REFUSED,
@@ -13,9 +9,6 @@ import {
   uploadRefusalReason,
 } from "./testflight-upload-refusal.mjs";
 
-const script = fileURLToPath(
-  new URL("./testflight-upload-refusal.mjs", import.meta.url),
-);
 // Synthetic identifiers in the shape altool prints; none may leave the runner.
 const secrets = [
   "ABCDE12345",
@@ -72,10 +65,10 @@ test("classifies known altool refusals into fixed reasons", () => {
     uploadRefusalClass(undefined, "1"),
     "testflight-upload-log-missing",
   );
-  // altool exited 0 but did not print the expected confirmation.
+  // altool exited 0 but App Store Connect never listed the build.
   assert.equal(
     uploadRefusalClass("UPLOAD FINISHED", "0"),
-    "testflight-success-unconfirmed",
+    "testflight-build-not-visible",
   );
 });
 
@@ -109,62 +102,6 @@ test("the receipt is bound to the exact build run and fixed reasons only", () =>
   assert.throws(() => uploadRefusal("testflight-upload-limit", 0));
 });
 
-test("the CLI prints and retains only the fixed reason, never the log", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "testflight-refusal-"));
-  try {
-    const log = join(dir, "upload.log");
-    const summary = join(dir, "summary.md");
-    await writeFile(log, noise + "ERROR ITMS-90382: Upload limit reached.\n");
-    const result = spawnSync(process.execPath, [script, log, "1"], {
-      env: {
-        PATH: process.env.PATH,
-        GITHUB_RUN_ID: "44137166558",
-        GITHUB_WORKSPACE: dir,
-        GITHUB_STEP_SUMMARY: summary,
-      },
-      encoding: "utf8",
-    });
-    assert.equal(result.status, 0);
-    assert.equal(result.stdout, "");
-    assert.equal(
-      result.stderr,
-      "TestFlight upload refused: testflight-upload-limit\n",
-    );
-    const retained = await readFile(
-      join(dir, "testflight-upload-result.json"),
-      "utf8",
-    );
-    assert.deepEqual(JSON.parse(retained), {
-      outcome: UPLOAD_REFUSED,
-      reason: "testflight-upload-limit",
-      run_id: 44137166558,
-    });
-    const written = retained + (await readFile(summary, "utf8"));
-    for (const secret of secrets) assert.ok(!written.includes(secret));
-
-    // A missing log is still a bounded refusal, not a crash.
-    const missing = spawnSync(
-      process.execPath,
-      [script, join(dir, "absent.log"), "1"],
-      {
-        env: {
-          PATH: process.env.PATH,
-          GITHUB_RUN_ID: "44137166558",
-          GITHUB_WORKSPACE: dir,
-        },
-        encoding: "utf8",
-      },
-    );
-    assert.equal(missing.status, 0);
-    assert.equal(
-      missing.stderr,
-      "TestFlight upload refused: testflight-upload-log-missing\n",
-    );
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-
 test("the iOS release keeps the upload log private and retains the refusal class", async () => {
   const workflow = parse(
     await readFile(
@@ -179,9 +116,21 @@ test("the iOS release keeps the upload log private and retains the refusal class
   assert.equal(steps[upload].id, "testflight");
   const run = steps[upload].run;
   assert.match(run, /> "\$upload_log" 2>&1/);
+  // App Store Connect, not the altool wording, decides success.
   assert.match(
     run,
-    /node "\$GITHUB_WORKSPACE\/scripts\/testflight-upload-refusal\.mjs" "\$upload_log" "\$upload_status" \|\| true/,
+    /node "\$GITHUB_WORKSPACE\/scripts\/testflight-upload\.mjs" confirm "\$upload_log" "\$upload_status"\n/,
+  );
+  assert.doesNotMatch(run, /No errors uploading|\|\| true/);
+  const preflight = steps.findIndex((step) => step.id === "build_number");
+  assert.ok(preflight > 0 && preflight < upload);
+  assert.equal(
+    steps[preflight].run,
+    'node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" preflight',
+  );
+  assert.ok(
+    preflight <
+      steps.findIndex((step) => step.name === "Install Apple signing identity"),
   );
   // The raw log is never printed or uploaded.
   assert.doesNotMatch(run, /cat "\$upload_log"|tail [^\n]*upload_log/);
@@ -195,7 +144,7 @@ test("the iOS release keeps the upload log private and retains the refusal class
   assert.equal(retained[0].with.path, "testflight-upload-result.json");
   assert.equal(
     retained[0].if,
-    "failure() && steps.testflight.outcome == 'failure' && hashFiles('testflight-upload-result.json') != ''",
+    "failure() && (steps.testflight.outcome == 'failure' || steps.build_number.outcome == 'failure') && hashFiles('testflight-upload-result.json') != ''",
   );
   for (const step of steps.filter((s) =>
     s.uses?.startsWith("actions/upload-artifact@"),

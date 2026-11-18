@@ -143,6 +143,17 @@ and that reason, but keeps `write_started: true` because the TestFlight upload
 is already a store write, so the line still stops with
 `app-publication-failed`. A failure after a write attempt retains nothing.
 
+App Store Connect, not altool's wording, confirms a TestFlight upload. After
+altool exits 0, `scripts/testflight-upload.mjs confirm` polls the API (about
+ten minutes) for the exact build: the TaskNotes app and bundle id, the marketing
+version and the build number. A listed build is success even when altool's
+success phrase is missing; "No errors uploading" and "UPLOAD SUCCEEDED" are only
+hints. A non-zero altool exit keeps the log-based classification. Before signing,
+`testflight-upload.mjs preflight` refuses with `testflight-build-number-taken`
+when App Store Connect already holds this or a higher build for the version. The
+build number is the release run number and reruns are refused, so a retry after
+an unconfirmed upload is a new dispatch with a higher build number.
+
 When `ios-release.yml` cannot confirm a TestFlight upload, the altool log stays
 on the runner because it can name the team, key and delivery. The job prints and
 retains only `{outcome: "testflight-upload-refused", reason, run_id}` as
@@ -151,8 +162,10 @@ retains only `{outcome: "testflight-upload-refused", reason, run_id}` as
 `testflight-upload-limit`, `testflight-agreement-required`,
 `testflight-auth-refused`, `testflight-service-unavailable`,
 `testflight-transport`, `testflight-validation-itms-<code>`,
-`testflight-success-unconfirmed`, `testflight-upload-log-missing` or
-`testflight-upload-unclassified`. For a failed `ios-release.yml` run, the
+`testflight-build-not-visible`, `testflight-build-lookup-failed`,
+`testflight-build-number-taken`, `testflight-upload-log-missing` or
+`testflight-upload-unclassified`. Receipts from older runs may still carry
+`testflight-success-unconfirmed`. For a failed `ios-release.yml` run, the
 coordinator reads the receipt bound to that exact run and saves it as
 `boundary_reason`. The upload may already have reached Apple, so
 `write_started: true`, the `store-build-or-publication-failed` reason and the

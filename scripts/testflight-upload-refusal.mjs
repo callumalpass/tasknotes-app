@@ -1,9 +1,6 @@
-import { appendFile, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 // The altool upload log can hold account, team, key and delivery identifiers,
-// so it never leaves the runner. When TestFlight does not confirm an upload,
+// so it never leaves the runner. When an upload is not confirmed (see
+// testflight-upload.mjs, which asks App Store Connect for the exact build),
 // only one of these fixed reasons is printed and retained. The first match
 // wins, so specific Apple refusals come before generic transport failures.
 export const UPLOAD_REFUSED = "testflight-upload-refused";
@@ -45,7 +42,8 @@ export function uploadRefusalClass(log, status) {
   for (const [reason, pattern] of classes) if (pattern.test(log)) return reason;
   const itms = ITMS.exec(log);
   if (itms) return `testflight-validation-itms-${itms[1]}`;
-  if (String(status) === "0") return "testflight-success-unconfirmed";
+  // altool exited 0 but App Store Connect never listed the exact build.
+  if (String(status) === "0") return "testflight-build-not-visible";
   return "testflight-upload-unclassified";
 }
 
@@ -64,41 +62,4 @@ export function uploadRefusalReason(result, runId) {
     SLUG.test(result.reason ?? "")
     ? result.reason
     : null;
-}
-
-async function main() {
-  const [logPath, status] = process.argv.slice(2);
-  let log;
-  try {
-    log = await readFile(logPath, "utf8");
-  } catch {
-    log = undefined;
-  }
-  const receipt = uploadRefusal(
-    uploadRefusalClass(log, status),
-    Number(process.env.GITHUB_RUN_ID),
-  );
-  await writeFile(
-    resolve(
-      process.env.GITHUB_WORKSPACE ?? ".",
-      "testflight-upload-result.json",
-    ),
-    JSON.stringify(receipt) + "\n",
-  );
-  console.error(`TestFlight upload refused: ${receipt.reason}`);
-  if (process.env.GITHUB_STEP_SUMMARY)
-    await appendFile(
-      process.env.GITHUB_STEP_SUMMARY,
-      `TestFlight upload refused: \`${receipt.reason}\`\n`,
-    );
-}
-
-if (
-  process.argv[1] &&
-  fileURLToPath(import.meta.url) === resolve(process.argv[1])
-) {
-  main().catch(() => {
-    console.error("TestFlight upload refusal could not be classified.");
-    process.exitCode = 1;
-  });
 }
