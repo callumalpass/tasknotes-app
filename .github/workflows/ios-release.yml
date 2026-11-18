@@ -70,6 +70,15 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      # The build source may predate this workflow's release helpers, and the
+      # source checkout below replaces the workspace. Release policy follows
+      # the workflow commit; only build content follows the source.
+      - name: Keep workflow-owned release helpers
+        run: |
+          mkdir -p "$RUNNER_TEMP/workflow-tools"
+          git archive "$GITHUB_WORKFLOW_SHA" scripts |
+            tar -x -C "$RUNNER_TEMP/workflow-tools"
+
       - name: Check out qualified build source
         uses: actions/checkout@v7
         with:
@@ -132,7 +141,7 @@ jobs:
       - name: Check build number is unused in App Store Connect
         id: build_number
         if: env.TASKNOTES_IOS_UPLOAD == 'true'
-        run: node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" preflight
+        run: node "$RUNNER_TEMP/workflow-tools/scripts/testflight-upload.mjs" preflight
 
       - name: Restore Firebase configuration
         run: >-
@@ -245,7 +254,7 @@ jobs:
           # App Store Connect decides: after altool exits 0 the exact build must
           # become visible through the API. The raw log stays on the runner;
           # only a fixed refusal class is printed and retained.
-          node "$GITHUB_WORKSPACE/scripts/testflight-upload.mjs" confirm "$upload_log" "$upload_status"
+          node "$RUNNER_TEMP/workflow-tools/scripts/testflight-upload.mjs" confirm "$upload_log" "$upload_status"
 
       - name: Retain TestFlight upload refusal
         if: failure() && (steps.testflight.outcome == 'failure' || steps.build_number.outcome == 'failure') && hashFiles('testflight-upload-result.json') != ''
