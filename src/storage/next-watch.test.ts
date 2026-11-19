@@ -70,6 +70,7 @@ function heldWatch() {
     stale(problem: MdbaseError) {
       state = "stale";
       error = problem;
+      reject(problem);
       listener(state, error);
     },
     fail(problem: MdbaseError) {
@@ -115,6 +116,18 @@ async function seed(f: Awaited<ReturnType<typeof fixture>>) {
 }
 
 describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => {
+  it("reads after a watch becomes active despite its rejected initial ready", async () => {
+    const f = await fixture();
+    const first = heldWatch();
+    vi.spyOn(f.client, "watchChanges").mockReturnValueOnce(first.watch);
+    const opened = f.repository.initialize();
+    const problem = unavailable();
+    first.stale(problem);
+    await expect(opened).rejects.toBe(problem);
+    first.active();
+    await expect(f.repository.refresh()).resolves.toMatchObject({ scanned: 0 });
+    await expect(f.repository.listSummaries()).resolves.toEqual([]);
+  });
   it("invalidates a loaded index on an actual SDK remote change", async () => {
     const f = await fixture();
     const { task, record } = await seed(f);

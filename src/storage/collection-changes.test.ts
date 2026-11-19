@@ -92,4 +92,16 @@ describe("collection change evidence", () => {
     expect(classify(Array(999).fill(change)).reset).toBe(false);
     expect(classify(Array(1000).fill(change)).reset).toBe(true);
   });
+  it("classifies pathless removals by identity without resetting the collection", () => {
+    for (const id of ["indexed", "source", "settings", "other"]) {
+      const change = classify([{ id, kind: "remove", path: "" }]);
+      expect(change).toMatchObject({
+        reset: false,
+        data: true,
+        model: id === "settings",
+        views: id === "source",
+      });
+      expect([...change.tasks.keys()]).toEqual(id === "indexed" ? [id] : []);
+    }
+  });
 });

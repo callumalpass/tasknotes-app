@@ -1,29 +1,40 @@
 import { MdbaseError, type wire } from "@mdbase-dev/sdk";
+import {
+  parseFrontmatter,
+  serializeMarkdownDocument,
+} from "@tasknotes/model/frontmatter";
 import { afterEach, expect, it, vi } from "vitest";
-import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
+import {
+  nextTaskFixture,
+  seedRecord,
+  seedTask,
+} from "../test/next-task-fixture";
 import { deferred } from "../test/deferred";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 afterEach(() => {
   fixtures.splice(0).forEach((f) => f.close());
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
-async function fixture(withCursor = false) {
-  const f = await nextTaskFixture();
+async function fixture(withCursor = false, manual = false) {
+  const f = await nextTaskFixture(manual ? { confirmDelayMs: null } : {});
   fixtures.push(f);
   const { id } = seedTask(f.replica, { title: "Original" });
   const record = await f.client.get(id, { include: { effective: true } });
   const watch = f.client.watchChanges.bind(f.client);
   let deliver!: Parameters<typeof watch>[0];
+  let lastBatch: wire.ChangesResult | undefined;
   const watches = vi
     .spyOn(f.client, "watchChanges")
     .mockImplementation((cb, options) => {
       let cursor = options?.cursor ?? "0";
       deliver = (batch) => {
+        lastBatch = batch;
         cursor = batch.cursor;
         cb(batch);
       };
-      const original = watch(deliver, options);
+      const original = watch(manual ? () => {} : deliver, options);
       if (!withCursor) return original;
       return Object.defineProperties(() => original(), {
         ready: { value: original.ready },
@@ -59,6 +70,7 @@ async function fixture(withCursor = false) {
     findRecord,
     taskReads,
     watches,
+    lastBatch: () => lastBatch,
   };
 }
 
@@ -165,10 +177,13 @@ it.each([true, false])(
   async (withCursor) => {
     const f = await fixture(withCursor);
     await f.repository.initialize();
+    const other = seedTask(f.replica, { title: "Unrelated" });
     await (
       await f.client.update(f.record, { patch: { title: "Before suspend" } })
     ).confirmed;
     await f.repository.listSummaries();
+    expect(f.lastBatch()?.changes.map(({ id }) => id)).toContain(f.id);
+    const stoppedCursor = f.lastBatch()!.cursor;
     f.repository.suspend();
     await (
       await f.client.update(f.id, { patch: { title: "While suspended" } })
@@ -176,15 +191,18 @@ it.each([true, false])(
     f.query.mockClear();
     f.find.mockClear();
     f.repository.resume();
-    expect(await f.repository.refresh()).toMatchObject({ scanned: 1 });
-    expect((await f.repository.listSummaries())[0]?.title).toBe(
-      "While suspended",
-    );
+    expect(await f.repository.refresh()).toMatchObject({
+      scanned: withCursor ? 1 : 2,
+    });
+    expect(
+      (await f.repository.listSummaries()).map((task) => task.title),
+    ).toEqual(expect.arrayContaining(["While suspended", "Unrelated"]));
     expect(f.watches.mock.calls[1]?.[1]?.cursor).toEqual(
-      withCursor ? expect.any(String) : undefined,
+      withCursor ? stoppedCursor : undefined,
     );
     expect(f.query).toHaveBeenCalledTimes(withCursor ? 0 : 1);
-    expect(f.taskReads()).toHaveLength(withCursor ? 1 : 0);
+    expect(f.taskReads().map(([id]) => id)).toEqual(withCursor ? [f.id] : []);
+    expect(f.taskReads().map(([id]) => id)).not.toContain(other.id);
   },
 );
 
@@ -250,13 +268,13 @@ it.each(["direct first", "delta first", "late not-found"] as const)(
     ).confirmed;
     if (order === "direct first") {
       release.resolve();
-      await direct;
+      expect(await direct).toBeNull();
     }
     expect(await f.repository.listSummaries()).toMatchObject([
       { id: newId, title: "New identity" },
     ]);
     release.resolve();
-    await direct;
+    expect(await direct).toBeNull();
     expect(await f.repository.listSummaries()).toMatchObject([
       { id: newId, title: "New identity" },
     ]);
@@ -289,6 +307,263 @@ it("keeps an interrupted delta pending across cursor resume", async () => {
   ]);
   expect(f.query).toHaveBeenCalledOnce();
   expect(f.taskReads()).toHaveLength(2);
+});
+
+it("publishes a replacement at the path of a missing task during a reset scan", async () => {
+  const f = await fixture();
+  await f.repository.initialize();
+  f.replica.deleteElsewhere(f.id);
+  const replacement = seedTask(
+    f.replica,
+    { title: "Replacement" },
+    { path: f.record.path },
+  );
+  const record = await f.client.get(replacement.id, {
+    include: { effective: true },
+  });
+  f.push([], true);
+  const started = deferred<void>(),
+    release = deferred<void>();
+  f.query.mockImplementationOnce(async () => {
+    started.resolve();
+    await release.promise;
+    return { records: [record], complete: true, asOf: 1 };
+  });
+  const rows = f.repository.listSummaries();
+  await started.promise;
+  try {
+    await expect(
+      f.repository.update(String(f.record.frontmatter.id), {
+        title: "Missing",
+      }),
+    ).rejects.toThrow("no longer available");
+  } finally {
+    release.resolve();
+  }
+  expect(await rows).toMatchObject([{ title: "Replacement" }]);
+  expect(await f.repository.refresh()).toMatchObject({ scanned: 0 });
+  expect(await f.repository.listSummaries()).toMatchObject([
+    { title: "Replacement" },
+  ]);
+});
+
+it("returns the revision read for Undo rather than the cached revision", async () => {
+  const f = await fixture();
+  await (
+    await f.client.update(f.id, { patch: { mobileRevision: 7 } })
+  ).confirmed;
+  await f.repository.initialize();
+  const started = deferred<void>(),
+    release = deferred<void>();
+  f.find.mockImplementationOnce(async (...args) => {
+    started.resolve();
+    await release.promise;
+    return f.findRecord(...args);
+  });
+  const direct = f.repository.getSummary(String(f.record.frontmatter.id));
+  await started.promise;
+  await (
+    await f.client.update(f.id, { patch: { mobileRevision: 8 } })
+  ).confirmed;
+  release.resolve();
+  expect(await direct).toMatchObject({ revision: 8 });
+});
+
+it("reconciles a confirmed read superseded by an older pending delta", async () => {
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  const intent = {
+    id: crypto.randomUUID(),
+    authorityRequestId: undefined as string | undefined,
+  };
+  const local = await f.repository.create({ title: "Local" }, intent);
+  f.push([{ ...f.change, id: local.id, path: local.path }]);
+  const deltaStarted = deferred<void>(),
+    releaseDelta = deferred<void>();
+  const ackStarted = deferred<void>(),
+    releaseAck = deferred<void>();
+  f.find
+    .mockImplementationOnce(async (...args) => {
+      const record = await f.findRecord(...args);
+      deltaStarted.resolve();
+      await releaseDelta.promise;
+      return record;
+    })
+    .mockImplementationOnce(async (...args) => {
+      const record = await f.findRecord(...args);
+      ackStarted.resolve();
+      await releaseAck.promise;
+      return record;
+    });
+  const older = f.repository.listSummaries();
+  await deltaStarted.promise;
+  f.replica.confirmAll();
+  f.replica.editElsewhere(local.id, { frontmatter: { title: "Confirmed" } });
+  await ackStarted.promise;
+  releaseDelta.resolve();
+  await older;
+  releaseAck.resolve();
+  await vi.waitFor(() => expect(intent.authorityRequestId).toBeUndefined());
+  expect(await f.repository.listSummaries()).toContainEqual(
+    expect.objectContaining({ title: "Confirmed" }),
+  );
+});
+
+it("keeps every unread UUID pending after a multi-record ACK fails", async () => {
+  vi.setSystemTime(new Date("2026-08-05T10:00:00Z"));
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  const parent = await f.repository.create({
+    title: "Rolling",
+    scheduled: "2026-08-05",
+    recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
+    occurrenceMaterialization: "rolling",
+    occurrencePastHorizon: "P0D",
+    occurrenceFutureHorizon: "P1D",
+  });
+  const children = (await f.repository.listSummaries()).filter(
+    (task) => task.occurrenceDate,
+  );
+  expect(children).toHaveLength(2);
+  f.find.mockClear().mockRejectedValueOnce(new Error("first ACK read failed"));
+  f.replica.confirmAll();
+  await vi.waitFor(() => expect(f.find).toHaveBeenCalled());
+  for (const child of children)
+    f.replica.editElsewhere(child.id, {
+      frontmatter: { title: "Child confirmed" },
+    });
+  expect(
+    (await f.repository.listSummaries()).filter(
+      (task) => task.title === "Child confirmed",
+    ),
+  ).toHaveLength(2);
+  expect(f.taskReads()[0]?.[0]).toBe(parent.id);
+});
+
+it.each([false, true])(
+  "delivers a captured write ACK after resume (cursor: %s)",
+  async (withCursor) => {
+    const f = await fixture(withCursor, true);
+    await f.repository.initialize();
+    const captured = await f.repository.create({ title: "Before suspend" });
+    f.repository.suspend();
+    f.repository.resume();
+    await f.repository.refresh();
+    f.replica.confirmAll();
+    f.replica.editElsewhere(captured.id, {
+      frontmatter: { title: "After resume" },
+    });
+    await vi.waitFor(async () =>
+      expect(await f.repository.listSummaries()).toContainEqual(
+        expect.objectContaining({ title: "After resume" }),
+      ),
+    );
+  },
+);
+
+it("does not archive with settings retired during the task read", async () => {
+  const f = await fixture();
+  const path = "_mdbase/settings/dev.tasknotes.md";
+  const settings = seedRecord(f.replica, {
+    path,
+    types: ["tasknotes-settings"],
+    frontmatter: {
+      app: "dev.tasknotes",
+      scope: "collection",
+      settings_version: 1,
+      archive_folder: "Old",
+      move_on_archive: true,
+    },
+  });
+  await f.repository.initialize();
+  expect((await f.repository.taskConfiguration()).archive.folder).toBe("Old");
+  const started = deferred<void>(),
+    release = deferred<void>();
+  const get = f.client.get.bind(f.client);
+  vi.spyOn(f.client, "get").mockImplementationOnce(async (...args) => {
+    started.resolve();
+    await release.promise;
+    return get(...args);
+  });
+  const archived = f.repository.setArchived(
+    String(f.record.frontmatter.id),
+    true,
+  );
+  await started.promise;
+  await (
+    await f.client.update(settings.id, { patch: { archive_folder: "New" } })
+  ).confirmed;
+  release.resolve();
+  expect((await archived).path).toMatch(/^New\//);
+});
+
+it("rescans when a revisionless task definition changes only its match glob", async () => {
+  const f = await fixture();
+  await f.repository.initialize();
+  const path = "_types/task.md";
+  const source = parseFrontmatter((await f.client.resources.get(path)).text!);
+  f.replica.seedResource(
+    path,
+    serializeMarkdownDocument(
+      { ...source.frontmatter, match: { path_glob: "elsewhere/*.md" } },
+      source.body,
+    ),
+  );
+  f.query
+    .mockClear()
+    .mockResolvedValueOnce({ records: [], complete: true, asOf: 1 });
+  expect(await f.repository.refresh()).toMatchObject({ removed: 1 });
+  expect(f.query).toHaveBeenCalledOnce();
+});
+
+it("invalidates empty discovery for an unknown untyped view source", async () => {
+  const f = await fixture();
+  await f.repository.initialize();
+  const discovery = vi.spyOn(f.client, "listAppBasesViews");
+  expect(await f.repository.listViews()).toEqual([]);
+  f.push([
+    {
+      id: crypto.randomUUID(),
+      path: "boards/team.md",
+      entity: "record",
+      kind: "put",
+      version: 2,
+    },
+  ]);
+  await f.repository.listViews();
+  expect(discovery).toHaveBeenCalledTimes(2);
+});
+
+it("notifies views once when an unchanged refresh crosses local midnight", async () => {
+  vi.setSystemTime(new Date(2026, 7, 5, 23, 59));
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  const changed = vi.fn();
+  f.repository.subscribe(changed);
+  await f.repository.refresh();
+  expect(changed).not.toHaveBeenCalledWith({ kind: "data" });
+  vi.setSystemTime(new Date(2026, 7, 6, 0, 1));
+  await f.repository.refresh();
+  expect(changed).toHaveBeenCalledWith({ kind: "data" });
+  changed.mockClear();
+  await f.repository.refresh();
+  expect(changed).not.toHaveBeenCalledWith({ kind: "data" });
+});
+
+it("bounds each reader's delta passes during continuous edits", async () => {
+  const f = await fixture();
+  await f.repository.initialize();
+  f.push([f.change]);
+  let reads = 0;
+  f.find.mockImplementation(async (...args) => {
+    if (++reads > 3) throw new Error("reader chased the edit stream");
+    f.push([f.change]);
+    return f.findRecord(...args);
+  });
+  expect(await f.repository.listSummaries()).toHaveLength(1);
+  f.find.mockClear().mockImplementation(f.findRecord);
+  await f.repository.listSummaries();
+  expect(f.find).toHaveBeenCalledOnce();
 });
 
 it("retains a failed or superseded put until the current value commits", async () => {
