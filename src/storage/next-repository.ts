@@ -578,11 +578,10 @@ export class NextTaskRepository implements TaskRepository {
           bindings?.has(id) ||
           record.types.some((type) => this.models.has(type))
         ) {
-          this.remember(
-            record,
-            epoch,
-            bindings?.get(id) ?? this.cache.taskIdForRecord(id),
-          );
+          // The record's current binding, as before #515: a create's caller
+          // knows only its record ID, and a rename can change a path-derived
+          // portable ID (#518).
+          this.remember(record, epoch, this.cache.taskIdForRecord(id));
           this.taskWriteCommitted(id, "put");
         } else if (record.types.includes(SCRATCHPAD_TYPE))
           this.scratchpad(record);
@@ -1279,11 +1278,11 @@ export class NextTaskRepository implements TaskRepository {
     return task;
   }
 
-  private async readSavedTask(
-    id: string,
-    signal: AbortSignal,
-    expectedId: string,
-  ) {
+  /** Reads a record this device just wrote. The write targeted this native
+   * record; its portable identity may legitimately differ from the caller's
+   * (a new task's portable ID is not its record ID, and a rename can change a
+   * path-derived ID), so it is taken from what was saved (#518). */
+  private async readSavedTask(id: string, signal: AbortSignal) {
     const epoch = this.recordEpoch(id);
     const record = await this.client.get(id, {
       include: { body: true, effective: true },
@@ -1294,7 +1293,7 @@ export class NextTaskRepository implements TaskRepository {
       throw new Error(
         "The native task READ changed its original record identity.",
       );
-    const task = this.remember(record, epoch, expectedId);
+    const task = this.remember(record, epoch);
     if (epoch === this.recordEpoch(id)) this.taskWriteCommitted(id, "put");
     else this.queueWriteRereads([id]);
     return task;
@@ -2672,7 +2671,7 @@ export class NextTaskRepository implements TaskRepository {
       const refused = this.refusedWrite(intent.id);
       if (refused && refused.problem?.code !== "outcome_unknown")
         throw new RejectedNextMutation(refused.mutationId, refused.problem);
-      return this.readSavedTask(intent.id, this.signal(), intent.id);
+      return this.readSavedTask(intent.id, this.signal());
     }
     await this.initialize({ deferTaskIndex: true });
     owner.throwIfAborted();
@@ -2746,11 +2745,7 @@ export class NextTaskRepository implements TaskRepository {
             };
           },
           confirmed: async (receipt, signal) => {
-            const saved = await this.readSavedTask(
-              intent.id,
-              signal,
-              intent.id,
-            );
+            const saved = await this.readSavedTask(intent.id, signal);
             if (
               receipt.state === "confirmed" &&
               receipt.status === "applied" &&
@@ -2914,7 +2909,7 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The confirmed task identity cannot be resolved. Refresh before continuing.",
             );
-          const task = await this.readSavedTask(recordId, signal, id);
+          const task = await this.readSavedTask(recordId, signal);
           if (task.occurrenceMaterialization === "rolling") this.retireIndex();
           this.emit("data");
           return rollingWarnings.length
@@ -3119,8 +3114,8 @@ export class NextTaskRepository implements TaskRepository {
         },
         confirmed: async (_receipt, signal) => {
           const tasks = await Promise.all(
-            [...targets].map(([nativeId, taskId]) =>
-              this.readSavedTask(nativeId, signal, taskId),
+            [...targets].map(([nativeId]) =>
+              this.readSavedTask(nativeId, signal),
             ),
           );
           if (!tasks[0])
@@ -3196,7 +3191,7 @@ export class NextTaskRepository implements TaskRepository {
             );
         },
         confirmed: async (_r, signal) => {
-          const task = await this.readSavedTask(recordId, signal, recordId);
+          const task = await this.readSavedTask(recordId, signal);
           this.emit("data");
           return { task, created: true, warnings };
         },
@@ -3292,7 +3287,7 @@ export class NextTaskRepository implements TaskRepository {
             throw new Error(
               "The archived native record identity was not retained.",
             );
-          const saved = await this.readSavedTask(recordId, signal, id);
+          const saved = await this.readSavedTask(recordId, signal);
           this.emit("data");
           return saved;
         },
