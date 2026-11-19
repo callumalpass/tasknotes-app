@@ -11,6 +11,8 @@ import {
   seedTaskView,
 } from "../test/next-task-fixture";
 import { deferred } from "../test/deferred";
+import { rememberTaskEdit } from "../app/task-edit-undo";
+import { takeUndo } from "../app/undo-history";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 afterEach(() => {
@@ -348,27 +350,51 @@ it("publishes a replacement at the path of a missing task during a reset scan", 
   ]);
 });
 
-it("returns the revision read for Undo rather than the cached revision", async () => {
-  const f = await fixture();
-  await (
-    await f.client.update(f.id, { patch: { mobileRevision: 7 } })
-  ).confirmed;
-  await f.repository.initialize();
-  const started = deferred<void>(),
-    release = deferred<void>();
-  f.find.mockImplementationOnce(async (...args) => {
-    started.resolve();
-    await release.promise;
-    return f.findRecord(...args);
-  });
-  const direct = f.repository.getSummary(String(f.record.frontmatter.id));
-  await started.promise;
-  await (
-    await f.client.update(f.id, { patch: { mobileRevision: 8 } })
-  ).confirmed;
-  release.resolve();
-  expect(await direct).toMatchObject({ revision: 8 });
-});
+it.each(["summary", "submission"])(
+  "refuses Undo across an external same-field edit at %s without a mobileRevision bump",
+  async (stage) => {
+    const f = await fixture();
+    const [before] = await f.repository.listSummaries();
+    const input = { title: "Saved" };
+    const saved = await f.repository.update(before!.id, input);
+    await f.repository.listSummaries();
+    const started = deferred<void>(),
+      release = deferred<void>();
+    if (stage === "summary") {
+      f.find.mockImplementationOnce(async (...args) => {
+        const snapshot = await f.findRecord(...args);
+        started.resolve();
+        await release.promise;
+        return snapshot;
+      });
+    }
+    const updateTask = vi.fn(
+      async (...args: Parameters<typeof f.repository.update>) => {
+        if (stage === "submission") {
+          started.resolve();
+          await release.promise;
+        }
+        return f.repository.update(...args);
+      },
+    );
+    rememberTaskEdit({
+      before: before!,
+      saved,
+      input,
+      notice: "Updated",
+      getSummary: (id) => f.repository.getSummary(id),
+      updateTask,
+    });
+    const undo = takeUndo()!.run();
+    await started.promise;
+    f.replica.editElsewhere(f.id, { frontmatter: { title: "External" } });
+    await f.client.get(f.id);
+    release.resolve();
+    await expect(undo).rejects.toThrow(/changed/i);
+    if (stage === "summary") expect(updateTask).not.toHaveBeenCalled();
+    expect((await f.client.get(f.id)).frontmatter.title).toBe("External");
+  },
+);
 
 it("reconciles a confirmed read superseded by an older pending delta", async () => {
   const f = await fixture(false, true);
@@ -684,10 +710,23 @@ it.each(["full task", "summary"])(
   },
 );
 
-it("keeps pending write status bound to a native record after its task row is removed", async () => {
+it("binds queued edits and pending write status to the original native record", async () => {
   const f = await fixture();
   await f.repository.initialize();
   const portable = String(f.record.frontmatter.id);
+  const started = deferred<void>(),
+    release = deferred<void>();
+  const get = f.client.get.bind(f.client);
+  vi.spyOn(f.client, "get").mockImplementationOnce(async (...args) => {
+    started.resolve();
+    await release.promise;
+    return get(...args);
+  });
+  const blocking = expect(
+    f.repository.update(portable, { title: "First" }),
+  ).rejects.toThrow("no longer available");
+  await started.promise;
+  const queued = f.repository.update(portable, { title: "Queued" });
   f.replica.deleteElsewhere(f.id);
   expect(await f.repository.listSummaries()).toEqual([]);
   const state = vi
@@ -708,6 +747,163 @@ it("keeps pending write status bound to a native record after its task row is re
     "pending",
   );
   expect(state).toHaveBeenLastCalledWith(next.id);
+  const submit = vi.spyOn(f.client, "submit");
+  release.resolve();
+  await blocking;
+  await expect(queued).rejects.toThrow("no longer available");
+  expect(submit).not.toHaveBeenCalled();
+  expect((await get(next.id)).frontmatter.title).toBe("Replacement");
+});
+
+it("deletes a view row still pending after both index passes", async () => {
+  const f = await fixture(false, true);
+  seedTaskView(f.replica);
+  await f.repository.initialize();
+  const [document] = await f.repository.listViews();
+  const added = seedTask(f.replica, { title: "New row" });
+  const execution = await f.repository.executeView(document!.views[0]!);
+  const row = execution.rows.find(({ task }) => task.title === "New row")!;
+  const change = { ...f.change, id: added.id, path: added.path };
+  f.push([change]);
+  let edits = 0;
+  f.find.mockImplementation(async (...args) => {
+    const record = await f.findRecord(...args);
+    if (args[0] === added.id && edits < 2) {
+      f.replica.editElsewhere(added.id, {
+        frontmatter: { title: `Edit ${++edits}` },
+      });
+      f.push([change]);
+    }
+    return record;
+  });
+  await f.repository.delete(row.task.id);
+  expect(await f.findRecord(added.id)).toBeNull();
+  expect(await f.findRecord(f.id)).not.toBeNull();
+});
+
+it("commits healthy deltas in every group while surfacing a failed UUID", async () => {
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  const changes = Array.from({ length: 10 }, (_, index) => ({
+    ...f.change,
+    ...seedTask(f.replica, { title: `Added ${index}` }),
+  }));
+  f.push(changes);
+  f.find.mockRejectedValueOnce(new Error("Unreadable record"));
+  await expect(f.repository.listSummaries()).rejects.toThrow(
+    "Unreadable record",
+  );
+  f.find.mockClear();
+  expect(await f.repository.listSummaries()).toHaveLength(11);
+  expect(f.taskReads().map(([id]) => id)).toEqual([changes[0]!.id]);
+});
+
+it.each(["list", "summary"])(
+  "keeps per-request budgets across a slow %s reconciliation",
+  async (read) => {
+    const f = await fixture(false, true);
+    await f.repository.initialize();
+    const changes = Array.from({ length: 9 }, () => ({
+      ...f.change,
+      id: crypto.randomUUID(),
+    }));
+    f.push(changes);
+    let elapsed = 0;
+    const deadlines = new Map<AbortController, number>();
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const controller = new AbortController();
+      deadlines.set(controller, elapsed + ms);
+      return controller.signal;
+    });
+    f.find.mockImplementation(async (...args) => {
+      const record = await f.findRecord(...args);
+      if (args[0] === changes[0]!.id || args[0] === changes[8]!.id)
+        elapsed += 11_000;
+      for (const [controller, at] of deadlines)
+        if (at <= elapsed)
+          controller.abort(new DOMException("Request expired", "TimeoutError"));
+      args[1]?.signal?.throwIfAborted();
+      return record;
+    });
+    const task =
+      read === "list"
+        ? (await f.repository.listSummaries())[0]
+        : await f.repository.getSummary(String(f.record.frontmatter.id));
+    expect(task?.title).toBe("Original");
+    expect(elapsed).toBe(22_000);
+  },
+);
+
+it("restarts first discovery on a pathless removal of an unknown source", async () => {
+  const f = await fixture(false, true);
+  const source = seedTaskView(f.replica);
+  await f.repository.initialize();
+  const list = f.client.listAppBasesViews.bind(f.client);
+  const discovery = vi
+    .spyOn(f.client, "listAppBasesViews")
+    .mockImplementationOnce(async (...args) => {
+      const snapshot = await list(...args);
+      f.replica.deleteElsewhere(source.record);
+      f.push([{ id: source.record, kind: "remove", path: "", version: 2 }]);
+      return snapshot;
+    });
+  expect(await f.repository.listViews()).toEqual([]);
+  expect(discovery).toHaveBeenCalledTimes(2);
+});
+
+it("rediscovers views when revisionless obsidian.base implementers change", async () => {
+  const f = await fixture(false, true);
+  const contract = {
+    ...f.catalog.contracts[0]!,
+    id: "obsidian.base",
+    implementedBy: [] as string[],
+  };
+  f.catalog.contracts.push(contract);
+  await f.repository.initialize();
+  const discovery = vi.spyOn(f.client, "listAppBasesViews");
+  expect(await f.repository.listViews()).toEqual([]);
+  const source = seedTaskView(f.replica, { path: "boards/team.md" });
+  contract.implementedBy.push("board");
+  f.query.mockClear();
+  await f.repository.refresh();
+  expect(await f.repository.listViews()).toMatchObject([{ id: source.record }]);
+  expect(discovery).toHaveBeenCalledTimes(2);
+  expect(f.query).not.toHaveBeenCalled();
+});
+
+it("preserves a non-task conflict until a clean reread", async () => {
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  const target = { kind: "task" as const, id: String(f.record.frontmatter.id) };
+  const nonTask = { ...f.record, types: ["note"] };
+  f.push([f.change]);
+  f.find.mockResolvedValueOnce({
+    ...nonTask,
+    state: { ...nonTask.state, unresolved: 1 },
+  });
+  expect(await f.repository.listSummaries()).toEqual([]);
+  expect(f.repository.writeState(target)).toBe("conflicted");
+  f.push([f.change]);
+  f.find.mockResolvedValueOnce(nonTask);
+  await f.repository.listSummaries();
+  expect(f.repository.writeState(target)).toBeUndefined();
+});
+
+it("bounds retained record epochs across drained watch batches", async () => {
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  for (let batch = 0; batch < 3; batch++) {
+    f.push(
+      Array.from({ length: 250 }, () => ({
+        ...f.change,
+        id: crypto.randomUUID(),
+        kind: "remove",
+      })),
+    );
+    await f.repository.listSummaries();
+  }
+  expect(f.repository["recordEpochs"].size).toBeLessThanOrEqual(500);
+  expect(f.query).toHaveBeenCalledOnce();
 });
 
 it("re-enqueues the original UUID when its acknowledgement read fails", async () => {

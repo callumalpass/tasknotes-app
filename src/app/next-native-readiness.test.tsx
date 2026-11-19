@@ -13,7 +13,11 @@ import type {
   AppBasesDescriptor,
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import {
+  nextTaskFixture,
+  seedTask,
+  seedTaskView,
+} from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { NextTaskRepository } from "../storage/next-repository";
 import { RepositoryProvider } from "./repository-context";
@@ -503,4 +507,42 @@ it("refreshes mounted navigation without a task read and publishes the Today bad
   ).toBeVisible();
   expect(find.mock.calls.filter(([id]) => id === record.id)).toHaveLength(1);
   expect(discovery).not.toHaveBeenCalled();
+});
+
+it("re-executes the mounted view across an hour boundary without scanning tasks or discovering sources", async () => {
+  vi.setSystemTime(new Date(2026, 7, 5, 9, 59));
+  try {
+    const f = await fixture();
+    seedTask(f.replica, { title: "Morning only" });
+    seedTaskView(f.replica, {
+      name: "Today",
+      path: taskNotesViewSourcePath("today"),
+    });
+    const execute = f.client.executeAppBases.bind(f.client);
+    const queryView = vi
+      .spyOn(f.client, "executeAppBases")
+      .mockImplementation(async (...args) => {
+        const result = await execute(...args);
+        return result.kind === "success" && new Date().getHours() >= 10
+          ? { ...result, rows: [], window: undefined }
+          : result;
+      });
+    renderShell(f.repository);
+    expect(await screen.findByText("Morning only")).toBeVisible();
+    const discover = vi.spyOn(f.client, "listAppBasesViews");
+    const scan = vi.spyOn(f.client, "query");
+    queryView.mockClear();
+    vi.setSystemTime(new Date(2026, 7, 5, 10, 0));
+    await act(async () => {
+      await f.repository.refresh();
+    });
+    await waitFor(() =>
+      expect(screen.queryByText("Morning only")).not.toBeInTheDocument(),
+    );
+    expect(queryView).toHaveBeenCalled();
+    expect(discover).not.toHaveBeenCalled();
+    expect(scan).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
 });
