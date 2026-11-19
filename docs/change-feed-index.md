@@ -1,6 +1,6 @@
 # Change-feed task index
 
-Status: design, 2026-11-19. Follows #512 / #513. Supersedes the "Change-feed
+Status: implemented, 2026-11-20 (design 2026-11-19). Follows #512 / #513. Supersedes the "Change-feed
 reconciliation" section of `large-collections.md`, which described the removed
 legacy repository (prior art: `b72c0b3b`, `dedc3079`), not `NextTaskRepository`.
 
