@@ -99,7 +99,7 @@ interface RepositoryContextValue {
   } | null;
   deletionError: OperationalError | null;
   createTask(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
-  updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
+  updateTask: TaskRepository["update"];
   updateTasks(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]>;
@@ -567,8 +567,11 @@ export function RepositoryProvider({
     [acceptTask, repository],
   );
   const updateTask = useCallback(
-    async (id: string, input: UpdateTaskInput) =>
-      acceptTask(await repository.update(id, input), { input }),
+    async (
+      id: string,
+      input: UpdateTaskInput,
+      options?: { expectedRevision?: number },
+    ) => acceptTask(await repository.update(id, input, options), { input }),
     [acceptTask, repository],
   );
   const updateTasks = useCallback(

@@ -99,19 +99,22 @@ describe("session task index", () => {
     expect(index.rollingParents()).toEqual([]);
   });
 
-  it("tracks both sides of renames, removes indexes on deletion, and isolates snapshots", () => {
-    const index = new ConnectedTaskIndex<{ task: Task }>();
+  it("tracks native records across renames, removes indexes on deletion, and isolates snapshots", () => {
+    const index = new ConnectedTaskIndex<{ task: Task; recordId: string }>();
     const first = task("one");
-    index.set(first.id, { task: first });
+    index.set(first.id, { task: first, recordId: "original" });
     const tracking = index.trackWrites();
-    index.set(first.id, { task: { ...first, path: "renamed.md" } });
+    index.set(first.id, {
+      task: { ...first, path: "renamed.md" },
+      recordId: "replacement",
+    });
     expect(index.atPath(first.path)).toBeUndefined();
     expect(index.atPath("renamed.md")?.task.id).toBe(first.id);
-    expect([...tracking.paths]).toEqual([first.path, "renamed.md"]);
+    expect([...tracking.records]).toEqual(["original", "replacement"]);
     tracking.stop();
     const next = task("two");
-    index.set(next.id, { task: next });
-    expect(tracking.paths.has(next.path)).toBe(false);
+    index.set(next.id, { task: next, recordId: "next" });
+    expect(tracking.records.has("next")).toBe(false);
     index.list();
     index.delete(first.id);
     expect(index.atPath("renamed.md")).toBeUndefined();

@@ -475,8 +475,11 @@ export class NextTaskRepository implements TaskRepository {
       client.files,
       () => this.scope.signal,
     );
-    this.mutations = new NextMutations(client, (ids, signal) =>
-      this.readCurrentWrites(ids, signal),
+    this.mutations = new NextMutations(
+      client,
+      (ids, signal) => this.readCurrentWrites(ids, signal),
+      undefined,
+      () => this.scope.signal,
     );
     this.settings = nativeTaskNotesSettingsStore(
       client,
@@ -538,21 +541,32 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
     bindings?: ReadonlyMap<string, string>,
   ) {
-    for (const id of new Set(ids)) {
+    const unread = new Set(ids);
+    for (const id of unread) {
       const epoch = this.recordEpoch(id);
       try {
+        signal.throwIfAborted();
         const record = await this.client.find(id, {
           include: { body: true, document: true, effective: true },
           signal,
         });
         signal.throwIfAborted();
+        if (epoch !== this.recordEpoch(id)) {
+          this.queueWriteRereads([id]);
+          unread.delete(id);
+          continue;
+        }
         if (!record) {
-          if (epoch === this.recordEpoch(id)) this.conflictedRecords.delete(id);
+          this.conflictedRecords.delete(id);
+          const previous = this.cache.taskIdForRecord(id);
+          if (previous) this.cache.delete(previous);
+          this.taskWriteCommitted(id, "remove");
+          unread.delete(id);
           continue;
         }
         if (record.id !== id)
           throw new Error("The restored native record changed identity.");
-        if (epoch === this.recordEpoch(id)) this.rememberWriteState(record);
+        this.rememberWriteState(record);
         if (
           bindings?.has(id) ||
           record.types.some((type) => this.models.has(type))
@@ -562,8 +576,7 @@ export class NextTaskRepository implements TaskRepository {
             epoch,
             bindings?.get(id) ?? this.cache.taskIdForRecord(id),
           );
-          if (epoch === this.recordEpoch(id))
-            this.taskWriteCommitted(id, "put");
+          this.taskWriteCommitted(id, "put");
         } else if (record.types.includes(SCRATCHPAD_TYPE))
           this.scratchpad(record);
         else if (record.types.includes(SCRATCH_IMAGE_TYPE))
@@ -578,15 +591,19 @@ export class NextTaskRepository implements TaskRepository {
             );
           this.sourceDocument(record, record.path);
         }
+        unread.delete(id);
       } catch (reason) {
-        if (!this.disposed) {
-          this.enqueueTaskChange(id, "put");
-          if (!this.scope.signal.aborted) this.changeWindow.changed();
-        }
+        this.queueWriteRereads(unread);
         throw reason;
       }
     }
     this.emit("data");
+  }
+
+  private queueWriteRereads(ids: Iterable<string>) {
+    if (this.disposed) return;
+    for (const id of ids) this.enqueueTaskChange(id, "put");
+    if (!this.scope.signal.aborted) this.changeWindow.changed();
   }
 
   private acknowledgeTasks(
@@ -934,6 +951,15 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
+  private readonly guardTaskModel = async (signal: AbortSignal) => {
+    await this.initializeModel(signal);
+    const model = this.initialization;
+    if (!model) throw collectionChanged();
+    return () => {
+      if (this.initialization !== model) throw collectionChanged();
+    };
+  };
+
   private async loadIndex(signal: AbortSignal): Promise<void> {
     await this.initializeModel(this.requestSignal(signal));
     signal.throwIfAborted();
@@ -1004,14 +1030,14 @@ export class NextTaskRepository implements TaskRepository {
         writes.stop();
         for (const [id, existing] of this.cache)
           if (
-            !writes.paths.has(existing.task.path) &&
+            !writes.records.has(existing.recordId) &&
             this.recordEpoch(existing.recordId) <= start &&
             !snapshot.has(id)
           )
             this.cache.delete(id);
         for (const [id, { value, record }] of snapshot) {
           if (
-            writes.paths.has(value.task.path) ||
+            writes.records.has(record.id) ||
             this.recordEpoch(record.id) > start
           )
             continue;
@@ -1020,7 +1046,8 @@ export class NextTaskRepository implements TaskRepository {
           this.cache.set(id, value);
         }
         for (const id of this.pendingTaskChanges.keys())
-          if (this.recordEpoch(id) <= start) this.pendingTaskChanges.delete(id);
+          if (this.recordEpoch(id) <= start && !writes.records.has(id))
+            this.pendingTaskChanges.delete(id);
         // The scan committed a new baseline for every record, including absences.
         // In-flight reads from the old baseline must not publish over it.
         this.recordEpochs.clear();
@@ -1094,13 +1121,8 @@ export class NextTaskRepository implements TaskRepository {
       writes.stop();
       let committed = false;
       for (const { id, epoch, record, value } of results) {
-        if (epoch !== this.recordEpoch(id)) continue;
+        if (epoch !== this.recordEpoch(id) || writes.records.has(id)) continue;
         const previous = this.cache.taskIdForRecord(id);
-        if (
-          (previous && writes.paths.has(this.cache.get(previous)!.task.path)) ||
-          (value && writes.paths.has(value.task.path))
-        )
-          continue;
         if (
           value &&
           this.cache.has(value.task.id) &&
@@ -1193,6 +1215,7 @@ export class NextTaskRepository implements TaskRepository {
       );
     const task = this.remember(record, epoch, expectedId);
     if (epoch === this.recordEpoch(id)) this.taskWriteCommitted(id, "put");
+    else this.queueWriteRereads([id]);
     return task;
   }
 
@@ -2428,42 +2451,37 @@ export class NextTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     const entry = this.cache.get(id);
     if (!entry) return null;
-    const epoch = this.recordEpoch(entry.recordId);
-    const record = await this.client.find(entry.recordId, {
-      include: { effective: true },
-      signal,
-    });
-    signal.throwIfAborted();
-    if (record && record.id !== entry.recordId)
-      throw new Error(
-        "The native task READ changed its original record identity.",
-      );
-    if (
-      epoch !== this.recordEpoch(entry.recordId) ||
-      this.cache.get(id)?.recordId !== entry.recordId
-    )
-      return this.cache.get(id)?.task ?? null;
-    if (!record) {
-      this.cache.delete(id);
-      return null;
+    for (;;) {
+      const epoch = this.recordEpoch(entry.recordId);
+      const record = await this.client.find(entry.recordId, {
+        include: { effective: true },
+        signal,
+      });
+      signal.throwIfAborted();
+      if (record && record.id !== entry.recordId)
+        throw new Error(
+          "The native task READ changed its original record identity.",
+        );
+      if (this.cache.get(id)?.recordId !== entry.recordId) return null;
+      if (epoch !== this.recordEpoch(entry.recordId)) continue;
+      if (!record) {
+        this.cache.delete(id);
+        return null;
+      }
+      const decoded = this.decodeSummary(record);
+      if (!decoded)
+        throw new Error("The record no longer provides the task contract.");
+      if (decoded.task.id !== id) this.cache.delete(id);
+      const identity = this.cache.get(decoded.task.id);
+      if (identity && identity.recordId !== record.id)
+        throw new Error(
+          "Two native records have the same portable TaskNotes identity.",
+        );
+      this.rememberWriteState(record);
+      this.bindTaskRecord(decoded.task.id, record.id);
+      this.cache.set(decoded.task.id, decoded);
+      return decoded.task.id === id ? decoded.task : null;
     }
-    const decoded = this.decodeSummary(record);
-    if (!decoded)
-      throw new Error("The record no longer provides the task contract.");
-    if (decoded.task.id !== id) this.cache.delete(id);
-    const identity = this.cache.get(decoded.task.id);
-    if (identity && identity.recordId !== record.id)
-      throw new Error(
-        "Two native records have the same portable TaskNotes identity.",
-      );
-    this.rememberWriteState(record);
-    this.bindTaskRecord(decoded.task.id, record.id);
-    this.cache.set(decoded.task.id, decoded);
-    if (decoded.task.id !== id)
-      throw new Error(
-        "The portable task identity changed. Refresh before continuing.",
-      );
-    return decoded.task;
   }
 
   /**
@@ -2547,6 +2565,7 @@ export class NextTaskRepository implements TaskRepository {
       .runRecord(
         {
           key: JSON.stringify(["task:create", intent.id]),
+          guardPreparation: this.guardTaskModel,
           ack: async (receipt, signal) => {
             await this.acknowledgeTasks(receipt, signal, [
               [intent.id, intent.id],
@@ -2727,6 +2746,7 @@ export class NextTaskRepository implements TaskRepository {
     return this.mutations.runRecord(
       {
         key,
+        guardPreparation: this.guardTaskModel,
         recordIds: () => (recordId ? [recordId] : []),
         ack: (receipt, signal) =>
           this.acknowledgeTasks(
@@ -2855,6 +2875,7 @@ export class NextTaskRepository implements TaskRepository {
     return this.mutations.runRecord(
       {
         recordIds: () => [...targets.keys()],
+        guardPreparation: this.guardTaskModel,
         ack: (receipt, signal) =>
           this.acknowledgeTasks(receipt, signal, targets),
         key: JSON.stringify([
@@ -3013,6 +3034,7 @@ export class NextTaskRepository implements TaskRepository {
         ack: (receipt, signal) =>
           this.acknowledgeTasks(receipt, signal, [[recordId, recordId]]),
         key: JSON.stringify(["task:materialize", parentId, occurrenceDate]),
+        guardPreparation: this.guardTaskModel,
         prepare: async (mutationId, signal) => {
           const parent = await this.current(parentId, signal);
           const existing = [...this.cache.values()]
@@ -3112,6 +3134,7 @@ export class NextTaskRepository implements TaskRepository {
             recordId ? [[recordId, id]] : [],
           ),
         key: JSON.stringify(["task:archive", id, archived]),
+        guardPreparation: this.guardTaskModel,
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
           recordId = current.record.id;
@@ -3200,6 +3223,7 @@ export class NextTaskRepository implements TaskRepository {
             recordId ? [[recordId, id]] : [],
           ),
         key: JSON.stringify(["task:delete", id]),
+        guardPreparation: this.guardTaskModel,
         requestId: options.authorityRequestId,
         prepare: async (mutationId, signal) => {
           const current = await this.current(id, signal);
@@ -3236,7 +3260,7 @@ export class NextTaskRepository implements TaskRepository {
               this.cache.delete(id);
             this.conflictedRecords.delete(recordId);
             this.taskWriteCommitted(recordId, "remove");
-          }
+          } else this.queueWriteRereads([recordId]);
           this.emit("data");
         },
       },

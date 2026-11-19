@@ -485,6 +485,7 @@ it("does not archive with settings retired during the task read", async () => {
     await release.promise;
     return get(...args);
   });
+  const submit = vi.spyOn(f.client, "submit");
   const archived = f.repository.setArchived(
     String(f.record.frontmatter.id),
     true,
@@ -493,8 +494,16 @@ it("does not archive with settings retired during the task read", async () => {
   await (
     await f.client.update(settings.id, { patch: { archive_folder: "New" } })
   ).confirmed;
+  submit.mockClear();
   release.resolve();
-  expect((await archived).path).toMatch(/^New\//);
+  await expect(archived).rejects.toMatchObject({
+    reason: "collection_changed",
+  });
+  expect(submit).not.toHaveBeenCalled();
+  expect(
+    (await f.repository.setArchived(String(f.record.frontmatter.id), true))
+      .path,
+  ).toMatch(/^New\//);
 });
 
 it("rescans when a revisionless task definition changes only its match glob", async () => {

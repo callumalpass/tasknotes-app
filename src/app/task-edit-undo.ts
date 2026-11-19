@@ -15,7 +15,11 @@ export function rememberTaskEdit({
   input: UpdateTaskInput;
   notice: string;
   getSummary(id: string): Promise<TaskSummary | null>;
-  updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
+  updateTask(
+    id: string,
+    input: UpdateTaskInput,
+    options: { expectedRevision: number },
+  ): Promise<Task>;
 }) {
   const earlier = Object.fromEntries(
     Object.keys(input).map((field) => [
@@ -31,7 +35,7 @@ export function rememberTaskEdit({
       const current = await getSummary(saved.id);
       if (!current || current.revision !== savedRevision)
         throw new Error(t`This task changed. Review it before trying again.`);
-      return updateTask(saved.id, earlier);
+      return updateTask(saved.id, earlier, { expectedRevision: savedRevision });
     },
   });
 }

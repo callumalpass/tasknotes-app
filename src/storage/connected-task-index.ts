@@ -72,9 +72,9 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     )
       this.rolling.set(id, value.task);
     else this.rolling.delete(id);
-    for (const paths of this.trackers) {
-      if (previous) paths.add(previous.task.path);
-      paths.add(value.task.path);
+    for (const records of this.trackers) {
+      if (previous?.recordId) records.add(previous.recordId);
+      if (value.recordId) records.add(value.recordId);
     }
     if (previous?.task !== value.task) {
       this.ordered = undefined;
@@ -92,7 +92,8 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     this.rolling.delete(id);
     if (previous.recordId && this.recordIds.get(previous.recordId) === id)
       this.recordIds.delete(previous.recordId);
-    for (const paths of this.trackers) paths.add(previous.task.path);
+    if (previous.recordId)
+      for (const records of this.trackers) records.add(previous.recordId);
     this.ordered = undefined;
     this.relations = undefined;
     return super.delete(id);
@@ -126,10 +127,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   }
 
   /** Protect accepted local writes while a remote snapshot is being fetched. */
-  trackWrites(): { paths: Set<string>; stop(): void } {
-    const paths = new Set<string>();
-    this.trackers.add(paths);
-    return { paths, stop: () => this.trackers.delete(paths) };
+  trackWrites() {
+    const records = new Set<string>();
+    this.trackers.add(records);
+    return { records, stop: () => this.trackers.delete(records) };
   }
 
   matchesMetadata(task: TaskSummary, token: string): boolean {
