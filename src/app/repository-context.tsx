@@ -499,7 +499,7 @@ export function RepositoryProvider({
     return repository.subscribe((change) => {
       void loadConnection().catch(() => undefined);
       if (change?.kind === "status") return;
-      if (change?.kind === "lifecycle") {
+      if (change?.kind === "lifecycle" || change?.kind === "clock") {
         invalidation.invalidateViews();
         return;
       }

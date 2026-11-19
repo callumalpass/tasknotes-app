@@ -153,12 +153,17 @@ These override the sections above where they differ.
   epoch bumped when a change for it is enqueued or committed. Any read that
   publishes into the index (`current`, `getSummary`, `remember`, delta
   reconciliation, full scan rows) captures the epoch before its request and
-  does not publish if it moved; the change stays pending.
+  does not publish if it moved; the change stays pending. Between index workers,
+  the repository can retire the whole epoch map under a newer baseline without
+  discarding pending changes. A long-lived watch need not keep every past ID.
 - **Write bindings outlive index rows.** `knownTaskRecords` (portable id to
   record id) is the write-identity binding and is not cleared when a delta
   removes or rekeys an index row; refusals and identity checks keep using it
-  until the write settles. A failed acknowledgement reread re-enqueues its
-  record id.
+  until the write settles. Queued mutations read the native ID captured at
+  invocation, not the current owner of its portable ID. On an unresolved index
+  miss, a mutation looks up the portable ID (or path fallback) at authority
+  before treating the task as absent. A failed acknowledgement reread
+  re-enqueues its record id.
 - **Stale cursors restart the scan.** A full scan that gets
   `invalid_request` with `cursor_stale` or `cursor_expired` discards its
   partial result and starts again (bounded, then the error surfaces as today),
@@ -169,17 +174,23 @@ These override the sections above where they differ.
   catalog (including an empty one) while `viewGeneration` is unchanged. A change
   is view-relevant if its path ends in `.base`, its `types` include a type that
   implements `obsidian.base` (from `describe()` contracts), or its record id is
-  a known view source.
+  a known view source. During discovery, even a pathless removal can retire
+  the pass before it publishes a source. A change in the `obsidian.base`
+  implementing type set retires discovery without forcing a task scan.
 - **Listeners hear about committed deltas.** After a reconciliation pass
   commits a change, listeners get a data notification that does not retire any
-  generation, so cached-count consumers (the Today badge) update.
+  generation, so cached-count consumers (the Today badge) update. A failed
+  record read is reported after independent current results commit; only
+  failed or superseded candidates need another read. A non-task reread still
+  updates that record's conflict state.
 
 ### Reconciliation and lifecycle details
 
 - Scan and delta write tracking uses native record IDs, not paths. Reusing a
   deleted task's path does not make the replacement the same record. A summary
   used to check a revision rereads its original ID if its epoch moved; Undo
-  also passes the saved revision to the conditional update. Task submissions
+  also passes the saved native record version to the conditional update. An
+  external editor need not write `mobileRevision` to retire an undo. Task submissions
   refuse a model retired during preparation, before capturing a mutation. A
   periodic refresh starts a new model read, but does not retire the write's
   model generation unless the verified signature changes.
@@ -194,7 +205,9 @@ These override the sections above where they differ.
 - An index reader waits at most one change notification per attempt and two
   delta passes after model initialization. A required full scan still runs;
   newer deltas stay pending for another reader or change notification. An
-  unchanged refresh notifies views when the local calendar date changes.
+  index reconciliation has per-request deadlines, not a deadline over the
+  whole pass. An unchanged refresh in a new minute re-executes mounted views
+  for clock-dependent results; a new local date also updates date-based counts.
 
 ## Connect changes (separate PR, mdbase-connect)
 
@@ -228,7 +241,8 @@ Neither needs a TaskNotes release to be safe: TaskNotes feature-detects
 - An older read that completes after a newer delta does not overwrite it (both
   completion orders, including a late not-found after an identity change).
 - A suspend during reconciliation loses no pending change.
-- Mounted UI: an unchanged refresh triggers no discovery and no task reads;
-  the Today badge updates after a delta commits.
+- Mounted UI: an unchanged refresh triggers no discovery or task index reads;
+  a clock tick may hydrate the visible rows of a mounted view. The Today
+  badge updates after a delta commits.
 - Existing repository, watch, availability and startup tests keep their
   guarantees (pending writes, identity fences, held edits, lifecycle).

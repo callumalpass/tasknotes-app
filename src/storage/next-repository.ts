@@ -426,6 +426,7 @@ export class NextTaskRepository implements TaskRepository {
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
   private lastDataDay = todayString();
+  private lastViewMinute = Math.floor(Date.now() / 60_000);
   private readonly changeWindow = new CollectionChangeWindow(() => {
     if (this.disposed || this.scope.signal.aborted) return;
     this.notify("data");
@@ -750,6 +751,7 @@ export class NextTaskRepository implements TaskRepository {
         this.boundTaskRecords.has(id) ||
         this.pendingTaskChanges.has(id),
       scanning: !this.indexReady && !!this.indexLoading,
+      discovering: !!this.discovery,
       viewTypes: this.viewTypes,
       viewSources: new Set(this.sourceRecords.values()),
     });
@@ -913,14 +915,20 @@ export class NextTaskRepository implements TaskRepository {
             if (this.initialization?.pending !== loading)
               throw collectionChanged();
             const before = this.modelSignature();
+            const viewTypesChanged =
+              viewTypes.size !== this.viewTypes.size ||
+              [...viewTypes].some((type) => !this.viewTypes.has(type));
             this.catalogSignature = signature;
             this.viewTypes = viewTypes;
             this.settingsType = settingsType;
             this.providers = providers;
             this.models = new Map(providers.map((p) => [p.typeName, p.model]));
-            if (this.modelSignature() !== before) {
+            const modelChanged = this.modelSignature() !== before;
+            if (modelChanged) {
               this.modelGeneration++;
               this.retireIndex();
+            }
+            if (modelChanged || viewTypesChanged) {
               this.retireViews();
               this.invalidateDataGeneration();
             }
@@ -1357,7 +1365,7 @@ export class NextTaskRepository implements TaskRepository {
         [...this.cache].map(([id, value]) => [id, value.task]),
       );
       const compared = this.hasLoadedIndex;
-      const model = this.modelSignature();
+      const views = this.viewGeneration;
       const scannedBefore = this.recordsRead;
       signal.throwIfAborted();
       if (
@@ -1387,14 +1395,17 @@ export class NextTaskRepository implements TaskRepository {
         (id) => !this.cache.has(id),
       ).length;
       this.reached();
-      // An unchanged refresh updates reachability. Emitting data here would
-      // make mounted screens execute their views and hydrate task rows again.
       if (
         (compared && (changed || removed)) ||
-        this.modelSignature() !== model ||
+        this.viewGeneration !== views ||
         this.lastDataDay !== todayString()
       )
         this.emit("data");
+      else if (
+        compared &&
+        this.lastViewMinute !== Math.floor(Date.now() / 60_000)
+      )
+        this.notify("clock");
       else this.notify(compared ? "status" : "data");
       return {
         scanned: this.recordsRead - scannedBefore,
@@ -4371,6 +4382,8 @@ export class NextTaskRepository implements TaskRepository {
   /** Tells listeners without retiring the current data generation. */
   private notify(kind: RepositoryChange["kind"]) {
     if (kind === "data") this.lastDataDay = todayString();
+    if (kind === "data" || kind === "clock")
+      this.lastViewMinute = Math.floor(Date.now() / 60_000);
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }

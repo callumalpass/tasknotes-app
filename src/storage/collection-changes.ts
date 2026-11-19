@@ -19,6 +19,7 @@ export function classifyChangeBatch(
     viewTypes: ReadonlySet<string>;
     viewSources: ReadonlySet<string>;
     scanning: boolean;
+    discovering: boolean;
   },
 ) {
   const tasks = new Map<string, wire.Change["kind"]>();
@@ -47,6 +48,7 @@ export function classifyChangeBatch(
       path.endsWith(".base") ||
       path.startsWith("_views/") ||
       context.viewSources.has(id) ||
+      (record && kind === "remove" && context.discovering) ||
       (record && kind === "put" && !types) ||
       !!types?.some((type) => context.viewTypes.has(type));
     data ||= record || pathlessRemoval;

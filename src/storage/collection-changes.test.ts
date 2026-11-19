@@ -14,6 +14,7 @@ const context = {
   viewSources: new Set(["source"]),
   settingsId: "settings",
   scanning: false,
+  discovering: false,
 };
 const change: wire.Change = {
   id: "other",
