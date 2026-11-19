@@ -1,3 +1,5 @@
+import { deferred } from "../test/deferred";
+import { todayString } from "../domain/task";
 import {
   act,
   fireEvent,
@@ -398,3 +400,107 @@ it.each([
     mounted.unmount();
   },
 );
+
+it("refreshes mounted navigation without a task read and publishes the Today badge after a delta commits", async () => {
+  const f = await fixture();
+  const seed = await f.repository.create({ title: "Count this task" });
+  f.replica.confirmAll();
+  const record = await f.client.get({ path: seed.path });
+  const revision = record.revision;
+  const clock = { instant: 1, tz: "UTC", localDate: "1970-01-01" };
+  const view: AppBasesDescriptor = {
+    record: crypto.randomUUID(),
+    path: taskNotesViewSourcePath("today"),
+    sourceRevision: revision,
+    ordinal: 0,
+    name: "Today",
+    viewType: "tasknotesTaskList",
+    implementations: [],
+  };
+  const discovery = vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
+    kind: "success",
+    unreadable: [],
+    views: [view],
+    clock,
+    collectionRevision: revision,
+    continuation: null,
+  });
+  vi.spyOn(f.client, "readAppBasesViewSource").mockResolvedValue({
+    kind: "success",
+    view,
+    clock,
+    collectionRevision: revision,
+    source: "views:\n  - name: Today\n    type: tasknotesTaskList\n",
+  });
+  vi.spyOn(f.client, "executeAppBases").mockResolvedValue({
+    kind: "success",
+    view,
+    columns: ["note.title"],
+    unavailableColumns: [],
+    rows: [
+      {
+        record: record.id,
+        path: record.path,
+        sourceRevision: revision,
+        cells: [{ kind: "text", value: seed.title }],
+      },
+    ],
+    groups: [],
+    clock,
+    collectionRevision: revision,
+  });
+  const refresh = vi.spyOn(f.repository, "refresh");
+  renderShell(f.repository);
+  const navigation = within(
+    await screen.findByRole("complementary", { name: "Primary" }),
+  );
+  expect(
+    await navigation.findByRole("button", { name: "Today 0" }),
+  ).toBeVisible();
+  await waitFor(() => expect(refresh).toHaveBeenCalled());
+  await act(async () => {
+    await refresh.mock.results.at(-1)!.value;
+  });
+  expect(await screen.findByText(seed.title)).toBeVisible();
+  const original = f.client.find.bind(f.client);
+  const query = vi.spyOn(f.client, "query");
+  const find = vi.spyOn(f.client, "find");
+  const get = vi.spyOn(f.client, "get");
+  discovery.mockClear();
+  await act(async () => {
+    window.dispatchEvent(new Event("online"));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    expect(await refresh.mock.results.at(-1)!.value).toMatchObject({
+      scanned: 0,
+    });
+  });
+  expect(discovery).not.toHaveBeenCalled();
+  expect(query).not.toHaveBeenCalled();
+  expect(find.mock.calls.filter(([id]) => id === record.id)).toHaveLength(0);
+  expect(get.mock.calls.filter(([id]) => id === record.id)).toHaveLength(0);
+  const started = deferred<void>(),
+    release = deferred<void>();
+  find.mockImplementation(async (id, options) => {
+    if (id === record.id) {
+      started.resolve();
+      await release.promise;
+    }
+    return original(id, options);
+  });
+  try {
+    await act(async () => {
+      f.replica.editElsewhere(record.id, {
+        frontmatter: { due: todayString() },
+      });
+      await started.promise;
+    });
+    expect(navigation.getByRole("button", { name: "Today 0" })).toBeVisible();
+  } finally {
+    await act(async () => release.resolve());
+  }
+  expect(
+    await navigation.findByRole("button", { name: "Today 1" }),
+  ).toBeVisible();
+  expect(find.mock.calls.filter(([id]) => id === record.id)).toHaveLength(1);
+  expect(discovery).not.toHaveBeenCalled();
+});
