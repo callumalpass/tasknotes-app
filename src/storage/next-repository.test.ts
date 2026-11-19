@@ -1,7 +1,7 @@
 import { buildCalendarEntries } from "@tasknotes/model/calendar";
 import { type PlainValue, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import { nextTaskFixture, taskQueryWhere } from "../test/next-task-fixture";
 import { heldEditFromHold } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -11,6 +11,7 @@ import {
   type TaskCreateIntent,
 } from "../application/ports/task-repository";
 import type { UpdateTaskInput } from "../domain/task";
+import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
 
 const fixtures: Awaited<ReturnType<typeof nextTaskFixture>>[] = [];
 afterEach(() => {
@@ -82,11 +83,11 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     const started = new Promise<void>((resolve) => {
       reading = resolve;
     });
-    const pages = f.client.pages.bind(f.client);
-    vi.spyOn(f.client, "pages").mockImplementation(async function* (...args) {
+    const query = f.client.query.bind(f.client);
+    vi.spyOn(f.client, "query").mockImplementation(async (...args) => {
       reading();
       await gate;
-      yield* pages(...args);
+      return query(...args);
     });
     const remove = vi.spyOn(f.client, "delete");
     const result = f.repository.delete(task.portableId);
@@ -989,5 +990,115 @@ describe("protected edits and sync position (hold UX)", () => {
       saves: 0,
     });
     expect(gone.actions.map((a) => a.action)).toEqual(["keep_mine", "delete"]);
+  });
+});
+
+describe("a relayed collection slower than one foreground budget (#512)", () => {
+  const budgets = TASKNOTES_REQUEST_BUDGETS as { foregroundMs: number };
+  const foregroundMs = budgets.foregroundMs;
+  afterEach(() => {
+    budgets.foregroundMs = foregroundMs;
+  });
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  type Query = Parameters<
+    Awaited<ReturnType<typeof fixture>>["client"]["query"]
+  >[0];
+  const indexScan = (query: Query) =>
+    !!query.types?.length && query.where === undefined;
+  /** Each query is one relayed round trip of `ms`, one record per page. */
+  function relayed(f: Awaited<ReturnType<typeof fixture>>, ms: number) {
+    const query = f.client.query.bind(f.client);
+    return vi
+      .spyOn(f.client, "query")
+      .mockImplementation(async (input, options) => {
+        await delay(ms);
+        options?.signal?.throwIfAborted();
+        return query({ ...input, limit: 1 }, options);
+      });
+  }
+  async function indexRetired(f: Awaited<ReturnType<typeof fixture>>) {
+    // Another device's write retires the loaded task index.
+    const other = new TaskNotesTaskModel().create(
+      { title: "Written elsewhere" },
+      { id: crypto.randomUUID() },
+    );
+    await (
+      await f.client.create({
+        id: crypto.randomUUID(),
+        type: "task",
+        path: other.path,
+        frontmatter: other.frontmatter as Record<string, PlainValue>,
+        body: other.body,
+      })
+    ).confirmed;
+    await vi.waitFor(() =>
+      expect(
+        (f.repository as unknown as { indexReady: boolean }).indexReady,
+      ).toBe(false),
+    );
+  }
+
+  it("edits a listed task without reloading the task index", async () => {
+    const f = await fixture();
+    const s = await seed(f);
+    await seed(f, "Second");
+    await f.repository.initialize();
+    await indexRetired(f);
+    budgets.foregroundMs = 400;
+    // A full index pass (three pages) is longer than the edit's deadline.
+    const query = relayed(f, 250);
+    const task = await f.repository.update(s.portableId, { priority: "high" });
+    expect(task.priority).toBe("high");
+    expect(query.mock.calls.filter(([input]) => indexScan(input))).toHaveLength(
+      0,
+    );
+  });
+
+  it("an edit of a task deleted elsewhere says it is gone", async () => {
+    const f = await fixture();
+    const s = await seed(f);
+    await f.repository.initialize();
+    await (
+      await f.client.delete(s.nativeId)
+    ).confirmed;
+    await expect(
+      f.repository.update(s.portableId, { priority: "high" }),
+    ).rejects.toThrow("The task is no longer available.");
+  });
+
+  it("searches when every page fits its own budget but the pass does not", async () => {
+    const f = await fixture({ where: taskQueryWhere });
+    await f.repository.create({ title: "Probe one", body: "rarebody" });
+    await f.repository.create({ title: "Probe two" });
+    await f.repository.create({ title: "Other" });
+    await indexRetired(f);
+    budgets.foregroundMs = 400;
+    const query = relayed(f, 150);
+    const started = performance.now();
+    const results = await f.repository.search({ search: "rarebody" });
+    expect(performance.now() - started).toBeGreaterThan(400);
+    expect(results.map((r) => r.task.title)).toEqual(["Probe one"]);
+    expect(results[0]!.bodyMatches).toEqual(["rarebody"]);
+    expect(query.mock.calls.length).toBeGreaterThan(3);
+  });
+
+  it("a page that outlives its own budget still fails", async () => {
+    const f = await fixture({ where: taskQueryWhere });
+    await f.repository.create({ title: "Probe", body: "rarebody" });
+    await indexRetired(f);
+    budgets.foregroundMs = 200;
+    vi.spyOn(f.client, "query").mockImplementation(
+      (_input, options) =>
+        new Promise((_, reject) => {
+          const signal = options!.signal!;
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        }),
+    );
+    await expect(
+      f.repository.search({ search: "rarebody" }),
+    ).rejects.toMatchObject({ name: "TimeoutError" });
   });
 });

@@ -210,19 +210,17 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     const opened = f.repository.initialize({ deferTaskIndex: true });
     control.active();
     await opened;
-    const original = f.client.pages.bind(f.client);
+    const original = f.client.query.bind(f.client);
     const pages = vi
-      .spyOn(f.client, "pages")
-      .mockImplementationOnce(async function* () {
-        yield { records: [staleRecord], complete: true, asOf: 0 };
+      .spyOn(f.client, "query")
+      .mockImplementationOnce(async () => {
+        // The collection moves while this page is in flight.
         changes(batch);
+        return { records: [staleRecord], complete: true, asOf: 0 };
       })
       .mockImplementation(original);
     expect(await f.repository.listSummaries()).toEqual([]);
     expect(pages).toHaveBeenCalledTimes(2);
-    expect(pages.mock.calls[0]![1]!.signal).toBe(
-      pages.mock.calls[1]![1]!.signal,
-    ); // original deadline/owner
     expect(
       f.repository.writeState({ kind: "task", id: task.id }),
     ).toBeUndefined();
@@ -247,14 +245,14 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });
-      const originalPages = f.client.pages.bind(f.client);
+      const originalQuery = f.client.query.bind(f.client);
       const pages = vi
-        .spyOn(f.client, "pages")
-        .mockImplementationOnce(async function* () {
+        .spyOn(f.client, "query")
+        .mockImplementationOnce(async () => {
           await gate;
-          yield { records: [], complete: true, asOf: 0 };
+          return { records: [], complete: true, asOf: 0 };
         })
-        .mockImplementation(originalPages);
+        .mockImplementation(originalQuery);
       const expected =
         kind === "local"
           ? [expect.objectContaining({ title: "Accepted local task" })]
@@ -381,7 +379,7 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
   });
 
   it.each(["catalog", "index"])(
-    "converges after repeated %s invalidation using the original read-only owner and deadline",
+    "converges after repeated %s invalidation under the original read-only owner",
     async (kind) => {
       const f = await fixture(),
         control = heldWatch();
@@ -406,12 +404,12 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
         });
         changes(batch);
       } else {
-        vi.spyOn(f.client, "pages").mockImplementation(
-          async function* (_query, options) {
+        vi.spyOn(f.client, "query").mockImplementation(
+          async (_query, options) => {
             count++;
             signals.push(options?.signal);
-            yield { records: [], complete: true, asOf: 0 };
             if (count <= 6) changes(batch);
+            return { records: [], complete: true, asOf: 0 };
           },
         );
       }
@@ -421,7 +419,10 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
         ).resolves.toBeUndefined();
       else await expect(f.repository.listSummaries()).resolves.toEqual([]);
       expect(count).toBe(7);
-      expect(signals.every((signal) => signal === signals[0])).toBe(true);
+      if (kind === "catalog")
+        expect(signals.every((signal) => signal === signals[0])).toBe(true);
+      // Each index page is one request under its own deadline (#512).
+      else expect(new Set(signals).size).toBe(signals.length);
       expect(signals[0]).toBeInstanceOf(AbortSignal);
     },
   );
