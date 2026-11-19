@@ -364,7 +364,7 @@ export class DemoTaskRepository implements TaskRepository {
   async update(
     id: string,
     input: UpdateTaskInput,
-    options: { expectedRevision?: number } = {},
+    options: { expectedRevision?: number | string } = {},
   ): Promise<Task> {
     const current = this.requireTask(id);
     if (

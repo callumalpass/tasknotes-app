@@ -14,7 +14,7 @@ import {
 } from "../domain/task-row-relations";
 import type { TaskSummary, TaskListQuery } from "../domain/task";
 
-type Entry = { task: TaskSummary };
+type Entry = { task: TaskSummary; recordId?: string };
 
 /** Session-only indexes over repository-owned tasks; never a durable replica. */
 export class ConnectedTaskIndex<Value extends Entry> extends Map<
@@ -22,6 +22,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   Value
 > {
   private readonly paths = new Map<string, string>();
+  private readonly recordIds = new Map<string, string>();
   private readonly rolling = new Map<string, TaskSummary>();
   private ordered?: TaskSummary[];
   private relations?: TaskRowRelations;
@@ -56,20 +57,24 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     const previous = this.get(id);
     if (previous === value) return this;
     if (previous) {
-      this.paths.delete(previous.task.path);
+      if (this.paths.get(previous.task.path) === id)
+        this.paths.delete(previous.task.path);
+      if (previous.recordId && this.recordIds.get(previous.recordId) === id)
+        this.recordIds.delete(previous.recordId);
       this.adjustCounts(previous.task, -1);
     }
     this.adjustCounts(value.task, 1);
     this.paths.set(value.task.path, id);
+    if (value.recordId) this.recordIds.set(value.recordId, id);
     if (
       value.task.recurrence &&
       value.task.occurrenceMaterialization === "rolling"
     )
       this.rolling.set(id, value.task);
     else this.rolling.delete(id);
-    for (const paths of this.trackers) {
-      if (previous) paths.add(previous.task.path);
-      paths.add(value.task.path);
+    for (const records of this.trackers) {
+      if (previous?.recordId) records.add(previous.recordId);
+      if (value.recordId) records.add(value.recordId);
     }
     if (previous?.task !== value.task) {
       this.ordered = undefined;
@@ -81,10 +86,14 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   override delete(id: string): boolean {
     const previous = this.get(id);
     if (!previous) return false;
-    this.paths.delete(previous.task.path);
+    if (this.paths.get(previous.task.path) === id)
+      this.paths.delete(previous.task.path);
     this.adjustCounts(previous.task, -1);
     this.rolling.delete(id);
-    for (const paths of this.trackers) paths.add(previous.task.path);
+    if (previous.recordId && this.recordIds.get(previous.recordId) === id)
+      this.recordIds.delete(previous.recordId);
+    if (previous.recordId)
+      for (const records of this.trackers) records.add(previous.recordId);
     this.ordered = undefined;
     this.relations = undefined;
     return super.delete(id);
@@ -104,6 +113,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     return this.relations;
   }
 
+  taskIdForRecord(recordId: string): string | undefined {
+    return this.recordIds.get(recordId);
+  }
+
   atPath(path: string): Value | undefined {
     const id = this.paths.get(path);
     return id === undefined ? undefined : this.get(id);
@@ -114,10 +127,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   }
 
   /** Protect accepted local writes while a remote snapshot is being fetched. */
-  trackWrites(): { paths: Set<string>; stop(): void } {
-    const paths = new Set<string>();
-    this.trackers.add(paths);
-    return { paths, stop: () => this.trackers.delete(paths) };
+  trackWrites() {
+    const records = new Set<string>();
+    this.trackers.add(records);
+    return { records, stop: () => this.trackers.delete(records) };
   }
 
   matchesMetadata(task: TaskSummary, token: string): boolean {

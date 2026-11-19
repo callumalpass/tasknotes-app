@@ -99,7 +99,7 @@ interface RepositoryContextValue {
   } | null;
   deletionError: OperationalError | null;
   createTask(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
-  updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
+  updateTask: TaskRepository["update"];
   updateTasks(
     updates: readonly { id: string; input: UpdateTaskInput }[],
   ): Promise<Task[]>;
@@ -499,7 +499,7 @@ export function RepositoryProvider({
     return repository.subscribe((change) => {
       void loadConnection().catch(() => undefined);
       if (change?.kind === "status") return;
-      if (change?.kind === "lifecycle") {
+      if (change?.kind === "lifecycle" || change?.kind === "clock") {
         invalidation.invalidateViews();
         return;
       }
@@ -567,8 +567,8 @@ export function RepositoryProvider({
     [acceptTask, repository],
   );
   const updateTask = useCallback(
-    async (id: string, input: UpdateTaskInput) =>
-      acceptTask(await repository.update(id, input), { input }),
+    async (...args: Parameters<TaskRepository["update"]>) =>
+      acceptTask(await repository.update(...args), { input: args[1] }),
     [acceptTask, repository],
   );
   const updateTasks = useCallback(

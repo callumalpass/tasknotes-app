@@ -5,7 +5,7 @@ import {
   type PlainValue,
   type wire,
 } from "@mdbase-dev/sdk";
-import { nextTaskFixture } from "../test/next-task-fixture";
+import { nextTaskFixture, taskQueryWhere } from "../test/next-task-fixture";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 
 // Actual SDK/MemoryReplica CRUD; synthetic catalog and assignment-query frames.
@@ -127,20 +127,9 @@ it("never substitutes cached unfiltered tasks when assignment matching is unavai
 
 it("finds assignments on a collection larger than one query budget, from the person's backlinks", async () => {
   const config = defaultTaskCollectionConfiguration();
-  const f = await nextTaskFixture(
-    {
-      // Only the repository's body search is evaluated here.
-      where: (expr, record) => {
-        const token = /^file\.body\.lower\(\)\.contains\((".*")\)$/.exec(
-          expr,
-        )?.[1];
-        if (token === undefined) throw new Error(`unexpected where ${expr}`);
-        return record.body.toLowerCase().includes(JSON.parse(token));
-      },
-    },
-    false,
-    { fieldMapping: { ...config.fieldMapping, assignees: "owners" } },
-  );
+  const f = await nextTaskFixture({ where: taskQueryWhere }, false, {
+    fieldMapping: { ...config.fieldMapping, assignees: "owners" },
+  });
   fixtures.push(f);
   const me = f.replica.seed({ path: "people/Me.md", types: [], body: "" });
   const seed = (i: number, extra: Record<string, unknown> = {}, body = "") =>

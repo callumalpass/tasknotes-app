@@ -250,27 +250,19 @@ initial snapshot for authorities without changes.
 
 ### Change-feed reconciliation instead of periodic full downloads
 
-The repository retains the **pre-snapshot** `describe.changeCursor`, then uses
-ordinary provider-neutral `changes` operations on refresh. It deduplicates
-changed paths, including both sides of a rename, and queries those paths in
-batches of 100 using the existing type/provider mappings and effective
-frontmatter. Deletions and records leaving task types are reconciled from the
-absence of rows. It does not rely on an event containing a complete task.
+`NextTaskRepository` keeps its task index across collection changes and applies
+the change feed to it record by record. A task change rereads that record only;
+refresh, foreground return and a resumed watch reread nothing unless the feed
+reported a change, a reset, or the task model changed. A full scan remains the
+fallback for resets, model changes, duplicate identities and large backlogs.
+It pages in ascending path order with a fresh query for each page. An edit
+between pages leaves the scan running. The change feed reconciles records
+renamed across the last path, created, edited or deleted during the pass.
+See [the change-feed index design](change-feed-index.md#limits) for the
+remaining limits.
 
-A cursor reset, changed description/schema/configuration, unknown resource/event,
-more than 500 distinct paths, or more than 10 change pages causes an authoritative
-full snapshot. These bounds are provisional until real-provider measurements
-establish a crossover point. Authorities not advertising `changes` retain the
-full-snapshot path. Ordinary transport failures do **not** trigger extra full
-queries or hide known unavailability. View-source-only events invalidate views
-without downloading tasks.
-
-All pages are staged before commit. The cursor advances only after a successful
-commit. A failed schema rebuild remains pending. Session writes made while a
-snapshot is in flight protect both old/new paths from stale replacement or
-resurrection. Captured lifecycle signals prevent pre-suspension pages from being
-committed after resume. Unchanged task objects retain their identity, and full
-snapshot comparison no longer JSON-stringifies note bodies.
+(This section previously described the incremental reconciliation of the removed
+legacy repository, `b72c0b3b` and `dedc3079`.)
 
 ### One session index for repeated queries
 

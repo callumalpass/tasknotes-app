@@ -41,6 +41,21 @@ it("waits for an actual quiet window, not the maximum UI notification delay", as
   await pending;
   expect(completed).toHaveBeenCalledOnce();
 });
+it("releases an index reader at the maximum notification during uninterrupted edits", async () => {
+  const window = new CollectionChangeWindow(vi.fn());
+  window.changed();
+  const completed = vi.fn();
+  const reader = window
+    .quiet(new AbortController().signal, false)
+    .then(completed);
+  for (let index = 0; index < 20; index++) {
+    expect(completed).not.toHaveBeenCalled();
+    window.changed();
+    await vi.advanceTimersByTimeAsync(100);
+  }
+  expect(completed).toHaveBeenCalledOnce();
+  await reader;
+});
 it("lets a waiting reader through only after the trailing reload, even when the clock runs ahead of the timer", async () => {
   const order: string[] = [];
   const window = new CollectionChangeWindow(() => order.push("reload"));

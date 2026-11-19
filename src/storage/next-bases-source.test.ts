@@ -394,6 +394,7 @@ describe("native view source boundaries (protocol stand-ins)", () => {
       collectionRevision: f.record.revision,
       continuation: null,
     });
+    f.replica.editElsewhere(f.record.id, { body: changed });
     await f.repository.listViews();
     await expect(f.repository.deleteViewSource(f.record.path)).rejects.toThrow(
       "ambiguous",

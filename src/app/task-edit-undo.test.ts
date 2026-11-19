@@ -26,7 +26,11 @@ it("acknowledges an edit and restores only its changed fields through Undo", asy
   });
   expect(notice).toHaveBeenCalledOnce();
   await takeUndo()!.run();
-  expect(updateTask).toHaveBeenCalledWith("one", { priority: "low" });
+  expect(updateTask).toHaveBeenCalledWith(
+    "one",
+    { priority: "low" },
+    { expectedRevision: saved.revision },
+  );
   unsubscribe();
 });
 

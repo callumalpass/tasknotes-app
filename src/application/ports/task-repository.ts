@@ -125,7 +125,7 @@ export interface TaskRepository {
   update(
     id: string,
     input: UpdateTaskInput,
-    options?: { expectedRevision?: number },
+    options?: { expectedRevision?: number | string },
   ): Promise<Task>;
   /** Apply an exact calendar plan with normal authority/revision safeguards. */
   editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;
@@ -257,7 +257,7 @@ export interface CollectionInfo {
 export interface RepositoryChange {
   /** lifecycle means foreground cursors were interrupted and must be reopened;
    * it does not imply collection data or availability changed. */
-  kind: "data" | "status" | "lifecycle";
+  kind: "data" | "status" | "lifecycle" | "clock";
 }
 
 export interface RepositoryConnectionStatus {

@@ -56,6 +56,7 @@ function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
 interface NativeMutation<Result> {
   /** Includes the logical action and its input, not generated timestamps. */
   key: string;
+  guardPreparation?(signal: AbortSignal): Promise<() => void>;
   /** Reads/validation happen before the submission boundary. */
   prepare(
     id: string,
@@ -128,6 +129,7 @@ export class NextMutations {
       signal: AbortSignal,
     ) => Promise<void> = async () => {},
     private readonly reconcileWindowMs = NEXT_RECONCILE_FOREGROUND_MS,
+    private readonly acknowledgementOwner?: () => AbortSignal,
   ) {}
 
   /** Reuse a current-layer reader after local capture and again after ACK. */
@@ -166,9 +168,8 @@ export class NextMutations {
     owner: AbortSignal,
   ): void {
     void this.localQueue(async () => {
-      owner.throwIfAborted();
       const signal = AbortSignal.any([
-        owner,
+        this.acknowledgementOwner?.() ?? owner,
         AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.foregroundMs),
       ]);
       if (entry.delivered && entry.ack) await entry.ack(receipt, signal);
@@ -208,11 +209,13 @@ export class NextMutations {
         });
       const id = previous?.id ?? operation.requestId ?? crypto.randomUUID();
       // A retained identity can only be observed, never submitted again.
-      const submit =
-        previous || operation.requestId
-          ? null
-          : await operation.prepare(id, signal);
+      const recovering = previous || operation.requestId;
+      const validate = recovering
+        ? undefined
+        : await operation.guardPreparation?.(signal);
+      const submit = recovering ? null : await operation.prepare(id, signal);
       signal.throwIfAborted();
+      validate?.();
       if (submit && typeof submit !== "function") return submit.value;
       // Recovery keeps the original operation's reader, never a new callback.
       const entry: RetainedWrite = previous ?? {

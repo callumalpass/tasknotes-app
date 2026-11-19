@@ -4,11 +4,7 @@ import type {
   AppBasesDescriptor,
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
-import {
-  attachTaskNotes,
-  nextTaskFixture,
-  seedTask,
-} from "../test/next-task-fixture";
+import { attachTaskNotes, nextTaskFixture } from "../test/next-task-fixture";
 import type { TaskViewExecution } from "../domain/view";
 import * as timezone from "../domain/runtime-timezone";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
@@ -34,6 +30,28 @@ const descriptor: AppBasesDescriptor = {
 async function fixture() {
   const f = await nextTaskFixture();
   fixtures.push(f);
+  let listener!: Parameters<typeof f.client.watchChanges>[0];
+  const watch = f.client.watchChanges.bind(f.client);
+  vi.spyOn(f.client, "watchChanges").mockImplementation((callback, options) => {
+    listener = callback;
+    return watch(callback, options);
+  });
+  function sourceChanged() {
+    listener({
+      cursor: "source-edit",
+      reset: false,
+      changes: [
+        {
+          id: descriptor.record,
+          path: descriptor.path,
+          entity: "record",
+          types: ["base"],
+          kind: "put",
+          version: 1,
+        },
+      ],
+    });
+  }
   const task = await f.repository.create({ title: "Native-selected task" });
   // This suite isolates native selection/metadata ordering, not ACK races.
   // Local capture now returns before ACK: establish a stable seed frontier.
@@ -88,6 +106,7 @@ async function fixture() {
   return {
     ...f,
     task,
+    sourceChanged,
     record,
     list,
     source,
@@ -249,12 +268,10 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     expect(f.source).not.toHaveBeenCalled();
     expect(f.execute).not.toHaveBeenCalled();
   });
-  it("rediscovers the exact declaration after an accepted write invalidates the catalog", async () => {
+  it("reuses the exact declaration and executes current rows after an accepted task write", async () => {
     const f = await fixture();
     const added = await f.repository.create({ title: "Confirmed new task" });
-    await vi.waitFor(async () =>
-      expect(await f.repository.cachedViews()).toEqual([]),
-    );
+    expect(await f.repository.cachedViews()).toHaveLength(1);
     const record = (
       await f.client.query({ types: ["task"], limit: 10 })
     ).records.find((candidate) => candidate.frontmatter.id === added.id)!;
@@ -275,7 +292,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       f.task.id,
       added.id,
     ]);
-    expect(f.list).toHaveBeenCalledTimes(2);
+    expect(f.list).toHaveBeenCalledTimes(1);
     expect(f.execute.mock.calls[0]![0]).toMatchObject({
       record: descriptor.record,
       sourceRevision: revision,
@@ -287,10 +304,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     "refuses a %s declaration after rediscovery instead of silently reselecting it",
     async (drift) => {
       const f = await fixture();
-      await f.repository.create({ title: "Invalidate the original catalog" });
-      await vi.waitFor(async () =>
-        expect(await f.repository.cachedViews()).toEqual([]),
-      );
+      f.sourceChanged();
       f.list.mockResolvedValue({
         kind: "success",
         unreadable: [],
@@ -356,6 +370,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
   });
   it("continues empty progress before publishing a complete native inventory", async () => {
     const f = await fixture();
+    f.sourceChanged();
     f.list
       .mockClear()
       .mockResolvedValueOnce({
@@ -386,6 +401,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     // F5: a prepended `---` block made one view file two YAML documents, and
     // discovery refused the whole collection.
     const f = await fixture();
+    f.sourceChanged();
     const broken = {
       record: "00000000-0000-0000-0000-000000000002",
       path: "TaskNotes/Views/tasks-default.base",
@@ -422,6 +438,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
   });
   it("does not publish a partial catalog after captured-cut drift", async () => {
     const f = await fixture();
+    f.sourceChanged();
     const before = await f.repository.cachedViews();
     f.list
       .mockResolvedValueOnce({
@@ -552,6 +569,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     "restarts view discovery when a stale cursor refusal is %s",
     async (route) => {
       const f = await fixture();
+      f.sourceChanged();
       const problem = {
         code: "conflict",
         recovery: "refresh",
@@ -572,6 +590,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
   );
   it("overlapping discoveries share one native cursor instead of retiring each other", async () => {
     const f = await fixture();
+    f.sourceChanged();
     // The native replica holds ONE discovery cursor per session and scans
     // every record, 64 at a time, so a 765-record collection pages 13 times.
     // A second discovery started meanwhile replaces that cursor, and the
@@ -630,11 +649,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
   });
   it("a joined discovery continues under its own deadline when the pass's owner aborts", async () => {
     const f = await fixture();
-    // A write retires the catalog, so the next execution rediscovers.
-    await f.repository.create({ title: "Retires the catalog" });
-    await vi.waitFor(async () =>
-      expect(await f.repository.cachedViews()).toEqual([]),
-    );
+    f.sourceChanged();
     f.list.mockReset();
     // The owner's first page is answered only by the owner's own abort.
     f.list.mockImplementationOnce(
@@ -692,6 +707,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     }
     it("lists views when every page fits its own budget", async () => {
       const f = await fixture();
+      f.sourceChanged();
       budgets.foregroundMs = 400;
       paged(f, 5);
       const started = performance.now();
@@ -702,11 +718,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     it("a view that must rediscover first still executes", async () => {
       const f = await fixture();
-      // A write retires the catalog, so the next execution rediscovers.
-      await f.repository.create({ title: "Retires the catalog" });
-      await vi.waitFor(async () =>
-        expect(await f.repository.cachedViews()).toEqual([]),
-      );
+      f.sourceChanged();
       budgets.foregroundMs = 400;
       paged(f, 5);
       f.execute.mockClear();
@@ -717,6 +729,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     it("a page that outlives its own budget still fails", async () => {
       const f = await fixture();
+      f.sourceChanged();
       budgets.foregroundMs = 300;
       f.list.mockReset().mockImplementation(
         (_input, options) =>
@@ -735,11 +748,10 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
       expect(f.list).toHaveBeenCalledOnce();
     });
   });
-  it("rereads discovery at once when a local data event retires its cut", async () => {
+  it("keeps a discovery pass when a local task write finishes during it", async () => {
     const f = await fixture();
+    f.sourceChanged();
     f.list.mockClear();
-    // A local write finishing during discovery emits a data event, which
-    // retires the cut this discovery was reading.
     f.list.mockImplementationOnce(async () => {
       await f.repository.create({ title: "Written during discovery" });
       return {
@@ -751,20 +763,13 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
         continuation: null,
       };
     });
-    let retired = Number.NaN;
-    f.repository.subscribe((change) => {
-      if (change?.kind === "data") retired = performance.now();
-    });
     const documents = await f.repository.listViews();
-    const elapsed = performance.now() - retired;
     expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
-    expect(f.list).toHaveBeenCalledTimes(2);
-    // The new generation already exists; the 250 ms refusal pacing would
-    // only delay the first view.
-    expect(elapsed).toBeLessThan(240);
+    expect(f.list).toHaveBeenCalledOnce();
   });
   it("a refresh that rereads an unchanged collection does not restart discovery", async () => {
     const f = await fixture();
+    f.sourceChanged();
     // Load the task index first: this is the periodic refresh case.
     await f.repository.refresh();
     const pages = 13;
@@ -792,8 +797,8 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     const documents = await f.repository.listViews();
     expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
-    // Screens still hear that the refresh finished...
-    expect(data).toHaveBeenCalled();
+    // An unchanged refresh does not ask mounted screens to read their rows again.
+    expect(data).not.toHaveBeenCalled();
     // ...but the pass in flight was not retired and read again.
     expect(f.list).toHaveBeenCalledTimes(pages);
   });
@@ -824,16 +829,22 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
     expect(list).toHaveBeenCalledTimes(3);
   });
-  it("a refresh that finds a changed task still retires discovery in flight", async () => {
+  it("a refresh applying a changed task keeps discovery in flight", async () => {
     const f = await fixture();
+    f.sourceChanged();
     await f.repository.refresh();
     let seeded = false;
     f.list.mockReset().mockImplementation(async ({ continuation }) => {
       const page = continuation ? continuation[0]! + 1 : 1;
       if (page === 2 && !seeded) {
         seeded = true;
-        seedTask(f.replica, { title: "Written by another app" });
-        await f.repository.refresh();
+        f.replica.editElsewhere(f.record.id, {
+          frontmatter: { title: "Updated by another app" },
+        });
+        expect(await f.repository.refresh()).toMatchObject({
+          scanned: 1,
+          changed: 1,
+        });
       }
       return {
         kind: "success" as const,
@@ -846,8 +857,7 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     });
     const documents = await f.repository.listViews();
     expect(documents[0]!.views.map((view) => view.name)).toEqual(["Same"]);
-    // Two pages of the retired pass, then a full pass of three.
-    expect(f.list).toHaveBeenCalledTimes(5);
+    expect(f.list).toHaveBeenCalledTimes(3);
   });
   it("propagates native refusal and pre-cancellation without fallback or hydration", async () => {
     const f = await fixture();
