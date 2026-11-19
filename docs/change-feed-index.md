@@ -166,7 +166,7 @@ These override the sections above where they differ.
   re-enqueues its record id.
 - **Full scans page by path.** The watch must be active before page one.
   Each page queries all task types with `order_by: [{ field: "file.path",
-  direction: "asc" }]`, `limit: 1000` and its own foreground deadline.
+direction: "asc" }]`, `limit: 1000` and its own foreground deadline.
   After page one, the `where` predicate selects paths strictly greater than
   the JSON-quoted last path. Each request reads the current collection. An
   explicit `hasMore` decides whether to continue, including on short pages

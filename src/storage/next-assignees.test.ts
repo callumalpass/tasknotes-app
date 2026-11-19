@@ -127,11 +127,9 @@ it("never substitutes cached unfiltered tasks when assignment matching is unavai
 
 it("finds assignments on a collection larger than one query budget, from the person's backlinks", async () => {
   const config = defaultTaskCollectionConfiguration();
-  const f = await nextTaskFixture(
-    { where: taskQueryWhere },
-    false,
-    { fieldMapping: { ...config.fieldMapping, assignees: "owners" } },
-  );
+  const f = await nextTaskFixture({ where: taskQueryWhere }, false, {
+    fieldMapping: { ...config.fieldMapping, assignees: "owners" },
+  });
   fixtures.push(f);
   const me = f.replica.seed({ path: "people/Me.md", types: [], body: "" });
   const seed = (i: number, extra: Record<string, unknown> = {}, body = "") =>
