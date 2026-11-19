@@ -715,11 +715,23 @@ export class NextTaskRepository implements TaskRepository {
     return this.recordEpochs.get(id) ?? this.indexEpoch;
   }
 
+  private compactRecordEpochs() {
+    if (
+      this.indexReady &&
+      !this.indexLoading &&
+      this.recordEpochs.size > MAX_PENDING_TASK_CHANGES
+    ) {
+      this.indexEpoch = ++this.epoch;
+      this.recordEpochs.clear();
+    }
+  }
+
   private taskWriteCommitted(id: string, kind: wire.Change["kind"]) {
     this.recordEpochs.set(id, ++this.epoch);
     // A delayed feed echo may still describe an earlier removal. A pass that
     // overlapped this write must reconcile the accepted current layer.
     if (this.pendingTaskChanges.has(id)) this.pendingTaskChanges.set(id, kind);
+    this.compactRecordEpochs();
   }
 
   private enqueueTaskChange(id: string, kind: wire.Change["kind"]) {
@@ -999,7 +1011,10 @@ export class NextTaskRepository implements TaskRepository {
               : this.scanIndex(signal, generation),
           )
           .finally(() => {
-            if (this.indexLoading === loading) this.indexLoading = null;
+            if (this.indexLoading === loading) {
+              this.indexLoading = null;
+              this.compactRecordEpochs();
+            }
           });
         this.indexLoading = loading;
       }
@@ -1106,6 +1121,7 @@ export class NextTaskRepository implements TaskRepository {
         epoch: this.recordEpoch(id),
       }));
       const results = [];
+      let failure: PromiseRejectedResult | undefined;
       for (
         let offset = 0;
         offset < candidates.length;
@@ -1138,8 +1154,8 @@ export class NextTaskRepository implements TaskRepository {
         signal.throwIfAborted();
         if (generation !== this.indexEpoch) throw collectionChanged();
         for (const read of reads) {
-          if (read.status === "rejected") throw read.reason;
-          results.push(read.value);
+          if (read.status === "rejected") failure ??= read;
+          else results.push(read.value);
         }
       }
       writes.stop();
@@ -1153,20 +1169,23 @@ export class NextTaskRepository implements TaskRepository {
           this.cache.get(value.task.id)!.recordId !== id
         ) {
           this.retireIndex();
+          if (failure) throw failure.reason;
           return;
         }
         if (previous && previous !== value?.task.id)
           this.cache.delete(previous);
-        if (value && record) {
-          this.rememberWriteState(record);
+        if (record) this.rememberWriteState(record);
+        else this.conflictedRecords.delete(id);
+        if (value) {
           this.bindTaskRecord(value.task.id, id);
           this.cache.set(value.task.id, value);
-        } else this.conflictedRecords.delete(id);
+        }
         this.pendingTaskChanges.delete(id);
         this.recordEpochs.set(id, ++this.epoch);
         committed = true;
       }
       if (committed) this.notify("data");
+      if (failure) throw failure.reason;
     } finally {
       writes.stop();
     }
@@ -1464,7 +1483,7 @@ export class NextTaskRepository implements TaskRepository {
     query: Omit<TaskListQuery, "search"> = {},
   ): Promise<TaskSummary[]> {
     if (query.limit === 0) return [];
-    const signal = this.signal();
+    const signal = this.lifetimeSignal();
     await this.ensureIndex();
     signal.throwIfAborted();
     const paths = await this.assignedPaths(query.assignedTo, signal);
@@ -2479,7 +2498,7 @@ export class NextTaskRepository implements TaskRepository {
     query: TaskListQuery = {},
     options: { signal?: AbortSignal } = {},
   ): Promise<Task[]> {
-    const signal = this.signal(options.signal);
+    const signal = this.lifetimeSignal(options.signal);
     signal.throwIfAborted();
     const selected = query.search?.trim()
       ? (await this.search(query, options)).map((r) => r.task)
@@ -2487,22 +2506,23 @@ export class NextTaskRepository implements TaskRepository {
     const out: Task[] = [];
     for (const task of selected) {
       signal.throwIfAborted();
-      out.push((await this.current(task.id, signal)).task);
+      out.push((await this.current(task.id, this.requestSignal(signal))).task);
     }
     return out;
   }
 
   async get(id: string): Promise<Task | null> {
-    const signal = this.signal();
+    const signal = this.lifetimeSignal();
     await this.ensureIndex();
     signal.throwIfAborted();
     if (!this.cache.has(id)) return null;
-    return (await this.current(id, signal)).task;
+    return (await this.current(id, this.requestSignal(signal))).task;
   }
 
   async getSummary(id: string): Promise<TaskSummary | null> {
-    const signal = this.signal();
+    const owner = this.lifetimeSignal();
     await this.ensureIndex();
+    const signal = this.requestSignal(owner);
     signal.throwIfAborted();
     const entry = this.cache.get(id);
     if (!entry) return null;
@@ -2548,15 +2568,16 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   async relationships(id: string) {
-    const signal = this.signal();
+    const signal = this.lifetimeSignal();
     await this.ensureIndex();
     signal.throwIfAborted();
     return connectedTaskRelationships(this.cache.values(), id);
   }
 
   async completeField(request: FieldCompletionRequest) {
-    const signal = this.signal();
+    const owner = this.lifetimeSignal();
     await this.ensureIndex();
+    const signal = this.requestSignal(owner);
     signal.throwIfAborted();
     if (request.kind === "values")
       return completeTaskValues(

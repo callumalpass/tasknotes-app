@@ -914,6 +914,18 @@ it("preserves a non-task conflict until a clean reread", async () => {
 it("bounds retained record epochs across drained watch batches", async () => {
   const f = await fixture(false, true);
   await f.repository.initialize();
+  const started = deferred<void>(),
+    release = deferred<void>();
+  f.find.mockImplementationOnce(async (...args) => {
+    const snapshot = await f.findRecord(...args);
+    started.resolve();
+    await release.promise;
+    return snapshot;
+  });
+  const direct = f.repository.getSummary(String(f.record.frontmatter.id));
+  await started.promise;
+  f.replica.editElsewhere(f.id, { frontmatter: { title: "Newer" } });
+  f.push([f.change]);
   for (let batch = 0; batch < 3; batch++) {
     f.push(
       Array.from({ length: 250 }, () => ({
@@ -925,6 +937,8 @@ it("bounds retained record epochs across drained watch batches", async () => {
     await f.repository.listSummaries();
   }
   expect(f.repository["recordEpochs"].size).toBeLessThanOrEqual(500);
+  release.resolve();
+  expect(await direct).toMatchObject({ title: "Newer" });
   expect(f.query).toHaveBeenCalledOnce();
 });
 
