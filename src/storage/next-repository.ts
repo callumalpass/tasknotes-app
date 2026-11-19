@@ -277,7 +277,7 @@ export class NextTaskRepository implements TaskRepository {
   private providers: NextTaskProvider[] = [];
   private models = new Map<string, TaskNotesTaskModel>();
   private initialization: {
-    pending: Promise<void>;
+    pending: Promise<number>;
     signal: AbortSignal;
   } | null = null;
   private indexLoading: Promise<void> | null = null;
@@ -872,48 +872,52 @@ export class NextTaskRepository implements TaskRepository {
     }
   }
 
-  private async initializeModel(signal: AbortSignal): Promise<void> {
+  private async initializeModel(signal: AbortSignal): Promise<number> {
     signal.throwIfAborted();
     await this.observeChanges(signal);
     for (;;) {
       signal.throwIfAborted();
       if (!this.initialization) {
-        const generation = this.modelGeneration;
-        const loading = (async () => {
-          // The record is read first: its fields win over the type binding's.
-          const settings = await this.settings.reload(signal);
-          signal.throwIfAborted();
-          const { providers, settingsType, signature, viewTypes } =
-            await nextTaskCatalog(this.client, signal, {
-              settings: settings.frontmatter,
-            });
-          signal.throwIfAborted();
-          if (generation !== this.modelGeneration) throw collectionChanged();
-          const before = this.modelSignature();
-          this.catalogSignature = signature;
-          this.viewTypes = viewTypes;
-          this.settingsType = settingsType;
-          this.providers = providers;
-          this.models = new Map(providers.map((p) => [p.typeName, p.model]));
-          if (this.modelSignature() !== before) {
-            this.retireIndex();
-            this.retireViews();
-            this.invalidateDataGeneration();
-          }
-          this.reached(false);
-        })().catch((reason) => {
-          if (this.initialization?.pending === loading)
-            this.initialization = null;
-          this.noteOperationFailure(reason, signal);
-          throw reason;
-        });
+        const loading: Promise<number> = Promise.resolve()
+          .then(async () => {
+            // The record is read first: its fields win over the type binding's.
+            const settings = await this.settings.reload(signal);
+            signal.throwIfAborted();
+            const { providers, settingsType, signature, viewTypes } =
+              await nextTaskCatalog(this.client, signal, {
+                settings: settings.frontmatter,
+              });
+            signal.throwIfAborted();
+            if (this.initialization?.pending !== loading)
+              throw collectionChanged();
+            const before = this.modelSignature();
+            this.catalogSignature = signature;
+            this.viewTypes = viewTypes;
+            this.settingsType = settingsType;
+            this.providers = providers;
+            this.models = new Map(providers.map((p) => [p.typeName, p.model]));
+            if (this.modelSignature() !== before) {
+              this.modelGeneration++;
+              this.retireIndex();
+              this.retireViews();
+              this.invalidateDataGeneration();
+            }
+            this.reached(false);
+            return this.modelGeneration;
+          })
+          .catch((reason) => {
+            if (this.initialization?.pending === loading)
+              this.initialization = null;
+            this.noteOperationFailure(reason, signal);
+            throw reason;
+          });
         this.initialization = { pending: loading, signal };
       }
       const read = this.initialization;
       try {
-        await read.pending;
+        const generation = await read.pending;
         signal.throwIfAborted();
-        return;
+        return generation;
       } catch (reason) {
         signal.throwIfAborted();
         // A shared model READ belongs to its initiating caller. Retiring that
@@ -952,11 +956,13 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private readonly guardTaskModel = async (signal: AbortSignal) => {
-    await this.initializeModel(signal);
-    const model = this.initialization;
-    if (!model) throw collectionChanged();
+    const generation = await this.readCurrentGeneration(
+      signal,
+      "modelGeneration",
+      () => this.initializeModel(signal),
+    );
     return () => {
-      if (this.initialization !== model) throw collectionChanged();
+      if (this.modelGeneration !== generation) throw collectionChanged();
     };
   };
 
@@ -1298,7 +1304,7 @@ export class NextTaskRepository implements TaskRepository {
         this.changesWatch = null;
         retired();
       }
-      this.retireModel();
+      this.initialization = null;
       if (
         this.changesWatch?.state !== "active" &&
         this.resumeCursor === undefined

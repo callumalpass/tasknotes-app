@@ -506,6 +506,26 @@ it("does not archive with settings retired during the task read", async () => {
   ).toMatch(/^New\//);
 });
 
+it("allows a prepared task edit across a refresh that verifies the same model", async () => {
+  const f = await fixture();
+  await f.repository.initialize();
+  const started = deferred<void>(),
+    release = deferred<void>();
+  const get = f.client.get.bind(f.client);
+  vi.spyOn(f.client, "get").mockImplementationOnce(async (...args) => {
+    started.resolve();
+    await release.promise;
+    return get(...args);
+  });
+  const edit = f.repository.update(String(f.record.frontmatter.id), {
+    title: "Accepted",
+  });
+  await started.promise;
+  await f.repository.refresh();
+  release.resolve();
+  await expect(edit).resolves.toMatchObject({ title: "Accepted" });
+});
+
 it("rescans when a revisionless task definition changes only its match glob", async () => {
   const f = await fixture();
   await f.repository.initialize();

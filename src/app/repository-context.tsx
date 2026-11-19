@@ -567,11 +567,8 @@ export function RepositoryProvider({
     [acceptTask, repository],
   );
   const updateTask = useCallback(
-    async (
-      id: string,
-      input: UpdateTaskInput,
-      options?: { expectedRevision?: number },
-    ) => acceptTask(await repository.update(id, input, options), { input }),
+    async (...args: Parameters<TaskRepository["update"]>) =>
+      acceptTask(await repository.update(...args), { input: args[1] }),
     [acceptTask, repository],
   );
   const updateTasks = useCallback(
