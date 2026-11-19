@@ -28,9 +28,10 @@ export function classifyChangeBatch(
   let views = false;
   let data = false;
   for (const { id, kind, path, types, entity } of batch.changes) {
+    const pathlessRemoval = kind === "remove" && path === "";
     if (
       !id ||
-      !path ||
+      (!path && !pathlessRemoval) ||
       (kind !== "put" && kind !== "remove") ||
       (entity !== undefined && entity !== "record" && entity !== "file")
     ) {
@@ -41,17 +42,20 @@ export function classifyChangeBatch(
       id === context.settingsId ||
       settingsPaths.has(path) ||
       /^_(types|contracts|schemas)\//.test(path);
+    const record = entity !== "file";
     views ||=
       path.endsWith(".base") ||
       path.startsWith("_views/") ||
       context.viewSources.has(id) ||
+      (record && kind === "put" && !types) ||
       !!types?.some((type) => context.viewTypes.has(type));
-    const record = entity !== "file";
-    data ||= record;
+    data ||= record || pathlessRemoval;
     if (
       tasks.has(id) ||
       context.isKnownTask(id) ||
-      (record && (context.scanning || !types || types.some(context.isTaskType)))
+      (record &&
+        (context.scanning ||
+          (!pathlessRemoval && (!types || types.some(context.isTaskType)))))
     )
       tasks.set(id, kind);
   }

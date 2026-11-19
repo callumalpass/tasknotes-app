@@ -174,6 +174,28 @@ These override the sections above where they differ.
   commits a change, listeners get a data notification that does not retire any
   generation, so cached-count consumers (the Today badge) update.
 
+### Reconciliation and lifecycle details
+
+- Scan and delta write tracking uses native record IDs, not paths. Reusing a
+  deleted task's path does not make the replacement the same record. A summary
+  used to check a revision rereads its original ID if its epoch moved; Undo
+  also passes the saved revision to the conditional update. Task submissions
+  refuse a model retired during preparation, before capturing a mutation. A
+  periodic refresh starts a new model read, but does not retire the write's
+  model generation unless the verified signature changes.
+- Confirmation runs under the repository's current lifecycle, not the scope
+  that captured the write. If the confirmation cannot publish, the affected
+  IDs (including unread IDs in the receipt) remain pending for reconciliation.
+- A watch's `active` state certifies catch-up even when its first `ready`
+  promise rejected. An older catalog without type revisions uses the task
+  definition source already fetched for its model signature. An untyped record
+  put may introduce a view source. A removal without a tombstone path is
+  classified by ID and does not by itself require a scan.
+- An index reader waits at most one change notification per attempt and two
+  delta passes after model initialization. A required full scan still runs;
+  newer deltas stay pending for another reader or change notification. An
+  unchanged refresh notifies views when the local calendar date changes.
+
 ## Connect changes (separate PR, mdbase-connect)
 
 1. SDK: `ChangesWatch.cursor: string | undefined`, the last cursor the watch

@@ -42,16 +42,18 @@ export class CollectionChangeWindow {
    * been delivered. The notification's timer and a reader's own wait end at
    * the same instant; a reader let through first would publish its result
    * and then be told to read again. */
-  async quiet(signal: AbortSignal): Promise<void> {
+  async quiet(signal: AbortSignal, waitForQuiet = true): Promise<void> {
     for (;;) {
       signal.throwIfAborted();
       if (this.trailing !== undefined) {
         await this.notified(signal);
+        if (!waitForQuiet) return;
         continue;
       }
       const remaining = 250 - (performance.now() - this.changedAt);
       if (remaining <= 0) return;
       await waitForChangeWindow(remaining, signal);
+      if (!waitForQuiet) return;
     }
   }
   private notified(signal: AbortSignal): Promise<void> {

@@ -8,6 +8,7 @@ import {
   nextTaskFixture,
   seedRecord,
   seedTask,
+  seedTaskView,
 } from "../test/next-task-fixture";
 import { deferred } from "../test/deferred";
 
@@ -546,20 +547,24 @@ it("rescans when a revisionless task definition changes only its match glob", as
 });
 
 it("invalidates empty discovery for an unknown untyped view source", async () => {
-  const f = await fixture();
+  const f = await fixture(false, true);
   await f.repository.initialize();
   const discovery = vi.spyOn(f.client, "listAppBasesViews");
   expect(await f.repository.listViews()).toEqual([]);
+  const path = "boards/team.md";
+  const source = seedTaskView(f.replica, { path });
   f.push([
     {
-      id: crypto.randomUUID(),
-      path: "boards/team.md",
+      id: source.record,
+      path,
       entity: "record",
       kind: "put",
       version: 2,
     },
   ]);
-  await f.repository.listViews();
+  expect(await f.repository.listViews()).toMatchObject([
+    { id: source.record, source: { path } },
+  ]);
   expect(discovery).toHaveBeenCalledTimes(2);
 });
 

@@ -62,7 +62,7 @@ import type {
   TaskTimeEntry,
   MaterializeOccurrenceResult,
 } from "../domain/task";
-import { summarizeTask } from "../domain/task";
+import { summarizeTask, todayString } from "../domain/task";
 import { taskPathCandidates } from "../domain/task-path-policy";
 import type { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import {
@@ -328,6 +328,7 @@ export class NextTaskRepository implements TaskRepository {
   /** Records whose current read carries a hold or an unresolved conflict. */
   private readonly conflictedRecords = new Set<string>();
   private readonly knownTaskRecords = new Map<string, string>();
+  private readonly boundTaskRecords = new Set<string>();
   private readonly scratchRecords = new Map<string, string>();
 
   private bindTaskRecord(taskId: string, recordId: string) {
@@ -335,8 +336,12 @@ export class NextTaskRepository implements TaskRepository {
     if (
       previous !== recordId &&
       (!previous || this.client.ledger.stateOf(previous) === "saved")
-    )
+    ) {
       this.knownTaskRecords.set(taskId, recordId);
+      this.boundTaskRecords.add(recordId);
+      if (previous && ![...this.knownTaskRecords.values()].includes(previous))
+        this.boundTaskRecords.delete(previous);
+    }
   }
 
   private writeRecordId(target: RecordWriteTarget): string | undefined {
@@ -420,6 +425,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
+  private lastDataDay = todayString();
   private readonly changeWindow = new CollectionChangeWindow(() => {
     if (this.disposed || this.scope.signal.aborted) return;
     this.notify("data");
@@ -729,6 +735,7 @@ export class NextTaskRepository implements TaskRepository {
       isTaskType: (name) => this.models.has(name),
       isKnownTask: (id) =>
         this.cache.taskIdForRecord(id) !== undefined ||
+        this.boundTaskRecords.has(id) ||
         this.pendingTaskChanges.has(id),
       scanning: !this.indexReady && !!this.indexLoading,
       viewTypes: this.viewTypes,
@@ -799,7 +806,8 @@ export class NextTaskRepository implements TaskRepository {
       signal.addEventListener("abort", aborted, { once: true });
     });
     try {
-      await Promise.race([watch.ready, cancellation]);
+      if (watch.state !== "active")
+        await Promise.race([watch.ready, cancellation]);
       signal.throwIfAborted();
       if (watch.state !== "active")
         throw (
@@ -830,13 +838,15 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
     fence: "modelGeneration" | "viewGeneration" | "dataRevision",
     read: () => Promise<Result>,
+    waitForQuiet = true,
   ): Promise<Result> {
     // A lifetime-owned READ has no overall deadline, so refusals that no
     // local change explains are bounded here as they were by the deadline.
     let unexplainedSince: number | null = null;
     for (;;) {
       signal.throwIfAborted();
-      if (this.changeWindow.unsettled) await this.changeWindow.quiet(signal);
+      if (this.changeWindow.unsettled)
+        await this.changeWindow.quiet(signal, waitForQuiet);
       const generation = this[fence];
       try {
         const result = await read();
@@ -942,8 +952,11 @@ export class NextTaskRepository implements TaskRepository {
    * caller once the collection was large enough or the link slow (#512). */
   private async ensureIndex(): Promise<void> {
     const signal = this.lifetimeSignal();
-    await this.readCurrentGeneration(signal, "modelGeneration", () =>
-      this.loadIndex(signal),
+    await this.readCurrentGeneration(
+      signal,
+      "modelGeneration",
+      () => this.loadIndex(signal),
+      false,
     );
   }
 
@@ -970,7 +983,12 @@ export class NextTaskRepository implements TaskRepository {
     await this.initializeModel(this.requestSignal(signal));
     signal.throwIfAborted();
     let model = this.initialization;
-    while (!this.indexReady || this.pendingTaskChanges.size) {
+    let deltaPasses = 0;
+    while (
+      !this.indexReady ||
+      (this.pendingTaskChanges.size && deltaPasses < 2)
+    ) {
+      if (this.indexReady) deltaPasses++;
       if (!this.indexLoading) {
         const generation = this.indexEpoch;
         // Install the shared worker before its first request can deliver a push.
@@ -1325,7 +1343,11 @@ export class NextTaskRepository implements TaskRepository {
       this.reached();
       // An unchanged refresh updates reachability. Emitting data here would
       // make mounted screens execute their views and hydrate task rows again.
-      if ((compared && (changed || removed)) || this.modelSignature() !== model)
+      if (
+        (compared && (changed || removed)) ||
+        this.modelSignature() !== model ||
+        this.lastDataDay !== todayString()
+      )
         this.emit("data");
       else this.notify(compared ? "status" : "data");
       return {
@@ -4296,6 +4318,7 @@ export class NextTaskRepository implements TaskRepository {
   }
   /** Tells listeners without retiring the current data generation. */
   private notify(kind: RepositoryChange["kind"]) {
+    if (kind === "data") this.lastDataDay = todayString();
     if (!this.disposed)
       this.listeners.forEach((listener) => listener({ kind }));
   }

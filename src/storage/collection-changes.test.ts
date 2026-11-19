@@ -85,6 +85,10 @@ describe("collection change evidence", () => {
   });
   it("resets on unplaceable evidence, an explicit reset or a full SDK page", () => {
     expect(classify([{ path: "" }]).reset).toBe(true);
+    expect(classify([{ id: "", kind: "remove", path: "" }]).reset).toBe(true);
+    expect(classify([{ kind: "unknown" as wire.Change["kind"] }]).reset).toBe(
+      true,
+    );
     expect(
       classifyChangeBatch({ changes: [], cursor: "1", reset: true }, context)
         .reset,
