@@ -161,8 +161,10 @@ These override the sections above where they differ.
   record id.
 - **Stale cursors restart the scan.** A full scan that gets
   `invalid_request` with `cursor_stale` or `cursor_expired` discards its
-  partial result and starts again (bounded), keeping per-page deadlines. Pending
-  deltas make the restarted result correct.
+  partial result and starts again (bounded, then the error surfaces as today),
+  keeping per-page deadlines. Pending deltas make the restarted result correct.
+  This does not guarantee completion under uninterrupted edits (see
+  Acceptance).
 - **Discovery is cached by view generation.** `listViews()` returns the cached
   catalog (including an empty one) while `viewGeneration` is unchanged. A change
   is view-relevant if its path ends in `.base`, its `types` include a type that
@@ -192,7 +194,12 @@ Neither needs a TaskNotes release to be safe: TaskNotes feature-detects
   request-counting stand-in).
 - One external task edit costs one record read, not a scan; a task-only change
   does not re-run view discovery or `describe`.
-- A scan under a steady stream of task changes completes.
+- Change-feed notifications alone never restart a full scan. (A native
+  `cursor_stale` refusal between pages still restarts it: the replica's query
+  cursors are invalidated by any collection change, so a multi-page scan,
+  more than 1,000 tasks, needs one attempt with no edit between its pages.
+  Guaranteed completion under uninterrupted edits needs snapshot-consistent
+  paging in the replica; out of scope here.)
 - Resume with a cursor applies only the catch-up.
 - Reset, model change, duplicate identity, too many pending changes, a full
   catch-up page and watch failure all fall back to the full load.
