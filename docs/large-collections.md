@@ -255,7 +255,11 @@ the change feed to it record by record. A task change rereads that record only;
 refresh, foreground return and a resumed watch reread nothing unless the feed
 reported a change, a reset, or the task model changed. A full scan remains the
 fallback for resets, model changes, duplicate identities and large backlogs.
-`change-feed-index.md` describes the design, its fences and its limits.
+It pages in ascending path order with a fresh query for each page. An edit
+between pages leaves the scan running. The change feed reconciles records
+renamed across the last path, created, edited or deleted during the pass.
+See [the change-feed index design](change-feed-index.md#limits) for the
+remaining limits.
 
 (This section previously described the incremental reconciliation of the removed
 legacy repository, `b72c0b3b` and `dedc3079`.)

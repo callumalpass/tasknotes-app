@@ -164,12 +164,22 @@ These override the sections above where they differ.
   a mutation looks up the portable ID (or path fallback) at authority
   before treating the task as absent. A failed acknowledgement reread
   re-enqueues its record id.
-- **Stale cursors restart the scan.** A full scan that gets
-  `invalid_request` with `cursor_stale` or `cursor_expired` discards its
-  partial result and starts again (bounded, then the error surfaces as today),
-  keeping per-page deadlines. Pending deltas make the restarted result correct.
-  This does not guarantee completion under uninterrupted edits (see
-  Acceptance).
+- **Full scans page by path.** The watch must be active before page one.
+  Each page queries all task types with `order_by: [{ field: "file.path",
+  direction: "asc" }]`, `limit: 1000` and its own foreground deadline.
+  After page one, the `where` predicate selects paths strictly greater than
+  the JSON-quoted last path. Each request reads the current collection. An
+  explicit `hasMore` decides whether to continue, including on short pages
+  limited by the replica's byte budget. Without it, a short page ends the scan.
+- **The feed reconciles changes across pages.** A rename can make two
+  pages return the same record, or move it behind the last path before
+  either page sees it. The scan keeps the last read per native record ID.
+  At commit, it checks portable identities only among distinct records
+  unchanged since the start. Both
+  publication and absence-based deletion skip records with a newer epoch or
+  a concurrent local write. A new owner of a portable ID still held by a
+  protected row is queued for reconciliation. Changes received during the
+  scan stay pending until their deltas commit.
 - **Discovery is cached by view generation.** `listViews()` returns the cached
   catalog (including an empty one) while `viewGeneration` is unchanged. A change
   is view-relevant if its path ends in `.base`, its `types` include a type that
@@ -229,12 +239,14 @@ Neither needs a TaskNotes release to be safe: TaskNotes feature-detects
   request-counting stand-in).
 - One external task edit costs one record read, not a scan; a task-only change
   does not re-run view discovery or `describe`.
-- Change-feed notifications alone never restart a full scan. (A native
-  `cursor_stale` refusal between pages still restarts it: the replica's query
-  cursors are invalidated by any collection change, so a multi-page scan,
-  more than 1,000 tasks, needs one attempt with no edit between its pages.
-  Guaranteed completion under uninterrupted edits needs snapshot-consistent
-  paging in the replica; out of scope here.)
+- A 2,500-task scan finishes in three fresh queries with an edit between every
+  page. It sends no native query cursor, so edits between pages cannot cause
+  a `cursor_stale` restart. The two edited records are reread by native ID.
+- Renames in both directions across a page boundary, deletion of an already
+  scanned task and creation behind the frontier converge to one entry per
+  surviving task. The scan preserves a changed cached row until its delta
+  commits. A later read or a feed change can resolve an apparent portable
+  identity collision before commit.
 - Resume with a cursor applies only the catch-up.
 - Reset, model change, duplicate identity, too many pending changes, a full
   catch-up page and watch failure all fall back to the full load.
@@ -246,3 +258,16 @@ Neither needs a TaskNotes release to be safe: TaskNotes feature-detects
   badge updates after a delta commits.
 - Existing repository, watch, availability and startup tests keep their
   guarantees (pending writes, identity fences, held edits, lifecycle).
+
+## Limits
+
+A full scan still reads the collection over multiple requests. Edits can
+change what each page sees, and an ever-growing range ahead of the last path
+can extend the scan. The change feed reconciles concurrent edits within its
+existing bounds. A reset, a changed task model or more than 500 distinct
+pending IDs can require a new full scan.
+
+Each query is still subject to replica resource limits. At the pinned Connect
+revision (`29ed1fb2`), a replica with pending local writes routes an explicit
+sort through its ordinary query executor. A constrained host can still refuse
+an individual request that exceeds its query budget.
