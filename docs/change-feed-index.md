@@ -122,12 +122,64 @@ device is picked up by the next model reload (refresh, resume, reconnect,
 reset). Once the replica pushes `reset` on catalog changes it is immediate.
 TaskNotes' own type and settings writes keep invalidating locally as now.
 
+## Design review amendments (Astra, 2026-11-19)
+
+These override the sections above where they differ.
+
+- **Catch-up pages can skip changes (replica bug).** One replica notification
+  stamps all its changes with one version; a 1,000-change page can end inside a
+  version group and the next page starts after that version
+  (`replica/live.rs` changes paging). Until the replica pages on version-group
+  boundaries, the app treats any batch with 1,000 or more changes (the SDK's
+  `CHANGES_PAGE`) as a reset.
+- **Model identity covers the catalog.** `modelSignature()` adds every type's
+  `name`, `path` and `revision` and every contract's `id` and `digest` from
+  `describe()`. A definition-only change (for example a task type's
+  `match.path_glob`) then forces a full load on the next model reload. An
+  explicit `reset` always forces a full load, whatever the signature says.
+- **Classification never discards evidence for known or in-scan records.** Any
+  change (record or file entity) to a record id the index holds is a task
+  candidate. While a full scan is in flight every record change is a candidate.
+  The negative `types` filter (types present, no task type) applies only to
+  record ids the index does not hold, outside a scan.
+- **Pending changes are kept until committed.** The SDK advances its cursor
+  before the callback, so the app's pending map is the only copy. One
+  reconciliation worker reads candidates and deletes each id from the pending
+  map only when its result is committed; a failed or aborted pass leaves them
+  pending, and newer arrivals for the same id are not lost. Reads are bounded
+  concurrent `find` calls (each with its own deadline and UUID check), not
+  `readMany`.
+- **Per-record epochs fence every cache publication.** Each record id has an
+  epoch bumped when a change for it is enqueued or committed. Any read that
+  publishes into the index (`current`, `getSummary`, `remember`, delta
+  reconciliation, full scan rows) captures the epoch before its request and
+  does not publish if it moved; the change stays pending.
+- **Write bindings outlive index rows.** `knownTaskRecords` (portable id to
+  record id) is the write-identity binding and is not cleared when a delta
+  removes or rekeys an index row; refusals and identity checks keep using it
+  until the write settles. A failed acknowledgement reread re-enqueues its
+  record id.
+- **Stale cursors restart the scan.** A full scan that gets
+  `invalid_request` with `cursor_stale` or `cursor_expired` discards its
+  partial result and starts again (bounded), keeping per-page deadlines. Pending
+  deltas make the restarted result correct.
+- **Discovery is cached by view generation.** `listViews()` returns the cached
+  catalog (including an empty one) while `viewGeneration` is unchanged. A change
+  is view-relevant if its path ends in `.base`, its `types` include a type that
+  implements `obsidian.base` (from `describe()` contracts), or its record id is
+  a known view source.
+- **Listeners hear about committed deltas.** After a reconciliation pass
+  commits a change, listeners get a data notification that does not retire any
+  generation, so cached-count consumers (the Today badge) update.
+
 ## Connect changes (separate PR, mdbase-connect)
 
 1. SDK: `ChangesWatch.cursor: string | undefined`, the last cursor the watch
    delivered or acknowledged, so an app can stop a watch and later resume with
    `watchChanges(cb, { cursor })`.
-2. Replica: a committed catalog change (resource put/delete that changes the
+2. Replica: page the change feed on version-group boundaries, so a full page
+   never ends inside one notification's changes.
+3. Replica: a committed catalog change (resource put/delete that changes the
    catalog) raises the feed floor and pushes `{ changes: [], reset: true }` to
    watchers, so caches built under the old catalog are re-read.
 
@@ -142,7 +194,12 @@ Neither needs a TaskNotes release to be safe: TaskNotes feature-detects
   does not re-run view discovery or `describe`.
 - A scan under a steady stream of task changes completes.
 - Resume with a cursor applies only the catch-up.
-- Reset, model change, duplicate identity, too many pending changes and watch
-  failure all fall back to the full load.
+- Reset, model change, duplicate identity, too many pending changes, a full
+  catch-up page and watch failure all fall back to the full load.
+- An older read that completes after a newer delta does not overwrite it (both
+  completion orders, including a late not-found after an identity change).
+- A suspend during reconciliation loses no pending change.
+- Mounted UI: an unchanged refresh triggers no discovery and no task reads;
+  the Today badge updates after a delta commits.
 - Existing repository, watch, availability and startup tests keep their
   guarantees (pending writes, identity fences, held edits, lifecycle).
