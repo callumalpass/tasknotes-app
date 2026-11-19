@@ -196,14 +196,12 @@ it("shows a usable first view while enabled archive reconciliation and the metad
     autoArchiveDelay: 5,
   }));
   vi.spyOn(repository, "taskConfiguration").mockResolvedValue(configuration);
-  const pages = client.pages.bind(client);
+  const query = client.query.bind(client);
   const release = deferred<void>();
-  const scan = vi.spyOn(client, "pages").mockImplementation((...args) =>
-    (async function* () {
-      await release.promise;
-      yield* pages(...args);
-    })(),
-  );
+  const scan = vi.spyOn(client, "query").mockImplementation(async (...args) => {
+    await release.promise;
+    return query(...args);
+  });
   const execute = vi.spyOn(client, "executeAppBases");
   const rendered = render(
     <RepositoryProvider

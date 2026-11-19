@@ -560,6 +560,35 @@ export class NextTaskRepository implements TaskRepository {
       AbortSignal.timeout(TASKNOTES_REQUEST_BUDGETS.foregroundMs),
     ]);
   }
+  /** Every page of a query, as `client.pages`, but each page is one request
+   * with its own foreground deadline under `signal`. A pass over every task or
+   * every note is one relayed round trip per page on a Private collection, so
+   * its length grows with the collection (#512, as #436 for discovery). */
+  private async *pagesWithinBudget(
+    query: Parameters<MdbaseClient["query"]>[0],
+    include: NonNullable<Parameters<MdbaseClient["query"]>[1]>["include"],
+    signal: AbortSignal,
+  ) {
+    let cursor: string | undefined;
+    for (;;) {
+      signal.throwIfAborted();
+      const page = await this.client.query(
+        cursor === undefined ? query : { ...query, cursor },
+        {
+          ...(include ? { include } : {}),
+          signal: this.requestSignal(signal),
+        },
+      );
+      signal.throwIfAborted();
+      if (page.hasMore && !page.cursor)
+        throw nativeUnsupported(
+          "The replica asked for offset paging instead of a cursor.",
+        );
+      yield page;
+      if (!page.cursor) return;
+      cursor = page.cursor;
+    }
+  }
 
   private assertCurrentData(revision: number) {
     if (revision !== this.dataRevision) throw collectionChanged();
@@ -744,13 +773,25 @@ export class NextTaskRepository implements TaskRepository {
     }
   }
 
+  /** The task index reads every task, a page at a time. The pass is owned by
+   * the repository lifetime and each page keeps its own foreground deadline:
+   * on a relayed collection one deadline over the whole pass refused every
+   * caller once the collection was large enough or the link slow (#512). */
   private async ensureIndex(): Promise<void> {
-    const signal = this.signal();
+    const signal = this.lifetimeSignal();
     await this.readCurrentGeneration(signal, () => this.loadIndex(signal));
   }
 
+  /** The task model alone: a fixed number of requests, one deadline. */
+  private async ensureModel(): Promise<void> {
+    const signal = this.lifetimeSignal();
+    await this.readCurrentGeneration(signal, () =>
+      this.initializeModel(this.requestSignal(signal)),
+    );
+  }
+
   private async loadIndex(signal: AbortSignal): Promise<void> {
-    await this.initializeModel(signal);
+    await this.initializeModel(this.requestSignal(signal));
     signal.throwIfAborted();
     if (this.indexReady) return;
     if (this.indexLoading) return this.indexLoading;
@@ -759,9 +800,10 @@ export class NextTaskRepository implements TaskRepository {
     const loading = (async () => {
       const snapshot = new Map<string, CachedTask>();
       const records = new Map<string, RecordView>();
-      for await (const page of this.client.pages(
+      for await (const page of this.pagesWithinBudget(
         { types: [...this.models.keys()], limit: 1000 },
-        { include: { effective: true }, signal },
+        { effective: true },
+        signal,
       )) {
         signal.throwIfAborted();
         if (!page.complete)
@@ -852,14 +894,29 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   private async current(id: string, signal: AbortSignal) {
-    await this.ensureIndex();
+    // An edit reads only its own record. A known task's native identity does
+    // not change, so it is read directly with the current model; the whole
+    // task index is reloaded only to find a task this device has not seen.
+    // After any collection change that reload ran inside the edit's deadline,
+    // and on a relayed Private collection it outlasted it (#512).
+    if (this.cache.has(id)) await this.ensureModel();
+    else await this.ensureIndex();
     signal.throwIfAborted();
     const entry = this.cache.get(id);
     if (!entry) throw new Error("The task is no longer available.");
-    const record = await this.client.get(entry.recordId, {
-      include: { body: true, effective: true },
-      signal,
-    });
+    let record: RecordView;
+    try {
+      record = await this.client.get(entry.recordId, {
+        include: { body: true, effective: true },
+        signal,
+      });
+    } catch (reason) {
+      if (isMdbaseError(reason, "not_found")) {
+        this.cache.delete(id);
+        throw new Error("The task is no longer available.", { cause: reason });
+      }
+      throw reason;
+    }
     signal.throwIfAborted();
     if (record.id !== entry.recordId)
       throw new Error(
@@ -875,7 +932,8 @@ export class NextTaskRepository implements TaskRepository {
       throw new Error(
         "The portable task identity changed. Refresh before editing.",
       );
-    return { record, task, model: entry.model };
+    // `remember` binds the entry to the model just loaded, not the index's.
+    return { record, task, model: this.cache.get(id)!.model };
   }
 
   async refresh(): Promise<RefreshResult> {
@@ -1924,7 +1982,11 @@ export class NextTaskRepository implements TaskRepository {
       try {
         page = await this.client.backlinks(
           { path: personPath },
-          { limit: 1000, signal, ...(cursor ? { cursor } : {}) },
+          {
+            limit: 1000,
+            signal: this.requestSignal(signal),
+            ...(cursor ? { cursor } : {}),
+          },
         );
       } catch (reason) {
         // No person record: nothing is assigned to it.
@@ -1951,7 +2013,9 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   async search(query: TaskListQuery, options: { signal?: AbortSignal } = {}) {
-    const signal = this.signal(options.signal);
+    // Each token reads every note's body, a page at a time, after the task
+    // index: owned by the caller, each page under its own deadline (#512).
+    const signal = this.lifetimeSignal(options.signal);
     try {
       await this.ensureIndex();
       signal.throwIfAborted();
@@ -1959,13 +2023,14 @@ export class NextTaskRepository implements TaskRepository {
       const matches = new Map<string, Set<string>>();
       for (const token of tokens) {
         const ids = new Set<string>();
-        for await (const page of this.client.pages(
+        for await (const page of this.pagesWithinBudget(
           {
             types: [...this.models.keys()],
             where: `file.body.lower().contains(${JSON.stringify(token)})`,
             limit: 1000,
           },
-          { signal },
+          undefined,
+          signal,
         )) {
           signal.throwIfAborted();
           if (!page.complete)

@@ -60,14 +60,12 @@ it("keeps known unavailability visible while a retry has only metadata and is st
   describe.mockImplementation(originalDescribe);
   const started = deferred<void>();
   const release = deferred<void>();
-  const originalPages = f.client.pages.bind(f.client);
-  vi.spyOn(f.client, "pages").mockImplementationOnce((...args) =>
-    (async function* () {
-      started.resolve();
-      await release.promise;
-      yield* originalPages(...args);
-    })(),
-  );
+  const originalQuery = f.client.query.bind(f.client);
+  vi.spyOn(f.client, "query").mockImplementationOnce(async (...args) => {
+    started.resolve();
+    await release.promise;
+    return originalQuery(...args);
+  });
   const retry = f.repository.refresh();
   try {
     await started.promise;
