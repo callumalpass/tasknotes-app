@@ -278,17 +278,19 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       );
       void current.catch(() => {});
       try {
+        // A local write is protected by the scan write tracker; both readers may share its page.
+        if (kind === "local") release();
         await vi.waitFor(() => expect(finished).toBe(true));
         expect(failure).toBeUndefined();
         expect(result).toEqual(expected);
-        expect(pages).toHaveBeenCalledTimes(2);
+        expect(pages).toHaveBeenCalledTimes(kind === "local" ? 1 : 2);
       } finally {
         release();
       }
       await refreshed;
       await current;
       expect(await f.repository.listSummaries()).toEqual(expected);
-      expect(pages).toHaveBeenCalledTimes(2);
+      expect(pages).toHaveBeenCalledTimes(kind === "local" ? 1 : 2);
     },
   );
 
@@ -506,4 +508,29 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
       state: "unavailable",
     });
   });
+});
+
+it("a failed loaded watch requires a full scan, while catch-up on the same watch only reloads the model", async () => {
+  const f = await fixture();
+  await seed(f);
+  const first = heldWatch();
+  const original = f.client.watchChanges.bind(f.client);
+  vi.spyOn(f.client, "watchChanges")
+    .mockReturnValueOnce(first.watch)
+    .mockImplementation(original);
+  const initialized = f.repository.initialize();
+  first.active();
+  await initialized;
+  const query = vi.spyOn(f.client, "query");
+  const describe = vi.mocked(f.client.describe);
+  describe.mockClear();
+  first.stale(unavailable());
+  first.active();
+  expect(await f.repository.listSummaries()).toHaveLength(1);
+  expect(describe).toHaveBeenCalledOnce();
+  expect(query).not.toHaveBeenCalled();
+  first.fail(unavailable());
+  await expect(f.repository.listSummaries()).rejects.toThrow("change feed");
+  expect(await f.repository.refresh()).toMatchObject({ scanned: 1 });
+  expect(query).toHaveBeenCalledOnce();
 });

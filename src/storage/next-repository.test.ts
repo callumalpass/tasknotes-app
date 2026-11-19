@@ -1017,8 +1017,9 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
         return query({ ...input, limit: 1 }, options);
       });
   }
-  async function indexRetired(f: Awaited<ReturnType<typeof fixture>>) {
-    // Another device's write retires the loaded task index.
+  async function externalWrite(f: Awaited<ReturnType<typeof fixture>>) {
+    const changed = vi.fn();
+    const stop = f.repository.subscribe(changed);
     const other = new TaskNotesTaskModel().create(
       { title: "Written elsewhere" },
       { id: crypto.randomUUID() },
@@ -1033,10 +1034,9 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
       })
     ).confirmed;
     await vi.waitFor(() =>
-      expect(
-        (f.repository as unknown as { indexReady: boolean }).indexReady,
-      ).toBe(false),
+      expect(changed).toHaveBeenCalledWith({ kind: "data" }),
     );
+    stop();
   }
 
   it("edits a listed task without reloading the task index", async () => {
@@ -1044,7 +1044,7 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
     const s = await seed(f);
     await seed(f, "Second");
     await f.repository.initialize();
-    await indexRetired(f);
+    await externalWrite(f);
     budgets.foregroundMs = 400;
     // A full index pass (three pages) is longer than the edit's deadline.
     const query = relayed(f, 250);
@@ -1072,7 +1072,7 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
     await f.repository.create({ title: "Probe one", body: "rarebody" });
     await f.repository.create({ title: "Probe two" });
     await f.repository.create({ title: "Other" });
-    await indexRetired(f);
+    await externalWrite(f);
     budgets.foregroundMs = 400;
     const query = relayed(f, 150);
     const started = performance.now();
@@ -1086,7 +1086,7 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
   it("a page that outlives its own budget still fails", async () => {
     const f = await fixture({ where: taskQueryWhere });
     await f.repository.create({ title: "Probe", body: "rarebody" });
-    await indexRetired(f);
+    await externalWrite(f);
     budgets.foregroundMs = 200;
     vi.spyOn(f.client, "query").mockImplementation(
       (_input, options) =>

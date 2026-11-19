@@ -60,11 +60,18 @@ it("keeps known unavailability visible while a retry has only metadata and is st
   describe.mockImplementation(originalDescribe);
   const started = deferred<void>();
   const release = deferred<void>();
-  const originalQuery = f.client.query.bind(f.client);
-  vi.spyOn(f.client, "query").mockImplementationOnce(async (...args) => {
-    started.resolve();
-    await release.promise;
-    return originalQuery(...args);
+  // Give the retry actual task data to reconcile on the active watch.
+  const [record] = (await f.client.query({ types: ["task"] })).records;
+  await (
+    await f.client.update(record!, { patch: { title: "Updated elsewhere" } })
+  ).confirmed;
+  const find = f.client.find.bind(f.client);
+  vi.spyOn(f.client, "find").mockImplementation(async (id, options) => {
+    if (id === record!.id) {
+      started.resolve();
+      await release.promise;
+    }
+    return find(id, options);
   });
   const retry = f.repository.refresh();
   try {

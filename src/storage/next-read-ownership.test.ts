@@ -120,6 +120,14 @@ it.each(["superseded", "cancelled", "unavailable"] as const)(
       }),
     );
     try {
+      const watch = f.client.watchChanges.bind(f.client);
+      let push!: Parameters<typeof watch>[0];
+      vi.spyOn(f.client, "watchChanges").mockImplementation(
+        (callback, options) => {
+          push = callback;
+          return watch(callback, options);
+        },
+      );
       const task = await f.repository.create({ title: "Original task" });
       vi.spyOn(f.client, "listAppBasesViews").mockResolvedValue({
         kind: "success",
@@ -128,6 +136,20 @@ it.each(["superseded", "cancelled", "unavailable"] as const)(
         continuation: null,
         clock: { instant: 1, tz: "UTC", localDate: "1970-01-01" },
         collectionRevision: "sha256:" + "ab".repeat(32),
+      });
+      // An actual model invalidation makes the first caller own a new describe.
+      push({
+        cursor: "type-change",
+        reset: false,
+        changes: [
+          {
+            id: crypto.randomUUID(),
+            path: "_types/task.md",
+            kind: "put",
+            entity: "file",
+            version: 1,
+          },
+        ],
       });
       holdDescribe = true;
       const owner = new AbortController();
