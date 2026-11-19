@@ -14,7 +14,7 @@ import {
 } from "../domain/task-row-relations";
 import type { TaskSummary, TaskListQuery } from "../domain/task";
 
-type Entry = { task: TaskSummary };
+type Entry = { task: TaskSummary; recordId?: string };
 
 /** Session-only indexes over repository-owned tasks; never a durable replica. */
 export class ConnectedTaskIndex<Value extends Entry> extends Map<
@@ -22,6 +22,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   Value
 > {
   private readonly paths = new Map<string, string>();
+  private readonly recordIds = new Map<string, string>();
   private readonly rolling = new Map<string, TaskSummary>();
   private ordered?: TaskSummary[];
   private relations?: TaskRowRelations;
@@ -56,11 +57,15 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     const previous = this.get(id);
     if (previous === value) return this;
     if (previous) {
-      this.paths.delete(previous.task.path);
+      if (this.paths.get(previous.task.path) === id)
+        this.paths.delete(previous.task.path);
+      if (previous.recordId && this.recordIds.get(previous.recordId) === id)
+        this.recordIds.delete(previous.recordId);
       this.adjustCounts(previous.task, -1);
     }
     this.adjustCounts(value.task, 1);
     this.paths.set(value.task.path, id);
+    if (value.recordId) this.recordIds.set(value.recordId, id);
     if (
       value.task.recurrence &&
       value.task.occurrenceMaterialization === "rolling"
@@ -81,9 +86,12 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   override delete(id: string): boolean {
     const previous = this.get(id);
     if (!previous) return false;
-    this.paths.delete(previous.task.path);
+    if (this.paths.get(previous.task.path) === id)
+      this.paths.delete(previous.task.path);
     this.adjustCounts(previous.task, -1);
     this.rolling.delete(id);
+    if (previous.recordId && this.recordIds.get(previous.recordId) === id)
+      this.recordIds.delete(previous.recordId);
     for (const paths of this.trackers) paths.add(previous.task.path);
     this.ordered = undefined;
     this.relations = undefined;
@@ -102,6 +110,10 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       })(this.values()),
     );
     return this.relations;
+  }
+
+  taskIdForRecord(recordId: string): string | undefined {
+    return this.recordIds.get(recordId);
   }
 
   atPath(path: string): Value | undefined {

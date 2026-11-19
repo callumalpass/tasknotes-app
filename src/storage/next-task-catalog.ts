@@ -28,6 +28,8 @@ export async function nextTaskProviders(
 
 export interface NextTaskCatalog {
   providers: NextTaskProvider[];
+  signature: string;
+  viewTypes: Set<string>;
   /** Whether the collection defines the TaskNotes settings type. */
   settingsType: boolean;
 }
@@ -88,6 +90,17 @@ export async function nextTaskCatalog(
     );
   return {
     providers,
+    signature: JSON.stringify([
+      catalog.types.map((type) => [type.name, type.path, type.revision]).sort(),
+      catalog.contracts
+        .map((contract) => [contract.id, contract.digest])
+        .sort(),
+    ]),
+    viewTypes: new Set(
+      catalog.contracts
+        .filter((contract) => contract.id === "obsidian.base")
+        .flatMap((contract) => contract.implementedBy),
+    ),
     settingsType: catalog.types.some(
       (type) => type.name === TASKNOTES_SETTINGS_TYPE,
     ),

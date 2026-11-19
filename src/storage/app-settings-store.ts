@@ -27,6 +27,7 @@ import {
 export interface AppSettingsRecord {
   readonly frontmatter: Readonly<Record<string, unknown>>;
   readonly revision?: string;
+  readonly recordId?: string;
 }
 
 /** How a port failure reads. Anything else is a plain failure. */
@@ -63,6 +64,7 @@ export interface AppSettingsSnapshot<Values extends object> {
   /** The record's frontmatter as read; undefined when there is no record (yet). */
   readonly frontmatter?: Readonly<Record<string, unknown>>;
   readonly revision?: string;
+  readonly recordId?: string;
   readonly problem?: string;
 }
 
@@ -268,6 +270,7 @@ export class AppSettingsStore<Values extends object> {
       status: "ready",
       settings: resolveAppSettings(this.definition, record.frontmatter, path),
       frontmatter: record.frontmatter,
+      ...(record.recordId ? { recordId: record.recordId } : {}),
       ...(record.revision ? { revision: record.revision } : {}),
     });
   }

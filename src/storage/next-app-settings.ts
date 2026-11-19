@@ -108,5 +108,9 @@ export function nativeTaskNotesSettingsStore(
 }
 
 function settingsRecord(record: RecordView): AppSettingsRecord {
-  return { frontmatter: record.frontmatter, revision: record.revision };
+  return {
+    recordId: record.id,
+    frontmatter: record.frontmatter,
+    revision: record.revision,
+  };
 }
