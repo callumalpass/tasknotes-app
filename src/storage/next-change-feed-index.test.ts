@@ -776,32 +776,39 @@ it("binds queued edits and pending write status to the original native record", 
   expect((await get(next.id)).frontmatter.title).toBe("Replacement");
 });
 
-it("deletes a view row still pending after both index passes", async () => {
-  const f = await fixture(false, true);
-  seedTaskView(f.replica);
-  await f.repository.initialize();
-  const [document] = await f.repository.listViews();
-  const added = seedTask(f.replica, { title: "New row" });
-  const execution = await f.repository.executeView(document!.views[0]!);
-  const row = execution.rows.find(({ task }) => task.title === "New row")!;
-  const change = { ...f.change, id: added.id, path: added.path };
-  f.push([change]);
-  let edits = 0;
-  f.find.mockImplementation(async (...args) => {
-    const record = await f.findRecord(...args);
-    if (args[0] === added.id && edits < 2) {
-      f.replica.editElsewhere(added.id, {
-        frontmatter: { title: `Edit ${++edits}` },
-      });
-      f.push([change]);
-    }
-    return record;
-  });
-  await f.repository.delete(row.task.id);
-  expect(edits).toBe(2);
-  expect(await f.findRecord(added.id)).toBeNull();
-  expect(await f.findRecord(f.id)).not.toBeNull();
-});
+it.each(["before feed delivery", "after both index passes"])(
+  "deletes an unindexed view row %s",
+  async (timing) => {
+    const f = await fixture(false, true);
+    seedTaskView(f.replica);
+    await f.repository.initialize();
+    const [document] = await f.repository.listViews();
+    const added = seedTask(f.replica, { title: "New row" });
+    const execution = await f.repository.executeView(document!.views[0]!);
+    const row = execution.rows.find(({ task }) => task.title === "New row")!;
+    const change = { ...f.change, id: added.id, path: added.path };
+    if (timing === "after both index passes") f.push([change]);
+    let edits = 0;
+    f.find.mockImplementation(async (...args) => {
+      const record = await f.findRecord(...args);
+      if (
+        timing === "after both index passes" &&
+        args[0] === added.id &&
+        edits < 2
+      ) {
+        f.replica.editElsewhere(added.id, {
+          frontmatter: { title: `Edit ${++edits}` },
+        });
+        f.push([change]);
+      }
+      return record;
+    });
+    await f.repository.delete(row.task.id);
+    expect(edits).toBe(timing === "after both index passes" ? 2 : 0);
+    expect(await f.findRecord(added.id)).toBeNull();
+    expect(await f.findRecord(f.id)).not.toBeNull();
+  },
+);
 
 it("commits healthy deltas in every group while surfacing a failed UUID", async () => {
   const f = await fixture(false, true);

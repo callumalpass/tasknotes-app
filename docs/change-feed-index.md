@@ -160,8 +160,8 @@ These override the sections above where they differ.
   record id) is the write-identity binding and is not cleared when a delta
   removes or rekeys an index row; refusals and identity checks keep using it
   until the write settles. Queued mutations read the native ID captured at
-  invocation, not the current owner of its portable ID. On an unresolved index
-  miss, a mutation looks up the portable ID (or path fallback) at authority
+  invocation, not the current owner of its portable ID. On an index miss,
+  a mutation looks up the portable ID (or path fallback) at authority
   before treating the task as absent. A failed acknowledgement reread
   re-enqueues its record id.
 - **Stale cursors restart the scan.** A full scan that gets

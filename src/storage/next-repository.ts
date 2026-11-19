@@ -1274,8 +1274,7 @@ export class NextTaskRepository implements TaskRepository {
     await this.ensureIndex();
     signal.throwIfAborted();
     const indexed = this.cache.get(id)?.recordId;
-    if (indexed || (this.indexReady && !this.pendingTaskChanges.size))
-      return indexed;
+    if (indexed) return indexed;
     const generation = this.modelGeneration;
     const literal = JSON.stringify(id);
     const page = await this.client.query(
@@ -3279,8 +3278,19 @@ export class NextTaskRepository implements TaskRepository {
     let recordId = this.cache.get(id)?.recordId;
     try {
       owner.throwIfAborted();
-      if (!recordId && !options.authorityRequestId)
-        recordId = await this.resolveTaskRecordId(id, owner);
+      if (options.authorityRequestId) {
+        await this.ensureIndex();
+        const original = await this.ledgerRecords(
+          options.authorityRequestId,
+          owner,
+        );
+        recordId = original.length === 1 ? original[0] : undefined;
+      } else {
+        const resolved = await this.resolveTaskRecordId(id, owner);
+        owner.throwIfAborted();
+        if (!resolved) return;
+        recordId ??= resolved;
+      }
       owner.throwIfAborted();
     } catch (reason) {
       if (
@@ -3295,14 +3305,6 @@ export class NextTaskRepository implements TaskRepository {
           },
         );
       throw reason;
-    }
-    if (!recordId && !options.authorityRequestId) return;
-    if (options.authorityRequestId) {
-      const original = await this.ledgerRecords(
-        options.authorityRequestId,
-        owner,
-      );
-      recordId = original.length === 1 ? original[0] : undefined;
     }
     await this.mutations.runRecord(
       {
