@@ -125,7 +125,7 @@ export interface TaskRepository {
   update(
     id: string,
     input: UpdateTaskInput,
-    options?: { expectedRevision?: number },
+    options?: { expectedRevision?: number | string },
   ): Promise<Task>;
   /** Apply an exact calendar plan with normal authority/revision safeguards. */
   editCalendar(id: string, edit: CalendarTaskEdit): Promise<Task>;

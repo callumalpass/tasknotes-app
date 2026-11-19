@@ -29,10 +29,12 @@ export function nextTaskSummary(
 ): TaskSummary | null {
   const model = modelFor(record, models);
   if (!model) return null;
-  return model.readSummary({
+  const task = model.readSummary({
     path: record.path,
     frontmatter: record.effective ?? record.frontmatter,
   });
+  task.recordVersion = JSON.stringify([record.id, record.revision]);
+  return task;
 }
 
 export function nextTaskDocument(
@@ -43,9 +45,11 @@ export function nextTaskDocument(
   if (!model) return null;
   if (record.body === undefined)
     throw new Error("Mdbase did not return the complete task body.");
-  return model.read({
+  const task = model.read({
     path: record.path,
     frontmatter: record.effective ?? record.frontmatter,
     body: record.body,
   });
+  task.recordVersion = JSON.stringify([record.id, record.revision]);
+  return task;
 }

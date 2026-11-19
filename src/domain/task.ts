@@ -64,6 +64,7 @@ export interface TaskSummary {
   customProperties: Record<string, unknown>;
   operationWarnings?: string[];
   revision: number;
+  recordVersion?: string;
   frontmatter: Record<string, unknown>;
 }
 

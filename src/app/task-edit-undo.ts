@@ -18,7 +18,7 @@ export function rememberTaskEdit({
   updateTask(
     id: string,
     input: UpdateTaskInput,
-    options: { expectedRevision: number },
+    options: { expectedRevision: number | string },
   ): Promise<Task>;
 }) {
   const earlier = Object.fromEntries(
@@ -27,13 +27,16 @@ export function rememberTaskEdit({
       (before as unknown as Record<string, unknown>)[field] ?? null,
     ]),
   ) as UpdateTaskInput;
-  const savedRevision = saved.revision;
+  const savedRevision = saved.recordVersion ?? saved.revision;
   rememberUndo({
     label: before.title,
     notice,
     run: async () => {
       const current = await getSummary(saved.id);
-      if (!current || current.revision !== savedRevision)
+      if (
+        !current ||
+        (current.recordVersion ?? current.revision) !== savedRevision
+      )
         throw new Error(t`This task changed. Review it before trying again.`);
       return updateTask(saved.id, earlier, { expectedRevision: savedRevision });
     },

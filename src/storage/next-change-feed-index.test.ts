@@ -354,6 +354,23 @@ it("publishes a replacement at the path of a missing task during a reset scan", 
   ]);
 });
 
+it("allows Undo after the saved record is confirmed unchanged", async () => {
+  const f = await fixture(false, true);
+  const [before] = await f.repository.listSummaries();
+  const input = { title: "Saved" };
+  const saved = await f.repository.update(before!.id, input);
+  f.replica.confirmAll();
+  rememberTaskEdit({
+    before: before!,
+    saved,
+    input,
+    notice: "Updated",
+    getSummary: (id) => f.repository.getSummary(id),
+    updateTask: (...args) => f.repository.update(...args),
+  });
+  await expect(takeUndo()!.run()).resolves.toMatchObject({ title: "Original" });
+});
+
 it.each(["summary", "submission"])(
   "refuses Undo across an external same-field edit at %s without a mobileRevision bump",
   async (stage) => {

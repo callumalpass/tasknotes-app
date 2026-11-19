@@ -2876,7 +2876,7 @@ export class NextTaskRepository implements TaskRepository {
   update(
     id: string,
     input: UpdateTaskInput,
-    options: { expectedRevision?: number } = {},
+    options: { expectedRevision?: number | string } = {},
   ) {
     return this.mutateTask(
       id,
@@ -2891,7 +2891,8 @@ export class NextTaskRepository implements TaskRepository {
       (task, model) => {
         if (
           options.expectedRevision !== undefined &&
-          task.revision !== options.expectedRevision
+          task.revision !== options.expectedRevision &&
+          task.recordVersion !== options.expectedRevision
         )
           throw new TaskRevisionChangedError(
             "The task changed after creation.",
