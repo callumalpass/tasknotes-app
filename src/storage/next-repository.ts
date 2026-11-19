@@ -1243,22 +1243,49 @@ export class NextTaskRepository implements TaskRepository {
     return task;
   }
 
-  private async current(id: string, signal: AbortSignal) {
-    // An edit reads only its own record. A known task's native identity does
-    // not change, so it is read directly with the current model; the whole
-    // task index is reloaded only to find a task this device has not seen.
-    // After any collection change that reload ran inside the edit's deadline,
-    // and on a relayed Private collection it outlasted it (#512).
-    if (this.cache.has(id)) await this.ensureModel();
-    else await this.ensureIndex();
+  private async resolveTaskRecordId(id: string, signal: AbortSignal) {
+    await this.ensureIndex();
     signal.throwIfAborted();
-    const entry = this.cache.get(id);
-    if (!entry) throw new Error("The task is no longer available.");
+    const indexed = this.cache.get(id)?.recordId;
+    if (indexed || (this.indexReady && !this.pendingTaskChanges.size))
+      return indexed;
+    const generation = this.modelGeneration;
+    const literal = JSON.stringify(id);
+    const page = await this.client.query(
+      {
+        types: [...this.models.keys()],
+        where: `file.path == ${literal} || ("id" in record && record.id == ${literal})`,
+        limit: 3,
+      },
+      { include: { effective: true }, signal: this.requestSignal(signal) },
+    );
+    signal.throwIfAborted();
+    if (generation !== this.modelGeneration || !page.complete)
+      throw collectionChanged();
+    const matches = page.records.filter(
+      (record) => this.decodeSummary(record)?.task.id === id,
+    );
+    if (page.hasMore || matches.length > 1)
+      throw new Error(
+        "Two native records have the same portable TaskNotes identity.",
+      );
+    return matches[0]?.id;
+  }
+
+  private async current(
+    id: string,
+    signal: AbortSignal,
+    recordId = this.cache.get(id)?.recordId,
+  ) {
+    if (recordId) await this.ensureModel();
+    else recordId = await this.resolveTaskRecordId(id, signal);
+    signal.throwIfAborted();
+    if (!recordId) throw new Error("The task is no longer available.");
     for (;;) {
-      const epoch = this.recordEpoch(entry.recordId);
+      const epoch = this.recordEpoch(recordId);
       let record: RecordView;
       try {
-        record = await this.client.get(entry.recordId, {
+        record = await this.client.get(recordId, {
           include: { body: true, effective: true },
           signal,
         });
@@ -1266,8 +1293,8 @@ export class NextTaskRepository implements TaskRepository {
         if (isMdbaseError(reason, "not_found")) {
           signal.throwIfAborted();
           if (
-            epoch === this.recordEpoch(entry.recordId) &&
-            this.cache.get(id)?.recordId === entry.recordId
+            epoch === this.recordEpoch(recordId) &&
+            this.cache.get(id)?.recordId === recordId
           )
             this.cache.delete(id);
           throw new Error("The task is no longer available.", {
@@ -1277,12 +1304,12 @@ export class NextTaskRepository implements TaskRepository {
         throw reason;
       }
       signal.throwIfAborted();
-      if (record.id !== entry.recordId)
+      if (record.id !== recordId)
         throw new Error(
           "The native task READ changed its original record identity.",
         );
-      if (epoch !== this.recordEpoch(entry.recordId)) {
-        if (this.cache.get(id)?.recordId !== entry.recordId)
+      if (epoch !== this.recordEpoch(recordId)) {
+        if (this.cache.has(id) && this.cache.get(id)?.recordId !== recordId)
           throw new Error("The task is no longer available.");
         // Only the pre-submission READ is repeated, against its original UUID.
         if (!this.initialization) await this.ensureModel();
@@ -2783,7 +2810,7 @@ export class NextTaskRepository implements TaskRepository {
             recordId ? [[recordId, id]] : [],
           ),
         prepare: async (mutationId, signal) => {
-          const current = await this.current(id, signal);
+          const current = await this.current(id, signal, recordId);
           recordId = current.record.id;
           const next = mutate(current.task, current.model);
           if (next === current.task) return { value: current.task };
@@ -2899,6 +2926,7 @@ export class NextTaskRepository implements TaskRepository {
     completed?: boolean,
   ): Promise<Task> {
     const targets = new Map<string, string>();
+    const original = this.cache.get(id)?.recordId;
     const warnings: string[] = [];
     return this.mutations.runRecord(
       {
@@ -2914,7 +2942,7 @@ export class NextTaskRepository implements TaskRepository {
           completed,
         ]),
         prepare: async (mutationId, signal) => {
-          const current = await this.current(id, signal);
+          const current = await this.current(id, signal, original);
           const now = new Date().toISOString();
           targets.set(current.record.id, id);
           const ops: wire.Op[] = [];
@@ -3052,6 +3080,7 @@ export class NextTaskRepository implements TaskRepository {
     overrides?: OccurrenceOverrides,
   ): Promise<MaterializeOccurrenceResult> {
     const owner = this.scope.signal;
+    const parentRecord = this.cache.get(parentId)?.recordId;
     owner.throwIfAborted();
     const recordId = await occurrenceRecordId(parentId, occurrenceDate);
     owner.throwIfAborted();
@@ -3064,7 +3093,7 @@ export class NextTaskRepository implements TaskRepository {
         key: JSON.stringify(["task:materialize", parentId, occurrenceDate]),
         guardPreparation: this.guardTaskModel,
         prepare: async (mutationId, signal) => {
-          const parent = await this.current(parentId, signal);
+          const parent = await this.current(parentId, signal, parentRecord);
           const existing = [...this.cache.values()]
             .map((value) => value.task)
             .filter(
@@ -3151,7 +3180,7 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
   async setArchived(id: string, archived: boolean): Promise<Task> {
-    let recordId: string | undefined;
+    let recordId = this.cache.get(id)?.recordId;
     return this.mutations.runRecord(
       {
         recordIds: () => (recordId ? [recordId] : []),
@@ -3164,7 +3193,7 @@ export class NextTaskRepository implements TaskRepository {
         key: JSON.stringify(["task:archive", id, archived]),
         guardPreparation: this.guardTaskModel,
         prepare: async (mutationId, signal) => {
-          const current = await this.current(id, signal);
+          const current = await this.current(id, signal, recordId);
           recordId = current.record.id;
           const next = current.model.update(
             current.task,
@@ -3214,9 +3243,11 @@ export class NextTaskRepository implements TaskRepository {
     options: { authorityRequestId?: string; expectedRevision?: number } = {},
   ): Promise<void> {
     const owner = this.scope.signal;
+    let recordId = this.cache.get(id)?.recordId;
     try {
       owner.throwIfAborted();
-      await this.ensureIndex();
+      if (!recordId && !options.authorityRequestId)
+        recordId = await this.resolveTaskRecordId(id, owner);
       owner.throwIfAborted();
     } catch (reason) {
       if (
@@ -3232,8 +3263,7 @@ export class NextTaskRepository implements TaskRepository {
         );
       throw reason;
     }
-    if (!this.cache.has(id) && !options.authorityRequestId) return;
-    let recordId = this.cache.get(id)?.recordId;
+    if (!recordId && !options.authorityRequestId) return;
     if (options.authorityRequestId) {
       const original = await this.ledgerRecords(
         options.authorityRequestId,
@@ -3254,7 +3284,7 @@ export class NextTaskRepository implements TaskRepository {
         guardPreparation: this.guardTaskModel,
         requestId: options.authorityRequestId,
         prepare: async (mutationId, signal) => {
-          const current = await this.current(id, signal);
+          const current = await this.current(id, signal, recordId);
           if (
             options.expectedRevision !== undefined &&
             current.task.revision !== options.expectedRevision

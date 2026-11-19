@@ -9,6 +9,7 @@ import {
   seedRecord,
   seedTask,
   seedTaskView,
+  taskQueryWhere,
 } from "../test/next-task-fixture";
 import { deferred } from "../test/deferred";
 import { rememberTaskEdit } from "../app/task-edit-undo";
@@ -21,7 +22,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 async function fixture(withCursor = false, manual = false) {
-  const f = await nextTaskFixture(manual ? { confirmDelayMs: null } : {});
+  const f = await nextTaskFixture({
+    where: taskQueryWhere,
+    ...(manual ? { confirmDelayMs: null } : {}),
+  });
   fixtures.push(f);
   const { id } = seedTask(f.replica, { title: "Original" });
   const record = await f.client.get(id, { include: { effective: true } });
@@ -777,6 +781,7 @@ it("deletes a view row still pending after both index passes", async () => {
     return record;
   });
   await f.repository.delete(row.task.id);
+  expect(edits).toBe(2);
   expect(await f.findRecord(added.id)).toBeNull();
   expect(await f.findRecord(f.id)).not.toBeNull();
 });

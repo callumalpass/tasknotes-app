@@ -220,10 +220,18 @@ const bodyContains = new RegExp(
 const pathOrTitleContains = new RegExp(
   String.raw`^file\.path\.lower\(\)\.contains\(${literal}\) \|\| \("title" in record && record\.title\.lower\(\)\.contains\(${literal}\)\)$`,
 );
+const taskIdentity = new RegExp(
+  String.raw`^file\.path == ${literal} \|\| \("id" in record && record\.id == \1\)$`,
+);
 
 /** `MemoryReplicaOptions.where` for the expressions TaskNotes sends: Notes
  * search and link completion. Not Core's CEL; anything else is refused. */
 export function taskQueryWhere(expression: string, record: MemoryRecord) {
+  const identity = taskIdentity.exec(expression);
+  if (identity) {
+    const id: string = JSON.parse(identity[1]!);
+    return record.path === id || record.frontmatter.get("id") === id;
+  }
   const body = bodyContains.exec(expression);
   if (body)
     return record.body.toLowerCase().includes(JSON.parse(body[1]!) as string);
