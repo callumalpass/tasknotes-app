@@ -267,7 +267,7 @@ export type ReminderTimers = Pick<TimersApi, "reconcile">;
 
 const MAX_PENDING_TASK_CHANGES = 500;
 const TASK_READ_CONCURRENCY = 8;
-const MAX_CURSOR_RESTARTS = 2;
+const TASK_INDEX_PAGE_SIZE = 1000;
 
 export class NextTaskRepository implements TaskRepository {
   readonly files: NextCollectionFileStore;
@@ -650,8 +650,8 @@ export class NextTaskRepository implements TaskRepository {
     ]);
   }
   /** Every page of a query, as `client.pages`, but each page is one request
-   * with its own foreground deadline under `signal`. A pass over every task or
-   * every note is one relayed round trip per page on a Private collection, so
+   * with its own foreground deadline under `signal`. A body search takes
+   * one relayed round trip per page on a Private collection, so
    * its length grows with the collection (#512, as #436 for discovery). */
   private async *pagesWithinBudget(
     query: Parameters<MdbaseClient["query"]>[0],
@@ -1035,86 +1035,116 @@ export class NextTaskRepository implements TaskRepository {
     }
   }
 
-  private async scanIndex(signal: AbortSignal, generation: number) {
-    const start = this.epoch;
-    for (let attempt = 0; ; attempt++) {
-      if (generation !== this.indexEpoch) throw collectionChanged();
-      const writes = this.cache.trackWrites();
-      try {
-        const snapshot = new Map<
-          string,
-          { value: CachedTask; record: RecordView }
-        >();
-        for await (const page of this.pagesWithinBudget(
-          { types: [...this.models.keys()], limit: 1000 },
-          { effective: true },
-          signal,
-        )) {
-          if (generation !== this.indexEpoch) throw collectionChanged();
-          if (!page.complete)
-            throw nativeUnsupported(
-              "The replica has not supplied a complete task index.",
-            );
-          this.recordsRead += page.records.length;
-          for (const record of page.records) {
-            if (this.recordEpoch(record.id) > start) continue;
-            const value = this.decodeSummary(record);
-            if (!value) continue;
-            const previous = snapshot.get(value.task.id);
-            if (
-              previous &&
-              previous.record.id !== record.id &&
-              this.recordEpoch(previous.record.id) <= start
-            )
-              throw new Error(
-                "Two native records have the same portable TaskNotes identity. Resolve the duplicate before opening this collection.",
-              );
-            snapshot.set(value.task.id, { value, record });
-          }
-        }
-        signal.throwIfAborted();
-        if (generation !== this.indexEpoch) throw collectionChanged();
-        writes.stop();
-        for (const [id, existing] of this.cache)
-          if (
-            !writes.records.has(existing.recordId) &&
-            this.recordEpoch(existing.recordId) <= start &&
-            !snapshot.has(id)
-          )
-            this.cache.delete(id);
-        for (const [id, { value, record }] of snapshot) {
-          if (
-            writes.records.has(record.id) ||
-            this.recordEpoch(record.id) > start
-          )
-            continue;
-          this.rememberWriteState(record);
-          this.bindTaskRecord(id, value.recordId);
-          this.cache.set(id, value);
-        }
-        for (const id of this.pendingTaskChanges.keys())
-          if (this.recordEpoch(id) <= start && !writes.records.has(id))
-            this.pendingTaskChanges.delete(id);
-        // The scan committed a new baseline for every record, including absences.
-        // In-flight reads from the old baseline must not publish over it.
-        this.recordEpochs.clear();
-        this.indexEpoch = ++this.epoch;
-        this.indexReady = true;
-        this.hasLoadedIndex = true;
-        this.notify("status");
-        this.reached();
+  /** A fresh path-ordered query per page. The replica invalidates its native
+   * continuation on any edit. The change feed covers moves across this frontier. */
+  private async *taskIndexPages(signal: AbortSignal) {
+    const types = [...this.models.keys()];
+    let after: string | undefined;
+    for (;;) {
+      signal.throwIfAborted();
+      const page = await this.client.query(
+        {
+          types,
+          order_by: [{ field: "file.path", direction: "asc" }],
+          ...(after === undefined
+            ? {}
+            : { where: `file.path > ${JSON.stringify(after)}` }),
+          limit: TASK_INDEX_PAGE_SIZE,
+        },
+        { include: { effective: true }, signal: this.requestSignal(signal) },
+      );
+      signal.throwIfAborted();
+      if (!page.complete)
+        throw nativeUnsupported(
+          "The replica has not supplied a complete task index.",
+        );
+      yield page.records;
+      // A replica byte budget can shorten a page that still has more rows.
+      if (!(page.hasMore ?? page.records.length === TASK_INDEX_PAGE_SIZE))
         return;
-      } catch (reason) {
-        if (
-          attempt >= MAX_CURSOR_RESTARTS ||
-          !isMdbaseError(reason, "invalid_request") ||
-          (reason.reason !== "cursor_stale" &&
-            reason.reason !== "cursor_expired")
-        )
-          throw reason;
-      } finally {
-        writes.stop();
+      const last = page.records.at(-1);
+      if (!last || last.path === after)
+        throw nativeUnsupported(
+          "The task index page did not advance its path.",
+        );
+      after = last.path;
+    }
+  }
+
+  private async scanIndex(signal: AbortSignal, generation: number) {
+    signal.throwIfAborted();
+    if (this.changesWatch?.state !== "active")
+      await this.observeChanges(this.requestSignal(signal));
+    if (generation !== this.indexEpoch) throw collectionChanged();
+    const start = this.epoch;
+    const writes = this.cache.trackWrites();
+    const unchanged = (id: string) =>
+      this.recordEpoch(id) <= start && !writes.records.has(id);
+    try {
+      const rows = new Map<string, { value: CachedTask; record: RecordView }>();
+      for await (const records of this.taskIndexPages(signal)) {
+        if (generation !== this.indexEpoch) throw collectionChanged();
+        this.recordsRead += records.length;
+        for (const record of records) {
+          if (!unchanged(record.id)) continue;
+          const value = this.decodeSummary(record);
+          // A rename ahead of the frontier can return this native ID twice,
+          // even with a different portable ID. Only its last read counts.
+          if (value) rows.set(record.id, { value, record });
+          else rows.delete(record.id);
+        }
       }
+      signal.throwIfAborted();
+      if (generation !== this.indexEpoch) throw collectionChanged();
+      writes.stop();
+
+      // A later page's change event can retire an earlier apparent collision.
+      // Check all surviving identities before publishing any of them.
+      const portableIds = new Set<string>();
+      for (const [recordId, { value }] of rows) {
+        if (!unchanged(recordId)) {
+          rows.delete(recordId);
+          continue;
+        }
+        if (portableIds.has(value.task.id))
+          throw new Error(
+            "Two native records have the same portable TaskNotes identity. Resolve the duplicate before opening this collection.",
+          );
+        portableIds.add(value.task.id);
+      }
+      for (const [id, existing] of this.cache)
+        if (
+          unchanged(existing.recordId) &&
+          rows.get(existing.recordId)?.value.task.id !== id
+        )
+          this.cache.delete(id);
+
+      const deferred: string[] = [];
+      for (const [recordId, { value, record }] of rows) {
+        const id = value.task.id;
+        const owner = this.cache.get(id);
+        if (owner && owner.recordId !== recordId) {
+          // Its old owner changed during the scan and still holds this slot.
+          // Let the delta worker reconcile the new owner after it.
+          deferred.push(recordId);
+          continue;
+        }
+        this.rememberWriteState(record);
+        this.bindTaskRecord(id, recordId);
+        this.cache.set(id, value);
+      }
+      for (const id of this.pendingTaskChanges.keys())
+        if (unchanged(id)) this.pendingTaskChanges.delete(id);
+      // Fence outstanding reads, including reads of records absent from the scan.
+      this.recordEpochs.clear();
+      this.indexEpoch = ++this.epoch;
+      this.indexReady = true;
+      this.hasLoadedIndex = true;
+      for (const id of deferred) this.enqueueTaskChange(id, "put");
+      this.notify("status");
+      this.reached();
+    } finally {
+      writes.stop();
     }
   }
 

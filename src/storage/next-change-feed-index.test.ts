@@ -61,6 +61,7 @@ async function fixture(withCursor = false, manual = false) {
     kind: "put",
     version: 1,
   };
+  const queryRecords = f.client.query.bind(f.client);
   const query = vi.spyOn(f.client, "query");
   const findRecord = f.client.find.bind(f.client);
   const find = vi.spyOn(f.client, "find");
@@ -73,6 +74,7 @@ async function fixture(withCursor = false, manual = false) {
     change,
     push,
     query,
+    queryRecords,
     find,
     findRecord,
     taskReads,
@@ -118,64 +120,200 @@ it("reads zero tasks on unchanged refresh and reconciles one edit with one find 
   expect(describe).not.toHaveBeenCalled();
 });
 
-it("finishes the scan once and rereads negative type evidence delivered during a page", async () => {
-  const f = await fixture();
-  f.query
-    .mockImplementationOnce(async () => {
-      f.push([{ ...f.change, types: ["unrelated"] }]);
-      return {
-        asOf: 0,
-        complete: true,
-        records: [],
-        hasMore: true,
-        cursor: "page-2",
-      };
-    })
-    .mockResolvedValueOnce({ asOf: 0, complete: true, records: [] });
-  expect((await f.repository.listSummaries())[0]?.title).toBe("Original");
-  expect(f.query.mock.calls.map(([q]) => q.cursor)).toEqual([
-    undefined,
-    "page-2",
+it("scans 2,500 tasks once with an edit between every page and quoted path frontiers", async () => {
+  const f = await fixture(false, true);
+  const path = (index: number) =>
+    `Tasks/${String(index).padStart(4, "0")}-"é"\\日本語.md`;
+  f.replica.renameElsewhere(f.id, path(0));
+  const expected = new Map([[path(0), "Original"]]);
+  const nativeIds = [f.id];
+  for (let i = 2499; i > 0; i--) {
+    const title = `Task ${i}`;
+    nativeIds[i] = seedRecord(f.replica, {
+      path: path(i),
+      types: ["task"],
+      frontmatter: { id: crypto.randomUUID(), title },
+    }).id;
+    expected.set(path(i), title);
+  }
+
+  const editBeforePage = new Map([
+    [2, 17],
+    [3, 2499],
   ]);
-  expect(f.taskReads()).toHaveLength(1);
+  f.query.mockImplementation(async (...args) => {
+    expect(f.watches.mock.results[0]!.value.state).toBe("active");
+    const index = editBeforePage.get(f.query.mock.calls.length);
+    if (index !== undefined) {
+      const id = nativeIds[index]!;
+      const title = `Edited ${index}`;
+      f.replica.editElsewhere(id, { frontmatter: { title } });
+      // During the scan even negative type evidence requires a reread.
+      f.push([{ ...f.change, id, path: path(index), types: ["unrelated"] }]);
+      expected.set(path(index), title);
+    }
+    return f.queryRecords(...args);
+  });
+  const rows = await f.repository.listSummaries({ limit: 2501 });
+  const base = {
+    types: ["task"],
+    order_by: [{ field: "file.path", direction: "asc" }],
+    limit: 1000,
+  };
+  expect(f.query.mock.calls.map(([input]) => input)).toStrictEqual([
+    base,
+    { ...base, where: `file.path > ${JSON.stringify(path(999))}` },
+    { ...base, where: `file.path > ${JSON.stringify(path(1999))}` },
+  ]);
+  expect(f.taskReads().map(([id]) => id)).toEqual([
+    nativeIds[17],
+    nativeIds[2499],
+  ]);
+  expect(rows).toHaveLength(2500);
+  expect(new Map(rows.map((row) => [row.path, row.title]))).toEqual(expected);
+});
+
+// Simulate a replica byte budget. The SDK stand-in still sorts, evaluates the
+// predicate and pages the actual records. Only the number that fit is smaller.
+function shortIndexPages(
+  f: Awaited<ReturnType<typeof fixture>>,
+  limit: number,
+  beforePage: (page: number) => void,
+) {
+  let page = 0;
+  f.query.mockImplementation(async (input, options) => {
+    beforePage(++page);
+    const result = await f.queryRecords({ ...input, limit }, options);
+    return { ...result, hasMore: !!result.cursor };
+  });
+}
+
+it("reconciles moves in both directions, a deletion and a creation across the path frontier", async () => {
+  const f = await fixture(false, true);
+  f.replica.renameElsewhere(f.id, "a.md");
+  const seed = (path: string) => seedTask(f.replica, { title: path }, { path });
+  const removed = seed("b.md");
+  seed("m.md");
+  const behind = seed("y.md");
+  seed("z.md");
+  await f.repository.initialize();
+  f.push([], true);
+  f.query.mockClear();
+  f.find.mockClear();
+  let created!: string;
+  shortIndexPages(f, 3, (page) => {
+    if (page !== 2) return;
+    f.replica.renameElsewhere(f.id, "x.md"); // seen twice
+    f.replica.renameElsewhere(behind.id, "0.md"); // unseen on either page
+    f.replica.deleteElsewhere(removed.id);
+    created = seed("1.md").id;
+    f.push([
+      { ...f.change, path: "x.md" },
+      { ...f.change, id: behind.id, path: "0.md" },
+      { ...f.change, id: removed.id, path: "b.md", kind: "remove" },
+      { ...f.change, id: created, path: "1.md" },
+    ]);
+  });
+  f.find.mockImplementation(async (...args) => {
+    if (typeof args[0] === "string") {
+      // The scan must preserve even the cached row it never saw (y.md).
+      // Only the delta worker may change these five entries.
+      expect(f.repository.navigationTaskCounts("2026-11-20")?.inbox).toBe(5);
+    }
+    return f.findRecord(...args);
+  });
+  const rows = await f.repository.listSummaries();
+  expect(rows.map(({ path, title }) => [path, title]).sort()).toEqual([
+    ["0.md", "y.md"],
+    ["1.md", "1.md"],
+    ["m.md", "m.md"],
+    ["x.md", "Original"],
+    ["z.md", "z.md"],
+  ]);
+  expect(f.query).toHaveBeenCalledTimes(2);
+  expect(f.taskReads().map(([id]) => id)).toEqual([f.id, behind.id, created]);
+});
+
+it.each(["later read", "feed delta"])(
+  "resolves a portable identity collision using the native record's %s",
+  async (resolution) => {
+    const f = await fixture(false, true);
+    f.replica.renameElsewhere(f.id, "b.md");
+    const oldId = String(f.record.frontmatter.id);
+    const newId = crypto.randomUUID();
+    seedTask(f.replica, { title: "Other" }, { path: "a.md", id: oldId });
+    seedTask(f.replica, { title: "Tail" }, { path: "c.md" });
+    shortIndexPages(f, 2, (page) => {
+      if (page !== 2) return;
+      f.replica.editElsewhere(f.id, { frontmatter: { id: newId } });
+      if (resolution === "later read") f.replica.renameElsewhere(f.id, "z.md");
+      else f.push([{ ...f.change, path: "b.md" }]);
+    });
+    const rows = await f.repository.listSummaries();
+    expect(rows).toHaveLength(3);
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: oldId, path: "a.md" }),
+        expect.objectContaining({
+          id: newId,
+          path: resolution === "later read" ? "z.md" : "b.md",
+        }),
+      ]),
+    );
+    expect(f.taskReads()).toHaveLength(resolution === "later read" ? 0 : 1);
+    expect(f.query).toHaveBeenCalledTimes(2);
+  },
+);
+
+it("keeps a changed cached owner until the delta releases its portable ID", async () => {
+  const f = await fixture(false, true);
+  f.replica.renameElsewhere(f.id, "z.md");
+  f.replica.editElsewhere(f.id, { frontmatter: { projects: ["Old"] } });
+  await f.repository.initialize();
+  const oldId = String(f.record.frontmatter.id);
+  const newId = crypto.randomUUID();
+  const next = seedTask(
+    f.replica,
+    { title: "Replacement", projects: ["New"] },
+    { id: oldId, path: "a.md" },
+  );
+  f.push([], true);
+  f.query.mockClear();
+  f.find.mockClear();
+  shortIndexPages(f, 1, (page) => {
+    if (page !== 2) return;
+    f.replica.editElsewhere(f.id, { frontmatter: { id: newId } });
+    f.push([{ ...f.change, path: "z.md" }]);
+  });
+  f.find.mockImplementation(async (...args) => {
+    if (args[0] === f.id)
+      expect(f.repository.projectShortcuts()).toEqual([
+        { label: "Old", count: 1 },
+      ]);
+    return f.findRecord(...args);
+  });
+  const rows = await f.repository.listSummaries();
+  expect(rows.map(({ id, path }) => [path, id]).sort()).toEqual([
+    ["a.md", oldId],
+    ["z.md", newId],
+  ]);
+  expect(f.taskReads().map(([id]) => id)).toEqual([f.id, next.id]);
+  expect(f.query).toHaveBeenCalledTimes(2);
 });
 
 it.each(["cursor_stale", "cursor_expired"])(
-  "restarts a refused partial scan and bounds repeated %s refusals",
+  "surfaces a %s refusal on a fresh scan request without retrying it",
   async (reason) => {
     const f = await fixture();
-    const problem = new MdbaseError({
+    const refusal = new MdbaseError({
       code: "invalid_request",
       recovery: "refresh",
       reason,
       message: reason,
     });
-    const first = {
-      complete: true,
-      asOf: 0,
-      records: [f.record],
-      hasMore: true,
-      cursor: "stale-page",
-    };
-    const changedId = crypto.randomUUID();
-    f.query
-      .mockImplementationOnce(async () => {
-        f.push([{ ...f.change, id: changedId }]);
-        return first;
-      })
-      .mockRejectedValueOnce(problem)
-      .mockResolvedValueOnce({ complete: true, asOf: 1, records: [] });
-    expect(await f.repository.listSummaries()).toEqual([]);
-    expect(f.query.mock.calls.map(([q]) => q.cursor)).toEqual([
-      undefined,
-      "stale-page",
-      undefined,
-    ]);
-    expect(f.taskReads().map(([id]) => id)).toEqual([changedId]);
-    f.push([], true);
-    f.query.mockClear().mockRejectedValue(problem);
-    await expect(f.repository.listSummaries()).rejects.toBe(problem);
-    expect(f.query).toHaveBeenCalledTimes(3);
+    f.query.mockRejectedValue(refusal);
+    await expect(f.repository.listSummaries()).rejects.toBe(refusal);
+    expect(f.query).toHaveBeenCalledOnce();
   },
 );
 

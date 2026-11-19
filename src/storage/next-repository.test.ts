@@ -1005,7 +1005,8 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
     Awaited<ReturnType<typeof fixture>>["client"]["query"]
   >[0];
   const indexScan = (query: Query) =>
-    !!query.types?.length && query.where === undefined;
+    !!query.types?.length &&
+    (query.where === undefined || query.where.startsWith("file.path > "));
   /** Each query is one relayed round trip of `ms`, one record per page. */
   function relayed(f: Awaited<ReturnType<typeof fixture>>, ms: number) {
     const query = f.client.query.bind(f.client);
@@ -1014,7 +1015,8 @@ describe("a relayed collection slower than one foreground budget (#512)", () => 
       .mockImplementation(async (input, options) => {
         await delay(ms);
         options?.signal?.throwIfAborted();
-        return query({ ...input, limit: 1 }, options);
+        const page = await query({ ...input, limit: 1 }, options);
+        return { ...page, hasMore: !!page.cursor };
       });
   }
   async function externalWrite(f: Awaited<ReturnType<typeof fixture>>) {

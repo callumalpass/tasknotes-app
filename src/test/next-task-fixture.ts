@@ -220,13 +220,16 @@ const bodyContains = new RegExp(
 const pathOrTitleContains = new RegExp(
   String.raw`^file\.path\.lower\(\)\.contains\(${literal}\) \|\| \("title" in record && record\.title\.lower\(\)\.contains\(${literal}\)\)$`,
 );
+const pathAfter = new RegExp(String.raw`^file\.path > ${literal}$`);
 const taskIdentity = new RegExp(
   String.raw`^file\.path == ${literal} \|\| \("id" in record && record\.id == \1\)$`,
 );
 
-/** `MemoryReplicaOptions.where` for the expressions TaskNotes sends: Notes
- * search and link completion. Not Core's CEL; anything else is refused. */
+/** Evaluates the Notes search, index paging, identity and link expressions
+ * TaskNotes sends to the SDK stand-in. Unsupported expressions fail the test. */
 export function taskQueryWhere(expression: string, record: MemoryRecord) {
+  const after = pathAfter.exec(expression);
+  if (after) return record.path > (JSON.parse(after[1]!) as string);
   const identity = taskIdentity.exec(expression);
   if (identity) {
     const id: string = JSON.parse(identity[1]!);

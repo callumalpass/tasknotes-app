@@ -128,6 +128,27 @@ describe("native change invalidation (SDK stand-in, not Core/Noise/LAB)", () => 
     await expect(f.repository.refresh()).resolves.toMatchObject({ scanned: 0 });
     await expect(f.repository.listSummaries()).resolves.toEqual([]);
   });
+  it("requires an active watch at page one if the watch went stale during model loading", async () => {
+    const f = await fixture();
+    const control = heldWatch();
+    vi.spyOn(f.client, "watchChanges").mockReturnValueOnce(control.watch);
+    const describe = vi.mocked(f.client.describe).getMockImplementation()!;
+    const problem = unavailable();
+    vi.mocked(f.client.describe).mockImplementationOnce(async (...args) => {
+      const result = await describe(...args);
+      control.stale(problem);
+      return result;
+    });
+    const pages = vi.spyOn(f.client, "query");
+    const opened = f.repository.initialize();
+    control.active();
+    await expect(opened).rejects.toBe(problem);
+    expect(pages).not.toHaveBeenCalled();
+    control.active();
+    await f.repository.initialize();
+    expect(pages).toHaveBeenCalledOnce();
+  });
+
   it("invalidates a loaded index on an actual SDK remote change", async () => {
     const f = await fixture();
     const { task, record } = await seed(f);
