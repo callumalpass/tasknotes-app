@@ -146,6 +146,7 @@ it.each(["active", "starting"] as const)(
     const watch = Object.assign(vi.fn(), {
       state: "active" as ChangesWatchState,
       error: null,
+      cursor: undefined,
       ready: Promise.resolve(),
       subscribe(listener: Parameters<ChangesWatch["subscribe"]>[0]) {
         notify = listener;

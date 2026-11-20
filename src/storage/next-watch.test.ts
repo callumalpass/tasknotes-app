@@ -42,6 +42,7 @@ function heldWatch() {
   });
   const watch: ChangesWatch = Object.assign(stop, {
     ready,
+    cursor: undefined,
     get state() {
       return state;
     },
