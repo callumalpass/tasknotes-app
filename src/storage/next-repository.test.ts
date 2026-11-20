@@ -71,6 +71,19 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
 
   it("identifies a deletion cancelled before index loading submits a write", async () => {
     const f = await fixture();
+    // A watch without a resumable cursor (an SDK before 0.1.21), so resume
+    // reloads the index and the deletion waits for it.
+    const watch = f.client.watchChanges.bind(f.client);
+    vi.spyOn(f.client, "watchChanges").mockImplementation((cb, options) => {
+      const original = watch(cb, options);
+      return Object.defineProperties(() => original(), {
+        ready: { value: original.ready },
+        subscribe: { value: original.subscribe },
+        state: { get: () => original.state },
+        error: { get: () => original.error },
+        cursor: { get: () => undefined },
+      }) as typeof original;
+    });
     const task = await seed(f);
     await f.repository.get(task.portableId);
     f.repository.suspend();
