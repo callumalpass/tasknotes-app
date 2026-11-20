@@ -1,5 +1,6 @@
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 import type { Mdbase } from "@mdbase-dev/sdk";
 import manifest from "../generated/mdbase-app.json";
 import { grantCallbackFromHandoff, nativeGrantReturnUrl } from "./grant-return";
@@ -7,15 +8,19 @@ import { grantCallbackFromHandoff, nativeGrantReturnUrl } from "./grant-return";
 export const TASKNOTES_NATIVE_RETURN_URL =
   "dev.tasknotes.app://auth/mdbase/callback";
 
-const grantReturnUrl = nativeGrantReturnUrl(manifest);
-
 export const nativeSignIn = {
   returnUrl: TASKNOTES_NATIVE_RETURN_URL,
-  // Private collection grants come back through the web page's hand-off (#492).
-  ...(grantReturnUrl ? { grantReturnUrl } : {}),
   open: (url: string) => Browser.open({ url }),
   close: () => Browser.close(),
 };
+
+export function nativeSignInOpener() {
+  const grantReturnUrl =
+    Capacitor.getPlatform() === "android"
+      ? nativeGrantReturnUrl(manifest)
+      : null;
+  return { ...nativeSignIn, ...(grantReturnUrl ? { grantReturnUrl } : {}) };
+}
 
 export function isNativeSignInReturn(value: string): boolean {
   try {
@@ -43,6 +48,7 @@ export function followNativeSignInReturn(
   deliverGrant: (url: string) => Promise<void> = async (url) =>
     (await import("@mdbase-dev/sdk/app-grant")).deliverAppGrantCallback(url),
 ): () => void {
+  const { grantReturnUrl } = nativeSignInOpener();
   let active = true;
   const returned = (url: string) => {
     if (!active) return;

@@ -1,5 +1,7 @@
 # Unreleased
 
+- Fix a launch crash on iPhone and iPad caused by using Android's Private collection callback on iOS.
+
 - Keep an open task that repeats from its completion date on its current scheduled and due dates when you change its repeat settings, such as the repeat count or occurrence note policy. These edits no longer move the task to a later occurrence.
 
 - Show reminders as ready as soon as notification access is approved in mdbase, instead of still asking for approval until the page is reloaded.

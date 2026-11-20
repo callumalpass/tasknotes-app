@@ -4,7 +4,7 @@ import {
   type MdbaseApplicationDeclaration,
 } from "@mdbase-dev/sdk";
 import { Capacitor } from "@capacitor/core";
-import { nativeSignIn } from "../native/sign-in";
+import { nativeSignInOpener } from "../native/sign-in";
 import manifest from "../generated/mdbase-app.json";
 import {
   requireTaskNotesAppEnvironment,
@@ -73,7 +73,7 @@ export function taskNotesMdbase(): Mdbase {
   entry = createMdbase(taskNotesApplicationDeclaration(environment), {
     followVisibility: true,
     unsynced: taskNotesUnsyncedEnabled(),
-    ...(Capacitor.isNativePlatform() ? { signIn: nativeSignIn } : {}),
+    ...(Capacitor.isNativePlatform() ? { signIn: nativeSignInOpener() } : {}),
   });
   return entry;
 }
