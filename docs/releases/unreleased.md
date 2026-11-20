@@ -1,5 +1,7 @@
 # Unreleased
 
+- Keep an open task that repeats from its completion date on its current scheduled and due dates when you change its repeat settings, such as the repeat count or occurrence note policy. These edits no longer move the task to a later occurrence.
+
 - Show reminders as ready as soon as notification access is approved in mdbase, instead of still asking for approval until the page is reloaded.
 
 - Keep a reminder's generated notification text in step with its time: changing "15 minutes before" to 2 minutes now reads "2 minutes before". Text you wrote yourself is never changed.
