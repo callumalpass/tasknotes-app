@@ -7,6 +7,9 @@ test.use({ timezoneId: "UTC", colorScheme: "dark" });
 test("expanded agenda keeps round markers and collapses long empty runs", async ({
   page,
 }) => {
+  // Demo tasks are dated relative to today, so the empty runs this test
+  // walks to move with the calendar unless the date is fixed.
+  await page.clock.setFixedTime(new Date("2026-11-19T12:00:00Z"));
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(upcoming);
   await page.locator(".agenda-range-toggle").click();

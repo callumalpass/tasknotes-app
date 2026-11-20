@@ -42,13 +42,13 @@ async function fixture(withCursor = false, manual = false) {
         cb(batch);
       };
       const original = watch(manual ? () => {} : deliver, options);
-      if (!withCursor) return original;
+      // SDK 0.1.21 watches expose `cursor`; an older SDK's had none.
       return Object.defineProperties(() => original(), {
         ready: { value: original.ready },
         subscribe: { value: original.subscribe },
         state: { get: () => original.state },
         error: { get: () => original.error },
-        cursor: { get: () => cursor },
+        cursor: { get: () => (withCursor ? cursor : undefined) },
       }) as typeof original;
     });
   function push(changes: wire.Change[], reset = false) {
