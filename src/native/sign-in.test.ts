@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 const native = vi.hoisted(() => ({
@@ -32,7 +33,8 @@ it.each([
 ])("ignores unrelated callback %s", (url) => {
   expect(isNativeSignInReturn(url)).toBe(false);
 });
-it("warm return wakes the same SDK owner; URL codes are never exchanged", async () => {
+it("warm iOS sign-in return wakes the same SDK owner without accepting Android grants", async () => {
+  vi.spyOn(Capacitor, "getPlatform").mockReturnValue("ios");
   const remove = vi.fn(async () => {});
   let returned!: (event: { url: string }) => void;
   native.addListener.mockImplementation((_name, listener) => {
@@ -40,8 +42,13 @@ it("warm return wakes the same SDK owner; URL codes are never exchanged", async 
     return Promise.resolve({ remove });
   });
   const mdbase = { setForeground: vi.fn() } as unknown as Mdbase;
-  const stop = followNativeSignInReturn(mdbase);
+  const deliver = vi.fn(async () => {});
+  const stop = followNativeSignInReturn(mdbase, deliver);
   returned({ url: "https://evil.test" });
+  returned({
+    url: "dev.tasknotes.app://auth/mdbase/grant?code=c0de&state=st4te",
+  });
+  expect(deliver).not.toHaveBeenCalled();
   expect(mdbase.setForeground).not.toHaveBeenCalled();
   returned({
     url:
@@ -65,12 +72,8 @@ it("cold return also wakes the original SDK owner", async () => {
   expect(mdbase.setForeground).toHaveBeenCalledWith(true);
   stop();
 });
-it("declares the grant return the manifest lists for Private collections", () => {
-  expect(nativeSignIn.grantReturnUrl).toBe(
-    "https://app.tasknotes.dev/auth/mdbase/callback?via=app",
-  );
-});
-it("hands a Private grant to the waiting SDK flow and wakes it (#492)", async () => {
+it("hands an Android Private grant to the waiting SDK flow and wakes it (#492)", async () => {
+  vi.spyOn(Capacitor, "getPlatform").mockReturnValue("android");
   let returned!: (event: { url: string }) => void;
   native.addListener.mockImplementation((_name, listener) => {
     returned = listener;
