@@ -1,9 +1,26 @@
 # Store screenshots
 
 Captioned App Store and Google Play screenshots, rendered from the real app UI by
-`scripts/store-screenshots.mjs`. Store automation does not upload them: Apple
-carries listing screenshots forward between versions and Play keeps its listing
-assets, so upload a new set by hand when it changes.
+`scripts/store-screenshots.mjs`. The store publishers upload the `en` sets with
+every release (`scripts/store-media.mjs`), so commit new images here rather than
+uploading them in App Store Connect or Play Console; console uploads are
+replaced by the next release.
+
+- **App Store**: the iPhone and iPad sets go on the primary locale of the new
+  version, before submission. A set is replaced only when its ordered checksums
+  differ, and the submission waits until Apple has processed the uploads and
+  published their checksums. Other iPhone and iPad sizes on that locale are
+  emptied, so Apple scales these instead of showing old images. Locales without
+  their own screenshots fall back to the primary locale's.
+- **Google Play**: the phone set and the feature graphic go on the default
+  language in the release edit, before commit. An image type is replaced only
+  when its ordered SHA-256 list differs. Languages without their own graphics
+  fall back to the default language's. The 3:4 iPad set is not used for Play
+  tablets, where 16:9 or 9:16 is recommended.
+
+`scripts/store-media.mjs` checks each file's size and that it is an opaque RGB
+PNG before anything is written; a bad file stops the release with
+`store-media-invalid`. Only `en` is uploaded for now.
 
 ## Regenerate
 
@@ -27,15 +44,15 @@ script fails if a caption does not fit in two lines.
 
 ## Sets
 
-| Directory                | Pixels    | Where it goes                                       |
-| ------------------------ | --------- | --------------------------------------------------- |
-| `ios-iphone-69/<locale>` | 1320×2868 | App Store Connect → iPhone 6.9" Display             |
-| `ios-ipad-13/<locale>`   | 2064×2752 | App Store Connect → iPad 13" Display                |
-| `play-phone/<locale>`    | 1080×1920 | Play Console → Main store listing → Phone           |
-| `play-feature-graphic`   | 1024×500  | Play Console → Main store listing → Feature graphic |
+| Directory                | Pixels    | Where it goes                                      |
+| ------------------------ | --------- | -------------------------------------------------- |
+| `ios-iphone-69/<locale>` | 1320×2868 | App Store iPhone 6.9" (`APP_IPHONE_67` in the API) |
+| `ios-ipad-13/<locale>`   | 2064×2752 | App Store iPad 13" (`APP_IPAD_PRO_3GEN_129`)       |
+| `play-phone/<locale>`    | 1080×1920 | Play phone screenshots                             |
+| `play-feature-graphic`   | 1024×500  | Play feature graphic                               |
 
 All files are opaque RGB PNGs; Apple rejects screenshots with an alpha channel.
-Upload them in file-name order:
+The stores show them in file-name order:
 
 1. `01-today`: Today, with today's tasks and one overdue task.
 2. `02-capture`: the New task sheet parsing a date, project and priority.

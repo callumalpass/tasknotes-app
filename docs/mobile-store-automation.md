@@ -96,6 +96,12 @@ its writes back before submitting or committing; a mismatch fails like any
 other saved-state mismatch. Edit the files, not the consoles. The first
 release after a new locale is added creates that locale in the store.
 
+Store screenshots and the Play feature graphic live in `store/screenshots/`
+(see its README) and are uploaded the same way: the App Store submitter puts
+them on the new version's primary locale and waits for Apple to process them
+before submitting; the Play publisher puts them on the default language in the
+release edit. Unchanged images are not uploaded again.
+
 ## Stops, outcomes and recovery
 
 Use the ops front door:

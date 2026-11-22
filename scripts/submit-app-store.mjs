@@ -3,6 +3,7 @@ import { readFile, appendFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStoreListing } from "./store-listing.mjs";
+import { loadStoreMedia } from "./store-media.mjs";
 
 export const APP_ID = "6797168033";
 export const BUNDLE_ID = "dev.tasknotes.app";
@@ -451,6 +452,182 @@ function listingPlan(localizations, metadata, listing) {
   };
 }
 
+// Screenshots on the primary locale, which every other locale falls back to.
+// A managed set is replaced only when its ordered checksums differ; smaller
+// iPhone and iPad sets are emptied so Apple scales the managed ones instead
+// of showing stale images.
+// Apple publishes sourceFileChecksum shortly after a screenshot reaches
+// COMPLETE, so a screenshot is delivered only once both are present.
+const delivered = (shot) =>
+  shot.attributes.assetDeliveryState?.state === "COMPLETE" &&
+  Boolean(shot.attributes.sourceFileChecksum);
+const sameFile = (shot, file) =>
+  shot.attributes.sourceFileChecksum === file.md5 && delivered(shot);
+// While Apple is still processing, the checksum may be missing; the name and
+// size then identify the upload, so a rerun after a timed-out wait keeps
+// waiting instead of uploading the same images again.
+const inFlight = (shot, file) =>
+  ["UPLOAD_COMPLETE", "COMPLETE"].includes(
+    shot.attributes.assetDeliveryState?.state,
+  ) &&
+  (shot.attributes.sourceFileChecksum
+    ? shot.attributes.sourceFileChecksum === file.md5
+    : shot.attributes.fileName === file.fileName &&
+      shot.attributes.fileSize === file.bytes.length);
+const isDeviceSet = (type) => /^APP_(IPHONE|IPAD)_/.test(type);
+
+async function screenshotSets(client, localizationId) {
+  return client.list(
+    `appStoreVersionLocalizations/${localizationId}/appScreenshotSets`,
+  );
+}
+
+const screenshotsOf = (client, setId) =>
+  client.list(`appScreenshotSets/${setId}/appScreenshots`);
+
+function sameScreenshots(shots, files, matches = sameFile) {
+  return (
+    shots.length === files.length &&
+    shots.every((shot, index) => matches(shot, files[index]))
+  );
+}
+
+async function uploadScreenshot(client, setId, file, upload) {
+  const shot = (
+    await client.request("appScreenshots", "POST", {
+      type: "appScreenshots",
+      attributes: { fileName: file.fileName, fileSize: file.bytes.length },
+      relationships: {
+        appScreenshotSet: relation("appScreenshotSets", setId),
+      },
+    })
+  ).data;
+  for (const operation of shot.attributes.uploadOperations ?? []) {
+    // Apple's presigned asset URLs never receive the API bearer token.
+    const url = new URL(operation.url);
+    if (url.protocol !== "https:")
+      throw new Error("Unexpected screenshot upload URL");
+    const response = await upload(url, {
+      method: operation.method,
+      headers: Object.fromEntries(
+        (operation.requestHeaders ?? []).map(({ name, value }) => [
+          name,
+          value,
+        ]),
+      ),
+      body: file.bytes.subarray(
+        operation.offset,
+        operation.offset + operation.length,
+      ),
+      redirect: "error",
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (!response.ok)
+      throw new Error(`Screenshot upload failed: HTTP ${response.status}`);
+  }
+  await client.request(`appScreenshots/${shot.id}`, "PATCH", {
+    type: "appScreenshots",
+    id: shot.id,
+    attributes: { uploaded: true, sourceFileChecksum: file.md5 },
+  });
+  return shot.id;
+}
+
+async function syncScreenshots(
+  client,
+  localizationId,
+  media,
+  { upload = fetch, sleepImpl = sleep, attempts = 40 } = {},
+) {
+  const sets = await screenshotSets(client, localizationId);
+  for (const [type, files] of Object.entries(media)) {
+    const set =
+      sets.find((item) => item.attributes.screenshotDisplayType === type) ??
+      (
+        await client.request("appScreenshotSets", "POST", {
+          type: "appScreenshotSets",
+          attributes: { screenshotDisplayType: type },
+          relationships: {
+            appStoreVersionLocalization: relation(
+              "appStoreVersionLocalizations",
+              localizationId,
+            ),
+          },
+        })
+      ).data;
+    const shots = await screenshotsOf(client, set.id);
+    if (sameScreenshots(shots, files, inFlight)) continue;
+    for (const shot of shots)
+      await client.request(`appScreenshots/${shot.id}`, "DELETE");
+    const ids = [];
+    for (const file of files)
+      ids.push(await uploadScreenshot(client, set.id, file, upload));
+    await client.request(
+      `appScreenshotSets/${set.id}/relationships/appScreenshots`,
+      "PATCH",
+      ids.map((id) => ({ type: "appScreenshots", id })),
+    );
+  }
+  for (const set of sets) {
+    const type = set.attributes.screenshotDisplayType;
+    if (media[type] || !isDeviceSet(type)) continue;
+    for (const shot of await screenshotsOf(client, set.id))
+      await client.request(`appScreenshots/${shot.id}`, "DELETE");
+  }
+  // Apple processes uploads asynchronously; submission needs them delivered.
+  for (let attempt = 0; ; attempt++) {
+    const current = await screenshotSets(client, localizationId);
+    let pending = false;
+    for (const type of Object.keys(media)) {
+      const set = current.find(
+        (item) => item.attributes.screenshotDisplayType === type,
+      );
+      for (const shot of set ? await screenshotsOf(client, set.id) : []) {
+        if (shot.attributes.assetDeliveryState?.state === "FAILED")
+          throw new Error(
+            "Apple could not process a store screenshot; inspect App Store Connect",
+          );
+        if (!delivered(shot)) pending = true;
+      }
+    }
+    if (!pending) return;
+    if (attempt + 1 >= attempts)
+      throw new Error(
+        "Timed out waiting for Apple to process store screenshots; rerun the submission",
+      );
+    await sleepImpl(15_000);
+  }
+}
+
+async function screenshotsMismatch(client, localizationId, media) {
+  const sets = await screenshotSets(client, localizationId);
+  for (const set of sets) {
+    const type = set.attributes.screenshotDisplayType;
+    const shots = await screenshotsOf(client, set.id);
+    if (
+      media[type]
+        ? !sameScreenshots(shots, media[type])
+        : isDeviceSet(type) && shots.length
+    )
+      return true;
+  }
+  return Object.keys(media).some(
+    (type) =>
+      !sets.some((set) => set.attributes.screenshotDisplayType === type),
+  );
+}
+
+function primaryLocalization(app, localizations) {
+  const primary = localizations.find(
+    (item) => item.attributes.locale === app.attributes.primaryLocale,
+  );
+  if (!primary)
+    throw new Error(
+      "The primary locale has no version localization; inspect App Store Connect",
+    );
+  return primary;
+}
+
 function demoCredentialsOf(env) {
   const name = env.APP_REVIEW_DEMO_ACCOUNT_NAME;
   const password = env.APP_REVIEW_DEMO_ACCOUNT_PASSWORD;
@@ -530,6 +707,8 @@ export async function submitAppStore({
   listing = {},
   commit = false,
   waitOptions,
+  media = {},
+  mediaOptions,
   env = process.env,
 }) {
   validateMetadata(metadata, version);
@@ -734,6 +913,18 @@ export async function submitAppStore({
       });
     }
     if (Object.keys(listing).length) await applyAppInfoListing(client, listing);
+    if (Object.keys(media).length)
+      await syncScreenshots(
+        client,
+        primaryLocalization(
+          app,
+          await client.list(
+            `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
+          ),
+        ).id,
+        media,
+        mediaOptions,
+      );
     const detail = await readReview(client, target.id);
     if (!detail)
       throw new Error(
@@ -761,6 +952,12 @@ export async function submitAppStore({
     prepared.attributes.earliestReleaseDate ||
     listingMismatch(savedLocales, metadata, listing) ||
     (await appInfoListingMismatch(client, listing)) ||
+    (Object.keys(media).length &&
+      (await screenshotsMismatch(
+        client,
+        primaryLocalization(app, savedLocales).id,
+        media,
+      ))) ||
     savedReview?.attributes?.notes !== metadata.reviewNotes
   ) {
     throw new Error(
@@ -991,6 +1188,7 @@ const taggedReasons = new Set([
   "app-store-pagination-repeated",
   "app-store-auth-key-invalid",
   "store-listing-invalid",
+  "store-media-invalid",
 ]);
 // Unrecognised failures name only a fixed error class, never the message.
 const errorClasses = new Map([
@@ -1048,6 +1246,7 @@ async function main(tracker) {
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw invalidMetadata("Invalid public release version");
   const listing = (await loadStoreListing()).apple;
+  const media = (await loadStoreMedia()).apple;
   const metadata = {
     ...(await releaseMetadata(version, listing)),
     releaseType: "AFTER_APPROVAL",
@@ -1079,6 +1278,7 @@ async function main(tracker) {
     buildNumber: process.env.TASKNOTES_IOS_BUILD,
     metadata,
     listing,
+    media,
     commit: process.argv.includes("--submit"),
   });
   const qualified = JSON.parse(
