@@ -43,6 +43,10 @@ msgid ". Pending edits are not yet synced."
 msgstr ". Pending edits are not yet synced."
 
 #: src/components/recovered-edit-notice.tsx
+msgid ". These edits last only in this tab."
+msgstr ". These edits last only in this tab."
+
+#: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
 msgstr ". They stay in this browser until restored or discarded."
 
@@ -327,6 +331,10 @@ msgstr "{action} could not finish while the collection was unavailable."
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
 msgstr "{action} could not finish."
+
+#: src/components/operation-error-notice.tsx
+msgid "{action} may have reached your server. Check the collection before trying again."
+msgstr "{action} may have reached your server. Check the collection before trying again."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
@@ -699,6 +707,10 @@ msgstr "3 days"
 msgid "30 minutes"
 msgstr "30 minutes"
 
+#: src/app/direct-collection-gate.tsx
+msgid "8-digit pairing code from your server"
+msgstr "8-digit pairing code from your server"
+
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
 msgstr "A calendar date"
@@ -992,6 +1004,7 @@ msgstr "Adjust this view’s filters or choose another view."
 msgid "Advance after"
 msgstr "Advance after"
 
+#: src/app/tasknotes-app.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1272,6 +1285,14 @@ msgstr "Bold"
 msgid "Browse tasks"
 msgstr "Browse tasks"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Browser pairing storage is unavailable. Check this site’s storage settings and try again."
+msgstr "Browser pairing storage is unavailable. Check this site’s storage settings and try again."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
+msgstr "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Builder"
@@ -1387,6 +1408,10 @@ msgstr "Changes every occurrence"
 msgid "changes need review"
 msgstr "changes need review"
 
+#: src/app/more-screen.tsx
+msgid "Changes require a connection to your server."
+msgstr "Changes require a connection to your server."
+
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
 msgstr "Check account status"
@@ -1398,6 +1423,11 @@ msgstr "Check strict completion"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "Check that the collection is connected, then try again."
+
+#: src/app/app-shell.tsx
+#: src/components/collection-write-status.tsx
+msgid "Check the collection before trying again."
+msgstr "Check the collection before trying again."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1606,6 +1636,10 @@ msgstr "Close property editor"
 #: src/app/task-screen.tsx
 msgid "Close task details"
 msgstr "Close task details"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Close this collection? Copy unsaved work first. Pending deletions will be cancelled if they have not started."
+msgstr "Close this collection? Copy unsaved work first. Pending deletions will be cancelled if they have not started."
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -1830,6 +1864,11 @@ msgstr "Conflicting changes"
 msgid "Connect calendars"
 msgstr "Connect calendars"
 
+#: src/app/direct-collection-gate.tsx
+#: src/app/tasknotes-app.tsx
+msgid "Connect to your own server"
+msgstr "Connect to your own server"
+
 #: src/app/import-screen.tsx
 msgid "Connect Todoist"
 msgstr "Connect Todoist"
@@ -1843,9 +1882,18 @@ msgstr "Connected"
 msgid "Connecting"
 msgstr "Connecting"
 
+#: src/app/direct-collection-gate.tsx
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Connecting…"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. A change in progress may have reached your server. Reconnect and check before trying again."
+msgstr "Connection lost. A change in progress may have reached your server. Reconnect and check before trying again."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. Reconnect to your server."
+msgstr "Connection lost. Reconnect to your server."
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -1886,6 +1934,10 @@ msgstr "Conversion undone"
 msgid "Convert to note"
 msgstr "Convert to note"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Copied"
+msgstr "Copied"
+
 #: src/components/task-actions.tsx
 msgid "Copy"
 msgstr "Copy"
@@ -1911,6 +1963,10 @@ msgstr "Copy task link"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "Copy title"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Copy unsaved edits"
+msgstr "Copy unsaved edits"
 
 #: src/app/more-screen.tsx
 msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
@@ -2242,6 +2298,10 @@ msgstr "Deletion stopped before this task was changed."
 msgid "Deletion waiting"
 msgstr "Deletion waiting"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Deletions still in the Undo window were cancelled."
+msgstr "Deletions still in the Undo window were cancelled."
+
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -2335,11 +2395,20 @@ msgstr "Discard recovery"
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect"
+msgstr "Disconnect"
+
 #: src/calendar-service/settings.tsx
 msgid "Disconnect calendars"
 msgstr "Disconnect calendars"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect this tab? Copy unsaved edits first. You will need a new code to pair again."
+msgstr "Disconnect this tab? Copy unsaved edits first. You will need a new code to pair again."
+
 #: src/app/bulk-task-actions.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
@@ -2814,6 +2883,14 @@ msgstr "For an upcoming window"
 msgid "For example P1D"
 msgstr "For example P1D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser"
+msgstr "Forget this browser"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser’s pairing? Copy any unsaved edits first. To revoke access, remove this browser on your server."
+msgstr "Forget this browser’s pairing? Copy any unsaved edits first. To revoke access, remove this browser on your server."
+
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
 msgstr "Forgot password"
@@ -3009,6 +3086,10 @@ msgstr "I saved my recovery key"
 msgid "I understand that existing devices must finish applying strict mode."
 msgstr "I understand that existing devices must finish applying strict mode."
 
+#: src/app/direct-collection-gate.tsx
+msgid "If your browser asked, allow local-network access for this site."
+msgstr "If your browser asked, allow local-network access for this site."
+
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
 msgstr "Image actions"
@@ -3109,6 +3190,15 @@ msgstr "Install TaskNotes to open it from your home screen."
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
 msgstr "Invalid recurrence rule"
+
+#. placeholder {0}: backendHost(address)
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation from <0>{0}</0>. Reconnect to your saved server or forget it to use the invitation."
+msgstr "Invitation from <0>{0}</0>. Reconnect to your saved server or forget it to use the invitation."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation link or HTTPS server address"
+msgstr "Invitation link or HTTPS server address"
 
 #: src/components/expression-builder.tsx
 msgid "is"
@@ -3583,6 +3673,10 @@ msgstr "More actions for {0}"
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "More task actions"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Most people use TaskNotes with mdbase."
+msgstr "Most people use TaskNotes with mdbase."
 
 #: src/i18n/ui-copy.ts
 msgid "move"
@@ -4150,9 +4244,17 @@ msgstr "On"
 msgid "On a date"
 msgstr "On a date"
 
+#: src/app/direct-collection-gate.tsx
+msgid "On a shared device, leave this unchecked. The pairing and unsaved task edits last only in this tab. Remembering also saves unsaved task edits in this browser."
+msgstr "On a shared device, leave this unchecked. The pairing and unsaved task edits last only in this tab. Remembering also saves unsaved task edits in this browser."
+
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "On this device"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Online only. Your pairing code lets this app read and change the collection on your server."
+msgstr "Online only. Your pairing code lets this app read and change the collection on your server."
 
 #: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
@@ -4207,6 +4309,14 @@ msgstr "Open in Planner"
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "Open task"
+
+#: src/app/direct-invitation.ts
+msgid "Open the invitation from {host}? This closes the current workspace and discards unsaved edits."
+msgstr "Open the invitation from {host}? This closes the current workspace and discards unsaved edits."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Open this build on an HTTPS site without a service worker."
+msgstr "Open this build on an HTTPS site without a service worker."
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4288,6 +4398,23 @@ msgstr "P0D"
 msgid "P14D"
 msgstr "P14D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Pair and open collection"
+msgstr "Pair and open collection"
+
+#. placeholder {0}: backendHost(descriptor)
+#: src/app/direct-collection-gate.tsx
+msgid "Pair with <0>{0}</0>"
+msgstr "Pair with <0>{0}</0>"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paired for this tab only. The connection could not be remembered."
+msgstr "Paired for this tab only. The connection could not be remembered."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Pairing could not be confirmed. Check your network and server, then check whether the browser was paired before requesting another code."
+msgstr "Pairing could not be confirmed. Check your network and server, then check whether the browser was paired before requesting another code."
+
 #: src/app/more-screen.tsx
 msgid "Part of mdbase"
 msgstr "Part of mdbase"
@@ -4299,6 +4426,10 @@ msgstr "Password strength: "
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
 msgstr "Past horizon"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paste an invitation for this app site or a valid HTTPS server address."
+msgstr "Paste an invitation for this app site or a valid HTTPS server address."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
@@ -4543,6 +4674,7 @@ msgstr "Recently opened"
 msgid "Recognized task details"
 msgstr "Recognized task details"
 
+#: src/app/direct-collection-gate.tsx
 #: src/calendar-service/settings.tsx
 msgid "Reconnect"
 msgstr "Reconnect"
@@ -4660,6 +4792,10 @@ msgstr "Reload"
 #: src/app/search-screen.tsx
 msgid "Reload people"
 msgstr "Reload people"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Remember this browser"
+msgstr "Remember this browser"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
@@ -4952,6 +5088,10 @@ msgstr "Retry, or undo to restore the task here."
 msgid "Retrying…"
 msgstr "Retrying…"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Return to TaskNotes"
+msgstr "Return to TaskNotes"
+
 #: src/main.tsx
 msgid "Return to the TaskNotes app"
 msgstr "Return to the TaskNotes app"
@@ -5091,6 +5231,7 @@ msgid "Saving collection behavior"
 msgstr "Saving collection behavior"
 
 #: src/app/view-editor.tsx
+#: src/components/collection-write-status.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
@@ -5300,6 +5441,10 @@ msgstr "Selected tasks"
 #: src/app/bulk-task-actions.tsx
 msgid "Selection cleared"
 msgstr "Selection cleared"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Server unavailable. Check your network and reconnect with the same pairing."
+msgstr "Server unavailable. Check your network and reconnect with the same pairing."
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5884,6 +6029,10 @@ msgstr "Templates/Task.md"
 msgid "Text"
 msgstr "Text"
 
+#: src/app/direct-collection-gate.tsx
+msgid "That code is incorrect or expired. Check all eight digits or ask for a new code."
+msgstr "That code is incorrect or expired. Check all eight digits or ask for a new code."
+
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
 msgstr "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
@@ -5994,6 +6143,10 @@ msgstr "The recovery key is still kept on this device."
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "The rule is kept exactly as written. Apply only after it is valid."
 
+#: src/app/direct-collection-gate.tsx
+msgid "The saved pairing changed. Check the server below before reconnecting."
+msgstr "The saved pairing changed. Check the server below before reconnecting."
+
 #: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "The scratchpad is not open."
@@ -6001,6 +6154,10 @@ msgstr "The scratchpad is not open."
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "The series keeps its days, so only this occurrence can move to another day."
 msgstr "The series keeps its days, so only this occurrence can move to another day."
+
+#: src/app/direct-collection-gate.tsx
+msgid "The server was not reached, so your code was not used. Check the server and network, then enter the code again."
+msgstr "The server was not reached, so your code was not used. Check the server and network, then enter the code again."
 
 #: src/app/views-screen.tsx
 msgid "the task"
@@ -6059,6 +6216,10 @@ msgstr "This anchors the pattern. Scheduled remains the next date you plan to do
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "This board groups by a calculated property, so cards cannot move between columns."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This browser cannot connect to this server. Open the same link in a browser with {transport} support."
+msgstr "This browser cannot connect to this server. Open the same link in a browser with {transport} support."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "This calendar is read-only."
 msgstr "This calendar is read-only."
@@ -6095,6 +6256,10 @@ msgstr "This event no longer exists in Google Calendar."
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "This filter uses syntax that the builder cannot safely edit."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This invitation is invalid. Open the original link from your server."
+msgstr "This invitation is invalid. Open the original link from your server."
+
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
@@ -6102,6 +6267,10 @@ msgstr "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyo
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "This occurrence"
+
+#: src/app/direct-collection-gate.tsx
+msgid "This pairing is no longer accepted. Ask for a new code."
+msgstr "This pairing is no longer accepted. Ask for a new code."
 
 #: src/calendar-service/failure-message.ts
 msgid "This period has too many events. Choose a shorter one."
@@ -6299,6 +6468,7 @@ msgid "Tracked time"
 msgstr "Tracked time"
 
 #: src/app/app-shell.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
@@ -6406,6 +6576,10 @@ msgstr "Unsaved edits found"
 msgid "Unsaved edits from an earlier session are available."
 msgstr "Unsaved edits from an earlier session are available."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Unsaved task edits"
+msgstr "Unsaved task edits"
+
 #: src/app/task-screen.tsx
 msgid "Unskip"
 msgstr "Unskip"
@@ -6453,6 +6627,10 @@ msgstr "Use “{0}”"
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
 msgstr "Use a longer, less predictable passphrase."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Use another server address"
+msgstr "Use another server address"
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx

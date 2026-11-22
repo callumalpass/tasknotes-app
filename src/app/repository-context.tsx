@@ -173,7 +173,7 @@ export function RepositoryProvider({
   children: ReactNode;
   repository: TaskRepository;
   reminderAuthority?: ReminderAuthority;
-  mutationJournal: MutationJournal;
+  mutationJournal: MutationJournal | null;
   discardPendingRecovery?(): Promise<void>;
   privateAccount?: PrivateAccountUi;
 }) {
@@ -185,7 +185,7 @@ export function RepositoryProvider({
     discardRef.current = discardPendingRecovery;
   }, [discardPendingRecovery]);
   const canDiscardPending = Boolean(discardPendingRecovery);
-  const [mutationJournal] = useState<MutationJournal>(
+  const [mutationJournal] = useState<MutationJournal | null>(
     () => suppliedMutationJournal,
   );
   const [status, setStatus] = useState<StorageStatus>("opening");

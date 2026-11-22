@@ -1,9 +1,47 @@
 import { act, renderHook } from "@testing-library/react";
 
-import { useWorkspaceNavigation } from "./use-workspace-navigation";
+import {
+  bindDirectRoute,
+  useWorkspaceNavigation,
+} from "./use-workspace-navigation";
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   window.history.replaceState(null, "", "/");
+});
+
+it("puts direct task, occurrence and view identifiers only in the fragment, including after reopening", () => {
+  vi.stubEnv("MODE", "self-hosted");
+  bindDirectRoute("backend A / tasks");
+  const first = renderHook(() => useWorkspaceNavigation([]));
+  const task = {
+    page: "task",
+    id: "private/path?#.md",
+    occurrence: "2026-11-21",
+  } as const;
+  act(() => first.result.current.navigate(task));
+  expect(location.pathname + location.search).toBe("/");
+  expect(location.hash).toBe(
+    "#/task/private%2Fpath%3F%23.md?occurrence=2026-11-21",
+  );
+  first.unmount();
+  const second = renderHook(() => useWorkspaceNavigation([]));
+  expect(second.result.current.route).toEqual(task);
+  act(() =>
+    second.result.current.navigate({ page: "views", key: "private/view" }),
+  );
+  expect(location.pathname + location.search).toBe("/");
+  expect(location.hash).toBe("#/views/private%2Fview");
+  act(() => {
+    history.replaceState(
+      { directScope: "backend B / tasks" },
+      "",
+      "/#/task/private",
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  expect(second.result.current.route).toEqual({ page: "home" });
+  expect(location.hash).toBe("");
 });
 
 it("opens and navigates the integrated import route without losing app query state", () => {

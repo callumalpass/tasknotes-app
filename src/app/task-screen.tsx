@@ -1,3 +1,4 @@
+import { CollectionGateContext } from "./collection-context";
 import { t as translate } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
 import { ArrowLeft, X } from "lucide-react";
@@ -328,8 +329,10 @@ function TaskEditor({
   // whose draft still matches it has no local edit and follows newer versions.
   const knownDraft = useRef(draft);
   const editScope = useRef(recoveryScope);
+  const { onTaskDraft, taskEditStorage } =
+    useContext(CollectionGateContext) ?? {};
   const [recovered, setRecovered] = useState<StoredTaskEdit | null>(() =>
-    readTaskEdit(recoveryScope, task.id, draft, undefined, !!writeState),
+    readTaskEdit(recoveryScope, task.id, draft, taskEditStorage, !!writeState),
   );
   const recoveredRef = useRef(recovered);
   const [backupUnavailable, setBackupUnavailable] = useState(false);
@@ -339,15 +342,17 @@ function TaskEditor({
     (unsaved: boolean) => {
       const scope = editScope.current;
       if (!scope) return;
-      const kept = writeTaskEdit(scope, task.id, {
+      const fields = {
         ...recoveredRef.current?.fields,
         ...(unsaved
           ? changedFields(openedDraft.current, draftRef.current)
           : {}),
-      });
+      };
+      onTaskDraft?.(fields);
+      const kept = writeTaskEdit(scope, task.id, fields, taskEditStorage);
       if (mounted.current) setBackupUnavailable(!kept);
     },
-    [task.id],
+    [onTaskDraft, task.id, taskEditStorage],
   );
   const resizeTitle = useCallback(() => {
     const field = titleRef.current;
@@ -942,6 +947,7 @@ function TaskEditor({
 
       {recovered ? (
         <RecoveredEditNotice
+          tabOnly={!!taskEditStorage}
           fields={recovered.fields}
           onRestore={restoreRecoveredEdit}
           onDiscard={discardRecoveredEdit}

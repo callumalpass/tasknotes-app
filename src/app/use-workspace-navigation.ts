@@ -23,6 +23,11 @@ export type Route =
 export type TaskNavigationTarget = { id: string; occurrence?: string };
 export type WorkspaceRoute = Exclude<Route, { page: "task" }>;
 
+export function bindDirectRoute(scope: string): void {
+  if (history.state?.directScope !== scope)
+    history.replaceState({ directScope: scope }, "", "/");
+}
+
 // Screens that cannot be left yet (an unsaveable or refused draft) veto
 // browser history navigation the same way their own Back button does.
 const leaveGuards = new Set<() => boolean>();
@@ -66,6 +71,11 @@ export function useWorkspaceNavigation(
   } | null>(null);
   const currentRouteUrl = routeUrl(route);
   const routeRef = useRef(route);
+  const directScope = useRef<string | undefined>(
+    import.meta.env.MODE === "self-hosted"
+      ? history.state?.directScope
+      : undefined,
+  );
   const detailRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
   const lastTaskId = useRef<string | null>(null);
@@ -99,10 +109,18 @@ export function useWorkspaceNavigation(
 
   useEffect(() => {
     const pop = (event: PopStateEvent) => {
+      if (directScope.current) bindDirectRoute(directScope.current);
       if ([...leaveGuards].some((blocked) => blocked())) {
         const current = routeRef.current;
         window.history.pushState(
-          current.page === "task" ? { taskPanel: true } : null,
+          directScope.current
+            ? {
+                directScope: directScope.current,
+                taskPanel: current.page === "task",
+              }
+            : current.page === "task"
+              ? { taskPanel: true }
+              : null,
           "",
           routeUrl(current),
         );
@@ -165,8 +183,11 @@ export function useWorkspaceNavigation(
                 ? Boolean(window.history.state?.taskPanel)
                 : true,
             };
-      if (replace) window.history.replaceState(state, "", url);
-      else window.history.pushState(state, "", url);
+      const entry = directScope.current
+        ? { ...state, directScope: directScope.current }
+        : state;
+      if (replace) window.history.replaceState(entry, "", url);
+      else window.history.pushState(entry, "", url);
       if (next.page === "task" && route.page !== "task")
         taskReturn.current = {
           element:
@@ -219,21 +240,25 @@ export function useWorkspaceNavigation(
 }
 
 function parseRoute(): Route {
-  const path = appPathname();
+  const direct = import.meta.env.MODE === "self-hosted";
+  const [fragmentPath, fragmentSearch] = location.hash.slice(1).split("?");
+  const path = direct ? fragmentPath : appPathname();
   const task = /^\/task\/([^/]+)$/.exec(path);
   if (task)
     return {
       page: "task",
       id: decodeURIComponent(task[1]),
       occurrence:
-        new URLSearchParams(window.location.search).get("occurrence") ??
-        undefined,
+        new URLSearchParams(direct ? fragmentSearch : location.search).get(
+          "occurrence",
+        ) ?? undefined,
     };
   const view = /^\/views\/([^/]+)$/.exec(path);
   if (view) return { page: "views", key: decodeURIComponent(view[1]) };
   if (path === "/views") return { page: "views" };
   if (path === "/search") return { page: "search" };
-  if (path === "/import") return { page: "import" };
+  if (path === "/import" && import.meta.env.MODE !== "self-hosted")
+    return { page: "import" };
   if (path === "/scratchpad") return { page: "scratchpad" };
   if (path === "/more") return { page: "more" };
   const settings = /^\/more\/([^/]+)$/.exec(path);
@@ -257,6 +282,13 @@ function routeUrl(route: Route): string {
           : route.page === "home"
             ? "/"
             : `/${route.page}`;
+  if (import.meta.env.MODE === "self-hosted") {
+    const search =
+      route.page === "task" && route.occurrence
+        ? `?${new URLSearchParams({ occurrence: route.occurrence })}`
+        : "";
+    return `/#${path}${search}`;
+  }
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const url = new URL(location.href);
   url.pathname = `${base}${path}` || "/";

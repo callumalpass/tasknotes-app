@@ -295,3 +295,19 @@ it("offers work before connecting by default on the web", async () => {
     screen.getByRole("button", { name: "Continue without connecting" }),
   ).toBeVisible();
 });
+
+it("offers the configured separate static site without carrying managed URL state", async () => {
+  vi.stubGlobal("__SELF_HOSTED_UI_ORIGIN__", "https://ui.example");
+  try {
+    const mdbase = await createTestMdbase({ phase: "signed_out" });
+    render(<TaskNotesApp mdbase={mdbase} />);
+    const link = await screen.findByRole("link", {
+      name: "Connect to your own server",
+    });
+    expect(link).toHaveAttribute("href", "https://ui.example");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

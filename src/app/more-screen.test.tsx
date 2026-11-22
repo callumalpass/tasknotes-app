@@ -278,6 +278,19 @@ it("lists categories on phones and opens each as its own page", async () => {
   expect(onSection).toHaveBeenLastCalledWith(undefined, true);
 });
 
+it("does not offer PWA installation on the worker-free self-hosted site", () => {
+  vi.stubEnv("MODE", "self-hosted");
+  try {
+    render(settings("about"));
+    expect(
+      screen.queryByRole("complementary", { name: "Install TaskNotes" }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Install app/ })).toBeNull();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 it("offers installation once at the top and remembers dismissal", () => {
   render(settings("about"));
   const banner = screen.getByRole("complementary", {

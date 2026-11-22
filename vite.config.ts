@@ -11,6 +11,7 @@ const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
 const build = buildIdentity(version, process.env);
+const DIRECT_MODE = "self-hosted";
 
 /** Browser-test fixture pages, built only in e2e mode so the e2e suite can
  * run against a built preview (pull-request and Pages checks), not just the
@@ -29,31 +30,45 @@ function e2eFixtureInputs(mode: string): Record<string, string> {
 }
 
 export default defineConfig(({ command, mode, isPreview }) => ({
+  ...(mode === DIRECT_MODE
+    ? { root: resolve(import.meta.dirname, "self-hosted") }
+    : {}),
   resolve: {
     alias:
-      command === "serve" && mode !== "test" && !isPreview
-        ? [
-            {
-              find: /^\.\.\/generated\/mdbase-app\.json$/,
-              replacement: resolve(
-                import.meta.dirname,
-                "src/generated/mdbase-app.development.json",
-              ),
-            },
-          ]
-        : [],
+      mode === DIRECT_MODE
+        ? [{ find: "@mdbase-dev/sdk", replacement: "@tasknotes/direct-sdk" }]
+        : command === "serve" && mode !== "test" && !isPreview
+          ? [
+              {
+                find: /^\.\.\/generated\/mdbase-app\.json$/,
+                replacement: resolve(
+                  import.meta.dirname,
+                  "src/generated/mdbase-app.development.json",
+                ),
+              },
+            ]
+          : [],
   },
   define: {
+    __SELF_HOSTED_UI_ORIGIN__: JSON.stringify(
+      mode === DIRECT_MODE
+        ? null
+        : selfHostedUiOrigin(process.env.TASKNOTES_SELF_HOSTED_UI_ORIGIN),
+    ),
     __APP_VERSION__: JSON.stringify(build.version),
     __APP_BUILD_REVISION__: JSON.stringify(build.revision),
   },
-  base: process.env.VITE_BASE_PATH ?? "/",
+  base: mode === DIRECT_MODE ? "/" : (process.env.VITE_BASE_PATH ?? "/"),
+  ...(mode === DIRECT_MODE ? { envDir: false as const, envPrefix: [] } : {}),
   plugins: [
-    androidNotificationSmokeEntry(),
+    mode === DIRECT_MODE
+      ? directCollectionEntry(command, isPreview)
+      : androidNotificationSmokeEntry(),
     uiCatalogueImports(),
     react(),
     lingui({ macroTransform: true }),
-    offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
+    mode !== DIRECT_MODE &&
+      offlineShellPlugin({ workerFile: "service-worker.js", register: false }),
   ],
   worker: { format: "es" },
   // The calendar loads lazily; pre-bundle it so dev servers don't reload
@@ -64,20 +79,39 @@ export default defineConfig(({ command, mode, isPreview }) => ({
     include: ["@tasknotes/calendar", "@tasknotes/calendar/react"],
   },
   build: {
+    ...(mode === DIRECT_MODE
+      ? {
+          outDir: resolve(import.meta.dirname, "out/self-hosted"),
+          emptyOutDir: true,
+          copyPublicDir: false,
+          // Fonts must come from this origin under the direct entry’s CSP.
+          assetsInlineLimit: 0,
+        }
+      : {}),
     // Collection and cloud runtimes load after the small location gate. Keep
     // warnings focused on unexpectedly large individual chunks.
     chunkSizeWarningLimit: 620,
     rollupOptions: {
       input: {
-        app: resolve(import.meta.dirname, "index.html"),
-        "service-worker": resolve(import.meta.dirname, "src/service-worker.ts"),
+        app: resolve(
+          import.meta.dirname,
+          mode === DIRECT_MODE ? "self-hosted/index.html" : "index.html",
+        ),
+        ...(mode !== DIRECT_MODE
+          ? {
+              "service-worker": resolve(
+                import.meta.dirname,
+                "src/service-worker.ts",
+              ),
+            }
+          : {}),
         ...e2eFixtureInputs(mode),
       },
       output: {
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : chunk.name === "app" && build.commit
+            : mode !== DIRECT_MODE && chunk.name === "app" && build.commit
               ? `assets/index-tasknotes-${build.commit.slice(0, 12)}.js`
               : "assets/[name]-[hash].js",
       },
@@ -89,16 +123,17 @@ export default defineConfig(({ command, mode, isPreview }) => ({
     strictPort: true,
     // A service on another site can't set the same-site session cookie, so LAB
     // reaches it same-origin. Set VITE_TASKNOTES_CALENDAR_ORIGIN to this path.
-    proxy: process.env.TASKNOTES_CALENDAR_PROXY
-      ? {
-          "/calendar-service": {
-            target: process.env.TASKNOTES_CALENDAR_PROXY,
-            changeOrigin: true,
-            headers: { origin: "http://localhost:4173" },
-            rewrite: (path) => path.replace(/^\/calendar-service/, ""),
-          },
-        }
-      : undefined,
+    proxy:
+      mode !== DIRECT_MODE && process.env.TASKNOTES_CALENDAR_PROXY
+        ? {
+            "/calendar-service": {
+              target: process.env.TASKNOTES_CALENDAR_PROXY,
+              changeOrigin: true,
+              headers: { origin: "http://localhost:4173" },
+              rewrite: (path) => path.replace(/^\/calendar-service/, ""),
+            },
+          }
+        : undefined,
     https:
       process.env.TASKNOTES_HTTPS_KEY && process.env.TASKNOTES_HTTPS_CERT
         ? {
@@ -138,6 +173,46 @@ export default defineConfig(({ command, mode, isPreview }) => ({
     restoreMocks: true,
   },
 }));
+
+function selfHostedUiOrigin(value?: string): string | null {
+  if (!value) return null;
+  const origin = new URL(value).origin;
+  if (
+    !origin.startsWith("https://") ||
+    (value !== origin && value !== `${origin}/`)
+  )
+    throw new Error(
+      "TASKNOTES_SELF_HOSTED_UI_ORIGIN must be a canonical HTTPS origin",
+    );
+  return origin;
+}
+
+function directCollectionEntry(
+  command: "build" | "serve",
+  isPreview: boolean | undefined,
+): import("vite").Plugin {
+  if (command !== "build" && !isPreview)
+    throw new Error("Use pnpm build:self-hosted for direct collection access.");
+  return {
+    name: "tasknotes-direct-collection-entry",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "_headers",
+        source: readFileSync(
+          new URL("./self-hosted/_headers", import.meta.url),
+        ),
+      });
+      this.emitFile({
+        type: "asset",
+        fileName: "tasknotes-mark.svg",
+        source: readFileSync(
+          new URL("./public/tasknotes-mark.svg", import.meta.url),
+        ),
+      });
+    },
+  };
+}
 
 function androidNotificationSmokeEntry() {
   return {

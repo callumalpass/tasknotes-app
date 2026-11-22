@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 declare const __APP_VERSION__: string;
+declare const __SELF_HOSTED_UI_ORIGIN__: string | null;
 /** Version plus the short build commit when the build knows it. */
 declare const __APP_BUILD_REVISION__: string;
 

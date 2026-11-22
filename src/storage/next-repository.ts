@@ -466,7 +466,7 @@ export class NextTaskRepository implements TaskRepository {
   constructor(
     private readonly client: MdbaseClient,
     private readonly displayName: string,
-    private readonly accountId: string,
+    private readonly authority: string | { directServer: string },
     options: {
       /** Host-owned clients survive this adapter's disposal; default remains owned. */
       clientOwnership?: "owned" | "borrowed";
@@ -537,7 +537,11 @@ export class NextTaskRepository implements TaskRepository {
           ? { state: "connected", lastReachedAt: new Date().toISOString() }
           : {
               state: "unavailable",
-              message: reason?.message ?? "Mdbase is not reachable.",
+              message:
+                reason?.message ??
+                (typeof this.authority === "string"
+                  ? "Mdbase is not reachable."
+                  : "Server unavailable."),
             };
       this.emit("status");
     });
@@ -803,7 +807,11 @@ export class NextTaskRepository implements TaskRepository {
         if (state === "stale" || state === "failed" || state === "closed") {
           this.status = {
             state: "unavailable",
-            message: error?.message ?? "Mdbase is not reachable.",
+            message:
+              error?.message ??
+              (typeof this.authority === "string"
+                ? "Mdbase is not reachable."
+                : "Server unavailable."),
           };
           if (state === "stale") this.emit("data");
           else this.invalidateRemoteData();
@@ -4281,10 +4289,20 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   async collectionInfo() {
+    const collection = this.client.collection;
+    if (typeof this.authority !== "string")
+      return {
+        kind: "direct" as const,
+        id: `direct:${this.authority.directServer}/${encodeURIComponent(collection)}`,
+        collectionId: collection,
+        name: this.displayName,
+        location: this.displayName,
+        runtime: "browser" as const,
+      };
     return {
       kind: "connect" as const,
-      id: `next:${this.accountId}:${this.client.collection}`,
-      collectionId: this.client.collection,
+      id: `next:${this.authority}:${collection}`,
+      collectionId: collection,
       name: this.displayName,
       location: this.displayName,
       runtime: Capacitor.isNativePlatform()
@@ -4292,7 +4310,15 @@ export class NextTaskRepository implements TaskRepository {
         : ("browser" as const),
     };
   }
+  unconfirmedTaskTitles(): string[] | undefined {
+    const ids = this.mutations.unconfirmedRecordIds();
+    if (!ids) return;
+    return [...this.cache.values()]
+      .filter((entry) => entry.recordId && ids.has(entry.recordId))
+      .map((entry) => entry.task.title);
+  }
   async connectionStatus(): Promise<RepositoryConnectionStatus> {
+    if (typeof this.authority !== "string") return this.status;
     return {
       ...this.status,
       ...(this.sync ? { sync: this.sync } : {}),

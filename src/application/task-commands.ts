@@ -58,7 +58,7 @@ export class TaskCommandService {
   constructor(
     private readonly options: {
       repository: TaskCommandRepository;
-      journal: MutationJournal;
+      journal: MutationJournal | null;
       discardPendingRequest?(requestId: string): Promise<void>;
       onDeleted?(taskId: string): Promise<void>;
       onTasksUpdated?(
@@ -73,10 +73,9 @@ export class TaskCommandService {
   async initialize(): Promise<void> {
     const info = await this.options.repository.collectionInfo();
     this.collectionId = collectionIdentity(info);
-    const commands = (await this.options.journal.list(this.collectionId)).sort(
-      (left, right) => left.requestedAt - right.requestedAt,
-    );
-    const deletions = commands.sort(
+    // Online-only sessions have an Undo window, but no durable delete intent.
+    if (!this.options.journal) return;
+    const deletions = (await this.options.journal.list(this.collectionId)).sort(
       (left, right) => left.requestedAt - right.requestedAt,
     );
 
@@ -169,7 +168,7 @@ export class TaskCommandService {
         commitAfter:
           requestedAt + (this.options.undoWindowMs ?? DEFAULT_UNDO_WINDOW_MS),
       };
-      await this.options.journal.put(command);
+      await this.options.journal?.put(command);
       this.pendingDeletion = command;
       this.deletionError = null;
       this.schedule(command);
@@ -218,7 +217,7 @@ export class TaskCommandService {
           );
         await this.options.discardPendingRequest(pending.authorityRequestId);
       }
-      await this.options.journal.remove(pending.operationId);
+      await this.options.journal?.remove(pending.operationId);
       this.clearTimer();
       this.pendingDeletion = null;
       this.deletionError = null;
@@ -274,7 +273,7 @@ export class TaskCommandService {
       };
       // Record that the window is over first: if the process dies before the
       // delete settles, the next launch commits it instead of offering Undo.
-      await this.options.journal.put(due).catch(() => undefined);
+      await this.options.journal?.put(due).catch(() => undefined);
       this.pendingDeletion = due;
       await this.commitDeletionNow(due);
     }).catch(() => undefined);
@@ -301,6 +300,7 @@ export class TaskCommandService {
   private async commitDeletionNow(command: PendingTaskDeletion): Promise<void> {
     this.clearTimer();
     try {
+      if (this.disposed && !this.options.journal) return;
       if (command.authorityRequestId)
         await this.options.repository.delete(command.taskId, {
           authorityRequestId: command.authorityRequestId,
@@ -322,18 +322,25 @@ export class TaskCommandService {
         // only uncommitted rows, never recreate an already deleted task.
         command = remaining;
         this.pendingDeletion = remaining;
-        await this.options.journal.put(remaining);
+        await this.options.journal?.put(remaining);
         this.publish();
         return this.commitDeletionNow(remaining);
       }
       await acceptedWriteEffect(
         "the accepted deletion's recovery journal could not be cleared",
-        () => this.options.journal.remove(command.operationId),
+        async () => {
+          await this.options.journal?.remove(command.operationId);
+        },
       );
       if (this.pendingDeletion?.operationId === command.operationId)
         this.pendingDeletion = null;
       this.deletionError = null;
     } catch (reason) {
+      if (!this.options.journal) {
+        this.pendingDeletion = null;
+        this.deletionError = toOperationalError(reason, "delete-task");
+        throw this.deletionError;
+      }
       if (
         reason instanceof TaskDeletionNotStartedError &&
         !command.authorityRequestId

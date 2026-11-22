@@ -2,7 +2,12 @@ import { createContext, useContext } from "react";
 import type { CollectionUiOptions } from "@mdbase-dev/ui/collections";
 import type { TaskRepository } from "tasknotes-import/task-repository";
 
+import type { TaskEditStorage } from "./task-edit-recovery";
+
 export interface CollectionGateContextValue {
+  taskEditStorage?: TaskEditStorage;
+  /** Keep the current editor's unconfirmed fields available after a live disconnect. */
+  onTaskDraft?(fields: Record<string, unknown>): void;
   importDestination?: {
     id: string;
     name: string;

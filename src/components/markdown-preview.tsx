@@ -26,6 +26,9 @@ export function MarkdownPreview({
         components={{
           a: ({ children, href }) => {
             const external = /^https?:\/\//i.test(href ?? "");
+            // The direct app has no routes for links inside a collection.
+            if (import.meta.env.MODE === "self-hosted" && !external)
+              return <span>{children}</span>;
             return (
               <a
                 href={href}
@@ -45,6 +48,11 @@ export function MarkdownPreview({
               return <img alt={alt ?? ""} src={src} />;
             const path = markdownImagePath(src ?? "");
             if (!path || !inlineImageMediaType(path))
+              return <span>{alt ?? t`Attached image`}</span>;
+            if (
+              import.meta.env.MODE === "self-hosted" &&
+              (!src || !resolveImage || /^(?:[a-z][\w+.-]*:|\/\/)/i.test(src))
+            )
               return <span>{alt ?? t`Attached image`}</span>;
             if (!src || !resolveImage || /^(?:https?:|data:|blob:)/i.test(src))
               return <img alt={alt ?? ""} src={src} />;

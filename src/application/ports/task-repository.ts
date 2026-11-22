@@ -243,7 +243,7 @@ export interface TaskRepository {
 }
 
 export interface CollectionInfo {
-  kind: "connect";
+  kind: "connect" | "direct";
   /** Stable application preference scope, which may include an account. */
   id?: string;
   /** Actual selectable collection ID for portable links, not a preference scope. */

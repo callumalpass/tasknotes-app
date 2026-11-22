@@ -35,6 +35,16 @@ export function OperationErrorNotice({
         </Trans>
       </p>
     );
+  if (
+    import.meta.env.MODE === "self-hosted" &&
+    failure.code === "outcome-unknown"
+  )
+    return (
+      <p
+        role="alert"
+        className="inline-error"
+      >{t`${action} may have reached your server. Check the collection before trying again.`}</p>
+    );
   const technical = cleanOperationError(failure.detail).trim();
   return (
     <div className={`operation-error ${className}`.trim()}>

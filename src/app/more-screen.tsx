@@ -479,7 +479,13 @@ function CollectionSettings({ onImport }: { onImport?: () => void }) {
       </button>
       {showStorage ? (
         <div className="collection-storage-detail">
-          <p className="section-copy">{storageExplanation()}</p>
+          <p className="section-copy">
+            {info?.kind === "direct"
+              ? translate({
+                  message: "Changes require a connection to your server.",
+                })
+              : storageExplanation()}
+          </p>
           <p className="section-copy">
             <Trans>
               Tasks are portable Markdown records in the mdbase v0.3 format.
@@ -527,7 +533,8 @@ function useReminderSettings() {
   const operation = useRef(0);
 
   useEffect(() => {
-    if (!delivers || busyRef.current) return;
+    if (import.meta.env.MODE === "self-hosted" || !delivers || busyRef.current)
+      return;
     let active = true;
     const current = ++operation.current;
     void import("../native/mdbase-notifications")
@@ -587,7 +594,7 @@ function useReminderSettings() {
   }, []);
 
   async function setEnabled(enabled: boolean) {
-    if (!delivers) return;
+    if (import.meta.env.MODE === "self-hosted" || !delivers) return;
     // An older passive check must not overwrite explicit enable/disable results.
     operation.current += 1;
     busyRef.current = true;
@@ -771,6 +778,7 @@ function useInstallPrompt() {
     false,
   );
   const available =
+    import.meta.env.MODE !== "self-hosted" &&
     !Capacitor.isNativePlatform() &&
     (installState === "available" || installState === "ios-instructions");
 
@@ -876,7 +884,10 @@ const MDBASE_URL = "https://mdbase.dev/";
 // Both pages reach mdbase's paid plans, which App Store rules keep out of the
 // iOS app; web and Android show the links.
 function showEcosystemLinks(): boolean {
-  return !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios");
+  return (
+    import.meta.env.MODE !== "self-hosted" &&
+    !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")
+  );
 }
 
 function ExternalLink({
@@ -951,28 +962,35 @@ function AboutSettings({ install }: { install: InstallPrompt }) {
             <ChevronDown aria-hidden="true" size={17} />
           </summary>
           <p>
-            <Trans>
-              No. TaskNotes reads and writes the authoritative mdbase collection
-              directly. Hosted collections need a network connection; a computer
-              collection also needs that computer to be reachable.
-            </Trans>
+            {import.meta.env.MODE === "self-hosted" ? (
+              <Trans>Changes require a connection to your server.</Trans>
+            ) : (
+              <Trans>
+                No. TaskNotes reads and writes the authoritative mdbase
+                collection directly. Hosted collections need a network
+                connection; a computer collection also needs that computer to be
+                reachable.
+              </Trans>
+            )}
           </p>
         </details>
-        <details className="help-topic">
-          <summary>
-            <span>
-              <Trans>Can I change collections later?</Trans>
-            </span>
-            <ChevronDown aria-hidden="true" size={17} />
-          </summary>
-          <p>
-            <Trans>
-              Yes. Use Change collection under Collection to open another mdbase
-              collection. Changing collections does not move records between
-              them.
-            </Trans>
-          </p>
-        </details>
+        {import.meta.env.MODE !== "self-hosted" && (
+          <details className="help-topic">
+            <summary>
+              <span>
+                <Trans>Can I change collections later?</Trans>
+              </span>
+              <ChevronDown aria-hidden="true" size={17} />
+            </summary>
+            <p>
+              <Trans>
+                Yes. Use Change collection under Collection to open another
+                mdbase collection. Changing collections does not move records
+                between them.
+              </Trans>
+            </p>
+          </details>
+        )}
         <FeedbackButton className="settings-feedback" />
       </div>
     </>

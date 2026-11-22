@@ -43,6 +43,10 @@ msgid ". Pending edits are not yet synced."
 msgstr ". 대기 중인 편집 내용은 아직 동기화되지 않았습니다."
 
 #: src/components/recovered-edit-notice.tsx
+msgid ". These edits last only in this tab."
+msgstr ". 이 변경 사항은 이 탭에서만 유지됩니다."
+
+#: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
 msgstr ". 복원하거나 폐기할 때까지 이 브라우저에 보관됩니다."
 
@@ -327,6 +331,10 @@ msgstr "컬렉션을 사용할 수 없어 {action}을(를) 완료할 수 없습�
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
 msgstr "{action}을(를) 완료할 수 없습니다."
+
+#: src/components/operation-error-notice.tsx
+msgid "{action} may have reached your server. Check the collection before trying again."
+msgstr "‘{action}’ 작업이 서버에 전달되었을 수 있습니다. 다시 시도하기 전에 컬렉션을 확인하세요."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
@@ -699,6 +707,10 @@ msgstr "3일"
 msgid "30 minutes"
 msgstr "30분"
 
+#: src/app/direct-collection-gate.tsx
+msgid "8-digit pairing code from your server"
+msgstr "서버에서 발급한 8자리 페어링 코드"
+
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
 msgstr "캘린더 날짜"
@@ -992,6 +1004,7 @@ msgstr "이 뷰의 필터를 조정하거나 다른 뷰를 선택하세요."
 msgid "Advance after"
 msgstr "다음으로 진행하는 기준"
 
+#: src/app/tasknotes-app.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1272,6 +1285,14 @@ msgstr "굵게"
 msgid "Browse tasks"
 msgstr "작업 탐색"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Browser pairing storage is unavailable. Check this site’s storage settings and try again."
+msgstr "브라우저의 페어링 저장소를 사용할 수 없습니다. 이 사이트의 저장소 설정을 확인한 후 다시 시도하세요."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
+msgstr "브라우저 저장소를 사용할 수 없습니다. 저장된 초안을 삭제하려면 이 기기에서 이 사이트의 데이터를 지우세요."
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "빌더"
@@ -1387,6 +1408,10 @@ msgstr "모든 반복 항목 변경"
 msgid "changes need review"
 msgstr "변경 사항 검토 필요"
 
+#: src/app/more-screen.tsx
+msgid "Changes require a connection to your server."
+msgstr "변경하려면 서버에 연결해야 합니다."
+
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
 msgstr "계정 상태 확인"
@@ -1398,6 +1423,11 @@ msgstr "엄격 모드 완료 상태 확인"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "컬렉션이 연결되어 있는지 확인한 후 다시 시도하세요."
+
+#: src/app/app-shell.tsx
+#: src/components/collection-write-status.tsx
+msgid "Check the collection before trying again."
+msgstr "다시 시도하기 전에 컬렉션을 확인하세요."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1606,6 +1636,10 @@ msgstr "속성 편집기 닫기"
 #: src/app/task-screen.tsx
 msgid "Close task details"
 msgstr "작업 세부정보 닫기"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Close this collection? Copy unsaved work first. Pending deletions will be cancelled if they have not started."
+msgstr "이 컬렉션을 닫을까요? 저장하지 않은 내용을 먼저 복사하세요. 아직 시작하지 않은 삭제는 취소됩니다."
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -1830,6 +1864,11 @@ msgstr "충돌하는 변경 사항"
 msgid "Connect calendars"
 msgstr "캘린더 연결"
 
+#: src/app/direct-collection-gate.tsx
+#: src/app/tasknotes-app.tsx
+msgid "Connect to your own server"
+msgstr "내 서버에 연결"
+
 #: src/app/import-screen.tsx
 msgid "Connect Todoist"
 msgstr "Todoist 연결"
@@ -1843,9 +1882,18 @@ msgstr "연결됨"
 msgid "Connecting"
 msgstr "연결 중"
 
+#: src/app/direct-collection-gate.tsx
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "연결 중…"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. A change in progress may have reached your server. Reconnect and check before trying again."
+msgstr "연결이 끊겼습니다. 진행 중이던 변경 사항이 서버에 전달되었을 수 있습니다. 다시 연결해 확인한 후 재시도하세요."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. Reconnect to your server."
+msgstr "연결이 끊겼습니다. 서버에 다시 연결하세요."
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -1886,6 +1934,10 @@ msgstr "변환을 취소했습니다"
 msgid "Convert to note"
 msgstr "노트로 변환"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Copied"
+msgstr "복사됨"
+
 #: src/components/task-actions.tsx
 msgid "Copy"
 msgstr "복사"
@@ -1911,6 +1963,10 @@ msgstr "작업 링크 복사"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "제목 복사"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Copy unsaved edits"
+msgstr "저장하지 않은 변경 사항 복사"
 
 #: src/app/more-screen.tsx
 msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
@@ -2242,6 +2298,10 @@ msgstr "이 작업이 변경되기 전에 삭제가 중단되었습니다."
 msgid "Deletion waiting"
 msgstr "삭제 대기 중"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Deletions still in the Undo window were cancelled."
+msgstr "아직 실행 취소할 수 있었던 삭제 작업은 취소되었습니다."
+
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -2335,11 +2395,20 @@ msgstr "복구 정보 폐기"
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "폐기하면 저장된 복구 정보가 모두 제거되고 이 컬렉션의 연결이 해제됩니다. 이미 완료되었을 수 있는 삭제는 되돌리지 않습니다."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect"
+msgstr "연결 끊기"
+
 #: src/calendar-service/settings.tsx
 msgid "Disconnect calendars"
 msgstr "캘린더 연결 해제"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect this tab? Copy unsaved edits first. You will need a new code to pair again."
+msgstr "이 탭의 연결을 끊을까요? 저장하지 않은 변경 사항을 먼저 복사하세요. 다시 페어링하려면 새 코드가 필요합니다."
+
 #: src/app/bulk-task-actions.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
@@ -2814,6 +2883,14 @@ msgstr "다가오는 기간 기준"
 msgid "For example P1D"
 msgstr "예: P1D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser"
+msgstr "이 브라우저의 페어링 삭제"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser’s pairing? Copy any unsaved edits first. To revoke access, remove this browser on your server."
+msgstr "이 브라우저의 페어링을 잊을까요? 저장하지 않은 변경 사항을 먼저 복사하세요. 접근 권한을 취소하려면 서버에서 이 브라우저를 삭제하세요."
+
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
 msgstr "비밀번호를 잊으셨나요?"
@@ -3009,6 +3086,10 @@ msgstr "복구 키를 저장했습니다"
 msgid "I understand that existing devices must finish applying strict mode."
 msgstr "기존 기기에서 엄격 모드 적용을 완료해야 한다는 점을 확인했습니다."
 
+#: src/app/direct-collection-gate.tsx
+msgid "If your browser asked, allow local-network access for this site."
+msgstr "브라우저가 권한을 요청했다면 이 사이트의 로컬 네트워크 접근을 허용하세요."
+
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
 msgstr "이미지 작업"
@@ -3109,6 +3190,15 @@ msgstr "홈 화면에서 열 수 있도록 TaskNotes를 설치하세요."
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
 msgstr "반복 규칙이 올바르지 않습니다."
+
+#. placeholder {0}: backendHost(address)
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation from <0>{0}</0>. Reconnect to your saved server or forget it to use the invitation."
+msgstr "<0>{0}</0>에서 보낸 초대입니다. 저장된 서버에 다시 연결하거나 페어링을 지운 뒤 초대를 사용하세요."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation link or HTTPS server address"
+msgstr "초대 링크 또는 서버의 HTTPS 주소"
 
 #: src/components/expression-builder.tsx
 msgid "is"
@@ -3583,6 +3673,10 @@ msgstr "{0} 추가 작업"
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "작업 추가 작업"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Most people use TaskNotes with mdbase."
+msgstr "대부분의 사용자는 TaskNotes를 mdbase와 함께 사용합니다."
 
 #: src/i18n/ui-copy.ts
 msgid "move"
@@ -4150,9 +4244,17 @@ msgstr "켬"
 msgid "On a date"
 msgstr "날짜 기준"
 
+#: src/app/direct-collection-gate.tsx
+msgid "On a shared device, leave this unchecked. The pairing and unsaved task edits last only in this tab. Remembering also saves unsaved task edits in this browser."
+msgstr "공유 기기에서는 선택하지 마세요. 페어링과 저장하지 않은 작업 변경 사항은 이 탭에서만 유지됩니다. 페어링을 기억하면 저장하지 않은 작업 변경 사항도 이 브라우저에 보관됩니다."
+
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "이 기기에서"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Online only. Your pairing code lets this app read and change the collection on your server."
+msgstr "온라인에서만 사용할 수 있습니다. 페어링 코드를 입력하면 이 앱이 서버의 컬렉션을 읽고 변경할 수 있습니다."
 
 #: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
@@ -4207,6 +4309,14 @@ msgstr "Planner에서 열기"
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "작업 열기"
+
+#: src/app/direct-invitation.ts
+msgid "Open the invitation from {host}? This closes the current workspace and discards unsaved edits."
+msgstr "{host}의 초대를 열까요? 현재 작업 공간이 닫히고 저장하지 않은 변경 사항이 삭제됩니다."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Open this build on an HTTPS site without a service worker."
+msgstr "서비스 워커가 없는 HTTPS 사이트에서 이 빌드를 여세요."
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4288,6 +4398,23 @@ msgstr "P0D"
 msgid "P14D"
 msgstr "P14D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Pair and open collection"
+msgstr "페어링하고 컬렉션 열기"
+
+#. placeholder {0}: backendHost(descriptor)
+#: src/app/direct-collection-gate.tsx
+msgid "Pair with <0>{0}</0>"
+msgstr "<0>{0}</0>에 페어링"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paired for this tab only. The connection could not be remembered."
+msgstr "이 탭에서만 페어링되었습니다. 연결 정보를 저장하지 못했습니다."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Pairing could not be confirmed. Check your network and server, then check whether the browser was paired before requesting another code."
+msgstr "페어링을 확인할 수 없습니다. 네트워크와 서버를 확인한 뒤 새 코드를 요청하기 전에 브라우저가 이미 페어링되었는지 확인하세요."
+
 #: src/app/more-screen.tsx
 msgid "Part of mdbase"
 msgstr "mdbase의 일부"
@@ -4299,6 +4426,10 @@ msgstr "비밀번호 강도: "
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
 msgstr "과거 범위"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paste an invitation for this app site or a valid HTTPS server address."
+msgstr "이 앱 사이트용 초대 링크나 유효한 서버 HTTPS 주소를 붙여넣으세요."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
@@ -4543,6 +4674,7 @@ msgstr "최근에 연 항목"
 msgid "Recognized task details"
 msgstr "인식된 작업 세부정보"
 
+#: src/app/direct-collection-gate.tsx
 #: src/calendar-service/settings.tsx
 msgid "Reconnect"
 msgstr "다시 연결"
@@ -4660,6 +4792,10 @@ msgstr "다시 불러오기"
 #: src/app/search-screen.tsx
 msgid "Reload people"
 msgstr "사람 목록 다시 불러오기"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Remember this browser"
+msgstr "이 브라우저 기억하기"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
@@ -4952,6 +5088,10 @@ msgstr "다시 시도하거나 실행 취소하여 작업을 여기로 복원하
 msgid "Retrying…"
 msgstr "다시 시도 중…"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Return to TaskNotes"
+msgstr "TaskNotes로 돌아가기"
+
 #: src/main.tsx
 msgid "Return to the TaskNotes app"
 msgstr "TaskNotes 앱으로 돌아가기"
@@ -5091,6 +5231,7 @@ msgid "Saving collection behavior"
 msgstr "컬렉션 동작 저장 중"
 
 #: src/app/view-editor.tsx
+#: src/components/collection-write-status.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
@@ -5300,6 +5441,10 @@ msgstr "선택한 작업"
 #: src/app/bulk-task-actions.tsx
 msgid "Selection cleared"
 msgstr "선택 해제됨"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Server unavailable. Check your network and reconnect with the same pairing."
+msgstr "서버에 연결할 수 없습니다. 네트워크를 확인하고 기존 페어링으로 다시 연결하세요."
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5884,6 +6029,10 @@ msgstr "Templates/Task.md"
 msgid "Text"
 msgstr "텍스트"
 
+#: src/app/direct-collection-gate.tsx
+msgid "That code is incorrect or expired. Check all eight digits or ask for a new code."
+msgstr "코드가 틀렸거나 만료되었습니다. 숫자 여덟 자리를 확인하거나 새 코드를 요청하세요."
+
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
 msgstr "이 확인 코드가 받아들여지지 않았거나 만료되었습니다. 처음부터 다시 시작해 새 코드를 받으세요."
@@ -5994,6 +6143,10 @@ msgstr "복구 키는 이 기기에 계속 보관됩니다."
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "규칙은 입력한 그대로 유지됩니다. 유효한 경우에만 적용하세요."
 
+#: src/app/direct-collection-gate.tsx
+msgid "The saved pairing changed. Check the server below before reconnecting."
+msgstr "저장된 페어링이 변경되었습니다. 다시 연결하기 전에 아래 서버를 확인하세요."
+
 #: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "스크래치패드가 열려 있지 않습니다."
@@ -6001,6 +6154,10 @@ msgstr "스크래치패드가 열려 있지 않습니다."
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "The series keeps its days, so only this occurrence can move to another day."
 msgstr "시리즈의 날짜는 유지되므로 이 반복 항목만 다른 날로 옮길 수 있습니다."
+
+#: src/app/direct-collection-gate.tsx
+msgid "The server was not reached, so your code was not used. Check the server and network, then enter the code again."
+msgstr "서버에 연결하지 못해 코드가 사용되지 않았습니다. 서버와 네트워크를 확인한 후 코드를 다시 입력하세요."
 
 #: src/app/views-screen.tsx
 msgid "the task"
@@ -6059,6 +6216,10 @@ msgstr "이 날짜가 패턴의 기준이 됩니다. 예정일은 작업을 다�
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "이 보드는 계산된 속성으로 그룹화되어 카드 간 열 이동이 불가능합니다."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This browser cannot connect to this server. Open the same link in a browser with {transport} support."
+msgstr "이 브라우저는 이 서버에 연결할 수 없습니다. {transport}를 지원하는 브라우저에서 같은 링크를 여세요."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "This calendar is read-only."
 msgstr "이 캘린더는 읽기 전용입니다."
@@ -6095,6 +6256,10 @@ msgstr "이 일정은 Google 캘린더에 더 이상 없습니다."
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "이 필터는 빌더에서 안전하게 편집할 수 없는 구문을 사용합니다."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This invitation is invalid. Open the original link from your server."
+msgstr "유효하지 않은 초대입니다. 서버에서 발급한 원본 링크를 여세요."
+
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "이 키는 한 번만 표시됩니다. TaskNotes 외부의 안전한 곳에 보관하세요. 이 키가 있으면 누구나 비공개 컬렉션에 다시 접근할 수 있습니다."
@@ -6102,6 +6267,10 @@ msgstr "이 키는 한 번만 표시됩니다. TaskNotes 외부의 안전한 곳
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "이 반복 항목만"
+
+#: src/app/direct-collection-gate.tsx
+msgid "This pairing is no longer accepted. Ask for a new code."
+msgstr "더 이상 이 페어링을 사용할 수 없습니다. 새 코드를 요청하세요."
 
 #: src/calendar-service/failure-message.ts
 msgid "This period has too many events. Choose a shorter one."
@@ -6299,6 +6468,7 @@ msgid "Tracked time"
 msgstr "기록된 시간"
 
 #: src/app/app-shell.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
@@ -6406,6 +6576,10 @@ msgstr "저장되지 않은 편집 내용을 찾았습니다."
 msgid "Unsaved edits from an earlier session are available."
 msgstr "이전 세션에서 저장되지 않은 편집 내용을 사용할 수 있습니다."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Unsaved task edits"
+msgstr "저장하지 않은 작업 변경 사항"
+
 #: src/app/task-screen.tsx
 msgid "Unskip"
 msgstr "건너뛰기 취소"
@@ -6453,6 +6627,10 @@ msgstr "“{0}” 사용"
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
 msgstr "더 길고 예측하기 어려운 암호 문구를 사용하세요."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Use another server address"
+msgstr "다른 서버 주소 사용"
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx

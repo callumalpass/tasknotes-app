@@ -3,6 +3,7 @@ node_modules/
 /.impeccable/
 /.ops/
 dist/
+/out/
 coverage/
 playwright-report/
 test-results/

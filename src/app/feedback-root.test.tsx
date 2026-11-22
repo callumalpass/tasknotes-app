@@ -1,6 +1,6 @@
 import { FeedbackButton } from "@mdbase-dev/ui/feedback";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { feedbackConfiguration, FeedbackRoot } from "./feedback-root";
 
@@ -74,6 +74,23 @@ describe("feedback configuration", () => {
 });
 
 describe("FeedbackRoot", () => {
+  it("never enables feedback or its widget in the self-hosted entry", () => {
+    vi.stubEnv("MODE", "self-hosted");
+    vi.stubEnv("VITE_TASKNOTES_ENVIRONMENT", "production");
+    vi.stubEnv("VITE_MDBASE_FEEDBACK_URL", "https://feedback.example");
+    try {
+      render(
+        <FeedbackRoot>
+          <FeedbackButton />
+        </FeedbackRoot>,
+      );
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(document.querySelector("iframe")).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("renders no entry point when feedback is not configured", () => {
     render(
       <FeedbackRoot>

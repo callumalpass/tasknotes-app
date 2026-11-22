@@ -15,7 +15,10 @@ export function usePlannerViewLink(
     id?: string;
   }>();
   const viewKey =
-    view?.presentation?.type === "tasknotes.planner" ? view.key : undefined;
+    import.meta.env.MODE !== "self-hosted" &&
+    view?.presentation?.type === "tasknotes.planner"
+      ? view.key
+      : undefined;
 
   useEffect(() => {
     if (!viewKey) return;
