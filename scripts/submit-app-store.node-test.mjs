@@ -47,6 +47,7 @@ function fixture() {
   };
   const f = {
     versions: [old],
+    released: new Set(["en-AU"]),
     build,
     writes: [],
     reads: [],
@@ -129,6 +130,12 @@ function fixture() {
       }
       if (path.startsWith("builds?")) return f.build ? [f.build] : [];
       if (path.includes("/appStoreVersions?")) return f.versions;
+      // The live version has only the released languages; the fixture
+      // otherwise shares one localization list with the draft.
+      if (path === "appStoreVersions/old/appStoreVersionLocalizations")
+        return f.locales.filter((item) =>
+          f.released.has(item.attributes.locale),
+        );
       if (path.includes("/appStoreVersionLocalizations")) return f.locales;
       if (path === `apps/${APP_ID}/appInfos`) return f.appInfos;
       if (path.endsWith("/appInfoLocalizations")) return f.infoLocales;
@@ -177,15 +184,29 @@ function fixture() {
         throw new Error(`Unexpected GET ${path}`);
       }
       f.writes.push({ path, method, data });
+      const rejected = (code, attribute) =>
+        Object.assign(
+          new Error(
+            `App Store Connect ${method} /v1/${path}: HTTP 409 (${code}). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+          ),
+          { status: 409, method, apple: { code, attribute } },
+        );
       // Apple refuses a write (for example 409 for an over-long field).
       if (f.reject?.(path, method, data)) {
         f.reject = null;
-        throw Object.assign(
-          new Error(
-            `App Store Connect ${method} /v1/${path}: HTTP 409 (ENTITY_ERROR.ATTRIBUTE.INVALID). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
-          ),
-          { status: 409, method },
-        );
+        throw rejected("ENTITY_ERROR.ATTRIBUTE.INVALID", "keywords");
+      }
+      // Like App Store Connect, release notes are refused on a language the
+      // live version does not have yet.
+      if (
+        path.startsWith("appStoreVersionLocalizations") &&
+        data?.attributes?.whatsNew !== undefined
+      ) {
+        const locale =
+          data.attributes.locale ??
+          f.locales.find((item) => item.id === path.split("/")[1])?.attributes
+            .locale;
+        if (!f.released.has(locale)) throw rejected("STATE_ERROR", "whatsNew");
       }
       let result = {};
       if (path === "appStoreVersions" && method === "POST") {
@@ -660,6 +681,7 @@ for (const [label, change, expected] of [
     "untranslated locale",
     (f) => {
       f.locales.push({ id: "fr", attributes: { locale: "fr-FR" } });
+      f.released.add("fr-FR");
     },
     /all existing store locales/,
   ],
@@ -1157,7 +1179,6 @@ test("applies repository listing text and creates its new locales", async () => 
     description: "Description fr",
     keywords: "tasks,fr",
     promotionalText: "Promo fr",
-    whatsNew: "Notes fr",
     supportUrl: "https://tasknotes.dev/support",
     marketingUrl: "https://tasknotes.dev",
   });
@@ -1217,6 +1238,7 @@ test("a noted locale without listing text still needs App Store Connect setup", 
 test("a store locale missing from the release notes refuses before writing", async () => {
   const f = fixture();
   f.locales.push({ id: "de", attributes: { locale: "de-DE", whatsNew: "x" } });
+  f.released.add("de-DE");
   await assert.rejects(
     f.run({ commit: true, metadata: listingMetadata, listing }),
     /Release notes must cover exactly/,
@@ -1246,9 +1268,10 @@ test("rolling notes already live fall back to the version line", async () => {
   const byLocale = Object.fromEntries(
     f.locales.map((item) => [item.attributes.locale, item.attributes.whatsNew]),
   );
+  // fr-FR is new in this update, so it carries no release notes yet.
   assert.deepEqual(byLocale, {
     "en-AU": "TaskNotes 1.0.4.",
-    "fr-FR": "Notes fr",
+    "fr-FR": undefined,
   });
 });
 
@@ -1574,12 +1597,16 @@ test("a failure after a write keeps a bounded phase receipt, never a refusal", a
     phase: "version-localizations",
     http_status: 409,
     error_class: "app-store-write-rejected",
+    apple_error_code: "ENTITY_ERROR.ATTRIBUTE.INVALID",
+    apple_error_attribute: "keywords",
+    http_method: "POST",
+    locale: "ja",
     source_run_id: 42,
   });
   // The coordinator's pre-write refusal check never accepts it.
   assert.equal(recheckRefusalReason(receipt, 42), null);
   const text = JSON.stringify(receipt);
-  for (const leak of ["ENTITY_ERROR", "/v1/", "ja", "review@", "new"])
+  for (const leak of ["/v1/", "review@", "new", "Notes", "tasks"])
     assert.ok(!text.includes(leak), leak);
 });
 
@@ -1599,6 +1626,10 @@ test("post-write receipts need a write and a source run", () => {
       phase: "unknown",
       http_status: null,
       error_class: "error-error",
+      apple_error_code: null,
+      apple_error_attribute: null,
+      http_method: null,
+      locale: null,
       source_run_id: 7,
     },
   );
@@ -1782,4 +1813,262 @@ test("the version a draft was renamed to is verified before submission", async (
     /does not match the requested submission/,
   );
   assert.equal(f.submissions.length, 0);
+});
+
+// Languages added by an update: App Store Connect has no "What's New" for a
+// locale the live version lacks and answers 409 STATE_ERROR on whatsNew.
+test("languages new in this update are created without release notes", async () => {
+  const f = fixture();
+  const client = trackWrites(f.client);
+  const result = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  const notes = Object.fromEntries(
+    f.locales.map((item) => [item.attributes.locale, item.attributes.whatsNew]),
+  );
+  assert.deepEqual(notes, {
+    "en-AU": "Notes au",
+    "fr-FR": undefined,
+    ja: undefined,
+  });
+  // Listing text still goes out on the new languages.
+  const ja = f.locales.find((item) => item.attributes.locale === "ja");
+  assert.equal(ja.attributes.keywords, "tasks,ja");
+  assert.equal(ja.attributes.supportUrl, "https://tasknotes.dev/support");
+});
+
+test("the dry run names the languages that go out without release notes", async () => {
+  const f = fixture();
+  const result = await f.run({
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+  });
+  assert.deepEqual(result.listingPlan.firstReleaseLocales, ["fr-FR", "ja"]);
+  assert.equal(f.writes.length, 0);
+});
+
+test("an existing draft left by refused release notes is completed in place", async () => {
+  // The state two failed runs left: the draft exists with only the live
+  // language, because creating the first new language was refused.
+  const f = fixture();
+  f.versions.push({
+    id: "new",
+    attributes: {
+      versionString: "1.0.4",
+      appStoreState: "PREPARE_FOR_SUBMISSION",
+    },
+  });
+  f.appInfos.push({
+    id: "info-new",
+    attributes: { state: "PREPARE_FOR_SUBMISSION" },
+  });
+  f.attached = { type: "builds", id: "older-build" };
+  const run = () =>
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    });
+  assert.equal((await run()).state, "WAITING_FOR_REVIEW");
+  const localizationWrites = f.writes.filter((w) =>
+    w.path.startsWith("appStoreVersionLocalizations"),
+  );
+  assert.deepEqual(
+    localizationWrites.map(
+      (w) => `${w.method} ${w.data.attributes.locale ?? w.path}`,
+    ),
+    ["PATCH appStoreVersionLocalizations/locale", "POST fr-FR", "POST ja"],
+  );
+  assert.ok(
+    localizationWrites
+      .filter((w) => w.method === "POST")
+      .every((w) => !("whatsNew" in w.data.attributes)),
+  );
+  assert.equal(f.versions.length, 2);
+  assert.equal(f.items.length, 1);
+});
+
+test("a draft where a new language already exists updates it, never re-creates it", async () => {
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  const run = () =>
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    });
+  await assert.rejects(run(), /HTTP 409/);
+  // fr-FR exists on the draft; change its text so the rerun must update it.
+  const fr = f.locales.find((item) => item.attributes.locale === "fr-FR");
+  fr.attributes.keywords = "stale";
+  f.writes = [];
+  assert.equal((await run()).state, "WAITING_FOR_REVIEW");
+  const writes = f.writes.filter((w) =>
+    w.path.startsWith("appStoreVersionLocalizations"),
+  );
+  assert.deepEqual(
+    writes.map((w) => `${w.method} ${w.data.attributes.locale ?? w.path}`),
+    ["PATCH appStoreVersionLocalizations/locale-fr-FR", "POST ja"],
+  );
+  assert.ok(!("whatsNew" in writes[0].data.attributes));
+  assert.equal(
+    f.locales.filter((item) => item.attributes.locale === "fr-FR").length,
+    1,
+  );
+});
+
+test("a refused release-notes write names Apple's code, attribute, method and locale", async () => {
+  // Without the fix the submitter wrote whatsNew on every new language.
+  const f = fixture();
+  const client = trackWrites(f.client);
+  const request = f.client.request;
+  f.client.request = (path, method, data) =>
+    request(
+      path,
+      method,
+      path === "appStoreVersionLocalizations" && method === "POST"
+        ? {
+            ...data,
+            attributes: { ...data.attributes, whatsNew: "Notes" },
+          }
+        : data,
+    );
+  const error = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  assert.deepEqual(postWriteReceipt(error, client, "9"), {
+    outcome: "failed-after-write",
+    write_started: true,
+    phase: "version-localizations",
+    http_status: 409,
+    error_class: "app-store-write-rejected",
+    apple_error_code: "STATE_ERROR",
+    apple_error_attribute: "whatsNew",
+    http_method: "POST",
+    locale: "fr-FR",
+    source_run_id: 9,
+  });
+});
+
+test("Apple's error code and attribute survive only as fixed vocabulary", async () => {
+  const errorFor = async (errors) =>
+    createClient(credentials, {
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ errors }), { status: 409 }),
+    })
+      .request("appStoreVersionLocalizations/abc", "PATCH", {})
+      .catch((caught) => caught);
+  const kept = await errorFor([
+    {
+      code: "ENTITY_ERROR.ATTRIBUTE.INVALID.TOO_LONG",
+      title: "secret-title",
+      detail: "secret-detail",
+      source: { pointer: "/data/attributes/keywords" },
+    },
+  ]);
+  assert.deepEqual(kept.apple, {
+    code: "ENTITY_ERROR.ATTRIBUTE.INVALID.TOO_LONG",
+    attribute: "keywords",
+  });
+  for (const [errors, expected] of [
+    [[], { code: null, attribute: null }],
+    [
+      [
+        {
+          code: "STATE_ERROR detail text",
+          source: { pointer: "https://example.test/x" },
+        },
+      ],
+      { code: null, attribute: null },
+    ],
+    [
+      [
+        {
+          code: "STATE_ERROR",
+          source: { pointer: "/data/relationships/appStoreVersion" },
+        },
+      ],
+      { code: "STATE_ERROR", attribute: null },
+    ],
+    [
+      [{ code: "lowercase.code", source: { pointer: "/data/attributes/a b" } }],
+      { code: null, attribute: null },
+    ],
+  ])
+    assert.deepEqual((await errorFor(errors)).apple, expected);
+  const client = { writeAttempted: true, phase: "version", locale: "../x" };
+  const receipt = postWriteReceipt(
+    Object.assign(new Error("x"), {
+      status: 409,
+      method: "GET /v1",
+      apple: { code: "A".repeat(101), attribute: "/data/x" },
+    }),
+    client,
+    "3",
+  );
+  assert.equal(receipt.apple_error_code, null);
+  assert.equal(receipt.apple_error_attribute, null);
+  assert.equal(receipt.http_method, null);
+  assert.equal(receipt.locale, null);
+  assert.ok(!JSON.stringify(kept).includes("secret"));
+});
+
+test("app info writes record their locale; later phases clear it", async () => {
+  const f = fixture();
+  const client = trackWrites(f.client);
+  const request = f.client.request;
+  f.client.request = async (path, method, data) => {
+    if (path === "appInfoLocalizations" && method === "POST")
+      throw Object.assign(new Error("App Store Connect POST: HTTP 409"), {
+        status: 409,
+        method,
+        apple: { code: "ENTITY_ERROR.ATTRIBUTE.INVALID", attribute: "name" },
+      });
+    return request(path, method, data);
+  };
+  const error = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  const receipt = postWriteReceipt(error, client, "5");
+  assert.equal(receipt.phase, "app-info-localizations");
+  assert.equal(receipt.locale, "fr-FR");
+  assert.equal(receipt.apple_error_attribute, "name");
+  client.phase = null;
+  f.client.request = request;
+  f.reject = (path) => path === "appStoreReviewDetails/review";
+  const later = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  const laterReceipt = postWriteReceipt(later, client, "5");
+  assert.equal(laterReceipt.phase, "review-details");
+  assert.equal(laterReceipt.locale, null);
 });

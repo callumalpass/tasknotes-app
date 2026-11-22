@@ -161,15 +161,22 @@ is already a store write, so the line still stops with
 
 A failure after a write attempt retains
 `{outcome: "failed-after-write", write_started: true, phase, http_status,
-error_class, source_run_id}` instead, and the job log prints the same three
-fields. `phase` is one of `version`, `version-localizations`,
-`app-info-localizations`, `screenshots`, `review-details`, `read-back`,
-`review-submission`, `confirmation` (or `unknown`); `http_status` is the status
-Apple returned, or null; `error_class` is a fixed slug such as
-`app-store-write-rejected`, `screenshot-processing-failed` or `error-typeerror`.
-Apple's response body, request paths, ids and messages never leave the job. The
-coordinator's refusal check never accepts this receipt, so the target keeps its
-write-started stop; it only says where the next attempt should look.
+error_class, apple_error_code, apple_error_attribute, http_method, locale,
+source_run_id}` instead, and the job log prints the same fields. `phase` is one
+of `version`, `version-localizations`, `app-info-localizations`, `screenshots`,
+`review-details`, `read-back`, `review-submission`, `confirmation` (or
+`unknown`); `http_status` is the status Apple returned, or null; `error_class`
+is a fixed slug such as `app-store-write-rejected`,
+`screenshot-processing-failed` or `error-typeerror`. Where Apple rejected a
+request, `apple_error_code` is the first error's fixed code (for example
+`STATE_ERROR` or `ENTITY_ERROR.ATTRIBUTE.INVALID`), `apple_error_attribute` the
+attribute name its `source.pointer` names (for example `whatsNew` or
+`keywords`), and `http_method` the request method; `locale` is the locale code
+being written during a localization phase. Each is kept only when it matches a
+strict pattern and is otherwise null. Apple's title and detail text, response
+bodies, request paths, ids and URLs never leave the job. The coordinator's
+refusal check never accepts this receipt, so the target keeps its write-started
+stop; it only says where the next attempt should look.
 
 A failed submission can leave an unsubmitted version in
 `PREPARE_FOR_SUBMISSION` with some listing text or screenshots saved. The next
