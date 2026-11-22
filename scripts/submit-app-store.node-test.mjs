@@ -1514,7 +1514,11 @@ test("screenshots that do not read back block submission", async () => {
 // failed run left behind.
 // No rolling notes: the fixture shares one localization list between the
 // live version and the draft, which would otherwise rewrite them on reruns.
-const withoutRolling = ({ whatsNew, ...entry }) => entry;
+const withoutRolling = (entry) => {
+  const copy = { ...entry };
+  delete copy.whatsNew;
+  return copy;
+};
 const threeLocales = {
   "en-AU": withoutRolling(listingEntry("au")),
   "fr-FR": withoutRolling(listingEntry("fr")),
