@@ -273,7 +273,7 @@ export class TaskCommandService {
       };
       // Record that the window is over first: if the process dies before the
       // delete settles, the next launch commits it instead of offering Undo.
-      await this.options.journal.put(due).catch(() => undefined);
+      await this.options.journal?.put(due).catch(() => undefined);
       this.pendingDeletion = due;
       await this.commitDeletionNow(due);
     }).catch(() => undefined);
