@@ -96,6 +96,15 @@ its writes back before submitting or committing; a mismatch fails like any
 other saved-state mismatch. Edit the files, not the consoles. The first
 release after a new locale is added creates that locale in the store.
 
+Every localization of an App Store update needs release notes, including a
+language the update adds: the 1.0.31 review submission item was refused with
+`ENTITY_ERROR.ATTRIBUTE.REQUIRED` on `whatsNew` for es-ES, es-MX, fr-CA and
+fr-FR, which had been created without notes. The submitter creates a new
+localization without `whatsNew` and sets it right after with a PATCH, from the
+listing file's notes or, when a file has none, the reviewed en-AU notes. If
+Apple refuses that PATCH, the receipt shows phase `version-localizations`,
+`http_method` PATCH, `apple_error_attribute` `whatsNew` and the `locale`.
+
 Store screenshots and the Play feature graphic live in `store/screenshots/`
 (see its README) and are uploaded the same way: the App Store submitter puts
 them on the new version's primary locale and on every listed Apple locale, and
@@ -110,8 +119,8 @@ its six API-created locales had no screenshots; that is the inferred cause, and
 
 Before the review submission, the read-back also checks that the primary and
 every listed locale have the properties Apple requires on each localization
-(description, keywords and support URL on the version; name and privacy policy
-URL on the app info). A gap stops there with error class
+(description, keywords, support URL and release notes on the version; name
+and privacy policy URL on the app info). A gap stops there with error class
 `listing-required-missing`, the `locale` and `missing_attribute`.
 
 ## Stops, outcomes and recovery

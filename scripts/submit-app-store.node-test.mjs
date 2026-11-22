@@ -205,8 +205,10 @@ function fixture() {
         f.reject = null;
         throw rejected("ENTITY_ERROR.ATTRIBUTE.INVALID", "keywords");
       }
-      // Like App Store Connect, release notes are refused on a language the
-      // live version does not have yet.
+      // Release notes in the create POST of a language the live version
+      // does not have yet are refused (inferred from the 1.0.31 attempts).
+      // Setting them by PATCH afterwards is accepted unless a test says
+      // Apple refuses that too.
       if (
         path.startsWith("appStoreVersionLocalizations") &&
         data?.attributes?.whatsNew !== undefined
@@ -215,7 +217,11 @@ function fixture() {
           data.attributes.locale ??
           f.locales.find((item) => item.id === path.split("/")[1])?.attributes
             .locale;
-        if (!f.released.has(locale)) throw rejected("STATE_ERROR", "whatsNew");
+        if (
+          !f.released.has(locale) &&
+          (method === "POST" || f.refuseNewLocaleNotes)
+        )
+          throw rejected("STATE_ERROR", "whatsNew");
       }
       let result = {};
       if (path === "appStoreVersions" && method === "POST") {
@@ -1195,6 +1201,7 @@ test("applies repository listing text and creates its new locales", async () => 
     promotionalText: "Promo fr",
     supportUrl: "https://tasknotes.dev/support",
     marketingUrl: "https://tasknotes.dev",
+    whatsNew: "Notes fr",
   });
   const auInfo = f.infoLocales.find(
     (item) => item.attributes.locale === "en-AU",
@@ -1282,10 +1289,10 @@ test("rolling notes already live fall back to the version line", async () => {
   const byLocale = Object.fromEntries(
     f.locales.map((item) => [item.attributes.locale, item.attributes.whatsNew]),
   );
-  // fr-FR is new in this update, so it carries no release notes yet.
+  // fr-FR is new in this update, so the rolling notes are new to it too.
   assert.deepEqual(byLocale, {
     "en-AU": "TaskNotes 1.0.4.",
-    "fr-FR": undefined,
+    "fr-FR": "Notes fr",
   });
 });
 
@@ -1363,7 +1370,8 @@ test("explicit notes apply to every locale of the same language file", () => {
       "en-AU": "Specific notes.",
       "en-CA": "Specific notes.",
       "fr-FR": "Notes françaises.",
-      "de-DE": "TaskNotes 1.0.5.",
+      // No notes of its own: the reviewed en-AU notes, never an empty field.
+      "de-DE": "Specific notes.",
     },
   );
 });
@@ -1721,7 +1729,7 @@ test("a rerun after a refused locale completes without duplicating or rewriting"
     f.writes
       .filter((w) => w.path.startsWith("appStoreVersionLocalizations"))
       .map((w) => `${w.method} ${w.data.attributes.locale ?? w.path}`),
-    ["POST ja"],
+    ["POST ja", "PATCH appStoreVersionLocalizations/locale-ja"],
   );
   assert.equal(f.versions.length, 2);
   assert.equal(f.submissions.length, 1);
@@ -1834,9 +1842,10 @@ test("the version a draft was renamed to is verified before submission", async (
   assert.equal(f.submissions.length, 0);
 });
 
-// Languages added by an update: App Store Connect has no "What's New" for a
-// locale the live version lacks and answers 409 STATE_ERROR on whatsNew.
-test("languages new in this update are created without release notes", async () => {
+// Languages added by an update: Apple requires release notes on them before
+// the review submission (1.0.31 was refused with ATTRIBUTE.REQUIRED on
+// whatsNew), but the create POST goes without them, so they are set by PATCH.
+test("languages new in this update are created, then given release notes by PATCH", async () => {
   const f = fixture();
   const client = trackWrites(f.client);
   const result = await submitAppStore({
@@ -1855,9 +1864,33 @@ test("languages new in this update are created without release notes", async () 
   );
   assert.deepEqual(notes, {
     "en-AU": "Notes au",
-    "fr-FR": undefined,
-    ja: undefined,
+    "fr-FR": "Notes fr",
+    ja: "Notes ja",
   });
+  const localizationWrites = f.writes.filter((w) =>
+    w.path.startsWith("appStoreVersionLocalizations"),
+  );
+  assert.deepEqual(
+    localizationWrites.map((w) => `${w.method} ${w.path}`),
+    [
+      "PATCH appStoreVersionLocalizations/locale",
+      "POST appStoreVersionLocalizations",
+      "PATCH appStoreVersionLocalizations/locale-fr-FR",
+      "POST appStoreVersionLocalizations",
+      "PATCH appStoreVersionLocalizations/locale-ja",
+    ],
+  );
+  assert.ok(
+    localizationWrites
+      .filter((w) => w.method === "POST")
+      .every((w) => !("whatsNew" in w.data.attributes)),
+  );
+  assert.deepEqual(
+    localizationWrites
+      .filter((w) => w.path.startsWith("appStoreVersionLocalizations/locale-"))
+      .map((w) => w.data.attributes),
+    [{ whatsNew: "Notes fr" }, { whatsNew: "Notes ja" }],
+  );
   // Listing text still goes out on the new languages.
   const ja = f.locales.find((item) => item.attributes.locale === "ja");
   assert.equal(ja.attributes.keywords, "tasks,ja");
@@ -1904,7 +1937,13 @@ test("an existing draft left by refused release notes is completed in place", as
     localizationWrites.map(
       (w) => `${w.method} ${w.data.attributes.locale ?? w.path}`,
     ),
-    ["PATCH appStoreVersionLocalizations/locale", "POST fr-FR", "POST ja"],
+    [
+      "PATCH appStoreVersionLocalizations/locale",
+      "POST fr-FR",
+      "PATCH appStoreVersionLocalizations/locale-fr-FR",
+      "POST ja",
+      "PATCH appStoreVersionLocalizations/locale-ja",
+    ],
   );
   assert.ok(
     localizationWrites
@@ -1935,9 +1974,13 @@ test("a draft where a new language already exists updates it, never re-creates i
   );
   assert.deepEqual(
     writes.map((w) => `${w.method} ${w.data.attributes.locale ?? w.path}`),
-    ["PATCH appStoreVersionLocalizations/locale-fr-FR", "POST ja"],
+    [
+      "PATCH appStoreVersionLocalizations/locale-fr-FR",
+      "POST ja",
+      "PATCH appStoreVersionLocalizations/locale-ja",
+    ],
   );
-  assert.ok(!("whatsNew" in writes[0].data.attributes));
+  assert.equal(writes[0].data.attributes.whatsNew, "Notes fr");
   assert.equal(
     f.locales.filter((item) => item.attributes.locale === "fr-FR").length,
     1,
@@ -2382,14 +2425,15 @@ test("associated errors are deduplicated and capped", () => {
   );
 });
 
-// Like App Store Connect: a version whose listed localizations have no
-// screenshot sets of their own is refused as a review submission item.
+// Like App Store Connect: a version whose localizations have no screenshot
+// sets of their own, or no release notes, is refused as a review submission
+// item, with one associated error per gap.
 function refuseIncompleteLocales(f, mediaTypes) {
   const request = f.client.request;
   f.client.request = async (path, method, data) => {
     if (path === "reviewSubmissionItems" && method === "POST") {
-      const bare = f.locales.filter((localization) =>
-        mediaTypes.some(
+      const gaps = (localization) => [
+        ...(mediaTypes.some(
           (type) =>
             !f.sets.some(
               (set) =>
@@ -2397,7 +2441,27 @@ function refuseIncompleteLocales(f, mediaTypes) {
                 set.attributes.screenshotDisplayType === type &&
                 (f.shots[set.id] ?? []).length,
             ),
-        ),
+        )
+          ? [
+              {
+                code: "ENTITY_ERROR.RELATIONSHIP.REQUIRED",
+                detail: "secret-detail",
+                source: { pointer: "/data/relationships/appScreenshotSets" },
+              },
+            ]
+          : []),
+        ...(localization.attributes.whatsNew?.trim()
+          ? []
+          : [
+              {
+                code: "ENTITY_ERROR.ATTRIBUTE.REQUIRED",
+                detail: "secret-detail",
+                source: { pointer: "/data/attributes/whatsNew" },
+              },
+            ]),
+      ];
+      const bare = f.locales.filter(
+        (localization) => gaps(localization).length,
       );
       if (bare.length) {
         f.writes.push({ path, method, data, refused: true });
@@ -2414,15 +2478,7 @@ function refuseIncompleteLocales(f, mediaTypes) {
                   associatedErrors: Object.fromEntries(
                     bare.map((localization) => [
                       `/v1/appStoreVersionLocalizations/${localization.id}`,
-                      [
-                        {
-                          code: "ENTITY_ERROR.RELATIONSHIP.REQUIRED",
-                          detail: "secret-detail",
-                          source: {
-                            pointer: "/data/relationships/appScreenshotSets",
-                          },
-                        },
-                      ],
+                      gaps(localization),
                     ]),
                   ),
                 },
@@ -2663,5 +2719,126 @@ test("a listed app info locale without a privacy policy URL stops at read-back",
   assert.equal(receipt.error_class, "listing-required-missing");
   assert.equal(receipt.locale, "en-AU");
   assert.equal(receipt.missing_attribute, "privacyPolicyUrl");
+  assert.ok(!f.writes.some((w) => w.path.startsWith("reviewSubmission")));
+});
+
+test("the 1.0.31 draft whose new locales lack release notes gets them by PATCH on rerun", async () => {
+  // The state run 45049158067 left: every listed locale is on the draft with
+  // its screenshots, a locale created before #550 carries release notes, the
+  // ones created after it have none, and the refused submission item left an
+  // empty draft review submission.
+  const f = fixture();
+  refuseIncompleteLocales(f, Object.keys(media));
+  const client = trackWrites(f.client);
+  const run = () =>
+    submitAppStore({
+      client,
+      version: "1.0.4",
+      buildNumber: "15",
+      metadata: listingMetadata,
+      listing,
+      media,
+      mediaOptions: mediaOptions(f),
+      waitOptions: { attempts: 1 },
+      env: {},
+      commit: true,
+    });
+  assert.equal((await run()).state, "WAITING_FOR_REVIEW");
+  const fr = f.locales.find((item) => item.attributes.locale === "fr-FR");
+  delete fr.attributes.whatsNew;
+  f.versions.find((v) => v.id === "new").attributes.appStoreState =
+    "PREPARE_FOR_SUBMISSION";
+  f.submissions[0].attributes.state = "READY_FOR_REVIEW";
+  f.items.length = 0;
+  f.writes = [];
+  f.uploads.length = 0;
+  assert.equal((await run()).state, "WAITING_FOR_REVIEW");
+  assert.equal(fr.attributes.whatsNew, "Notes fr");
+  // fr-FR's notes were written in place (the fixture shares en-AU with the
+  // live version, so en-AU's notes roll to the version line); nothing was
+  // created, deleted or re-uploaded, and the empty draft submission was
+  // reused.
+  assert.deepEqual(
+    f.writes
+      .filter((w) => w.path === `appStoreVersionLocalizations/${fr.id}`)
+      .map((w) => `${w.method} ${w.data.attributes.whatsNew}`),
+    ["PATCH Notes fr"],
+  );
+  assert.ok(
+    !f.writes.some(
+      (w) => w.path === "appStoreVersionLocalizations" && w.method === "POST",
+    ),
+  );
+  assert.ok(!f.writes.some((w) => w.method === "DELETE"));
+  assert.ok(!f.writes.some((w) => w.path.startsWith("appScreenshot")));
+  assert.ok(!f.writes.some((w) => w.path === "reviewSubmissions"));
+  assert.equal(f.submissions.length, 1);
+  assert.equal(f.items.length, 1);
+  assert.equal(f.uploads.length, 0);
+});
+
+test("a refused release-notes PATCH on a new locale names PATCH, whatsNew and the locale", async () => {
+  // If Apple also refuses notes set after creation, the receipt says so.
+  const f = fixture();
+  f.refuseNewLocaleNotes = true;
+  const client = trackWrites(f.client);
+  const error = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  assert.deepEqual(postWriteReceipt(error, client, "9"), {
+    outcome: "failed-after-write",
+    write_started: true,
+    phase: "version-localizations",
+    http_status: 409,
+    error_class: "app-store-write-rejected",
+    apple_error_code: "STATE_ERROR",
+    apple_error_attribute: "whatsNew",
+    http_method: "PATCH",
+    locale: "fr-FR",
+    request_resource: "appStoreVersionLocalizations",
+    source_run_id: 9,
+  });
+  // The create itself went through; a rerun PATCHes it, never re-creates it.
+  assert.equal(
+    f.locales.filter((item) => item.attributes.locale === "fr-FR").length,
+    1,
+  );
+});
+
+test("the read-back requires release notes on every listed locale", async () => {
+  const f = fixture();
+  const request = f.client.request;
+  // Apple accepts the notes PATCH but does not keep the text.
+  f.client.request = async (path, method, data) =>
+    request(
+      path,
+      method,
+      path === "appStoreVersionLocalizations/locale-fr-FR" && method === "PATCH"
+        ? { ...data, attributes: { ...data.attributes, whatsNew: " " } }
+        : data,
+    );
+  const client = trackWrites(f.client);
+  const error = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: listingMetadata,
+    listing,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  const receipt = postWriteReceipt(error, client, "8");
+  assert.equal(receipt.phase, "read-back");
+  assert.equal(receipt.error_class, "listing-required-missing");
+  assert.equal(receipt.locale, "fr-FR");
+  assert.equal(receipt.missing_attribute, "whatsNew");
   assert.ok(!f.writes.some((w) => w.path.startsWith("reviewSubmission")));
 });

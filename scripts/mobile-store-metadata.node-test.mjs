@@ -21,7 +21,7 @@ test("new versions get notes without inventing feature/privacy claims or needing
   assert.equal(result.releaseType, "AFTER_APPROVAL");
 });
 
-test("listing locales get their rolling notes, or the version line", () => {
+test("listing locales get their rolling notes, or the reviewed en-AU notes", () => {
   const result = generatedMetadata(
     {
       copyright: "2026 Example",
@@ -33,6 +33,6 @@ test("listing locales get their rolling notes, or the version line", () => {
   );
   assert.deepEqual(result.whatsNew, {
     "en-AU": "Recent improvements.",
-    "fr-FR": "TaskNotes 1.0.13.",
+    "fr-FR": "Recent improvements.",
   });
 });
