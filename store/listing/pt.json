@@ -3,7 +3,7 @@
     "locales": ["pt-BR"],
     "name": "TaskNotes: tarefas em Markdown",
     "subtitle": "Lista, agenda e lembretes",
-    "keywords": "todo,afazeres,planejador,gtd,kanban,quadro,notas,checklist,calendário,projetos,produtividade",
+    "keywords": "todo,afazeres,planejador,kanban,quadro,notas,checklist,calendário,projetos,produtividade",
     "promotionalText": "Suas tarefas como notas Markdown portáteis, no iPhone, iPad e na web. Funciona com o plugin TaskNotes para Obsidian."
   },
   "play": {
@@ -17,7 +17,7 @@
     "Anote uma tarefa em segundos, veja o que importa hoje e planeje a semana em um calendário ou quadro. Suas tarefas são suas: cada uma é um arquivo Markdown simples com propriedades estruturadas, que você pode abrir, pesquisar e reutilizar fora do app.",
     "",
     "PLANEJE SEU DIA",
-    "• Visualização Hoje com tarefas atrasadas e agendadas num relance",
+    "• Visualização Hoje com tarefas atrasadas e agendadas de relance",
     "• Datas de vencimento e de agendamento, prioridades, projetos e etiquetas",
     "• Tarefas recorrentes, lembretes e dependências",
     "• Subtarefas, anexos e controle de tempo",

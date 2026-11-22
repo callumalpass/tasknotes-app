@@ -3,16 +3,16 @@
     "locales": ["zh-Hans"],
     "name": "TaskNotes - Markdown 待办清单",
     "subtitle": "计划、日历与提醒",
-    "keywords": "todo,待办,任务,清单,日程,备忘,gtd,看板,笔记,项目,重复,效率,时间管理",
-    "promotionalText": "把任务变成可携带的 Markdown 笔记，在 iPhone、iPad 和网页上使用。可与 Obsidian 的 TaskNotes 插件配合使用。"
+    "keywords": "todo,待办,任务,清单,日程,备忘,看板,笔记,项目,重复,效率,时间管理",
+    "promotionalText": "把任务变成可迁移的 Markdown 笔记，在 iPhone、iPad 和网页上使用。可与 Obsidian 的 TaskNotes 插件配合使用。"
   },
   "play": {
     "languages": ["zh-CN"],
     "title": "TaskNotes - Markdown 待办清单",
-    "shortDescription": "待办清单、计划和日历。每个任务都是可携带的 Markdown 笔记。"
+    "shortDescription": "待办清单、计划和日历。每个任务都是可迁移的 Markdown 笔记。"
   },
   "description": [
-    "TaskNotes 是一款沉稳可靠的待办清单与计划工具，每个任务都是一条可携带的 Markdown 笔记。",
+    "TaskNotes 是一款沉稳可靠的待办清单与计划工具，每个任务都是一条可迁移的 Markdown 笔记。",
     "",
     "几秒钟记下任务，看清今天的重点，在日历或看板上规划一周。任务完全属于你：每个任务都是带有结构化属性的普通 Markdown 文件，可以在应用之外打开、搜索和重复使用。",
     "",
@@ -32,7 +32,7 @@
     "• 随手记，用于快速记录文字和图片",
     "• 查看每个任务背后的 Markdown 文件，并从其他笔记中链接到它",
     "",
-    "为可携带而设计",
+    "为可迁移而设计",
     "TaskNotes 将任务保存在 mdbase 集合中：可以使用托管集合，也可以保存在自己的电脑上并通过 mdbase Connect 同步。同样的任务笔记也适用于 Obsidian 的 TaskNotes 插件，让手机、网页和笔记始终保持一致。",
     "",
     "安静而私密的提醒",

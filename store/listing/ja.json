@@ -3,16 +3,16 @@
     "locales": ["ja"],
     "name": "TaskNotes - Markdownタスク管理",
     "subtitle": "ToDoリスト・カレンダー・リマインダー",
-    "keywords": "todo,タスク,やること,手帳,予定,スケジュール,gtd,かんばん,ボード,メモ,ノート,チェックリスト,プロジェクト,繰り返し",
-    "promotionalText": "タスクを持ち運べるMarkdownノートに。iPhone、iPad、Webで使えます。Obsidian用TaskNotesプラグインとも連携します。"
+    "keywords": "todo,タスク,やること,手帳,予定,スケジュール,かんばん,ボード,メモ,ノート,チェックリスト,プロジェクト,繰り返し",
+    "promotionalText": "タスクをポータブルなMarkdownノートに。iPhone、iPad、Webで使えます。Obsidian用TaskNotesプラグインとも連携します。"
   },
   "play": {
     "languages": ["ja-JP"],
     "title": "TaskNotes - Markdownタスク管理",
-    "shortDescription": "ToDoリスト、プランナー、カレンダー。すべてのタスクが持ち運べるMarkdownノートです。"
+    "shortDescription": "ToDoリスト、プランナー、カレンダー。すべてのタスクがポータブルなMarkdownノートです。"
   },
   "description": [
-    "TaskNotesは、すべてのタスクを持ち運べるMarkdownノートとして扱う、シンプルで頼れるToDoリスト兼プランナーです。",
+    "TaskNotesは、すべてのタスクをポータブルなMarkdownノートとして扱う、シンプルで頼れるToDoリスト兼プランナーです。",
     "",
     "数秒でタスクを記録し、今日やるべきことを確認し、カレンダーやボードで一週間を計画できます。タスクはあなたのものです。それぞれが構造化されたプロパティを持つシンプルなMarkdownファイルなので、アプリの外でも開いたり、検索したり、再利用したりできます。",
     "",
@@ -32,7 +32,7 @@
     "• 思いつきや画像を残せるスクラッチパッド",
     "• 各タスクの元になっているMarkdownファイルを確認し、ほかのノートからリンク",
     "",
-    "持ち運べる設計",
+    "ポータブルな設計",
     "TaskNotesはタスクをmdbaseコレクションに保存します。ホスト型のコレクションのほか、自分のコンピューター上に置いてmdbase Connectで同期することもできます。同じタスクノートはObsidian用TaskNotesプラグインでも使えるので、スマートフォン、Web、ノートの内容がそろいます。",
     "",
     "静かでプライベートなリマインダー",

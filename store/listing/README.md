@@ -8,16 +8,17 @@ release.
 One file per app language. Each file holds:
 
 - `apple`: the App Store locales it covers, the app `name` (30), `subtitle`
-  (30), `keywords` (100, comma-separated, no spaces, no words already in the
-  name or subtitle) and `promotionalText` (170).
+  (30), `keywords` (100, comma-separated with no spaces around commas, no
+  words already in the name or subtitle) and `promotionalText` (170).
 - `play`: the Google Play languages it covers, the `title` (30) and
   `shortDescription` (80).
 - `description`: the full description for both stores, one entry per line
   (4000).
-- `whatsNew`: optional rolling release notes for both stores (500, Play's
-  limit). It is reused for every release until it changes, so describe recent
-  improvements rather than a single version. Without it, releases say
-  "TaskNotes x.y.z.".
+- `whatsNew`: optional release notes for both stores (500, Play's limit).
+  They go out with the first release after they change; later releases say
+  "TaskNotes x.y.z." until they are rewritten, so update them alongside a
+  user-visible change. An explicit `docs/releases/ios/<version>.json` still
+  wins on iOS, for every locale of its language.
 
 Numbers are the store limits in characters; `scripts/store-listing.node-test.mjs`
 checks them. Apple rejects metadata that names other mobile platforms, so keep

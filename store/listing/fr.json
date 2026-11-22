@@ -3,7 +3,7 @@
     "locales": ["fr-FR", "fr-CA"],
     "name": "TaskNotes : tâches Markdown",
     "subtitle": "Agenda, calendrier et rappels",
-    "keywords": "todo,liste,planificateur,gtd,kanban,tableau,notes,projets,récurrent,organiser,productivité,checklist",
+    "keywords": "todo,liste,planificateur,kanban,tableau,notes,projets,récurrent,organiser,productivité,checklist",
     "promotionalText": "Vos tâches en notes Markdown portables, sur iPhone, iPad et le web. Compatible avec le plugin TaskNotes pour Obsidian."
   },
   "play": {

@@ -3,7 +3,7 @@
     "locales": ["it"],
     "name": "TaskNotes: attività Markdown",
     "subtitle": "Lista, agenda e promemoria",
-    "keywords": "todo,cose da fare,planner,gtd,kanban,bacheca,note,checklist,calendario,progetti,produttività",
+    "keywords": "todo,cose da fare,planner,kanban,bacheca,note,checklist,calendario,progetti,produttività",
     "promotionalText": "Le tue attività come note Markdown portabili, su iPhone, iPad e sul web. Funziona con il plugin TaskNotes per Obsidian."
   },
   "play": {

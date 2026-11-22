@@ -3,7 +3,7 @@
     "locales": ["en-AU", "en-CA", "en-GB", "en-US"],
     "name": "TaskNotes: Markdown To-Do List",
     "subtitle": "Planner, calendar & reminders",
-    "keywords": "tasks,todo,gtd,kanban,board,notes,checklist,agenda,schedule,projects,recurring,time tracking",
+    "keywords": "tasks,todo,kanban,board,notes,checklist,agenda,schedule,projects,recurring,time tracking,organizer",
     "promotionalText": "Your tasks as portable Markdown notes, on iPhone, iPad and the web. Works with the TaskNotes plugin for Obsidian."
   },
   "play": {
@@ -20,7 +20,7 @@
     "• Today view with overdue and scheduled work at a glance",
     "• Due and scheduled dates, priorities, projects and tags",
     "• Recurring tasks, reminders and dependencies",
-    "• Subtasks, attachments and time tracking",
+    "• Subtasks, attachments and time tracking,organizer",
     "",
     "SEE YOUR WORK YOUR WAY",
     "• Lists, boards and saved views",

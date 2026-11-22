@@ -309,6 +309,14 @@ function assertLocales(localizations, metadata, listing = {}) {
   }
 }
 
+// Store text is compared as people read it: line endings, Unicode form and
+// surrounding whitespace are not differences.
+const normalized = (value) =>
+  typeof value === "string"
+    ? value.replace(/\r\n?/g, "\n").normalize("NFC").trim()
+    : value;
+export const sameText = (a, b) => normalized(a) === normalized(b);
+
 // Saved state must match the request exactly: one localization per noted
 // locale, with its notes and, where the repository lists it, its listing text.
 function listingMismatch(localizations, metadata, listing = {}) {
@@ -322,10 +330,10 @@ function listingMismatch(localizations, metadata, listing = {}) {
     const { locale } = item.attributes;
     const expected = listing[locale];
     return (
-      item.attributes.whatsNew !== metadata.whatsNew[locale] ||
+      !sameText(item.attributes.whatsNew, metadata.whatsNew[locale]) ||
       (expected &&
         versionFields.some(
-          (field) => item.attributes[field] !== expected[field],
+          (field) => !sameText(item.attributes[field], expected[field]),
         ))
     );
   });
@@ -338,7 +346,6 @@ const editableAppInfoStates = new Set([
   "READY_FOR_REVIEW",
   "DEVELOPER_REJECTED",
   "REJECTED",
-  "METADATA_REJECTED",
 ]);
 const pick = (object, fields) =>
   Object.fromEntries(fields.map((field) => [field, object[field]]));
@@ -369,16 +376,23 @@ async function applyAppInfoListing(client, listing) {
     const current = existing.find((item) => item.attributes.locale === locale);
     const attributes = pick(entry, appInfoFields);
     if (current) {
+      const needsPrivacyUrl = template && !current.attributes.privacyPolicyUrl;
       if (
-        appInfoFields.every(
-          (field) => current.attributes[field] === attributes[field],
+        !needsPrivacyUrl &&
+        appInfoFields.every((field) =>
+          sameText(current.attributes[field], attributes[field]),
         )
       )
         continue;
       await client.request(`appInfoLocalizations/${current.id}`, "PATCH", {
         type: "appInfoLocalizations",
         id: current.id,
-        attributes,
+        attributes: {
+          ...attributes,
+          ...(needsPrivacyUrl
+            ? { privacyPolicyUrl: template.attributes.privacyPolicyUrl }
+            : {}),
+        },
       });
     } else {
       await client.request("appInfoLocalizations", "POST", {
@@ -406,9 +420,35 @@ async function appInfoListingMismatch(client, listing) {
     );
     return (
       !item ||
-      appInfoFields.some((field) => item.attributes[field] !== entry[field])
+      appInfoFields.some(
+        (field) => !sameText(item.attributes[field], entry[field]),
+      )
     );
   });
+}
+
+// What a commit would change in the version listing, for dry runs.
+function listingPlan(localizations, metadata, listing) {
+  const existing = new Map(
+    localizations.map((item) => [item.attributes.locale, item]),
+  );
+  return {
+    createLocales: Object.keys(metadata.whatsNew).filter(
+      (locale) => !existing.has(locale),
+    ),
+    updateLocales: Object.entries(listing)
+      .filter(([locale, entry]) => {
+        const item = existing.get(locale);
+        return (
+          item &&
+          versionFields.some(
+            (field) => !sameText(item.attributes[field], entry[field]),
+          )
+        );
+      })
+      .map(([locale]) => locale),
+    whatsNew: metadata.whatsNew,
+  };
 }
 
 function demoCredentialsOf(env) {
@@ -457,6 +497,29 @@ function verifyDemoAccount(review, credentials) {
   }
   // Deliberately return only safe verification flags, never either credential.
   return { demoAccountNameVerified: true, demoAccountRequired: true };
+}
+
+// Rolling release notes describe the first release after they change. Once
+// the live version already carries them, later releases say only
+// "TaskNotes x.y.z." until the notes are rewritten.
+async function withoutRepeatedNotes(client, live, metadata, listing, version) {
+  const rolling = Object.entries(listing).filter(
+    ([locale, entry]) =>
+      entry.whatsNew && sameText(metadata.whatsNew[locale], entry.whatsNew),
+  );
+  if (!rolling.length) return metadata;
+  const liveLocales = await client.list(
+    `appStoreVersions/${live.id}/appStoreVersionLocalizations`,
+  );
+  const whatsNew = { ...metadata.whatsNew };
+  for (const [locale, entry] of rolling) {
+    const shipped = liveLocales.find(
+      (item) => item.attributes.locale === locale,
+    );
+    if (shipped && sameText(shipped.attributes.whatsNew, entry.whatsNew))
+      whatsNew[locale] = `TaskNotes ${version}.`;
+  }
+  return { ...metadata, whatsNew };
 }
 
 export async function submitAppStore({
@@ -538,6 +601,13 @@ export async function submitAppStore({
   ) {
     throw new Error("earlier-store-version-in-flight");
   }
+  metadata = await withoutRepeatedNotes(
+    client,
+    current,
+    metadata,
+    listing,
+    version,
+  );
   const sourceId = target?.id ?? current.id;
   const localizations = await client.list(
     `appStoreVersions/${sourceId}/appStoreVersionLocalizations`,
@@ -590,6 +660,7 @@ export async function submitAppStore({
       buildNumber,
       state: "DRY_RUN",
       wouldCreateVersion: !target,
+      listingPlan: listingPlan(localizations, metadata, listing),
     };
 
   if (!target) {
@@ -765,10 +836,18 @@ export async function submitAppStore({
 
 // Locales the repository listing adds get its rolling release notes, or the
 // plain version line when it has none. Explicit per-locale notes win.
-function withListingNotes(whatsNew, version, listing) {
+export function withListingNotes(whatsNew, version, listing) {
   const notes = { ...whatsNew };
-  for (const [locale, entry] of Object.entries(listing))
-    notes[locale] ??= entry.whatsNew ?? `TaskNotes ${version}.`;
+  for (const [locale, entry] of Object.entries(listing)) {
+    // Locales from the same listing file share one language: reuse its
+    // explicit notes so English storefronts never disagree about a build.
+    const sibling = Object.keys(whatsNew).find(
+      (other) => listing[other] === entry,
+    );
+    notes[locale] ??= sibling
+      ? whatsNew[sibling]
+      : (entry.whatsNew ?? `TaskNotes ${version}.`);
+  }
   return notes;
 }
 

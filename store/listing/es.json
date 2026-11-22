@@ -3,7 +3,7 @@
     "locales": ["es-ES", "es-MX"],
     "name": "TaskNotes: tareas en Markdown",
     "subtitle": "Lista, agenda y recordatorios",
-    "keywords": "todo,pendientes,planificador,gtd,kanban,tablero,notas,checklist,calendario,proyectos,productividad",
+    "keywords": "todo,pendientes,planificador,kanban,tablero,notas,checklist,calendario,proyectos,productividad",
     "promotionalText": "Tus tareas como notas Markdown portables, en iPhone, iPad y la web. Funciona con el plugin TaskNotes para Obsidian."
   },
   "play": {
@@ -33,7 +33,7 @@
     "• Consulta el archivo Markdown de cada tarea y enlázalo desde tus otras notas",
     "",
     "PORTABLE POR DISEÑO",
-    "TaskNotes guarda tus tareas en una colección de mdbase, alojada para ti o en tu propio ordenador y sincronizada con mdbase Connect. Las mismas notas de tareas funcionan con el plugin TaskNotes para Obsidian, así que tu teléfono, la web y tus notas siempre están al día.",
+    "TaskNotes guarda tus tareas en una colección de mdbase, alojada para ti o en tu propia computadora y sincronizada con mdbase Connect. Las mismas notas de tareas funcionan con el plugin TaskNotes para Obsidian, así que tu teléfono, la web y tus notas siempre están al día.",
     "",
     "RECORDATORIOS DISCRETOS Y PRIVADOS",
     "mdbase envía los recordatorios aunque TaskNotes esté cerrada. Las notificaciones nunca incluyen el título ni el contenido de tus tareas.",

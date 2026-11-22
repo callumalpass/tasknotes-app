@@ -191,13 +191,26 @@ function trackContainsVersion(track, versionCode) {
   );
 }
 
-// Release notes for every listed language (its rolling notes, or the plain
-// release name), always including the en-US default.
-export function releaseNotesFor(name, listing = {}) {
-  const notes = Object.entries(listing).map(([language, entry]) => ({
-    language,
-    text: entry.whatsNew ?? `${name}.`,
-  }));
+// Store text is compared as people read it: line endings, Unicode form and
+// surrounding whitespace are not differences.
+const normalized = (value) =>
+  typeof value === "string"
+    ? value.replace(/\r\n?/g, "\n").normalize("NFC").trim()
+    : value;
+const sameText = (a, b) => normalized(a) === normalized(b);
+
+// Release notes for every listed language, always including the en-US
+// default. Rolling notes describe the first release after they change; once
+// the live release already carries them, the plain release name is used.
+export function releaseNotesFor(name, listing = {}, liveNotes = []) {
+  const notes = Object.entries(listing).map(([language, entry]) => {
+    const shipped = liveNotes.find((note) => note?.language === language);
+    const repeated = shipped && sameText(shipped.text, entry.whatsNew);
+    return {
+      language,
+      text: entry.whatsNew && !repeated ? entry.whatsNew : `${name}.`,
+    };
+  });
   if (!notes.some((note) => note.language === "en-US"))
     notes.unshift({ language: "en-US", text: `${name}.` });
   return notes;
@@ -217,7 +230,7 @@ async function applyListing(fetchImpl, token, editPath, listing) {
     const current = existing.find((item) => item?.language === language);
     if (
       current &&
-      listingFields.every((field) => current[field] === entry[field])
+      listingFields.every((field) => sameText(current[field], entry[field]))
     )
       continue;
     const saved = await playRequest(
@@ -235,7 +248,7 @@ async function applyListing(fetchImpl, token, editPath, listing) {
         }),
       },
     );
-    if (listingFields.some((field) => saved?.[field] !== entry[field]))
+    if (listingFields.some((field) => !sameText(saved?.[field], entry[field])))
       throw new Error("Google Play did not save the requested store listing");
   }
 }
@@ -334,7 +347,13 @@ export async function publishProduction({
               name: validatedName,
               versionCodes: [String(versionCode)],
               status: PLAY_RELEASE_STATUS,
-              releaseNotes: releaseNotesFor(validatedName, listing),
+              releaseNotes: releaseNotesFor(
+                validatedName,
+                listing,
+                existingTrack?.releases?.find(
+                  (release) => release?.status === "completed",
+                )?.releaseNotes,
+              ),
             },
           ],
         }),

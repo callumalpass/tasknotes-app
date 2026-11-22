@@ -414,6 +414,22 @@ describe("Google Play production publisher", () => {
     expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
   });
 
+  it("rolling notes already in the live release fall back to the release name", () => {
+    const listing = {
+      "en-US": { whatsNew: "Recent improvements." },
+      "fr-FR": { whatsNew: "Améliorations récentes." },
+    };
+    expect(
+      releaseNotesFor("TaskNotes 1.2.4", listing, [
+        { language: "en-US", text: "Recent improvements.\n" },
+        { language: "fr-FR", text: "Anciennes notes." },
+      ]),
+    ).toEqual([
+      { language: "en-US", text: "TaskNotes 1.2.4." },
+      { language: "fr-FR", text: "Améliorations récentes." },
+    ]);
+  });
+
   it("release notes always include the en-US default", () => {
     expect(releaseNotesFor("TaskNotes 1.2.3")).toEqual([
       { language: "en-US", text: "TaskNotes 1.2.3." },

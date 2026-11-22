@@ -3,7 +3,7 @@
     "locales": ["de-DE"],
     "name": "TaskNotes: Markdown-Aufgaben",
     "subtitle": "To-do-Liste, Planer, Kalender",
-    "keywords": "todo,aufgabenliste,gtd,kanban,board,notizen,checkliste,erinnerungen,projekte,termine,produktivität",
+    "keywords": "todo,aufgabenliste,kanban,board,notizen,checkliste,erinnerungen,projekte,termine,produktivität",
     "promotionalText": "Ihre Aufgaben als portable Markdown-Notizen – auf iPhone, iPad und im Web. Funktioniert mit dem TaskNotes-Plugin für Obsidian."
   },
   "play": {
@@ -18,7 +18,7 @@
     "",
     "DEN TAG PLANEN",
     "• Heute-Ansicht mit überfälligen und geplanten Aufgaben auf einen Blick",
-    "• Fälligkeits- und Plandaten, Prioritäten, Projekte und Tags",
+    "• Fälligkeitsdaten, geplante Termine, Prioritäten, Projekte und Tags",
     "• Wiederkehrende Aufgaben, Erinnerungen und Abhängigkeiten",
     "• Unteraufgaben, Anhänge und Zeiterfassung",
     "",
@@ -42,5 +42,5 @@
     "",
     "Mehr unter tasknotes.dev."
   ],
-  "whatsNew": "Neu in letzter Zeit: TaskNotes spricht zehn Sprachen und stellt Erinnerungen auch bei geschlossener App zu. Wiederkehrende Aufgaben behalten ihre Termine, wenn Sie die Wiederholung ändern, monatliche Wiederholungen werden korrekt beschrieben, und die App startet schneller."
+  "whatsNew": "Aktuelle Verbesserungen: TaskNotes spricht zehn Sprachen und stellt Erinnerungen auch bei geschlossener App zu. Wiederkehrende Aufgaben behalten ihre Termine, wenn Sie die Wiederholung ändern, monatliche Wiederholungen werden korrekt beschrieben, und die App startet schneller."
 }

@@ -16,6 +16,7 @@ import {
   submitAppStore,
   trackWrites,
   validateMetadata,
+  withListingNotes,
   waitForBuild,
 } from "./submit-app-store.mjs";
 
@@ -1135,4 +1136,93 @@ test("listing text that does not read back blocks submission", async () => {
     /Saved release metadata\/build does not match/,
   );
   assert.ok(!f.writes.some((w) => w.path === "reviewSubmissionItems"));
+});
+
+test("rolling notes already live fall back to the version line", async () => {
+  const f = fixture();
+  f.locales[0].attributes.whatsNew = "Notes au";
+  await f.run({ commit: true, metadata: listingMetadata, listing });
+  const byLocale = Object.fromEntries(
+    f.locales.map((item) => [item.attributes.locale, item.attributes.whatsNew]),
+  );
+  assert.deepEqual(byLocale, {
+    "en-AU": "TaskNotes 1.0.4.",
+    "fr-FR": "Notes fr",
+  });
+});
+
+test("read-back ignores line-ending and Unicode-form differences", async () => {
+  const f = fixture();
+  const request = f.client.request;
+  f.client.request = async (path, method, data) => {
+    if (data?.attributes?.description)
+      data = {
+        ...data,
+        attributes: {
+          ...data.attributes,
+          description: `${data.attributes.description.replaceAll("\n", "\r\n")}\n`,
+        },
+      };
+    return request(path, method, data);
+  };
+  const multiline = {
+    "en-AU": { ...listing["en-AU"], description: "Line one\nLine two" },
+    "fr-FR": listing["fr-FR"],
+  };
+  assert.equal(
+    (
+      await f.run({
+        commit: true,
+        metadata: listingMetadata,
+        listing: multiline,
+      })
+    ).state,
+    "WAITING_FOR_REVIEW",
+  );
+});
+
+test("dry run reports the planned listing changes without writing", async () => {
+  const f = fixture();
+  const result = await f.run({ metadata: listingMetadata, listing });
+  assert.equal(result.state, "DRY_RUN");
+  assert.deepEqual(result.listingPlan.createLocales, ["fr-FR"]);
+  assert.deepEqual(result.listingPlan.updateLocales, ["en-AU"]);
+  assert.equal(f.writes.length, 0);
+});
+
+test("an app info locale without a privacy URL gets the existing one", async () => {
+  const f = fixture();
+  f.infoLocales.push({
+    id: "info-fr",
+    attributes: {
+      locale: "fr-FR",
+      name: "TaskNotes fr",
+      subtitle: "Subtitle fr",
+    },
+  });
+  await f.run({ commit: true, metadata: listingMetadata, listing });
+  assert.equal(
+    f.infoLocales.find((item) => item.id === "info-fr").attributes
+      .privacyPolicyUrl,
+    "https://tasknotes.dev/privacy",
+  );
+});
+
+test("explicit notes apply to every locale of the same language file", () => {
+  const english = { whatsNew: "Rolling English." };
+  const french = { whatsNew: "Notes françaises." };
+  assert.deepEqual(
+    withListingNotes({ "en-AU": "Specific notes." }, "1.0.5", {
+      "en-AU": english,
+      "en-US": english,
+      "fr-FR": french,
+      "de-DE": {},
+    }),
+    {
+      "en-AU": "Specific notes.",
+      "en-US": "Specific notes.",
+      "fr-FR": "Notes françaises.",
+      "de-DE": "TaskNotes 1.0.5.",
+    },
+  );
 });
