@@ -20,3 +20,19 @@ test("new versions get notes without inventing feature/privacy claims or needing
   assert.ok(!result.reviewNotes.includes("Old promises"));
   assert.equal(result.releaseType, "AFTER_APPROVAL");
 });
+
+test("listing locales get their rolling notes, or the version line", () => {
+  const result = generatedMetadata(
+    {
+      copyright: "2026 Example",
+      whatsNew: { "en-AU": "Old features" },
+      reviewNotes: "TaskNotes 1.0.12\n\nHOW TO REVIEW\nUse the review account.",
+    },
+    "1.0.13",
+    { "en-AU": { whatsNew: "Recent improvements." }, "fr-FR": {} },
+  );
+  assert.deepEqual(result.whatsNew, {
+    "en-AU": "Recent improvements.",
+    "fr-FR": "TaskNotes 1.0.13.",
+  });
+});

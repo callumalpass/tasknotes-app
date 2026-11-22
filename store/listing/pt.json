@@ -1,0 +1,46 @@
+{
+  "apple": {
+    "locales": ["pt-BR"],
+    "name": "TaskNotes: tarefas em Markdown",
+    "subtitle": "Lista, agenda e lembretes",
+    "keywords": "todo,afazeres,planejador,gtd,kanban,quadro,notas,checklist,calendário,projetos,produtividade",
+    "promotionalText": "Suas tarefas como notas Markdown portáteis, no iPhone, iPad e na web. Funciona com o plugin TaskNotes para Obsidian."
+  },
+  "play": {
+    "languages": ["pt-BR"],
+    "title": "TaskNotes: tarefas em Markdown",
+    "shortDescription": "Lista de tarefas, agenda e calendário. Cada tarefa é uma nota Markdown."
+  },
+  "description": [
+    "O TaskNotes é uma lista de tarefas e um planejador tranquilo e completo, em que cada tarefa é uma nota Markdown portátil.",
+    "",
+    "Anote uma tarefa em segundos, veja o que importa hoje e planeje a semana em um calendário ou quadro. Suas tarefas são suas: cada uma é um arquivo Markdown simples com propriedades estruturadas, que você pode abrir, pesquisar e reutilizar fora do app.",
+    "",
+    "PLANEJE SEU DIA",
+    "• Visualização Hoje com tarefas atrasadas e agendadas num relance",
+    "• Datas de vencimento e de agendamento, prioridades, projetos e etiquetas",
+    "• Tarefas recorrentes, lembretes e dependências",
+    "• Subtarefas, anexos e controle de tempo",
+    "",
+    "SEU TRABALHO DO SEU JEITO",
+    "• Listas, quadros e visualizações salvas",
+    "• Calendários mensal, de vários dias e agenda, com eventos do Google Agenda ao lado das tarefas",
+    "• Pesquisa rápida em todas as tarefas",
+    "",
+    "NOTAS E TAREFAS JUNTAS",
+    "• Escreva notas em Markdown em qualquer tarefa",
+    "• Bloco de notas para anotações rápidas e imagens",
+    "• Veja o arquivo Markdown por trás de cada tarefa e crie links para ele a partir de outras notas",
+    "",
+    "PORTÁTIL POR DESIGN",
+    "O TaskNotes guarda suas tarefas em uma coleção mdbase, hospedada para você ou mantida no seu computador e sincronizada com o mdbase Connect. As mesmas notas de tarefas funcionam com o plugin TaskNotes para Obsidian, então celular, web e notas ficam sempre em sintonia.",
+    "",
+    "LEMBRETES DISCRETOS E PRIVADOS",
+    "Os lembretes são enviados pelo mdbase mesmo com o TaskNotes fechado. As notificações nunca mostram o título ou o conteúdo das tarefas.",
+    "",
+    "O TaskNotes precisa de uma conta mdbase para guardar suas tarefas. Disponível em português do Brasil, inglês, francês, alemão, espanhol, italiano, japonês, coreano, russo e chinês simplificado.",
+    "",
+    "Saiba mais em tasknotes.dev."
+  ],
+  "whatsNew": "Melhorias recentes: o TaskNotes agora fala dez idiomas e envia lembretes mesmo com o app fechado. Tarefas recorrentes mantêm as datas quando você altera a repetição, repetições mensais são descritas corretamente e o app abre mais rápido."
+}

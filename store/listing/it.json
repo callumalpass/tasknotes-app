@@ -1,0 +1,46 @@
+{
+  "apple": {
+    "locales": ["it"],
+    "name": "TaskNotes: attività Markdown",
+    "subtitle": "Lista, agenda e promemoria",
+    "keywords": "todo,cose da fare,planner,gtd,kanban,bacheca,note,checklist,calendario,progetti,produttività",
+    "promotionalText": "Le tue attività come note Markdown portabili, su iPhone, iPad e sul web. Funziona con il plugin TaskNotes per Obsidian."
+  },
+  "play": {
+    "languages": ["it-IT"],
+    "title": "TaskNotes: attività Markdown",
+    "shortDescription": "Lista di cose da fare, agenda e calendario. Ogni attività è una nota Markdown."
+  },
+  "description": [
+    "TaskNotes è una lista di cose da fare e un’agenda semplici e complete, in cui ogni attività è una nota Markdown portabile.",
+    "",
+    "Annota un’attività in pochi secondi, vedi cosa conta oggi e pianifica la settimana su un calendario o una bacheca. Le tue attività restano tue: ognuna è un semplice file Markdown con proprietà strutturate, che puoi aprire, cercare e riutilizzare anche fuori dall’app.",
+    "",
+    "PIANIFICA LA GIORNATA",
+    "• Vista Oggi con le attività scadute e pianificate a colpo d’occhio",
+    "• Scadenze, date pianificate, priorità, progetti e tag",
+    "• Attività ricorrenti, promemoria e dipendenze",
+    "• Attività secondarie, allegati e registrazione del tempo",
+    "",
+    "IL TUO LAVORO, COME VUOI TU",
+    "• Liste, bacheche e viste salvate",
+    "• Calendari mensile, su più giorni e agenda, con gli eventi di Google Calendar accanto alle attività",
+    "• Ricerca rapida in tutte le attività",
+    "",
+    "NOTE E ATTIVITÀ INSIEME",
+    "• Scrivi note Markdown in ogni attività",
+    "• Blocco appunti per note veloci e immagini",
+    "• Vedi il file Markdown di ogni attività e collegalo dalle altre note",
+    "",
+    "PORTABILE PER SCELTA",
+    "TaskNotes conserva le attività in una raccolta mdbase, ospitata per te o tenuta sul tuo computer e sincronizzata con mdbase Connect. Le stesse note funzionano con il plugin TaskNotes per Obsidian, così telefono, web e note restano allineati.",
+    "",
+    "PROMEMORIA DISCRETI E PRIVATI",
+    "I promemoria vengono inviati da mdbase anche quando TaskNotes è chiusa. Le notifiche non contengono mai titoli o dettagli delle attività.",
+    "",
+    "TaskNotes richiede un account mdbase per archiviare le attività. È disponibile in italiano, inglese, francese, tedesco, spagnolo, giapponese, coreano, portoghese brasiliano, russo e cinese semplificato.",
+    "",
+    "Scopri di più su tasknotes.dev."
+  ],
+  "whatsNew": "Miglioramenti recenti: TaskNotes parla dieci lingue e invia i promemoria anche quando l’app è chiusa. Le attività ricorrenti mantengono le date quando modifichi la ripetizione, le ripetizioni mensili sono descritte correttamente e l’app si apre più velocemente."
+}
