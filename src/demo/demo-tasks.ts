@@ -110,7 +110,7 @@ export function demoTasks(model: TaskNotesTaskModel, count: number): Task[] {
   });
 }
 
-function dateOffset(date: Date, days: number, hour?: number): string {
+export function dateOffset(date: Date, days: number, hour?: number): string {
   const value = new Date(date);
   value.setHours(hour ?? 12, 0, 0, 0);
   value.setDate(value.getDate() + days);

@@ -54,7 +54,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "cap:sync": "pnpm build && cap sync",
-    "android": "pnpm cap:sync && cap run android"
+    "android": "pnpm cap:sync && cap run android",
+    "store:screenshots": "node scripts/store-screenshots.mjs"
   },
   "dependencies": {
     "@capacitor-firebase/messaging": "8.3.0",
@@ -127,6 +128,7 @@
     "globals": "17.7.0",
     "jsdom": "29.1.1",
     "prettier": "3.9.6",
+    "sharp": "0.35.4",
     "tasknotes-spec": "file:vendor/tasknotes-spec-0.3.0-rc.5.tgz",
     "typescript": "6.0.3",
     "typescript-eslint": "8.65.0",

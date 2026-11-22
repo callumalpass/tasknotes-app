@@ -4,18 +4,21 @@ import { AppShell } from "../app/app-shell";
 import { CollectionGateContext } from "../app/collection-context";
 import { RepositoryProvider } from "../app/repository-context";
 import { DemoMutationJournal } from "./demo-mutation-journal";
+import type { DemoSeed } from "./demo-seed";
 import { DemoTaskRepository } from "./demo-task-repository";
 
 export function DemoApp({
   count,
   adjustDefinition,
+  seed,
 }: {
   count: number;
   adjustDefinition?: ConstructorParameters<typeof DemoTaskRepository>[1];
+  seed?: DemoSeed;
 }) {
   const repository = useMemo(
-    () => new DemoTaskRepository(count, adjustDefinition),
-    [adjustDefinition, count],
+    () => new DemoTaskRepository(count, adjustDefinition, seed),
+    [adjustDefinition, count, seed],
   );
   const mutationJournal = useMemo(() => new DemoMutationJournal(), []);
   const collectionActions = useMemo(
