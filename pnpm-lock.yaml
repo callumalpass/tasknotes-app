@@ -17,6 +17,9 @@ importers:
 
   .:
     dependencies:
+      '@capacitor-community/in-app-review':
+        specifier: 8.0.0
+        version: 8.0.0(@capacitor/core@8.4.2)
       '@capacitor-firebase/messaging':
         specifier: 8.3.0
         version: 8.3.0(@capacitor/core@8.4.2)(firebase@12.16.0)
@@ -407,6 +410,11 @@ packages:
     resolution: {integrity: sha512-fw8S64FaMt9YT/0WKb8mURWRn6wPca4PA7FpNPnDWquj2lm47CoBp+g25yrlJNUqPyCVgSs0lOSx6G/8u9uWJw==}
     deprecated: No longer maintained. Use @mdbase-dev/mdbase for contract digests, validation and type packs, or @mdbase-dev/sdk to work with collections through mdbase Connect.
     hasBin: true
+
+  '@capacitor-community/in-app-review@8.0.0':
+    resolution: {integrity: sha512-AYpEkIjdv27WGS3hnlc7xAQ1BhaBvD2svgQBfHF4P2Olw1N6a7MSCOQC6O4SuxmdBdJ2fM6uFeo1jyNjKLtIPw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor-firebase/messaging@8.3.0':
     resolution: {integrity: sha512-gjlpPH8nFN2D4PGpg+Bi7Pk1Apy+nRh6DHTI8hr4o3QfCmZPnNCT0mhhT8Rcdpwf2D+E5NxkaVy4/2GYiXoF8Q==}
@@ -5176,6 +5184,10 @@ snapshots:
       sql.js: 1.14.1
       ulid: 2.4.0
       yaml: 2.9.0
+
+  '@capacitor-community/in-app-review@8.0.0(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
 
   '@capacitor-firebase/messaging@8.3.0(@capacitor/core@8.4.2)(firebase@12.16.0)':
     dependencies:
