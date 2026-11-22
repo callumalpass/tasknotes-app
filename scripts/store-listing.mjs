@@ -6,7 +6,10 @@ import { join } from "node:path";
 
 export const STORE_LISTING_DIR = "store/listing";
 
-// Store limits, counted in Unicode code points.
+// Store limits, counted in Unicode code points, except Apple keywords: App
+// Store Connect caps them at 100 bytes of UTF-8, so Japanese, Korean,
+// Chinese and Cyrillic keywords reach the limit well before 100 characters.
+export const APPLE_KEYWORD_BYTES = 100;
 export const LIMITS = {
   apple: {
     name: 30,
@@ -74,6 +77,11 @@ function onlyKeys(object, allowed, label) {
 
 function keywords(value, label) {
   const list = text(value, label, LIMITS.apple.keywords);
+  const bytes = Buffer.byteLength(list, "utf8");
+  if (bytes > APPLE_KEYWORD_BYTES)
+    throw invalid(
+      `${label} is ${bytes} bytes of UTF-8; the App Store limit is ${APPLE_KEYWORD_BYTES}`,
+    );
   const words = list.split(",");
   if (words.some((word) => !word.trim() || word !== word.trim()))
     throw invalid(

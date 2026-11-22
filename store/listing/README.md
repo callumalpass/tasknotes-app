@@ -8,7 +8,7 @@ release.
 One file per app language. Each file holds:
 
 - `apple`: the App Store locales it covers, the app `name` (30), `subtitle`
-  (30), `keywords` (100, comma-separated with no spaces around commas, no
+  (30), `keywords` (100 _bytes_ of UTF-8, comma-separated with no spaces around commas, no
   words already in the name or subtitle) and `promotionalText` (170).
 - `play`: the Google Play languages it covers, the `title` (30) and
   `shortDescription` (80).
@@ -20,8 +20,10 @@ One file per app language. Each file holds:
   user-visible change. An explicit `docs/releases/ios/<version>.json` still
   wins on iOS, for every locale of its language.
 
-Numbers are the store limits in characters; `scripts/store-listing.node-test.mjs`
-checks them. Apple rejects metadata that names other mobile platforms, so keep
+Numbers are the store limits in characters, except Apple keywords, which App
+Store Connect counts in UTF-8 bytes: a Japanese, Korean or Chinese character
+takes three and a Cyrillic letter two, so those lists hold far fewer than 100
+characters. `scripts/store-listing.mjs` refuses a listing over any limit. Apple rejects metadata that names other mobile platforms, so keep
 "Android" out of the `apple` fields and the shared description.
 
 How each release applies them:

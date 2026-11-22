@@ -551,7 +551,7 @@ test("pending or processing stores quietly wait without building, even an older 
     "PENDING_APPLE_RELEASE",
     "PENDING_DEVELOPER_RELEASE",
     "PROCESSING_FOR_APP_STORE",
-    "PREPARE_FOR_SUBMISSION",
+    "READY_FOR_REVIEW",
     "FUTURE_UNKNOWN_STATE",
   ]) {
     const fixtureValue = fixture("app-store");
@@ -562,6 +562,18 @@ test("pending or processing stores quietly wait without building, even an older 
     await fixtureValue.run();
     assert.equal(fixtureValue.records.at(-1).outcome, "pending-review");
     assert.equal(fixtureValue.calls.length, 0);
+  }
+  // A never-submitted draft (for example left by a failed submission) is
+  // not in review: the release proceeds and the submitter reconciles it.
+  {
+    const fixtureValue = fixture("app-store");
+    fixtureValue.services.status = async () => ({
+      versions: [{ state: "PREPARE_FOR_SUBMISSION" }],
+    });
+    fixtureValue.services.commit = async () => {
+      throw new Error("checked-past-draft");
+    };
+    await assert.rejects(fixtureValue.run(), /checked-past-draft/);
   }
   const fixtureValue = fixture();
   fixtureValue.services.status = async () => ({
@@ -579,6 +591,23 @@ test("pending or processing stores quietly wait without building, even an older 
 });
 test("rejections, stopped lines, failed checks and mismatched builds fail closed", async () => {
   assert.equal(appleQueueBlock([{ state: "REJECTED" }]), "store-rejected");
+  // One never-submitted draft is reconciled by the submitter; anything
+  // Apple has received, or more than one open version, still waits.
+  const live = { state: "READY_FOR_SALE" };
+  assert.equal(
+    appleQueueBlock([live, { state: "PREPARE_FOR_SUBMISSION" }]),
+    null,
+  );
+  for (const open of [
+    [{ state: "WAITING_FOR_REVIEW" }],
+    [{ state: "READY_FOR_REVIEW" }],
+    [{ state: "PREPARE_FOR_SUBMISSION" }, { state: "IN_REVIEW" }],
+    [{ state: "PREPARE_FOR_SUBMISSION" }, { state: "PREPARE_FOR_SUBMISSION" }],
+  ])
+    assert.equal(
+      appleQueueBlock([live, ...open]),
+      "earlier-store-version-in-flight",
+    );
   for (const change of [
     {
       lines: async () => {

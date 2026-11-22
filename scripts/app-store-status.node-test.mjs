@@ -7,8 +7,10 @@ import {
   createStatusClient,
   readAppStoreStatus,
   statusSummary,
-  VERSION,
 } from "./app-store-status.mjs";
+
+// Newer than the stale package.json version, as store CD numbers releases.
+const VERSION = "1.0.31";
 
 const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
 const credentials = { privateKey, keyId: "TESTKEY", issuerId: "test-issuer" };
@@ -23,7 +25,20 @@ function fixture() {
     requests: [],
     bundleId: BUNDLE_ID,
     versions: [
-      { id: "old", attributes: { versionString: "1.0.8" } },
+      {
+        id: "old",
+        attributes: {
+          versionString: "1.0.30",
+          appStoreState: "READY_FOR_SALE",
+        },
+      },
+      {
+        id: "older",
+        attributes: {
+          versionString: "1.0.12",
+          appStoreState: "REPLACED_WITH_NEW_VERSION",
+        },
+      },
       {
         id: "target",
         attributes: {
@@ -42,6 +57,7 @@ function fixture() {
     ],
     items: { review: [item("target")], other: [item("old")] },
     builds: [{ attributes: { version: "27", processingState: "VALID" } }],
+    attached: { attributes: { version: "26", processingState: "VALID" } },
   };
   f.client = createStatusClient(credentials, {
     fetchImpl: async (url, init) => {
@@ -59,6 +75,8 @@ function fixture() {
           next = `${url.href}&cursor=next`;
         } else data = f.paginate ? f.versions.slice(1) : f.versions;
       } else if (url.pathname === "/v1/reviewSubmissions") data = f.submissions;
+      else if (url.pathname === "/v1/appStoreVersions/target/build")
+        data = f.attached;
       else if (/^\/v1\/reviewSubmissions\/[^/]+\/items$/.test(url.pathname))
         data = f.items[url.pathname.split("/")[3]];
       else if (url.pathname === "/v1/builds") {
@@ -92,9 +110,11 @@ test("GET-only status reads the requested version, its active review and latest 
   const result = await f.run();
   assert.deepEqual(result, {
     version: VERSION,
+    liveVersion: "1.0.30",
     appStoreState: "WAITING_FOR_REVIEW",
     releaseType: "MANUAL",
     reviewSubmissionState: "WAITING_FOR_REVIEW",
+    attachedBuild: { buildNumber: "26", processingState: "VALID" },
     latestBuild: { buildNumber: "27", processingState: "VALID" },
   });
   assert.match(
@@ -123,7 +143,7 @@ test("GET-only status reads the requested version, its active review and latest 
 
 test("approved MANUAL version reports PENDING_DEVELOPER_RELEASE and no active review after completion", async () => {
   const f = fixture();
-  f.versions[1].attributes.appStoreState = "PENDING_DEVELOPER_RELEASE";
+  f.versions[2].attributes.appStoreState = "PENDING_DEVELOPER_RELEASE";
   f.submissions[1].attributes.state = "COMPLETE";
   const result = await f.run();
   assert.equal(result.reviewSubmissionState, "NONE");
@@ -147,12 +167,43 @@ test("reports missing version/build without manufacturing a review state", async
   f.versions = [];
   f.builds = [];
   assert.deepEqual(await f.run(), {
-    version: VERSION,
+    version: "NOT_FOUND",
+    liveVersion: "NONE",
     appStoreState: "NOT_FOUND",
     releaseType: "NOT_FOUND",
     reviewSubmissionState: "NONE",
+    attachedBuild: null,
     latestBuild: null,
   });
+});
+
+test("reports the newest version record even when versions arrive out of order", async () => {
+  const f = fixture();
+  // Apple lists versions in no guaranteed order; a stale record must not win.
+  f.versions.reverse();
+  f.versions.push({
+    id: "ancient",
+    attributes: { versionString: "1.0.9", appStoreState: "READY_FOR_SALE" },
+  });
+  const result = await f.run();
+  assert.equal(result.version, VERSION);
+  assert.equal(result.liveVersion, "1.0.30");
+  assert.equal(result.attachedBuild.buildNumber, "26");
+  const builds = f.requests.find((url) => url.pathname === "/v1/builds");
+  assert.equal(
+    builds.searchParams.get("filter[preReleaseVersion.version]"),
+    VERSION,
+  );
+});
+
+test("reports a draft with no attached build", async () => {
+  const f = fixture();
+  f.versions[2].attributes.appStoreState = "PREPARE_FOR_SUBMISSION";
+  f.attached = null;
+  const result = await f.run();
+  assert.equal(result.appStoreState, "PREPARE_FOR_SUBMISSION");
+  assert.equal(result.attachedBuild, null);
+  assert.match(statusSummary(result), /Attached build: NONE/);
 });
 
 test("reports PROCESSING without polling or changing the build", async () => {
@@ -171,7 +222,7 @@ for (const [label, change] of [
   [
     "duplicate versions",
     (f) => {
-      f.versions.push(f.versions[1]);
+      f.versions.push(f.versions[2]);
     },
   ],
   [
@@ -183,7 +234,7 @@ for (const [label, change] of [
   [
     "invalid status text",
     (f) => {
-      f.versions[1].attributes.appStoreState = secret;
+      f.versions[2].attributes.appStoreState = secret;
     },
   ],
   [

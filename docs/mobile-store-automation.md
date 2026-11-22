@@ -157,7 +157,30 @@ attempt, even one that never reaches Apple). Its reason is a fixed slug such as
 leave the job. The coordinator records `boundary_outcome: refused-before-write`
 and that reason, but keeps `write_started: true` because the TestFlight upload
 is already a store write, so the line still stops with
-`app-publication-failed`. A failure after a write attempt retains nothing.
+`app-publication-failed`.
+
+A failure after a write attempt retains
+`{outcome: "failed-after-write", write_started: true, phase, http_status,
+error_class, source_run_id}` instead, and the job log prints the same three
+fields. `phase` is one of `version`, `version-localizations`,
+`app-info-localizations`, `screenshots`, `review-details`, `read-back`,
+`review-submission`, `confirmation` (or `unknown`); `http_status` is the status
+Apple returned, or null; `error_class` is a fixed slug such as
+`app-store-write-rejected`, `screenshot-processing-failed` or `error-typeerror`.
+Apple's response body, request paths, ids and messages never leave the job. The
+coordinator's refusal check never accepts this receipt, so the target keeps its
+write-started stop; it only says where the next attempt should look.
+
+A failed submission can leave an unsubmitted version in
+`PREPARE_FOR_SUBMISSION` with some listing text or screenshots saved. The next
+attempt reconciles it rather than waiting on it: the App CD queue check does not
+treat a single such draft as in review; a rerun of the same version skips
+localizations whose text already matches, creates only missing ones, and
+replaces a screenshot set only when its ordered checksums differ; a new build of
+that version is re-attached to the draft; and a later version adopts an older
+draft by renaming it. A draft review submission is reused only when it contains
+nothing but that version. Anything Apple has already received, a newer draft, or
+more than one open version still waits as `pending-review` or refuses.
 
 App Store Connect, not altool's wording, confirms a TestFlight upload. After
 altool exits 0, `scripts/testflight-upload.mjs confirm` polls the API (about
