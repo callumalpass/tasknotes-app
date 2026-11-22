@@ -6,11 +6,14 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recheckRefusalReason } from "./mobile-release-policy.mjs";
 import {
   APP_ID,
   BUNDLE_ID,
   createClient,
   createToken,
+  postWriteClass,
+  postWriteReceipt,
   refusalReason,
   refusalReceipt,
   submitAppStore,
@@ -174,6 +177,16 @@ function fixture() {
         throw new Error(`Unexpected GET ${path}`);
       }
       f.writes.push({ path, method, data });
+      // Apple refuses a write (for example 409 for an over-long field).
+      if (f.reject?.(path, method, data)) {
+        f.reject = null;
+        throw Object.assign(
+          new Error(
+            `App Store Connect ${method} /v1/${path}: HTTP 409 (ENTITY_ERROR.ATTRIBUTE.INVALID). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+          ),
+          { status: 409, method },
+        );
+      }
       let result = {};
       if (path === "appStoreVersions" && method === "POST") {
         const v = {
@@ -1495,4 +1508,274 @@ test("screenshots that do not read back block submission", async () => {
     f.run({ commit: true, media, mediaOptions: options }),
     /does not match the requested submission/,
   );
+});
+
+// Failures after a write: bounded receipt, and reconciliation of what the
+// failed run left behind.
+// No rolling notes: the fixture shares one localization list between the
+// live version and the draft, which would otherwise rewrite them on reruns.
+const withoutRolling = ({ whatsNew, ...entry }) => entry;
+const threeLocales = {
+  "en-AU": withoutRolling(listingEntry("au")),
+  "fr-FR": withoutRolling(listingEntry("fr")),
+  ja: withoutRolling(listingEntry("ja")),
+};
+const threeLocaleMetadata = {
+  ...metadata,
+  whatsNew: { "en-AU": "Notes au", "fr-FR": "Notes fr", ja: "Notes ja" },
+};
+const rejectLocale = (locale) => (path, method, data) =>
+  path === "appStoreVersionLocalizations" &&
+  method === "POST" &&
+  data.attributes.locale === locale;
+
+test("API errors carry only their HTTP status and direction", async () => {
+  const client = createClient(credentials, {
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          errors: [{ code: "ENTITY_ERROR", detail: "secret-detail" }],
+        }),
+        { status: 409 },
+      ),
+  });
+  const error = await client
+    .request("appStoreVersionLocalizations", "POST", {})
+    .catch((caught) => caught);
+  assert.equal(error.status, 409);
+  assert.equal(error.method, "POST");
+  assert.equal(postWriteClass(error), "app-store-write-rejected");
+});
+
+test("a failure after a write keeps a bounded phase receipt, never a refusal", async () => {
+  const f = fixture();
+  const client = trackWrites(f.client);
+  f.reject = rejectLocale("ja");
+  const error = await submitAppStore({
+    client,
+    version: "1.0.4",
+    buildNumber: "15",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+    waitOptions: { attempts: 1 },
+    env: {},
+    commit: true,
+  }).catch((caught) => caught);
+  assert.equal(client.writeAttempted, true);
+  assert.equal(await refusalReceipt(error, client, "42"), null);
+  const receipt = postWriteReceipt(error, client, "42");
+  assert.deepEqual(receipt, {
+    outcome: "failed-after-write",
+    write_started: true,
+    phase: "version-localizations",
+    http_status: 409,
+    error_class: "app-store-write-rejected",
+    source_run_id: 42,
+  });
+  // The coordinator's pre-write refusal check never accepts it.
+  assert.equal(recheckRefusalReason(receipt, 42), null);
+  const text = JSON.stringify(receipt);
+  for (const leak of ["ENTITY_ERROR", "/v1/", "ja", "review@", "new"])
+    assert.ok(!text.includes(leak), leak);
+});
+
+test("post-write receipts need a write and a source run", () => {
+  const error = new Error("anything");
+  assert.equal(postWriteReceipt(error, undefined, "42"), null);
+  assert.equal(postWriteReceipt(error, { writeAttempted: false }, "42"), null);
+  assert.equal(
+    postWriteReceipt(error, { writeAttempted: true }, undefined),
+    null,
+  );
+  assert.deepEqual(
+    postWriteReceipt(error, { writeAttempted: true, phase: "elsewhere" }, "7"),
+    {
+      outcome: "failed-after-write",
+      write_started: true,
+      phase: "unknown",
+      http_status: null,
+      error_class: "error-error",
+      source_run_id: 7,
+    },
+  );
+});
+
+test("post-write failures name fixed classes", () => {
+  for (const [error, expected] of [
+    [
+      new Error("Apple could not process a store screenshot; inspect"),
+      "screenshot-processing-failed",
+    ],
+    [
+      new Error("Timed out waiting for Apple to process store screenshots"),
+      "screenshot-processing-timeout",
+    ],
+    [
+      Object.assign(new Error("Screenshot upload failed: HTTP 403"), {
+        status: 403,
+        postWrite: "screenshot-upload-rejected",
+      }),
+      "screenshot-upload-rejected",
+    ],
+    [
+      Object.assign(new Error("App Store Connect GET /v1/x: HTTP 500 (x)"), {
+        status: 500,
+        method: "GET",
+      }),
+      "app-store-read-rejected",
+    ],
+    [
+      Object.assign(new TypeError("fetch failed"), {
+        cause: { code: "ECONNRESET" },
+      }),
+      "app-store-request-network",
+    ],
+    [
+      new Error("Saved release metadata/build does not match the request"),
+      "app-store-saved-state-mismatch",
+    ],
+    [new RangeError("secret text"), "error-rangeerror"],
+  ])
+    assert.equal(postWriteClass(error), expected);
+});
+
+test("a rerun after a refused locale completes without duplicating or rewriting", async () => {
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  const run = () =>
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    });
+  await assert.rejects(run(), /HTTP 409/);
+  // Nothing after the refused write ran: no screenshots, review or submission.
+  assert.ok(!f.writes.some((w) => /appInfo|review|Screenshot/i.test(w.path)));
+  assert.deepEqual(
+    f.locales.map((item) => item.attributes.locale),
+    ["en-AU", "fr-FR"],
+  );
+  f.writes = [];
+  assert.equal((await run()).state, "WAITING_FOR_REVIEW");
+  assert.deepEqual(f.locales.map((item) => item.attributes.locale).sort(), [
+    "en-AU",
+    "fr-FR",
+    "ja",
+  ]);
+  // Localizations already saved by the failed run are not written again.
+  assert.deepEqual(
+    f.writes
+      .filter((w) => w.path.startsWith("appStoreVersionLocalizations"))
+      .map((w) => `${w.method} ${w.data.attributes.locale ?? w.path}`),
+    ["POST ja"],
+  );
+  assert.equal(f.versions.length, 2);
+  assert.equal(f.submissions.length, 1);
+  assert.equal(f.items.length, 1);
+});
+
+test("a new build re-points an unsubmitted draft of the same version", async () => {
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    }),
+    /HTTP 409/,
+  );
+  assert.equal(f.attached.id, "build");
+  f.build = { ...f.build, id: "build-16" };
+  f.build.attributes = { ...f.build.attributes, version: "16" };
+  const result = await f.run({
+    commit: true,
+    buildNumber: "16",
+    metadata: threeLocaleMetadata,
+    listing: threeLocales,
+  });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  assert.equal(f.attached.id, "build-16");
+  assert.equal(f.versions.length, 2);
+});
+
+test("a later release adopts an older unsubmitted draft instead of waiting", async () => {
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    }),
+    /HTTP 409/,
+  );
+  const next = {
+    ...threeLocaleMetadata,
+    version: "1.0.5",
+  };
+  const dry = await f.run({
+    version: "1.0.5",
+    metadata: next,
+    listing: threeLocales,
+  });
+  assert.equal(dry.wouldCreateVersion, false);
+  assert.equal(dry.wouldAdoptDraft, true);
+  f.writes = [];
+  const result = await f.run({
+    commit: true,
+    version: "1.0.5",
+    metadata: next,
+    listing: threeLocales,
+  });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  assert.ok(!f.writes.some((w) => w.path === "appStoreVersions"));
+  assert.equal(f.versions.length, 2);
+  assert.equal(f.versions[1].attributes.versionString, "1.0.5");
+});
+
+test("drafts Apple has received, or newer drafts, are never adopted", async () => {
+  for (const draft of [
+    { versionString: "1.0.3.1", appStoreState: "PREPARE_FOR_SUBMISSION" },
+    { versionString: "1.0.9", appStoreState: "PREPARE_FOR_SUBMISSION" },
+    { versionString: "1.0.2", appStoreState: "WAITING_FOR_REVIEW" },
+  ]) {
+    const f = fixture();
+    f.versions.push({ id: "draft", attributes: draft });
+    await assert.rejects(
+      f.run({ commit: true }),
+      /earlier-store-version-in-flight/,
+    );
+    assert.equal(f.writes.length, 0);
+  }
+});
+
+test("the version a draft was renamed to is verified before submission", async () => {
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    }),
+    /HTTP 409/,
+  );
+  // Apple ignores the rename: the read-back must stop before submitting.
+  const original = f.client.request;
+  f.client.request = async (path, method, data) => {
+    if (path === "appStoreVersions/new" && method === "PATCH")
+      delete data.attributes.versionString;
+    return original(path, method, data);
+  };
+  await assert.rejects(
+    f.run({
+      commit: true,
+      version: "1.0.5",
+      metadata: { ...threeLocaleMetadata, version: "1.0.5" },
+      listing: threeLocales,
+    }),
+    /does not match the requested submission/,
+  );
+  assert.equal(f.submissions.length, 0);
 });

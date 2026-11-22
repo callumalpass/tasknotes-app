@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { LIMITS, expandListing, loadStoreListing } from "./store-listing.mjs";
+import {
+  APPLE_KEYWORD_BYTES,
+  LIMITS,
+  expandListing,
+  loadStoreListing,
+} from "./store-listing.mjs";
 
 const file = () => ({
   apple: {
@@ -22,6 +27,10 @@ test("the committed store listing is valid for both stores", async () => {
   for (const entry of Object.values(listing.apple)) {
     for (const [field, max] of Object.entries(LIMITS.apple))
       if (entry[field]) assert.ok([...entry[field]].length <= max, field);
+    assert.ok(
+      Buffer.byteLength(entry.keywords, "utf8") <= APPLE_KEYWORD_BYTES,
+      `${entry.name}: keywords exceed ${APPLE_KEYWORD_BYTES} bytes`,
+    );
     // Apple indexes the name and subtitle already; repeating their words wastes keyword space.
     const titled = new Set(
       `${entry.name} ${entry.subtitle}`
@@ -72,6 +81,12 @@ for (const [label, change, pattern] of [
     "padded keywords",
     (d) => (d.apple.keywords = "todo, gtd"),
     /comma-separated/,
+  ],
+  [
+    // 38 characters but 104 bytes: within the character count, over the byte cap.
+    "keywords over Apple's byte limit",
+    (d) => (d.apple.keywords = `todo,${"タ".repeat(33)}`),
+    /104 bytes of UTF-8; the App Store limit is 100/,
   ],
   ["repeated keywords", (d) => (d.apple.keywords = "todo,Todo"), /repeats/],
   ["an unknown field", (d) => (d.apple.icon = "x"), /unknown field/],

@@ -219,8 +219,11 @@ export function createClient(
         const body = await response.json().catch(() => ({}));
         const codes =
           body.errors?.map((error) => error.code).join(", ") || "unknown";
-        throw new Error(
-          `App Store Connect ${method} ${url.pathname}: HTTP ${response.status} (${codes}). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+        throw Object.assign(
+          new Error(
+            `App Store Connect ${method} ${url.pathname}: HTTP ${response.status} (${codes}). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+          ),
+          { status: response.status, method },
         );
       }
       return response.status === 204 ? {} : body;
@@ -506,7 +509,9 @@ async function uploadScreenshot(client, setId, file, upload) {
     // Apple's presigned asset URLs never receive the API bearer token.
     const url = new URL(operation.url);
     if (url.protocol !== "https:")
-      throw new Error("Unexpected screenshot upload URL");
+      throw Object.assign(new Error("Unexpected screenshot upload URL"), {
+        postWrite: "screenshot-upload-url-unexpected",
+      });
     const response = await upload(url, {
       method: operation.method,
       headers: Object.fromEntries(
@@ -523,7 +528,10 @@ async function uploadScreenshot(client, setId, file, upload) {
       signal: AbortSignal.timeout(120_000),
     });
     if (!response.ok)
-      throw new Error(`Screenshot upload failed: HTTP ${response.status}`);
+      throw Object.assign(
+        new Error(`Screenshot upload failed: HTTP ${response.status}`),
+        { status: response.status, postWrite: "screenshot-upload-rejected" },
+      );
   }
   await client.request(`appScreenshots/${shot.id}`, "PATCH", {
     type: "appScreenshots",
@@ -699,6 +707,42 @@ async function withoutRepeatedNotes(client, live, metadata, listing, version) {
   return { ...metadata, whatsNew };
 }
 
+// Fixed phases of the commit path. A failure after a write attempt is
+// retained only as the phase it happened in, never as a message.
+export const SUBMISSION_PHASES = new Set([
+  "version",
+  "version-localizations",
+  "app-info-localizations",
+  "screenshots",
+  "review-details",
+  "read-back",
+  "review-submission",
+  "confirmation",
+]);
+function enter(client, phase) {
+  client.phase = phase;
+}
+
+const compareVersions = (a, b) => {
+  const left = a.split(".").map(Number),
+    right = b.split(".").map(Number);
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+};
+
+// A version this workflow created but never submitted (for example after a
+// failed run) stays in PREPARE_FOR_SUBMISSION. Apple allows only one editable
+// version, so a newer release adopts it instead of waiting on it forever.
+function adoptableDraft(versions, version) {
+  const open = versions.filter((item) => !releasedStates.has(state(item)));
+  if (open.length !== 1) return undefined;
+  const [draft] = open;
+  return state(draft) === "PREPARE_FOR_SUBMISSION" &&
+    /^\d+\.\d+\.\d+$/.test(draft.attributes.versionString ?? "") &&
+    compareVersions(draft.attributes.versionString, version) < 0
+    ? draft
+    : undefined;
+}
+
 export async function submitAppStore({
   client,
   version,
@@ -723,6 +767,8 @@ export async function submitAppStore({
   let target = versions.find(
     (item) => item.attributes.versionString === version,
   );
+  const adopted = target ? undefined : adoptableDraft(versions, version);
+  target ??= adopted;
   const current = versions.find((item) => state(item) === "READY_FOR_SALE");
   if (!current)
     throw new Error(
@@ -732,7 +778,13 @@ export async function submitAppStore({
     const linked = (
       await client.request(`appStoreVersions/${target.id}/relationships/build`)
     ).data;
-    if (linked && linked.id !== build.id)
+    // An unsubmitted draft may be re-pointed at the exact qualified build;
+    // anything Apple has already received keeps its build.
+    if (
+      linked &&
+      linked.id !== build.id &&
+      state(target) !== "PREPARE_FOR_SUBMISSION"
+    )
       throw new Error(
         "Store version is attached to a different build; refusing to replace it",
       );
@@ -839,9 +891,11 @@ export async function submitAppStore({
       buildNumber,
       state: "DRY_RUN",
       wouldCreateVersion: !target,
+      ...(adopted ? { wouldAdoptDraft: true } : {}),
       listingPlan: listingPlan(localizations, metadata, listing),
     };
 
+  enter(client, "version");
   if (!target) {
     target = (
       await client.request("appStoreVersions", "POST", {
@@ -861,6 +915,7 @@ export async function submitAppStore({
       type: "appStoreVersions",
       id: target.id,
       attributes: {
+        ...(adopted ? { versionString: version } : {}),
         copyright: metadata.copyright,
         releaseType: releaseTypeOf(metadata),
         earliestReleaseDate: null,
@@ -873,18 +928,27 @@ export async function submitAppStore({
       `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
     );
     assertLocales(inherited, metadata, listing);
+    enter(client, "version-localizations");
     for (const locale of inherited) {
       const entry = listing[locale.attributes.locale];
+      const attributes = {
+        ...(entry ? pick(entry, versionFields) : {}),
+        whatsNew: metadata.whatsNew[locale.attributes.locale],
+      };
+      // A rerun leaves text that already matches alone.
+      if (
+        Object.entries(attributes).every(([field, value]) =>
+          sameText(locale.attributes[field], value),
+        )
+      )
+        continue;
       await client.request(
         `appStoreVersionLocalizations/${locale.id}`,
         "PATCH",
         {
           type: "appStoreVersionLocalizations",
           id: locale.id,
-          attributes: {
-            ...(entry ? pick(entry, versionFields) : {}),
-            whatsNew: metadata.whatsNew[locale.attributes.locale],
-          },
+          attributes,
         },
       );
     }
@@ -912,7 +976,9 @@ export async function submitAppStore({
         },
       });
     }
+    enter(client, "app-info-localizations");
     if (Object.keys(listing).length) await applyAppInfoListing(client, listing);
+    enter(client, "screenshots");
     if (Object.keys(media).length)
       await syncScreenshots(
         client,
@@ -925,6 +991,7 @@ export async function submitAppStore({
         media,
         mediaOptions,
       );
+    enter(client, "review-details");
     const detail = await readReview(client, target.id);
     if (!detail)
       throw new Error(
@@ -937,6 +1004,7 @@ export async function submitAppStore({
     });
   }
   // Read back durable state before the irreversible submission step (also on reruns).
+  enter(client, "read-back");
   const prepared = (await client.request(`appStoreVersions/${target.id}`)).data;
   const attached = (
     await client.request(`appStoreVersions/${target.id}/relationships/build`)
@@ -948,6 +1016,7 @@ export async function submitAppStore({
   const demoVerification = verifyDemoAccount(savedReview, demoCredentials);
   if (
     attached?.id !== build.id ||
+    prepared.attributes.versionString !== version ||
     prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
     listingMismatch(savedLocales, metadata, listing) ||
@@ -972,6 +1041,7 @@ export async function submitAppStore({
     throw new Error(
       "A phased release is configured; remove it manually to release to everyone after approval",
     );
+  enter(client, "review-submission");
   if (!submission) {
     submission = (
       await client.request("reviewSubmissions", "POST", {
@@ -1004,6 +1074,7 @@ export async function submitAppStore({
     id: submission.id,
     attributes: { submitted: true },
   });
+  enter(client, "confirmation");
   const confirmed = (await client.request(`appStoreVersions/${target.id}`))
     .data;
   if (confirmed.attributes.releaseType !== releaseTypeOf(metadata)) {
@@ -1220,6 +1291,7 @@ export function refusalReason(error) {
 export function trackWrites(client) {
   const tracked = {
     writeAttempted: false,
+    phase: null,
     request(path, method = "GET", data) {
       if (method !== "GET") tracked.writeAttempted = true;
       return client.request(path, method, data);
@@ -1236,6 +1308,70 @@ export async function refusalReceipt(error, client, sourceRunId) {
   if (client && client.writeAttempted !== false) return null;
   const { recheckRefusal } = await import("./mobile-release-policy.mjs");
   return recheckRefusal(refusalReason(error), sourceRunId);
+}
+
+// Failures after a write began name a fixed class: where the message is one
+// of ours, a slug chosen here; where Apple answered, only the direction of
+// the request. Apple's response body, paths and ids never leave the process.
+const postWriteReasons = [
+  [
+    "Apple could not process a store screenshot",
+    "screenshot-processing-failed",
+  ],
+  [
+    "Timed out waiting for Apple to process store screenshots",
+    "screenshot-processing-timeout",
+  ],
+  ["The primary locale has no version localization", "primary-locale-missing"],
+  ["Apple did not inherit review details", "review-details-missing"],
+  ["Review submission items changed", "review-submission-items-changed"],
+  ["Release policy changed during submission", "release-policy-changed"],
+  ["Apple has not yet confirmed submission", "submission-unconfirmed"],
+];
+const BOUNDED = /^[a-z0-9-]{1,100}$/;
+
+export function postWriteClass(error) {
+  if (BOUNDED.test(error?.postWrite ?? "")) return error.postWrite;
+  if (Number.isInteger(error?.status) && typeof error?.method === "string")
+    return error.method === "GET"
+      ? "app-store-read-rejected"
+      : "app-store-write-rejected";
+  const transport = transportFailure(error);
+  if (transport)
+    return transport.reason.replace("app-store-read-", "app-store-request-");
+  const message = typeof error?.message === "string" ? error.message : "";
+  const known = postWriteReasons.find(([prefix]) =>
+    message.startsWith(prefix),
+  )?.[1];
+  if (known) return known;
+  const reason = refusalReason(error);
+  return reason.startsWith("app-store-precheck-refused-")
+    ? `error-${errorClasses.get(error?.name) ?? "other"}`
+    : reason;
+}
+
+// After a write attempt the target must keep its write-started stop, so this
+// receipt is deliberately not a refusal: it has its own outcome and fields,
+// which the coordinator's pre-write refusal check never accepts. It records
+// only a fixed phase, the HTTP status Apple returned (if any) and a fixed
+// error class, so the next attempt knows where the last one stopped.
+export const POST_WRITE_FAILURE = "failed-after-write";
+export function postWriteReceipt(error, client, sourceRunId) {
+  if (!client || client.writeAttempted !== true) return null;
+  const runId = Number(sourceRunId);
+  if (!Number.isSafeInteger(runId) || runId <= 0) return null;
+  const status = error?.status;
+  return {
+    outcome: POST_WRITE_FAILURE,
+    write_started: true,
+    phase: SUBMISSION_PHASES.has(client.phase) ? client.phase : "unknown",
+    http_status:
+      Number.isInteger(status) && status >= 100 && status <= 599
+        ? status
+        : null,
+    error_class: postWriteClass(error),
+    source_run_id: runId,
+  };
 }
 
 async function main(tracker) {
@@ -1335,9 +1471,24 @@ if (
           JSON.stringify(receipt) + "\n",
         ).catch(() => {});
       } else {
-        console.error(
-          "App Store submission refused; inspect the target outcome.",
+        const failure = postWriteReceipt(
+          error,
+          tracker.client,
+          process.env.SOURCE_RUN_ID,
         );
+        if (failure) {
+          console.error(
+            `App Store submission failed after a write began: phase ${failure.phase}, HTTP ${failure.http_status ?? "none"}, ${failure.error_class}. The store target keeps its write-started stop.`,
+          );
+          await writeFile(
+            "store-target-result.json",
+            JSON.stringify(failure) + "\n",
+          ).catch(() => {});
+        } else {
+          console.error(
+            "App Store submission refused; inspect the target outcome.",
+          );
+        }
       }
     }
   });

@@ -43,17 +43,21 @@ export function appleQueueBlock(versions) {
     )
   )
     return "store-rejected";
+  const open = versions.filter(
+    (version) =>
+      ![
+        "READY_FOR_SALE",
+        "READY_FOR_DISTRIBUTION",
+        "REPLACED_WITH_NEW_VERSION",
+        "REMOVED_FROM_SALE",
+        "DEVELOPER_REMOVED_FROM_SALE",
+      ].includes(version.state),
+  );
+  // A single never-submitted draft (left by a failed submission) is not in
+  // review: the submitter reconciles or adopts it instead of waiting on it.
   if (
-    versions.some(
-      (version) =>
-        ![
-          "READY_FOR_SALE",
-          "READY_FOR_DISTRIBUTION",
-          "REPLACED_WITH_NEW_VERSION",
-          "REMOVED_FROM_SALE",
-          "DEVELOPER_REMOVED_FROM_SALE",
-        ].includes(version.state),
-    )
+    open.length > 1 ||
+    (open.length === 1 && open[0].state !== "PREPARE_FOR_SUBMISSION")
   )
     return "earlier-store-version-in-flight";
   return null;
