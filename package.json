@@ -84,7 +84,7 @@
     "@mdbase-dev/ui": "0.1.18",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "@tanstack/react-virtual": "3.14.11",
-    "@tasknotes/direct-sdk": "file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz",
+    "@tasknotes/direct-sdk": "file:vendor/sdk-self-hosted-9df3f92db395da1a1c61744f74846f756b6852511619e696c7c6bb9c32a7308f.tgz",
     "@tasknotes/calendar": "0.1.10",
     "@tasknotes/model": "catalog:",
     "codemirror": "^6.0.2",
