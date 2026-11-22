@@ -28,6 +28,51 @@ export const LIMITS = {
 };
 
 const LOCALE = /^[a-z]{2,3}(?:-[A-Za-z0-9]+)*$/;
+// The locale codes App Store Connect uses for app and version localizations,
+// spelled exactly as Apple returns them (the submitter matches existing
+// localizations by exact code). A code Apple does not use would be created
+// as a stray localization or refused, so it never reaches a submission.
+export const APPLE_LOCALES = new Set([
+  "ar-SA",
+  "ca",
+  "cs",
+  "da",
+  "de-DE",
+  "el",
+  "en-AU",
+  "en-CA",
+  "en-GB",
+  "en-US",
+  "es-ES",
+  "es-MX",
+  "fi",
+  "fr-CA",
+  "fr-FR",
+  "he",
+  "hi",
+  "hr",
+  "hu",
+  "id",
+  "it",
+  "ja",
+  "ko",
+  "ms",
+  "nl-NL",
+  "no",
+  "pl",
+  "pt-BR",
+  "pt-PT",
+  "ro",
+  "ru",
+  "sk",
+  "sv",
+  "th",
+  "tr",
+  "uk",
+  "vi",
+  "zh-Hans",
+  "zh-Hant",
+]);
 const FILE_KEYS = new Set(["apple", "play", "description", "whatsNew"]);
 const APPLE_KEYS = new Set([
   "locales",
@@ -59,12 +104,14 @@ function text(value, label, max, { optional = false } = {}) {
   return value;
 }
 
-function locales(value, label) {
+function locales(value, label, known) {
   if (!Array.isArray(value) || !value.length)
     throw invalid(`${label} must list at least one locale`);
   for (const locale of value)
     if (typeof locale !== "string" || !LOCALE.test(locale))
       throw invalid(`${label} has an invalid locale`);
+    else if (known && !known.has(locale))
+      throw invalid(`${label} has ${locale}, which is not an App Store locale`);
   return value;
 }
 
@@ -138,7 +185,11 @@ export function expandListing(files) {
       ),
       ...(whatsNew ? { whatsNew } : {}),
     };
-    for (const locale of locales(data.apple.locales, `${file} apple.locales`)) {
+    for (const locale of locales(
+      data.apple.locales,
+      `${file} apple.locales`,
+      APPLE_LOCALES,
+    )) {
       if (apple[locale])
         throw invalid(`Apple locale ${locale} is listed twice`);
       apple[locale] = appleEntry;

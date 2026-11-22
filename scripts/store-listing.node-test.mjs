@@ -96,6 +96,17 @@ for (const [label, change, pattern] of [
     /invalid locale/,
   ],
   ["empty text", (d) => (d.apple.subtitle = " "), /non-empty/],
+  [
+    // Apple spells Simplified Chinese zh-Hans; zh-CN is a Play code.
+    "a locale App Store Connect does not use",
+    (d) => (d.apple.locales = ["zh-CN"]),
+    /zh-CN, which is not an App Store locale/,
+  ],
+  [
+    "an App Store locale in the wrong case",
+    (d) => (d.apple.locales = ["zh-hans"]),
+    /not an App Store locale/,
+  ],
 ]) {
   test(`refuses ${label}`, () => {
     const data = file();

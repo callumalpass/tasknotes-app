@@ -20,6 +20,9 @@ One file per app language. Each file holds:
   user-visible change. An explicit `docs/releases/ios/<version>.json` still
   wins on iOS, for every locale of its language.
 
+Apple locales must be App Store Connect locale codes spelled exactly as Apple
+does (`zh-Hans`, not `zh-CN`; `it`, not `it-IT`); the loader refuses others.
+
 Numbers are the store limits in characters, except Apple keywords, which App
 Store Connect counts in UTF-8 bytes: a Japanese, Korean or Chinese character
 takes three and a Cyrillic letter two, so those lists hold far fewer than 100
@@ -31,7 +34,9 @@ How each release applies them:
 - **App Store** (`scripts/submit-app-store.mjs`): updates each listed locale's
   description, keywords, promotional text and release notes on the new
   version, creates listed locales the store does not have yet (copying the
-  support and marketing URLs), and sets the name and subtitle on the editable
+  support and marketing URLs; a locale the live version does not have yet goes
+  out without release notes, because App Store Connect has no "What's New" for
+  a language's first release), and sets the name and subtitle on the editable
   app info (copying the privacy policy URL). Locales that only exist in App
   Store Connect keep their text and get the plain release line. Screenshots
   come from `store/screenshots` (see its README).
