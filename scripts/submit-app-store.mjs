@@ -428,7 +428,7 @@ export const sameText = (a, b) => normalized(a) === normalized(b);
 
 // Saved state must match the request exactly: one localization per noted
 // locale, with its notes and, where the repository lists it, its listing text.
-function listingMismatch(localizations, metadata, listing, released) {
+function listingMismatch(localizations, metadata, listing) {
   const actual = localizations.map((item) => item.attributes.locale).sort();
   if (
     JSON.stringify(actual) !==
@@ -439,8 +439,7 @@ function listingMismatch(localizations, metadata, listing, released) {
     const { locale } = item.attributes;
     const expected = listing[locale];
     return (
-      (released.has(locale) &&
-        !sameText(item.attributes.whatsNew, metadata.whatsNew[locale])) ||
+      !sameText(item.attributes.whatsNew, metadata.whatsNew[locale]) ||
       (expected &&
         versionFields.some(
           (field) => !sameText(item.attributes[field], expected[field]),
@@ -548,7 +547,16 @@ async function appInfoListingMismatch(client, listing) {
 // platform version and app information references). Checked on the primary
 // locale and every listed locale, so a gap stops at read-back with the locale
 // and property named, instead of as an opaque refusal of the submission.
-const requiredVersionFields = ["description", "keywords", "supportUrl"];
+// whatsNew is required on every localization of an update, including a
+// language the update adds: the 1.0.31 review submission item was refused
+// with ENTITY_ERROR.ATTRIBUTE.REQUIRED on whatsNew for es-ES, es-MX, fr-CA
+// and fr-FR.
+const requiredVersionFields = [
+  "description",
+  "keywords",
+  "supportUrl",
+  "whatsNew",
+];
 const requiredAppInfoFields = ["name", "privacyPolicyUrl"];
 export class ListingIncomplete extends Error {
   constructor(locale, attribute) {
@@ -610,7 +618,8 @@ function listingPlan(localizations, metadata, listing, released) {
         );
       })
       .map(([locale]) => locale),
-    // New languages go out without release notes (see submitAppStore).
+    // Languages the live version lacks. They are created without release
+    // notes, which are then set by PATCH (see submitAppStore).
     firstReleaseLocales: Object.keys(metadata.whatsNew).filter(
       (locale) => !released.has(locale),
     ),
@@ -1060,10 +1069,12 @@ export async function submitAppStore({
   const liveLocales = await client.list(
     `appStoreVersions/${current.id}/appStoreVersionLocalizations`,
   );
-  // Release notes go only to locales the live version already has. A
-  // language added by this update has no "What's New" in App Store Connect,
-  // and writing whatsNew where it is not editable is answered with 409
-  // STATE_ERROR; the post-write receipt names the attribute if that recurs.
+  // Every localization of an update needs release notes before Apple accepts
+  // the review submission item, including languages this update adds. Those
+  // are created without whatsNew and get it by PATCH right after creation:
+  // a 409 STATE_ERROR on whatsNew in the create POST was inferred, never
+  // proven, and a refusal of the PATCH names its method, attribute and
+  // locale in the post-write receipt.
   const released = new Set(liveLocales.map((item) => item.attributes.locale));
   metadata = withoutRepeatedNotes(liveLocales, metadata, listing, version);
   const sourceId = target?.id ?? current.id;
@@ -1156,13 +1167,11 @@ export async function submitAppStore({
     );
     assertLocales(inherited, metadata, listing);
     enter(client, "version-localizations");
-    const notes = (locale) =>
-      released.has(locale) ? { whatsNew: metadata.whatsNew[locale] } : {};
     for (const locale of inherited) {
       const entry = listing[locale.attributes.locale];
       const attributes = {
         ...(entry ? pick(entry, versionFields) : {}),
-        ...notes(locale.attributes.locale),
+        whatsNew: metadata.whatsNew[locale.attributes.locale],
       };
       // A rerun leaves text that already matches alone.
       if (
@@ -1187,25 +1196,40 @@ export async function submitAppStore({
     for (const locale of Object.keys(metadata.whatsNew)) {
       if (inherited.some((item) => item.attributes.locale === locale)) continue;
       writing(client, locale);
-      await client.request("appStoreVersionLocalizations", "POST", {
-        type: "appStoreVersionLocalizations",
-        attributes: {
-          locale,
-          ...pick(listing[locale], versionFields),
-          ...notes(locale),
-          ...(urls
-            ? {
-                supportUrl: urls.attributes.supportUrl,
-                ...(urls.attributes.marketingUrl
-                  ? { marketingUrl: urls.attributes.marketingUrl }
-                  : {}),
-              }
-            : {}),
+      const created = await client.request(
+        "appStoreVersionLocalizations",
+        "POST",
+        {
+          type: "appStoreVersionLocalizations",
+          attributes: {
+            locale,
+            ...pick(listing[locale], versionFields),
+            ...(urls
+              ? {
+                  supportUrl: urls.attributes.supportUrl,
+                  ...(urls.attributes.marketingUrl
+                    ? { marketingUrl: urls.attributes.marketingUrl }
+                    : {}),
+                }
+              : {}),
+          },
+          relationships: {
+            appStoreVersion: relation("appStoreVersions", target.id),
+          },
         },
-        relationships: {
-          appStoreVersion: relation("appStoreVersions", target.id),
+      );
+      // Release notes go on the new localization as its own write, so a
+      // refusal is told apart from the create in the receipt (method PATCH,
+      // attribute whatsNew, this locale).
+      await client.request(
+        `appStoreVersionLocalizations/${created.data.id}`,
+        "PATCH",
+        {
+          type: "appStoreVersionLocalizations",
+          id: created.data.id,
+          attributes: { whatsNew: metadata.whatsNew[locale] },
         },
-      });
+      );
     }
     enter(client, "app-info-localizations");
     if (Object.keys(listing).length) await applyAppInfoListing(client, listing);
@@ -1252,12 +1276,15 @@ export async function submitAppStore({
   );
   const savedReview = await readReview(client, target.id);
   const demoVerification = verifyDemoAccount(savedReview, demoCredentials);
+  // A blank required property is named before the general comparison, which
+  // would otherwise report it only as a mismatch.
+  await assertListingComplete(client, app, savedLocales, listing);
   if (
     attached?.id !== build.id ||
     prepared.attributes.versionString !== version ||
     prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
-    listingMismatch(savedLocales, metadata, listing, released) ||
+    listingMismatch(savedLocales, metadata, listing) ||
     (await appInfoListingMismatch(client, listing)) ||
     (Object.keys(media).length &&
       (await screenshotsMismatch(
@@ -1271,7 +1298,6 @@ export async function submitAppStore({
       "Saved release metadata/build does not match the requested submission",
     );
   }
-  await assertListingComplete(client, app, savedLocales, listing);
   // A phased release must never be silently retained or changed.
   const phased = await client.request(
     `appStoreVersions/${target.id}/relationships/appStoreVersionPhasedRelease`,
@@ -1341,8 +1367,15 @@ export async function submitAppStore({
   };
 }
 
+// The reviewed release notes every other locale falls back to: the App
+// Store primary locale, which every release metadata file carries.
+const NOTES_FALLBACK_LOCALE = "en-AU";
+const fallbackNotes = (whatsNew, version) =>
+  whatsNew[NOTES_FALLBACK_LOCALE] ?? `TaskNotes ${version}.`;
+
 // Locales the repository listing adds get its rolling release notes, or the
-// plain version line when it has none. Explicit per-locale notes win.
+// reviewed en-AU notes when it has none (Apple requires notes on every
+// localization of an update). Explicit per-locale notes win.
 export function withListingNotes(whatsNew, version, listing) {
   const notes = { ...whatsNew };
   for (const [locale, entry] of Object.entries(listing)) {
@@ -1353,7 +1386,7 @@ export function withListingNotes(whatsNew, version, listing) {
     );
     notes[locale] ??= sibling
       ? whatsNew[sibling]
-      : (entry.whatsNew ?? `TaskNotes ${version}.`);
+      : (entry.whatsNew ?? fallbackNotes(whatsNew, version));
   }
   return notes;
 }
@@ -1367,6 +1400,8 @@ export function generatedMetadata(template, version, listing = {}) {
       ?.trim();
   if (!instructions)
     throw invalidMetadata("No reviewed store instructions template");
+  const primaryNotes =
+    listing[NOTES_FALLBACK_LOCALE]?.whatsNew ?? `TaskNotes ${version}.`;
   return validateMetadata(
     {
       version,
@@ -1380,7 +1415,10 @@ export function generatedMetadata(template, version, listing = {}) {
           ]),
         ].map((locale) => [
           locale,
-          listing[locale]?.whatsNew ?? `TaskNotes ${version}.`,
+          listing[locale]?.whatsNew ??
+            (locale in template.whatsNew
+              ? `TaskNotes ${version}.`
+              : primaryNotes),
         ]),
       ),
       reviewNotes: `TaskNotes ${version}\n\nHOW TO REVIEW\n${instructions}`,

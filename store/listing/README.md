@@ -45,9 +45,9 @@ How each release applies them:
 - **App Store** (`scripts/submit-app-store.mjs`): updates each listed locale's
   description, keywords, promotional text and release notes on the new
   version, creates listed locales the store does not have yet (copying the
-  support and marketing URLs; a locale the live version does not have yet goes
-  out without release notes, because App Store Connect has no "What's New" for
-  a language's first release), and sets the name and subtitle on the editable
+  support and marketing URLs, then setting its release notes by PATCH: Apple
+  requires notes on every localization of an update, and a file without
+  `whatsNew` falls back to the reviewed en-AU notes), and sets the name and subtitle on the editable
   app info (copying the privacy policy URL). Locales that only exist in App
   Store Connect keep their text and get the plain release line. Screenshots
   come from `store/screenshots` and go on every listed locale (see its README).
