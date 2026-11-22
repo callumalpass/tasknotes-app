@@ -73,6 +73,17 @@ export const APPLE_LOCALES = new Set([
   "zh-Hans",
   "zh-Hant",
 ]);
+// App Store locales TaskNotes must never list. Creating the en-GB version
+// localization was refused with 409 STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT:
+// the app's name is already taken in that locale by an app on another
+// developer account. UK users get the primary English listing instead. See
+// "Name conflicts" in docs/mobile-store-automation.md before removing one.
+export const APPLE_REFUSED_LOCALES = new Map([
+  [
+    "en-GB",
+    "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
+  ],
+]);
 const FILE_KEYS = new Set(["apple", "play", "description", "whatsNew"]);
 const APPLE_KEYS = new Set([
   "locales",
@@ -104,7 +115,7 @@ function text(value, label, max, { optional = false } = {}) {
   return value;
 }
 
-function locales(value, label, known) {
+function locales(value, label, known, refused = new Map()) {
   if (!Array.isArray(value) || !value.length)
     throw invalid(`${label} must list at least one locale`);
   for (const locale of value)
@@ -112,6 +123,12 @@ function locales(value, label, known) {
       throw invalid(`${label} has an invalid locale`);
     else if (known && !known.has(locale))
       throw invalid(`${label} has ${locale}, which is not an App Store locale`);
+    else if (refused.has(locale))
+      throw invalid(
+        `${label} has ${locale}, which the App Store refuses: ${refused.get(
+          locale,
+        )}`,
+      );
   return value;
 }
 
@@ -189,6 +206,7 @@ export function expandListing(files) {
       data.apple.locales,
       `${file} apple.locales`,
       APPLE_LOCALES,
+      APPLE_REFUSED_LOCALES,
     )) {
       if (apple[locale])
         throw invalid(`Apple locale ${locale} is listed twice`);

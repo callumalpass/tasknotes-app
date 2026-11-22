@@ -24,6 +24,8 @@ test("the committed store listing is valid for both stores", async () => {
   const listing = await loadStoreListing();
   assert.ok(listing.apple["en-AU"], "the primary App Store locale is listed");
   assert.ok(listing.play["en-US"], "the default Play language is listed");
+  assert.ok(!listing.apple["en-GB"], "en-GB is not an App Store locale");
+  assert.ok(listing.play["en-GB"], "Google Play keeps en-GB");
   for (const entry of Object.values(listing.apple)) {
     for (const [field, max] of Object.entries(LIMITS.apple))
       if (entry[field]) assert.ok([...entry[field]].length <= max, field);
@@ -101,6 +103,13 @@ for (const [label, change, pattern] of [
     "a locale App Store Connect does not use",
     (d) => (d.apple.locales = ["zh-CN"]),
     /zh-CN, which is not an App Store locale/,
+  ],
+  [
+    // Apple refused the en-GB localization: its name is taken there by an
+    // app on another developer account.
+    "en-GB, whose app name another developer account holds",
+    (d) => (d.apple.locales = ["en-AU", "en-GB"]),
+    /en-GB, which the App Store refuses: .*DUPLICATE_NAME\.DIFFERENT_ACCOUNT/,
   ],
   [
     "an App Store locale in the wrong case",

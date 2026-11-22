@@ -1,6 +1,6 @@
 {
   "apple": {
-    "locales": ["en-AU", "en-CA", "en-GB", "en-US"],
+    "locales": ["en-AU", "en-CA", "en-US"],
     "name": "TaskNotes: Markdown To-Do List",
     "subtitle": "Planner, calendar & reminders",
     "keywords": "tasks,todo,kanban,board,notes,checklist,agenda,schedule,projects,recurring,time tracking,organizer",

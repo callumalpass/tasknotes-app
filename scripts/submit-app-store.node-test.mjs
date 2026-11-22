@@ -1284,7 +1284,10 @@ test("read-back ignores line-ending and Unicode-form differences", async () => {
         ...data,
         attributes: {
           ...data.attributes,
-          description: `${data.attributes.description.replaceAll("\n", "\r\n")}\n`,
+          description: `${data.attributes.description.replaceAll(
+            "\n",
+            "\r\n",
+          )}\n`,
         },
       };
     return request(path, method, data);
@@ -1923,6 +1926,55 @@ test("a draft where a new language already exists updates it, never re-creates i
     f.locales.filter((item) => item.attributes.locale === "fr-FR").length,
     1,
   );
+});
+
+test("a locale dropped after a name conflict is not expected, and nothing on the draft is deleted", async () => {
+  // The state the DUPLICATE_NAME run left: en-AU updated, the languages
+  // before the conflicting one created, the conflicting one never created.
+  // The rerun drops that locale from the listing and finishes in place.
+  const f = fixture();
+  f.reject = rejectLocale("ja");
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: threeLocaleMetadata,
+      listing: threeLocales,
+    }),
+    /HTTP 409/,
+  );
+  f.writes = [];
+  const kept = ([locale]) => locale !== "ja";
+  const listing = Object.fromEntries(Object.entries(threeLocales).filter(kept));
+  const whatsNew = Object.fromEntries(
+    Object.entries(threeLocaleMetadata.whatsNew).filter(kept),
+  );
+  assert.equal(
+    (
+      await f.run({
+        commit: true,
+        metadata: { ...threeLocaleMetadata, whatsNew },
+        listing,
+      })
+    ).state,
+    "WAITING_FOR_REVIEW",
+  );
+  const localizationWrites = f.writes.filter((w) =>
+    /^app(StoreVersion|Info)Localizations/.test(w.path),
+  );
+  assert.ok(localizationWrites.every((w) => w.method !== "DELETE"));
+  assert.ok(
+    !localizationWrites.some(
+      (w) => w.method === "POST" && w.path === "appStoreVersionLocalizations",
+    ),
+    "localizations already on the draft are never re-created",
+  );
+  assert.ok(
+    !localizationWrites.some((w) => w.data?.attributes?.locale === "ja"),
+  );
+  assert.deepEqual(f.locales.map((item) => item.attributes.locale).sort(), [
+    "en-AU",
+    "fr-FR",
+  ]);
 });
 
 test("a refused release-notes write names Apple's code, attribute, method and locale", async () => {
