@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   PLAY_PACKAGE,
@@ -442,5 +442,127 @@ describe("Google Play production publisher", () => {
       { language: "en-US", text: "TaskNotes 1.2.3." },
       { language: "ja-JP", text: "最近の改善。" },
     ]);
+  });
+  const image = (name) => {
+    const bytes = Buffer.from(`fake ${name}`);
+    return {
+      fileName: `${name}.png`,
+      bytes,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+    };
+  };
+  const media = {
+    phoneScreenshots: [image("phone-1"), image("phone-2")],
+    featureGraphic: [image("feature")],
+  };
+  function mediaFetch(calls, { stored = {}, saveAs } = {}) {
+    const base = successfulFetch(calls);
+    return vi.fn(async (url, options = {}) => {
+      const requestUrl = String(url);
+      if (requestUrl.endsWith("/edits/edit-1/details")) {
+        calls.push({ url: requestUrl, options });
+        return jsonResponse({ defaultLanguage: "en-US" });
+      }
+      const images =
+        /\/edits\/edit-1\/listings\/en-US\/(\w+)(\?uploadType=media)?$/.exec(
+          requestUrl,
+        );
+      if (images) {
+        calls.push({ url: requestUrl, options });
+        const [, type, upload] = images;
+        if (upload) {
+          expect(requestUrl).toContain("/upload/androidpublisher/v3/");
+          const sha256 =
+            saveAs ?? createHash("sha256").update(options.body).digest("hex");
+          (stored[type] ??= []).push({ sha256 });
+          return jsonResponse({ image: { sha256 } });
+        }
+        if (options.method === "DELETE") {
+          stored[type] = [];
+          return new Response(null, { status: 204 });
+        }
+        return jsonResponse({ images: stored[type] ?? [] });
+      }
+      return base(url, options);
+    });
+  }
+  const publishWithMedia = (fetchImpl) =>
+    publishProduction({
+      credentialBase64,
+      aabPath: "release.aab",
+      expectedVersionCode: 123401,
+      name: "TaskNotes 1.2.3",
+      media,
+      fetchImpl,
+      readFileImpl: vi.fn(async () => Buffer.from("bundle")),
+      now: 1_750_000_000_000,
+    });
+
+  it("replaces only changed store images of the default language in the release edit", async () => {
+    const calls = [];
+    const stored = {
+      phoneScreenshots: [{ sha256: "stale" }],
+      featureGraphic: [{ sha256: media.featureGraphic[0].sha256 }],
+    };
+    await publishWithMedia(mediaFetch(calls, { stored }));
+
+    expect(stored.phoneScreenshots).toEqual(
+      media.phoneScreenshots.map(({ sha256 }) => ({ sha256 })),
+    );
+    const order = calls.map(
+      (call) => `${call.options.method ?? "GET"} ${call.url}`,
+    );
+    expect(
+      order.filter(
+        (call) => call.includes("/featureGraphic") && !call.startsWith("GET"),
+      ),
+    ).toEqual([]);
+    const deleted = order.findIndex(
+      (call) => call.startsWith("DELETE") && call.endsWith("/phoneScreenshots"),
+    );
+    const uploads = order
+      .map((call, index) =>
+        call.includes("uploadType=media") && call.includes("/listings/")
+          ? index
+          : -1,
+      )
+      .filter((index) => index >= 0);
+    expect(uploads).toHaveLength(2);
+    expect(deleted).toBeLessThan(uploads[0]);
+    expect(uploads.at(-1)).toBeLessThan(
+      order.findIndex((call) =>
+        call.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    );
+    const upload = calls.find((call) =>
+      call.url.includes("/phoneScreenshots?"),
+    );
+    expect(upload.options.headers.get("content-type")).toBe("image/png");
+  });
+
+  it("leaves unchanged store images alone", async () => {
+    const calls = [];
+    const stored = Object.fromEntries(
+      Object.entries(media).map(([type, files]) => [
+        type,
+        files.map(({ sha256 }) => ({ sha256 })),
+      ]),
+    );
+    await publishWithMedia(mediaFetch(calls, { stored }));
+    expect(
+      calls.some(
+        (call) =>
+          call.url.includes("/listings/en-US/") &&
+          (call.options.method ?? "GET") !== "GET",
+      ),
+    ).toBe(false);
+  });
+
+  it("never commits when Play does not save the requested store image", async () => {
+    const calls = [];
+    await expect(
+      publishWithMedia(mediaFetch(calls, { saveAs: "different" })),
+    ).rejects.toThrow("did not save the requested store image");
+    expect(calls.some((call) => call.url.includes(":commit"))).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStoreListing } from "./store-listing.mjs";
+import { loadStoreMedia } from "./store-media.mjs";
 
 export const PLAY_PACKAGE = "dev.tasknotes.app";
 export const PLAY_TRACK = "production";
@@ -253,12 +254,51 @@ async function applyListing(fetchImpl, token, editPath, listing) {
   }
 }
 
+// Store graphics of the default language, which other languages fall back to.
+// An image type is replaced only when its ordered SHA-256 list differs.
+async function applyMedia(fetchImpl, token, editPath, uploadPath, media) {
+  if (!Object.keys(media).length) return;
+  const details = await playRequest(fetchImpl, token, `${editPath}/details`);
+  const language = encodeURIComponent(
+    requiredString(details?.defaultLanguage, "Google Play default language"),
+  );
+  for (const [imageType, files] of Object.entries(media)) {
+    const path = `listings/${language}/${imageType}`;
+    const current =
+      (await playRequest(fetchImpl, token, `${editPath}/${path}`))?.images ??
+      [];
+    if (
+      current.length === files.length &&
+      current.every((image, index) => image?.sha256 === files[index].sha256)
+    )
+      continue;
+    await playRequest(fetchImpl, token, `${editPath}/${path}`, {
+      method: "DELETE",
+    });
+    for (const file of files) {
+      const uploaded = await playRequest(
+        fetchImpl,
+        token,
+        `${uploadPath}/${path}?uploadType=media`,
+        {
+          method: "POST",
+          headers: { "content-type": "image/png" },
+          body: file.bytes,
+        },
+      );
+      if (uploaded?.image?.sha256 !== file.sha256)
+        throw new Error("Google Play did not save the requested store image");
+    }
+  }
+}
+
 export async function publishProduction({
   credentialBase64,
   aabPath,
   expectedVersionCode,
   name,
   listing = {},
+  media = {},
   fetchImpl = fetch,
   readFileImpl = readFile,
   now = Date.now(),
@@ -332,6 +372,13 @@ export async function publishProduction({
       token,
       `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}`,
       listing,
+    );
+    await applyMedia(
+      fetchImpl,
+      token,
+      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}`,
+      `${PLAY_UPLOAD_API}/${packagePath}/edits/${encodeURIComponent(editId)}`,
+      media,
     );
 
     const track = await playRequest(
@@ -411,6 +458,7 @@ async function main() {
       expectedVersionCode: androidVersionCode(qualified.build),
       name: `TaskNotes ${qualified.version}`,
       listing: (await loadStoreListing()).play,
+      media: (await loadStoreMedia()).play,
     });
     await writeFile(
       "store-target-result.json",

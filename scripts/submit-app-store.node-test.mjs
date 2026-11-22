@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { generateKeyPairSync, verify } from "node:crypto";
+import { createHash, generateKeyPairSync, verify } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -79,6 +79,11 @@ function fixture() {
         },
       },
     ],
+    sets: [],
+    shots: {},
+    shotCount: 0,
+    uploads: [],
+    processResult: "COMPLETE",
     review: {
       id: "review",
       attributes: {
@@ -94,6 +99,19 @@ function fixture() {
   f.client = {
     async list(path) {
       f.reads.push(path);
+      if (path.endsWith("/appScreenshotSets"))
+        return f.sets.filter((set) => set.localization === path.split("/")[1]);
+      if (path.endsWith("/appScreenshots")) {
+        // Apple finishes processing a committed upload between reads.
+        const shots = f.shots[path.split("/")[1]] ?? [];
+        for (const shot of shots)
+          if (
+            !f.holdProcessing &&
+            shot.attributes.assetDeliveryState.state === "UPLOAD_COMPLETE"
+          )
+            shot.attributes.assetDeliveryState.state = f.processResult;
+        return shots;
+      }
       if (path.startsWith("builds?")) return f.build ? [f.build] : [];
       if (path.includes("/appStoreVersions?")) return f.versions;
       if (path.includes("/appStoreVersionLocalizations")) return f.locales;
@@ -108,7 +126,12 @@ function fixture() {
         f.reads.push(path);
         if (path === `apps/${APP_ID}`)
           return {
-            data: { attributes: { bundleId: f.bundleId ?? BUNDLE_ID } },
+            data: {
+              attributes: {
+                bundleId: f.bundleId ?? BUNDLE_ID,
+                primaryLocale: "en-AU",
+              },
+            },
           };
         if (path.endsWith("/relationships/build")) return { data: f.attached };
         if (
@@ -186,6 +209,52 @@ function fixture() {
         };
         f.infoLocales.push(created);
         result = { data: created };
+      } else if (path === "appScreenshotSets" && method === "POST") {
+        const set = {
+          id: `set-${data.attributes.screenshotDisplayType}`,
+          localization: data.relationships.appStoreVersionLocalization.data.id,
+          attributes: { ...data.attributes },
+        };
+        f.sets.push(set);
+        f.shots[set.id] = [];
+        result = { data: set };
+      } else if (path === "appScreenshots" && method === "POST") {
+        const shot = {
+          id: `shot-${++f.shotCount}`,
+          attributes: {
+            ...data.attributes,
+            assetDeliveryState: { state: "AWAITING_UPLOAD" },
+            uploadOperations: [
+              {
+                method: "PUT",
+                url: `https://upload.example.test/${f.shotCount}`,
+                offset: 0,
+                length: data.attributes.fileSize,
+                requestHeaders: [{ name: "Content-Type", value: "image/png" }],
+              },
+            ],
+          },
+        };
+        f.shots[data.relationships.appScreenshotSet.data.id].push(shot);
+        result = { data: shot };
+      } else if (path.startsWith("appScreenshots/") && method === "PATCH") {
+        const shot = Object.values(f.shots)
+          .flat()
+          .find((item) => item.id === path.split("/")[1]);
+        assert.ok(f.uploads.includes(shot.id.replace("shot-", "")));
+        shot.attributes.sourceFileChecksum = data.attributes.sourceFileChecksum;
+        shot.attributes.assetDeliveryState.state = "UPLOAD_COMPLETE";
+      } else if (path.startsWith("appScreenshots/") && method === "DELETE") {
+        for (const [id, shots] of Object.entries(f.shots))
+          f.shots[id] = shots.filter((item) => item.id !== path.split("/")[1]);
+      } else if (
+        path.startsWith("appScreenshotSets/") &&
+        path.endsWith("/relationships/appScreenshots")
+      ) {
+        const id = path.split("/")[1];
+        f.shots[id] = data.map((ref) =>
+          f.shots[id].find((item) => item.id === ref.id),
+        );
       } else if (path === "appStoreReviewDetails/review") {
         Object.assign(f.review.attributes, data.attributes);
       } else if (path === "reviewSubmissions" && method === "POST") {
@@ -723,6 +792,11 @@ test("pre-write refusals map to fixed bounded reasons", () => {
     ["Something unexpected: details", "app-store-precheck-refused-error"],
   ])
     assert.equal(refusalReason(new Error(message)), reason);
+  for (const reason of ["store-listing-invalid", "store-media-invalid"])
+    assert.equal(
+      refusalReason(Object.assign(new Error("details"), { refusal: reason })),
+      reason,
+    );
 });
 
 const rejectsWith = async (promise, reason) =>
@@ -1224,5 +1298,182 @@ test("explicit notes apply to every locale of the same language file", () => {
       "fr-FR": "Notes françaises.",
       "de-DE": "TaskNotes 1.0.5.",
     },
+  );
+});
+
+const png = (name) => {
+  const bytes = Buffer.from(`fake ${name}`);
+  return {
+    fileName: `${name}.png`,
+    bytes,
+    md5: createHash("md5").update(bytes).digest("hex"),
+  };
+};
+const media = {
+  APP_IPHONE_67: [png("phone-1"), png("phone-2")],
+  APP_IPAD_PRO_3GEN_129: [png("ipad-1")],
+};
+const mediaOptions = (f) => ({
+  attempts: 3,
+  sleepImpl: async () => {},
+  upload: async (url, init) => {
+    assert.equal(url.origin, "https://upload.example.test");
+    assert.equal(init.headers.authorization, undefined);
+    assert.equal(init.headers["Content-Type"], "image/png");
+    f.uploads.push(url.pathname.slice(1));
+    return { ok: true, status: 200 };
+  },
+});
+const checksums = (f, type) =>
+  f.shots[`set-${type}`].map((shot) => shot.attributes.sourceFileChecksum);
+
+test("uploads store screenshots to the primary locale and empties stale device sets", async () => {
+  const f = fixture();
+  f.sets.push(
+    {
+      id: "set-old-phone",
+      localization: "locale",
+      attributes: { screenshotDisplayType: "APP_IPHONE_65" },
+    },
+    {
+      id: "set-watch",
+      localization: "locale",
+      attributes: { screenshotDisplayType: "APP_WATCH_ULTRA" },
+    },
+  );
+  f.shots["set-old-phone"] = [
+    {
+      id: "old-1",
+      attributes: {
+        sourceFileChecksum: "stale",
+        assetDeliveryState: { state: "COMPLETE" },
+      },
+    },
+  ];
+  f.shots["set-watch"] = [
+    {
+      id: "watch-1",
+      attributes: {
+        sourceFileChecksum: "watch",
+        assetDeliveryState: { state: "COMPLETE" },
+      },
+    },
+  ];
+  const result = await f.run({
+    commit: true,
+    media,
+    mediaOptions: mediaOptions(f),
+  });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  assert.deepEqual(
+    checksums(f, "APP_IPHONE_67"),
+    media.APP_IPHONE_67.map((file) => file.md5),
+  );
+  assert.deepEqual(
+    checksums(f, "APP_IPAD_PRO_3GEN_129"),
+    media.APP_IPAD_PRO_3GEN_129.map((file) => file.md5),
+  );
+  assert.deepEqual(f.shots["set-old-phone"], []);
+  // Sets that are not iPhone or iPad screenshots are left alone.
+  assert.equal(f.shots["set-watch"].length, 1);
+  assert.equal(f.uploads.length, 3);
+  const submitted = f.writes.findIndex(
+    (w) => w.path === "reviewSubmissionItems",
+  );
+  assert.ok(
+    f.writes.findLastIndex((w) => w.path.startsWith("appScreenshot")) <
+      submitted,
+  );
+});
+
+test("unchanged screenshots are not uploaded again", async () => {
+  const f = fixture();
+  for (const [type, files] of Object.entries(media)) {
+    f.sets.push({
+      id: `set-${type}`,
+      localization: "locale",
+      attributes: { screenshotDisplayType: type },
+    });
+    f.shots[`set-${type}`] = files.map((file, index) => ({
+      id: `${type}-${index}`,
+      attributes: {
+        sourceFileChecksum: file.md5,
+        assetDeliveryState: { state: "COMPLETE" },
+      },
+    }));
+  }
+  await f.run({ commit: true, media, mediaOptions: mediaOptions(f) });
+  assert.ok(!f.writes.some((w) => w.path.startsWith("appScreenshot")));
+});
+
+test("reordered screenshots are replaced in repository order", async () => {
+  const f = fixture();
+  f.sets.push({
+    id: "set-APP_IPHONE_67",
+    localization: "locale",
+    attributes: { screenshotDisplayType: "APP_IPHONE_67" },
+  });
+  f.shots["set-APP_IPHONE_67"] = [...media.APP_IPHONE_67]
+    .reverse()
+    .map((file, index) => ({
+      id: `existing-${index}`,
+      attributes: {
+        sourceFileChecksum: file.md5,
+        assetDeliveryState: { state: "COMPLETE" },
+      },
+    }));
+  await f.run({ commit: true, media, mediaOptions: mediaOptions(f) });
+  assert.deepEqual(
+    checksums(f, "APP_IPHONE_67"),
+    media.APP_IPHONE_67.map((file) => file.md5),
+  );
+  assert.ok(
+    f.writes.some(
+      (w) => w.path === "appScreenshots/existing-0" && w.method === "DELETE",
+    ),
+  );
+});
+
+test("screenshot processing failures and timeouts stop before submission", async () => {
+  const failed = fixture();
+  failed.processResult = "FAILED";
+  await assert.rejects(
+    failed.run({ commit: true, media, mediaOptions: mediaOptions(failed) }),
+    /could not process a store screenshot/,
+  );
+  assertNoSubmission(failed);
+
+  const slow = fixture();
+  slow.holdProcessing = true;
+  await assert.rejects(
+    slow.run({ commit: true, media, mediaOptions: mediaOptions(slow) }),
+    /Timed out waiting for Apple to process store screenshots/,
+  );
+  assertNoSubmission(slow);
+  // A rerun keeps the uploads that are still processing.
+  slow.holdProcessing = false;
+  const uploads = slow.uploads.length;
+  assert.equal(
+    (await slow.run({ commit: true, media, mediaOptions: mediaOptions(slow) }))
+      .state,
+    "WAITING_FOR_REVIEW",
+  );
+  assert.equal(slow.uploads.length, uploads);
+});
+
+test("screenshots that do not read back block submission", async () => {
+  const f = fixture();
+  const options = mediaOptions(f);
+  await f.run({ commit: true, media, mediaOptions: options });
+  // A later run finds a screenshot changed outside the publisher while the
+  // version is already waiting for review.
+  f.shots["set-APP_IPHONE_67"][0].attributes.sourceFileChecksum = "changed";
+  f.versions.find((v) => v.id === "new").attributes.appStoreState =
+    "READY_FOR_REVIEW";
+  f.submissions.length = 0;
+  f.items.length = 0;
+  await assert.rejects(
+    f.run({ commit: true, media, mediaOptions: options }),
+    /does not match the requested submission/,
   );
 });
