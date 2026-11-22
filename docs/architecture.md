@@ -71,7 +71,10 @@ authority topology.
   TaskNotes does not keep a second task replica or a legacy connection fallback.
 - IndexedDB does not contain a task or file replica. It may retain bounded UI
   intent that is not collection data, currently the 30-second undo window for
-  a delayed deletion and attachment-operation coordination.
+  a delayed deletion and attachment-operation coordination. The undo window
+  applies only while TaskNotes is on screen: hiding or backgrounding it commits
+  the pending deletion at once. If the process ends first, the recorded
+  deletion is committed at the next launch.
 - Normal creates and updates go directly to mdbase. There is no TaskNotes
   outbox, reconciliation engine, or conflict resolver.
 

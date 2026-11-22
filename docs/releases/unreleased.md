@@ -1,5 +1,7 @@
 # Unreleased
 
+- Finish deleting a task when you switch away from TaskNotes, instead of waiting until you return. Other devices and apps stop showing the task straight away. Undo is still available for 30 seconds while TaskNotes stays on screen.
+
 - On iPhone, iPad and Android, occasionally let the App Store or Google Play ask for a rating after you complete a task, once you have used TaskNotes on several days. The system decides whether to show it, and TaskNotes asks at most once every 120 days.
 
 - Fix a launch crash on iPhone and iPad caused by using Android's Private collection callback on iOS.
