@@ -101,7 +101,8 @@ export class TaskCommandService {
       await this.commitDeletionNow(deletion).catch(() => undefined);
     const latest = deletions.at(-1) ?? null;
     if (!latest) return;
-    if (this.foreground && latest.commitAfter <= this.clock.now()) {
+    // Hidden, the undo window is not offered: finish the deletion now.
+    if (!this.foreground || latest.commitAfter <= this.clock.now()) {
       await this.commitDeletionNow(latest).catch(() => undefined);
       return;
     }
@@ -232,17 +233,51 @@ export class TaskCommandService {
     });
   }
 
-  setForeground(active: boolean): void {
+  /**
+   * Undo is offered only while TaskNotes is on screen. Hiding it finishes the
+   * pending deletion at once rather than holding it until TaskNotes returns, so
+   * other devices and apps stop showing the task. The returned promise settles
+   * once that commit has finished or failed; callers suspend the repository
+   * only afterwards, so suspension cannot cancel the delete it is waiting on.
+   */
+  setForeground(active: boolean): Promise<void> {
     this.foreground = active;
     this.clearTimer();
-    if (active && this.pendingDeletion && !this.deletionError)
+    if (!active) return this.commitWhileHidden();
+    if (this.pendingDeletion && !this.deletionError)
       this.schedule(this.pendingDeletion);
+    return Promise.resolve();
   }
 
   dispose(): void {
     this.disposed = true;
     this.clearTimer();
     this.listeners.clear();
+  }
+
+  private commitWhileHidden(): Promise<void> {
+    return this.enqueue(async () => {
+      const pending = this.pendingDeletion;
+      // A failed or outcome-unknown deletion keeps its review/retry path; a
+      // return to the foreground before this runs keeps the undo window.
+      if (
+        this.foreground ||
+        this.disposed ||
+        !pending ||
+        this.deletionError ||
+        pending.authorityRequestId
+      )
+        return;
+      const due: PendingTaskDeletion = {
+        ...pending,
+        commitAfter: Math.min(pending.commitAfter, this.clock.now()),
+      };
+      // Record that the window is over first: if the process dies before the
+      // delete settles, the next launch commits it instead of offering Undo.
+      await this.options.journal.put(due).catch(() => undefined);
+      this.pendingDeletion = due;
+      await this.commitDeletionNow(due);
+    }).catch(() => undefined);
   }
 
   private schedule(command: PendingTaskDeletion): void {

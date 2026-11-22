@@ -156,60 +156,166 @@ describe("TaskCommandService", () => {
     service.dispose();
   });
 
-  it("defers an expired deletion while backgrounded and commits once on return", async () => {
+  it("commits a pending deletion as soon as TaskNotes is hidden, without waiting for the window", async () => {
     const repository = taskRepository();
     const journal = new MemoryMutationJournal();
-    const service = new TaskCommandService({ repository, journal });
+    const onDeleted = vi.fn(async () => undefined);
+    const service = new TaskCommandService({ repository, journal, onDeleted });
     await service.initialize();
     await service.requestDeletion("task-1");
-    await vi.advanceTimersByTimeAsync(10_000);
-    service.setForeground(false);
-    await vi.advanceTimersByTimeAsync(120_000);
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(service.snapshot().deletionError).toBeNull();
-    expect(journal.commands).toHaveLength(1);
-    service.setForeground(true);
-    service.setForeground(true);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(repository.delete).toHaveBeenCalledExactlyOnceWith("task-1");
-    expect(journal.commands).toEqual([]);
-    service.dispose();
-  });
+    await vi.advanceTimersByTimeAsync(1_000);
+    const published = vi.fn();
+    service.subscribe(published);
 
-  it("keeps the original undo deadline across a short background interval", async () => {
-    const repository = taskRepository();
-    const service = new TaskCommandService({
-      repository,
-      journal: new MemoryMutationJournal(),
+    await service.setForeground(false);
+
+    expect(repository.delete).toHaveBeenCalledExactlyOnceWith("task-1");
+    expect(onDeleted).toHaveBeenCalledWith("task-1");
+    expect(journal.commands).toEqual([]);
+    // Undo is withdrawn: returning cannot offer an undo that can't work.
+    expect(service.snapshot()).toEqual({
+      pendingDeletion: null,
+      deletionError: null,
     });
-    await service.initialize();
-    await service.requestDeletion("task-1");
-    service.setForeground(false);
-    await vi.advanceTimersByTimeAsync(20_000);
-    service.setForeground(true);
-    await vi.advanceTimersByTimeAsync(9_999);
-    expect(repository.delete).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
+    expect(published).toHaveBeenCalled();
+    await service.setForeground(true);
+    await service.undoDeletion();
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(repository.delete).toHaveBeenCalledOnce();
     service.dispose();
   });
 
-  it("restores an overdue deletion in a hidden tab without submitting it", async () => {
+  it("commits every remaining row of a bulk deletion when hidden", async () => {
+    const repository = taskRepository();
+    repository.getSummary.mockImplementation(
+      async (id) => ({ id, title: id }) as Task,
+    );
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion(["a", "b", "c"]);
+    await service.setForeground(false);
+    expect(repository.delete.mock.calls).toEqual([["a"], ["b"], ["c"]]);
+    expect(journal.commands).toEqual([]);
+    expect(service.snapshot().pendingDeletion).toBeNull();
+    service.dispose();
+  });
+
+  it("keeps the undo window when TaskNotes returns before the hidden commit starts", async () => {
+    const repository = taskRepository();
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    const hidden = service.setForeground(false);
+    void service.setForeground(true);
+    await hidden;
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(service.snapshot().pendingDeletion?.taskId).toBe("task-1");
+    await service.undoDeletion();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("does not delete a task whose deletion was undone within the window while visible", async () => {
+    const repository = taskRepository();
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await vi.advanceTimersByTimeAsync(29_000);
+    await service.undoDeletion();
+    await service.setForeground(false);
+    await vi.advanceTimersByTimeAsync(60_000);
+    await service.setForeground(true);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("marks the window over before the hidden delete, so a killed process commits on next launch", async () => {
+    const repository = taskRepository();
+    repository.delete.mockImplementationOnce(() => new Promise(() => {}));
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    void service.setForeground(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(repository.delete).toHaveBeenCalledOnce();
+    expect(journal.commands[0]?.commitAfter).toBeLessThanOrEqual(Date.now());
+    // The process dies with the delete in flight; the next launch is visible.
+    service.dispose();
+    const relaunched = new TaskCommandService({ repository, journal });
+    await relaunched.initialize();
+    expect(repository.delete).toHaveBeenCalledTimes(2);
+    expect(journal.commands).toEqual([]);
+    expect(relaunched.snapshot().pendingDeletion).toBeNull();
+    relaunched.dispose();
+  });
+
+  it("keeps a hidden deletion that failed for the existing retry path", async () => {
+    const repository = taskRepository();
+    repository.delete.mockRejectedValueOnce(new Error("offline"));
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await service.setForeground(false);
+    expect(service.snapshot().pendingDeletion?.taskId).toBe("task-1");
+    expect(service.snapshot().deletionError).not.toBeNull();
+    expect(journal.commands).toHaveLength(1);
+    // Hiding and returning again does not retry it implicitly.
+    await service.setForeground(true);
+    await service.setForeground(false);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(repository.delete).toHaveBeenCalledOnce();
+    await service.retryDeletion();
+    expect(repository.delete).toHaveBeenCalledTimes(2);
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("resumes a hidden deletion that the suspended repository refused before submission", async () => {
+    const repository = taskRepository();
+    repository.delete.mockRejectedValueOnce(
+      new TaskDeletionNotStartedError("Deletion paused before submission."),
+    );
+    const journal = new MemoryMutationJournal();
+    const service = new TaskCommandService({ repository, journal });
+    await service.initialize();
+    await service.requestDeletion("task-1");
+    await service.setForeground(false);
+    expect(service.snapshot()).toMatchObject({
+      pendingDeletion: { taskId: "task-1" },
+      deletionError: null,
+    });
+    expect(journal.commands).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(repository.delete).toHaveBeenCalledOnce();
+    await service.setForeground(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(repository.delete).toHaveBeenCalledTimes(2);
+    expect(journal.commands).toEqual([]);
+    service.dispose();
+  });
+
+  it("commits a restored deletion when TaskNotes starts hidden", async () => {
     const repository = taskRepository();
     const journal = new MemoryMutationJournal();
     const command = unknownDeletionCommand();
     delete command.authorityRequestId;
+    command.commitAfter = Date.now() + 20_000;
     journal.commands = [command];
     const service = new TaskCommandService({ repository, journal });
-    service.setForeground(false);
+    void service.setForeground(false);
     await service.initialize();
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(repository.delete).not.toHaveBeenCalled();
-    expect(service.snapshot().deletionError).toBeNull();
-    service.setForeground(true);
-    await vi.advanceTimersByTimeAsync(1);
     expect(repository.delete).toHaveBeenCalledExactlyOnceWith("task-1");
     expect(journal.commands).toEqual([]);
+    expect(service.snapshot().pendingDeletion).toBeNull();
     service.dispose();
   });
 
@@ -228,8 +334,8 @@ describe("TaskCommandService", () => {
     await service.requestDeletion("task-1");
     await vi.advanceTimersByTimeAsync(30_000);
     expect(repository.delete).toHaveBeenCalledOnce();
-    service.setForeground(false);
-    service.setForeground(true);
+    void service.setForeground(false);
+    void service.setForeground(true);
     interrupt(
       new TaskDeletionNotStartedError("Deletion paused before submission."),
     );
@@ -252,7 +358,6 @@ describe("TaskCommandService", () => {
     const service = new TaskCommandService({ repository, journal });
     await service.initialize();
     await service.requestDeletion("task-1");
-    service.setForeground(false);
     await expect(service.requestDeletion("task-2")).rejects.toBeInstanceOf(
       TaskDeletionNotStartedError,
     );
@@ -261,7 +366,6 @@ describe("TaskCommandService", () => {
       deletionError: null,
     });
     expect(journal.commands).toHaveLength(1);
-    service.setForeground(true);
     await vi.advanceTimersByTimeAsync(30_000);
     expect(journal.commands).toEqual([]);
     service.dispose();
@@ -279,8 +383,8 @@ describe("TaskCommandService", () => {
     await service.initialize();
     await service.requestDeletion("task-1");
     await vi.advanceTimersByTimeAsync(30_000);
-    service.setForeground(false);
-    service.setForeground(true);
+    void service.setForeground(false);
+    void service.setForeground(true);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(repository.delete).toHaveBeenCalledOnce();
     expect(service.snapshot().deletionError?.code).toBe("cancelled");
@@ -302,8 +406,8 @@ describe("TaskCommandService", () => {
     await service.initialize();
     await service.requestDeletion("task-1");
     await vi.advanceTimersByTimeAsync(30_000);
-    service.setForeground(false);
-    service.setForeground(true);
+    void service.setForeground(false);
+    void service.setForeground(true);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(repository.delete).toHaveBeenCalledOnce();
     expect(service.snapshot().deletionError).not.toBeNull();
