@@ -189,6 +189,20 @@ draft by renaming it. A draft review submission is reused only when it contains
 nothing but that version. Anything Apple has already received, a newer draft, or
 more than one open version still waits as `pending-review` or refuses.
 
+Name conflicts. A receipt with HTTP 409 and Apple code
+`STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT` on a localization phase means
+the app name is already taken in that `locale` by an app on another developer
+account. App Store names are reserved per locale, so the same name can be fine
+in one English storefront and taken in another. A retry won't help. Either drop
+that locale from `apple.locales` in `store/listing/` (its storefront then shows
+the primary listing) and add it to `APPLE_REFUSED_LOCALES` in
+`scripts/store-listing.mjs` so it is not re-added, or give that locale a
+different `name`. Renaming the app itself is Callum's call. en-GB is dropped for
+this reason. The rerun completes the draft in place: localizations already
+created stay and are never deleted. A dropped locale is never written. If a
+draft ever holds a localization the listing no longer covers, the submitter
+refuses before writing rather than deleting it.
+
 App Store Connect, not altool's wording, confirms a TestFlight upload. After
 altool exits 0, `scripts/testflight-upload.mjs confirm` polls the API (about
 ten minutes) for the exact build: the TaskNotes app and bundle id, the marketing
