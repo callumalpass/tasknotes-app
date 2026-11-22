@@ -50,7 +50,7 @@ How each release applies them:
   a language's first release), and sets the name and subtitle on the editable
   app info (copying the privacy policy URL). Locales that only exist in App
   Store Connect keep their text and get the plain release line. Screenshots
-  come from `store/screenshots` (see its README).
+  come from `store/screenshots` and go on every listed locale (see its README).
 - **Google Play** (`scripts/publish-google-play.mjs`): in the same edit as the
   release, replaces the title and descriptions of every listed language whose
   text differs, keeping any promo video, and adds release notes for every

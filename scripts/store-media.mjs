@@ -6,7 +6,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const STORE_MEDIA_DIR = "store/screenshots";
-// Screenshots in the app's primary language; other locales fall back to them.
+// Screenshots in the app's primary language. The App Store submitter puts
+// them on every listed locale, which API-created localizations need.
 const LOCALE = "en";
 
 // App Store Connect has no separate 6.9" or 13" type: the largest iPhone and
