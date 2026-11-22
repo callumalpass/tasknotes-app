@@ -2035,6 +2035,67 @@ test("the committed listing finishes the draft a refused en-US left, in listing 
   );
 });
 
+test("the committed listing finishes the draft a refused it left, in place", async () => {
+  // Run 45038591007 updated en-AU, created de-DE, en-CA, es-ES, es-MX, fr-FR
+  // and fr-CA, and was refused creating it. The committed listing holds it and
+  // the languages after it, so the rerun updates the seven in place, creates
+  // and deletes nothing, and never writes a held locale.
+  const committed = Object.keys((await loadStoreListing()).apple);
+  const held = ["it", "ja", "ko", "pt-BR", "ru", "zh-Hans"];
+  const draft = ["en-AU", "de-DE", "en-CA", "es-ES", "es-MX", "fr-FR", "fr-CA"];
+  assert.deepEqual([...committed].sort(), [...draft].sort());
+  const entries = (locales) =>
+    Object.fromEntries(
+      locales.map((locale) => [locale, withoutRolling(listingEntry(locale))]),
+    );
+  const notes = (locales) =>
+    Object.fromEntries(locales.map((locale) => [locale, `Notes ${locale}`]));
+  const f = fixture();
+  f.reject = rejectLocale("it");
+  const refused = [...draft, ...held];
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: { ...metadata, whatsNew: notes(refused) },
+      listing: entries(refused),
+    }),
+    /HTTP 409/,
+  );
+  assert.deepEqual(
+    f.locales.map((item) => item.attributes.locale),
+    draft,
+  );
+  f.writes = [];
+  assert.equal(
+    (
+      await f.run({
+        commit: true,
+        metadata: { ...metadata, whatsNew: notes(committed) },
+        listing: entries(committed),
+      })
+    ).state,
+    "WAITING_FOR_REVIEW",
+  );
+  const writes = f.writes.filter((w) =>
+    /^app(StoreVersion|Info)Localizations/.test(w.path),
+  );
+  assert.ok(writes.every((w) => w.method !== "DELETE"));
+  assert.ok(
+    !writes.some(
+      (w) => w.method === "POST" && w.path === "appStoreVersionLocalizations",
+    ),
+    "no version localization is created",
+  );
+  assert.ok(
+    !writes.some((w) => held.includes(w.data?.attributes?.locale)),
+    "no held locale is written",
+  );
+  assert.deepEqual(
+    f.locales.map((item) => item.attributes.locale),
+    draft,
+  );
+});
+
 test("a refused release-notes write names Apple's code, attribute, method and locale", async () => {
   // Without the fix the submitter wrote whatsNew on every new language.
   const f = fixture();

@@ -7,7 +7,7 @@ release.
 
 One file per app language. Each file holds:
 
-- `apple`: the App Store locales it covers, the app `name` (30), `subtitle`
+- `apple`: the App Store locales it covers (may be empty), the app `name` (30), `subtitle`
   (30), `keywords` (100 _bytes_ of UTF-8, comma-separated with no spaces around commas, no
   words already in the name or subtitle) and `promotionalText` (170).
 - `play`: the Google Play languages it covers, the `title` (30) and
@@ -27,6 +27,12 @@ The loader also refuses en-GB and en-US: App Store Connect rejected both with
 account holds the app's name there. UK and US users see the primary English
 listing. Google Play keeps en-GB and en-US. See "Name conflicts" in
 `docs/mobile-store-automation.md`.
+
+it, ja, ko, pt-BR, ru and zh-Hans are held, not refused. Their files list
+`apple.locales: []` and keep all their text, and `APPLE_HELD_LOCALES` in
+`scripts/store-listing.mjs` refuses them on the App Store until new locales are
+created with their own name first. Google Play keeps these languages. See
+"Held App Store locales" in `docs/mobile-store-automation.md`.
 
 Numbers are the store limits in characters, except Apple keywords, which App
 Store Connect counts in UTF-8 bytes: a Japanese, Korean or Chinese character

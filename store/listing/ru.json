@@ -1,6 +1,6 @@
 {
   "apple": {
-    "locales": ["ru"],
+    "locales": [],
     "name": "TaskNotes: задачи в Markdown",
     "subtitle": "Список дел, планер, календарь",
     "keywords": "todo,дела,ежедневник,напоминания,канбан,заметки,чеклист",

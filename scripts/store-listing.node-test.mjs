@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  APPLE_HELD_LOCALES,
   APPLE_KEYWORD_BYTES,
+  APPLE_REFUSED_LOCALES,
   LIMITS,
   expandListing,
   loadStoreListing,
@@ -28,6 +30,16 @@ test("the committed store listing is valid for both stores", async () => {
   assert.ok(!listing.apple["en-US"], "en-US is not an App Store locale");
   assert.ok(listing.play["en-GB"], "Google Play keeps en-GB");
   assert.ok(listing.play["en-US"], "Google Play keeps en-US");
+  // Only the locales already on the 1.0.31 draft; the rest are held.
+  assert.deepEqual(Object.keys(listing.apple), [
+    "de-DE",
+    "en-AU",
+    "en-CA",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "fr-CA",
+  ]);
   for (const entry of Object.values(listing.apple)) {
     for (const [field, max] of Object.entries(LIMITS.apple))
       if (entry[field]) assert.ok([...entry[field]].length <= max, field);
@@ -50,6 +62,37 @@ test("the committed store listing is valid for both stores", async () => {
   for (const entry of Object.values(listing.play))
     for (const [field, max] of Object.entries(LIMITS.play))
       if (entry[field]) assert.ok([...entry[field]].length <= max, field);
+});
+
+test("held App Store locales keep their text and Google Play languages", async () => {
+  const listing = await loadStoreListing();
+  assert.deepEqual(
+    [...APPLE_HELD_LOCALES.keys()],
+    ["it", "ja", "ko", "pt-BR", "ru", "zh-Hans"],
+  );
+  for (const locale of APPLE_HELD_LOCALES.keys()) {
+    assert.ok(!listing.apple[locale], `${locale} is not an App Store locale`);
+    // Held is not refused: re-adding one is a decision, not a known conflict.
+    assert.ok(!APPLE_REFUSED_LOCALES.has(locale), `${locale} is not refused`);
+  }
+  for (const language of ["it-IT", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "zh-CN"])
+    assert.ok(listing.play[language], `Google Play keeps ${language}`);
+});
+
+test("a language with no App Store locale is still validated", () => {
+  const data = file();
+  data.apple.locales = [];
+  const { apple, play } = expandListing({
+    "en.json": file(),
+    "it.json": { ...data, play: { ...data.play, languages: ["it-IT"] } },
+  });
+  assert.deepEqual(Object.keys(apple), ["en-AU", "en-CA"]);
+  assert.ok(play["it-IT"]);
+  data.apple.name = "x".repeat(31);
+  assert.throws(
+    () => expandListing({ "en.json": file(), "it.json": data }),
+    /it.json apple.name is 31 characters/,
+  );
 });
 
 test("expands one language file to each store locale", () => {
@@ -118,6 +161,12 @@ for (const [label, change, pattern] of [
     "en-US, whose app name another developer account holds",
     (d) => (d.apple.locales = ["en-AU", "en-US"]),
     /en-US, which the App Store refuses: .*DUPLICATE_NAME\.DIFFERENT_ACCOUNT/,
+  ],
+  [
+    // Held until new locales are created with their own name first.
+    "a held App Store locale",
+    (d) => (d.apple.locales = ["en-AU", "it"]),
+    /it, which is on hold: .*own name/,
   ],
   [
     "an App Store locale in the wrong case",
