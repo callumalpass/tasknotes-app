@@ -111,8 +111,10 @@ export default defineConfig(({ command, mode, isPreview }) => ({
         entryFileNames: (chunk) =>
           chunk.name === "service-worker"
             ? "service-worker.js"
-            : mode !== DIRECT_MODE && chunk.name === "app" && build.commit
-              ? `assets/index-tasknotes-${build.commit.slice(0, 12)}.js`
+            : chunk.name === "app" && build.commit
+              ? mode === DIRECT_MODE
+                ? `assets/tasknotes-self-hosted-${build.commit.slice(0, 12)}.js`
+                : `assets/index-tasknotes-${build.commit.slice(0, 12)}.js`
               : "assets/[name]-[hash].js",
       },
     },

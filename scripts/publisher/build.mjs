@@ -1,9 +1,11 @@
 // Unprivileged build; publisher checkout must remain dependency-free (#1562).
+import { execFileSync } from "node:child_process";
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { compareInstalled } from "./originals.mjs";
 import { publicationInventory, serializeInventory } from "./publisher.mjs";
+import { planned, selfHostedInventory } from "./self-hosted.mjs";
 const root = process.cwd(),
   output = process.argv[2];
 const plan = JSON.parse(await readFile(join(output, "plan.json"), "utf8"));
@@ -41,3 +43,23 @@ await writeFile(
   join(output, "inventory.json"),
   serializeInventory(await publicationInventory(join(output, "publish"), plan)),
 );
+// Production only, and only for a source that opts in: the separate
+// self-hosted TaskNotes from the same frozen install. The direct entry has no
+// managed-app link setting, and the managed build above is unchanged.
+if (plan.target === "production" && planned(plan.sha)) {
+  execFileSync("pnpm", ["run", "build:self-hosted"], {
+    env: { ...env, TASKNOTES_BUILD_COMMIT: plan.sha },
+    stdio: "inherit",
+  });
+  await cp(join(root, "out/self-hosted"), join(output, "self-hosted/publish"), {
+    recursive: true,
+    errorOnExist: true,
+    force: false,
+  });
+  await writeFile(
+    join(output, "self-hosted/inventory.json"),
+    serializeInventory(
+      await selfHostedInventory(join(output, "self-hosted/publish"), plan.sha),
+    ),
+  );
+}
