@@ -73,14 +73,19 @@ export const APPLE_LOCALES = new Set([
   "zh-Hans",
   "zh-Hant",
 ]);
-// App Store locales TaskNotes must never list. Creating the en-GB version
-// localization was refused with 409 STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT:
-// the app's name is already taken in that locale by an app on another
-// developer account. UK users get the primary English listing instead. See
-// "Name conflicts" in docs/mobile-store-automation.md before removing one.
+// App Store locales TaskNotes must never list. Creating the en-GB and en-US
+// version localizations was refused with 409
+// STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT: the app's name is already taken
+// in that locale by an app on another developer account. UK and US users get
+// the primary English listing instead. See "Name conflicts" in
+// docs/mobile-store-automation.md before removing one.
 export const APPLE_REFUSED_LOCALES = new Map([
   [
     "en-GB",
+    "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
+  ],
+  [
+    "en-US",
     "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
   ],
 ]);
