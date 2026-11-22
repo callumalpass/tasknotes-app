@@ -350,3 +350,11 @@
 .mdbase-tooltip {
   width: max-content;
 }
+
+/* Work before connecting: the kit's "Saved only on this device" line sits at
+ * the very top of the page. In the native shells that is under the status bar,
+ * where "Connect to sync your work" cannot be tapped. Keep it below the inset;
+ * on the web the inset is zero and nothing changes. */
+.mdbase-collections-unsynced {
+  padding-top: calc(6px + env(safe-area-inset-top, 0px));
+}

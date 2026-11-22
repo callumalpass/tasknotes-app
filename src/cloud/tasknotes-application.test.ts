@@ -6,7 +6,7 @@ import manifest from "../generated/mdbase-app.json";
 import {
   taskNotesApplicationDeclaration,
   taskNotesMdbase,
-  taskNotesUnsyncedEnabled,
+  taskNotesUnsyncedStorage,
 } from "./tasknotes-application";
 
 vi.mock("@mdbase-dev/sdk", async (importOriginal) => ({
@@ -20,13 +20,13 @@ afterEach(() => {
 });
 
 it.each([
-  [false, true],
-  [true, false],
-])(
-  "turns work before connecting on for the web only (native %s → %s)",
-  (native, enabled) => {
+  [false, "browser"],
+  [true, "device"],
+] as const)(
+  "says where work before connecting is kept (native %s → %s)",
+  (native, storage) => {
     vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(native);
-    expect(taskNotesUnsyncedEnabled()).toBe(enabled);
+    expect(taskNotesUnsyncedStorage()).toBe(storage);
   },
 );
 
@@ -106,5 +106,35 @@ it("starts the web SDK with work before connecting", async () => {
   expect(createMdbase).toHaveBeenCalledWith(
     expect.objectContaining({ environment: "staging" }),
     { followVisibility: true, unsynced: true },
+  );
+});
+
+it("starts the native SDK with work before connecting and native sign-in", async () => {
+  vi.resetModules();
+  const fresh = await import("@mdbase-dev/sdk");
+  const { Capacitor: freshCapacitor } = await import("@capacitor/core");
+  const { taskNotesMdbase: freshEntry } =
+    await import("./tasknotes-application");
+  const mdbase = await createTestMdbase({ phase: "signed_out" });
+  const createMdbase = vi.mocked(fresh.createMdbase).mockReturnValue(mdbase);
+  vi.spyOn(freshCapacitor, "isNativePlatform").mockReturnValue(true);
+  vi.spyOn(freshCapacitor, "getPlatform").mockReturnValue("android");
+  vi.stubEnv("VITE_TASKNOTES_ENVIRONMENT", "production");
+  vi.stubEnv("VITE_TASKNOTES_LAB_ORIGIN", "");
+  vi.stubEnv("VITE_TASKNOTES_EDITOR_ORIGIN", "https://editor.mdbase.dev");
+  vi.stubGlobal("window", {
+    location: { origin: "https://app.tasknotes.dev" },
+  });
+
+  expect(freshEntry()).toBe(mdbase);
+  expect(createMdbase).toHaveBeenCalledWith(
+    expect.objectContaining({ environment: "production" }),
+    expect.objectContaining({
+      followVisibility: true,
+      unsynced: true,
+      signIn: expect.objectContaining({
+        returnUrl: "dev.tasknotes.app://auth/mdbase/callback",
+      }),
+    }),
   );
 });
