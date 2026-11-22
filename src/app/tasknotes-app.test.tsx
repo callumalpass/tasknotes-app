@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { StrictMode } from "react";
+import { Capacitor } from "@capacitor/core";
 import { expect, it, vi } from "vitest";
 import { createTestMdbase, type TestMdbase } from "@mdbase-dev/sdk/testing";
 import type { MdbaseSetupPlan } from "@mdbase-dev/sdk";
@@ -286,12 +287,18 @@ it("keeps requiring a collection where work before connecting is off", async () 
   ).toBeNull();
 });
 
-it("offers work before connecting by default on the web", async () => {
-  const mdbase = await createTestMdbase({ phase: "signed_out" });
-  render(<TaskNotesApp mdbase={mdbase} />);
+it.each([false, true])(
+  "offers work before connecting by default (native %s)",
+  async (native) => {
+    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(native);
+    const mdbase = await createTestMdbase({ phase: "signed_out" });
+    render(<TaskNotesApp mdbase={mdbase} />);
 
-  expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
-  expect(
-    screen.getByRole("button", { name: "Continue without connecting" }),
-  ).toBeVisible();
-});
+    expect(
+      await screen.findByRole("button", { name: "Sign in" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Continue without connecting" }),
+    ).toBeVisible();
+  },
+);

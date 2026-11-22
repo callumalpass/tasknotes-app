@@ -47,11 +47,11 @@ export function taskNotesApplicationDeclaration(
   };
 }
 
-/** Work before connecting: on the web, a signed-out visitor starts in this
- * browser's unsynced collection. Native shells stay off until validated on
- * devices. */
-export function taskNotesUnsyncedEnabled(): boolean {
-  return !Capacitor.isNativePlatform();
+/** Work before connecting: a signed-out visitor starts in the SDK's unsynced
+ * collection, on the web and in the native shells. The shared UI words where
+ * that work is kept: "in this browser" on the web, "on this device" natively. */
+export function taskNotesUnsyncedStorage(): "browser" | "device" {
+  return Capacitor.isNativePlatform() ? "device" : "browser";
 }
 
 let entry: Mdbase | null = null;
@@ -72,7 +72,7 @@ export function taskNotesMdbase(): Mdbase {
   // Returning from the Connect window or another app re-checks at once.
   entry = createMdbase(taskNotesApplicationDeclaration(environment), {
     followVisibility: true,
-    unsynced: taskNotesUnsyncedEnabled(),
+    unsynced: true,
     ...(Capacitor.isNativePlatform() ? { signIn: nativeSignInOpener() } : {}),
   });
   return entry;

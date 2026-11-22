@@ -18,7 +18,7 @@ import "@mdbase-dev/ui/collections.css";
 
 import {
   taskNotesMdbase,
-  taskNotesUnsyncedEnabled,
+  taskNotesUnsyncedStorage,
 } from "../cloud/tasknotes-application";
 import { followNativeSignInReturn } from "../native/sign-in";
 import { tasknotesMarkUrl } from "./assets";
@@ -83,7 +83,7 @@ function LoadedReadyCollection(props: Parameters<ReadyCollection>[0]) {
 export function TaskNotesApp({
   mdbase: supplied,
   Workspace,
-  unsynced = taskNotesUnsyncedEnabled(),
+  unsynced = true,
 }: {
   mdbase?: Mdbase;
   Workspace?: Workspace;
@@ -108,7 +108,13 @@ export function TaskNotesApp({
     void loadReadyCollection().catch(() => undefined);
   }, []);
   const ui = useMemo<CollectionUiOptions>(
-    () => ({ mdbase, app, ...(unsynced ? { unsynced: true } : {}) }),
+    () => ({
+      mdbase,
+      app,
+      ...(unsynced
+        ? { unsynced: { storage: taskNotesUnsyncedStorage() } }
+        : {}),
+    }),
     [mdbase, unsynced],
   );
   return (
