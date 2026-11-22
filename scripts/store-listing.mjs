@@ -89,6 +89,20 @@ export const APPLE_REFUSED_LOCALES = new Map([
     "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
   ],
 ]);
+// App Store locales on hold, not refused. Creating the `it` version
+// localization was refused with 409 STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT
+// even though its listing has its own Italian name: Apple appears to seed a new
+// locale with the app's current name, which another account holds in some
+// storefronts (inferred, not confirmed by Apple). These languages keep their
+// listing text and their Google Play languages, but stay off the App Store
+// until new locales are created with their own name first. See "Held App
+// Store locales" in docs/mobile-store-automation.md. Re-adding one is a
+// deliberate change: delete it here and list it in its file's apple.locales.
+const HELD =
+  "new App Store locales must first be created with their own name (Apple refused it with STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)";
+export const APPLE_HELD_LOCALES = new Map(
+  ["it", "ja", "ko", "pt-BR", "ru", "zh-Hans"].map((locale) => [locale, HELD]),
+);
 const FILE_KEYS = new Set(["apple", "play", "description", "whatsNew"]);
 const APPLE_KEYS = new Set([
   "locales",
@@ -120,8 +134,14 @@ function text(value, label, max, { optional = false } = {}) {
   return value;
 }
 
-function locales(value, label, known, refused = new Map()) {
-  if (!Array.isArray(value) || !value.length)
+function locales(
+  value,
+  label,
+  known,
+  refused = new Map(),
+  { held = new Map(), allowEmpty = false } = {},
+) {
+  if (!Array.isArray(value) || (!value.length && !allowEmpty))
     throw invalid(`${label} must list at least one locale`);
   for (const locale of value)
     if (typeof locale !== "string" || !LOCALE.test(locale))
@@ -133,6 +153,10 @@ function locales(value, label, known, refused = new Map()) {
         `${label} has ${locale}, which the App Store refuses: ${refused.get(
           locale,
         )}`,
+      );
+    else if (held.has(locale))
+      throw invalid(
+        `${label} has ${locale}, which is on hold: ${held.get(locale)}`,
       );
   return value;
 }
@@ -212,6 +236,8 @@ export function expandListing(files) {
       `${file} apple.locales`,
       APPLE_LOCALES,
       APPLE_REFUSED_LOCALES,
+      // A language with no App Store locale keeps its text for when one is added.
+      { held: APPLE_HELD_LOCALES, allowEmpty: true },
     )) {
       if (apple[locale])
         throw invalid(`Apple locale ${locale} is listed twice`);
