@@ -15,9 +15,11 @@ const APPLE_SETS = {
   APP_IPHONE_67: { dir: "ios-iphone-69", width: 1320, height: 2868 },
   APP_IPAD_PRO_3GEN_129: { dir: "ios-ipad-13", width: 2064, height: 2752 },
 };
+// Play recommends 16:9 or 9:16 tablet screenshots, so the 3:4 iPad set is
+// not reused there; tablets show the phone screenshots until a tablet set
+// exists.
 const PLAY_SETS = {
   phoneScreenshots: { dir: "play-phone", width: 1080, height: 1920, max: 8 },
-  tenInchScreenshots: { dir: "ios-ipad-13", width: 2064, height: 2752, max: 8 },
 };
 const FEATURE_GRAPHIC = {
   file: "play-feature-graphic.png",

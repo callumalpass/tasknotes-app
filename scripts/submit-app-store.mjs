@@ -456,14 +456,24 @@ function listingPlan(localizations, metadata, listing) {
 // A managed set is replaced only when its ordered checksums differ; smaller
 // iPhone and iPad sets are emptied so Apple scales the managed ones instead
 // of showing stale images.
+// Apple publishes sourceFileChecksum shortly after a screenshot reaches
+// COMPLETE, so a screenshot is delivered only once both are present.
 const delivered = (shot) =>
-  shot.attributes.assetDeliveryState?.state === "COMPLETE";
-// Still processing counts as present, so a rerun after a timed-out wait
-// keeps waiting instead of uploading the same images again.
-const committed = (shot) =>
+  shot.attributes.assetDeliveryState?.state === "COMPLETE" &&
+  Boolean(shot.attributes.sourceFileChecksum);
+const sameFile = (shot, file) =>
+  shot.attributes.sourceFileChecksum === file.md5 && delivered(shot);
+// While Apple is still processing, the checksum may be missing; the name and
+// size then identify the upload, so a rerun after a timed-out wait keeps
+// waiting instead of uploading the same images again.
+const inFlight = (shot, file) =>
   ["UPLOAD_COMPLETE", "COMPLETE"].includes(
     shot.attributes.assetDeliveryState?.state,
-  );
+  ) &&
+  (shot.attributes.sourceFileChecksum
+    ? shot.attributes.sourceFileChecksum === file.md5
+    : shot.attributes.fileName === file.fileName &&
+      shot.attributes.fileSize === file.bytes.length);
 const isDeviceSet = (type) => /^APP_(IPHONE|IPAD)_/.test(type);
 
 async function screenshotSets(client, localizationId) {
@@ -475,13 +485,10 @@ async function screenshotSets(client, localizationId) {
 const screenshotsOf = (client, setId) =>
   client.list(`appScreenshotSets/${setId}/appScreenshots`);
 
-function sameScreenshots(shots, files, ready = delivered) {
+function sameScreenshots(shots, files, matches = sameFile) {
   return (
     shots.length === files.length &&
-    shots.every(
-      (shot, index) =>
-        shot.attributes.sourceFileChecksum === files[index].md5 && ready(shot),
-    )
+    shots.every((shot, index) => matches(shot, files[index]))
   );
 }
 
@@ -549,7 +556,7 @@ async function syncScreenshots(
         })
       ).data;
     const shots = await screenshotsOf(client, set.id);
-    if (sameScreenshots(shots, files, committed)) continue;
+    if (sameScreenshots(shots, files, inFlight)) continue;
     for (const shot of shots)
       await client.request(`appScreenshots/${shot.id}`, "DELETE");
     const ids = [];

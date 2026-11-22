@@ -102,15 +102,27 @@ function fixture() {
       if (path.endsWith("/appScreenshotSets"))
         return f.sets.filter((set) => set.localization === path.split("/")[1]);
       if (path.endsWith("/appScreenshots")) {
-        // Apple finishes processing a committed upload between reads.
+        // Apple finishes processing a committed upload between reads, and
+        // publishes its checksum a couple of reads after that.
         const shots = f.shots[path.split("/")[1]] ?? [];
-        for (const shot of shots)
+        for (const shot of shots) {
+          if (f.holdProcessing) continue;
+          const delivery = shot.attributes.assetDeliveryState;
           if (
-            !f.holdProcessing &&
-            shot.attributes.assetDeliveryState.state === "UPLOAD_COMPLETE"
-          )
-            shot.attributes.assetDeliveryState.state = f.processResult;
-        return shots;
+            delivery.state === "COMPLETE" &&
+            shot.pendingChecksum &&
+            --shot.checksumReads <= 0
+          ) {
+            shot.attributes.sourceFileChecksum = shot.pendingChecksum;
+            delete shot.pendingChecksum;
+          }
+          if (delivery.state === "UPLOAD_COMPLETE")
+            delivery.state = f.processResult;
+        }
+        return shots.map((shot) => ({
+          id: shot.id,
+          attributes: shot.attributes,
+        }));
       }
       if (path.startsWith("builds?")) return f.build ? [f.build] : [];
       if (path.includes("/appStoreVersions?")) return f.versions;
@@ -242,7 +254,9 @@ function fixture() {
           .flat()
           .find((item) => item.id === path.split("/")[1]);
         assert.ok(f.uploads.includes(shot.id.replace("shot-", "")));
-        shot.attributes.sourceFileChecksum = data.attributes.sourceFileChecksum;
+        assert.equal(data.attributes.uploaded, true);
+        shot.pendingChecksum = data.attributes.sourceFileChecksum;
+        shot.checksumReads = 2;
         shot.attributes.assetDeliveryState.state = "UPLOAD_COMPLETE";
       } else if (path.startsWith("appScreenshots/") && method === "DELETE") {
         for (const [id, shots] of Object.entries(f.shots))
@@ -1320,6 +1334,11 @@ const mediaOptions = (f) => ({
     assert.equal(url.origin, "https://upload.example.test");
     assert.equal(init.headers.authorization, undefined);
     assert.equal(init.headers["Content-Type"], "image/png");
+    assert.ok(
+      Object.values(media)
+        .flat()
+        .some((file) => file.bytes.equals(init.body)),
+    );
     f.uploads.push(url.pathname.slice(1));
     return { ok: true, status: 200 };
   },

@@ -10,11 +10,7 @@ test("the committed screenshots load in file-name order with checksums", async (
     "APP_IPHONE_67",
     "APP_IPAD_PRO_3GEN_129",
   ]);
-  assert.deepEqual(Object.keys(play), [
-    "phoneScreenshots",
-    "tenInchScreenshots",
-    "featureGraphic",
-  ]);
+  assert.deepEqual(Object.keys(play), ["phoneScreenshots", "featureGraphic"]);
   for (const files of [...Object.values(apple), ...Object.values(play)]) {
     const names = files.map((file) => file.fileName);
     assert.deepEqual(names, [...names].sort());
