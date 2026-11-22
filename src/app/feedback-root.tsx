@@ -86,13 +86,17 @@ const ViewContext = createContext<(view: FeedbackView) => void>(
  */
 export function FeedbackRoot({ children }: { readonly children: ReactNode }) {
   const [view, setView] = useState<FeedbackView>("opening");
-  const configuration = feedbackConfiguration({
-    environment: import.meta.env.VITE_TASKNOTES_ENVIRONMENT,
-    endpoint: import.meta.env.VITE_MDBASE_FEEDBACK_URL,
-    turnstileSiteKey: import.meta.env.VITE_MDBASE_FEEDBACK_TURNSTILE_SITE_KEY,
-    nativeIos:
-      Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios",
-  });
+  const configuration =
+    import.meta.env.MODE === "self-hosted"
+      ? hidden
+      : feedbackConfiguration({
+          environment: import.meta.env.VITE_TASKNOTES_ENVIRONMENT,
+          endpoint: import.meta.env.VITE_MDBASE_FEEDBACK_URL,
+          turnstileSiteKey: import.meta.env
+            .VITE_MDBASE_FEEDBACK_TURNSTILE_SITE_KEY,
+          nativeIos:
+            Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios",
+        });
   return (
     <ViewContext.Provider value={setView}>
       <FeedbackProvider

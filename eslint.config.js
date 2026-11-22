@@ -6,7 +6,14 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["android", "apps", "dist", "coverage", "ios/App/App/public"],
+    ignores: [
+      "android",
+      "apps",
+      "dist",
+      "out",
+      "coverage",
+      "ios/App/App/public",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -62,6 +69,15 @@ export default tseslint.config(
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
+    },
+  },
+  {
+    files: ["src/direct-main.tsx"],
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.self-hosted.json",
+        projectService: false,
+      },
     },
   },
   {

@@ -36,6 +36,20 @@ function view(): TaskView {
   };
 }
 
+it("does not construct a managed Planner handoff in direct mode", () => {
+  vi.stubEnv("MODE", "self-hosted");
+  try {
+    const load = vi.fn(async () => info(collectionId));
+    const { result } = renderHook(() =>
+      usePlannerViewLink(repository(load), view()),
+    );
+    expect(result.current).toBeUndefined();
+    expect(load).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 it("uses the actual portable collection id, not the preference namespace, in a Planner link", async () => {
   const repo = repository(async () => info(`next:account:${collectionId}`));
   const { result } = renderHook(() => usePlannerViewLink(repo, view()));

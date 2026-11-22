@@ -43,6 +43,10 @@ msgid ". Pending edits are not yet synced."
 msgstr ". Há edições pendentes que ainda não foram sincronizadas."
 
 #: src/components/recovered-edit-notice.tsx
+msgid ". These edits last only in this tab."
+msgstr ". Estas alterações duram apenas nesta aba."
+
+#: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
 msgstr ". Elas permanecem neste navegador até serem restauradas ou descartadas."
 
@@ -327,6 +331,10 @@ msgstr "Não foi possível concluir {action} enquanto a coleção estava indispo
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
 msgstr "Não foi possível concluir {action}."
+
+#: src/components/operation-error-notice.tsx
+msgid "{action} may have reached your server. Check the collection before trying again."
+msgstr "A operação “{action}” pode ter chegado ao servidor. Confira a coleção antes de tentar novamente."
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
@@ -699,6 +707,10 @@ msgstr "3 dias"
 msgid "30 minutes"
 msgstr "30 minutos"
 
+#: src/app/direct-collection-gate.tsx
+msgid "8-digit pairing code from your server"
+msgstr "Código de pareamento de 8 dígitos fornecido pelo servidor"
+
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
 msgstr "Uma data do calendário"
@@ -992,6 +1004,7 @@ msgstr "Ajuste os filtros desta visualização ou escolha outra."
 msgid "Advance after"
 msgstr "Avançar após"
 
+#: src/app/tasknotes-app.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1272,6 +1285,14 @@ msgstr "Negrito"
 msgid "Browse tasks"
 msgstr "Navegar pelas tarefas"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Browser pairing storage is unavailable. Check this site’s storage settings and try again."
+msgstr "O armazenamento de pareamentos do navegador está indisponível. Confira as configurações de armazenamento deste site e tente novamente."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
+msgstr "O armazenamento do navegador está indisponível. Limpe os dados deste site neste dispositivo para remover os rascunhos salvos."
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Criador"
@@ -1387,6 +1408,10 @@ msgstr "Altera cada ocorrência"
 msgid "changes need review"
 msgstr "alterações precisam ser revisadas"
 
+#: src/app/more-screen.tsx
+msgid "Changes require a connection to your server."
+msgstr "As alterações exigem uma conexão com seu servidor."
+
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
 msgstr "Verificar o estado da conta"
@@ -1398,6 +1423,11 @@ msgstr "Verificar conclusão estrita"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "Verifique se a coleção está conectada e tente novamente."
+
+#: src/app/app-shell.tsx
+#: src/components/collection-write-status.tsx
+msgid "Check the collection before trying again."
+msgstr "Confira a coleção antes de tentar novamente."
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1606,6 +1636,10 @@ msgstr "Fechar editor de propriedade"
 #: src/app/task-screen.tsx
 msgid "Close task details"
 msgstr "Fechar detalhes da tarefa"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Close this collection? Copy unsaved work first. Pending deletions will be cancelled if they have not started."
+msgstr "Fechar esta coleção? Copie primeiro o trabalho não salvo. As exclusões pendentes serão canceladas se ainda não tiverem começado."
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -1830,6 +1864,11 @@ msgstr "Alterações conflitantes"
 msgid "Connect calendars"
 msgstr "Conectar agendas"
 
+#: src/app/direct-collection-gate.tsx
+#: src/app/tasknotes-app.tsx
+msgid "Connect to your own server"
+msgstr "Conectar ao seu próprio servidor"
+
 #: src/app/import-screen.tsx
 msgid "Connect Todoist"
 msgstr "Conectar Todoist"
@@ -1843,9 +1882,18 @@ msgstr "Conectado"
 msgid "Connecting"
 msgstr "Conectando"
 
+#: src/app/direct-collection-gate.tsx
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "Conectando…"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. A change in progress may have reached your server. Reconnect and check before trying again."
+msgstr "A conexão foi perdida. Uma alteração em andamento pode ter chegado ao servidor. Reconecte e confira antes de tentar novamente."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. Reconnect to your server."
+msgstr "A conexão foi perdida. Reconecte ao seu servidor."
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -1886,6 +1934,10 @@ msgstr "Conversão anulada"
 msgid "Convert to note"
 msgstr "Converter em nota"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Copied"
+msgstr "Copiado"
+
 #: src/components/task-actions.tsx
 msgid "Copy"
 msgstr "Copiar"
@@ -1911,6 +1963,10 @@ msgstr "Copiar link da tarefa"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "Copiar título"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Copy unsaved edits"
+msgstr "Copiar alterações não salvas"
 
 #: src/app/more-screen.tsx
 msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
@@ -2242,6 +2298,10 @@ msgstr "A exclusão parou antes de alterar esta tarefa."
 msgid "Deletion waiting"
 msgstr "Exclusão aguardando"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Deletions still in the Undo window were cancelled."
+msgstr "As exclusões que ainda podiam ser desfeitas foram canceladas."
+
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -2335,11 +2395,20 @@ msgstr "Descartar recuperação"
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "Descartar remove todos os dados de recuperação salvos e desconecta esta coleção. Isso não desfaz uma exclusão que possa ter sido concluída."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect"
+msgstr "Desconectar"
+
 #: src/calendar-service/settings.tsx
 msgid "Disconnect calendars"
 msgstr "Desconectar agendas"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect this tab? Copy unsaved edits first. You will need a new code to pair again."
+msgstr "Desconectar esta aba? Copie primeiro as alterações não salvas. Você precisará de um novo código para parear outra vez."
+
 #: src/app/bulk-task-actions.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
@@ -2814,6 +2883,14 @@ msgstr "Para um período futuro"
 msgid "For example P1D"
 msgstr "Por exemplo, P1D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser"
+msgstr "Esquecer este navegador"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser’s pairing? Copy any unsaved edits first. To revoke access, remove this browser on your server."
+msgstr "Esquecer o pareamento deste navegador? Copie primeiro as alterações não salvas. Para revogar o acesso, remova este navegador no servidor."
+
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
 msgstr "Esqueceu a senha"
@@ -3009,6 +3086,10 @@ msgstr "Salvei minha chave de recuperação"
 msgid "I understand that existing devices must finish applying strict mode."
 msgstr "Entendo que os dispositivos existentes precisam terminar de aplicar o modo estrito."
 
+#: src/app/direct-collection-gate.tsx
+msgid "If your browser asked, allow local-network access for this site."
+msgstr "Se o navegador solicitou permissão, permita que este site acesse a rede local."
+
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
 msgstr "Ações da imagem"
@@ -3109,6 +3190,15 @@ msgstr "Instale o TaskNotes para abri-lo na tela inicial."
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
 msgstr "Regra de recorrência inválida"
+
+#. placeholder {0}: backendHost(address)
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation from <0>{0}</0>. Reconnect to your saved server or forget it to use the invitation."
+msgstr "Convite de <0>{0}</0>. Reconecte ao servidor salvo ou esqueça o pareamento para usar o convite."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation link or HTTPS server address"
+msgstr "Link de convite ou endereço HTTPS do servidor"
 
 #: src/components/expression-builder.tsx
 msgid "is"
@@ -3583,6 +3673,10 @@ msgstr "Mais ações para {0}"
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "Mais ações da tarefa"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Most people use TaskNotes with mdbase."
+msgstr "A maioria das pessoas usa o TaskNotes com o mdbase."
 
 #: src/i18n/ui-copy.ts
 msgid "move"
@@ -4150,9 +4244,17 @@ msgstr "Ativado"
 msgid "On a date"
 msgstr "Em uma data"
 
+#: src/app/direct-collection-gate.tsx
+msgid "On a shared device, leave this unchecked. The pairing and unsaved task edits last only in this tab. Remembering also saves unsaved task edits in this browser."
+msgstr "Em um dispositivo compartilhado, deixe a opção desmarcada. O pareamento e as alterações de tarefas não salvas duram apenas nesta aba. Ao lembrar o pareamento, as alterações não salvas também são guardadas neste navegador."
+
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "Neste dispositivo"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Online only. Your pairing code lets this app read and change the collection on your server."
+msgstr "Somente online. O código de pareamento permite que este aplicativo leia e altere a coleção no seu servidor."
 
 #: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
@@ -4207,6 +4309,14 @@ msgstr "Abrir no Planner"
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "Abrir tarefa"
+
+#: src/app/direct-invitation.ts
+msgid "Open the invitation from {host}? This closes the current workspace and discards unsaved edits."
+msgstr "Abrir o convite de {host}? O espaço de trabalho atual será fechado e as alterações não salvas serão descartadas."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Open this build on an HTTPS site without a service worker."
+msgstr "Abra esta versão em um site HTTPS sem service worker."
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4288,6 +4398,23 @@ msgstr "P0D"
 msgid "P14D"
 msgstr "P14D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Pair and open collection"
+msgstr "Parear e abrir a coleção"
+
+#. placeholder {0}: backendHost(descriptor)
+#: src/app/direct-collection-gate.tsx
+msgid "Pair with <0>{0}</0>"
+msgstr "Parear com <0>{0}</0>"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paired for this tab only. The connection could not be remembered."
+msgstr "Pareamento válido apenas nesta aba. Não foi possível lembrar a conexão."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Pairing could not be confirmed. Check your network and server, then check whether the browser was paired before requesting another code."
+msgstr "Não foi possível confirmar o pareamento. Confira a rede e o servidor e verifique se o navegador já foi pareado antes de pedir outro código."
+
 #: src/app/more-screen.tsx
 msgid "Part of mdbase"
 msgstr "Parte do mdbase"
@@ -4299,6 +4426,10 @@ msgstr "Nível de segurança da senha: "
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
 msgstr "Horizonte passado"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paste an invitation for this app site or a valid HTTPS server address."
+msgstr "Cole um convite para este site ou um endereço HTTPS válido do servidor."
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
@@ -4543,6 +4674,7 @@ msgstr "Abertos recentemente"
 msgid "Recognized task details"
 msgstr "Detalhes da tarefa reconhecidos"
 
+#: src/app/direct-collection-gate.tsx
 #: src/calendar-service/settings.tsx
 msgid "Reconnect"
 msgstr "Reconectar"
@@ -4660,6 +4792,10 @@ msgstr "Recarregar"
 #: src/app/search-screen.tsx
 msgid "Reload people"
 msgstr "Recarregar pessoas"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Remember this browser"
+msgstr "Lembrar deste navegador"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
@@ -4952,6 +5088,10 @@ msgstr "Tente novamente ou desfaça para restaurar a tarefa aqui."
 msgid "Retrying…"
 msgstr "Tentando novamente…"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Return to TaskNotes"
+msgstr "Voltar ao TaskNotes"
+
 #: src/main.tsx
 msgid "Return to the TaskNotes app"
 msgstr "Voltar ao app TaskNotes"
@@ -5091,6 +5231,7 @@ msgid "Saving collection behavior"
 msgstr "Salvando comportamento da coleção"
 
 #: src/app/view-editor.tsx
+#: src/components/collection-write-status.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
@@ -5300,6 +5441,10 @@ msgstr "Tarefas selecionadas"
 #: src/app/bulk-task-actions.tsx
 msgid "Selection cleared"
 msgstr "Seleção limpa"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Server unavailable. Check your network and reconnect with the same pairing."
+msgstr "Servidor indisponível. Confira a rede e reconecte com o mesmo pareamento."
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5884,6 +6029,10 @@ msgstr "Templates/Task.md"
 msgid "Text"
 msgstr "Texto"
 
+#: src/app/direct-collection-gate.tsx
+msgid "That code is incorrect or expired. Check all eight digits or ask for a new code."
+msgstr "O código está incorreto ou expirou. Confira os oito dígitos ou peça um novo código."
+
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
 msgstr "Esse código de confirmação não foi aceito ou expirou. Comece de novo para receber outro."
@@ -5994,6 +6143,10 @@ msgstr "A chave de recuperação continua armazenada neste dispositivo."
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "A regra é mantida exatamente como foi escrita. Aplique-a somente quando for válida."
 
+#: src/app/direct-collection-gate.tsx
+msgid "The saved pairing changed. Check the server below before reconnecting."
+msgstr "O pareamento salvo mudou. Confira o servidor abaixo antes de reconectar."
+
 #: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "O bloco de notas não está aberto."
@@ -6001,6 +6154,10 @@ msgstr "O bloco de notas não está aberto."
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "The series keeps its days, so only this occurrence can move to another day."
 msgstr "A série mantém seus dias, então só esta ocorrência pode ir para outro dia."
+
+#: src/app/direct-collection-gate.tsx
+msgid "The server was not reached, so your code was not used. Check the server and network, then enter the code again."
+msgstr "Não foi possível alcançar o servidor, então seu código não foi usado. Verifique o servidor e a rede e digite o código novamente."
 
 #: src/app/views-screen.tsx
 msgid "the task"
@@ -6059,6 +6216,10 @@ msgstr "Isso ancora o padrão. A data agendada continua sendo a próxima data em
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "Este quadro agrupa por uma propriedade calculada, então não é possível mover cartões entre colunas."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This browser cannot connect to this server. Open the same link in a browser with {transport} support."
+msgstr "Este navegador não consegue se conectar ao servidor. Abra o mesmo link em um navegador compatível com {transport}."
+
 #: src/calendar-service/event-dialog.tsx
 msgid "This calendar is read-only."
 msgstr "Esta agenda é somente leitura."
@@ -6095,6 +6256,10 @@ msgstr "Este evento não existe mais no Google Agenda."
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "Este filtro usa uma sintaxe que o construtor não pode editar com segurança."
 
+#: src/app/direct-collection-gate.tsx
+msgid "This invitation is invalid. Open the original link from your server."
+msgstr "Este convite é inválido. Abra o link original fornecido pelo servidor."
+
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "Esta chave é exibida uma única vez. Guarde-a em um local seguro fora do TaskNotes. Qualquer pessoa que a tenha pode recuperar o acesso às suas coleções privadas."
@@ -6102,6 +6267,10 @@ msgstr "Esta chave é exibida uma única vez. Guarde-a em um local seguro fora d
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "Só esta ocorrência"
+
+#: src/app/direct-collection-gate.tsx
+msgid "This pairing is no longer accepted. Ask for a new code."
+msgstr "Este pareamento não é mais aceito. Peça um novo código."
 
 #: src/calendar-service/failure-message.ts
 msgid "This period has too many events. Choose a shorter one."
@@ -6299,6 +6468,7 @@ msgid "Tracked time"
 msgstr "Tempo registrado"
 
 #: src/app/app-shell.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
@@ -6406,6 +6576,10 @@ msgstr "Edições não salvas encontradas"
 msgid "Unsaved edits from an earlier session are available."
 msgstr "Há edições não salvas de uma sessão anterior disponíveis."
 
+#: src/app/direct-collection-gate.tsx
+msgid "Unsaved task edits"
+msgstr "Alterações não salvas na tarefa"
+
 #: src/app/task-screen.tsx
 msgid "Unskip"
 msgstr "Desmarcar como ignorada"
@@ -6453,6 +6627,10 @@ msgstr "Usar “{0}”"
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
 msgstr "Use uma frase secreta mais longa e menos previsível."
+
+#: src/app/direct-collection-gate.tsx
+msgid "Use another server address"
+msgstr "Usar outro endereço de servidor"
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx

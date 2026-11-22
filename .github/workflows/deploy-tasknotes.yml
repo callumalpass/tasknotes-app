@@ -139,6 +139,7 @@ jobs:
       - name: ALL installed original members, then unprivileged build once
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TASKNOTES_SELF_HOSTED_UI_ORIGIN: ${{ vars.TASKNOTES_SELF_HOSTED_UI_ORIGIN }}
         run: node ../publisher/scripts/publisher/build.mjs "$RUNNER_TEMP/tasknotes-build"
       - run: node ../publisher/scripts/publisher/envelope.mjs "$RUNNER_TEMP/tasknotes-build"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

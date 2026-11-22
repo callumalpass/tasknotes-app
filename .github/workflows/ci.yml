@@ -98,4 +98,4 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify application
-        run: pnpm i18n:check && git diff --exit-code -- src/i18n/locales && pnpm format:check && pnpm typecheck && pnpm lint && pnpm test:release && pnpm test && pnpm test:conformance && pnpm build
+        run: pnpm i18n:check && git diff --exit-code -- src/i18n/locales && pnpm format:check && pnpm typecheck && pnpm lint && pnpm test:release && pnpm test && pnpm test:conformance && pnpm build && pnpm build:self-hosted

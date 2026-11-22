@@ -20,5 +20,6 @@
       "@mdbase-dev/sdk": ["./node_modules/@mdbase-dev/sdk"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/direct-main.tsx"]
 }

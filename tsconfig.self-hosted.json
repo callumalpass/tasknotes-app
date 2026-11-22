@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "paths": {
+      "@mdbase-dev/sdk": ["./node_modules/@tasknotes/direct-sdk"],
+      "@mdbase-dev/sdk/*": ["./node_modules/@tasknotes/direct-sdk/dist/*"]
+    }
+  },
+  "include": ["src/direct-main.tsx", "src/vite-env.d.ts"],
+  "exclude": []
+}

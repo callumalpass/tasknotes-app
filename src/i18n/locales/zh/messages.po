@@ -43,6 +43,10 @@ msgid ". Pending edits are not yet synced."
 msgstr "。待处理的更改尚未同步。"
 
 #: src/components/recovered-edit-notice.tsx
+msgid ". These edits last only in this tab."
+msgstr "。这些更改仅在此标签页中保留。"
+
+#: src/components/recovered-edit-notice.tsx
 msgid ". They stay in this browser until restored or discarded."
 msgstr "。在恢复或放弃之前，它们会保留在此浏览器中。"
 
@@ -327,6 +331,10 @@ msgstr "{action} 未能完成，因为集合当前不可用。"
 #: src/components/operation-error-notice.tsx
 msgid "{action} could not finish."
 msgstr "{action} 未能完成。"
+
+#: src/components/operation-error-notice.tsx
+msgid "{action} may have reached your server. Check the collection before trying again."
+msgstr "“{action}”操作可能已传到服务器。请先检查集合，再重试。"
 
 #: src/components/operation-error-notice.tsx
 msgid "{action} needs access to the collection."
@@ -699,6 +707,10 @@ msgstr "3 天"
 msgid "30 minutes"
 msgstr "30 分钟"
 
+#: src/app/direct-collection-gate.tsx
+msgid "8-digit pairing code from your server"
+msgstr "服务器提供的 8 位配对码"
+
 #: src/components/recurrence-field.tsx
 msgid "A calendar date"
 msgstr "日历日期"
@@ -992,6 +1004,7 @@ msgstr "调整此视图的筛选条件，或选择其他视图。"
 msgid "Advance after"
 msgstr "之后推进"
 
+#: src/app/tasknotes-app.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1272,6 +1285,14 @@ msgstr "粗体"
 msgid "Browse tasks"
 msgstr "浏览任务"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Browser pairing storage is unavailable. Check this site’s storage settings and try again."
+msgstr "浏览器的配对存储不可用。请检查此网站的存储设置，然后重试。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
+msgstr "浏览器存储不可用。如需移除已保存的草稿，请在此设备上清除此网站的数据。"
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "构建器"
@@ -1387,6 +1408,10 @@ msgstr "每次出现都更改"
 msgid "changes need review"
 msgstr "有更改需要审核"
 
+#: src/app/more-screen.tsx
+msgid "Changes require a connection to your server."
+msgstr "更改内容需要连接到你的服务器。"
+
 #: src/components/private-account-settings.tsx
 msgid "Check account status"
 msgstr "检查账户状态"
@@ -1398,6 +1423,11 @@ msgstr "检查严格模式完成状态"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "请确认集合已连接，然后重试。"
+
+#: src/app/app-shell.tsx
+#: src/components/collection-write-status.tsx
+msgid "Check the collection before trying again."
+msgstr "请先检查集合，再重试。"
 
 #: src/app/notification-label.ts
 msgid "Checking"
@@ -1606,6 +1636,10 @@ msgstr "关闭属性编辑器"
 #: src/app/task-screen.tsx
 msgid "Close task details"
 msgstr "关闭任务详情"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Close this collection? Copy unsaved work first. Pending deletions will be cancelled if they have not started."
+msgstr "关闭此集合？请先复制未保存的内容。尚未开始的删除操作将被取消。"
 
 #: src/app/view-editor.tsx
 msgid "Close view editor"
@@ -1830,6 +1864,11 @@ msgstr "冲突的更改"
 msgid "Connect calendars"
 msgstr "连接日历"
 
+#: src/app/direct-collection-gate.tsx
+#: src/app/tasknotes-app.tsx
+msgid "Connect to your own server"
+msgstr "连接到自己的服务器"
+
 #: src/app/import-screen.tsx
 msgid "Connect Todoist"
 msgstr "连接 Todoist"
@@ -1843,9 +1882,18 @@ msgstr "已连接"
 msgid "Connecting"
 msgstr "正在连接"
 
+#: src/app/direct-collection-gate.tsx
 #: src/components/collection-availability.tsx
 msgid "Connecting…"
 msgstr "正在连接…"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. A change in progress may have reached your server. Reconnect and check before trying again."
+msgstr "连接已断开。正在处理的更改可能已传到服务器。请重新连接并检查，再决定是否重试。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Connection lost. Reconnect to your server."
+msgstr "连接已断开。请重新连接到服务器。"
 
 #: src/components/collection-availability.tsx
 msgid "Connection settings"
@@ -1886,6 +1934,10 @@ msgstr "已撤销转换"
 msgid "Convert to note"
 msgstr "转换为笔记"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Copied"
+msgstr "已复制"
+
 #: src/components/task-actions.tsx
 msgid "Copy"
 msgstr "复制"
@@ -1911,6 +1963,10 @@ msgstr "复制任务链接"
 #: src/components/task-actions.tsx
 msgid "Copy title"
 msgstr "复制标题"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Copy unsaved edits"
+msgstr "复制未保存的更改"
 
 #: src/app/more-screen.tsx
 msgid "Copy your active Todoist tasks into this collection. Todoist itself is not changed."
@@ -2242,6 +2298,10 @@ msgstr "删除在更改此任务之前已停止。"
 msgid "Deletion waiting"
 msgstr "等待删除"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Deletions still in the Undo window were cancelled."
+msgstr "仍在撤销时限内的删除操作已取消。"
+
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -2335,11 +2395,20 @@ msgstr "放弃恢复数据"
 msgid "Discarding removes all saved recovery and disconnects this collection. It does not reverse a deletion that may have completed."
 msgstr "放弃操作会移除所有已保存的恢复数据并断开此集合连接，但不会撤销可能已经完成的删除。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect"
+msgstr "断开连接"
+
 #: src/calendar-service/settings.tsx
 msgid "Disconnect calendars"
 msgstr "断开日历连接"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Disconnect this tab? Copy unsaved edits first. You will need a new code to pair again."
+msgstr "断开此标签页的连接？请先复制未保存的更改。再次配对时需要新的配对码。"
+
 #: src/app/bulk-task-actions.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/app/running-timer.tsx
 #: src/app/scratchpad-note.tsx
 #: src/app/scratchpad-screen.tsx
@@ -2814,6 +2883,14 @@ msgstr "针对即将到来的时间范围"
 msgid "For example P1D"
 msgstr "例如 P1D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser"
+msgstr "忘记此浏览器"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Forget this browser’s pairing? Copy any unsaved edits first. To revoke access, remove this browser on your server."
+msgstr "忘记此浏览器的配对？请先复制未保存的更改。如要撤销访问权限，请在服务器上移除此浏览器。"
+
 #: src/components/private-account-settings.tsx
 msgid "Forgot password"
 msgstr "忘记密码"
@@ -3009,6 +3086,10 @@ msgstr "我已保存恢复密钥"
 msgid "I understand that existing devices must finish applying strict mode."
 msgstr "我明白，现有设备必须完成严格模式的应用。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "If your browser asked, allow local-network access for this site."
+msgstr "如果浏览器询问是否授权，请允许此网站访问本地网络。"
+
 #: src/app/scratchpad-screen.tsx
 msgid "Image actions"
 msgstr "图片操作"
@@ -3109,6 +3190,15 @@ msgstr "安装 TaskNotes，以便从主屏幕打开。"
 #: src/i18n/presentation.ts
 msgid "Invalid recurrence rule"
 msgstr "重复规则无效"
+
+#. placeholder {0}: backendHost(address)
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation from <0>{0}</0>. Reconnect to your saved server or forget it to use the invitation."
+msgstr "收到来自 <0>{0}</0> 的邀请。你可以重新连接到已保存的服务器，也可以忘记该配对并使用邀请。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Invitation link or HTTPS server address"
+msgstr "邀请链接或服务器的 HTTPS 地址"
 
 #: src/components/expression-builder.tsx
 msgid "is"
@@ -3583,6 +3673,10 @@ msgstr "{0}的更多操作"
 #: src/components/task-actions.tsx
 msgid "More task actions"
 msgstr "更多任务操作"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Most people use TaskNotes with mdbase."
+msgstr "大多数人会将 TaskNotes 与 mdbase 搭配使用。"
 
 #: src/i18n/ui-copy.ts
 msgid "move"
@@ -4150,9 +4244,17 @@ msgstr "开启"
 msgid "On a date"
 msgstr "指定日期"
 
+#: src/app/direct-collection-gate.tsx
+msgid "On a shared device, leave this unchecked. The pairing and unsaved task edits last only in this tab. Remembering also saves unsaved task edits in this browser."
+msgstr "在共享设备上，请勿勾选此项。配对和未保存的任务更改仅在此标签页中保留。若选择记住配对，未保存的任务更改也将存储在此浏览器中。"
+
 #: src/app/settings-sections.ts
 msgid "On this device"
 msgstr "在此设备上"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Online only. Your pairing code lets this app read and change the collection on your server."
+msgstr "仅可在线使用。配对码允许此应用读取和更改你服务器上的集合。"
 
 #: src/app/scratchpad-note.tsx
 msgid "Only draft items can become TaskNotes."
@@ -4207,6 +4309,14 @@ msgstr "在 Planner 中打开"
 #: src/components/task-capture.tsx
 msgid "Open task"
 msgstr "打开任务"
+
+#: src/app/direct-invitation.ts
+msgid "Open the invitation from {host}? This closes the current workspace and discards unsaved edits."
+msgstr "打开来自 {host} 的邀请？这将关闭当前工作区并丢弃未保存的更改。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Open this build on an HTTPS site without a service worker."
+msgstr "请在未使用服务工作线程的 HTTPS 网站上打开此版本。"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4288,6 +4398,23 @@ msgstr "P0D"
 msgid "P14D"
 msgstr "P14D"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Pair and open collection"
+msgstr "配对并打开集合"
+
+#. placeholder {0}: backendHost(descriptor)
+#: src/app/direct-collection-gate.tsx
+msgid "Pair with <0>{0}</0>"
+msgstr "与 <0>{0}</0> 配对"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paired for this tab only. The connection could not be remembered."
+msgstr "仅在此标签页中配对。无法保存此连接。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Pairing could not be confirmed. Check your network and server, then check whether the browser was paired before requesting another code."
+msgstr "无法确认配对结果。请检查网络和服务器，并在申请新配对码前确认浏览器是否已配对。"
+
 #: src/app/more-screen.tsx
 msgid "Part of mdbase"
 msgstr "属于 mdbase"
@@ -4299,6 +4426,10 @@ msgstr "密码强度： "
 #: src/app/occurrence-policy-field.tsx
 msgid "Past horizon"
 msgstr "过去时间范围"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Paste an invitation for this app site or a valid HTTPS server address."
+msgstr "请粘贴适用于此应用网站的邀请链接或有效的服务器 HTTPS 地址。"
 
 #: src/app/scratchpad-screen.tsx
 msgid "Pasted Scratchpad image"
@@ -4543,6 +4674,7 @@ msgstr "最近打开"
 msgid "Recognized task details"
 msgstr "已识别的任务详情"
 
+#: src/app/direct-collection-gate.tsx
 #: src/calendar-service/settings.tsx
 msgid "Reconnect"
 msgstr "重新连接"
@@ -4660,6 +4792,10 @@ msgstr "重新加载"
 #: src/app/search-screen.tsx
 msgid "Reload people"
 msgstr "重新加载人员"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Remember this browser"
+msgstr "记住此浏览器"
 
 #. placeholder {0}: index + 1
 #: src/components/reminder-editor.tsx
@@ -4952,6 +5088,10 @@ msgstr "重试，或撤销以将任务恢复到此处。"
 msgid "Retrying…"
 msgstr "正在重试…"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Return to TaskNotes"
+msgstr "返回 TaskNotes"
+
 #: src/main.tsx
 msgid "Return to the TaskNotes app"
 msgstr "返回 TaskNotes 应用"
@@ -5091,6 +5231,7 @@ msgid "Saving collection behavior"
 msgstr "正在保存集合行为设置"
 
 #: src/app/view-editor.tsx
+#: src/components/collection-write-status.tsx
 #: src/components/task-actions.tsx
 #: src/components/task-model-settings.tsx
 #: src/components/task-property-editor.tsx
@@ -5300,6 +5441,10 @@ msgstr "所选任务"
 #: src/app/bulk-task-actions.tsx
 msgid "Selection cleared"
 msgstr "已清除选择"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Server unavailable. Check your network and reconnect with the same pairing."
+msgstr "服务器不可用。请检查网络并使用原有配对重新连接。"
 
 #: src/i18n/ui-copy.ts
 msgid "session"
@@ -5884,6 +6029,10 @@ msgstr "Templates/Task.md"
 msgid "Text"
 msgstr "文本"
 
+#: src/app/direct-collection-gate.tsx
+msgid "That code is incorrect or expired. Check all eight digits or ask for a new code."
+msgstr "配对码错误或已过期。请核对全部 8 位数字，或申请新配对码。"
+
 #: src/calendar-service/failure-message.ts
 msgid "That confirmation code wasn’t accepted, or it expired. Start again to get a new one."
 msgstr "该确认码未被接受或已过期。请重新开始以获取新的确认码。"
@@ -5994,6 +6143,10 @@ msgstr "恢复密钥仍保留在此设备上。"
 msgid "The rule is kept exactly as written. Apply only after it is valid."
 msgstr "规则会按原样保留。只有规则有效时才能应用。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "The saved pairing changed. Check the server below before reconnecting."
+msgstr "保存的配对已更改。请先检查下方的服务器，再重新连接。"
+
 #: src/app/scratchpad-note.tsx
 msgid "The scratchpad is not open."
 msgstr "随手记未打开。"
@@ -6001,6 +6154,10 @@ msgstr "随手记未打开。"
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "The series keeps its days, so only this occurrence can move to another day."
 msgstr "系列的日期保持不变，因此只有此重复项可以移到其他日期。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The server was not reached, so your code was not used. Check the server and network, then enter the code again."
+msgstr "未能连接到服务器，因此配对码尚未使用。请检查服务器和网络，然后重新输入配对码。"
 
 #: src/app/views-screen.tsx
 msgid "the task"
@@ -6059,6 +6216,10 @@ msgstr "此设置用于确定重复模式的锚点。计划日期仍是你计划
 msgid "This board groups by a calculated property, so cards cannot move between columns."
 msgstr "此看板按计算属性分组，因此无法在列之间移动卡片。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "This browser cannot connect to this server. Open the same link in a browser with {transport} support."
+msgstr "此浏览器无法连接到该服务器。请使用支持 {transport} 的浏览器打开同一链接。"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "This calendar is read-only."
 msgstr "此日历为只读。"
@@ -6095,6 +6256,10 @@ msgstr "此活动已不在 Google 日历中。"
 msgid "This filter uses syntax that the builder cannot safely edit."
 msgstr "此筛选器使用构建器无法安全编辑的语法。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "This invitation is invalid. Open the original link from your server."
+msgstr "邀请无效。请打开服务器提供的原始链接。"
+
 #: src/components/private-account-settings.tsx
 msgid "This key is shown once. Keep it somewhere secure outside TaskNotes. Anyone with it can recover access to your private collections."
 msgstr "此密钥仅显示一次。请将其安全地保存在 TaskNotes 之外。任何持有此密钥的人都可以恢复对你私有集合的访问权限。"
@@ -6102,6 +6267,10 @@ msgstr "此密钥仅显示一次。请将其安全地保存在 TaskNotes 之外�
 #: src/components/recurring-edit-scope-dialog.tsx
 msgid "This occurrence"
 msgstr "仅此重复项"
+
+#: src/app/direct-collection-gate.tsx
+msgid "This pairing is no longer accepted. Ask for a new code."
+msgstr "此配对已失效。请申请新的配对码。"
 
 #: src/calendar-service/failure-message.ts
 msgid "This period has too many events. Choose a shorter one."
@@ -6299,6 +6468,7 @@ msgid "Tracked time"
 msgstr "已跟踪时间"
 
 #: src/app/app-shell.tsx
+#: src/app/direct-collection-gate.tsx
 #: src/components/task-completed-notice.tsx
 #: src/components/view-execution-error-notice.tsx
 msgid "Try again"
@@ -6406,6 +6576,10 @@ msgstr "发现未保存的编辑"
 msgid "Unsaved edits from an earlier session are available."
 msgstr "可恢复上次会话中未保存的编辑。"
 
+#: src/app/direct-collection-gate.tsx
+msgid "Unsaved task edits"
+msgstr "未保存的任务更改"
+
 #: src/app/task-screen.tsx
 msgid "Unskip"
 msgstr "取消跳过"
@@ -6453,6 +6627,10 @@ msgstr "使用“{0}”"
 #: src/components/private-account-settings.tsx
 msgid "Use a longer, less predictable passphrase."
 msgstr "请使用更长且更难预测的密码短语。"
+
+#: src/app/direct-collection-gate.tsx
+msgid "Use another server address"
+msgstr "使用其他服务器地址"
 
 #. placeholder {0}: configuration.templating.templatePath ? ` · ${configuration.templating.templatePath}` : ""
 #: src/components/task-capture.tsx

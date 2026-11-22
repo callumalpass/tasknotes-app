@@ -2,7 +2,7 @@ import { buildCalendarEntries } from "@tasknotes/model/calendar";
 import { type PlainValue, type wire } from "@mdbase-dev/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTaskFixture, taskQueryWhere } from "../test/next-task-fixture";
-import { heldEditFromHold } from "./next-repository";
+import { heldEditFromHold, NextTaskRepository } from "./next-repository";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import {
@@ -23,6 +23,45 @@ async function fixture(...args: Parameters<typeof nextTaskFixture>) {
   fixtures.push(f);
   return f;
 }
+
+it("uses a separate browser collection identity without an account", async () => {
+  const { accountId, client, repository } = await fixture();
+  const direct = new NextTaskRepository(
+    client,
+    "Local task collection",
+    { directServer: "https://replica.example" },
+    {
+      clientOwnership: "borrowed",
+    },
+  );
+  const other = new NextTaskRepository(
+    client,
+    "Local task collection",
+    { directServer: "https://replica.example:9443" },
+    { clientOwnership: "borrowed" },
+  );
+  try {
+    expect(await direct.collectionInfo()).toEqual({
+      kind: "direct",
+      id: `direct:https://replica.example/${client.collection}`,
+      collectionId: client.collection,
+      name: "Local task collection",
+      location: "Local task collection",
+      runtime: "browser",
+    });
+    expect(await repository.collectionInfo()).toMatchObject({
+      kind: "connect",
+      id: `next:${accountId}:${client.collection}`,
+      collectionId: client.collection,
+    });
+    expect((await other.collectionInfo()).id).not.toBe(
+      (await direct.collectionInfo()).id,
+    );
+  } finally {
+    other.dispose();
+    direct.dispose();
+  }
+});
 
 async function seed(
   f: Awaited<ReturnType<typeof fixture>>,
@@ -527,6 +566,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       });
     await expect(f.repository.toggle(occurrence.task.id)).rejects.toMatchObject(
       { code: "outcome_unknown" },
+    );
+    expect(f.repository.unconfirmedTaskTitles()).toContain(
+      occurrence.task.title,
     );
     expect((await f.repository.toggle(occurrence.task.id)).completed).toBe(
       true,

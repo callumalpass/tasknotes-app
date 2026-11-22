@@ -156,7 +156,24 @@ function WorkspaceLoading() {
 /** Signed out: what mdbase is. A problem: how to report it, with the SDK's
  * code (issue #436: the shared copy for an unclassified code names no cause). */
 function gateExtras(view: CollectionView, mdbase: Mdbase) {
-  if (view.kind === "signed_out") return <MdbaseExplainer />;
+  if (view.kind === "signed_out")
+    return (
+      <>
+        <MdbaseExplainer />
+        {__SELF_HOSTED_UI_ORIGIN__ &&
+          __SELF_HOSTED_UI_ORIGIN__ !== location.origin &&
+          !Capacitor.isNativePlatform() && (
+            <div className="advanced-server-link">
+              <small>
+                <Trans>Advanced</Trans>
+              </small>{" "}
+              <a href={__SELF_HOSTED_UI_ORIGIN__} rel="noreferrer">
+                <Trans>Connect to your own server</Trans>
+              </a>
+            </div>
+          )}
+      </>
+    );
   if (view.kind === "problem" || view.kind === "unavailable")
     return <OpenProblemDetails mdbase={mdbase} />;
   return null;

@@ -95,6 +95,9 @@ importers:
       '@tasknotes/calendar':
         specifier: 0.1.10
         version: 0.1.10(react@19.2.8)
+      '@tasknotes/direct-sdk':
+        specifier: file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz
+        version: '@mdbase-dev/sdk@file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz'
       '@tasknotes/model':
         specifier: 'catalog:'
         version: 0.3.2
@@ -1495,6 +1498,13 @@ packages:
   '@mdbase-dev/sdk@file:vendor/sdk-7a18f690-production-0.1.32.tgz':
     resolution: {integrity: sha512-tGkKBeF5gwSfwmLufWYDQEkvrKiieK/T/eOXpOYadsWwSw8KDxg1PVTV6j1KROep+W4rHCD9/oK70yfIbNItsA==, tarball: file:vendor/sdk-7a18f690-production-0.1.32.tgz}
     version: 0.1.32
+    engines: {node: '>=20'}
+    bundledDependencies:
+      - '@mdbase-dev/connect-protocol'
+
+  '@mdbase-dev/sdk@file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz':
+    resolution: {integrity: sha512-aVOXAsdgqCtKjzdzPhilkZ845NtiuruECN0Bzju1NaSyM5r2D72UVTIeaVSAX7mAByqOSnoatt7G16wOnfbh0A==, tarball: file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz}
+    version: 0.1.0-beta.152
     engines: {node: '>=20'}
     bundledDependencies:
       - '@mdbase-dev/connect-protocol'
@@ -6421,6 +6431,12 @@ snapshots:
       '@noble/hashes': 2.4.0
 
   '@mdbase-dev/sdk@file:vendor/sdk-7a18f690-production-0.1.32.tgz':
+    dependencies:
+      '@noble/ciphers': 2.4.0
+      '@noble/curves': 2.4.0
+      '@noble/hashes': 2.4.0
+
+  '@mdbase-dev/sdk@file:vendor/sdk-self-hosted-df3665801adaddcd58ad02554a7f0a381b1ac8b14a8d61792395b0e62a37d852.tgz':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0

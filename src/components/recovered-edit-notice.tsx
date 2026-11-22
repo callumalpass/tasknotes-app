@@ -23,9 +23,11 @@ const FIELD_LABELS: Record<string, string> = {
  * closed. Nothing is applied until the person chooses. */
 export function RecoveredEditNotice({
   fields,
+  tabOnly = false,
   onRestore,
   onDiscard,
 }: {
+  tabOnly?: boolean;
   fields: Record<string, unknown>;
   onRestore(): void;
   onDiscard(): void;
@@ -50,9 +52,13 @@ export function RecoveredEditNotice({
           {title !== undefined ? translate`Title: “${title}”. ` : ""}
           <Trans>Changed: </Trans>
           {names.join(", ")}
-          <Trans>
-            . They stay in this browser until restored or discarded.
-          </Trans>
+          {tabOnly ? (
+            <Trans>. These edits last only in this tab.</Trans>
+          ) : (
+            <Trans>
+              . They stay in this browser until restored or discarded.
+            </Trans>
+          )}
         </p>
       </div>
       <div className="held-edit-actions">

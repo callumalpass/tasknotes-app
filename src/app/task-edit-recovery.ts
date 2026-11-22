@@ -27,6 +27,21 @@ export interface TaskEditStorage {
 
 const PREFIX = "tasknotes:unsaved-task-edit:v1";
 
+/** Tab-only pairings retain drafts across a reconnect but never persist them. */
+export function tabTaskEdits(): TaskEditStorage & { clear(): void } {
+  const edits = new Map<string, string>();
+  return {
+    getItem: (key) => edits.get(key) ?? null,
+    setItem: (key, value) => {
+      edits.set(key, value);
+    },
+    removeItem: (key) => {
+      edits.delete(key);
+    },
+    clear: () => edits.clear(),
+  };
+}
+
 export function taskEditScope(info: CollectionInfo): string {
   return historyScope(info);
 }

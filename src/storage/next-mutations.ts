@@ -14,7 +14,9 @@ function pendingRecoveryError(requestId: string, cause: unknown): MdbaseError {
       code: "outcome_unknown",
       recovery: "resolve_outcome",
       message:
-        "The change may have been applied; its result is not confirmed yet. TaskNotes keeps checking its exact result automatically.",
+        import.meta.env.MODE === "self-hosted"
+          ? "The change may have been applied. Its result is unconfirmed."
+          : "The change may have been applied; its result is not confirmed yet. TaskNotes keeps checking its exact result automatically.",
     },
     { mutationId: requestId, cause },
   );
@@ -131,6 +133,13 @@ export class NextMutations {
     private readonly reconcileWindowMs = NEXT_RECONCILE_FOREGROUND_MS,
     private readonly acknowledgementOwner?: () => AbortSignal,
   ) {}
+
+  unconfirmedRecordIds(): Set<string> | undefined {
+    if (!this.pending && !this.retained.size) return;
+    return new Set(
+      [...this.retained.values()].flatMap((write) => [...write.recordIds]),
+    );
+  }
 
   /** Reuse a current-layer reader after local capture and again after ACK. */
   runRecord<Result>(

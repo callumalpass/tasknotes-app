@@ -4,6 +4,27 @@ import { describe, expect, it } from "vitest";
 import { MarkdownPreview } from "./markdown-preview";
 
 describe("MarkdownPreview", () => {
+  it("never fetches note paths from the static direct UI or follows note links", () => {
+    vi.stubEnv("MODE", "self-hosted");
+    try {
+      render(
+        <MarkdownPreview
+          source={
+            "![receipt](vault/private.png) ![remote](https://example.test/private.png) [notes](secret/note.md) [site](https://example.test/page)"
+          }
+        />,
+      );
+      expect(screen.queryByRole("img")).toBeNull();
+      // Only a web address opens, in its own tab and without a referrer.
+      const link = screen.getByRole("link");
+      expect(link).toHaveAttribute("href", "https://example.test/page");
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noreferrer");
+      expect(screen.getByText("notes").tagName).toBe("SPAN");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
   it("renders GFM structure and safe external links", () => {
     render(
       <MarkdownPreview

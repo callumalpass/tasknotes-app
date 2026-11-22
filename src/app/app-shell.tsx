@@ -136,11 +136,14 @@ import type { ProjectShortcut } from "../domain/project-shortcuts";
 import type { TaskView } from "../domain/view";
 import type { OperationalError } from "../application/operational-error";
 
-const ImportScreen = lazy(() =>
-  import("./import-screen").then((module) => ({
-    default: module.ImportScreen,
-  })),
-);
+const ImportScreen =
+  import.meta.env.MODE === "self-hosted"
+    ? null
+    : lazy(() =>
+        import("./import-screen").then((module) => ({
+          default: module.ImportScreen,
+        })),
+      );
 
 export function AppShell() {
   const { t } = useLingui();
@@ -359,7 +362,11 @@ export function AppShell() {
 
   useEffect(() => {
     // Only collections whose reminders mdbase delivers listen for wake-ups.
-    if (reminderAuthority !== "connect") return;
+    if (
+      import.meta.env.MODE === "self-hosted" ||
+      reminderAuthority !== "connect"
+    )
+      return;
     let active = true;
     let stop: (() => void) | undefined;
     void import("../native/mdbase-notifications")
@@ -459,7 +466,18 @@ export function AppShell() {
     <div
       className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}${route.page === "task" ? " has-detail" : ""}${keyboardOccluded ? " keyboard-occluded" : ""}`}
     >
-      <a className="skip-link" href="#main-content">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={
+          import.meta.env.MODE === "self-hosted"
+            ? (event) => {
+                event.preventDefault();
+                document.getElementById("main-content")?.focus();
+              }
+            : undefined
+        }
+      >
         <Trans>Skip to content</Trans>
       </a>
       <aside className="navigation-rail" aria-label={t({ message: "Primary" })}>
@@ -560,13 +578,15 @@ export function AppShell() {
           <ScratchpadScreen
             onOpenTask={(task) => navigate({ page: "task", id: task.id })}
           />
-        ) : workspacePage === "import" ? (
+        ) : workspacePage === "import" && ImportScreen ? (
           <Suspense fallback={<LoadingRows />}>
             <ImportScreen />
           </Suspense>
         ) : workspacePage === "more" ? (
           <MoreScreen
-            onImport={() => navigate({ page: "import" })}
+            onImport={
+              ImportScreen ? () => navigate({ page: "import" }) : undefined
+            }
             calendarPreferences={calendarPreferences}
             section={workspace.page === "more" ? workspace.section : undefined}
             onCalendarPreferencesChange={updateCalendarPreferences}
@@ -1192,7 +1212,7 @@ function DeletionRecoveryNotice({
     >
       <header>
         <h2 id={headingId}>
-          {outcomeUnknown
+          {outcomeUnknown || import.meta.env.MODE === "self-hosted"
             ? t({ message: "Deletion needs review" })
             : t({ message: "Deletion waiting" })}
         </h2>
@@ -1215,7 +1235,9 @@ function DeletionRecoveryNotice({
                     "Retry checks the saved request without sending a new deletion. Discard requires confirmation and disconnects this collection.",
                 })
               : t({ message: "Retry, or undo to restore the task here." })
-            : t({ message: "The task remains in the collection. Try again." })
+            : import.meta.env.MODE === "self-hosted"
+              ? t({ message: "Check the collection before trying again." })
+              : t({ message: "The task remains in the collection. Try again." })
         }
       />
       {onRetry && onUndo ? (
@@ -1281,7 +1303,8 @@ export function StorageErrorScreen({
   retry(): void;
 }) {
   useI18n();
-  const authorizationExpired = isAuthorizationError(error);
+  const authorizationExpired =
+    import.meta.env.MODE !== "self-hosted" && isAuthorizationError(error);
   return (
     <main className="opening-screen storage-error">
       {authorizationExpired ? null : (

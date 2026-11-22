@@ -19,12 +19,18 @@ export function OpenedCollection({
   repository,
 }: {
   actions: CollectionGateContextValue;
-  discardPendingRecovery(): Promise<void>;
+  discardPendingRecovery?(): Promise<void>;
   /** "connect" when mdbase delivers this collection's reminders. */
   reminderAuthority?: ReminderAuthority;
   repository: TaskRepository;
 }) {
-  const mutationJournal = useMemo(() => new IndexedDbMutationJournal(), []);
+  const mutationJournal = useMemo(
+    () =>
+      import.meta.env.MODE === "self-hosted"
+        ? null
+        : new IndexedDbMutationJournal(),
+    [],
+  );
   const journalLifetime = useRef({ mounts: 0 });
   useEffect(() => {
     const lifetime = journalLifetime.current;
@@ -34,7 +40,7 @@ export function OpenedCollection({
       // Effect replay keeps this bounded application journal; real unmount
       // closes it. Collection data still belongs solely to the repository.
       queueMicrotask(() => {
-        if (!lifetime.mounts) mutationJournal.close();
+        if (!lifetime.mounts) mutationJournal?.close();
       });
     };
   }, [mutationJournal]);

@@ -350,3 +350,14 @@
 .mdbase-tooltip {
   width: max-content;
 }
+
+.advanced-server-link {
+  display: inline-block;
+  padding-block: var(--space-sm);
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
+.advanced-server-link a {
+  color: inherit;
+}

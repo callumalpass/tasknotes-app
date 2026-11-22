@@ -18,7 +18,7 @@ export function navigationViewScope(info: CollectionInfo): string {
 export function legacyNavigationViewScope(
   info: CollectionInfo,
 ): string | undefined {
-  if (!info.id) return;
+  if (!info.id || info.kind === "direct") return;
   const previousId =
     info.collectionId && info.collectionId !== info.id
       ? info.collectionId

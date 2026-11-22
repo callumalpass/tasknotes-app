@@ -15,6 +15,15 @@ commit and its vendor inputs.
   production original. Do not copy the archive into `apps/import` or retarget the
   importer when preparing the main app's staging/LAB installation.
 - LAB SDK: `scripts/deploy-pages-dev.mjs` selects its isolated LAB archive.
+- Self-hosted SDK: `sdk-self-hosted-<sha256>.tgz`, installed as
+  `@tasknotes/direct-sdk` and used only by `pnpm build:self-hosted`. It is built
+  from mdbase-connect source, not from a published SDK release. The `.json` of
+  the same name records its digests, the mdbase-connect commit and Git tree of
+  `runtime/packages/sdk`, and the Node and npm versions. In an mdbase-connect
+  checkout, `node runtime/packages/sdk/scripts/direct-archive.mjs verify
+<path to that .json>` rebuilds the archive and compares bytes. A new archive
+  has a new filename; update the `package.json` specifier and the lockfile
+  with it.
 - `package.json` and `pnpm-lock.yaml` identify the protocol, native app-storage,
   browser, NLP and spec archives still installed from this directory. The model
   uses the shared exact registry catalog in `pnpm-workspace.yaml`; shared UI and

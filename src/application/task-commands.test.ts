@@ -17,6 +17,25 @@ describe("TaskCommandService", () => {
 
   afterEach(() => vi.useRealTimers());
 
+  it("abandons an online-only Undo window on disconnect and opens without replay", async () => {
+    const repository = taskRepository();
+    const first = new TaskCommandService({ repository, journal: null });
+    await first.initialize();
+    await first.requestDeletion("task-1");
+    expect(first.snapshot().pendingDeletion?.taskId).toBe("task-1");
+    first.dispose();
+    const reopened = new TaskCommandService({ repository, journal: null });
+    await reopened.initialize();
+    await vi.advanceTimersByTimeAsync(31_000);
+    await reopened.retryDeletion();
+    expect(repository.delete).not.toHaveBeenCalled();
+    expect(reopened.snapshot().pendingDeletion).toBeNull();
+    await reopened.requestDeletion("task-1");
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(repository.delete).toHaveBeenCalledExactlyOnceWith("task-1");
+    reopened.dispose();
+  });
+
   it("persists deletion intent before publishing it and removes it on undo", async () => {
     const journal = new MemoryMutationJournal();
     const repository = taskRepository();

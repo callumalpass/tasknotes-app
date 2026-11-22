@@ -163,15 +163,21 @@ export function WriteStatusOverlay({
       : problem.state === "conflicted"
         ? translate({ message: "Conflicting changes" })
         : translate({ message: "Save outcome unknown" })
-    : notice
-      ? connectionNoticeLabels[notice]
-      : offline
-        ? translate({ message: "Saved on this device; waiting for sync" })
-        : slow
-          ? translate({ message: "Sync is taking longer than usual" })
-          : syncing
-            ? translate({ message: "Syncing…" })
-            : "";
+    : import.meta.env.MODE === "self-hosted"
+      ? offline || slow
+        ? translate({ message: "Check the collection before trying again." })
+        : syncing
+          ? translate({ message: "Saving…" })
+          : ""
+      : notice
+        ? connectionNoticeLabels[notice]
+        : offline
+          ? translate({ message: "Saved on this device; waiting for sync" })
+          : slow
+            ? translate({ message: "Sync is taking longer than usual" })
+            : syncing
+              ? translate({ message: "Syncing…" })
+              : "";
   const needsAttention = Boolean(
     problem || (notice && notice !== "reconnecting") || offline || slow,
   );

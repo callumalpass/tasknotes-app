@@ -5,7 +5,12 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { it } from "node:test";
 import { parse } from "yaml";
-import { exactUiVersion, loadOriginals, productionPin } from "./originals.mjs";
+import {
+  assertFrozenOriginal,
+  exactUiVersion,
+  loadOriginals,
+  productionPin,
+} from "./originals.mjs";
 import { prepareInstall } from "./install-inputs.mjs";
 const root = new URL("../../", import.meta.url).pathname;
 it("authenticates production npm provenance, protected raw trust and ALL installed frozen originals", async () => {
@@ -36,6 +41,56 @@ it("authenticates production npm provenance, protected raw trust and ALL install
     ),
   );
   assert.ok(Object.values(trust.archives).some((a) => a.name === "mdbase"));
+  const direct = trust.archives["@tasknotes/direct-sdk"];
+  assert.equal(direct.path, `vendor/sdk-self-hosted-${direct.sha256}.tgz`);
+  // mdbase-connect's direct-archive.mjs verify rebuilds these bytes from the
+  // recorded source tree.
+  const facts = JSON.parse(
+    await readFile(join(root, direct.path.replace(/\.tgz$/, ".json")), "utf8"),
+  );
+  assert.equal(facts.sha256, direct.sha256);
+  assert.equal(
+    facts.sri,
+    "sha512-" +
+      createHash("sha512")
+        .update(await readFile(join(root, direct.path)))
+        .digest("base64"),
+  );
+  assert.match(facts.source.tree, /^[0-9a-f]{40}$/);
+});
+
+it("refuses a substituted direct SDK alias or mismatched archive bytes", async () => {
+  const name = "@tasknotes/direct-sdk";
+  const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+  const spec = pkg.dependencies[name];
+  const path = spec.slice("file:".length);
+  const lock = await readFile(join(root, "pnpm-lock.yaml"), "utf8");
+  const bytes = await readFile(join(root, path));
+  assert.throws(
+    () =>
+      assertFrozenOriginal(
+        lock.replace(`version: '@mdbase-dev/sdk@${spec}'`, `version: ${spec}`),
+        name,
+        spec,
+        bytes,
+      ),
+    /frozen original importer/,
+  );
+  assert.throws(
+    () => assertFrozenOriginal(lock, name, spec, Buffer.from("not original")),
+    /frozen original integrity/,
+  );
+  const mutable = "file:vendor/sdk-self-hosted.tgz";
+  assert.throws(
+    () =>
+      assertFrozenOriginal(
+        lock.replaceAll(spec, mutable),
+        name,
+        mutable,
+        bytes,
+      ),
+    /content-addressed filename/,
+  );
 });
 it("derives frozen staging SDK and all UI peer resolutions without touching other dependencies or originals", async () => {
   const { pin, spec } = await productionPin(root),

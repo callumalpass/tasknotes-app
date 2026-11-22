@@ -1,0 +1,44 @@
+.direct-collection-form {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.direct-collection-form input:not([type="checkbox"]) {
+  min-height: 48px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font-size: var(--type-control);
+}
+
+.direct-remember {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+}
+
+.direct-collection-screen {
+  padding-block: clamp(32px, 9vh, 94px) var(--space-lg);
+}
+.direct-collection-screen footer {
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+  margin-top: var(--space-lg);
+}
+.direct-collection-form textarea {
+  min-height: 6rem;
+  width: 100%;
+}
+
+.direct-tab-notice {
+  position: relative;
+  z-index: 2;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}

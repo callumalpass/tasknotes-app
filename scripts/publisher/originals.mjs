@@ -163,6 +163,34 @@ export async function compareInstalled(
       }
   }
 }
+export function assertFrozenOriginal(lock, name, specifier, original) {
+  const alias = name === "@tasknotes/direct-sdk";
+  const key = `${alias ? "@mdbase-dev/sdk" : name}@${specifier}`;
+  const dependencies = lock
+    .split("\n  .:\n    dependencies:\n")[1]
+    ?.split(/\n {4}\S/)[0];
+  assert(
+    dependencies?.includes(
+      `      ${name.startsWith("@") ? `'${name}'` : name}:\n        specifier: ${specifier}\n        version: ${alias ? `'${key}'` : specifier}\n`,
+    ),
+    "frozen original importer: " + name,
+  );
+  const entry = (
+    lock.split("\n  '" + key + "':\n")[1] ?? lock.split("\n  " + key + ":\n")[1]
+  )?.split(/\n {2}[^ ]/)[0];
+  assert(
+    entry?.includes("integrity: sha512-" + hash(original, "sha512")),
+    "frozen original integrity: " + name,
+  );
+  if (alias) {
+    assert.equal(
+      specifier,
+      `file:vendor/sdk-self-hosted-${hash(original)}.tgz`,
+      "direct SDK content-addressed filename",
+    );
+  }
+}
+
 export async function loadOriginals({
   target,
   repoRoot,
@@ -229,15 +257,7 @@ export async function loadOriginals({
     );
     const path = specifier.slice(5),
       original = await regular(repoRoot, path);
-    const key = name + "@" + specifier;
-    const entry = (
-      lock.split("\n  '" + key + "':\n")[1] ??
-      lock.split("\n  " + key + ":\n")[1]
-    )?.split(/\n {2}[^ ]/)[0];
-    assert(
-      entry?.includes("integrity: sha512-" + hash(original, "sha512")),
-      "frozen original integrity: " + name,
-    );
+    assertFrozenOriginal(lock, name, specifier, original);
     archives[name] = { name, path, sha256: hash(original) };
   }
   const pkg = await json(join(repoRoot, "package.json")),
