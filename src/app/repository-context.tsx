@@ -402,7 +402,7 @@ export function RepositoryProvider({
             onTasksUpdated: (tasks, updates) => effects.updated(tasks, updates),
           });
           const commands = taskCommands;
-          commands.setForeground(foregroundRef.current);
+          void commands.setForeground(foregroundRef.current);
           const publishCommandSnapshot = () => {
             if (!current()) return;
             const snapshot = commands.snapshot();
@@ -509,42 +509,44 @@ export function RepositoryProvider({
   }, [bump, invalidation, loadConnection, repository]);
 
   useEffect(() => {
+    const hide = () => {
+      if (!foregroundRef.current) return;
+      foregroundRef.current = false;
+      const lifecycle = ++lifecycleRef.current;
+      interruptStartupRef.current?.();
+      refreshInFlight.current = null;
+      // Hiding finishes a pending deletion instead of holding it until
+      // TaskNotes returns. Suspension cancels in-flight writes, so it waits
+      // for that commit, and is skipped if TaskNotes returned or hid again.
+      const committed =
+        taskCommandsRef.current?.setForeground(false) ?? Promise.resolve();
+      void committed.finally(() => {
+        if (!foregroundRef.current && lifecycle === lifecycleRef.current)
+          repository.suspend?.();
+      });
+    };
+    const show = () => {
+      if (foregroundRef.current) return;
+      foregroundRef.current = true;
+      repository.resume?.();
+      void taskCommandsRef.current?.setForeground(true);
+      void refresh().catch(() => undefined);
+    };
     if (Capacitor.isNativePlatform()) {
       const handle = CapacitorApp.addListener(
         "appStateChange",
-        ({ isActive }) => {
-          foregroundRef.current = isActive;
-          if (!isActive) {
-            taskCommandsRef.current?.setForeground(false);
-            lifecycleRef.current += 1;
-            repository.suspend?.();
-            interruptStartupRef.current?.();
-            refreshInFlight.current = null;
-            return;
-          }
-          repository.resume?.();
-          taskCommandsRef.current?.setForeground(true);
-          void refresh().catch(() => undefined);
-        },
+        ({ isActive }) => (isActive ? show() : hide()),
       );
       return () => void handle.then((listener) => listener.remove());
     }
-    const onVisibility = () => {
-      foregroundRef.current = document.visibilityState === "visible";
-      if (document.visibilityState !== "visible") {
-        taskCommandsRef.current?.setForeground(false);
-        lifecycleRef.current += 1;
-        repository.suspend?.();
-        interruptStartupRef.current?.();
-        refreshInFlight.current = null;
-        return;
-      }
-      repository.resume?.();
-      taskCommandsRef.current?.setForeground(true);
-      void refresh().catch(() => undefined);
-    };
+    const onVisibility = () =>
+      document.visibilityState === "visible" ? show() : hide();
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", hide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", hide);
+    };
   }, [refresh, repository]);
 
   useEffect(() => {

@@ -1,9 +1,9 @@
 {
   "apple": {
-    "locales": ["ko"],
+    "locales": [],
     "name": "TaskNotes: 마크다운 할 일 목록",
     "subtitle": "플래너, 캘린더, 리마인더",
-    "keywords": "todo,투두,할일,일정,스케줄,칸반,보드,메모,노트,체크리스트,프로젝트,반복,생산성",
+    "keywords": "todo,투두,할일,일정,스케줄,칸반,보드,메모,노트,체크리스트,프로젝트,반복",
     "promotionalText": "할 일을 이동 가능한 마크다운 노트로. iPhone, iPad, 웹에서 사용하세요. Obsidian용 TaskNotes 플러그인과 함께 작동합니다."
   },
   "play": {

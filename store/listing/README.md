@@ -7,8 +7,8 @@ release.
 
 One file per app language. Each file holds:
 
-- `apple`: the App Store locales it covers, the app `name` (30), `subtitle`
-  (30), `keywords` (100, comma-separated with no spaces around commas, no
+- `apple`: the App Store locales it covers (may be empty), the app `name` (30), `subtitle`
+  (30), `keywords` (100 _bytes_ of UTF-8, comma-separated with no spaces around commas, no
   words already in the name or subtitle) and `promotionalText` (170).
 - `play`: the Google Play languages it covers, the `title` (30) and
   `shortDescription` (80).
@@ -20,8 +20,24 @@ One file per app language. Each file holds:
   user-visible change. An explicit `docs/releases/ios/<version>.json` still
   wins on iOS, for every locale of its language.
 
-Numbers are the store limits in characters; `scripts/store-listing.node-test.mjs`
-checks them. Apple rejects metadata that names other mobile platforms, so keep
+Apple locales must be App Store Connect locale codes spelled exactly as Apple
+does (`zh-Hans`, not `zh-CN`; `it`, not `it-IT`); the loader refuses others.
+The loader also refuses en-GB and en-US: App Store Connect rejected both with
+`STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT` because another developer
+account holds the app's name there. UK and US users see the primary English
+listing. Google Play keeps en-GB and en-US. See "Name conflicts" in
+`docs/mobile-store-automation.md`.
+
+it, ja, ko, pt-BR, ru and zh-Hans are held, not refused. Their files list
+`apple.locales: []` and keep all their text, and `APPLE_HELD_LOCALES` in
+`scripts/store-listing.mjs` refuses them on the App Store until new locales are
+created with their own name first. Google Play keeps these languages. See
+"Held App Store locales" in `docs/mobile-store-automation.md`.
+
+Numbers are the store limits in characters, except Apple keywords, which App
+Store Connect counts in UTF-8 bytes: a Japanese, Korean or Chinese character
+takes three and a Cyrillic letter two, so those lists hold far fewer than 100
+characters. `scripts/store-listing.mjs` refuses a listing over any limit. Apple rejects metadata that names other mobile platforms, so keep
 "Android" out of the `apple` fields and the shared description.
 
 How each release applies them:
@@ -29,10 +45,12 @@ How each release applies them:
 - **App Store** (`scripts/submit-app-store.mjs`): updates each listed locale's
   description, keywords, promotional text and release notes on the new
   version, creates listed locales the store does not have yet (copying the
-  support and marketing URLs), and sets the name and subtitle on the editable
+  support and marketing URLs, then setting its release notes by PATCH: Apple
+  requires notes on every localization of an update, and a file without
+  `whatsNew` falls back to the reviewed en-AU notes), and sets the name and subtitle on the editable
   app info (copying the privacy policy URL). Locales that only exist in App
   Store Connect keep their text and get the plain release line. Screenshots
-  come from `store/screenshots` (see its README).
+  come from `store/screenshots` and go on every listed locale (see its README).
 - **Google Play** (`scripts/publish-google-play.mjs`): in the same edit as the
   release, replaces the title and descriptions of every listed language whose
   text differs, keeping any promo video, and adds release notes for every

@@ -1,9 +1,9 @@
 {
   "apple": {
-    "locales": ["ja"],
+    "locales": [],
     "name": "TaskNotes - Markdownタスク管理",
     "subtitle": "ToDoリスト・カレンダー・リマインダー",
-    "keywords": "todo,タスク,やること,手帳,予定,スケジュール,かんばん,ボード,メモ,ノート,チェックリスト,プロジェクト,繰り返し",
+    "keywords": "todo,タスク,やること,手帳,予定,かんばん,メモ,ノート,チェックリスト",
     "promotionalText": "タスクをポータブルなMarkdownノートに。iPhone、iPad、Webで使えます。Obsidian用TaskNotesプラグインとも連携します。"
   },
   "play": {

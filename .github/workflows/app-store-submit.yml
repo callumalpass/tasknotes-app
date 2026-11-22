@@ -81,7 +81,8 @@ jobs:
           APP_REVIEW_DEMO_ACCOUNT_PASSWORD: ${{ secrets.APP_REVIEW_DEMO_ACCOUNT_PASSWORD }}
         run: node scripts/submit-app-store.mjs --submit
       # A refusal before any App Store Connect write retains its bounded
-      # receipt; a failure after a write attempt writes no file and uploads nothing.
+      # receipt; a failure after a write attempt retains only its fixed phase,
+      # HTTP status and error class, which never counts as a refusal.
       - if: success() || (steps.submit.outcome == 'failure' && hashFiles('store-target-result.json') != '')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:

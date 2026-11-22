@@ -160,6 +160,106 @@ function transportFailure(error) {
   return null;
 }
 
+// Apple's error code and the attribute its source pointer names are a fixed
+// vocabulary; they are kept only when they match these patterns. The title,
+// detail, ids and any other text in the response never leave the process.
+const APPLE_ERROR_CODE = /^[A-Z][A-Z0-9_]{0,39}(?:\.[A-Z0-9_]{1,40}){0,6}$/;
+const APPLE_ATTRIBUTE_POINTER =
+  /^\/data\/attributes\/([a-z][A-Za-z0-9]{0,39})$/;
+// App Store Connect resource types an error can name. Anything else is
+// reported as "other", so a receipt only ever carries one of these words.
+export const APPLE_RESOURCE_KINDS = new Set([
+  "ageRatingDeclarations",
+  "appAvailabilities",
+  "appCategories",
+  "appClipDefaultExperiences",
+  "appDataUsages",
+  "appEncryptionDeclarations",
+  "appInfoLocalizations",
+  "appInfos",
+  "appPreviewSets",
+  "appPreviews",
+  "appPriceSchedules",
+  "apps",
+  "appScreenshotSets",
+  "appScreenshots",
+  "appStoreReviewAttachments",
+  "appStoreReviewDetails",
+  "appStoreVersionLocalizations",
+  "appStoreVersionPhasedReleases",
+  "appStoreVersions",
+  "appStoreVersionSubmissions",
+  "builds",
+  "endUserLicenseAgreements",
+  "inAppPurchases",
+  "reviewSubmissionItems",
+  "reviewSubmissions",
+  "routingAppCoverages",
+  "subscriptionGroups",
+  "subscriptions",
+  "territoryAvailabilities",
+]);
+// "/v1/<kind>/<id>[/...]". The id is held only in memory, to look up which
+// locale a resource belongs to; it is never retained.
+const APPLE_RESOURCE_PATH =
+  /^\/v1\/([A-Za-z]{1,60})(?:\/([A-Za-z0-9-]{1,64}))?(?:\/[A-Za-z0-9/-]{0,200})?$/;
+export function resourceKindOf(path) {
+  const kind =
+    typeof path === "string" && path.length <= 300
+      ? APPLE_RESOURCE_PATH.exec(path)?.[1]
+      : undefined;
+  if (!kind) return null;
+  return APPLE_RESOURCE_KINDS.has(kind) ? kind : "other";
+}
+const codeOf = (error) =>
+  typeof error?.code === "string" &&
+  error.code.length <= 100 &&
+  APPLE_ERROR_CODE.test(error.code)
+    ? error.code
+    : null;
+const attributeOf = (error) => {
+  const pointer = error?.source?.pointer;
+  return typeof pointer === "string" && pointer.length <= 100
+    ? (APPLE_ATTRIBUTE_POINTER.exec(pointer)?.[1] ?? null)
+    : null;
+};
+// Apple explains a refused state change (for example 409
+// STATE_ERROR.ENTITY_STATE_INVALID when a version is not complete enough to
+// submit) in meta.associatedErrors: resource path -> errors. Only each
+// error's code and attribute, and the path's resource kind, are kept.
+export const ASSOCIATED_ERRORS_SCANNED = 100;
+function associatedErrorsOf(errors) {
+  const result = [];
+  for (const error of errors) {
+    const associated = error?.meta?.associatedErrors;
+    if (!associated || typeof associated !== "object") continue;
+    for (const [path, list] of Object.entries(associated)) {
+      if (!Array.isArray(list)) continue;
+      const match =
+        path.length <= 300 ? APPLE_RESOURCE_PATH.exec(path) : undefined;
+      for (const item of list) {
+        if (result.length >= ASSOCIATED_ERRORS_SCANNED) return result;
+        result.push({
+          code: codeOf(item),
+          attribute: attributeOf(item),
+          resource: resourceKindOf(path),
+          resourceId: match?.[2] ?? null,
+        });
+      }
+    }
+  }
+  return result;
+}
+export function appleErrorOf(body) {
+  const errors = Array.isArray(body?.errors) ? body.errors : [];
+  const [first] = errors;
+  return {
+    code: codeOf(first),
+    attribute: attributeOf(first),
+    associated: associatedErrorsOf(errors),
+  };
+}
+
 export function createClient(
   credentials,
   { fetchImpl = fetch, sleepImpl = sleep } = {},
@@ -219,8 +319,16 @@ export function createClient(
         const body = await response.json().catch(() => ({}));
         const codes =
           body.errors?.map((error) => error.code).join(", ") || "unknown";
-        throw new Error(
-          `App Store Connect ${method} ${url.pathname}: HTTP ${response.status} (${codes}). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+        throw Object.assign(
+          new Error(
+            `App Store Connect ${method} ${url.pathname}: HTTP ${response.status} (${codes}). Check the listing in App Store Connect; no automatic cancellation or replacement was attempted.`,
+          ),
+          {
+            status: response.status,
+            method,
+            resource: resourceKindOf(url.pathname),
+            apple: appleErrorOf(body),
+          },
         );
       }
       return response.status === 204 ? {} : body;
@@ -320,7 +428,7 @@ export const sameText = (a, b) => normalized(a) === normalized(b);
 
 // Saved state must match the request exactly: one localization per noted
 // locale, with its notes and, where the repository lists it, its listing text.
-function listingMismatch(localizations, metadata, listing = {}) {
+function listingMismatch(localizations, metadata, listing) {
   const actual = localizations.map((item) => item.attributes.locale).sort();
   if (
     JSON.stringify(actual) !==
@@ -372,6 +480,7 @@ async function applyAppInfoListing(client, listing) {
   const existing = await client.list(
     `appInfos/${info.id}/appInfoLocalizations`,
   );
+  rememberAll(client, existing);
   const template = existing.find((item) => item.attributes.privacyPolicyUrl);
   for (const [locale, entry] of Object.entries(listing)) {
     const current = existing.find((item) => item.attributes.locale === locale);
@@ -385,6 +494,7 @@ async function applyAppInfoListing(client, listing) {
         )
       )
         continue;
+      writing(client, locale);
       await client.request(`appInfoLocalizations/${current.id}`, "PATCH", {
         type: "appInfoLocalizations",
         id: current.id,
@@ -396,6 +506,7 @@ async function applyAppInfoListing(client, listing) {
         },
       });
     } else {
+      writing(client, locale);
       await client.request("appInfoLocalizations", "POST", {
         type: "appInfoLocalizations",
         attributes: {
@@ -414,7 +525,10 @@ async function applyAppInfoListing(client, listing) {
 async function appInfoListingMismatch(client, listing) {
   if (!Object.keys(listing).length) return false;
   const info = await editableAppInfo(client);
-  const saved = await client.list(`appInfos/${info.id}/appInfoLocalizations`);
+  const saved = rememberAll(
+    client,
+    await client.list(`appInfos/${info.id}/appInfoLocalizations`),
+  );
   return Object.entries(listing).some(([locale, entry]) => {
     const item = saved.find(
       (candidate) => candidate.attributes.locale === locale,
@@ -428,8 +542,64 @@ async function appInfoListingMismatch(client, listing) {
   });
 }
 
+// Properties App Store Connect requires on every localization before a
+// version can be submitted ("required and can be localized" in Apple's
+// platform version and app information references). Checked on the primary
+// locale and every listed locale, so a gap stops at read-back with the locale
+// and property named, instead of as an opaque refusal of the submission.
+// whatsNew is required on every localization of an update, including a
+// language the update adds: the 1.0.31 review submission item was refused
+// with ENTITY_ERROR.ATTRIBUTE.REQUIRED on whatsNew for es-ES, es-MX, fr-CA
+// and fr-FR.
+const requiredVersionFields = [
+  "description",
+  "keywords",
+  "supportUrl",
+  "whatsNew",
+];
+const requiredAppInfoFields = ["name", "privacyPolicyUrl"];
+export class ListingIncomplete extends Error {
+  constructor(locale, attribute) {
+    super("A listed locale is missing a property App Store Connect requires");
+    this.postWrite = "listing-required-missing";
+    this.locale = locale;
+    this.missing = attribute;
+  }
+}
+async function assertListingComplete(client, app, localizations, listing) {
+  const locales = [
+    app.attributes.primaryLocale,
+    ...Object.keys(listing).filter(
+      (locale) => locale !== app.attributes.primaryLocale,
+    ),
+  ];
+  const info = await editableAppInfo(client);
+  const infoLocales = rememberAll(
+    client,
+    await client.list(`appInfos/${info.id}/appInfoLocalizations`),
+  );
+  const blank = (value) => typeof value !== "string" || !value.trim();
+  for (const locale of locales) {
+    const version = localizations.find(
+      (item) => item.attributes.locale === locale,
+    );
+    const appInfo = infoLocales.find(
+      (item) => item.attributes.locale === locale,
+    );
+    const gap =
+      (!version && "locale") ||
+      requiredVersionFields.find((field) => blank(version.attributes[field])) ||
+      (!appInfo && "locale") ||
+      requiredAppInfoFields.find((field) => blank(appInfo.attributes[field]));
+    if (gap) {
+      writing(client, locale);
+      throw new ListingIncomplete(locale, gap);
+    }
+  }
+}
+
 // What a commit would change in the version listing, for dry runs.
-function listingPlan(localizations, metadata, listing) {
+function listingPlan(localizations, metadata, listing, released) {
   const existing = new Map(
     localizations.map((item) => [item.attributes.locale, item]),
   );
@@ -448,11 +618,24 @@ function listingPlan(localizations, metadata, listing) {
         );
       })
       .map(([locale]) => locale),
+    // Languages the live version lacks. They are created without release
+    // notes, which are then set by PATCH (see submitAppStore).
+    firstReleaseLocales: Object.keys(metadata.whatsNew).filter(
+      (locale) => !released.has(locale),
+    ),
     whatsNew: metadata.whatsNew,
   };
 }
 
-// Screenshots on the primary locale, which every other locale falls back to.
+// Screenshots go on the primary locale and on every locale the repository
+// lists. App Store Connect's web form starts a newly added language with the
+// primary language's screenshots, but a localization created through the API
+// has no screenshot sets at all, and Apple then refuses the review submission
+// item (409 STATE_ERROR.ENTITY_STATE_INVALID; inferred from the 1.0.31
+// refusal, when six API-created locales had none). The repository has one set per
+// device, so every listed locale gets that set; App Store users see the same
+// images they would see if the language fell back to the primary one.
+// Locales that only exist in App Store Connect keep their own screenshots.
 // A managed set is replaced only when its ordered checksums differ; smaller
 // iPhone and iPad sets are emptied so Apple scales the managed ones instead
 // of showing stale images.
@@ -476,10 +659,13 @@ const inFlight = (shot, file) =>
       shot.attributes.fileSize === file.bytes.length);
 const isDeviceSet = (type) => /^APP_(IPHONE|IPAD)_/.test(type);
 
-async function screenshotSets(client, localizationId) {
-  return client.list(
-    `appStoreVersionLocalizations/${localizationId}/appScreenshotSets`,
+async function screenshotSets(client, localization) {
+  const sets = await client.list(
+    `appStoreVersionLocalizations/${localization.id}/appScreenshotSets`,
   );
+  for (const set of sets)
+    remember(client, set.id, localization.attributes.locale);
+  return sets;
 }
 
 const screenshotsOf = (client, setId) =>
@@ -506,7 +692,9 @@ async function uploadScreenshot(client, setId, file, upload) {
     // Apple's presigned asset URLs never receive the API bearer token.
     const url = new URL(operation.url);
     if (url.protocol !== "https:")
-      throw new Error("Unexpected screenshot upload URL");
+      throw Object.assign(new Error("Unexpected screenshot upload URL"), {
+        postWrite: "screenshot-upload-url-unexpected",
+      });
     const response = await upload(url, {
       method: operation.method,
       headers: Object.fromEntries(
@@ -523,7 +711,10 @@ async function uploadScreenshot(client, setId, file, upload) {
       signal: AbortSignal.timeout(120_000),
     });
     if (!response.ok)
-      throw new Error(`Screenshot upload failed: HTTP ${response.status}`);
+      throw Object.assign(
+        new Error(`Screenshot upload failed: HTTP ${response.status}`),
+        { status: response.status, postWrite: "screenshot-upload-rejected" },
+      );
   }
   await client.request(`appScreenshots/${shot.id}`, "PATCH", {
     type: "appScreenshots",
@@ -533,28 +724,28 @@ async function uploadScreenshot(client, setId, file, upload) {
   return shot.id;
 }
 
-async function syncScreenshots(
-  client,
-  localizationId,
-  media,
-  { upload = fetch, sleepImpl = sleep, attempts = 40 } = {},
-) {
-  const sets = await screenshotSets(client, localizationId);
+async function syncLocaleScreenshots(client, localization, media, upload) {
+  writing(client, localization.attributes.locale);
+  const sets = await screenshotSets(client, localization);
   for (const [type, files] of Object.entries(media)) {
-    const set =
-      sets.find((item) => item.attributes.screenshotDisplayType === type) ??
-      (
+    let set = sets.find(
+      (item) => item.attributes.screenshotDisplayType === type,
+    );
+    if (!set) {
+      set = (
         await client.request("appScreenshotSets", "POST", {
           type: "appScreenshotSets",
           attributes: { screenshotDisplayType: type },
           relationships: {
             appStoreVersionLocalization: relation(
               "appStoreVersionLocalizations",
-              localizationId,
+              localization.id,
             ),
           },
         })
       ).data;
+      remember(client, set.id, localization.attributes.locale);
+    }
     const shots = await screenshotsOf(client, set.id);
     if (sameScreenshots(shots, files, inFlight)) continue;
     for (const shot of shots)
@@ -574,20 +765,34 @@ async function syncScreenshots(
     for (const shot of await screenshotsOf(client, set.id))
       await client.request(`appScreenshots/${shot.id}`, "DELETE");
   }
+}
+
+async function syncScreenshots(
+  client,
+  localizations,
+  media,
+  // One wait covers every locale's uploads (about 15 minutes).
+  { upload = fetch, sleepImpl = sleep, attempts = 60 } = {},
+) {
+  for (const localization of localizations)
+    await syncLocaleScreenshots(client, localization, media, upload);
+  client.locale = null;
   // Apple processes uploads asynchronously; submission needs them delivered.
   for (let attempt = 0; ; attempt++) {
-    const current = await screenshotSets(client, localizationId);
     let pending = false;
-    for (const type of Object.keys(media)) {
-      const set = current.find(
-        (item) => item.attributes.screenshotDisplayType === type,
-      );
-      for (const shot of set ? await screenshotsOf(client, set.id) : []) {
-        if (shot.attributes.assetDeliveryState?.state === "FAILED")
-          throw new Error(
-            "Apple could not process a store screenshot; inspect App Store Connect",
-          );
-        if (!delivered(shot)) pending = true;
+    for (const localization of localizations) {
+      const current = await screenshotSets(client, localization);
+      for (const type of Object.keys(media)) {
+        const set = current.find(
+          (item) => item.attributes.screenshotDisplayType === type,
+        );
+        for (const shot of set ? await screenshotsOf(client, set.id) : []) {
+          if (shot.attributes.assetDeliveryState?.state === "FAILED")
+            throw new Error(
+              "Apple could not process a store screenshot; inspect App Store Connect",
+            );
+          if (!delivered(shot)) pending = true;
+        }
       }
     }
     if (!pending) return;
@@ -599,22 +804,28 @@ async function syncScreenshots(
   }
 }
 
-async function screenshotsMismatch(client, localizationId, media) {
-  const sets = await screenshotSets(client, localizationId);
-  for (const set of sets) {
-    const type = set.attributes.screenshotDisplayType;
-    const shots = await screenshotsOf(client, set.id);
+async function screenshotsMismatch(client, localizations, media) {
+  for (const localization of localizations) {
+    const sets = await screenshotSets(client, localization);
+    for (const set of sets) {
+      const type = set.attributes.screenshotDisplayType;
+      const shots = await screenshotsOf(client, set.id);
+      if (
+        media[type]
+          ? !sameScreenshots(shots, media[type])
+          : isDeviceSet(type) && shots.length
+      )
+        return true;
+    }
     if (
-      media[type]
-        ? !sameScreenshots(shots, media[type])
-        : isDeviceSet(type) && shots.length
+      Object.keys(media).some(
+        (type) =>
+          !sets.some((set) => set.attributes.screenshotDisplayType === type),
+      )
     )
       return true;
   }
-  return Object.keys(media).some(
-    (type) =>
-      !sets.some((set) => set.attributes.screenshotDisplayType === type),
-  );
+  return false;
 }
 
 function primaryLocalization(app, localizations) {
@@ -626,6 +837,21 @@ function primaryLocalization(app, localizations) {
       "The primary locale has no version localization; inspect App Store Connect",
     );
   return primary;
+}
+
+// The localizations that carry the repository's screenshots: the primary
+// locale first, then every listed locale on the version, in listing order.
+function screenshotLocalizations(app, localizations, listing) {
+  const primary = primaryLocalization(app, localizations);
+  return [
+    primary,
+    ...Object.keys(listing)
+      .filter((locale) => locale !== primary.attributes.locale)
+      .map((locale) =>
+        localizations.find((item) => item.attributes.locale === locale),
+      )
+      .filter(Boolean),
+  ];
 }
 
 function demoCredentialsOf(env) {
@@ -679,15 +905,12 @@ function verifyDemoAccount(review, credentials) {
 // Rolling release notes describe the first release after they change. Once
 // the live version already carries them, later releases say only
 // "TaskNotes x.y.z." until the notes are rewritten.
-async function withoutRepeatedNotes(client, live, metadata, listing, version) {
+function withoutRepeatedNotes(liveLocales, metadata, listing, version) {
   const rolling = Object.entries(listing).filter(
     ([locale, entry]) =>
       entry.whatsNew && sameText(metadata.whatsNew[locale], entry.whatsNew),
   );
   if (!rolling.length) return metadata;
-  const liveLocales = await client.list(
-    `appStoreVersions/${live.id}/appStoreVersionLocalizations`,
-  );
   const whatsNew = { ...metadata.whatsNew };
   for (const [locale, entry] of rolling) {
     const shipped = liveLocales.find(
@@ -697,6 +920,61 @@ async function withoutRepeatedNotes(client, live, metadata, listing, version) {
       whatsNew[locale] = `TaskNotes ${version}.`;
   }
   return { ...metadata, whatsNew };
+}
+
+// Fixed phases of the commit path. A failure after a write attempt is
+// retained only as the phase it happened in, never as a message.
+export const SUBMISSION_PHASES = new Set([
+  "version",
+  "version-localizations",
+  "app-info-localizations",
+  "screenshots",
+  "review-details",
+  "read-back",
+  "review-submission",
+  "confirmation",
+]);
+function enter(client, phase) {
+  client.phase = phase;
+  client.locale = null;
+}
+// The locale code a localization write is for, kept for the post-write
+// receipt alongside the phase.
+function writing(client, locale) {
+  client.locale = locale;
+}
+// Which locale a localization or screenshot set id belongs to, so Apple's
+// associated errors can be reported by locale without keeping any id.
+function remember(client, id, locale) {
+  if (typeof id !== "string" || typeof locale !== "string") return;
+  if (!(client.resourceLocales instanceof Map))
+    client.resourceLocales = new Map();
+  client.resourceLocales.set(id, locale);
+}
+const rememberAll = (client, localizations) => {
+  for (const item of localizations)
+    remember(client, item.id, item.attributes?.locale);
+  return localizations;
+};
+
+const compareVersions = (a, b) => {
+  const left = a.split(".").map(Number),
+    right = b.split(".").map(Number);
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+};
+
+// A version this workflow created but never submitted (for example after a
+// failed run) stays in PREPARE_FOR_SUBMISSION. Apple allows only one editable
+// version, so a newer release adopts it instead of waiting on it forever.
+function adoptableDraft(versions, version) {
+  const open = versions.filter((item) => !releasedStates.has(state(item)));
+  if (open.length !== 1) return undefined;
+  const [draft] = open;
+  return state(draft) === "PREPARE_FOR_SUBMISSION" &&
+    /^\d+\.\d+\.\d+$/.test(draft.attributes.versionString ?? "") &&
+    compareVersions(draft.attributes.versionString, version) < 0
+    ? draft
+    : undefined;
 }
 
 export async function submitAppStore({
@@ -723,6 +1001,8 @@ export async function submitAppStore({
   let target = versions.find(
     (item) => item.attributes.versionString === version,
   );
+  const adopted = target ? undefined : adoptableDraft(versions, version);
+  target ??= adopted;
   const current = versions.find((item) => state(item) === "READY_FOR_SALE");
   if (!current)
     throw new Error(
@@ -732,7 +1012,13 @@ export async function submitAppStore({
     const linked = (
       await client.request(`appStoreVersions/${target.id}/relationships/build`)
     ).data;
-    if (linked && linked.id !== build.id)
+    // An unsubmitted draft may be re-pointed at the exact qualified build;
+    // anything Apple has already received keeps its build.
+    if (
+      linked &&
+      linked.id !== build.id &&
+      state(target) !== "PREPARE_FOR_SUBMISSION"
+    )
       throw new Error(
         "Store version is attached to a different build; refusing to replace it",
       );
@@ -780,13 +1066,17 @@ export async function submitAppStore({
   ) {
     throw new Error("earlier-store-version-in-flight");
   }
-  metadata = await withoutRepeatedNotes(
-    client,
-    current,
-    metadata,
-    listing,
-    version,
+  const liveLocales = await client.list(
+    `appStoreVersions/${current.id}/appStoreVersionLocalizations`,
   );
+  // Every localization of an update needs release notes before Apple accepts
+  // the review submission item, including languages this update adds. Those
+  // are created without whatsNew and get it by PATCH right after creation:
+  // a 409 STATE_ERROR on whatsNew in the create POST was inferred, never
+  // proven, and a refusal of the PATCH names its method, attribute and
+  // locale in the post-write receipt.
+  const released = new Set(liveLocales.map((item) => item.attributes.locale));
+  metadata = withoutRepeatedNotes(liveLocales, metadata, listing, version);
   const sourceId = target?.id ?? current.id;
   const localizations = await client.list(
     `appStoreVersions/${sourceId}/appStoreVersionLocalizations`,
@@ -839,9 +1129,11 @@ export async function submitAppStore({
       buildNumber,
       state: "DRY_RUN",
       wouldCreateVersion: !target,
-      listingPlan: listingPlan(localizations, metadata, listing),
+      ...(adopted ? { wouldAdoptDraft: true } : {}),
+      listingPlan: listingPlan(localizations, metadata, listing, released),
     };
 
+  enter(client, "version");
   if (!target) {
     target = (
       await client.request("appStoreVersions", "POST", {
@@ -861,6 +1153,7 @@ export async function submitAppStore({
       type: "appStoreVersions",
       id: target.id,
       attributes: {
+        ...(adopted ? { versionString: version } : {}),
         copyright: metadata.copyright,
         releaseType: releaseTypeOf(metadata),
         earliestReleaseDate: null,
@@ -873,18 +1166,28 @@ export async function submitAppStore({
       `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
     );
     assertLocales(inherited, metadata, listing);
+    enter(client, "version-localizations");
     for (const locale of inherited) {
       const entry = listing[locale.attributes.locale];
+      const attributes = {
+        ...(entry ? pick(entry, versionFields) : {}),
+        whatsNew: metadata.whatsNew[locale.attributes.locale],
+      };
+      // A rerun leaves text that already matches alone.
+      if (
+        Object.entries(attributes).every(([field, value]) =>
+          sameText(locale.attributes[field], value),
+        )
+      )
+        continue;
+      writing(client, locale.attributes.locale);
       await client.request(
         `appStoreVersionLocalizations/${locale.id}`,
         "PATCH",
         {
           type: "appStoreVersionLocalizations",
           id: locale.id,
-          attributes: {
-            ...(entry ? pick(entry, versionFields) : {}),
-            whatsNew: metadata.whatsNew[locale.attributes.locale],
-          },
+          attributes,
         },
       );
     }
@@ -892,39 +1195,62 @@ export async function submitAppStore({
     const urls = inherited.find((item) => item.attributes.supportUrl);
     for (const locale of Object.keys(metadata.whatsNew)) {
       if (inherited.some((item) => item.attributes.locale === locale)) continue;
-      await client.request("appStoreVersionLocalizations", "POST", {
-        type: "appStoreVersionLocalizations",
-        attributes: {
-          locale,
-          ...pick(listing[locale], versionFields),
-          whatsNew: metadata.whatsNew[locale],
-          ...(urls
-            ? {
-                supportUrl: urls.attributes.supportUrl,
-                ...(urls.attributes.marketingUrl
-                  ? { marketingUrl: urls.attributes.marketingUrl }
-                  : {}),
-              }
-            : {}),
+      writing(client, locale);
+      const created = await client.request(
+        "appStoreVersionLocalizations",
+        "POST",
+        {
+          type: "appStoreVersionLocalizations",
+          attributes: {
+            locale,
+            ...pick(listing[locale], versionFields),
+            ...(urls
+              ? {
+                  supportUrl: urls.attributes.supportUrl,
+                  ...(urls.attributes.marketingUrl
+                    ? { marketingUrl: urls.attributes.marketingUrl }
+                    : {}),
+                }
+              : {}),
+          },
+          relationships: {
+            appStoreVersion: relation("appStoreVersions", target.id),
+          },
         },
-        relationships: {
-          appStoreVersion: relation("appStoreVersions", target.id),
+      );
+      // Release notes go on the new localization as its own write, so a
+      // refusal is told apart from the create in the receipt (method PATCH,
+      // attribute whatsNew, this locale).
+      await client.request(
+        `appStoreVersionLocalizations/${created.data.id}`,
+        "PATCH",
+        {
+          type: "appStoreVersionLocalizations",
+          id: created.data.id,
+          attributes: { whatsNew: metadata.whatsNew[locale] },
         },
-      });
+      );
     }
+    enter(client, "app-info-localizations");
     if (Object.keys(listing).length) await applyAppInfoListing(client, listing);
+    enter(client, "screenshots");
     if (Object.keys(media).length)
       await syncScreenshots(
         client,
-        primaryLocalization(
+        screenshotLocalizations(
           app,
-          await client.list(
-            `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
+          rememberAll(
+            client,
+            await client.list(
+              `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
+            ),
           ),
-        ).id,
+          listing,
+        ),
         media,
         mediaOptions,
       );
+    enter(client, "review-details");
     const detail = await readReview(client, target.id);
     if (!detail)
       throw new Error(
@@ -937,17 +1263,25 @@ export async function submitAppStore({
     });
   }
   // Read back durable state before the irreversible submission step (also on reruns).
+  enter(client, "read-back");
   const prepared = (await client.request(`appStoreVersions/${target.id}`)).data;
   const attached = (
     await client.request(`appStoreVersions/${target.id}/relationships/build`)
   ).data;
-  const savedLocales = await client.list(
-    `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
+  const savedLocales = rememberAll(
+    client,
+    await client.list(
+      `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
+    ),
   );
   const savedReview = await readReview(client, target.id);
   const demoVerification = verifyDemoAccount(savedReview, demoCredentials);
+  // A blank required property is named before the general comparison, which
+  // would otherwise report it only as a mismatch.
+  await assertListingComplete(client, app, savedLocales, listing);
   if (
     attached?.id !== build.id ||
+    prepared.attributes.versionString !== version ||
     prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
     listingMismatch(savedLocales, metadata, listing) ||
@@ -955,7 +1289,7 @@ export async function submitAppStore({
     (Object.keys(media).length &&
       (await screenshotsMismatch(
         client,
-        primaryLocalization(app, savedLocales).id,
+        screenshotLocalizations(app, savedLocales, listing),
         media,
       ))) ||
     savedReview?.attributes?.notes !== metadata.reviewNotes
@@ -972,6 +1306,7 @@ export async function submitAppStore({
     throw new Error(
       "A phased release is configured; remove it manually to release to everyone after approval",
     );
+  enter(client, "review-submission");
   if (!submission) {
     submission = (
       await client.request("reviewSubmissions", "POST", {
@@ -1004,6 +1339,7 @@ export async function submitAppStore({
     id: submission.id,
     attributes: { submitted: true },
   });
+  enter(client, "confirmation");
   const confirmed = (await client.request(`appStoreVersions/${target.id}`))
     .data;
   if (confirmed.attributes.releaseType !== releaseTypeOf(metadata)) {
@@ -1031,8 +1367,15 @@ export async function submitAppStore({
   };
 }
 
+// The reviewed release notes every other locale falls back to: the App
+// Store primary locale, which every release metadata file carries.
+const NOTES_FALLBACK_LOCALE = "en-AU";
+const fallbackNotes = (whatsNew, version) =>
+  whatsNew[NOTES_FALLBACK_LOCALE] ?? `TaskNotes ${version}.`;
+
 // Locales the repository listing adds get its rolling release notes, or the
-// plain version line when it has none. Explicit per-locale notes win.
+// reviewed en-AU notes when it has none (Apple requires notes on every
+// localization of an update). Explicit per-locale notes win.
 export function withListingNotes(whatsNew, version, listing) {
   const notes = { ...whatsNew };
   for (const [locale, entry] of Object.entries(listing)) {
@@ -1043,7 +1386,7 @@ export function withListingNotes(whatsNew, version, listing) {
     );
     notes[locale] ??= sibling
       ? whatsNew[sibling]
-      : (entry.whatsNew ?? `TaskNotes ${version}.`);
+      : (entry.whatsNew ?? fallbackNotes(whatsNew, version));
   }
   return notes;
 }
@@ -1057,6 +1400,8 @@ export function generatedMetadata(template, version, listing = {}) {
       ?.trim();
   if (!instructions)
     throw invalidMetadata("No reviewed store instructions template");
+  const primaryNotes =
+    listing[NOTES_FALLBACK_LOCALE]?.whatsNew ?? `TaskNotes ${version}.`;
   return validateMetadata(
     {
       version,
@@ -1070,7 +1415,10 @@ export function generatedMetadata(template, version, listing = {}) {
           ]),
         ].map((locale) => [
           locale,
-          listing[locale]?.whatsNew ?? `TaskNotes ${version}.`,
+          listing[locale]?.whatsNew ??
+            (locale in template.whatsNew
+              ? `TaskNotes ${version}.`
+              : primaryNotes),
         ]),
       ),
       reviewNotes: `TaskNotes ${version}\n\nHOW TO REVIEW\n${instructions}`,
@@ -1220,6 +1568,9 @@ export function refusalReason(error) {
 export function trackWrites(client) {
   const tracked = {
     writeAttempted: false,
+    phase: null,
+    locale: null,
+    resourceLocales: new Map(),
     request(path, method = "GET", data) {
       if (method !== "GET") tracked.writeAttempted = true;
       return client.request(path, method, data);
@@ -1236,6 +1587,131 @@ export async function refusalReceipt(error, client, sourceRunId) {
   if (client && client.writeAttempted !== false) return null;
   const { recheckRefusal } = await import("./mobile-release-policy.mjs");
   return recheckRefusal(refusalReason(error), sourceRunId);
+}
+
+// Failures after a write began name a fixed class: where the message is one
+// of ours, a slug chosen here; where Apple answered, only the direction of
+// the request. Apple's response body, paths and ids never leave the process.
+const postWriteReasons = [
+  [
+    "Apple could not process a store screenshot",
+    "screenshot-processing-failed",
+  ],
+  [
+    "Timed out waiting for Apple to process store screenshots",
+    "screenshot-processing-timeout",
+  ],
+  ["The primary locale has no version localization", "primary-locale-missing"],
+  ["Apple did not inherit review details", "review-details-missing"],
+  ["Review submission items changed", "review-submission-items-changed"],
+  ["Release policy changed during submission", "release-policy-changed"],
+  ["Apple has not yet confirmed submission", "submission-unconfirmed"],
+];
+const BOUNDED = /^[a-z0-9-]{1,100}$/;
+
+export function postWriteClass(error) {
+  if (BOUNDED.test(error?.postWrite ?? "")) return error.postWrite;
+  if (Number.isInteger(error?.status) && typeof error?.method === "string")
+    return error.method === "GET"
+      ? "app-store-read-rejected"
+      : "app-store-write-rejected";
+  const transport = transportFailure(error);
+  if (transport)
+    return transport.reason.replace("app-store-read-", "app-store-request-");
+  const message = typeof error?.message === "string" ? error.message : "";
+  const known = postWriteReasons.find(([prefix]) =>
+    message.startsWith(prefix),
+  )?.[1];
+  if (known) return known;
+  const reason = refusalReason(error);
+  return reason.startsWith("app-store-precheck-refused-")
+    ? `error-${errorClasses.get(error?.name) ?? "other"}`
+    : reason;
+}
+
+// After a write attempt the target must keep its write-started stop, so this
+// receipt is deliberately not a refusal: it has its own outcome and fields,
+// which the coordinator's pre-write refusal check never accepts. It records
+// only a fixed phase, the HTTP status Apple returned (if any), a fixed error
+// class and, where Apple rejected a write, its fixed error code, the rejected
+// attribute's name, the request method and the locale code being written, so
+// the next attempt knows where the last one stopped and which field to fix.
+// Each value is kept only when it matches a strict pattern; Apple's title and
+// detail text, bodies, ids and URLs never leave the job.
+export const POST_WRITE_FAILURE = "failed-after-write";
+const WRITE_METHODS = new Set(["POST", "PATCH", "DELETE", "PUT"]);
+const RECEIPT_LOCALE = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}$/;
+const ATTRIBUTE_NAME = /^[a-z][A-Za-z0-9]{0,39}$/;
+const bounded = (value, pattern) =>
+  typeof value === "string" && value.length <= 100 && pattern.test(value)
+    ? value
+    : null;
+export function postWriteReceipt(error, client, sourceRunId) {
+  if (!client || client.writeAttempted !== true) return null;
+  const runId = Number(sourceRunId);
+  if (!Number.isSafeInteger(runId) || runId <= 0) return null;
+  const status = error?.status;
+  return {
+    outcome: POST_WRITE_FAILURE,
+    write_started: true,
+    phase: SUBMISSION_PHASES.has(client.phase) ? client.phase : "unknown",
+    http_status:
+      Number.isInteger(status) && status >= 100 && status <= 599
+        ? status
+        : null,
+    error_class: postWriteClass(error),
+    apple_error_code: bounded(error?.apple?.code, APPLE_ERROR_CODE),
+    apple_error_attribute: bounded(error?.apple?.attribute, ATTRIBUTE_NAME),
+    http_method: WRITE_METHODS.has(error?.method) ? error.method : null,
+    locale: bounded(client.locale, RECEIPT_LOCALE),
+    ...(error instanceof ListingIncomplete
+      ? { missing_attribute: bounded(error.missing, ATTRIBUTE_NAME) }
+      : {}),
+    request_resource: APPLE_RESOURCE_KINDS.has(error?.resource)
+      ? error.resource
+      : error?.resource === "other"
+        ? "other"
+        : null,
+    ...associatedReceipt(error?.apple?.associated, client.resourceLocales),
+    source_run_id: runId,
+  };
+}
+
+// Apple's associated errors, as distinct {code, attribute, resource, locale}
+// entries: the locale comes from the localizations this run read itself
+// (never from Apple's text), and the resource is one fixed kind.
+export const ASSOCIATED_ERRORS_KEPT = 20;
+function associatedReceipt(associated, resourceLocales) {
+  if (!Array.isArray(associated) || !associated.length) return {};
+  const seen = new Set();
+  const kept = [];
+  for (const item of associated.slice(0, ASSOCIATED_ERRORS_SCANNED)) {
+    const entry = {
+      code: bounded(item?.code, APPLE_ERROR_CODE),
+      attribute: bounded(item?.attribute, ATTRIBUTE_NAME),
+      resource:
+        APPLE_RESOURCE_KINDS.has(item?.resource) || item?.resource === "other"
+          ? item.resource
+          : null,
+      locale: bounded(
+        resourceLocales instanceof Map
+          ? resourceLocales.get(item?.resourceId)
+          : undefined,
+        RECEIPT_LOCALE,
+      ),
+    };
+    const key = JSON.stringify(entry);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (kept.length < ASSOCIATED_ERRORS_KEPT) kept.push(entry);
+  }
+  return {
+    apple_associated_errors: kept,
+    apple_associated_error_count: Math.min(
+      associated.length,
+      ASSOCIATED_ERRORS_SCANNED,
+    ),
+  };
 }
 
 async function main(tracker) {
@@ -1335,9 +1811,24 @@ if (
           JSON.stringify(receipt) + "\n",
         ).catch(() => {});
       } else {
-        console.error(
-          "App Store submission refused; inspect the target outcome.",
+        const failure = postWriteReceipt(
+          error,
+          tracker.client,
+          process.env.SOURCE_RUN_ID,
         );
+        if (failure) {
+          console.error(
+            `App Store submission failed after a write began: phase ${failure.phase}, HTTP ${failure.http_method ?? ""} ${failure.http_status ?? "none"}, ${failure.error_class}, Apple code ${failure.apple_error_code ?? "none"}, attribute ${failure.apple_error_attribute ?? "none"}, locale ${failure.locale ?? "none"}${failure.missing_attribute ? `, missing ${failure.missing_attribute}` : ""}, resource ${failure.request_resource ?? "none"}${failure.apple_associated_errors ? `, associated errors (${failure.apple_associated_error_count}): ${failure.apple_associated_errors.map((item) => [item.code, item.attribute, item.resource, item.locale].map((value) => value ?? "-").join(" ")).join("; ")}` : ""}. The store target keeps its write-started stop.`,
+          );
+          await writeFile(
+            "store-target-result.json",
+            JSON.stringify(failure) + "\n",
+          ).catch(() => {});
+        } else {
+          console.error(
+            "App Store submission refused; inspect the target outcome.",
+          );
+        }
       }
     }
   });

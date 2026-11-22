@@ -6,7 +6,10 @@ import { join } from "node:path";
 
 export const STORE_LISTING_DIR = "store/listing";
 
-// Store limits, counted in Unicode code points.
+// Store limits, counted in Unicode code points, except Apple keywords: App
+// Store Connect caps them at 100 bytes of UTF-8, so Japanese, Korean,
+// Chinese and Cyrillic keywords reach the limit well before 100 characters.
+export const APPLE_KEYWORD_BYTES = 100;
 export const LIMITS = {
   apple: {
     name: 30,
@@ -25,6 +28,81 @@ export const LIMITS = {
 };
 
 const LOCALE = /^[a-z]{2,3}(?:-[A-Za-z0-9]+)*$/;
+// The locale codes App Store Connect uses for app and version localizations,
+// spelled exactly as Apple returns them (the submitter matches existing
+// localizations by exact code). A code Apple does not use would be created
+// as a stray localization or refused, so it never reaches a submission.
+export const APPLE_LOCALES = new Set([
+  "ar-SA",
+  "ca",
+  "cs",
+  "da",
+  "de-DE",
+  "el",
+  "en-AU",
+  "en-CA",
+  "en-GB",
+  "en-US",
+  "es-ES",
+  "es-MX",
+  "fi",
+  "fr-CA",
+  "fr-FR",
+  "he",
+  "hi",
+  "hr",
+  "hu",
+  "id",
+  "it",
+  "ja",
+  "ko",
+  "ms",
+  "nl-NL",
+  "no",
+  "pl",
+  "pt-BR",
+  "pt-PT",
+  "ro",
+  "ru",
+  "sk",
+  "sv",
+  "th",
+  "tr",
+  "uk",
+  "vi",
+  "zh-Hans",
+  "zh-Hant",
+]);
+// App Store locales TaskNotes must never list. Creating the en-GB and en-US
+// version localizations was refused with 409
+// STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT: the app's name is already taken
+// in that locale by an app on another developer account. UK and US users get
+// the primary English listing instead. See "Name conflicts" in
+// docs/mobile-store-automation.md before removing one.
+export const APPLE_REFUSED_LOCALES = new Map([
+  [
+    "en-GB",
+    "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
+  ],
+  [
+    "en-US",
+    "its app name is taken by another developer account (STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)",
+  ],
+]);
+// App Store locales on hold, not refused. Creating the `it` version
+// localization was refused with 409 STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT
+// even though its listing has its own Italian name: Apple appears to seed a new
+// locale with the app's current name, which another account holds in some
+// storefronts (inferred, not confirmed by Apple). These languages keep their
+// listing text and their Google Play languages, but stay off the App Store
+// until new locales are created with their own name first. See "Held App
+// Store locales" in docs/mobile-store-automation.md. Re-adding one is a
+// deliberate change: delete it here and list it in its file's apple.locales.
+const HELD =
+  "new App Store locales must first be created with their own name (Apple refused it with STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT)";
+export const APPLE_HELD_LOCALES = new Map(
+  ["it", "ja", "ko", "pt-BR", "ru", "zh-Hans"].map((locale) => [locale, HELD]),
+);
 const FILE_KEYS = new Set(["apple", "play", "description", "whatsNew"]);
 const APPLE_KEYS = new Set([
   "locales",
@@ -56,12 +134,30 @@ function text(value, label, max, { optional = false } = {}) {
   return value;
 }
 
-function locales(value, label) {
-  if (!Array.isArray(value) || !value.length)
+function locales(
+  value,
+  label,
+  known,
+  refused = new Map(),
+  { held = new Map(), allowEmpty = false } = {},
+) {
+  if (!Array.isArray(value) || (!value.length && !allowEmpty))
     throw invalid(`${label} must list at least one locale`);
   for (const locale of value)
     if (typeof locale !== "string" || !LOCALE.test(locale))
       throw invalid(`${label} has an invalid locale`);
+    else if (known && !known.has(locale))
+      throw invalid(`${label} has ${locale}, which is not an App Store locale`);
+    else if (refused.has(locale))
+      throw invalid(
+        `${label} has ${locale}, which the App Store refuses: ${refused.get(
+          locale,
+        )}`,
+      );
+    else if (held.has(locale))
+      throw invalid(
+        `${label} has ${locale}, which is on hold: ${held.get(locale)}`,
+      );
   return value;
 }
 
@@ -74,6 +170,11 @@ function onlyKeys(object, allowed, label) {
 
 function keywords(value, label) {
   const list = text(value, label, LIMITS.apple.keywords);
+  const bytes = Buffer.byteLength(list, "utf8");
+  if (bytes > APPLE_KEYWORD_BYTES)
+    throw invalid(
+      `${label} is ${bytes} bytes of UTF-8; the App Store limit is ${APPLE_KEYWORD_BYTES}`,
+    );
   const words = list.split(",");
   if (words.some((word) => !word.trim() || word !== word.trim()))
     throw invalid(
@@ -130,7 +231,14 @@ export function expandListing(files) {
       ),
       ...(whatsNew ? { whatsNew } : {}),
     };
-    for (const locale of locales(data.apple.locales, `${file} apple.locales`)) {
+    for (const locale of locales(
+      data.apple.locales,
+      `${file} apple.locales`,
+      APPLE_LOCALES,
+      APPLE_REFUSED_LOCALES,
+      // A language with no App Store locale keeps its text for when one is added.
+      { held: APPLE_HELD_LOCALES, allowEmpty: true },
+    )) {
       if (apple[locale])
         throw invalid(`Apple locale ${locale} is listed twice`);
       apple[locale] = appleEntry;
