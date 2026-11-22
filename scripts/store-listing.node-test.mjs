@@ -9,7 +9,7 @@ import {
 
 const file = () => ({
   apple: {
-    locales: ["en-AU", "en-US"],
+    locales: ["en-AU", "en-CA"],
     name: "TaskNotes",
     subtitle: "Tasks",
     keywords: "todo,gtd",
@@ -25,7 +25,9 @@ test("the committed store listing is valid for both stores", async () => {
   assert.ok(listing.apple["en-AU"], "the primary App Store locale is listed");
   assert.ok(listing.play["en-US"], "the default Play language is listed");
   assert.ok(!listing.apple["en-GB"], "en-GB is not an App Store locale");
+  assert.ok(!listing.apple["en-US"], "en-US is not an App Store locale");
   assert.ok(listing.play["en-GB"], "Google Play keeps en-GB");
+  assert.ok(listing.play["en-US"], "Google Play keeps en-US");
   for (const entry of Object.values(listing.apple)) {
     for (const [field, max] of Object.entries(LIMITS.apple))
       if (entry[field]) assert.ok([...entry[field]].length <= max, field);
@@ -52,8 +54,8 @@ test("the committed store listing is valid for both stores", async () => {
 
 test("expands one language file to each store locale", () => {
   const { apple, play } = expandListing({ "en.json": file() });
-  assert.deepEqual(Object.keys(apple), ["en-AU", "en-US"]);
-  assert.equal(apple["en-US"].description, "Line one\n• Line two");
+  assert.deepEqual(Object.keys(apple), ["en-AU", "en-CA"]);
+  assert.equal(apple["en-CA"].description, "Line one\n• Line two");
   assert.equal(play["en-US"].fullDescription, "Line one\n• Line two");
   assert.equal(play["en-US"].whatsNew, "Recent improvements.");
 });
@@ -110,6 +112,12 @@ for (const [label, change, pattern] of [
     "en-GB, whose app name another developer account holds",
     (d) => (d.apple.locales = ["en-AU", "en-GB"]),
     /en-GB, which the App Store refuses: .*DUPLICATE_NAME\.DIFFERENT_ACCOUNT/,
+  ],
+  [
+    // Apple refused the en-US localization for the same reason.
+    "en-US, whose app name another developer account holds",
+    (d) => (d.apple.locales = ["en-AU", "en-US"]),
+    /en-US, which the App Store refuses: .*DUPLICATE_NAME\.DIFFERENT_ACCOUNT/,
   ],
   [
     "an App Store locale in the wrong case",

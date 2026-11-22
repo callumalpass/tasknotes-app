@@ -197,8 +197,8 @@ in one English storefront and taken in another. A retry won't help. Either drop
 that locale from `apple.locales` in `store/listing/` (its storefront then shows
 the primary listing) and add it to `APPLE_REFUSED_LOCALES` in
 `scripts/store-listing.mjs` so it is not re-added, or give that locale a
-different `name`. Renaming the app itself is Callum's call. en-GB is dropped for
-this reason. The rerun completes the draft in place: localizations already
+different `name`. Renaming the app itself is Callum's call. en-GB and en-US are
+dropped for this reason. The rerun completes the draft in place: localizations already
 created stay and are never deleted. A dropped locale is never written. If a
 draft ever holds a localization the listing no longer covers, the submitter
 refuses before writing rather than deleting it.

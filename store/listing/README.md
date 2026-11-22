@@ -22,10 +22,10 @@ One file per app language. Each file holds:
 
 Apple locales must be App Store Connect locale codes spelled exactly as Apple
 does (`zh-Hans`, not `zh-CN`; `it`, not `it-IT`); the loader refuses others.
-The loader also refuses en-GB: App Store Connect rejected it with
+The loader also refuses en-GB and en-US: App Store Connect rejected both with
 `STATE_ERROR.DUPLICATE_NAME.DIFFERENT_ACCOUNT` because another developer
-account holds the app's name there. UK users see the primary English listing.
-Google Play keeps en-GB. See "Name conflicts" in
+account holds the app's name there. UK and US users see the primary English
+listing. Google Play keeps en-GB and en-US. See "Name conflicts" in
 `docs/mobile-store-automation.md`.
 
 Numbers are the store limits in characters, except Apple keywords, which App

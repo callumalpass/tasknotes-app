@@ -22,6 +22,7 @@ import {
   withListingNotes,
   waitForBuild,
 } from "./submit-app-store.mjs";
+import { loadStoreListing } from "./store-listing.mjs";
 
 const metadata = {
   version: "1.0.4",
@@ -1341,13 +1342,13 @@ test("explicit notes apply to every locale of the same language file", () => {
   assert.deepEqual(
     withListingNotes({ "en-AU": "Specific notes." }, "1.0.5", {
       "en-AU": english,
-      "en-US": english,
+      "en-CA": english,
       "fr-FR": french,
       "de-DE": {},
     }),
     {
       "en-AU": "Specific notes.",
-      "en-US": "Specific notes.",
+      "en-CA": "Specific notes.",
       "fr-FR": "Notes françaises.",
       "de-DE": "TaskNotes 1.0.5.",
     },
@@ -1975,6 +1976,63 @@ test("a locale dropped after a name conflict is not expected, and nothing on the
     "en-AU",
     "fr-FR",
   ]);
+});
+
+test("the committed listing finishes the draft a refused en-US left, in listing order", async () => {
+  // The 1.0.31 run updated en-AU, created de-DE and en-CA, and was refused
+  // creating en-US. The committed listing no longer has en-US; the rerun
+  // creates only the languages after it, in listing order, and deletes nothing.
+  const committed = Object.keys((await loadStoreListing()).apple);
+  assert.ok(!committed.includes("en-US"));
+  const before = ["en-AU", "de-DE", "en-CA"];
+  const after = committed.filter((locale) => !before.includes(locale));
+  const entries = (locales) =>
+    Object.fromEntries(
+      locales.map((locale) => [locale, withoutRolling(listingEntry(locale))]),
+    );
+  const notes = (locales) =>
+    Object.fromEntries(locales.map((locale) => [locale, `Notes ${locale}`]));
+  const f = fixture();
+  f.reject = rejectLocale("en-US");
+  const refused = ["en-AU", "de-DE", "en-CA", "en-US"];
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: { ...metadata, whatsNew: notes(refused) },
+      listing: entries(refused),
+    }),
+    /HTTP 409/,
+  );
+  assert.deepEqual(
+    f.locales.map((item) => item.attributes.locale),
+    before,
+  );
+  f.writes = [];
+  assert.equal(
+    (
+      await f.run({
+        commit: true,
+        metadata: { ...metadata, whatsNew: notes(committed) },
+        listing: entries(committed),
+      })
+    ).state,
+    "WAITING_FOR_REVIEW",
+  );
+  const writes = f.writes.filter((w) =>
+    w.path.startsWith("appStoreVersionLocalizations"),
+  );
+  assert.ok(writes.every((w) => w.method !== "DELETE"));
+  assert.ok(!writes.some((w) => w.data?.attributes?.locale === "en-US"));
+  assert.deepEqual(
+    writes
+      .filter((w) => w.method === "POST")
+      .map((w) => w.data.attributes.locale),
+    after,
+  );
+  assert.deepEqual(
+    f.locales.map((item) => item.attributes.locale).sort(),
+    [...committed].sort(),
+  );
 });
 
 test("a refused release-notes write names Apple's code, attribute, method and locale", async () => {
