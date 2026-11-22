@@ -16,6 +16,7 @@ import {
   submitAppStore,
   trackWrites,
   validateMetadata,
+  withListingNotes,
   waitForBuild,
 } from "./submit-app-store.mjs";
 
@@ -51,7 +52,32 @@ function fixture() {
     attached: null,
     phased: null,
     locales: [
-      { id: "locale", attributes: { locale: "en-AU", whatsNew: "Old notes" } },
+      {
+        id: "locale",
+        attributes: {
+          locale: "en-AU",
+          whatsNew: "Old notes",
+          description: "Old description",
+          keywords: "old",
+          promotionalText: "Old promo",
+          supportUrl: "https://tasknotes.dev/support",
+          marketingUrl: "https://tasknotes.dev",
+        },
+      },
+    ],
+    appInfos: [
+      { id: "info-live", attributes: { state: "READY_FOR_DISTRIBUTION" } },
+    ],
+    infoLocales: [
+      {
+        id: "info-locale",
+        attributes: {
+          locale: "en-AU",
+          name: "TaskNotes",
+          subtitle: "Old subtitle",
+          privacyPolicyUrl: "https://tasknotes.dev/privacy",
+        },
+      },
     ],
     review: {
       id: "review",
@@ -71,6 +97,8 @@ function fixture() {
       if (path.startsWith("builds?")) return f.build ? [f.build] : [];
       if (path.includes("/appStoreVersions?")) return f.versions;
       if (path.includes("/appStoreVersionLocalizations")) return f.locales;
+      if (path === `apps/${APP_ID}/appInfos`) return f.appInfos;
+      if (path.endsWith("/appInfoLocalizations")) return f.infoLocales;
       if (path.startsWith("reviewSubmissions?")) return f.submissions;
       if (path.includes("/items?")) return f.items;
       throw new Error(`Unexpected list ${path}`);
@@ -121,12 +149,43 @@ function fixture() {
           },
         };
         f.versions.push(v);
+        // Apple opens an editable app info alongside a new version.
+        f.appInfos.push({
+          id: "info-new",
+          attributes: { state: "PREPARE_FOR_SUBMISSION" },
+        });
         result = { data: v };
       } else if (path === "appStoreVersions/new") {
         Object.assign(target().attributes, data.attributes);
         f.attached = data.relationships.build.data;
-      } else if (path === "appStoreVersionLocalizations/locale") {
-        Object.assign(f.locales[0].attributes, data.attributes);
+      } else if (path.startsWith("appStoreVersionLocalizations/")) {
+        const id = path.split("/")[1];
+        Object.assign(
+          f.locales.find((item) => item.id === id).attributes,
+          data.attributes,
+        );
+      } else if (path === "appStoreVersionLocalizations" && method === "POST") {
+        assert.equal(data.relationships.appStoreVersion.data.id, "new");
+        const created = {
+          id: `locale-${data.attributes.locale}`,
+          attributes: { ...data.attributes },
+        };
+        f.locales.push(created);
+        result = { data: created };
+      } else if (path.startsWith("appInfoLocalizations/")) {
+        const id = path.split("/")[1];
+        Object.assign(
+          f.infoLocales.find((item) => item.id === id).attributes,
+          data.attributes,
+        );
+      } else if (path === "appInfoLocalizations" && method === "POST") {
+        assert.equal(data.relationships.appInfo.data.id, "info-new");
+        const created = {
+          id: `info-${data.attributes.locale}`,
+          attributes: { ...data.attributes },
+        };
+        f.infoLocales.push(created);
+        result = { data: created };
       } else if (path === "appStoreReviewDetails/review") {
         Object.assign(f.review.attributes, data.attributes);
       } else if (path === "reviewSubmissions" && method === "POST") {
@@ -962,4 +1021,208 @@ test("the submission CLI writes only the bounded pre-write refusal receipt", asy
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+const listingEntry = (suffix) => ({
+  name: `TaskNotes ${suffix}`,
+  subtitle: `Subtitle ${suffix}`,
+  keywords: `tasks,${suffix}`,
+  promotionalText: `Promo ${suffix}`,
+  description: `Description ${suffix}`,
+  whatsNew: `Notes ${suffix}`,
+});
+const listing = { "en-AU": listingEntry("au"), "fr-FR": listingEntry("fr") };
+const listingMetadata = {
+  ...metadata,
+  whatsNew: { "en-AU": "Notes au", "fr-FR": "Notes fr" },
+};
+
+test("applies repository listing text and creates its new locales", async () => {
+  const f = fixture();
+  const result = await f.run({
+    commit: true,
+    metadata: listingMetadata,
+    listing,
+  });
+  assert.equal(result.state, "WAITING_FOR_REVIEW");
+  const au = f.locales.find((item) => item.attributes.locale === "en-AU");
+  assert.equal(au.attributes.description, "Description au");
+  assert.equal(au.attributes.keywords, "tasks,au");
+  assert.equal(au.attributes.promotionalText, "Promo au");
+  assert.equal(au.attributes.whatsNew, "Notes au");
+  const fr = f.locales.find((item) => item.attributes.locale === "fr-FR");
+  assert.deepEqual(fr.attributes, {
+    locale: "fr-FR",
+    description: "Description fr",
+    keywords: "tasks,fr",
+    promotionalText: "Promo fr",
+    whatsNew: "Notes fr",
+    supportUrl: "https://tasknotes.dev/support",
+    marketingUrl: "https://tasknotes.dev",
+  });
+  const auInfo = f.infoLocales.find(
+    (item) => item.attributes.locale === "en-AU",
+  );
+  assert.equal(auInfo.attributes.name, "TaskNotes au");
+  assert.equal(auInfo.attributes.subtitle, "Subtitle au");
+  const frInfo = f.infoLocales.find(
+    (item) => item.attributes.locale === "fr-FR",
+  );
+  assert.deepEqual(frInfo.attributes, {
+    locale: "fr-FR",
+    name: "TaskNotes fr",
+    subtitle: "Subtitle fr",
+    privacyPolicyUrl: "https://tasknotes.dev/privacy",
+  });
+  // The live app info is never written.
+  assert.ok(!f.writes.some((w) => w.path.includes("info-live")));
+  assert.ok(!f.writes.some((w) => w.method === "DELETE"));
+});
+
+test("listing reruns after a lost response do not duplicate locales", async () => {
+  for (const failAfter of [
+    "appStoreVersionLocalizations",
+    "appInfoLocalizations",
+    "appInfoLocalizations/info-locale",
+  ]) {
+    const f = fixture();
+    f.failAfter = failAfter;
+    await assert.rejects(
+      f.run({ commit: true, metadata: listingMetadata, listing }),
+      /response lost/,
+    );
+    assert.equal(
+      (await f.run({ commit: true, metadata: listingMetadata, listing })).state,
+      "WAITING_FOR_REVIEW",
+    );
+    assert.equal(f.locales.length, 2);
+    assert.equal(f.infoLocales.length, 2);
+  }
+});
+
+test("a noted locale without listing text still needs App Store Connect setup", async () => {
+  const f = fixture();
+  await assert.rejects(
+    f.run({
+      commit: true,
+      metadata: listingMetadata,
+      listing: { "en-AU": listing["en-AU"] },
+    }),
+    /Release notes must cover exactly/,
+  );
+  assert.equal(f.writes.length, 0);
+});
+
+test("a store locale missing from the release notes refuses before writing", async () => {
+  const f = fixture();
+  f.locales.push({ id: "de", attributes: { locale: "de-DE", whatsNew: "x" } });
+  await assert.rejects(
+    f.run({ commit: true, metadata: listingMetadata, listing }),
+    /Release notes must cover exactly/,
+  );
+  assert.equal(f.writes.length, 0);
+});
+
+test("listing text that does not read back blocks submission", async () => {
+  const f = fixture();
+  const request = f.client.request;
+  f.client.request = async (path, method, data) => {
+    if (path === "appInfoLocalizations/info-locale" && method === "PATCH")
+      data = { ...data, attributes: { ...data.attributes, subtitle: "Other" } };
+    return request(path, method, data);
+  };
+  await assert.rejects(
+    f.run({ commit: true, metadata: listingMetadata, listing }),
+    /Saved release metadata\/build does not match/,
+  );
+  assert.ok(!f.writes.some((w) => w.path === "reviewSubmissionItems"));
+});
+
+test("rolling notes already live fall back to the version line", async () => {
+  const f = fixture();
+  f.locales[0].attributes.whatsNew = "Notes au";
+  await f.run({ commit: true, metadata: listingMetadata, listing });
+  const byLocale = Object.fromEntries(
+    f.locales.map((item) => [item.attributes.locale, item.attributes.whatsNew]),
+  );
+  assert.deepEqual(byLocale, {
+    "en-AU": "TaskNotes 1.0.4.",
+    "fr-FR": "Notes fr",
+  });
+});
+
+test("read-back ignores line-ending and Unicode-form differences", async () => {
+  const f = fixture();
+  const request = f.client.request;
+  f.client.request = async (path, method, data) => {
+    if (data?.attributes?.description)
+      data = {
+        ...data,
+        attributes: {
+          ...data.attributes,
+          description: `${data.attributes.description.replaceAll("\n", "\r\n")}\n`,
+        },
+      };
+    return request(path, method, data);
+  };
+  const multiline = {
+    "en-AU": { ...listing["en-AU"], description: "Line one\nLine two" },
+    "fr-FR": listing["fr-FR"],
+  };
+  assert.equal(
+    (
+      await f.run({
+        commit: true,
+        metadata: listingMetadata,
+        listing: multiline,
+      })
+    ).state,
+    "WAITING_FOR_REVIEW",
+  );
+});
+
+test("dry run reports the planned listing changes without writing", async () => {
+  const f = fixture();
+  const result = await f.run({ metadata: listingMetadata, listing });
+  assert.equal(result.state, "DRY_RUN");
+  assert.deepEqual(result.listingPlan.createLocales, ["fr-FR"]);
+  assert.deepEqual(result.listingPlan.updateLocales, ["en-AU"]);
+  assert.equal(f.writes.length, 0);
+});
+
+test("an app info locale without a privacy URL gets the existing one", async () => {
+  const f = fixture();
+  f.infoLocales.push({
+    id: "info-fr",
+    attributes: {
+      locale: "fr-FR",
+      name: "TaskNotes fr",
+      subtitle: "Subtitle fr",
+    },
+  });
+  await f.run({ commit: true, metadata: listingMetadata, listing });
+  assert.equal(
+    f.infoLocales.find((item) => item.id === "info-fr").attributes
+      .privacyPolicyUrl,
+    "https://tasknotes.dev/privacy",
+  );
+});
+
+test("explicit notes apply to every locale of the same language file", () => {
+  const english = { whatsNew: "Rolling English." };
+  const french = { whatsNew: "Notes françaises." };
+  assert.deepEqual(
+    withListingNotes({ "en-AU": "Specific notes." }, "1.0.5", {
+      "en-AU": english,
+      "en-US": english,
+      "fr-FR": french,
+      "de-DE": {},
+    }),
+    {
+      "en-AU": "Specific notes.",
+      "en-US": "Specific notes.",
+      "fr-FR": "Notes françaises.",
+      "de-DE": "TaskNotes 1.0.5.",
+    },
+  );
 });

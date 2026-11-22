@@ -1,0 +1,46 @@
+{
+  "apple": {
+    "locales": ["de-DE"],
+    "name": "TaskNotes: Markdown-Aufgaben",
+    "subtitle": "To-do-Liste, Planer, Kalender",
+    "keywords": "todo,aufgabenliste,kanban,board,notizen,checkliste,erinnerungen,projekte,termine,produktivität",
+    "promotionalText": "Ihre Aufgaben als portable Markdown-Notizen – auf iPhone, iPad und im Web. Funktioniert mit dem TaskNotes-Plugin für Obsidian."
+  },
+  "play": {
+    "languages": ["de-DE"],
+    "title": "TaskNotes: Markdown-Aufgaben",
+    "shortDescription": "To-do-Liste, Planer und Kalender. Jede Aufgabe ist eine Markdown-Notiz."
+  },
+  "description": [
+    "TaskNotes ist eine ruhige, leistungsfähige To-do-Liste und ein Planer, in dem jede Aufgabe eine portable Markdown-Notiz ist.",
+    "",
+    "Erfassen Sie Aufgaben in Sekunden, sehen Sie, was heute zählt, und planen Sie die Woche im Kalender oder auf einem Board. Ihre Aufgaben gehören Ihnen: Jede ist eine einfache Markdown-Datei mit strukturierten Eigenschaften, die Sie auch außerhalb der App öffnen, durchsuchen und weiterverwenden können.",
+    "",
+    "DEN TAG PLANEN",
+    "• Heute-Ansicht mit überfälligen und geplanten Aufgaben auf einen Blick",
+    "• Fälligkeitsdaten, geplante Termine, Prioritäten, Projekte und Tags",
+    "• Wiederkehrende Aufgaben, Erinnerungen und Abhängigkeiten",
+    "• Unteraufgaben, Anhänge und Zeiterfassung",
+    "",
+    "ARBEITEN, WIE SIE WOLLEN",
+    "• Listen, Kanban-Boards und gespeicherte Ansichten",
+    "• Monats-, Mehrtages- und Agenda-Kalender mit Google-Kalender-Terminen neben Ihren Aufgaben",
+    "• Schnelle Suche über alle Aufgaben",
+    "",
+    "NOTIZEN UND AUFGABEN ZUSAMMEN",
+    "• Markdown-Notizen zu jeder Aufgabe",
+    "• Scratchpad für schnelle Notizen und Bilder",
+    "• Sehen Sie die Markdown-Datei hinter jeder Aufgabe und verlinken Sie sie aus anderen Notizen",
+    "",
+    "PORTABEL VON GRUND AUF",
+    "TaskNotes speichert Ihre Aufgaben in einer mdbase-Sammlung – gehostet oder auf Ihrem eigenen Computer und mit mdbase Connect synchronisiert. Dieselben Aufgaben-Notizen funktionieren mit dem TaskNotes-Plugin für Obsidian, sodass Telefon, Web und Notizen im Einklang bleiben.",
+    "",
+    "DISKRETE, PRIVATE ERINNERUNGEN",
+    "Erinnerungen werden von mdbase zugestellt, auch wenn TaskNotes geschlossen ist. Benachrichtigungen enthalten nie Aufgabentitel oder -inhalte.",
+    "",
+    "TaskNotes benötigt ein mdbase-Konto, um Ihre Aufgaben zu speichern. Die App ist auf Deutsch, Englisch, Französisch, Spanisch, Italienisch, Japanisch, Koreanisch, brasilianischem Portugiesisch, Russisch und vereinfachtem Chinesisch verfügbar.",
+    "",
+    "Mehr unter tasknotes.dev."
+  ],
+  "whatsNew": "Aktuelle Verbesserungen: TaskNotes spricht zehn Sprachen und stellt Erinnerungen auch bei geschlossener App zu. Wiederkehrende Aufgaben behalten ihre Termine, wenn Sie die Wiederholung ändern, monatliche Wiederholungen werden korrekt beschrieben, und die App startet schneller."
+}

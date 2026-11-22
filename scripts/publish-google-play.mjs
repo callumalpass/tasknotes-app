@@ -2,6 +2,7 @@ import { createSign } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadStoreListing } from "./store-listing.mjs";
 
 export const PLAY_PACKAGE = "dev.tasknotes.app";
 export const PLAY_TRACK = "production";
@@ -190,11 +191,74 @@ function trackContainsVersion(track, versionCode) {
   );
 }
 
+// Store text is compared as people read it: line endings, Unicode form and
+// surrounding whitespace are not differences.
+const normalized = (value) =>
+  typeof value === "string"
+    ? value.replace(/\r\n?/g, "\n").normalize("NFC").trim()
+    : value;
+const sameText = (a, b) => normalized(a) === normalized(b);
+
+// Release notes for every listed language, always including the en-US
+// default. Rolling notes describe the first release after they change; once
+// the live release already carries them, the plain release name is used.
+export function releaseNotesFor(name, listing = {}, liveNotes = []) {
+  const notes = Object.entries(listing).map(([language, entry]) => {
+    const shipped = liveNotes.find((note) => note?.language === language);
+    const repeated = shipped && sameText(shipped.text, entry.whatsNew);
+    return {
+      language,
+      text: entry.whatsNew && !repeated ? entry.whatsNew : `${name}.`,
+    };
+  });
+  if (!notes.some((note) => note.language === "en-US"))
+    notes.unshift({ language: "en-US", text: `${name}.` });
+  return notes;
+}
+
+const listingFields = ["title", "shortDescription", "fullDescription"];
+
+// Brings the store listing text in this edit up to date with the repository.
+// Unchanged languages are left alone; a listing's video link is preserved, and
+// languages the repository does not list are never removed.
+async function applyListing(fetchImpl, token, editPath, listing) {
+  if (!Object.keys(listing).length) return;
+  const existing =
+    (await playRequest(fetchImpl, token, `${editPath}/listings`))?.listings ??
+    [];
+  for (const [language, entry] of Object.entries(listing)) {
+    const current = existing.find((item) => item?.language === language);
+    if (
+      current &&
+      listingFields.every((field) => sameText(current[field], entry[field]))
+    )
+      continue;
+    const saved = await playRequest(
+      fetchImpl,
+      token,
+      `${editPath}/listings/${encodeURIComponent(language)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          language,
+          title: entry.title,
+          shortDescription: entry.shortDescription,
+          fullDescription: entry.fullDescription,
+          ...(current?.video ? { video: current.video } : {}),
+        }),
+      },
+    );
+    if (listingFields.some((field) => !sameText(saved?.[field], entry[field])))
+      throw new Error("Google Play did not save the requested store listing");
+  }
+}
+
 export async function publishProduction({
   credentialBase64,
   aabPath,
   expectedVersionCode,
   name,
+  listing = {},
   fetchImpl = fetch,
   readFileImpl = readFile,
   now = Date.now(),
@@ -263,6 +327,13 @@ export async function publishProduction({
       );
     }
 
+    await applyListing(
+      fetchImpl,
+      token,
+      `${PLAY_API}/${packagePath}/edits/${encodeURIComponent(editId)}`,
+      listing,
+    );
+
     const track = await playRequest(
       fetchImpl,
       token,
@@ -276,7 +347,13 @@ export async function publishProduction({
               name: validatedName,
               versionCodes: [String(versionCode)],
               status: PLAY_RELEASE_STATUS,
-              releaseNotes: [{ language: "en-US", text: `${validatedName}.` }],
+              releaseNotes: releaseNotesFor(
+                validatedName,
+                listing,
+                existingTrack?.releases?.find(
+                  (release) => release?.status === "completed",
+                )?.releaseNotes,
+              ),
             },
           ],
         }),
@@ -333,6 +410,7 @@ async function main() {
       aabPath: "android-release/bundle/release/app-release.aab",
       expectedVersionCode: androidVersionCode(qualified.build),
       name: `TaskNotes ${qualified.version}`,
+      listing: (await loadStoreListing()).play,
     });
     await writeFile(
       "store-target-result.json",

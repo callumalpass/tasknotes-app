@@ -86,6 +86,16 @@ A retained successful same-source/live-version receipt makes subsequent ticks
 `already-live`, rather than rebuilding the same source. Receipts retain for 90
 days; preserve the ops deployment reports beyond artifact retention.
 
+## Store listing text
+
+Listing text and rolling release notes live in `store/listing/` (see its
+README). Both publishers apply them inside the write they already make: the
+App Store submitter on the new version and its editable app info before
+submission, the Play publisher in the release edit before commit. Each reads
+its writes back before submitting or committing; a mismatch fails like any
+other saved-state mismatch. Edit the files, not the consoles. The first
+release after a new locale is added creates that locale in the store.
+
 ## Stops, outcomes and recovery
 
 Use the ops front door:

@@ -2,6 +2,7 @@ import { sign } from "node:crypto";
 import { readFile, appendFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadStoreListing } from "./store-listing.mjs";
 
 export const APP_ID = "6797168033";
 export const BUNDLE_ID = "dev.tasknotes.app";
@@ -292,16 +293,162 @@ export async function waitForBuild(
   );
 }
 
-function assertLocales(localizations, metadata) {
-  const actual = localizations.map((item) => item.attributes.locale).sort();
+// Every existing store locale needs release notes. A locale with notes but no
+// store localization yet is created only when the repository listing has text
+// for it; otherwise it must be configured in App Store Connect first.
+function assertLocales(localizations, metadata, listing = {}) {
+  const actual = new Set(localizations.map((item) => item.attributes.locale));
+  const notes = Object.keys(metadata.whatsNew);
   if (
-    JSON.stringify(actual) !==
-    JSON.stringify(Object.keys(metadata.whatsNew).sort())
+    [...actual].some((locale) => !notes.includes(locale)) ||
+    notes.some((locale) => !actual.has(locale) && !listing[locale])
   ) {
     throw new Error(
       "Release notes must cover exactly all existing store locales; configure new locales in App Store Connect first",
     );
   }
+}
+
+// Store text is compared as people read it: line endings, Unicode form and
+// surrounding whitespace are not differences.
+const normalized = (value) =>
+  typeof value === "string"
+    ? value.replace(/\r\n?/g, "\n").normalize("NFC").trim()
+    : value;
+export const sameText = (a, b) => normalized(a) === normalized(b);
+
+// Saved state must match the request exactly: one localization per noted
+// locale, with its notes and, where the repository lists it, its listing text.
+function listingMismatch(localizations, metadata, listing = {}) {
+  const actual = localizations.map((item) => item.attributes.locale).sort();
+  if (
+    JSON.stringify(actual) !==
+    JSON.stringify(Object.keys(metadata.whatsNew).sort())
+  )
+    return true;
+  return localizations.some((item) => {
+    const { locale } = item.attributes;
+    const expected = listing[locale];
+    return (
+      !sameText(item.attributes.whatsNew, metadata.whatsNew[locale]) ||
+      (expected &&
+        versionFields.some(
+          (field) => !sameText(item.attributes[field], expected[field]),
+        ))
+    );
+  });
+}
+
+const versionFields = ["description", "keywords", "promotionalText"];
+const appInfoFields = ["name", "subtitle"];
+const editableAppInfoStates = new Set([
+  "PREPARE_FOR_SUBMISSION",
+  "READY_FOR_REVIEW",
+  "DEVELOPER_REJECTED",
+  "REJECTED",
+]);
+const pick = (object, fields) =>
+  Object.fromEntries(fields.map((field) => [field, object[field]]));
+
+// The app's name and subtitle live on the editable app info that Apple opens
+// alongside a new version. The listed (read-only) app info is never touched.
+async function editableAppInfo(client) {
+  const infos = await client.list(`apps/${APP_ID}/appInfos`);
+  const editable = infos.filter((info) =>
+    editableAppInfoStates.has(
+      info.attributes.state ?? info.attributes.appStoreState,
+    ),
+  );
+  if (editable.length !== 1)
+    throw new Error(
+      "App Store Connect has no single editable app info for the new version; inspect App Store Connect",
+    );
+  return editable[0];
+}
+
+async function applyAppInfoListing(client, listing) {
+  const info = await editableAppInfo(client);
+  const existing = await client.list(
+    `appInfos/${info.id}/appInfoLocalizations`,
+  );
+  const template = existing.find((item) => item.attributes.privacyPolicyUrl);
+  for (const [locale, entry] of Object.entries(listing)) {
+    const current = existing.find((item) => item.attributes.locale === locale);
+    const attributes = pick(entry, appInfoFields);
+    if (current) {
+      const needsPrivacyUrl = template && !current.attributes.privacyPolicyUrl;
+      if (
+        !needsPrivacyUrl &&
+        appInfoFields.every((field) =>
+          sameText(current.attributes[field], attributes[field]),
+        )
+      )
+        continue;
+      await client.request(`appInfoLocalizations/${current.id}`, "PATCH", {
+        type: "appInfoLocalizations",
+        id: current.id,
+        attributes: {
+          ...attributes,
+          ...(needsPrivacyUrl
+            ? { privacyPolicyUrl: template.attributes.privacyPolicyUrl }
+            : {}),
+        },
+      });
+    } else {
+      await client.request("appInfoLocalizations", "POST", {
+        type: "appInfoLocalizations",
+        attributes: {
+          locale,
+          ...attributes,
+          ...(template
+            ? { privacyPolicyUrl: template.attributes.privacyPolicyUrl }
+            : {}),
+        },
+        relationships: { appInfo: relation("appInfos", info.id) },
+      });
+    }
+  }
+}
+
+async function appInfoListingMismatch(client, listing) {
+  if (!Object.keys(listing).length) return false;
+  const info = await editableAppInfo(client);
+  const saved = await client.list(`appInfos/${info.id}/appInfoLocalizations`);
+  return Object.entries(listing).some(([locale, entry]) => {
+    const item = saved.find(
+      (candidate) => candidate.attributes.locale === locale,
+    );
+    return (
+      !item ||
+      appInfoFields.some(
+        (field) => !sameText(item.attributes[field], entry[field]),
+      )
+    );
+  });
+}
+
+// What a commit would change in the version listing, for dry runs.
+function listingPlan(localizations, metadata, listing) {
+  const existing = new Map(
+    localizations.map((item) => [item.attributes.locale, item]),
+  );
+  return {
+    createLocales: Object.keys(metadata.whatsNew).filter(
+      (locale) => !existing.has(locale),
+    ),
+    updateLocales: Object.entries(listing)
+      .filter(([locale, entry]) => {
+        const item = existing.get(locale);
+        return (
+          item &&
+          versionFields.some(
+            (field) => !sameText(item.attributes[field], entry[field]),
+          )
+        );
+      })
+      .map(([locale]) => locale),
+    whatsNew: metadata.whatsNew,
+  };
 }
 
 function demoCredentialsOf(env) {
@@ -352,11 +499,35 @@ function verifyDemoAccount(review, credentials) {
   return { demoAccountNameVerified: true, demoAccountRequired: true };
 }
 
+// Rolling release notes describe the first release after they change. Once
+// the live version already carries them, later releases say only
+// "TaskNotes x.y.z." until the notes are rewritten.
+async function withoutRepeatedNotes(client, live, metadata, listing, version) {
+  const rolling = Object.entries(listing).filter(
+    ([locale, entry]) =>
+      entry.whatsNew && sameText(metadata.whatsNew[locale], entry.whatsNew),
+  );
+  if (!rolling.length) return metadata;
+  const liveLocales = await client.list(
+    `appStoreVersions/${live.id}/appStoreVersionLocalizations`,
+  );
+  const whatsNew = { ...metadata.whatsNew };
+  for (const [locale, entry] of rolling) {
+    const shipped = liveLocales.find(
+      (item) => item.attributes.locale === locale,
+    );
+    if (shipped && sameText(shipped.attributes.whatsNew, entry.whatsNew))
+      whatsNew[locale] = `TaskNotes ${version}.`;
+  }
+  return { ...metadata, whatsNew };
+}
+
 export async function submitAppStore({
   client,
   version,
   buildNumber,
   metadata,
+  listing = {},
   commit = false,
   waitOptions,
   env = process.env,
@@ -430,11 +601,18 @@ export async function submitAppStore({
   ) {
     throw new Error("earlier-store-version-in-flight");
   }
+  metadata = await withoutRepeatedNotes(
+    client,
+    current,
+    metadata,
+    listing,
+    version,
+  );
   const sourceId = target?.id ?? current.id;
   const localizations = await client.list(
     `appStoreVersions/${sourceId}/appStoreVersionLocalizations`,
   );
-  assertLocales(localizations, metadata);
+  assertLocales(localizations, metadata, listing);
   const review = await readReview(client, sourceId);
   if (
     !review ||
@@ -482,6 +660,7 @@ export async function submitAppStore({
       buildNumber,
       state: "DRY_RUN",
       wouldCreateVersion: !target,
+      listingPlan: listingPlan(localizations, metadata, listing),
     };
 
   if (!target) {
@@ -514,18 +693,47 @@ export async function submitAppStore({
     const inherited = await client.list(
       `appStoreVersions/${target.id}/appStoreVersionLocalizations`,
     );
-    assertLocales(inherited, metadata);
+    assertLocales(inherited, metadata, listing);
     for (const locale of inherited) {
+      const entry = listing[locale.attributes.locale];
       await client.request(
         `appStoreVersionLocalizations/${locale.id}`,
         "PATCH",
         {
           type: "appStoreVersionLocalizations",
           id: locale.id,
-          attributes: { whatsNew: metadata.whatsNew[locale.attributes.locale] },
+          attributes: {
+            ...(entry ? pick(entry, versionFields) : {}),
+            whatsNew: metadata.whatsNew[locale.attributes.locale],
+          },
         },
       );
     }
+    // New listing locales reuse the existing support and marketing URLs.
+    const urls = inherited.find((item) => item.attributes.supportUrl);
+    for (const locale of Object.keys(metadata.whatsNew)) {
+      if (inherited.some((item) => item.attributes.locale === locale)) continue;
+      await client.request("appStoreVersionLocalizations", "POST", {
+        type: "appStoreVersionLocalizations",
+        attributes: {
+          locale,
+          ...pick(listing[locale], versionFields),
+          whatsNew: metadata.whatsNew[locale],
+          ...(urls
+            ? {
+                supportUrl: urls.attributes.supportUrl,
+                ...(urls.attributes.marketingUrl
+                  ? { marketingUrl: urls.attributes.marketingUrl }
+                  : {}),
+              }
+            : {}),
+        },
+        relationships: {
+          appStoreVersion: relation("appStoreVersions", target.id),
+        },
+      });
+    }
+    if (Object.keys(listing).length) await applyAppInfoListing(client, listing);
     const detail = await readReview(client, target.id);
     if (!detail)
       throw new Error(
@@ -547,15 +755,12 @@ export async function submitAppStore({
   );
   const savedReview = await readReview(client, target.id);
   const demoVerification = verifyDemoAccount(savedReview, demoCredentials);
-  assertLocales(savedLocales, metadata);
   if (
     attached?.id !== build.id ||
     prepared.attributes.releaseType !== releaseTypeOf(metadata) ||
     prepared.attributes.earliestReleaseDate ||
-    savedLocales.some(
-      (item) =>
-        item.attributes.whatsNew !== metadata.whatsNew[item.attributes.locale],
-    ) ||
+    listingMismatch(savedLocales, metadata, listing) ||
+    (await appInfoListingMismatch(client, listing)) ||
     savedReview?.attributes?.notes !== metadata.reviewNotes
   ) {
     throw new Error(
@@ -629,7 +834,24 @@ export async function submitAppStore({
   };
 }
 
-export function generatedMetadata(template, version) {
+// Locales the repository listing adds get its rolling release notes, or the
+// plain version line when it has none. Explicit per-locale notes win.
+export function withListingNotes(whatsNew, version, listing) {
+  const notes = { ...whatsNew };
+  for (const [locale, entry] of Object.entries(listing)) {
+    // Locales from the same listing file share one language: reuse its
+    // explicit notes so English storefronts never disagree about a build.
+    const sibling = Object.keys(whatsNew).find(
+      (other) => listing[other] === entry,
+    );
+    notes[locale] ??= sibling
+      ? whatsNew[sibling]
+      : (entry.whatsNew ?? `TaskNotes ${version}.`);
+  }
+  return notes;
+}
+
+export function generatedMetadata(template, version, listing = {}) {
   // Reuse reviewed instructions/contact custody; never invent privacy,
   // export-compliance, account credentials or feature promises.
   const instructions =
@@ -644,9 +866,14 @@ export function generatedMetadata(template, version) {
       copyright: template.copyright,
       releaseType: "AFTER_APPROVAL",
       whatsNew: Object.fromEntries(
-        Object.keys(template.whatsNew).map((locale) => [
+        [
+          ...new Set([
+            ...Object.keys(template.whatsNew),
+            ...Object.keys(listing),
+          ]),
+        ].map((locale) => [
           locale,
-          `TaskNotes ${version}.`,
+          listing[locale]?.whatsNew ?? `TaskNotes ${version}.`,
         ]),
       ),
       reviewNotes: `TaskNotes ${version}\n\nHOW TO REVIEW\n${instructions}`,
@@ -666,10 +893,17 @@ async function readMetadataFile(path) {
   }
 }
 
-async function releaseMetadata(version) {
+async function releaseMetadata(version, listing) {
   try {
-    return validateMetadata(
+    const metadata = validateMetadata(
       await readMetadataFile(`docs/releases/ios/${version}.json`),
+      version,
+    );
+    return validateMetadata(
+      {
+        ...metadata,
+        whatsNew: withListingNotes(metadata.whatsNew, version, listing),
+      },
       version,
     );
   } catch (error) {
@@ -688,6 +922,7 @@ async function releaseMetadata(version) {
     return generatedMetadata(
       await readMetadataFile(`docs/releases/ios/${templates[0]}`),
       version,
+      listing,
     );
   }
 }
@@ -727,6 +962,10 @@ const refusalReasons = [
   ],
   ["Release notes must cover exactly", "app-store-locales-mismatch"],
   [
+    "App Store Connect has no single editable app info",
+    "app-store-app-info-not-editable",
+  ],
+  [
     "App review contact information is incomplete",
     "app-store-review-contact-incomplete",
   ],
@@ -751,6 +990,7 @@ const taggedReasons = new Set([
   "app-store-pagination-url-unexpected",
   "app-store-pagination-repeated",
   "app-store-auth-key-invalid",
+  "store-listing-invalid",
 ]);
 // Unrecognised failures name only a fixed error class, never the message.
 const errorClasses = new Map([
@@ -807,8 +1047,9 @@ async function main(tracker) {
   );
   if (!/^\d+\.\d+\.\d+$/.test(version))
     throw invalidMetadata("Invalid public release version");
+  const listing = (await loadStoreListing()).apple;
   const metadata = {
-    ...(await releaseMetadata(version)),
+    ...(await releaseMetadata(version, listing)),
     releaseType: "AFTER_APPROVAL",
   };
   if (process.argv.includes("--validate")) return;
@@ -837,6 +1078,7 @@ async function main(tracker) {
     version,
     buildNumber: process.env.TASKNOTES_IOS_BUILD,
     metadata,
+    listing,
     commit: process.argv.includes("--submit"),
   });
   const qualified = JSON.parse(

@@ -6,6 +6,7 @@ import {
   PLAY_TRACK,
   parseServiceAccount,
   publishProduction,
+  releaseNotesFor,
 } from "./publish-google-play.mjs";
 
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -287,5 +288,159 @@ describe("Google Play production publisher", () => {
         readFileImpl: vi.fn(),
       }),
     ).rejects.toThrow("Release name must be");
+  });
+
+  it("updates only changed listing languages in the release edit and keeps their video", async () => {
+    const calls = [];
+    const base = successfulFetch(calls);
+    const saved = {};
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const requestUrl = String(url);
+      if (requestUrl.endsWith("/edits/edit-1/listings")) {
+        calls.push({ url: requestUrl, options });
+        return jsonResponse({
+          listings: [
+            {
+              language: "en-US",
+              title: "Old",
+              shortDescription: "Old short",
+              fullDescription: "Old full",
+              video: "https://youtu.be/example",
+            },
+            {
+              language: "fr-FR",
+              title: "Titre",
+              shortDescription: "Court",
+              fullDescription: "Complet",
+            },
+            { language: "de-DE", title: "Alt" },
+          ],
+        });
+      }
+      const listingPath = /\/edits\/edit-1\/listings\/([^/]+)$/.exec(
+        requestUrl,
+      );
+      if (listingPath) {
+        calls.push({ url: requestUrl, options });
+        saved[decodeURIComponent(listingPath[1])] = JSON.parse(options.body);
+        return jsonResponse(JSON.parse(options.body));
+      }
+      return base(url, options);
+    });
+    const listing = {
+      "en-US": {
+        title: "TaskNotes: Markdown To-Do List",
+        shortDescription: "Short",
+        fullDescription: "Full",
+        whatsNew: "Recent improvements.",
+      },
+      "fr-FR": {
+        title: "Titre",
+        shortDescription: "Court",
+        fullDescription: "Complet",
+      },
+      "es-419": {
+        title: "Tareas",
+        shortDescription: "Corto",
+        fullDescription: "Completo",
+      },
+    };
+
+    await publishProduction({
+      credentialBase64,
+      aabPath: "release.aab",
+      expectedVersionCode: 123401,
+      name: "TaskNotes 1.2.3",
+      listing,
+      fetchImpl,
+      readFileImpl: vi.fn(async () => Buffer.from("bundle")),
+      now: 1_750_000_000_000,
+    });
+
+    expect(Object.keys(saved).sort()).toEqual(["en-US", "es-419"]);
+    expect(saved["en-US"]).toEqual({
+      language: "en-US",
+      title: "TaskNotes: Markdown To-Do List",
+      shortDescription: "Short",
+      fullDescription: "Full",
+      video: "https://youtu.be/example",
+    });
+    expect(calls.some((call) => call.url.includes("/listings/de-DE"))).toBe(
+      false,
+    );
+    const trackCall = calls.find((call) =>
+      call.url.endsWith("/tracks/production"),
+    );
+    expect(JSON.parse(trackCall.options.body).releases[0].releaseNotes).toEqual(
+      [
+        { language: "en-US", text: "Recent improvements." },
+        { language: "fr-FR", text: "TaskNotes 1.2.3." },
+        { language: "es-419", text: "TaskNotes 1.2.3." },
+      ],
+    );
+    const order = calls.map((call) => call.url);
+    expect(order.findIndex((u) => u.includes("/listings/"))).toBeLessThan(
+      order.findIndex((u) =>
+        u.endsWith(":commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW"),
+      ),
+    );
+  });
+
+  it("never commits when Play does not save the requested listing", async () => {
+    const calls = [];
+    const base = successfulFetch(calls);
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const requestUrl = String(url);
+      if (requestUrl.endsWith("/edits/edit-1/listings"))
+        return jsonResponse({ listings: [] });
+      if (/\/listings\/en-US$/.test(requestUrl))
+        return jsonResponse({ language: "en-US", title: "Truncated" });
+      return base(url, options);
+    });
+    await expect(
+      publishProduction({
+        credentialBase64,
+        aabPath: "release.aab",
+        expectedVersionCode: 123401,
+        name: "TaskNotes 1.2.3",
+        listing: {
+          "en-US": { title: "T", shortDescription: "S", fullDescription: "F" },
+        },
+        fetchImpl,
+        readFileImpl: vi.fn(async () => Buffer.from("bundle")),
+      }),
+    ).rejects.toThrow("did not save the requested store listing");
+    expect(calls.some((call) => call.url.includes(":commit"))).toBe(false);
+    expect(calls.some((call) => call.options.method === "DELETE")).toBe(true);
+  });
+
+  it("rolling notes already in the live release fall back to the release name", () => {
+    const listing = {
+      "en-US": { whatsNew: "Recent improvements." },
+      "fr-FR": { whatsNew: "Améliorations récentes." },
+    };
+    expect(
+      releaseNotesFor("TaskNotes 1.2.4", listing, [
+        { language: "en-US", text: "Recent improvements.\n" },
+        { language: "fr-FR", text: "Anciennes notes." },
+      ]),
+    ).toEqual([
+      { language: "en-US", text: "TaskNotes 1.2.4." },
+      { language: "fr-FR", text: "Améliorations récentes." },
+    ]);
+  });
+
+  it("release notes always include the en-US default", () => {
+    expect(releaseNotesFor("TaskNotes 1.2.3")).toEqual([
+      { language: "en-US", text: "TaskNotes 1.2.3." },
+    ]);
+    expect(
+      releaseNotesFor("TaskNotes 1.2.3", {
+        "ja-JP": { whatsNew: "最近の改善。" },
+      }),
+    ).toEqual([
+      { language: "en-US", text: "TaskNotes 1.2.3." },
+      { language: "ja-JP", text: "最近の改善。" },
+    ]);
   });
 });

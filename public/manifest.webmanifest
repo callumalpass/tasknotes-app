@@ -27,5 +27,17 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ]
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=dev.tasknotes.app",
+      "id": "dev.tasknotes.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/tasknotes/id6797168033"
+    }
+  ],
+  "prefer_related_applications": false
 }

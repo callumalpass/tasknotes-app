@@ -1,0 +1,46 @@
+{
+  "apple": {
+    "locales": ["en-AU", "en-CA", "en-GB", "en-US"],
+    "name": "TaskNotes: Markdown To-Do List",
+    "subtitle": "Planner, calendar & reminders",
+    "keywords": "tasks,todo,kanban,board,notes,checklist,agenda,schedule,projects,recurring,time tracking,organizer",
+    "promotionalText": "Your tasks as portable Markdown notes, on iPhone, iPad and the web. Works with the TaskNotes plugin for Obsidian."
+  },
+  "play": {
+    "languages": ["en-US", "en-GB", "en-AU", "en-CA"],
+    "title": "TaskNotes: Markdown To-Do List",
+    "shortDescription": "To-do list, planner and calendar. Every task is a portable Markdown note."
+  },
+  "description": [
+    "TaskNotes is a calm, capable to-do list and planner where every task is a portable Markdown note.",
+    "",
+    "Capture a task in seconds, see what matters today, and plan the week ahead on a calendar or a board. Your tasks stay yours: each one is a plain Markdown file with structured properties, so you can open, search and reuse it outside the app.",
+    "",
+    "PLAN YOUR DAY",
+    "• Today view with overdue and scheduled work at a glance",
+    "• Due and scheduled dates, priorities, projects and tags",
+    "• Recurring tasks, reminders and dependencies",
+    "• Subtasks, attachments and time tracking,organizer",
+    "",
+    "SEE YOUR WORK YOUR WAY",
+    "• Lists, boards and saved views",
+    "• Month, multi-day and agenda calendars, with Google Calendar events beside your tasks",
+    "• Fast search across every task",
+    "",
+    "NOTES AND TASKS TOGETHER",
+    "• Write Markdown notes on any task",
+    "• Scratchpad for quick notes and images",
+    "• See the Markdown file behind each task and link to it from your other notes",
+    "",
+    "PORTABLE BY DESIGN",
+    "TaskNotes keeps your tasks in an mdbase collection, either hosted for you or kept on your own computer and synced with mdbase Connect. The same task notes work with the TaskNotes plugin for Obsidian, so your phone, the web and your notes stay in step.",
+    "",
+    "QUIET, PRIVATE REMINDERS",
+    "Reminders are delivered by mdbase, even when TaskNotes is closed. Notifications never contain task titles or details.",
+    "",
+    "TaskNotes needs an mdbase account to store your tasks. It is available in English, French, German, Spanish, Italian, Japanese, Korean, Brazilian Portuguese, Russian and Simplified Chinese.",
+    "",
+    "Learn more at tasknotes.dev."
+  ],
+  "whatsNew": "Recent improvements: TaskNotes now speaks ten languages and sends reminders even when the app is closed. Repeating tasks keep their dates when you change repeat settings, monthly repeats are described correctly, and the app opens faster."
+}
