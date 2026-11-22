@@ -52,6 +52,7 @@ import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
 import { DemoFileStore } from "./demo-file-store";
 import { BoundedCache } from "../storage/bounded-cache";
 import { demoTasks } from "./demo-tasks";
+import type { DemoSeed } from "./demo-seed";
 
 import type {
   CollectionInfo,
@@ -143,6 +144,8 @@ export class DemoTaskRepository implements TaskRepository {
     adjustDefinition?: (
       definition: Record<string, unknown>,
     ) => Record<string, unknown>,
+    /** A curated dataset in place of the generated demo tasks. */
+    seed?: DemoSeed,
   ) {
     if (adjustDefinition) {
       this.modelDefinition = adjustDefinition(this.modelDefinition);
@@ -174,10 +177,15 @@ export class DemoTaskRepository implements TaskRepository {
       document:
         "views:\n  - name: Work board\n    type: tasknotesKanban\n    groupBy:\n      property: status\n    sort:\n      - property: sortOrder\n        direction: DESC\n",
     });
-    for (const task of demoTasks(this.model, count))
+    for (const task of seed?.tasks(this.model) ?? demoTasks(this.model, count))
       this.tasks.set(task.id, this.model.read(task));
 
     const now = new Date().toISOString();
+    if (seed) {
+      for (const scratchpad of seed.scratchpads(new Date(now)))
+        this.scratchpads.set(scratchpad.id, scratchpad);
+      return;
+    }
     const current: ScratchpadDocument = {
       id: "demo-scratchpad",
       path: scratchpadDocumentPath(new Date(now), "demo-scratchpad"),
