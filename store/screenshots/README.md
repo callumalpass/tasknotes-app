@@ -7,11 +7,15 @@ uploading them in App Store Connect or Play Console; console uploads are
 replaced by the next release.
 
 - **App Store**: the iPhone and iPad sets go on the primary locale of the new
-  version, before submission. A set is replaced only when its ordered checksums
-  differ, and the submission waits until Apple has processed the uploads and
-  published their checksums. Other iPhone and iPad sizes on that locale are
-  emptied, so Apple scales these instead of showing old images. Locales without
-  their own screenshots fall back to the primary locale's.
+  version and on every locale listed in `store/listing`, before submission.
+  A localization created through the API has no screenshots of its own (App
+  Store Connect's web form copies the primary language's, the API does not),
+  and a version with such locales was refused at review submission. A set is replaced
+  only when its ordered checksums differ, and the submission waits until Apple
+  has processed the uploads and published their checksums. Other iPhone and
+  iPad sizes on those locales are emptied, so Apple scales these instead of
+  showing old images. Locales that exist only in App Store Connect keep their
+  own screenshots.
 - **Google Play**: the phone set and the feature graphic go on the default
   language in the release edit, before commit. An image type is replaced only
   when its ordered SHA-256 list differs. Languages without their own graphics
@@ -20,7 +24,7 @@ replaced by the next release.
 
 `scripts/store-media.mjs` checks each file's size and that it is an opaque RGB
 PNG before anything is written; a bad file stops the release with
-`store-media-invalid`. Only `en` is uploaded for now.
+`store-media-invalid`. Only `en` is uploaded for now, to every listed locale.
 
 ## Regenerate
 

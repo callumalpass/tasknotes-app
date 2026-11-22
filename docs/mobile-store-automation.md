@@ -98,9 +98,21 @@ release after a new locale is added creates that locale in the store.
 
 Store screenshots and the Play feature graphic live in `store/screenshots/`
 (see its README) and are uploaded the same way: the App Store submitter puts
-them on the new version's primary locale and waits for Apple to process them
-before submitting; the Play publisher puts them on the default language in the
-release edit. Unchanged images are not uploaded again.
+them on the new version's primary locale and on every listed Apple locale, and
+waits for Apple to process them before submitting; the Play publisher puts them
+on the default language in the release edit. Unchanged images are not uploaded
+again. Every listed locale needs its own App Store screenshot sets: App Store
+Connect's web form starts a new language with the primary language's
+screenshots, but a localization created through the API has none. The 1.0.31
+review submission was refused with 409 `STATE_ERROR.ENTITY_STATE_INVALID` while
+its six API-created locales had no screenshots; that is the inferred cause, and
+`apple_associated_errors` will name the item if a submission is refused again.
+
+Before the review submission, the read-back also checks that the primary and
+every listed locale have the properties Apple requires on each localization
+(description, keywords and support URL on the version; name and privacy policy
+URL on the app info). A gap stops there with error class
+`listing-required-missing`, the `locale` and `missing_attribute`.
 
 ## Stops, outcomes and recovery
 
@@ -162,7 +174,9 @@ is already a store write, so the line still stops with
 A failure after a write attempt retains
 `{outcome: "failed-after-write", write_started: true, phase, http_status,
 error_class, apple_error_code, apple_error_attribute, http_method, locale,
-source_run_id}` instead, and the job log prints the same fields. `phase` is one
+request_resource, source_run_id}` (plus `missing_attribute`,
+`apple_associated_errors` and `apple_associated_error_count` when they apply)
+instead, and the job log prints the same fields. `phase` is one
 of `version`, `version-localizations`, `app-info-localizations`, `screenshots`,
 `review-details`, `read-back`, `review-submission`, `confirmation` (or
 `unknown`); `http_status` is the status Apple returned, or null; `error_class`
@@ -172,8 +186,18 @@ request, `apple_error_code` is the first error's fixed code (for example
 `STATE_ERROR` or `ENTITY_ERROR.ATTRIBUTE.INVALID`), `apple_error_attribute` the
 attribute name its `source.pointer` names (for example `whatsNew` or
 `keywords`), and `http_method` the request method; `locale` is the locale code
-being written during a localization phase. Each is kept only when it matches a
-strict pattern and is otherwise null. Apple's title and detail text, response
+being written during a localization phase. `request_resource` is the App
+Store Connect resource type the rejected request was for (for example
+`reviewSubmissionItems` or `reviewSubmissions`), from a fixed list, or `other`.
+When Apple explains a refusal in `meta.associatedErrors` (as it does for
+`STATE_ERROR.ENTITY_STATE_INVALID` when a version is not complete enough to
+submit), `apple_associated_errors` keeps up to 20 distinct
+`{code, attribute, resource, locale}` entries, and
+`apple_associated_error_count` how many Apple sent (counted up to 100).
+`resource` is the type in the associated error's path, from the same fixed
+list; `locale` is looked up from the localizations and screenshot sets this
+run read itself, never taken from Apple's text, and the id is not kept.
+Each is kept only when it matches a strict pattern and is otherwise null. Apple's title and detail text, response
 bodies, request paths, ids and URLs never leave the job. The coordinator's
 refusal check never accepts this receipt, so the target keeps its write-started
 stop; it only says where the next attempt should look.
@@ -186,7 +210,10 @@ localizations whose text already matches, creates only missing ones, and
 replaces a screenshot set only when its ordered checksums differ; a new build of
 that version is re-attached to the draft; and a later version adopts an older
 draft by renaming it. A draft review submission is reused only when it contains
-nothing but that version. Anything Apple has already received, a newer draft, or
+nothing but that version; a refused submission item can leave an empty
+draft review submission (the read-only status reader, which counts only
+submissions holding the version, reports it as none), and the next attempt
+reuses it instead of creating another. Anything Apple has already received, a newer draft, or
 more than one open version still waits as `pending-review` or refuses.
 
 Name conflicts. A receipt with HTTP 409 and Apple code
