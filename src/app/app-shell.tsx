@@ -59,6 +59,7 @@ import {
   takeUndo,
   type UndoEntry,
 } from "./undo-history";
+import { useStoreReviewPrompt } from "./use-store-review-prompt";
 import {
   TaskCompletionReportContext,
   type TaskCompletion,
@@ -276,8 +277,18 @@ export function AppShell() {
     },
     [setTaskCompletion, updateTask],
   );
+  const promptStoreReview = useStoreReviewPrompt(
+    route.page === "task" ||
+      captureOpen ||
+      status !== "ready" ||
+      Boolean(error) ||
+      Boolean(discoveryFailure) ||
+      Boolean(pendingDeletion) ||
+      Boolean(deletionError),
+  );
   const reportCompleted = useCallback(
     (completion: TaskCompletion) => {
+      promptStoreReview(completion);
       setAddedNotice(undefined);
       setCompletedNotice({ completion, repository, route: routeRef.current });
       completionUndo.current = {
@@ -290,7 +301,7 @@ export function AppShell() {
       };
       rememberUndo(completionUndo.current);
     },
-    [repository, undoCompletion],
+    [promptStoreReview, repository, undoCompletion],
   );
   const dismissCompleted = useCallback(() => setCompletedNotice(undefined), []);
   useEffect(

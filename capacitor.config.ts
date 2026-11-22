@@ -16,6 +16,7 @@ const iosFirebaseConfigured =
   firebaseProjectConfigured &&
   existsSync("ios/App/App/GoogleService-Info.plist");
 const sharedNativePlugins = [
+  "@capacitor-community/in-app-review",
   "@capacitor/app",
   "@capacitor/browser",
   "@capacitor/haptics",

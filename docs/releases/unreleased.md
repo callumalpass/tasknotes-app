@@ -1,5 +1,7 @@
 # Unreleased
 
+- On iPhone, iPad and Android, occasionally let the App Store or Google Play ask for a rating after you complete a task, once you have used TaskNotes on several days. The system decides whether to show it, and TaskNotes asks at most once every 120 days.
+
 - Fix a launch crash on iPhone and iPad caused by using Android's Private collection callback on iOS.
 
 - Keep an open task that repeats from its completion date on its current scheduled and due dates when you change its repeat settings, such as the repeat count or occurrence note policy. These edits no longer move the task to a later occurrence.
