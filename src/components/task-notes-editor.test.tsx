@@ -1,4 +1,5 @@
 import { undo } from "@codemirror/commands";
+import { forceParsing } from "@codemirror/language";
 import type { ReactNode } from "react";
 import { act, render, screen } from "../test/render";
 import { changeNotes, notesView } from "../test/task-notes-editor";
@@ -24,6 +25,12 @@ describe("TaskNotesEditor", () => {
         resolveImage={unavailable}
       />,
     );
+    // CodeMirror parses within a time budget, so on a slow runner the end of
+    // the note (the reference link) may not be parsed yet. Finish it first.
+    const view = notesView();
+    act(() => {
+      forceParsing(view, view.state.doc.length, 5_000);
+    });
     expect(screen.getByText("A bolded heading")).toHaveClass("cm-lp-strong");
     expect(screen.getByText("Section").closest("a")).toBeNull();
     expect(screen.getByText("Summary").closest(".cm-lp-callout")).toBeVisible();
