@@ -634,14 +634,11 @@ test("browser Back keeps an unsaveable task draft open", async ({ page }) => {
   await page.getByText("Send the research summary to Rowan").first().click();
   const title = page.locator("#task-title");
   await title.fill("");
-  const notes = page.locator("textarea[aria-labelledby='task-notes-title']");
+  const notes = page.getByRole("textbox", { name: "Notes", exact: true });
   await notes.fill("Unsaved draft body");
   await title.focus();
   await page.goBack();
   await expect(page).toHaveURL(/\/task\//);
   await expect(title).toHaveValue("");
-  // Leaving the notes field shows them as read; the draft is still there.
-  await expect(page.locator(".notes-field")).toContainText(
-    "Unsaved draft body",
-  );
+  await expect(notes).toHaveText("Unsaved draft body");
 });
