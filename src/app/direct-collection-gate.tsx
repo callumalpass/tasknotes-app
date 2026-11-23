@@ -88,6 +88,11 @@ export function DirectCollectionGate({
   const [tabEdits] = useState(tabTaskEdits);
   const [draftCleanupFailed, setDraftCleanupFailed] = useState(false);
   const [lostWorkspace, setLostWorkspace] = useState(false);
+  const deletionWaiting = useRef(false);
+  const keepDeletionWaiting = useCallback((waiting: boolean) => {
+    deletionWaiting.current = waiting;
+  }, []);
+  const [deletionCancelled, setDeletionCancelled] = useState(false);
   const draft = useRef("");
   const [recoveryDraft, setRecoveryDraft] = useState("");
   const keepDraft = useCallback((fields: Record<string, unknown>) => {
@@ -189,6 +194,8 @@ export function DirectCollectionGate({
         const closing = begin();
         if (opened) {
           setLostWorkspace(true);
+          setDeletionCancelled(deletionWaiting.current);
+          deletionWaiting.current = false;
           setRecoveryDraft(draft.current);
           setTasks(titles);
           setCopied(false);
@@ -226,6 +233,7 @@ export function DirectCollectionGate({
         if (signal.aborted) repository.dispose?.();
         else {
           opened = true;
+          deletionWaiting.current = false;
           setLostWorkspace(false);
           setRecoveryDraft("");
           setTasks(undefined);
@@ -477,6 +485,7 @@ export function DirectCollectionGate({
             reauthorizeCurrentCollection: manage,
             taskEditStorage: grantKind === "tab" ? tabEdits : undefined,
             onTaskDraft: keepDraft,
+            onDeletionWaiting: keepDeletionWaiting,
           }}
           repository={state.repository}
         />
@@ -539,9 +548,13 @@ export function DirectCollectionGate({
               : t`Connection lost. Reconnect to your server.`}{" "}
             {tasks?.join(", ")}
           </p>
-          <p>
-            <Trans>Deletions still in the Undo window were cancelled.</Trans>
-          </p>
+          {deletionCancelled && (
+            <p>
+              <Trans>
+                The deletion waiting in the Undo window was cancelled.
+              </Trans>
+            </p>
+          )}
         </div>
       )}
       {recoveryDraft && (

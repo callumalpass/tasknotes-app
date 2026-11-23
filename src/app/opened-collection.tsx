@@ -7,7 +7,7 @@ import {
   CollectionGateContext,
   type CollectionGateContextValue,
 } from "./collection-context";
-import { RepositoryProvider } from "./repository-context";
+import { RepositoryProvider, useRepository } from "./repository-context";
 
 import type { TaskRepository } from "../application/ports/task-repository";
 import type { ReminderAuthority } from "../native/notifications";
@@ -52,8 +52,19 @@ export function OpenedCollection({
         reminderAuthority={reminderAuthority}
         repository={repository}
       >
+        {actions.onDeletionWaiting && (
+          <ReportDeletionWaiting report={actions.onDeletionWaiting} />
+        )}
         <AppShell />
       </RepositoryProvider>
     </CollectionGateContext.Provider>
   );
+}
+
+function ReportDeletionWaiting({ report }: { report(waiting: boolean): void }) {
+  const { pendingDeletion } = useRepository();
+  // A deletion whose request has been sent is no longer in its Undo window.
+  const waiting = !!pendingDeletion && !pendingDeletion.outcomeUnknown;
+  useEffect(() => report(waiting), [report, waiting]);
+  return null;
 }

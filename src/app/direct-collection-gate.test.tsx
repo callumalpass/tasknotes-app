@@ -393,6 +393,24 @@ it("keeps a tab-only draft through a reconnect without describing it as a submit
   ).toBe("still editing");
 });
 
+it("says a deletion was cancelled on disconnect only when one was waiting", async () => {
+  mount();
+  await submit(false);
+  await screen.findByRole("button", { name: "Close workspace" });
+  await act(async () => open.mock.calls[0][3]({ code: "unavailable" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Connection lost");
+  expect(screen.getByRole("alert")).not.toHaveTextContent("Undo window");
+  fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
+  await screen.findByRole("button", { name: "Close workspace" });
+  await act(async () =>
+    opened.mock.lastCall![0].actions.onDeletionWaiting!(true),
+  );
+  await act(async () => open.mock.lastCall![3]({ code: "unavailable" }));
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "The deletion waiting in the Undo window was cancelled.",
+  );
+});
+
 it("blocks revocation storage access if a worker appeared in a live session", async () => {
   await directBrowserGrant.save(credentials);
   const forget = vi.spyOn(directBrowserGrant, "forget");

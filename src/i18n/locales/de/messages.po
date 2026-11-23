@@ -2298,10 +2298,6 @@ msgstr "Das Löschen wurde beendet, bevor diese Aufgabe geändert wurde."
 msgid "Deletion waiting"
 msgstr "Löschung ausstehend"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Löschvorgänge, die noch rückgängig gemacht werden konnten, wurden abgebrochen."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "Das aktuelle Scratchpad ist nicht verfügbar."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "Die Löschung"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "Die Löschung, die noch rückgängig gemacht werden konnte, wurde abgebrochen."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

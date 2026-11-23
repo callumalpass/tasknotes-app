@@ -2298,10 +2298,6 @@ msgstr "删除在更改此任务之前已停止。"
 msgid "Deletion waiting"
 msgstr "等待删除"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "仍在撤销时限内的删除操作已取消。"
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "当前随手记不可用。"
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "删除操作"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "仍可撤销的删除已取消。"
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

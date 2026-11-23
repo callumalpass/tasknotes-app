@@ -2298,10 +2298,6 @@ msgstr "L’eliminazione si è interrotta prima di modificare questa attività."
 msgid "Deletion waiting"
 msgstr "Eliminazione in attesa"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Le eliminazioni ancora annullabili sono state annullate."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "Il blocco appunti corrente non è disponibile."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "L'eliminazione"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "L'eliminazione che si poteva ancora annullare è stata interrotta."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

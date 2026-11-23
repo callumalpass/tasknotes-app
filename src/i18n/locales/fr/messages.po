@@ -2299,10 +2299,6 @@ msgstr "La suppression s’est arrêtée avant de modifier cette tâche."
 msgid "Deletion waiting"
 msgstr "Suppression en attente"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Les suppressions encore en attente dans le délai d’annulation ont été annulées."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6093,6 +6089,10 @@ msgstr "Le bloc-notes actuel est indisponible."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "La suppression"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "La suppression qui pouvait encore être annulée a été abandonnée."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"
