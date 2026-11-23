@@ -2298,10 +2298,6 @@ msgstr "La eliminación se detuvo antes de cambiar esta tarea."
 msgid "Deletion waiting"
 msgstr "Eliminación pendiente"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Se cancelaron las eliminaciones que aún se podían deshacer."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "El bloc de notas actual no está disponible."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "La eliminación"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "Se canceló la eliminación que aún se podía deshacer."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

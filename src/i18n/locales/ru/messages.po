@@ -2298,10 +2298,6 @@ msgstr "Удаление остановлено до изменения этой
 msgid "Deletion waiting"
 msgstr "Ожидание удаления"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Удаления, которые ещё можно было отменить, отменены."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "Текущий блокнот недоступен."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "Удаление"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "Удаление, которое ещё можно было отменить, отменено."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

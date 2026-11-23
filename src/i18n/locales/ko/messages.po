@@ -2298,10 +2298,6 @@ msgstr "이 작업이 변경되기 전에 삭제가 중단되었습니다."
 msgid "Deletion waiting"
 msgstr "삭제 대기 중"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "아직 실행 취소할 수 있었던 삭제 작업은 취소되었습니다."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "현재 스크래치패드를 사용할 수 없습니다."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "삭제"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "아직 실행 취소할 수 있던 삭제가 취소되었습니다."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

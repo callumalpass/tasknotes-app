@@ -2298,10 +2298,6 @@ msgstr "A exclusão parou antes de alterar esta tarefa."
 msgid "Deletion waiting"
 msgstr "Exclusão aguardando"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "As exclusões que ainda podiam ser desfeitas foram canceladas."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "O bloco de notas atual está indisponível."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "a exclusão"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "A exclusão que ainda podia ser desfeita foi cancelada."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

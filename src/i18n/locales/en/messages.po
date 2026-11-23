@@ -2298,10 +2298,6 @@ msgstr "Deletion stopped before this task was changed."
 msgid "Deletion waiting"
 msgstr "Deletion waiting"
 
-#: src/app/direct-collection-gate.tsx
-msgid "Deletions still in the Undo window were cancelled."
-msgstr "Deletions still in the Undo window were cancelled."
-
 #: src/components/dependency-editor.tsx
 #: src/components/task-actions.tsx
 msgid "Dependencies"
@@ -6092,6 +6088,10 @@ msgstr "The current scratchpad is unavailable."
 #: src/app/app-shell.tsx
 msgid "The deletion"
 msgstr "The deletion"
+
+#: src/app/direct-collection-gate.tsx
+msgid "The deletion waiting in the Undo window was cancelled."
+msgstr "The deletion waiting in the Undo window was cancelled."
 
 #: src/i18n/ui-copy.ts
 msgid "the destination section"

@@ -8,6 +8,8 @@ export interface CollectionGateContextValue {
   taskEditStorage?: TaskEditStorage;
   /** Keep the current editor's unconfirmed fields available after a live disconnect. */
   onTaskDraft?(fields: Record<string, unknown>): void;
+  /** Whether a deletion is waiting in its Undo window, so a live disconnect can say it was cancelled. */
+  onDeletionWaiting?(waiting: boolean): void;
   importDestination?: {
     id: string;
     name: string;
