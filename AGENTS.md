@@ -1,8 +1,6 @@
 # TaskNotes app
 
-Read `PRODUCT.md` and `DESIGN.md` before changing user-facing behaviour or
-visuals. The application is web-first and packaged for Android and iOS through
-Capacitor.
+The application is web-first and packaged for Android and iOS through Capacitor.
 
 All durable collection access goes through the provider-neutral mdbase
 `TaskRepository`. UI and application code must not branch on hosted versus

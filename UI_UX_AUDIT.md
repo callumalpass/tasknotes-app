@@ -2,8 +2,7 @@
 
 > Historical audit, not the current product contract. Some observations below
 > predate removal of device-local collection storage and subsequent navigation
-> changes. Use `PRODUCT.md` and `DESIGN.md` for current behavior. The daily
-> experience changes and local validation are recorded in
+> changes. The daily experience changes and local validation are recorded in
 > `docs/daily-experience.md`.
 
 ## Product target

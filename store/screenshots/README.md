@@ -68,7 +68,7 @@ The stores show them in file-name order:
 ## Captions and locales
 
 Captions live in `captions.json`, keyed by locale. Keep each one short (about six
-words), in sentence case and calm in tone; see `PRODUCT.md`. `captureExample` is
+words), in sentence case and calm in tone. `captureExample` is
 the text typed into the New task sheet, so it must use syntax the capture parser
 understands in that language. To add a locale, add its captions and run the
 script: the browser runs in that locale, so the app renders in it when the locale

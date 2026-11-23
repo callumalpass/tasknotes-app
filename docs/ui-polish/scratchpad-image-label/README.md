@@ -2,8 +2,8 @@
 
 The Add image action was an icon with only a hover title and accessible name;
 its neighboring New note action already had visible text. Touch users could not
-read its purpose without opening it. DESIGN.md specifies both as borderless text
-actions, so Add image now includes its label in the existing contextual toolbar.
+read its purpose without opening it. Both are borderless text actions, so Add
+image now includes its label in the existing contextual toolbar.
 
 Both actions have 44px targets. The toolbar can wrap for 320px / 200% root text;
 no feed width, note indentation, editor or upload behavior changes.
