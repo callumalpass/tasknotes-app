@@ -40,10 +40,15 @@ for (const dependency of dependencies) {
   });
 }
 
-test("shared i18n and ui are pinned to the same release", async () => {
+// Both come from one release line, but i18n is published only when it
+// changes, so its newest release can be older than ui's, never newer.
+test("shared i18n is pinned no later than ui on the same release line", async () => {
   const { pkg } = await readPins();
-  const [i18n, ui] = dependencies.map((name) => pkg.dependencies[name]);
-  assert.equal(ui, i18n);
+  const [i18n, ui] = dependencies.map((name) =>
+    pkg.dependencies[name].split(/[.-]/, 3).map(Number),
+  );
+  assert.deepEqual(i18n.slice(0, 2), ui.slice(0, 2));
+  assert.ok(i18n[2] <= ui[2], "i18n must not be newer than ui");
 });
 
 test("the shared kit enables ten locales, Italian negotiation and its endonym", () => {

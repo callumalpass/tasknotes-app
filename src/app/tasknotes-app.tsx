@@ -24,6 +24,7 @@ import { followNativeSignInReturn } from "../native/sign-in";
 import { tasknotesMarkUrl } from "./assets";
 import type { OpenedCollection } from "./opened-collection";
 import { OpenProblemDetails } from "./open-problem-details";
+import { SelfHostedEntry } from "./self-hosted-entry";
 import { followSignOutRoute } from "./sign-out-route";
 import { StarterViewArming } from "./starter-view-arming";
 
@@ -160,18 +161,7 @@ function gateExtras(view: CollectionView, mdbase: Mdbase) {
     return (
       <>
         <MdbaseExplainer />
-        {__SELF_HOSTED_UI_ORIGIN__ &&
-          __SELF_HOSTED_UI_ORIGIN__ !== location.origin &&
-          !Capacitor.isNativePlatform() && (
-            <div className="advanced-server-link">
-              <small>
-                <Trans>Advanced</Trans>
-              </small>{" "}
-              <a href={__SELF_HOSTED_UI_ORIGIN__} rel="noreferrer">
-                <Trans>Connect to your own server</Trans>
-              </a>
-            </div>
-          )}
+        <SelfHostedEntry />
       </>
     );
   if (view.kind === "problem" || view.kind === "unavailable")

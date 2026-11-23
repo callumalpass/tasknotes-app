@@ -1004,7 +1004,7 @@ msgstr "调整此视图的筛选条件，或选择其他视图。"
 msgid "Advance after"
 msgstr "之后推进"
 
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1865,7 +1865,7 @@ msgid "Connect calendars"
 msgstr "连接日历"
 
 #: src/app/direct-collection-gate.tsx
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 msgid "Connect to your own server"
 msgstr "连接到自己的服务器"
 

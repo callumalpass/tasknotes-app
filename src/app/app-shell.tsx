@@ -121,6 +121,7 @@ import {
   useNavigationViews,
   type ViewDiscoveryFailure,
 } from "./use-navigation-views";
+import { SelfHostedEntry } from "./self-hosted-entry";
 import { useAddStarterViews } from "./use-starter-views";
 import { ViewsScreen } from "./views-screen";
 import { warmCalendarView } from "./views/calendar-view-presentation";
@@ -519,6 +520,7 @@ export function AppShell() {
             {...collectionUi}
             className="rail-collection-switcher"
             icon="mark"
+            signedOutExtra={<SelfHostedEntry />}
             variant="compact"
           />
         ) : null}

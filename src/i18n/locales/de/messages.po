@@ -1004,7 +1004,7 @@ msgstr "Passen Sie die Filter dieser Ansicht an oder wählen Sie eine andere Ans
 msgid "Advance after"
 msgstr "Fortschalten nach"
 
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1865,7 +1865,7 @@ msgid "Connect calendars"
 msgstr "Kalender verbinden"
 
 #: src/app/direct-collection-gate.tsx
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 msgid "Connect to your own server"
 msgstr "Mit eigenem Server verbinden"
 

@@ -1004,7 +1004,7 @@ msgstr "이 뷰의 필터를 조정하거나 다른 뷰를 선택하세요."
 msgid "Advance after"
 msgstr "다음으로 진행하는 기준"
 
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1865,7 +1865,7 @@ msgid "Connect calendars"
 msgstr "캘린더 연결"
 
 #: src/app/direct-collection-gate.tsx
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 msgid "Connect to your own server"
 msgstr "내 서버에 연결"
 
