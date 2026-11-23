@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 const root = process.argv[2];
@@ -22,6 +23,11 @@ await writeFile(
       target: plan.target,
       inventorySha256: await hash("inventory.json"),
       planSha256: await hash("plan.json"),
+      ...(existsSync(join(root, "self-hosted/inventory.json"))
+        ? {
+            selfHostedInventorySha256: await hash("self-hosted/inventory.json"),
+          }
+        : {}),
     },
     null,
     2,

@@ -122,6 +122,16 @@ to the managed app.
    `https://app.tasknotes.dev/`. The two origins have separate sessions.
    `pnpm build` builds only the managed app.
 
+The production web publisher also publishes this entry to
+`https://self-hosted.tasknotes.dev` (Pages project `tasknotes-self-hosted`)
+after `app.tasknotes.dev` is published and smoked, from the same source commit
+and artifact. A source opts in with `self-hosted/publication.json`, whose origin
+must equal the publisher's fixed origin. The served entry is
+`/assets/tasknotes-self-hosted-<first 12 characters of the commit>.js`. The job
+keeps `tasknotes-self-hosted-receipt-RUN-ATTEMPT` and, when its upload or
+verification fails, restores the previous deployment and fails the run. It never
+sets `TASKNOTES_SELF_HOSTED_UI_ORIGIN`.
+
 Open the invitation, or paste the complete link into the pairing form on the
 same app origin. The app removes the invitation fragment from the address bar.
 Check the displayed server address against the computer showing the eight-digit

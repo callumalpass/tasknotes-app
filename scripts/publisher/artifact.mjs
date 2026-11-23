@@ -248,17 +248,33 @@ export async function assertArtifactDirectory(root, expected) {
     "plan source/tree/target",
   );
   await assertInventory(join(root, "publish"), inventory);
+  // The optional production self-hosted TaskNotes is bound by the same envelope.
+  let selfHosted = null;
+  if (Object.hasOwn(envelope, "selfHostedInventorySha256")) {
+    const bytes = await readFile(join(root, "self-hosted/inventory.json"));
+    requireValue(
+      expected.target === "production" &&
+        envelope.selfHostedInventorySha256 === sha(bytes),
+      "self-hosted inventory binding",
+    );
+    selfHosted = JSON.parse(bytes);
+    await assertInventory(join(root, "self-hosted/publish"), selfHosted);
+  }
   const all = await inventoryDirectory(root);
   requireValue(
-    all.length === inventory.length + 3 &&
+    all.length ===
+      inventory.length + 3 + (selfHosted ? selfHosted.length + 1 : 0) &&
       all.every(
         (a) =>
           ["envelope.json", "inventory.json", "plan.json"].includes(a.path) ||
-          a.path.startsWith("publish/"),
+          a.path.startsWith("publish/") ||
+          (selfHosted &&
+            (a.path === "self-hosted/inventory.json" ||
+              a.path.startsWith("self-hosted/publish/"))),
       ),
     "unexpected artifact paths",
   );
-  return { plan, inventory, envelope };
+  return { plan, inventory, envelope, selfHosted };
 }
 export async function download(expected, root, transport = fetch) {
   const token = process.env.GITHUB_TOKEN;
