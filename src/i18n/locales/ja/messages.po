@@ -1004,7 +1004,7 @@ msgstr "このビューのフィルターを調整するか、別のビューを
 msgid "Advance after"
 msgstr "次の項目に進む"
 
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/expression-builder.tsx
 msgid "Advanced"
@@ -1865,7 +1865,7 @@ msgid "Connect calendars"
 msgstr "カレンダーを接続"
 
 #: src/app/direct-collection-gate.tsx
-#: src/app/tasknotes-app.tsx
+#: src/app/self-hosted-entry.tsx
 msgid "Connect to your own server"
 msgstr "自分のサーバーに接続"
 

@@ -61,6 +61,7 @@ import {
   type SettingsSection,
 } from "./settings-sections";
 import { storageExplanation } from "./storage-trust";
+import { SelfHostedEntry } from "./self-hosted-entry";
 import { useNarrowLayout } from "./use-narrow-layout";
 import { useStoredFlag } from "./use-stored-flag";
 import type { CalendarPreferences } from "./calendar-preferences";
@@ -424,7 +425,11 @@ function CollectionSettings({ onImport }: { onImport?: () => void }) {
               : translate({ message: "Refresh now" })}
           </button>
           {collectionUi ? (
-            <CollectionSwitcher {...collectionUi} variant="full" />
+            <CollectionSwitcher
+              {...collectionUi}
+              signedOutExtra={<SelfHostedEntry />}
+              variant="full"
+            />
           ) : (
             <button
               className="secondary-action"
