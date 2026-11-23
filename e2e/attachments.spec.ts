@@ -139,5 +139,5 @@ test("raster attachments keep their thumbnail and inline Notes insertion", async
   const row = section.getByRole("listitem");
   await expect(row.locator("img")).toBeVisible();
   await row.getByRole("button", { name: "Insert", exact: true }).click();
-  await expect(page.locator(".markdown-preview img")).toBeVisible();
+  await expect(page.locator(".task-notes-image img")).toBeVisible();
 });

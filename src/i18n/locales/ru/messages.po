@@ -945,7 +945,7 @@ msgstr "Добавить задачу в {0}"
 msgid "Add task to {label}"
 msgstr "Добавить задачу в {label}"
 
-#: src/app/task-screen.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Add thoughts, links, or supporting details…"
 msgstr "Добавьте мысли, ссылки или пояснения…"
 
@@ -1210,7 +1210,7 @@ msgstr "Для назначений используется связанная 
 msgid "Attach file"
 msgstr "Прикрепить файл"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Attached image"
 msgstr "Прикреплённое изображение"
 
@@ -2442,7 +2442,6 @@ msgid "done"
 msgstr "выполнено"
 
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2566,16 +2565,14 @@ msgstr "Предыдущие заметки"
 msgid "Earlier rules take priority."
 msgstr "Более ранние правила имеют приоритет."
 
-#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "Изменить"
 
 #. placeholder {0}: String(label)
-#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
+#. placeholder {0}: detail.label
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3098,11 +3095,11 @@ msgstr "Не удалось загрузить изображение"
 msgid "Image file is unavailable"
 msgstr "Файл изображения недоступен"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image preview unavailable"
 msgstr "Предпросмотр изображения недоступен"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image unavailable offline"
 msgstr "Изображение недоступно без подключения к интернету"
 
@@ -3452,7 +3449,7 @@ msgid "Loading attachments…"
 msgstr "Загрузка вложений…"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Loading image…"
 msgstr "Загрузка изображения…"
 
@@ -4166,10 +4163,6 @@ msgstr "Заметки"
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
 msgstr "После сегодняшнего дня задач не запланировано."
-
-#: src/components/markdown-preview.tsx
-msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "Пока нечего просматривать. Выберите «Писать», чтобы добавить заметки."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
@@ -4897,10 +4890,6 @@ msgstr "Запланированные даты удалены: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed tag {value} from {tasks}"
 msgstr "Убран тег {value}: {tasks}"
-
-#: src/app/task-screen.tsx
-msgid "Rendering…"
-msgstr "Отображение…"
 
 #: src/components/task-row.tsx
 msgctxt "task action: mark incomplete"

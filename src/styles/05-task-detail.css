@@ -1340,7 +1340,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-.notes-field:has(textarea:focus-visible) {
+.notes-field:has(textarea:focus-visible, .cm-editor.cm-focused) {
   border-bottom-color: var(--accent);
 }
 
@@ -1361,7 +1361,6 @@
   font-weight: 600;
 }
 
-/* Notes are one surface: Add image and Edit or Done sit quietly beside the heading. */
 .notes-field-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1378,32 +1377,6 @@
   margin-inline: 0;
 }
 
-.notes-mode-action {
-  min-height: var(--control-min-size);
-  padding: 0 6px;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: var(--type-supporting);
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-}
-
-.notes-mode-action:hover {
-  color: var(--ink);
-}
-
-.notes-mode-action:focus-visible {
-  color: var(--ink);
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.notes-preview-surface {
-  cursor: text;
-}
-
 .notes-field textarea {
   display: block;
   width: 100%;
@@ -1415,6 +1388,47 @@
   background: transparent;
   border: 0;
   outline: 0;
+}
+
+.task-notes-editor {
+  min-width: 0;
+  min-height: 64px;
+  font-size: var(--type-control);
+}
+
+.task-notes-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.task-notes-editor .cm-scroller {
+  font: inherit;
+  line-height: 1.6;
+}
+
+.task-notes-editor .cm-content {
+  min-height: 64px;
+  padding: 0;
+  caret-color: var(--ink);
+}
+
+.task-notes-editor .cm-line {
+  padding-inline: 0;
+}
+
+.task-notes-editor .cm-placeholder {
+  color: var(--ink-muted);
+}
+
+.task-notes-editor .cm-lp-link {
+  cursor: text;
+}
+
+.task-notes-editor .task-notes-web-link .cm-lp-link,
+.task-notes-editor .task-notes-web-link {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .task-attachments {
@@ -1684,20 +1698,14 @@
   opacity: 0.45;
 }
 
-.markdown-preview {
-  min-height: 150px;
-  overflow-wrap: anywhere;
-  font-size: var(--type-control);
-  line-height: 1.6;
-}
-
-.markdown-preview img {
-  display: block;
+.task-notes-image img {
+  display: inline-block;
   width: auto;
   max-width: 100%;
   max-height: min(52vh, 520px);
-  margin: 14px 0;
+  margin: 8px 0;
   object-fit: contain;
+  vertical-align: middle;
   border-radius: var(--radius-control);
 }
 
@@ -1710,105 +1718,6 @@
   font-size: var(--type-supporting);
   background: var(--paper-soft);
   border-radius: var(--radius-control);
-}
-
-.markdown-preview > :first-child {
-  margin-top: 0;
-}
-
-.markdown-preview > :last-child {
-  margin-bottom: 0;
-}
-
-.markdown-preview h1,
-.markdown-preview h2,
-.markdown-preview h3 {
-  margin: 1.25em 0 0.45em;
-  line-height: 1.25;
-}
-
-.markdown-preview h1 {
-  font-size: 1.45rem;
-}
-
-.markdown-preview h2 {
-  font-size: 1.25rem;
-}
-
-.markdown-preview h3 {
-  font-size: var(--type-control);
-}
-
-.markdown-preview ul,
-.markdown-preview ol {
-  padding-left: 1.5rem;
-}
-
-.markdown-preview li + li {
-  margin-top: 0.25rem;
-}
-
-.markdown-preview li:has(> input[type="checkbox"]) {
-  list-style: none;
-}
-
-.markdown-preview input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
-  margin: 0 7px 0 -1.4rem;
-  vertical-align: -3px;
-  accent-color: var(--accent);
-}
-
-.markdown-preview a {
-  color: var(--accent);
-  text-underline-offset: 2px;
-}
-
-.markdown-preview code {
-  padding: 0.12em 0.3em;
-  font-family: "Azeret Mono", ui-monospace, monospace;
-  font-size: 0.86em;
-  background: var(--paper-soft);
-  border-radius: var(--radius-control);
-}
-
-.markdown-preview pre {
-  padding: 12px;
-  overflow-x: auto;
-  background: var(--paper-soft);
-  border-radius: var(--radius-control);
-}
-
-.markdown-preview pre code {
-  padding: 0;
-  background: transparent;
-}
-
-.markdown-preview blockquote {
-  padding-left: 14px;
-  margin-left: 0;
-  color: var(--ink-soft);
-  border-left: 2px solid var(--line-strong);
-}
-
-.markdown-preview table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.markdown-preview th,
-.markdown-preview td {
-  padding: 7px 9px;
-  text-align: left;
-  border-bottom: 1px solid var(--line);
-}
-
-.markdown-preview-empty {
-  min-height: 150px;
-  margin: 0;
-  padding: 8px 0;
-  color: var(--ink-muted);
 }
 
 .capture-details-section > summary::-webkit-details-marker {
@@ -2044,27 +1953,6 @@
   gap: 12px;
   margin-bottom: 4px;
 }
-.task-screen .notes-field textarea {
-  min-height: 64px;
-}
-
-.task-screen .markdown-preview,
-.task-screen .markdown-preview-empty {
-  min-height: 64px;
-}
-
-/* Until the renderer loads, the note shows as it was written. */
-.markdown-preview.is-pending {
-  white-space: pre-wrap;
-}
-/* Notes grow with what is written, so a short note leaves Subtasks in reach. */
-@supports (field-sizing: content) {
-  .task-screen .notes-field textarea {
-    field-sizing: content;
-    resize: none;
-  }
-}
-
 .task-subtasks {
   padding: 20px 0;
   border-bottom: 1px solid var(--line);

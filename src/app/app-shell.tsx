@@ -116,7 +116,7 @@ import {
   SEARCH_NAVIGATION_KEY,
 } from "./navigation-views";
 import { transitionSidebar } from "./navigation-transition";
-import { TaskScreen, warmMarkdownPreview } from "./task-screen";
+import { TaskScreen, warmTaskNotesEditor } from "./task-screen";
 import {
   useNavigationViews,
   type ViewDiscoveryFailure,
@@ -158,7 +158,7 @@ export function AppShell() {
   useEffect(() => {
     if (import.meta.env.MODE === "test") return;
     const warm = () => {
-      warmMarkdownPreview();
+      warmTaskNotesEditor();
       warmCalendarView();
     };
     if (typeof window.requestIdleCallback === "function") {

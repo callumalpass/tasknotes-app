@@ -40,9 +40,9 @@ test("rapid autosaves acknowledge all edits without noisy sync announcements", a
 }) => {
   await open(page, "edit");
   await page.clock.resume();
-  await expect(page.locator(".markdown-preview")).toHaveText(
-    "A short note for checking the editor layout.",
-  );
+  await expect(
+    page.getByRole("textbox", { name: "Notes", exact: true }),
+  ).toHaveText("A short note for checking the editor layout.");
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
   const title = page.getByLabel("Task title", { exact: true });
   for (let index = 0; index < 8; index++) {
