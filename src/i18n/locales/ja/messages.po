@@ -945,7 +945,7 @@ msgstr "{0}にタスクを追加"
 msgid "Add task to {label}"
 msgstr "{label}にタスクを追加"
 
-#: src/app/task-screen.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Add thoughts, links, or supporting details…"
 msgstr "考え、リンク、補足情報を追加…"
 
@@ -1210,7 +1210,7 @@ msgstr "割り当てにはリンク済みの人物レコードを使用します
 msgid "Attach file"
 msgstr "ファイルを添付"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Attached image"
 msgstr "添付画像"
 
@@ -2442,7 +2442,6 @@ msgid "done"
 msgstr "完了"
 
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2566,16 +2565,14 @@ msgstr "以前のノート"
 msgid "Earlier rules take priority."
 msgstr "先のルールが優先されます。"
 
-#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "編集"
 
 #. placeholder {0}: String(label)
-#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
+#. placeholder {0}: detail.label
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3098,11 +3095,11 @@ msgstr "画像を読み込めませんでした"
 msgid "Image file is unavailable"
 msgstr "画像ファイルを利用できません"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image preview unavailable"
 msgstr "画像プレビューを利用できません"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image unavailable offline"
 msgstr "オフラインでは画像を利用できません"
 
@@ -3452,7 +3449,7 @@ msgid "Loading attachments…"
 msgstr "添付ファイルを読み込み中…"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Loading image…"
 msgstr "画像を読み込み中…"
 
@@ -4166,10 +4163,6 @@ msgstr "ノート"
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
 msgstr "今日以降に予定されたタスクはありません。"
-
-#: src/components/markdown-preview.tsx
-msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "まだプレビューする内容がありません。ノートを追加するには「書く」を選択してください。"
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
@@ -4897,10 +4890,6 @@ msgstr "予定日を削除しました: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed tag {value} from {tasks}"
 msgstr "タグ {value} を削除しました: {tasks}"
-
-#: src/app/task-screen.tsx
-msgid "Rendering…"
-msgstr "レンダリング中…"
 
 #: src/components/task-row.tsx
 msgctxt "task action: mark incomplete"

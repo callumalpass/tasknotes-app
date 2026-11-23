@@ -945,7 +945,7 @@ msgstr "将任务添加到 {0}"
 msgid "Add task to {label}"
 msgstr "将任务添加到 {label}"
 
-#: src/app/task-screen.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Add thoughts, links, or supporting details…"
 msgstr "添加想法、链接或补充详情…"
 
@@ -1210,7 +1210,7 @@ msgstr "负责人使用你关联的人员记录。"
 msgid "Attach file"
 msgstr "添加附件"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Attached image"
 msgstr "已附加图片"
 
@@ -2442,7 +2442,6 @@ msgid "done"
 msgstr "已完成"
 
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2566,16 +2565,14 @@ msgstr "之前的笔记"
 msgid "Earlier rules take priority."
 msgstr "较早的规则优先。"
 
-#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "编辑"
 
 #. placeholder {0}: String(label)
-#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
+#. placeholder {0}: detail.label
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3098,11 +3095,11 @@ msgstr "无法加载图片"
 msgid "Image file is unavailable"
 msgstr "图片文件不可用"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image preview unavailable"
 msgstr "图片预览不可用"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image unavailable offline"
 msgstr "离线时图片不可用"
 
@@ -3452,7 +3449,7 @@ msgid "Loading attachments…"
 msgstr "正在加载附件…"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Loading image…"
 msgstr "正在加载图片…"
 
@@ -4166,10 +4163,6 @@ msgstr "笔记"
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
 msgstr "今天之后没有安排任务。"
-
-#: src/components/markdown-preview.tsx
-msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "暂无可预览内容。选择“书写”以添加笔记。"
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
@@ -4897,10 +4890,6 @@ msgstr "已移除计划日期：{tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed tag {value} from {tasks}"
 msgstr "已移除标签 {value}：{tasks}"
-
-#: src/app/task-screen.tsx
-msgid "Rendering…"
-msgstr "正在渲染…"
 
 #: src/components/task-row.tsx
 msgctxt "task action: mark incomplete"

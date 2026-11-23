@@ -1116,10 +1116,6 @@
   border: 0;
 }
 
-.notes-preview-surface {
-  cursor: text;
-}
-
 /* Editable lists of statuses, priorities and custom fields. */
 .vocabulary-editor {
   padding: 4px 0 0;

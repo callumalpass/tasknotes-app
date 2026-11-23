@@ -6,6 +6,7 @@
  */
 
 .markdown-source-editor,
+.task-notes-editor,
 .cm-lp-table-menu {
   --color-text-faint: var(--ink-faint);
   --color-warning: oklch(64% 0.13 75);

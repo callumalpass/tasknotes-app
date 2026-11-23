@@ -7,6 +7,7 @@ import type {
 } from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
+import { changeNotes, notesView } from "../test/task-notes-editor";
 
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { attachTaskNotes } from "../test/next-task-fixture";
@@ -310,9 +311,7 @@ describe("TaskScreen across an immediate reload", () => {
       // Offline: the save is captured on this device and waits for sync.
       const capture = vi.spyOn(first.repository, "update");
       replica.stallConfirmations();
-      fireEvent.change(await screen.findByLabelText("Notes"), {
-        target: { value: "My offline notes" },
-      });
+      changeNotes(await screen.findByLabelText("Notes"), "My offline notes");
       await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
         timeout: 3_000,
       });
@@ -369,7 +368,7 @@ describe("TaskScreen across an immediate reload", () => {
         ),
       ).toBeVisible();
       await waitFor(() =>
-        expect(screen.getByLabelText("Notes")).toHaveValue("My offline notes"),
+        expect(notesView().state.doc.toString()).toBe("My offline notes"),
       );
       if (optimisticReopen) {
         // Restoring a refused draft must also survive closing without a choice.
@@ -379,9 +378,7 @@ describe("TaskScreen across an immediate reload", () => {
           "This task changed somewhere else, so your edit wasn't saved.",
         );
         await waitFor(() =>
-          expect(screen.getByLabelText("Notes")).toHaveValue(
-            "My offline notes",
-          ),
+          expect(notesView().state.doc.toString()).toBe("My offline notes"),
         );
         expect(hasBodyBackup()).toBe(true);
       }
@@ -389,9 +386,7 @@ describe("TaskScreen across an immediate reload", () => {
         ? "My revised offline notes"
         : "My offline notes";
       if (optimisticReopen) {
-        fireEvent.change(screen.getByLabelText("Notes"), {
-          target: { value: expectedBody },
-        });
+        changeNotes(screen.getByLabelText("Notes"), expectedBody);
         const notified = vi.fn();
         const stop = second.repository.subscribe(notified);
         try {
@@ -401,7 +396,7 @@ describe("TaskScreen across an immediate reload", () => {
             });
           });
           await waitFor(() => expect(notified).toHaveBeenCalled());
-          expect(screen.getByLabelText("Notes")).toHaveValue(expectedBody);
+          expect(notesView().state.doc.toString()).toBe(expectedBody);
           expect(hasBodyBackup(expectedBody)).toBe(true);
         } finally {
           stop();

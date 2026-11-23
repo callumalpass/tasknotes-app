@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { act, fireEvent, render, screen, waitFor } from "../test/render";
+import { changeNotes, notesView } from "../test/task-notes-editor";
 
 import type { NextTaskRepository } from "../storage/next-repository";
 import type { PlainValue } from "@mdbase-dev/sdk";
@@ -62,7 +63,7 @@ describe("TaskScreen", () => {
   it("keeps notes and every primary property directly inspectable", async () => {
     const back = renderTask();
     await screen.findByLabelText("Task title", { exact: true });
-    expect(screen.getByLabelText("Notes")).toBeVisible();
+    expect(await screen.findByRole("textbox", { name: "Notes" })).toBeVisible();
     expect(
       screen
         .getByRole("region", { name: "Task properties" })
@@ -94,27 +95,19 @@ describe("TaskScreen", () => {
     expect((await repository.get(task.id))?.tags).toContain("research");
   });
 
-  it("reads saved notes as text until someone edits them", async () => {
+  it("keeps one Markdown field for reading and editing", async () => {
     renderTask();
-    const notes = await screen.findByLabelText("Notes");
+    const notes = await screen.findByRole("textbox", { name: "Notes" });
+    changeNotes(notes, "A **bold** plan");
+    expect(await screen.findByText("bold")).toBeVisible();
+    expect(notesView(notes).state.doc.toString()).toBe("A **bold** plan");
     expect(screen.queryByRole("button", { name: "Edit Notes" })).toBeNull();
-    fireEvent.change(notes, { target: { value: "A **bold** plan" } });
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(await screen.findByText("bold")).toBeVisible();
-    expect(screen.queryByLabelText("Notes")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Edit Notes" }));
-    await waitFor(() => expect(screen.getByLabelText("Notes")).toHaveFocus());
-    expect(screen.getByLabelText("Notes")).toHaveValue("A **bold** plan");
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(await screen.findByText("bold")).toBeVisible();
   });
 
   it("saves pending notes before navigating to the next task", async () => {
     const navigate = vi.fn();
     renderTask(vi.fn(), navigate);
-    fireEvent.change(await screen.findByLabelText("Notes"), {
-      target: { value: "Before moving" },
-    });
+    changeNotes(await screen.findByLabelText("Notes"), "Before moving");
     fireEvent.click(screen.getByRole("button", { name: "Next task" }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith({ id: "next" }));
     expect((await repository.get(task.id))?.body).toBe("Before moving");
@@ -135,10 +128,10 @@ describe("TaskScreen", () => {
         await gate;
         return original(...args);
       });
-    fireEvent.change(notes, { target: { value: "First edit" } });
+    changeNotes(notes, "First edit");
     fireEvent.click(screen.getByRole("button", { name: "Next task" }));
     await waitFor(() => expect(update).toHaveBeenCalledOnce());
-    fireEvent.change(notes, { target: { value: "Typed while saving" } });
+    changeNotes(notes, "Typed while saving");
     await act(async () => release());
     await waitFor(() => expect(navigate).toHaveBeenCalledWith({ id: "next" }));
     expect((await repository.get(task.id))?.body).toBe("Typed while saving");
@@ -306,9 +299,10 @@ describe("TaskScreen", () => {
   it("completes from the title after preserving pending notes", async () => {
     const report = vi.fn();
     renderTask(vi.fn(), vi.fn(), report);
-    fireEvent.change(await screen.findByLabelText("Notes"), {
-      target: { value: "Keep the reasoning behind this task." },
-    });
+    changeNotes(
+      await screen.findByLabelText("Notes"),
+      "Keep the reasoning behind this task.",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Complete task" }));
     await screen.findByRole("button", { name: "Reopen task" });
     const saved = await repository.get(task.id);
@@ -386,9 +380,7 @@ describe("TaskScreen", () => {
       ),
     );
     await waitFor(() =>
-      expect(
-        (screen.getByLabelText("Notes") as HTMLTextAreaElement).value,
-      ).toMatch(/^!\[\[Attachments\//),
+      expect(notesView().state.doc.toString()).toMatch(/^!\[\[Attachments\//),
     );
 
     expect(
@@ -452,9 +444,7 @@ describe("TaskScreen", () => {
       target: { files: [file] },
     });
     await waitFor(() => expect(uploadSpy).toHaveBeenCalled());
-    fireEvent.change(screen.getByLabelText("Notes"), {
-      target: { value: "Typed while uploading" },
-    });
+    changeNotes(screen.getByLabelText("Notes"), "Typed while uploading");
     releaseUpload();
 
     await waitFor(async () => {
@@ -463,9 +453,9 @@ describe("TaskScreen", () => {
         /^Typed while uploading\n\n!\[\[Attachments\//,
       );
     });
-    expect(
-      (screen.getByLabelText("Notes") as HTMLTextAreaElement).value,
-    ).toMatch(/^Typed while uploading\n\n!\[\[Attachments\//);
+    expect(notesView().state.doc.toString()).toMatch(
+      /^Typed while uploading\n\n!\[\[Attachments\//,
+    );
   });
 
   it("preserves Notes typed while existing-image validation is in flight", async () => {
@@ -491,9 +481,7 @@ describe("TaskScreen", () => {
       });
     fireEvent.click(screen.getByRole("button", { name: "Insert" }));
     await waitFor(() => expect(listSpy).toHaveBeenCalled());
-    fireEvent.change(screen.getByLabelText("Notes"), {
-      target: { value: "Typed during validation" },
-    });
+    changeNotes(screen.getByLabelText("Notes"), "Typed during validation");
     releaseList();
 
     await waitFor(async () =>
@@ -630,9 +618,7 @@ describe("TaskScreen with a change made in another tab", () => {
     await saveFromAnotherTab({ title: "Gamma", body: "Notes from elsewhere" });
 
     await waitFor(() =>
-      expect(screen.getByLabelText("Notes")).toHaveValue(
-        "Notes from elsewhere",
-      ),
+      expect(notesView().state.doc.toString()).toBe("Notes from elsewhere"),
     );
     expect(title).toHaveValue("My unsaved title");
   });
@@ -665,9 +651,7 @@ describe("TaskScreen with a refused native save", () => {
         />
       </RepositoryProvider>,
     );
-    fireEvent.change(await screen.findByLabelText("Notes"), {
-      target: { value: "My local notes" },
-    });
+    changeNotes(await screen.findByLabelText("Notes"), "My local notes");
     await waitFor(() => expect(update).toHaveBeenCalledOnce(), {
       timeout: 3_000,
     });
@@ -694,7 +678,7 @@ describe("TaskScreen with a refused native save", () => {
         "This task changed somewhere else, so your edit wasn't saved.",
       ),
     ).toBeVisible();
-    expect(screen.getByLabelText("Notes")).toHaveValue("My local notes");
+    expect(notesView().state.doc.toString()).toBe("My local notes");
     expect(
       screen.getByRole("button", { name: "Not saved. Review your edit." }),
     ).toBeEnabled();
@@ -702,9 +686,7 @@ describe("TaskScreen with a refused native save", () => {
     fireEvent.keyDown(window, { key: "j" });
     expect(navigate).not.toHaveBeenCalled();
     // Further typing never silently overwrites the other app's change.
-    fireEvent.change(screen.getByLabelText("Notes"), {
-      target: { value: "My local notes, extended" },
-    });
+    changeNotes(screen.getByLabelText("Notes"), "My local notes, extended");
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(update).toHaveBeenCalledOnce();
 
@@ -742,7 +724,7 @@ describe("TaskScreen with a refused native save", () => {
         screen.queryByRole("alert", { name: "Edit not saved" }),
       ).not.toBeInTheDocument(),
     );
-    expect(screen.getByLabelText("Notes")).toHaveValue("Edited elsewhere");
+    expect(notesView().state.doc.toString()).toBe("Edited elsewhere");
     expect(screen.getByRole("button", { name: "Saved" })).toBeDisabled();
     expect(update).toHaveBeenCalledOnce();
   });

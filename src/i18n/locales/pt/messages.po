@@ -945,7 +945,7 @@ msgstr "Adicionar tarefa a {0}"
 msgid "Add task to {label}"
 msgstr "Adicionar tarefa a {label}"
 
-#: src/app/task-screen.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Add thoughts, links, or supporting details…"
 msgstr "Adicione ideias, links ou detalhes de apoio…"
 
@@ -1210,7 +1210,7 @@ msgstr "As atribuições usam o registro de pessoa vinculado a você."
 msgid "Attach file"
 msgstr "Anexar arquivo"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Attached image"
 msgstr "Imagem anexada"
 
@@ -2442,7 +2442,6 @@ msgid "done"
 msgstr "concluído"
 
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2566,16 +2565,14 @@ msgstr "Notas anteriores"
 msgid "Earlier rules take priority."
 msgstr "Regras anteriores têm prioridade."
 
-#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "Editar"
 
 #. placeholder {0}: String(label)
-#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
+#. placeholder {0}: detail.label
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3098,11 +3095,11 @@ msgstr "Não foi possível carregar a imagem"
 msgid "Image file is unavailable"
 msgstr "Arquivo de imagem indisponível"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image preview unavailable"
 msgstr "Prévia da imagem indisponível"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image unavailable offline"
 msgstr "Imagem indisponível offline"
 
@@ -3452,7 +3449,7 @@ msgid "Loading attachments…"
 msgstr "Carregando anexos…"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Loading image…"
 msgstr "Carregando imagem…"
 
@@ -4166,10 +4163,6 @@ msgstr "Notas"
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
 msgstr "Nada está agendado após hoje."
-
-#: src/components/markdown-preview.tsx
-msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "Ainda não há nada para visualizar. Escolha Escrever para adicionar notas."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
@@ -4897,10 +4890,6 @@ msgstr "Datas agendadas removidas: {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed tag {value} from {tasks}"
 msgstr "Etiqueta {value} removida: {tasks}"
-
-#: src/app/task-screen.tsx
-msgid "Rendering…"
-msgstr "Renderizando…"
 
 #: src/components/task-row.tsx
 msgctxt "task action: mark incomplete"

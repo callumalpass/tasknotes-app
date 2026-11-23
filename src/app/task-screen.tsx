@@ -67,13 +67,12 @@ import {
 import type { Task, UpdateTaskInput } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
 
-const markdownPreview = preloadable(
-  async () => (await import("../components/markdown-preview")).MarkdownPreview,
+const taskNotesEditor = preloadable(
+  async () => (await import("../components/task-notes-editor")).TaskNotesEditor,
 );
 
-/** Fetches the note renderer ahead of the first task a person opens. */
-export function warmMarkdownPreview(): void {
-  markdownPreview.preload();
+export function warmTaskNotesEditor(): void {
+  taskNotesEditor.preload();
 }
 
 type SaveState = "saved" | "saving" | "error";
@@ -161,7 +160,7 @@ function TaskEditor({
 }: TaskEditorProps & { recoveryScope: string }) {
   const { t } = useLingui();
   const besideWork = useDetailsBesideWork();
-  const [MarkdownPreview] = useState(markdownPreview.component);
+  const [TaskNotesEditor] = useState(taskNotesEditor.component);
   const {
     updateTask,
     mutations,
@@ -227,11 +226,6 @@ function TaskEditor({
     [repository, task.id, task.path],
   );
   const [draft, setDraft] = useState<Draft>(() => toDraft(task));
-  // Existing notes open as reading text; empty notes open ready for writing.
-  const [notesMode, setNotesMode] = useState<"write" | "preview">(() =>
-    draft.body.trim() ? "preview" : "write",
-  );
-  const notesInputRef = useRef<HTMLTextAreaElement>(null);
   const [notesInsertSlot, setNotesInsertSlot] = useState<HTMLElement | null>(
     null,
   );
@@ -841,7 +835,6 @@ function TaskEditor({
   }
 
   const retrySaveLabel = saveError ?? translate({ message: "Tap to retry." });
-  const notesLabel = t({ message: "Notes" });
   return (
     <section
       className="screen task-screen"
@@ -1135,86 +1128,17 @@ function TaskEditor({
             </h2>
             <div className="notes-field-actions">
               <span className="notes-insert-slot" ref={setNotesInsertSlot} />
-              {draft.body.trim() ? (
-                notesMode === "write" ? (
-                  <button
-                    className="notes-mode-action"
-                    type="button"
-                    // Pressing Done must not first blur the field into preview.
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setNotesMode("preview")}
-                  >
-                    <Trans>Done</Trans>
-                  </button>
-                ) : (
-                  <button
-                    className="notes-mode-action"
-                    type="button"
-                    aria-label={t`Edit ${String(notesLabel)}`}
-                    onClick={() => {
-                      setNotesMode("write");
-                      window.requestAnimationFrame(() =>
-                        notesInputRef.current?.focus(),
-                      );
-                    }}
-                  >
-                    <Trans>Edit</Trans>
-                  </button>
-                )
-              ) : null}
             </div>
           </header>
-          {notesMode === "write" ? (
-            <textarea
-              aria-labelledby="task-notes-title"
-              ref={notesInputRef}
-              placeholder={t({
-                message: "Add thoughts, links, or supporting details…",
-              })}
-              rows={3}
-              value={draft.body}
-              onChange={(event) => change({ body: event.target.value })}
-              onBlur={() => {
-                // Leaving the notes shows them as they read; switching windows does not.
-                if (!document.hasFocus()) return;
-                if (draftRef.current.body.trim()) setNotesMode("preview");
-              }}
+          <Suspense
+            fallback={<div className="task-notes-editor" aria-busy="true" />}
+          >
+            <TaskNotesEditor
+              source={draft.body}
+              onChange={(body) => change({ body })}
+              resolveImage={resolveTaskImage}
             />
-          ) : (
-            <Suspense
-              fallback={
-                draft.body.trim() ? (
-                  // The note's own text holds its place until it is rendered.
-                  <div className="markdown-preview is-pending">
-                    {draft.body}
-                  </div>
-                ) : (
-                  <p className="markdown-preview-empty">
-                    <Trans>Rendering…</Trans>
-                  </p>
-                )
-              }
-            >
-              {/* Keyboard users choose Edit; pointer users click the text. */}
-              <div
-                className="notes-preview-surface"
-                onClick={(event) => {
-                  if ((event.target as HTMLElement).closest("a, button"))
-                    return;
-                  if (window.getSelection()?.toString()) return;
-                  setNotesMode("write");
-                  window.requestAnimationFrame(() =>
-                    notesInputRef.current?.focus(),
-                  );
-                }}
-              >
-                <MarkdownPreview
-                  resolveImage={resolveTaskImage}
-                  source={draft.body}
-                />
-              </div>
-            </Suspense>
-          )}
+          </Suspense>
         </section>
 
         <div className="task-detail-extras">

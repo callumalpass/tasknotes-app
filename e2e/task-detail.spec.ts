@@ -1,5 +1,58 @@
 import { expect, test } from "@playwright/test";
 
+test("task Notes reveal syntax only where you edit and retain the Markdown", async ({
+  page,
+}) => {
+  await page.goto("?demo=60");
+  await page.locator(".task-row-title").first().click();
+  const notes = page.getByRole("textbox", { name: "Notes", exact: true });
+  const source =
+    "**A bolded heading**\n\n[[Some Note#Some heading|Section]]\n\n> [!summary]+ Summary\n> Some callout content.\n\n[Reference](https://example.test/docs)";
+  await notes.fill(source);
+  const title = page.getByRole("textbox", { name: "Task title", exact: true });
+  await title.focus();
+  await expect(notes.locator(".cm-lp-strong")).toHaveText("A bolded heading");
+  await expect(notes.locator(".cm-lp-callout").first()).toContainText(
+    "Summary",
+  );
+  await expect(notes.getByText("Section", { exact: true })).toBeVisible();
+  await expect(notes).not.toContainText("[!summary]");
+  await expect(notes.locator("a")).toHaveAttribute(
+    "href",
+    "https://example.test/docs",
+  );
+
+  await notes.locator(".cm-lp-strong").click();
+  await expect(notes).toBeFocused();
+  await expect(notes).toContainText("**A bolded heading**");
+  await expect(notes).not.toContainText("[[Some Note#Some heading|Section]]");
+  await title.focus();
+  await expect(notes).not.toContainText("**A bolded heading**");
+
+  await page
+    .context()
+    .route("https://example.test/docs", (route) =>
+      route.fulfill({ body: "Documentation" }),
+    );
+  const [popup] = await Promise.all([
+    page.context().waitForEvent("page", { timeout: 5_000 }),
+    notes.locator("a").click(),
+  ]);
+  await expect(popup.getByText("Documentation")).toBeVisible();
+  await popup.close();
+
+  await page.getByRole("button", { name: "Next task", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Previous task", exact: true })
+    .click();
+  await expect(notes.locator(".cm-lp-strong")).toHaveText("A bolded heading");
+  await notes.focus();
+  await notes.press("ControlOrMeta+a");
+  await expect
+    .poll(() => notes.evaluate(() => window.getSelection()?.toString()))
+    .toBe(source);
+});
+
 test("detail properties are directly editable and adjacent navigation saves notes", async ({
   page,
 }) => {
@@ -35,11 +88,6 @@ test("detail properties are directly editable and adjacent navigation saves note
   await expect(
     pane.getByRole("button", { name: "Edit Tags", exact: true }),
   ).toBeFocused();
-  const editNotes = pane.getByRole("button", {
-    name: "Edit Notes",
-    exact: true,
-  });
-  if (await editNotes.isVisible()) await editNotes.click();
   const notes = pane.getByRole("textbox", { name: "Notes", exact: true });
   await notes.fill("A note saved before browsing.");
   await page.keyboard.press("j");
@@ -55,9 +103,7 @@ test("detail properties are directly editable and adjacent navigation saves note
   await expect(
     pane.getByRole("textbox", { name: "Task title", exact: true }),
   ).toHaveValue(first);
-  await expect(pane.locator(".markdown-preview")).toContainText(
-    "A note saved before browsing.j",
-  );
+  await expect(notes).toContainText("A note saved before browsing.j");
   await pane.getByRole("combobox", { name: "Priority", exact: true }).click();
   await page.keyboard.press("j");
   await expect(

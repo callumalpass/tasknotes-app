@@ -945,7 +945,7 @@ msgstr "Add task to {0}"
 msgid "Add task to {label}"
 msgstr "Add task to {label}"
 
-#: src/app/task-screen.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Add thoughts, links, or supporting details…"
 msgstr "Add thoughts, links, or supporting details…"
 
@@ -1210,7 +1210,7 @@ msgstr "Assignments use your linked person record."
 msgid "Attach file"
 msgstr "Attach file"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Attached image"
 msgstr "Attached image"
 
@@ -2442,7 +2442,6 @@ msgid "done"
 msgstr "done"
 
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views/navigation-view-order.tsx
 #: src/components/recurrence-field.tsx
 #: src/components/task-properties-sheet.tsx
@@ -2566,16 +2565,14 @@ msgstr "Earlier notes"
 msgid "Earlier rules take priority."
 msgstr "Earlier rules take priority."
 
-#: src/app/task-screen.tsx
 #: src/app/views/view-catalog.tsx
 msgid "Edit"
 msgstr "Edit"
 
 #. placeholder {0}: String(label)
-#. placeholder {0}: String(notesLabel)
 #. placeholder {0}: dated ? item.key : item.label
+#. placeholder {0}: detail.label
 #: src/app/task-property-list.tsx
-#: src/app/task-screen.tsx
 #: src/app/views-screen.tsx
 #: src/components/task-capture.tsx
 #: src/components/task-property-editor.tsx
@@ -3098,11 +3095,11 @@ msgstr "Image could not be loaded"
 msgid "Image file is unavailable"
 msgstr "Image file is unavailable"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image preview unavailable"
 msgstr "Image preview unavailable"
 
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Image unavailable offline"
 msgstr "Image unavailable offline"
 
@@ -3452,7 +3449,7 @@ msgid "Loading attachments…"
 msgstr "Loading attachments…"
 
 #: src/app/scratchpad-screen.tsx
-#: src/components/markdown-preview.tsx
+#: src/components/task-notes-editor.tsx
 msgid "Loading image…"
 msgstr "Loading image…"
 
@@ -4166,10 +4163,6 @@ msgstr "Notes"
 #: src/app/today-clear.tsx
 msgid "Nothing is scheduled after today."
 msgstr "Nothing is scheduled after today."
-
-#: src/components/markdown-preview.tsx
-msgid "Nothing to preview yet. Choose Write to add notes."
-msgstr "Nothing to preview yet. Choose Write to add notes."
 
 #: src/components/reminder-editor.tsx
 msgid "Notifications are not available here"
@@ -4897,10 +4890,6 @@ msgstr "Removed scheduled dates from {tasks}"
 #: src/app/bulk-task-feedback.ts
 msgid "Removed tag {value} from {tasks}"
 msgstr "Removed tag {value} from {tasks}"
-
-#: src/app/task-screen.tsx
-msgid "Rendering…"
-msgstr "Rendering…"
 
 #: src/components/task-row.tsx
 msgctxt "task action: mark incomplete"
