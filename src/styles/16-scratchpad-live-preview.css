@@ -69,7 +69,13 @@
   border-color: var(--accent);
 }
 
-.markdown-source-editor .cm-lp-task[aria-checked="true"]::after {
+/*
+ * The tick is out of flow whether or not the box is checked; the shared
+ * checkbox's clip wipes it in. The box is an inline block placed by its
+ * baseline, and a tick in flow would move that baseline, so a box would drop
+ * by a few pixels when it is ticked.
+ */
+.markdown-source-editor .cm-lp-task::after {
   position: absolute;
   top: 45%;
   left: 50%;
