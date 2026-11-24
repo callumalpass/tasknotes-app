@@ -13,7 +13,8 @@ original members, protected raw target trust and immutable same-run artifact
 custody before protected upload. The unprivileged build dynamically imports
 candidate-local build code **after** the ALL-original gate; the dependency-free
 publisher never executes candidate code. Both upload boundaries re-read actual
-production server/provider producer ancestry. Incompatible/unknown revisions wait
+production Connect revision (`connect.mdbase.dev/health`) and its producer
+ancestry; the retired hosted provider is not consulted. Incompatible/unknown revisions wait
 without uploading.
 
 The served entry `assets/index-tasknotes-<12-hex-source>.js` identifies the build.
