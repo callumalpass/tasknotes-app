@@ -351,6 +351,12 @@
   width: max-content;
 }
 
+/* Shared app switcher menu (@mdbase-dev/ui) in TaskNotes' type and elevation. */
+.mdbase-menu {
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  box-shadow: 0 10px 28px var(--color-shadow-soft);
+}
+
 .advanced-server-link {
   display: inline-block;
   padding-block: var(--space-sm);

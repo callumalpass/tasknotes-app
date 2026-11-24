@@ -113,6 +113,10 @@ msgstr "({left}) 或 ({right})"
 msgid "(No title)"
 msgstr "（无标题）"
 
+#: src/components/app-switcher.tsx
+msgid "(opens in a new tab)"
+msgstr "（在新标签页中打开）"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（有未保存的更改）"
@@ -1061,6 +1065,10 @@ msgstr "达到指定次数后"
 msgid "Agenda"
 msgstr "议程"
 
+#: src/components/app-switcher.tsx
+msgid "AI clients (MCP)"
+msgstr "AI 客户端（MCP）"
+
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "全部"
@@ -1293,6 +1301,10 @@ msgstr "浏览器的配对存储不可用。请检查此网站的存储设置，
 msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
 msgstr "浏览器存储不可用。如需移除已保存的草稿，请在此设备上清除此网站的数据。"
 
+#: src/components/app-switcher.tsx
+msgid "Build your own"
+msgstr "构建自己的应用"
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "构建器"
@@ -1513,6 +1525,10 @@ msgstr "选择要包含在此视图中的任务。"
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "选择…"
+
+#: src/components/app-switcher.tsx
+msgid "Claude, ChatGPT and Codex"
+msgstr "Claude、ChatGPT 和 Codex"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
@@ -2112,6 +2128,10 @@ msgstr "已创建“{0}”"
 #: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "正在创建…"
+
+#: src/components/app-switcher.tsx
+msgid "Current"
+msgstr "当前"
 
 #: src/app/scratchpad-note.tsx
 msgid "Current note"
@@ -3581,6 +3601,10 @@ msgstr "在 {0} 中匹配"
 msgid "Maybe"
 msgstr "待定"
 
+#: src/components/app-switcher.tsx
+msgid "mdbase apps"
+msgstr "mdbase 应用"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 集合"
@@ -4283,6 +4307,10 @@ msgstr "优先打开"
 msgid "Open image"
 msgstr "打开图片"
 
+#: src/components/app-switcher.tsx
+msgid "Open in another mdbase app"
+msgstr "在其他 mdbase 应用中打开"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Open in Google Calendar"
 msgstr "在 Google 日历中打开"
@@ -4306,6 +4334,10 @@ msgstr "打开来自 {host} 的邀请？这将关闭当前工作区并丢弃未�
 #: src/app/direct-collection-gate.tsx
 msgid "Open this build on an HTTPS site without a service worker."
 msgstr "请在未使用服务工作线程的 HTTPS 网站上打开此版本。"
+
+#: src/components/app-switcher.tsx
+msgid "Open this collection in"
+msgstr "在此处打开此集合"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4335,6 +4367,7 @@ msgstr "正在打开你的视图"
 msgid "Opens as"
 msgstr "打开方式"
 
+#: src/components/app-switcher.tsx
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
 msgstr "在新标签页中打开"

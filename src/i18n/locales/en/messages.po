@@ -113,6 +113,10 @@ msgstr "({left}) or ({right})"
 msgid "(No title)"
 msgstr "(No title)"
 
+#: src/components/app-switcher.tsx
+msgid "(opens in a new tab)"
+msgstr "(opens in a new tab)"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(unsaved changes)"
@@ -1061,6 +1065,10 @@ msgstr "After a number of times"
 msgid "Agenda"
 msgstr "Agenda"
 
+#: src/components/app-switcher.tsx
+msgid "AI clients (MCP)"
+msgstr "AI clients (MCP)"
+
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "All"
@@ -1293,6 +1301,10 @@ msgstr "Browser pairing storage is unavailable. Check this site’s storage sett
 msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
 msgstr "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
 
+#: src/components/app-switcher.tsx
+msgid "Build your own"
+msgstr "Build your own"
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Builder"
@@ -1513,6 +1525,10 @@ msgstr "Choose which tasks belong in this view."
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "Choose…"
+
+#: src/components/app-switcher.tsx
+msgid "Claude, ChatGPT and Codex"
+msgstr "Claude, ChatGPT and Codex"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
@@ -2112,6 +2128,10 @@ msgstr "Created “{0}”"
 #: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "Creating…"
+
+#: src/components/app-switcher.tsx
+msgid "Current"
+msgstr "Current"
 
 #: src/app/scratchpad-note.tsx
 msgid "Current note"
@@ -3581,6 +3601,10 @@ msgstr "Matched in {0}"
 msgid "Maybe"
 msgstr "Maybe"
 
+#: src/components/app-switcher.tsx
+msgid "mdbase apps"
+msgstr "mdbase apps"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase collection"
@@ -4283,6 +4307,10 @@ msgstr "Open first"
 msgid "Open image"
 msgstr "Open image"
 
+#: src/components/app-switcher.tsx
+msgid "Open in another mdbase app"
+msgstr "Open in another mdbase app"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Open in Google Calendar"
 msgstr "Open in Google Calendar"
@@ -4306,6 +4334,10 @@ msgstr "Open the invitation from {host}? This closes the current workspace and d
 #: src/app/direct-collection-gate.tsx
 msgid "Open this build on an HTTPS site without a service worker."
 msgstr "Open this build on an HTTPS site without a service worker."
+
+#: src/components/app-switcher.tsx
+msgid "Open this collection in"
+msgstr "Open this collection in"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4335,6 +4367,7 @@ msgstr "Opening your view"
 msgid "Opens as"
 msgstr "Opens as"
 
+#: src/components/app-switcher.tsx
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
 msgstr "Opens in a new tab"

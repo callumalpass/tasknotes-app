@@ -113,6 +113,10 @@ msgstr "({left}) oder ({right})"
 msgid "(No title)"
 msgstr "(Kein Titel)"
 
+#: src/components/app-switcher.tsx
+msgid "(opens in a new tab)"
+msgstr "(öffnet sich in einem neuen Tab)"
+
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "(nicht gespeicherte Änderungen)"
@@ -1061,6 +1065,10 @@ msgstr "Nach einer bestimmten Anzahl von Wiederholungen"
 msgid "Agenda"
 msgstr "Agenda"
 
+#: src/components/app-switcher.tsx
+msgid "AI clients (MCP)"
+msgstr "KI-Clients (MCP)"
+
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "Alle"
@@ -1293,6 +1301,10 @@ msgstr "Der Browserspeicher für Kopplungen ist nicht verfügbar. Prüfe die Spe
 msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
 msgstr "Der Browserspeicher ist nicht verfügbar. Lösche die Daten dieser Website auf diesem Gerät, um gespeicherte Entwürfe zu entfernen."
 
+#: src/components/app-switcher.tsx
+msgid "Build your own"
+msgstr "Eigene App entwickeln"
+
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "Visueller Editor"
@@ -1513,6 +1525,10 @@ msgstr "Wählen Sie aus, welche Aufgaben zu dieser Ansicht gehören."
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "Auswählen…"
+
+#: src/components/app-switcher.tsx
+msgid "Claude, ChatGPT and Codex"
+msgstr "Claude, ChatGPT und Codex"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
@@ -2112,6 +2128,10 @@ msgstr "„{0}“ erstellt"
 #: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "Wird erstellt…"
+
+#: src/components/app-switcher.tsx
+msgid "Current"
+msgstr "Aktuell"
 
 #: src/app/scratchpad-note.tsx
 msgid "Current note"
@@ -3581,6 +3601,10 @@ msgstr "Treffer in {0}"
 msgid "Maybe"
 msgstr "Vielleicht"
 
+#: src/components/app-switcher.tsx
+msgid "mdbase apps"
+msgstr "mdbase-Apps"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase-Sammlung"
@@ -4283,6 +4307,10 @@ msgstr "Als Erstes öffnen"
 msgid "Open image"
 msgstr "Bild öffnen"
 
+#: src/components/app-switcher.tsx
+msgid "Open in another mdbase app"
+msgstr "In einer anderen mdbase-App öffnen"
+
 #: src/calendar-service/event-dialog.tsx
 msgid "Open in Google Calendar"
 msgstr "In Google Kalender öffnen"
@@ -4306,6 +4334,10 @@ msgstr "Einladung von {host} öffnen? Der aktuelle Arbeitsbereich wird geschloss
 #: src/app/direct-collection-gate.tsx
 msgid "Open this build on an HTTPS site without a service worker."
 msgstr "Öffne diese Version auf einer HTTPS-Website ohne Service Worker."
+
+#: src/components/app-switcher.tsx
+msgid "Open this collection in"
+msgstr "Diese Sammlung öffnen in"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4335,6 +4367,7 @@ msgstr "Ihre Ansicht wird geöffnet"
 msgid "Opens as"
 msgstr "Öffnet als"
 
+#: src/components/app-switcher.tsx
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
 msgstr "Wird in einem neuen Tab geöffnet"
