@@ -21,22 +21,18 @@ export async function compatible(
     return response.json();
   };
   try {
-    const cp = await json("https://connect.mdbase.dev/health"),
-      provider = await json("https://sync.mdbase.dev/ready");
+    // Read the actual serving revision, never committed release locks or npm latest.
+    const cp = await json("https://connect.mdbase.dev/health");
     if (
-      cp.ok !== true ||
+      cp?.ok !== true ||
       cp.environment !== "production" ||
-      provider.status !== "ready"
+      !/^[a-f0-9]{40}$/.test(cp.revision ?? "")
     )
       return false;
-    for (const revision of [cp.revision, provider.provider?.revision]) {
-      if (!/^[a-f0-9]{40}$/.test(revision ?? "")) return false;
-      const proof = await json(
-        `https://api.github.com/repos/mdbase-dev/mdbase-connect/compare/${producer}...${revision}?per_page=1`,
-      );
-      if (!["identical", "ahead"].includes(proof.status)) return false;
-    }
-    return true;
+    const proof = await json(
+      `https://api.github.com/repos/mdbase-dev/mdbase-connect/compare/${producer}...${cp.revision}?per_page=1`,
+    );
+    return ["identical", "ahead"].includes(proof.status);
   } catch {
     return false;
   }
