@@ -35,6 +35,10 @@ import { moveMenuFocus } from "@mdbase-dev/ui/popover";
 import { ReportFailure, useFeedbackView } from "./feedback-root";
 
 import { CollectionAvailability } from "../components/collection-availability";
+import {
+  canShowAppSwitcher,
+  TaskNotesAppSwitcher,
+} from "../components/app-switcher";
 import { CollectionWriteStatus } from "../components/collection-write-status";
 import {
   WorkspaceFeedback,
@@ -196,6 +200,9 @@ export function AppShell() {
   } = useRepository();
   const { collectionUi, changeCollection, reauthorizeCurrentCollection } =
     useCollectionGate();
+  const mdbasePhase = collectionUi?.mdbase.getSnapshot().phase;
+  const connectedCollectionId =
+    mdbasePhase?.kind === "ready" ? mdbasePhase.collectionId : undefined;
   const {
     documents,
     views,
@@ -483,16 +490,20 @@ export function AppShell() {
       </a>
       <aside className="navigation-rail" aria-label={t({ message: "Primary" })}>
         <div className="rail-heading">
-          <button
-            aria-label="TaskNotes"
-            title="TaskNotes"
-            className="wordmark"
-            type="button"
-            onClick={() => navigate({ page: "home" })}
-          >
-            <img alt="" src={tasknotesMarkUrl} />
-            <span>TaskNotes</span>
-          </button>
+          {canShowAppSwitcher() ? (
+            <TaskNotesAppSwitcher collectionId={connectedCollectionId} />
+          ) : (
+            <button
+              aria-label="TaskNotes"
+              title="TaskNotes"
+              className="wordmark"
+              type="button"
+              onClick={() => navigate({ page: "home" })}
+            >
+              <img alt="" src={tasknotesMarkUrl} />
+              <span>TaskNotes</span>
+            </button>
+          )}
           <button
             className="sidebar-toggle icon-action"
             type="button"

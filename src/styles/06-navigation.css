@@ -934,6 +934,18 @@
     margin: 0;
   }
 
+  .navigation-rail .wordmark.mdbase-app-switcher {
+    padding: 4px 8px;
+    margin-left: -8px;
+    border-radius: var(--radius-control);
+  }
+
+  .navigation-rail .wordmark.mdbase-app-switcher:hover,
+  .navigation-rail .wordmark.mdbase-app-switcher[aria-expanded="true"] {
+    border-color: var(--line);
+    background: var(--paper-raised);
+  }
+
   .navigation-rail .sidebar-toggle {
     flex: none;
     width: 44px;
