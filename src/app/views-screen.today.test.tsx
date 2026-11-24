@@ -331,15 +331,17 @@ function repository(
       listSummaries:
         options.listSummaries ?? (async () => options.summaries ?? rows),
       cachedViewExecution: async () => null,
-      executeView: options.executeView ?? (async () => ({
-        view: todayView,
-        rows: rows
-          .filter((row) => !row.completed)
-          .map((row) => ({ task: row, values: {} })),
-        totalCount: rows.length,
-        hasMore: false,
-        groups: [],
-      })),
+      executeView:
+        options.executeView ??
+        (async () => ({
+          view: todayView,
+          rows: rows
+            .filter((row) => !row.completed)
+            .map((row) => ({ task: row, values: {} })),
+          totalCount: rows.length,
+          hasMore: false,
+          groups: [],
+        })),
       readViewSource: async () => ({
         path: todayView.source.path,
         format: "obsidian.base",
