@@ -24,7 +24,10 @@ import {
   updateViewDocument,
   type EditableViewDraft,
 } from "../domain/view-document";
-import { taskNotesViewSourcePath } from "../domain/default-view-source";
+import {
+  taskIdentificationFilter,
+  taskNotesViewSourcePath,
+} from "../domain/default-view-source";
 import {
   previewViewDraft,
   type ViewDraftPreview,
@@ -230,7 +233,11 @@ export function ViewEditor({
           ...(format === "obsidian.base"
             ? { path: taskNotesViewSourcePath(draft.name) }
             : {}),
-          document: createViewDocument(format, draft),
+          document: createViewDocument(
+            format,
+            draft,
+            configuration ? taskIdentificationFilter(configuration) : undefined,
+          ),
         });
       }
       setSource(persisted);

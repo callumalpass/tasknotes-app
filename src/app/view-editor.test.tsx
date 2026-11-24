@@ -158,6 +158,33 @@ describe("ViewEditor", () => {
     );
   });
 
+  it("scopes a new Base to task files, keeping the view's own filter empty", async () => {
+    const createViewSource = vi.fn(
+      async (input: CreateTaskViewSourceInput) => ({
+        path: "views/board.base",
+        format: "obsidian.base",
+        revision: "two",
+        document: input.document,
+      }),
+    );
+    renderEditor({ repository: repository({ createViewSource }) });
+
+    await screen.findByRole("dialog", { name: "New view" });
+    fireEvent.change(screen.getByLabelText("View name"), {
+      target: { value: "Board" },
+    });
+    expect(screen.getByText("All tasks")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+
+    await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
+    const parsed = parse(createViewSource.mock.calls[0][0].document) as {
+      filters?: unknown;
+      views: Array<{ filters?: unknown }>;
+    };
+    expect(parsed.filters).toBe('file.hasTag("task")');
+    expect(parsed.views[0].filters).toBeUndefined();
+  });
+
   it("offers Manual order as a first-class descending sort", async () => {
     const createViewSource = vi.fn(
       async (input: CreateTaskViewSourceInput) => ({

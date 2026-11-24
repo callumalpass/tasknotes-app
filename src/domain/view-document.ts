@@ -91,13 +91,21 @@ export function materializeDefaultViewOrder(
   return yaml.wrap(String(document));
 }
 
+/**
+ * A new saved-view source. A Base reads the whole collection, so `taskFilter`
+ * is its file-level scope; an mdbase view is already scoped to the task type.
+ * The scope sits outside the view, so the editor's own filter stays the
+ * person's and "All tasks" stays true.
+ */
 export function createViewDocument(
   format: "obsidian.base" | "mdbase.view",
   draft: EditableViewDraft,
+  taskFilter?: string,
 ): string {
   if (format === "obsidian.base") {
     return stringify(
       compact({
+        filters: taskFilter,
         formulas: obsidianFormulaMap(draft.computedProperties),
         views: [obsidianView(draft)],
       }),

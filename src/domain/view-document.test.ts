@@ -247,6 +247,42 @@ Keep this body.
     ).toBe("view");
   });
 
+  it("keeps a new Base's task scope outside the view through later edits", () => {
+    const draft = {
+      ...emptyViewDraft("obsidian-bases"),
+      name: "Board",
+      renderer: "tasknotes.kanban" as const,
+      groupProperty: "status",
+    };
+    const source = baseSource(
+      createViewDocument("obsidian.base", draft, 'file.hasTag("task")'),
+    );
+    const created = parse(source.document) as {
+      filters: unknown;
+      views: Array<{ filters?: unknown }>;
+    };
+    expect(created.filters).toBe('file.hasTag("task")');
+    expect(created.views[0].filters).toBeUndefined();
+
+    const loaded = readViewDraft(source, "board");
+    expect(loaded.filter).toBeUndefined();
+    const edited = parse(
+      updateViewDocument(source, { ...loaded, filter: 'status == "open"' }),
+    ) as typeof created;
+    expect(edited.filters).toBe('file.hasTag("task")');
+    expect(edited.views[0].filters).toBe('status == "open"');
+
+    expect(
+      parseFrontmatter(
+        createViewDocument(
+          "mdbase.view",
+          { ...draft, dialect: "mdbase-cel" },
+          'file.hasTag("task")',
+        ),
+      ).frontmatter.filters,
+    ).toBeUndefined();
+  });
+
   it("preserves grouping for list views", () => {
     const source = baseSource(`views:
   - type: tasknotesTaskList

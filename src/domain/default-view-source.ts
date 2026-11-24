@@ -45,6 +45,7 @@ export function taskNotesDefaultBaseSources(
   configuration: TaskCollectionConfiguration,
 ): TaskNotesDefaultViewSource[] {
   const definition = parse(taskNotesDefaultBaseDocument(configuration)) as {
+    filters?: unknown;
     formulas?: Record<string, unknown>;
     properties?: Record<string, unknown>;
     views: Array<{ name: string } & Record<string, unknown>>;
@@ -57,6 +58,7 @@ export function taskNotesDefaultBaseSources(
       ...source,
       document: stringify(
         {
+          ...(definition.filters ? { filters: definition.filters } : {}),
           ...(definition.formulas ? { formulas: definition.formulas } : {}),
           ...(definition.properties
             ? { properties: definition.properties }
@@ -91,6 +93,8 @@ export function taskNotesDefaultBaseDocument(
 
   return stringify(
     {
+      // Which notes are tasks is the source's scope; each view narrows it.
+      filters: taskIdentificationFilter(configuration),
       properties: {
         [manualOrder]: {
           displayName: "Manual order",
@@ -212,7 +216,7 @@ export function taskNotesDefaultCanonicalDocument(
       id: TASKNOTES_DEFAULT_VIEW_SOURCE_NAME,
       version: 1,
       name: "TaskNotes",
-      query: {},
+      query: { types: ["task"] },
       views: [
         {
           id: "today",
@@ -415,22 +419,45 @@ function canonicalFilter(value: unknown): string {
   return entries.map((entry) => `(${canonicalFilter(entry)})`).join(operator);
 }
 
+/**
+ * Open tasks among a source's task files. The source, not this, decides which
+ * notes are tasks, so a task with no status still counts.
+ */
 function activeTaskFilters(
   configuration: TaskCollectionConfiguration,
-  file = "file",
 ): string[] {
-  const status =
-    file === "file"
-      ? note(configuration.fieldMapping.status)
-      : `${file}.properties[${literal(configuration.fieldMapping.status)}]`;
+  const status = note(configuration.fieldMapping.status);
   const completed = configuration.statuses
     .filter((entry) => entry.isCompleted)
     .map((entry) => `${status} != ${literal(entry.value)}`);
   return [
-    `${status}.isEmpty() == false`,
     ...completed,
-    `${file}.hasTag(${literal(configuration.fieldMapping.archiveTag)}) != true`,
+    `file.hasTag(${literal(configuration.fieldMapping.archiveTag)}) != true`,
   ];
+}
+
+/**
+ * The Bases filter that matches the collection's task files, as its task
+ * identification defines them. A new Base has no other scope, so without this
+ * a view reads every note in the collection. It follows the Obsidian plugin's
+ * default Bases and falls back to the task tag as the shared model does.
+ */
+export function taskIdentificationFilter(
+  configuration: TaskCollectionConfiguration,
+): string {
+  const { method, tag, propertyName, propertyValue } =
+    configuration.taskIdentification;
+  const name = propertyName.trim();
+  if (method !== "property" || !name)
+    return `file.hasTag(${literal(tag.trim() || configuration.defaults.taskTag || "task")})`;
+  const value = propertyValue.trim();
+  if (!value) return `file.hasProperty(${literal(name)})`;
+  if (name === "tags") return `file.hasTag(${literal(value)})`;
+  // list() reads scalar and list frontmatter alike; booleans stay unquoted.
+  const lower = value.toLowerCase();
+  const expected =
+    lower === "true" || lower === "false" ? lower : literal(value);
+  return `list(${note(name)}).contains(${expected})`;
 }
 
 function archivedTaskFilter(
