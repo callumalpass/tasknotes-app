@@ -47,5 +47,17 @@ jobs:
           -scheme App
           -configuration Debug
           -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath "$RUNNER_TEMP/tasknotes-ios"
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Verify built application metadata
+        run: |
+          plist="$RUNNER_TEMP/tasknotes-ios/Build/Products/Debug-iphonesimulator/App.app/Info.plist"
+          name=$(plutil -extract CFBundleName raw -o - "$plist")
+          display_name=$(plutil -extract CFBundleDisplayName raw -o - "$plist")
+          identifier=$(plutil -extract CFBundleIdentifier raw -o - "$plist")
+          printf 'CFBundleName=%s\nCFBundleDisplayName=%s\nCFBundleIdentifier=%s\n' "$name" "$display_name" "$identifier"
+          test "$name" = TaskNotes
+          test "$display_name" = TaskNotes
+          test "$identifier" = dev.tasknotes.app
