@@ -844,7 +844,11 @@ function useRepositoryTaskQuery<Value>(
   ]);
   const revision = useRepositoryRevision(`tasks:${key}`);
   useEffect(() => {
-    if (status !== "ready") return;
+    // A zero limit asks for nothing, so it never reads (search would otherwise
+    // build the whole task index). Loading it would also publish an empty
+    // result under this key, so a later real load would look like a refresh
+    // of an empty collection instead of a first load.
+    if (status !== "ready" || limit === 0) return;
     resource.load(key, (signal) =>
       reader.load(
         repository,
@@ -872,6 +876,15 @@ function useRepositoryTaskQuery<Value>(
     revision,
     reader,
   ]);
+  if (limit === 0)
+    return {
+      tasks: [],
+      loading: status === "opening",
+      refreshing: false,
+      stale: false,
+      error: openingError ?? null,
+      retry: resource.retry,
+    };
   const tasks = state.key === key ? (state.data ?? []) : [];
   return {
     tasks:

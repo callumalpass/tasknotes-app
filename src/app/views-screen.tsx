@@ -350,14 +350,19 @@ export function ViewsScreen({
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar" ||
     selected?.presentation?.type === "tasknotes.projects";
-  const {
-    tasks: identityTasks,
-    loading: identityTasksLoading,
-    error: identityTasksError,
-  } = useTasks({
+  // On Today the full task list only feeds the summary and the first-run
+  // state. Loading it scans the whole collection, so wait until the view has
+  // answered rather than compete with the query that shows its first rows.
+  const [todayViewAnswered, setTodayViewAnswered] = useState(false);
+  const identityTasksDeferred = !!todayScreen && !todayViewAnswered;
+  const identityTasksQuery = useTasks({
     status: "all",
-    limit: needsIdentityTasks ? 50_000 : 0,
+    limit: needsIdentityTasks && !identityTasksDeferred ? 50_000 : 0,
   });
+  const { tasks: identityTasks, error: identityTasksError } =
+    identityTasksQuery;
+  const identityTasksLoading =
+    identityTasksQuery.loading || identityTasksDeferred;
   const today = todayString();
   const todaySummary = useMemo(
     () => (todayScreen ? summarizeToday(identityTasks, today) : null),
@@ -458,6 +463,11 @@ export function ViewsScreen({
   }, [configuration, repository, selected, viewKey, currentSession]);
   const visibleExecution =
     execution?.view.key === selected?.key ? execution : null;
+  if (
+    identityTasksDeferred &&
+    (visibleExecution || (selected && executionError?.key === selected.key))
+  )
+    setTodayViewAnswered(true);
   const currentSort =
     sourceSort && sourceSort.key === selected?.key
       ? sourceSort.sort

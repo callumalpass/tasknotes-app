@@ -322,21 +322,26 @@ function repository(
   options: {
     summaries?: Task[];
     updateMany?: TaskRepository["updateMany"];
+    listSummaries?: TaskRepository["listSummaries"];
+    executeView?: TaskRepository["executeView"];
   } = {},
 ): TaskRepository {
   return taskRepositoryStub(
     {
-      listSummaries: async () => options.summaries ?? rows,
+      listSummaries:
+        options.listSummaries ?? (async () => options.summaries ?? rows),
       cachedViewExecution: async () => null,
-      executeView: async () => ({
-        view: todayView,
-        rows: rows
-          .filter((row) => !row.completed)
-          .map((row) => ({ task: row, values: {} })),
-        totalCount: rows.length,
-        hasMore: false,
-        groups: [],
-      }),
+      executeView:
+        options.executeView ??
+        (async () => ({
+          view: todayView,
+          rows: rows
+            .filter((row) => !row.completed)
+            .map((row) => ({ task: row, values: {} })),
+          totalCount: rows.length,
+          hasMore: false,
+          groups: [],
+        })),
       readViewSource: async () => ({
         path: todayView.source.path,
         format: "obsidian.base",
@@ -430,6 +435,36 @@ function task(id: string, title: string, patch: Partial<Task> = {}): Task {
     ...patch,
   };
 }
+
+it("loads the full task list only after Today's view has answered", async () => {
+  const execution =
+    deferred<Awaited<ReturnType<TaskRepository["executeView"]>>>();
+  const summaries = deferred<Task[]>();
+  const listSummaries = vi.fn<TaskRepository["listSummaries"]>(
+    () => summaries.promise,
+  );
+  renderToday(
+    repository([], { listSummaries, executeView: () => execution.promise }),
+  );
+  await act(async () => undefined);
+  expect(listSummaries).not.toHaveBeenCalled();
+  execution.resolve({
+    view: todayView,
+    rows: [],
+    totalCount: 0,
+    hasMore: false,
+    groups: [],
+  });
+  await waitFor(() =>
+    expect(listSummaries).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "all", limit: 50_000 }),
+    ),
+  );
+  // Still waiting for the list: an empty view is not yet an empty collection.
+  expect(screen.queryByText("No tasks yet")).not.toBeInTheDocument();
+  summaries.resolve([]);
+  expect(await screen.findByText("No tasks yet")).toBeInTheDocument();
+});
 
 it("keeps missed deadlines when asked to move only the plan", async () => {
   const today = todayString();
