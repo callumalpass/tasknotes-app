@@ -8,6 +8,7 @@ import {
   taskNotesDefaultBaseSources,
   newViewSourcePath,
   starterViewKind,
+  taskIdentificationFilter,
   taskNotesViewSourcePath,
   viewSourceFormat,
   viewSourceRecord,
@@ -75,6 +76,7 @@ describe("TaskNotes starter views", () => {
       'file.hasTag("retired") == true',
     ]);
     expect(JSON.stringify(sources)).not.toContain('note[\\"status\\"]');
+    expect(JSON.stringify(sources)).not.toContain('note[\\"State\\"].isEmpty');
     const projects = parse(sources[4].document).views[0];
     expect(projects.groupBy).toEqual({
       property: "Project links",
@@ -84,6 +86,32 @@ describe("TaskNotes starter views", () => {
       'note["Project links"].isEmpty() == false',
     );
     expect(configuration).toEqual(before);
+  });
+
+  it("scopes every starter to the collection's task files, not to a set status", () => {
+    const defaults = defaultTaskCollectionConfiguration();
+    for (const source of taskNotesDefaultBaseSources(defaults))
+      expect(parse(source.document).filters).toBe('file.hasTag("task")');
+
+    const byProperty = {
+      ...defaults,
+      taskIdentification: {
+        ...defaults.taskIdentification,
+        method: "property" as const,
+        propertyName: "isTask",
+        propertyValue: "true",
+      },
+    };
+    const sources = taskNotesDefaultBaseSources(byProperty);
+    for (const source of sources)
+      expect(parse(source.document).filters).toBe(
+        'list(note["isTask"]).contains(true)',
+      );
+    expect(parse(sources[5].document).views[0].filters.and).toEqual([
+      'file.hasTag("archived") == true',
+    ]);
+    for (const source of sources)
+      expect(source.document).not.toContain('note["status"].isEmpty()');
   });
 
   it("creates each namespaced Base once and returns provider-owned definitions", async () => {
@@ -463,6 +491,68 @@ describe("starterViewKind", () => {
         source: { path: "Work/today.base" },
       } as typeof view),
     ).toBeNull();
+  });
+});
+
+describe("taskIdentificationFilter", () => {
+  function identifiedBy(
+    taskIdentification: Partial<
+      ReturnType<
+        typeof defaultTaskCollectionConfiguration
+      >["taskIdentification"]
+    >,
+  ) {
+    const configuration = defaultTaskCollectionConfiguration();
+    return taskIdentificationFilter({
+      ...configuration,
+      taskIdentification: {
+        ...configuration.taskIdentification,
+        ...taskIdentification,
+      },
+    });
+  }
+
+  it("matches the task tag, falling back as the shared model does", () => {
+    expect(identifiedBy({ method: "tag", tag: "todo" })).toBe(
+      'file.hasTag("todo")',
+    );
+    expect(identifiedBy({ method: "tag", tag: " " })).toBe(
+      'file.hasTag("task")',
+    );
+    expect(identifiedBy({ method: "property", propertyName: " " })).toBe(
+      'file.hasTag("task")',
+    );
+  });
+
+  it("matches an identifying property by presence or by value", () => {
+    expect(
+      identifiedBy({
+        method: "property",
+        propertyName: "kind",
+        propertyValue: "",
+      }),
+    ).toBe('file.hasProperty("kind")');
+    expect(
+      identifiedBy({
+        method: "property",
+        propertyName: "is task",
+        propertyValue: "True",
+      }),
+    ).toBe('list(note["is task"]).contains(true)');
+    expect(
+      identifiedBy({
+        method: "property",
+        propertyName: "kind",
+        propertyValue: 'say "task"',
+      }),
+    ).toBe('list(note["kind"]).contains("say \\"task\\"")');
+    expect(
+      identifiedBy({
+        method: "property",
+        propertyName: "tags",
+        propertyValue: "work",
+      }),
+    ).toBe('file.hasTag("work")');
   });
 });
 
