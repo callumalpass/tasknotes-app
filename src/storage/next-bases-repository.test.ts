@@ -5,6 +5,7 @@ import type {
   AppBasesResult,
 } from "@mdbase-dev/sdk/app-host";
 import { attachTaskNotes, nextTaskFixture } from "../test/next-task-fixture";
+import { projectRowsLikeReplica } from "../test/native-row-projection";
 import type { TaskViewExecution } from "../domain/view";
 import * as timezone from "../domain/runtime-timezone";
 import { TASKNOTES_REQUEST_BUDGETS } from "../cloud/request-budgets";
@@ -99,9 +100,18 @@ async function fixture() {
     clock,
     collectionRevision: revision,
   };
+  // The native result before the replica projects `rowProperties` onto it.
   const execute = vi
-    .spyOn(f.client, "executeAppBases")
+    .fn<typeof f.client.executeAppBases>()
     .mockResolvedValue(reply);
+  vi.spyOn(f.client, "executeAppBases").mockImplementation(
+    async (request, options) =>
+      projectRowsLikeReplica(
+        f.client,
+        request,
+        await execute(request, options),
+      ),
+  );
   const view = (await f.repository.listViews())[0]!.views[0]!;
   return {
     ...f,
@@ -530,6 +540,59 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     ]);
     await iterator.return?.();
     expect(f.execute).toHaveBeenCalledTimes(1);
+  });
+  it("reads task summaries from the execution's projected rows, not one get per row", async () => {
+    const f = await fixture();
+    const get = vi.spyOn(f.client, "get");
+    f.execute.mockResolvedValue({
+      ...f.reply,
+      rows: [
+        {
+          ...f.reply.rows[0]!,
+          types: [...f.record.types],
+          properties: { ...f.record.frontmatter },
+        },
+      ],
+    });
+    const result = await f.repository.executeView(f.view);
+    expect(result.rows.map((row) => row.task.title)).toEqual([
+      "Native-selected task",
+    ]);
+    expect(get).not.toHaveBeenCalled();
+    const requested = f.execute.mock.calls[0]![0].rowProperties!;
+    expect(requested).toEqual(expect.arrayContaining(["title", "id", "tags"]));
+    expect(new Set(requested).size).toBe(requested.length);
+  });
+  it("falls back to per-row reads when the replica cannot project row properties", async () => {
+    const f = await fixture();
+    const get = vi.spyOn(f.client, "get");
+    f.execute.mockRejectedValueOnce(
+      new MdbaseError({
+        code: "upgrade_required",
+        recovery: "upgrade",
+        reason: "bases_row_properties_unsupported",
+        message:
+          "This replica does not support projected Bases row properties.",
+      }),
+    );
+    const result = await f.repository.executeView(f.view);
+    expect(result.rows.map((row) => row.task.title)).toEqual([
+      "Native-selected task",
+    ]);
+    expect(f.execute).toHaveBeenCalledTimes(2);
+    expect(f.execute.mock.calls[1]![0].rowProperties).toBeUndefined();
+    expect(get.mock.calls.map(([id]) => id)).toEqual([f.record.id]);
+  });
+  it("hydrates rows per record when the SDK returns them unprojected", async () => {
+    const f = await fixture();
+    const get = vi.spyOn(f.client, "get");
+    // The self-hosted direct SDK predates rowProperties and ignores it.
+    vi.spyOn(f.client, "executeAppBases").mockResolvedValue(f.reply);
+    const result = await f.repository.executeView(f.view);
+    expect(result.rows.map((row) => row.task.title)).toEqual([
+      "Native-selected task",
+    ]);
+    expect(get.mock.calls.map(([id]) => id)).toEqual([f.record.id]);
   });
   it("retains native order even when selected metadata reads complete out of order", async () => {
     const f = await fixture();

@@ -94,7 +94,11 @@ import {
   unreadableViewSources,
   type UnreadableViewSource,
 } from "./next-bases-discovery";
-import { readNativeRows } from "./next-bases-rows";
+import {
+  projectedNativeRows,
+  readNativeRows,
+  type NativeRowRecord,
+} from "./next-bases-rows";
 import { nativeCellValue } from "./next-bases-values";
 import { nativeRowValues } from "./next-bases-row-values";
 import { nativePresentation } from "./next-bases-presentation";
@@ -3878,15 +3882,42 @@ export class NextTaskRepository implements TaskRepository {
         timezone,
       );
       this.assertCurrentData(revision);
-      const result = await this.client.executeAppBases(
-        {
-          ...nativeViewSelection(descriptor),
-          hints: new Map(),
-          captureTimezone: timezone,
-          ...(window === undefined ? {} : { window }),
-        },
-        { signal: this.requestSignal(signal) },
-      );
+      const request = {
+        ...nativeViewSelection(descriptor),
+        hints: new Map<string, string>(),
+        captureTimezone: timezone,
+        ...(window === undefined ? {} : { window }),
+      };
+      // Summaries read only these properties, and edits re-read the whole
+      // document, so the execution READ projects them instead of one get per row.
+      const rowProperties = [
+        ...new Set([
+          "title",
+          ...[...this.models.values()].flatMap((model) =>
+            model.summaryFields(),
+          ),
+        ]),
+      ];
+      // Not a literal: the self-hosted direct SDK's request type predates it.
+      const projectedRequest = { ...request, rowProperties };
+      let result: Awaited<ReturnType<typeof this.client.executeAppBases>>;
+      try {
+        result = await this.client.executeAppBases(projectedRequest, {
+          signal: this.requestSignal(signal),
+        });
+      } catch (error) {
+        // Connected computers running Connect before 0.2.13 lack
+        // bases-row-properties-v1; the SDK refuses locally before any READ.
+        // Remove with readNativeRows once those daemons are unsupported.
+        if (
+          !isMdbaseError(error, "upgrade_required") ||
+          error.reason !== "bases_row_properties_unsupported"
+        )
+          throw error;
+        result = await this.client.executeAppBases(request, {
+          signal: this.requestSignal(signal),
+        });
+      }
       if (result.kind === "refusal") {
         if (
           repairDefaults &&
@@ -3948,15 +3979,25 @@ export class NextTaskRepository implements TaskRepository {
         result.groups,
         metadata.groupProperty,
       );
-      const records = await readNativeRows(
-        result.rows,
-        (id, current) =>
-          this.client.get(id, {
-            include: { effective: true },
-            signal: current,
-          }),
-        signal,
-      );
+      const records: NativeRowRecord[] =
+        projectedNativeRows(result.rows) ??
+        (
+          await readNativeRows(
+            result.rows,
+            (id, current) =>
+              this.client.get(id, {
+                include: { effective: true },
+                signal: current,
+              }),
+            signal,
+          )
+        ).map((record) => ({
+          id: record.id,
+          path: record.path,
+          revision: record.revision,
+          types: record.types,
+          frontmatter: record.effective ?? record.frontmatter,
+        }));
       signal.throwIfAborted();
       this.assertCurrentData(revision);
       const totalCount = result.window?.totalMatchedRows ?? result.rows.length;
@@ -3970,7 +4011,7 @@ export class NextTaskRepository implements TaskRepository {
         {
           results: records.map((record, index) => ({
             path: record.path,
-            effectiveFrontmatter: record.effective ?? record.frontmatter,
+            effectiveFrontmatter: record.frontmatter,
             types: [...record.types],
             values: values[index]!,
           })),

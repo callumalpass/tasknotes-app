@@ -344,6 +344,18 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
         record: r.id,
         path: r.path,
         sourceRevision: r.revision,
+        ...(selection.rowProperties === undefined
+          ? {}
+          : {
+              types: [...r.types],
+              properties: Object.fromEntries(
+                selection.rowProperties.flatMap((name) =>
+                  Object.hasOwn(r.frontmatter, name)
+                    ? [[name, r.frontmatter[name]!]]
+                    : [],
+                ),
+              ),
+            }),
         cells: (input.viewProperties ?? ["note.title"]).map((key) => ({
           kind: "text" as const,
           value: String(

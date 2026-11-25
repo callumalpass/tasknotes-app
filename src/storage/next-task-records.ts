@@ -5,7 +5,7 @@ import type { TaskNotesTaskModel } from "../domain/tasknotes-model";
 export type NextTaskModels = ReadonlyMap<string, TaskNotesTaskModel>;
 
 function modelFor(
-  record: RecordView,
+  record: Pick<RecordView, "types">,
   models: NextTaskModels,
 ): TaskNotesTaskModel | null {
   const matches = record.types.flatMap((type) => {
@@ -24,7 +24,11 @@ function modelFor(
  * These functions are dormant until the native next repository is wired in.
  */
 export function nextTaskSummary(
-  record: RecordView,
+  record: Pick<
+    RecordView,
+    "id" | "path" | "revision" | "types" | "frontmatter"
+  > &
+    Partial<Pick<RecordView, "effective">>,
   models: NextTaskModels,
 ): TaskSummary | null {
   const model = modelFor(record, models);

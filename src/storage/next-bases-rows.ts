@@ -1,9 +1,46 @@
 import type { RecordView, wire } from "@mdbase-dev/sdk";
 
+/** What a task summary needs from a row: its identity, catalog types and the
+ * effective properties the summary decoder reads. */
+export type NativeRowRecord = Pick<
+  RecordView,
+  "id" | "path" | "revision" | "types" | "frontmatter"
+>;
+
 export interface NativeRowIdentity {
   record: wire.Uuid;
   path: string;
   sourceRevision: wire.Hash;
+}
+
+/** A row as either SDK build returns it. The self-hosted entry's direct SDK
+ * (vendor/sdk-self-hosted-*, built before `rowProperties`) neither types nor
+ * projects these fields; drop the optional shape once it is rebuilt. */
+export type MaybeProjectedRow = NativeRowIdentity & {
+  types?: readonly string[];
+  properties?: NativeRowRecord["frontmatter"];
+};
+
+/** Rows whose READ already projected catalog types and the requested effective
+ * properties, so no per-row get follows. `null` when the rows carry no
+ * projection (a replica or SDK without `rowProperties`): hydrate them instead. */
+export function projectedNativeRows(
+  rows: readonly MaybeProjectedRow[],
+): NativeRowRecord[] | null {
+  const projected = rows.filter(
+    (row) => row.types !== undefined && row.properties !== undefined,
+  );
+  if (projected.length !== rows.length) {
+    if (projected.length) throw new Error("Native view rows mix projections.");
+    return null;
+  }
+  return rows.map((row) => ({
+    id: row.record,
+    path: row.path,
+    revision: row.sourceRevision,
+    types: [...row.types!],
+    frontmatter: row.properties!,
+  }));
 }
 
 /** Gets in flight while hydrating rows: the SDK's `readMany` bound. Through a
