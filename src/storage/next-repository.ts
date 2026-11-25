@@ -3898,13 +3898,13 @@ export class NextTaskRepository implements TaskRepository {
           ),
         ]),
       ];
-      let projected = true;
+      // Not a literal: the self-hosted direct SDK's request type predates it.
+      const projectedRequest = { ...request, rowProperties };
       let result: Awaited<ReturnType<typeof this.client.executeAppBases>>;
       try {
-        result = await this.client.executeAppBases(
-          { ...request, rowProperties },
-          { signal: this.requestSignal(signal) },
-        );
+        result = await this.client.executeAppBases(projectedRequest, {
+          signal: this.requestSignal(signal),
+        });
       } catch (error) {
         // Connected computers running Connect before 0.2.13 lack
         // bases-row-properties-v1; the SDK refuses locally before any READ.
@@ -3914,7 +3914,6 @@ export class NextTaskRepository implements TaskRepository {
           error.reason !== "bases_row_properties_unsupported"
         )
           throw error;
-        projected = false;
         result = await this.client.executeAppBases(request, {
           signal: this.requestSignal(signal),
         });
@@ -3980,25 +3979,25 @@ export class NextTaskRepository implements TaskRepository {
         result.groups,
         metadata.groupProperty,
       );
-      const records: NativeRowRecord[] = projected
-        ? projectedNativeRows(result.rows)
-        : (
-            await readNativeRows(
-              result.rows,
-              (id, current) =>
-                this.client.get(id, {
-                  include: { effective: true },
-                  signal: current,
-                }),
-              signal,
-            )
-          ).map((record) => ({
-            id: record.id,
-            path: record.path,
-            revision: record.revision,
-            types: record.types,
-            frontmatter: record.effective ?? record.frontmatter,
-          }));
+      const records: NativeRowRecord[] =
+        projectedNativeRows(result.rows) ??
+        (
+          await readNativeRows(
+            result.rows,
+            (id, current) =>
+              this.client.get(id, {
+                include: { effective: true },
+                signal: current,
+              }),
+            signal,
+          )
+        ).map((record) => ({
+          id: record.id,
+          path: record.path,
+          revision: record.revision,
+          types: record.types,
+          frontmatter: record.effective ?? record.frontmatter,
+        }));
       signal.throwIfAborted();
       this.assertCurrentData(revision);
       const totalCount = result.window?.totalMatchedRows ?? result.rows.length;

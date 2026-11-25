@@ -583,6 +583,17 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     expect(f.execute.mock.calls[1]![0].rowProperties).toBeUndefined();
     expect(get.mock.calls.map(([id]) => id)).toEqual([f.record.id]);
   });
+  it("hydrates rows per record when the SDK returns them unprojected", async () => {
+    const f = await fixture();
+    const get = vi.spyOn(f.client, "get");
+    // The self-hosted direct SDK predates rowProperties and ignores it.
+    vi.spyOn(f.client, "executeAppBases").mockResolvedValue(f.reply);
+    const result = await f.repository.executeView(f.view);
+    expect(result.rows.map((row) => row.task.title)).toEqual([
+      "Native-selected task",
+    ]);
+    expect(get.mock.calls.map(([id]) => id)).toEqual([f.record.id]);
+  });
   it("retains native order even when selected metadata reads complete out of order", async () => {
     const f = await fixture();
     const second = {
