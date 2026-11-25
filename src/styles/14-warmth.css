@@ -50,9 +50,11 @@
     background: var(--nav-active);
   }
 
+  /* Sized so "TaskNotes", the app switcher's chevron and the sidebar toggle
+   * share the 232px rail without truncating the name. */
   .navigation-rail .wordmark {
     font-family: inherit;
-    font-size: 1.1875rem;
+    font-size: var(--type-control);
     letter-spacing: -0.01em;
   }
 

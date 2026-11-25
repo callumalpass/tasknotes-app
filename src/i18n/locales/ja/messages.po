@@ -113,10 +113,6 @@ msgstr "({left}) または ({right})"
 msgid "(No title)"
 msgstr "(タイトルなし)"
 
-#: src/components/app-switcher.tsx
-msgid "(opens in a new tab)"
-msgstr "（新しいタブで開きます）"
-
 #: src/app/more-screen.tsx
 msgid "(unsaved changes)"
 msgstr "（未保存の変更）"
@@ -1065,10 +1061,6 @@ msgstr "指定回数後"
 msgid "Agenda"
 msgstr "アジェンダ"
 
-#: src/components/app-switcher.tsx
-msgid "AI clients (MCP)"
-msgstr "AIクライアント（MCP）"
-
 #: src/app/views/view-catalog.tsx
 msgid "All"
 msgstr "すべて"
@@ -1301,10 +1293,6 @@ msgstr "ブラウザーのペアリング情報を読み書きできません。
 msgid "Browser storage is unavailable. Clear this site’s data on this device to remove saved drafts."
 msgstr "ブラウザーのストレージを利用できません。保存された下書きを削除するには、この端末でこのサイトのデータを消去してください。"
 
-#: src/components/app-switcher.tsx
-msgid "Build your own"
-msgstr "自分のアプリを作る"
-
 #: src/components/expression-builder.tsx
 msgid "Builder"
 msgstr "ビルダー"
@@ -1525,10 +1513,6 @@ msgstr "このビューに含めるタスクを選択します。"
 #: src/components/expression-builder.tsx
 msgid "Choose…"
 msgstr "選択…"
-
-#: src/components/app-switcher.tsx
-msgid "Claude, ChatGPT and Codex"
-msgstr "Claude、ChatGPT、Codex"
 
 #: src/app/bulk-task-actions.tsx
 #: src/app/search-screen.tsx
@@ -2128,10 +2112,6 @@ msgstr "「{0}」を作成しました"
 #: src/app/scratchpad-note.tsx
 msgid "Creating…"
 msgstr "作成中…"
-
-#: src/components/app-switcher.tsx
-msgid "Current"
-msgstr "現在"
 
 #: src/app/scratchpad-note.tsx
 msgid "Current note"
@@ -3601,10 +3581,6 @@ msgstr "{0}で一致"
 msgid "Maybe"
 msgstr "未定"
 
-#: src/components/app-switcher.tsx
-msgid "mdbase apps"
-msgstr "mdbaseアプリ"
-
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbaseコレクション"
@@ -4307,10 +4283,6 @@ msgstr "最初に開く"
 msgid "Open image"
 msgstr "画像を開く"
 
-#: src/components/app-switcher.tsx
-msgid "Open in another mdbase app"
-msgstr "別のmdbaseアプリで開く"
-
 #: src/calendar-service/event-dialog.tsx
 msgid "Open in Google Calendar"
 msgstr "Google カレンダーで開く"
@@ -4334,10 +4306,6 @@ msgstr "{host} からの招待を開きますか？ 現在のワークスペー�
 #: src/app/direct-collection-gate.tsx
 msgid "Open this build on an HTTPS site without a service worker."
 msgstr "サービスワーカーのない HTTPS サイトでこのビルドを開いてください。"
-
-#: src/components/app-switcher.tsx
-msgid "Open this collection in"
-msgstr "このコレクションを開くアプリ"
 
 #: src/app/more-screen.tsx
 msgid "Open your browser’s Share menu, then choose Add to Home Screen."
@@ -4367,7 +4335,6 @@ msgstr "ビューを開く"
 msgid "Opens as"
 msgstr "次の形式で開く"
 
-#: src/components/app-switcher.tsx
 #: src/components/person-setup-link.tsx
 msgid "Opens in a new tab"
 msgstr "新しいタブで開きます"
