@@ -1,9 +1,36 @@
 import type { RecordView, wire } from "@mdbase-dev/sdk";
+import type { AppBasesRow } from "@mdbase-dev/sdk/app-host";
+
+/** What a task summary needs from a row: its identity, catalog types and the
+ * effective properties the summary decoder reads. */
+export type NativeRowRecord = Pick<
+  RecordView,
+  "id" | "path" | "revision" | "types" | "frontmatter"
+>;
 
 export interface NativeRowIdentity {
   record: wire.Uuid;
   path: string;
   sourceRevision: wire.Hash;
+}
+
+/** Rows of an execution that requested `rowProperties`: the native READ
+ * already projected the catalog types and requested effective properties, so
+ * no per-row get follows. */
+export function projectedNativeRows(
+  rows: readonly AppBasesRow[],
+): NativeRowRecord[] {
+  return rows.map((row) => {
+    if (row.types === undefined || row.properties === undefined)
+      throw new Error("Native view rows omitted their projected properties.");
+    return {
+      id: row.record,
+      path: row.path,
+      revision: row.sourceRevision,
+      types: [...row.types],
+      frontmatter: row.properties,
+    };
+  });
 }
 
 /** Gets in flight while hydrating rows: the SDK's `readMany` bound. Through a

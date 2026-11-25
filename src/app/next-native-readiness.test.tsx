@@ -24,6 +24,7 @@ import { RepositoryProvider } from "./repository-context";
 import { CollectionGateContext } from "./collection-context";
 import { AppShell } from "./app-shell";
 import { taskNotesViewSourcePath } from "../domain/default-view-source";
+import { projectRowsLikeReplica } from "../test/native-row-projection";
 
 // Real SDK task READs/CRUD and actual app shell; catalog and Bases replies are
 // declared stand-ins. No native/LAB/authority qualification.
@@ -343,7 +344,9 @@ it.each([
       clock,
       collectionRevision: revision,
     };
-    vi.spyOn(f.client, "executeAppBases").mockResolvedValue(result);
+    vi.spyOn(f.client, "executeAppBases").mockImplementation((request) =>
+      projectRowsLikeReplica(f.client, request, result),
+    );
     const create = vi.spyOn(f.client, "create");
     const mounted = render(
       <CollectionGateContext.Provider
@@ -437,23 +440,25 @@ it("refreshes mounted navigation without a task read and publishes the Today bad
     collectionRevision: revision,
     source: "views:\n  - name: Today\n    type: tasknotesTaskList\n",
   });
-  vi.spyOn(f.client, "executeAppBases").mockResolvedValue({
-    kind: "success",
-    view,
-    columns: ["note.title"],
-    unavailableColumns: [],
-    rows: [
-      {
-        record: record.id,
-        path: record.path,
-        sourceRevision: revision,
-        cells: [{ kind: "text", value: seed.title }],
-      },
-    ],
-    groups: [],
-    clock,
-    collectionRevision: revision,
-  });
+  vi.spyOn(f.client, "executeAppBases").mockImplementation((request) =>
+    projectRowsLikeReplica(f.client, request, {
+      kind: "success",
+      view,
+      columns: ["note.title"],
+      unavailableColumns: [],
+      rows: [
+        {
+          record: record.id,
+          path: record.path,
+          sourceRevision: revision,
+          cells: [{ kind: "text", value: seed.title }],
+        },
+      ],
+      groups: [],
+      clock,
+      collectionRevision: revision,
+    }),
+  );
   const refresh = vi.spyOn(f.repository, "refresh");
   renderShell(f.repository);
   const navigation = within(
