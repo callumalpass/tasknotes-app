@@ -1,5 +1,7 @@
 # Unreleased
 
+- Collection setup now accepts the scheduled and due times written by the TaskNotes Obsidian plugin. Thanks to @iantierney for reporting (TaskNotes #2706).
+
 - Read and edit task Notes in one Markdown field. Formatting stays visible while you write, and the syntax appears where you're editing. Wikilink labels and callouts are styled without opening Obsidian notes.
 
 - Finish deleting a task when you switch away from TaskNotes, instead of waiting until you return. Other devices and apps stop showing the task straight away. Undo is still available for 30 seconds while TaskNotes stays on screen.

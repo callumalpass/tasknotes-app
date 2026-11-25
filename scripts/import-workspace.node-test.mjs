@@ -77,7 +77,7 @@ test("the canonical catalog loader works from either app's working directory", (
         cwd: fileURLToPath(directory),
         encoding: "utf8",
       }).trim(),
-      "0.3.0-rc.21",
+      "0.3.0-rc.22",
     );
 });
 
