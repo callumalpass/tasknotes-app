@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { AppSwitcher } from "@mdbase-dev/ui/app-switcher";
 import type { OfficialAppId } from "@mdbase-dev/ui/apps";
-import type { JSX } from "react";
+import type { JSX, RefObject } from "react";
 
 import { tasknotesMarkUrl } from "../app/assets";
 import {
@@ -83,5 +83,35 @@ export function TaskNotesAppSwitcher({
       <img alt="" src={tasknotesMarkUrl} />
       <span>TaskNotes</span>
     </AppSwitcher>
+  );
+}
+
+/**
+ * The same mdbase apps menu without its wordmark trigger, for phones, where the
+ * navigation rail and its wordmark are hidden. The bottom navigation's More menu
+ * opens it, and it opens against `anchorRef`.
+ */
+export function TaskNotesAppsMenu({
+  anchorRef,
+  collectionId,
+  open,
+  onOpenChange,
+}: {
+  readonly anchorRef: RefObject<HTMLElement | null>;
+  readonly collectionId?: string | null;
+  readonly open: boolean;
+  onOpenChange(open: boolean): void;
+}): JSX.Element {
+  return (
+    <AppSwitcher
+      align="end"
+      anchorRef={anchorRef}
+      collectionId={collectionId}
+      current="tasknotes"
+      open={open}
+      urls={taskNotesAppUrls()}
+      variant="none"
+      onOpenChange={onOpenChange}
+    />
   );
 }

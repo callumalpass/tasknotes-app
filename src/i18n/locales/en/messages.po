@@ -3581,6 +3581,11 @@ msgstr "Matched in {0}"
 msgid "Maybe"
 msgstr "Maybe"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "mdbase apps"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase collection"

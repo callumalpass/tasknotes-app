@@ -3581,6 +3581,11 @@ msgstr "Treffer in {0}"
 msgid "Maybe"
 msgstr "Vielleicht"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "mdbase-Apps"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase-Sammlung"

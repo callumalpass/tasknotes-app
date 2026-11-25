@@ -3581,6 +3581,11 @@ msgstr "在 {0} 中匹配"
 msgid "Maybe"
 msgstr "待定"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "mdbase 应用"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 集合"

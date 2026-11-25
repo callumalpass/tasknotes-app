@@ -3581,6 +3581,11 @@ msgstr "Correspondência em {0}"
 msgid "Maybe"
 msgstr "Talvez"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "Aplicativos mdbase"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "Coleção mdbase"
