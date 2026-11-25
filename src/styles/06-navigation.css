@@ -954,6 +954,11 @@
     background: transparent;
   }
 
+  /* The toggle's hit area may overhang the rail's padding, giving the name room. */
+  .app-shell:not(.sidebar-collapsed) .navigation-rail .sidebar-toggle {
+    margin-right: -8px;
+  }
+
   .navigation-rail button > svg {
     flex: none;
   }
