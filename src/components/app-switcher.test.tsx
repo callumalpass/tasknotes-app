@@ -95,16 +95,33 @@ describe("TaskNotesAppSwitcher", () => {
     ).toHaveAttribute("href", "https://journal.mdbase.dev/?collection=col_42");
     expect(
       within(menu).getByRole("menuitem", {
-        name: /AI clients \(MCP\)/,
+        name: /Your app here/,
+        hidden: true,
+      }),
+    ).toHaveAttribute("href", "https://mdbase.dev/sdk/");
+
+    const assistantsRow = within(menu).getByRole("menuitem", {
+      name: /AI assistants/,
+      hidden: true,
+    });
+    expect(assistantsRow).toHaveAttribute("aria-haspopup", "menu");
+    fireEvent.click(assistantsRow);
+    const assistants = document.getElementById(
+      assistantsRow.getAttribute("aria-controls") ?? "",
+    )!;
+    expect(assistants).toHaveAttribute("role", "menu");
+    expect(
+      within(assistants).getByRole("menuitem", {
+        name: /Other AI clients/,
         hidden: true,
       }),
     ).toHaveAttribute("href", mcpSetupUrl);
     expect(
-      within(menu).getByRole("menuitem", {
-        name: /Build your own/,
+      within(assistants).getByRole("menuitem", {
+        name: /Memory/,
         hidden: true,
       }),
-    ).toHaveAttribute("href", "https://mdbase.dev/sdk/");
+    ).toHaveAttribute("href", "https://memory.mdbase.dev/");
   });
 
   it("shows the generic mdbase apps heading when no collection is connected", () => {

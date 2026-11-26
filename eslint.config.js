@@ -135,22 +135,4 @@ export default tseslint.config(
       ],
     },
   },
-  {
-    files: ["src/app/views-screen.tsx"],
-    rules: {
-      "max-lines": [
-        "error",
-        { max: 2500, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  {
-    files: ["src/app/task-screen.tsx"],
-    rules: {
-      "max-lines": [
-        "error",
-        { max: 1300, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
 );
