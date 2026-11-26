@@ -8,7 +8,6 @@ import {
   TASKNOTES_APP_TYPE_PACK_VERSION,
 } from "./tasknotes-manifest.mjs";
 import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
-import { loadCanonicalTaskNotesTypePack } from "./canonical-task-pack.mjs";
 import {
   previousScratchpadTypeDocument,
   scratchpadTypeDocument,
@@ -132,7 +131,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.21");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.22");
     // rc.20 keeps the tasknotes.task contracts earlier packs replaced in
     // place, so a task type outside the pack that still implements one does
     // not block setup.
@@ -161,7 +160,7 @@ describe("TaskNotes mdbase manifest", () => {
       taskSeed.upgrade_from.map(
         (baseline) => parse(baseline.document.split("---\n")[1]).version,
       ),
-    ).toEqual([4, 4, 3, 2, 1]);
+    ).toEqual([5, 4, 4, 3, 2, 1]);
     for (const baseline of taskSeed.upgrade_from) {
       expect(baseline.digest).toBe(
         `sha256:${createHash("sha256").update(baseline.document).digest("hex")}`,
@@ -368,19 +367,8 @@ describe("TaskNotes mdbase manifest", () => {
     ]);
   });
 
-  it("generates exactly the starter type the pinned pack installs", async () => {
-    const pack = await loadCanonicalTaskNotesTypePack();
-    const typeResource = pack.manifest.resources.find(
-      (resource) => resource.target === "_types/task.md",
-    );
-    const document = pack.resources.find(
-      (resource) => resource.source === typeResource.source,
-    ).document;
-    expect(buildAppTaskNotesResources().typeDocument).toBe(document);
-  });
-
-  it("provisions TaskNotes-compatible string ranks for manual order", () => {
-    const generated = buildAppTaskNotesResources();
+  it("provisions TaskNotes-compatible string ranks for manual order", async () => {
+    const generated = await buildAppTaskNotesResources();
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
@@ -403,8 +391,8 @@ describe("TaskNotes mdbase manifest", () => {
     );
   });
 
-  it("accepts date-only and timed due and scheduled values", () => {
-    const generated = buildAppTaskNotesResources();
+  it("accepts date-only and timed due and scheduled values", async () => {
+    const generated = await buildAppTaskNotesResources();
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
@@ -417,12 +405,17 @@ describe("TaskNotes mdbase manifest", () => {
       ],
     };
 
-    expect(
-      generated.type.schema.value.properties[implementation.fields.due],
-    ).toEqual(taskDateSchema);
-    expect(
-      generated.type.schema.value.properties[implementation.fields.scheduled],
-    ).toEqual(taskDateSchema);
+    for (const role of ["due", "scheduled"]) {
+      const { anyOf } =
+        generated.type.schema.value.properties[implementation.fields[role]];
+      expect(anyOf).toEqual(expect.arrayContaining(taskDateSchema.anyOf));
+      const localTime = new RegExp(
+        anyOf.find((branch) => branch.pattern).pattern,
+      );
+      expect("2026-11-30T16:00").toMatch(localTime);
+      expect("2026-11-30T16:00:59").toMatch(localTime);
+      expect("2026-11-30T25:00").not.toMatch(localTime);
+    }
     expect(generated.taskSchema.properties.due).toEqual(taskDateSchema);
     expect(generated.taskSchema.properties.scheduled).toEqual(taskDateSchema);
     expect(

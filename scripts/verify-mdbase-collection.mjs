@@ -8,7 +8,7 @@ import { buildAppTaskNotesResources } from "./tasknotes-resources.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "tasknotes-app-mdbase-"));
 try {
-  const resources = buildAppTaskNotesResources();
+  const resources = await buildAppTaskNotesResources();
   await write(root, resources.paths.config, resources.configDocument);
   await write(root, resources.paths.contract, resources.contractDocument);
   await write(root, resources.paths.type, resources.typeDocument);

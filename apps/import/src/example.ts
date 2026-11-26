@@ -1,5 +1,5 @@
 import YAML from "yaml";
-import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.21.json";
+import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.22.json";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import type { DestinationType } from "./plan";
 import type { SourceData } from "./todoist";

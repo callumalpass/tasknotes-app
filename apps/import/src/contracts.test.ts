@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
-import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.21.json";
+import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.22.json";
 import manifest from "./generated/mdbase-app.json";
 import { exampleTarget } from "./example";
 import { modelFor } from "./plan";
@@ -16,17 +16,17 @@ it("uses the published canonical TaskNotes pack and the matching stable model co
     hash(
       readFileSync(
         new URL(
-          "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.21.json",
+          "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.22.json",
           import.meta.url,
         ),
       ),
     ),
   ).toBe(
-    "sha256:35a439cd50aeca1ddb1ec2a260822133881e26d901f0851190adcddb56aca5be",
+    "sha256:7411d08797aaf564d5e6e75b1870110c83feff57c2fe71dc60728b7de3516ce7",
   );
   expect(pack.manifest).toMatchObject({
     id: "tasknotes.task",
-    version: "0.3.0-rc.21",
+    version: "0.3.0-rc.22",
   });
   expect(pack.provides).toContainEqual({
     id: "tasknotes.task",
