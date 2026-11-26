@@ -54,7 +54,38 @@ export function recheckRefusalReason(result, sourceRunId) {
 export function requirePolicy(condition, reason) {
   if (!condition) throw new Error(reason);
 }
-export function gh(path, options = {}, evidence = false) {
+// Which evidence read failed, as one of a fixed set of slugs. The store-cd
+// receipt may carry it so a stop names the read without any raw detail.
+export const FAILED_READS = Object.freeze([
+  "run-read",
+  "runs-list",
+  "jobs-read",
+  "artifacts-list",
+  "artifact-read",
+  "compare-read",
+  "policy-read",
+  "api-read",
+]);
+function readKind(path) {
+  if (/\/compare\//.test(path)) return "compare-read";
+  if (/\/contents\//.test(path)) return "policy-read";
+  if (/\/jobs(\?|$)/.test(path)) return "jobs-read";
+  if (/\/artifacts(\?|$)/.test(path)) return "artifacts-list";
+  if (/\/actions\/runs\/\d+$/.test(path)) return "run-read";
+  if (/\/runs(\?|$)/.test(path)) return "runs-list";
+  return "api-read";
+}
+function evidenceUnavailable(read) {
+  return Object.assign(new Error("release-evidence-unavailable"), { read });
+}
+const sleepSync = (delay) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delay);
+export function gh(
+  path,
+  options = {},
+  evidence = false,
+  { exec = execFileSync, sleep = sleepSync } = {},
+) {
   const env = { ...process.env };
   if (evidence) {
     requirePolicy(env.APP_EVIDENCE_GH_TOKEN, "ops-evidence-token-required");
@@ -66,18 +97,28 @@ export function gh(path, options = {}, evidence = false) {
     path,
   ];
   if (options.body) args.push("--method", "POST", "--input", "-");
-  try {
-    return JSON.parse(
-      execFileSync("gh", args, {
-        encoding: "utf8",
-        env,
-        input: options.body && JSON.stringify(options.body),
-        stdio: ["pipe", "pipe", "pipe"],
-        maxBuffer: 16 * 1024 * 1024,
-      }),
-    );
-  } catch {
-    throw new Error("release-evidence-unavailable");
+  // A GET is safe to repeat, so a transient failure (API lag or a transport
+  // error) is retried a bounded number of times. A POST (dispatch, cancel) is
+  // a write and stays single-shot.
+  const attempts = options.body ? 1 : 3;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return JSON.parse(
+        exec("gh", args, {
+          encoding: "utf8",
+          env,
+          input: options.body && JSON.stringify(options.body),
+          stdio: ["pipe", "pipe", "pipe"],
+          maxBuffer: 16 * 1024 * 1024,
+        }),
+      );
+    } catch {
+      if (attempt >= attempts)
+        throw options.body
+          ? new Error("release-evidence-unavailable")
+          : evidenceUnavailable(readKind(path));
+      sleep(10000);
+    }
   }
 }
 function gitFile(source, path) {
@@ -153,7 +194,7 @@ export async function artifactJson(
         );
         break;
       } catch {
-        if (attempt >= 3) throw new Error("release-evidence-unavailable");
+        if (attempt >= 3) throw evidenceUnavailable("artifact-read");
         await rm(dir, { recursive: true, force: true });
         await mkdir(dir, { recursive: true });
         await wait(10000);
@@ -393,25 +434,43 @@ export async function qualifyCommit(source, platform) {
   return { ...pkg, producer: pin.sourceCommit };
 }
 
+// Reads the dispatched source build run. Its identity must match on every read
+// and refuses at once. Just after the run completes, a read can still see it
+// unfinished, so only that state is re-read a bounded number of times.
+export async function readSourceRun(
+  platform,
+  sourceRunId,
+  {
+    transport = gh,
+    wait = (delay) => new Promise((done) => setTimeout(done, delay)),
+  } = {},
+) {
+  const expected = platform === "android" ? "android.yml" : "ios-release.yml";
+  for (let attempt = 1; ; attempt++) {
+    const run = transport(`repos/${REPO}/actions/runs/${sourceRunId}`);
+    requirePolicy(
+      run.path === `.github/workflows/${expected}` &&
+        run.repository?.full_name === REPO &&
+        run.head_repository?.full_name === REPO &&
+        run.run_attempt === 1 &&
+        run.event === "workflow_dispatch" &&
+        run.head_branch === "main" &&
+        /^[a-f0-9]{40}$/.test(run.head_sha),
+      "trusted-successful-source-run-required",
+    );
+    const succeeded =
+      run.status === "completed" && run.conclusion === "success";
+    if (succeeded) return run;
+    requirePolicy(attempt < 3, "trusted-successful-source-run-required");
+    await wait(10000);
+  }
+}
 export async function qualifySource(platform, sourceRunId) {
   requirePolicy(
     WORKFLOWS[platform] && /^[1-9]\d*$/.test(String(sourceRunId)),
     "source-run-required",
   );
-  const run = gh(`repos/${REPO}/actions/runs/${sourceRunId}`);
-  const expected = platform === "android" ? "android.yml" : "ios-release.yml";
-  requirePolicy(
-    run.path === `.github/workflows/${expected}` &&
-      run.repository.full_name === REPO &&
-      run.head_repository.full_name === REPO &&
-      run.status === "completed" &&
-      run.conclusion === "success" &&
-      run.run_attempt === 1 &&
-      run.event === "workflow_dispatch" &&
-      run.head_branch === "main" &&
-      /^[a-f0-9]{40}$/.test(run.head_sha),
-    "trusted-successful-source-run-required",
-  );
+  const run = await readSourceRun(platform, sourceRunId);
   const binding = await artifactJson(
     sourceRunId,
     `mobile-build-source-${platform}`,
