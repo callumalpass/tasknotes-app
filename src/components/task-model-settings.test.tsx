@@ -4,9 +4,15 @@ import { fireEvent, render, screen, waitFor } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { RepositoryProvider } from "../app/repository-context";
-import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
+import {
+  nextTaskFixture,
+  seedRecord,
+  seedTask,
+} from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { TaskModelSettingsEditor } from "./task-model-settings";
+import { customFieldKey } from "./task-vocabulary-editor";
 
 type Part = "properties" | "behavior";
 
@@ -238,5 +244,79 @@ describe("TaskModelSettingsEditor", () => {
     expect(
       (await repository.taskConfiguration()).statuses.map(({ value }) => value),
     ).toContain("in-progress");
+  });
+
+  it("preserves mixed-case custom field names like effortPoints on storage and reads matching files", async () => {
+    const { repository } = await renderEditor(({ replica }) => {
+      seedRecord(replica, {
+        path: "tasks/estimate.md",
+        types: ["task"],
+        frontmatter: {
+          id: "estimate",
+          title: "Estimate work",
+          status: "open",
+          tags: ["task"],
+          dateCreated: "2026-07-22T00:00:00Z",
+          effortPoints: 5,
+        },
+      });
+    }, "properties");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add field" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Field name" }), {
+      target: { value: "effortPoints" },
+    });
+    expect(screen.getByText("effortPoints")).toBeVisible();
+    // Choose Number type so the schema matches numeric effortPoints in the file.
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Type of effortPoints" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Number" }));
+    save();
+
+    await waitFor(() =>
+      expect(screen.getByText("Saved with the collection.")).toBeVisible(),
+    );
+    const configuration = await repository.taskConfiguration();
+    expect(configuration.userFields).toContainEqual(
+      expect.objectContaining({
+        key: "effortPoints",
+        displayName: "effortPoints",
+      }),
+    );
+
+    const tasks = await repository.listSummaries({ limit: 10 });
+    expect(tasks[0]?.customProperties).toEqual({ effortPoints: 5 });
+  });
+
+  it("deduplicates mixed-case custom field keys case-insensitively and reads legacy differing-case keys", () => {
+    expect(customFieldKey("effortPoints", [])).toBe("effortPoints");
+    expect(customFieldKey("EffortPoints", [])).toBe("EffortPoints");
+    expect(customFieldKey("effortPoints", ["effortpoints"])).toBe(
+      "effortPoints_2",
+    );
+    expect(customFieldKey("Client", [])).toBe("client");
+    expect(customFieldKey("Story points", [])).toBe("story_points");
+
+    const model = new TaskNotesTaskModel({
+      userFields: [
+        {
+          id: "effortpoints",
+          key: "effortpoints",
+          displayName: "effortPoints",
+          type: "number",
+        },
+      ],
+    });
+    const read = model.readSummary({
+      path: "tasks/one.md",
+      frontmatter: {
+        id: "one",
+        title: "Legacy casing",
+        status: "open",
+        effortPoints: 8,
+      },
+    });
+    expect(read.customProperties).toEqual({ effortpoints: 8 });
   });
 });

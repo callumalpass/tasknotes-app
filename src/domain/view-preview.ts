@@ -84,6 +84,8 @@ function taskProperties(task: TaskSummary): Record<string, unknown> {
     archived: task.archived,
     completed: task.completed,
     sortOrder: task.sortOrder,
+    dateModified:
+      task.frontmatter.dateModified ?? (task.updatedAt || undefined),
   };
 }
 

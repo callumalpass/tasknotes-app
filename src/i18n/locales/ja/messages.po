@@ -3647,6 +3647,11 @@ msgstr "分"
 msgid "Minutes"
 msgstr "分"
 
+#: src/app/view-sort-choices.tsx
+#: src/i18n/default-labels.ts
+msgid "Modified"
+msgstr "更新日時"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -4351,6 +4356,10 @@ msgstr "任意"
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
 msgstr "任意の通知テキスト"
+
+#: src/app/task-calendar-view.tsx
+msgid "Optional: connect Google Calendar in Settings to show Google events alongside your tasks."
+msgstr "任意：設定で Google カレンダーを連携すると、タスクと並べて Google の予定を表示できます。"
 
 #: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
@@ -5571,10 +5580,6 @@ msgstr "各項目の下にこの順序で表示"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Shown in this order wherever a status is chosen. At least one must count as done."
 msgstr "ステータスを選ぶ場所では、この順序で表示されます。少なくとも1つは完了として扱う必要があります。"
-
-#: src/app/task-calendar-view.tsx
-msgid "Sign in to Google Calendar in Settings to see events."
-msgstr "予定を表示するには、設定で Google カレンダーにログインしてください。"
 
 #: src/calendar-service/settings.tsx
 msgid "Sign in with Google"

@@ -126,6 +126,8 @@ export function builtInFieldLabel(key: string): string | undefined {
       return t`Due`;
     case "scheduled":
       return t`Scheduled`;
+    case "dateModified":
+      return t`Modified`;
     case "tags":
       return t`Tags`;
     case "projects":

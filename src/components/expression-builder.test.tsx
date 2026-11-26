@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "../test/render";
+import { fireEvent, render, screen, within } from "../test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { ExpressionBuilder } from "./expression-builder";
@@ -11,6 +11,7 @@ const fields = [
   { key: "scheduled", label: "Scheduled", type: "date" as const },
   { key: "due", label: "Due", type: "date" as const },
   { key: "tags", label: "Tags", type: "list" as const },
+  { key: "projects", label: "Projects", type: "list" as const },
   { key: "title", label: "Title", type: "text" as const },
   {
     key: "status",
@@ -276,5 +277,57 @@ describe("ExpressionBuilder", () => {
     ).toHaveValue(value);
     fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("defaults list properties like Projects to contains and restricts operators to list-aware ones", () => {
+    const onChange = vi.fn();
+    render(
+      <ExpressionBuilder
+        dialect="obsidian-bases"
+        fields={fields}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Condition" }));
+    const condition = screen.getByRole("combobox", {
+      name: "Filter condition",
+    });
+    expect(condition).toHaveAttribute("data-value", "equals");
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Filter property" }),
+      { target: { value: "projects" } },
+    );
+    expect(condition).toHaveAttribute("data-value", "contains");
+
+    fireEvent.click(condition);
+    const listbox = document.getElementById(
+      condition.getAttribute("aria-controls")!,
+    )!;
+    const options = within(listbox)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    expect(options).toEqual([
+      "contains",
+      "does not contain",
+      "is empty",
+      "is not empty",
+    ]);
+    fireEvent.click(within(listbox).getByRole("option", { name: "contains" }));
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Filter value" }), {
+      target: { value: "Alpha" },
+    });
+    expect(onChange).toHaveBeenLastCalledWith('projects.contains("Alpha")');
+
+    // Switching back to an enum property returns to an equality operator.
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Filter property" }),
+      { target: { value: "status" } },
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Filter condition" }),
+    ).toHaveAttribute("data-value", "equals");
   });
 });

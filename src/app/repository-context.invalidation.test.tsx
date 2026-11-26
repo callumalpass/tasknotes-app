@@ -86,6 +86,75 @@ it("refreshes silently when the window becomes visible again", async () => {
   }
 });
 
+it("refreshes immediately and invalidates views when the window regains focus", async () => {
+  const { replica, repository } = await nextTaskFixture();
+  seedTask(replica, { title: "One" });
+  const refresh = vi.spyOn(repository, "refresh");
+  render(
+    <RepositoryProvider
+      repository={repository}
+      mutationJournal={new MemoryMutationJournal()}
+    >
+      <Harness />
+    </RepositoryProvider>,
+  );
+  await screen.findByText("One");
+  await waitFor(() =>
+    expect(screen.getByText("connected")).toBeInTheDocument(),
+  );
+  await act(async () => {
+    await repository.refresh();
+  });
+  refresh.mockClear();
+  const revisionBefore = screen.getByTestId("view-revision").textContent;
+
+  await act(async () => {
+    window.dispatchEvent(new Event("focus"));
+  });
+
+  await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  expect(screen.getByTestId("view-revision").textContent).not.toBe(
+    revisionBefore,
+  );
+});
+
+it("coalesces back-to-back visibilitychange and focus events into one refresh", async () => {
+  const { replica, repository } = await nextTaskFixture();
+  seedTask(replica, { title: "One" });
+  const refresh = vi.spyOn(repository, "refresh");
+  render(
+    <RepositoryProvider
+      repository={repository}
+      mutationJournal={new MemoryMutationJournal()}
+    >
+      <Harness />
+    </RepositoryProvider>,
+  );
+  await screen.findByText("One");
+  await waitFor(() =>
+    expect(screen.getByText("connected")).toBeInTheDocument(),
+  );
+  await act(async () => {
+    await repository.refresh();
+  });
+  refresh.mockClear();
+  const visibility = vi.spyOn(document, "visibilityState", "get");
+  try {
+    visibility.mockReturnValue("hidden");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    visibility.mockReturnValue("visible");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  } finally {
+    visibility.mockRestore();
+  }
+});
+
 function Harness() {
   const { connection } = useRepository();
   const viewRevision = useRepositoryRevision("view:test");

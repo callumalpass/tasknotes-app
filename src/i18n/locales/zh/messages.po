@@ -3647,6 +3647,11 @@ msgstr "分钟"
 msgid "Minutes"
 msgstr "分钟"
 
+#: src/app/view-sort-choices.tsx
+#: src/i18n/default-labels.ts
+msgid "Modified"
+msgstr "修改时间"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -4351,6 +4356,10 @@ msgstr "可选"
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
 msgstr "可选通知文本"
+
+#: src/app/task-calendar-view.tsx
+msgid "Optional: connect Google Calendar in Settings to show Google events alongside your tasks."
+msgstr "可选：在设置中连接 Google 日历，即可将 Google 活动与任务一同显示。"
 
 #: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
@@ -5571,10 +5580,6 @@ msgstr "按此顺序显示在各项目下方。"
 #: src/components/task-vocabulary-editor.tsx
 msgid "Shown in this order wherever a status is chosen. At least one must count as done."
 msgstr "在选择状态的地方按此顺序显示。至少要有一个视为已完成。"
-
-#: src/app/task-calendar-view.tsx
-msgid "Sign in to Google Calendar in Settings to see events."
-msgstr "请在设置中登录 Google 日历以查看活动。"
 
 #: src/calendar-service/settings.tsx
 msgid "Sign in with Google"

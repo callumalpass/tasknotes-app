@@ -276,17 +276,23 @@ export function ViewEditorForm({
               }
               type="button"
               onClick={() => {
+                const property = sortPropertyInput.trim();
+                const normalized = property
+                  .replace(/^note\[["'](.+)["']\]$/, "$1")
+                  .replace(/^note\./, "");
+                const defaultDescending =
+                  isManualOrderProperty(
+                    property,
+                    configuration.fieldMapping.sortOrder,
+                  ) ||
+                  normalized === configuration.fieldMapping.dateModified ||
+                  normalized === "dateModified";
                 patch({
                   sort: [
                     ...draft.sort,
                     {
-                      property: sortPropertyInput.trim(),
-                      direction: isManualOrderProperty(
-                        sortPropertyInput.trim(),
-                        configuration.fieldMapping.sortOrder,
-                      )
-                        ? "desc"
-                        : "asc",
+                      property,
+                      direction: defaultDescending ? "desc" : "asc",
                     },
                   ],
                 });

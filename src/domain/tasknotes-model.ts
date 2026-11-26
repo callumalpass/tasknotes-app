@@ -1010,6 +1010,33 @@ export class TaskNotesTaskModel {
           if (alias !== canonical) delete result[alias];
       }
     }
+    if (this.config.userFields.length) {
+      const reserved = new Set(
+        [
+          ...Object.values(this.config.fieldMapping),
+          "id",
+          "tags",
+          "type",
+          "types",
+        ].map((name) => name.toLocaleLowerCase()),
+      );
+      const existingKeys = Object.keys(result);
+      for (const field of this.config.userFields) {
+        const lower = field.key.toLocaleLowerCase();
+        if (reserved.has(lower)) continue;
+        const matches = existingKeys.filter(
+          (candidate) =>
+            candidate !== field.key && candidate.toLocaleLowerCase() === lower,
+        );
+        if (!matches.length) continue;
+        if (!Object.prototype.hasOwnProperty.call(result, field.key)) {
+          result[field.key] = result[matches[0]!];
+        }
+        if (removeAliases) {
+          for (const alias of matches) delete result[alias];
+        }
+      }
+    }
     return result;
   }
 

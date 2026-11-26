@@ -27,6 +27,22 @@ describe("TaskNotes manual order", () => {
     ).toEqual({ property: "note.priority", direction: "desc" });
   });
 
+  it("supports descending-first sorts like Modified and reverses them on repeat selection", () => {
+    const first = leadSortWith(
+      [{ property: "title", direction: "asc" }],
+      "dateModified",
+      "tasknotes_manual_order",
+      "desc",
+    );
+    expect(first).toEqual([
+      { property: "dateModified", direction: "desc" },
+      { property: "title", direction: "asc" },
+    ]);
+    expect(
+      leadSortWith(first, "dateModified", "tasknotes_manual_order", "desc")[0],
+    ).toEqual({ property: "dateModified", direction: "asc" });
+  });
+
   it("recognizes the configured TaskNotes field only as the primary sort", () => {
     expect(
       manualOrderConfiguration(

@@ -252,6 +252,42 @@ describe("Google events alongside task calendars", () => {
     },
   );
 
+  it("shows the task calendar first and demotes the Google Calendar hint below it", () => {
+    calendar.google = {
+      enabled: true,
+      signedIn: false,
+      reconnect: false,
+      items: [],
+      writable: [],
+      events: [],
+      failure: null,
+      omitted: 0,
+      loading: false,
+      reload: vi.fn(),
+      replaceEvent: vi.fn(),
+      move: vi.fn(),
+      editor: null,
+      closeEditor: vi.fn(),
+      open: vi.fn(),
+      create: vi.fn(),
+    };
+    const { container } = renderCalendar(execution("2026-07-01"), vi.fn());
+    const surface = container.querySelector(".full-calendar-surface")!;
+    const hint = container.querySelector(".full-calendar-google-hint")!;
+    expect(surface).toBeInTheDocument();
+    expect(hint).toBeInTheDocument();
+    expect(hint).not.toHaveAttribute("role", "status");
+    expect(hint).toHaveTextContent(
+      "Optional: connect Google Calendar in Settings to show Google events alongside your tasks.",
+    );
+    expect(
+      Boolean(
+        surface.compareDocumentPosition(hint) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
+  });
+
   it("reads an agenda event as a row under each of its days", () => {
     const { item } = overlay();
     const current = execution("2026-07-01");

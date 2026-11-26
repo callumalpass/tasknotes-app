@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 
 import {
+  TASKNOTES_USER_FIELD_KEY,
   taskNotesUserFieldKey,
   taskNotesVocabularyValue,
   type TaskNotesPriorityEdit,
@@ -324,6 +325,29 @@ export function PriorityListEditor({
   );
 }
 
+/**
+ * Derive a stored frontmatter key for a new custom field.
+ * Preserves exact casing/separators when the user types an identifier-shaped
+ * key with internal uppercase or hyphens (e.g. `effortPoints`, `EffortPoints`,
+ * `effort-points`), while still turning ordinary labels (`Client`, `Story points`)
+ * into lowercase snake_case keys via `taskNotesUserFieldKey`.
+ */
+export function customFieldKey(
+  label: string,
+  taken: readonly string[],
+): string {
+  const trimmed = label.trim();
+  const preservesTypedKey =
+    TASKNOTES_USER_FIELD_KEY.test(trimmed) &&
+    (/[A-Z]/.test(trimmed.slice(1)) || trimmed.includes("-"));
+  if (!preservesTypedKey) return taskNotesUserFieldKey(label, taken);
+  const used = new Set(taken.map((key) => key.toLocaleLowerCase()));
+  let key = trimmed;
+  for (let suffix = 2; used.has(key.toLocaleLowerCase()); suffix += 1)
+    key = `${trimmed}_${suffix}`;
+  return key;
+}
+
 export function CustomFieldListEditor({
   fields,
   reservedKeys,
@@ -380,10 +404,7 @@ export function CustomFieldListEditor({
                         isNew(field)
                           ? {
                               displayName,
-                              key: taskNotesUserFieldKey(
-                                displayName,
-                                taken(field.id),
-                              ),
+                              key: customFieldKey(displayName, taken(field.id)),
                             }
                           : { displayName },
                       );

@@ -122,3 +122,12 @@ it("round-trips default fields through the real native Bases admission for every
     expect(validate(repaired!)).toEqual({ rows: [], groups: [] });
   }
 });
+
+it("admits views sorted by dateModified descending through native Bases", () => {
+  const draft = {
+    ...emptyViewDraft("obsidian-bases"),
+    sort: [{ property: "dateModified", direction: "desc" as const }],
+  };
+  const document = createViewDocument("obsidian.base", draft);
+  expect(validate(document)).toEqual({ rows: [], groups: [] });
+});

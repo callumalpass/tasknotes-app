@@ -3647,6 +3647,11 @@ msgstr "분"
 msgid "Minutes"
 msgstr "분"
 
+#: src/app/view-sort-choices.tsx
+#: src/i18n/default-labels.ts
+msgid "Modified"
+msgstr "수정됨"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -4351,6 +4356,10 @@ msgstr "선택 사항"
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
 msgstr "선택적 알림 문구"
+
+#: src/app/task-calendar-view.tsx
+msgid "Optional: connect Google Calendar in Settings to show Google events alongside your tasks."
+msgstr "선택 사항: 설정에서 Google 캘린더를 연결하면 할 일과 함께 Google 일정을 표시할 수 있습니다."
 
 #: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
@@ -5571,10 +5580,6 @@ msgstr "각 항목 아래에 이 순서로 표시됩니다."
 #: src/components/task-vocabulary-editor.tsx
 msgid "Shown in this order wherever a status is chosen. At least one must count as done."
 msgstr "상태를 선택하는 모든 곳에 이 순서로 표시됩니다. 하나 이상은 완료로 간주되어야 합니다."
-
-#: src/app/task-calendar-view.tsx
-msgid "Sign in to Google Calendar in Settings to see events."
-msgstr "일정을 보려면 설정에서 Google 캘린더에 로그인하세요."
 
 #: src/calendar-service/settings.tsx
 msgid "Sign in with Google"
