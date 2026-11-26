@@ -96,6 +96,27 @@ export class TaskNotesValidationError extends Error {
   }
 }
 
+export class DuplicatePortableTaskIdentityError extends Error {
+  readonly portableId: string;
+  readonly paths: readonly string[];
+
+  constructor(portableId: string, paths: readonly (string | undefined)[] = []) {
+    const distinct = [
+      ...new Set(paths.filter((path): path is string => Boolean(path))),
+    ].sort();
+    const message =
+      distinct.length >= 2
+        ? `Two task files have the same portable TaskNotes identity (${portableId}): "${distinct[0]}" and "${distinct[1]}". Delete the duplicate copy or change its frontmatter "id" field, then retry.`
+        : distinct.length === 1
+          ? `Two task files have the same portable TaskNotes identity (${portableId}), including "${distinct[0]}". Delete the duplicate copy or change its frontmatter "id" field, then retry.`
+          : `Two task files have the same portable TaskNotes identity (${portableId}). Delete the duplicate copy or change its frontmatter "id" field, then retry.`;
+    super(message);
+    this.name = "DuplicatePortableTaskIdentityError";
+    this.portableId = portableId;
+    this.paths = distinct;
+  }
+}
+
 export interface MaterializedOccurrenceTransition {
   occurrence: Task;
   parent: Task;

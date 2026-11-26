@@ -374,7 +374,7 @@ it.each(["reset", "model", "overflow", "full changes page"] as const)(
   },
 );
 
-it("checks duplicate portable identity with a full scan and surfaces the native rows' collision", async () => {
+it("checks duplicate portable identity with a full scan and names both colliding files", async () => {
   const f = await fixture();
   await f.repository.initialize();
   const duplicate = seedTask(
@@ -384,8 +384,9 @@ it("checks duplicate portable identity with a full scan and surfaces the native 
   );
   f.push([{ ...f.change, id: duplicate.id, path: "other.md" }]);
   f.query.mockClear();
+  const expectedPaths = [f.record.path, "other.md"].sort();
   await expect(f.repository.listSummaries()).rejects.toThrow(
-    "same portable TaskNotes identity",
+    `Two task files have the same portable TaskNotes identity (${String(f.record.frontmatter.id)}): "${expectedPaths[0]}" and "${expectedPaths[1]}". Delete the duplicate copy or change its frontmatter "id" field, then retry.`,
   );
   expect(f.query).toHaveBeenCalledOnce();
 });

@@ -72,6 +72,7 @@ import {
   TaskCompletionReportContext,
   type TaskCompletion,
 } from "../components/task-completion-motion";
+import { DuplicatePortableTaskIdentityError } from "../domain/tasknotes-model";
 import type { TaskSummary } from "../domain/task";
 import { useKeyboardOcclusion } from "../components/use-keyboard-occlusion";
 import { useSidebarReorder } from "./use-sidebar-reorder";
@@ -1352,7 +1353,11 @@ export function StorageErrorScreen({
               message:
                 "TaskNotes needs your approval in mdbase again before it can open this collection.",
             })
-          : translate({ message: "The collection is unavailable right now." })}
+          : error instanceof DuplicatePortableTaskIdentityError
+            ? error.message
+            : translate({
+                message: "The collection is unavailable right now.",
+              })}
       </p>
       <div className="welcome-actions">
         {authorizationExpired ? (
