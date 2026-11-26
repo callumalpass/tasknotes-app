@@ -51,6 +51,8 @@ import { TaskCompletedNotice } from "../components/task-completed-notice";
 import { RunningTimerNotice } from "./running-timer";
 import { useTimerControl } from "./use-timer-control";
 import {
+  clearProjectJump,
+  isProjectsPresentation,
   onProjectJump,
   requestProjectJump,
   setFocusedProject,
@@ -257,17 +259,25 @@ export function AppShell() {
   useEffect(() => {
     routeRef.current = route;
   });
+  const projectsViewKey = views?.find((view) =>
+    isProjectsPresentation(view),
+  )?.key;
   useEffect(
     () =>
       onProjectJump(() => {
-        const key = views?.find(
-          (view) => starterViewKind(view) === "projects",
-        )?.key;
+        if (!projectsViewKey) return;
         const current = routeRef.current;
-        if (key && !(current.page === "views" && current.key === key))
-          navigate({ page: "views", key });
+        const alreadyOnProjects =
+          (current.page === "views" && current.key === projectsViewKey) ||
+          (current.page === "home" && homeKey === projectsViewKey);
+        if (!alreadyOnProjects)
+          navigate(
+            projectsViewKey === homeKey
+              ? { page: "home" }
+              : { page: "views", key: projectsViewKey },
+          );
       }),
-    [navigate, views],
+    [homeKey, navigate, projectsViewKey],
   );
   const timerControl = useTimerControl();
   const completionUndo = useRef<UndoEntry | undefined>(undefined);
@@ -557,7 +567,7 @@ export function AppShell() {
           onMove={moveNavigationView}
           todayCounts={todayCounts}
           navigationCounts={navigationCounts}
-          projects={projectLinks}
+          projects={views && !projectsViewKey ? [] : projectLinks}
           mode="desktop"
           navigationKeys={navigationKeys}
           views={views ?? []}
@@ -1641,6 +1651,7 @@ export function Navigation({
         }
         type="button"
         onClick={() => {
+          clearProjectJump();
           setFocusedProject(null);
           onNavigate(route);
         }}

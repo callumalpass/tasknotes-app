@@ -5,11 +5,13 @@ const task = (
   projects: string[],
   completed = false,
   path = "Tasks/task.md",
+  extra: { tags?: string[]; frontmatter?: Record<string, unknown> } = {},
 ) => ({
   path,
   projects,
   completed,
   archived: false,
+  ...extra,
 });
 
 describe("projectShortcuts", () => {
@@ -36,6 +38,26 @@ describe("projectShortcuts", () => {
         task([], false, "Tasks/Plan the offsite.md"),
       ]),
     ).toEqual([{ label: "Operations", count: 1 }]);
+  });
+
+  it("keeps project notes that also match the task type via a project tag or category", () => {
+    expect(
+      projectShortcuts([
+        task(["[[Get First Aid Certificate]]"], false, "Tasks/book.md"),
+        task(["[[Get First Aid Certificate]]"], false, "Tasks/study.md"),
+        task([], false, "Projects/Get First Aid Certificate.md", {
+          tags: ["action/project"],
+        }),
+        task(["[[Make Skybird]]"], false, "Tasks/draft.md"),
+        task([], false, "Projects/Make Skybird.md", {
+          tags: ["action"],
+          frontmatter: { category: "project" },
+        }),
+      ]),
+    ).toEqual([
+      { label: "Get First Aid Certificate", count: 2 },
+      { label: "Make Skybird", count: 1 },
+    ]);
   });
 
   it("keeps the busiest when the list is short", () => {

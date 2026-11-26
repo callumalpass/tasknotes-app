@@ -21,6 +21,7 @@ import { useViewExecution } from "./use-view-execution";
 import { canReorderExecution } from "./manual-order-availability";
 import { ArrangeTasksOption } from "../components/arrange-tasks-option";
 import { basesProperty, starterViewKind } from "../domain/default-view-source";
+import { isProjectsPresentation } from "./project-jump";
 import { kanbanPropertyRole } from "../domain/kanban";
 import {
   kanbanColumnLabel,
@@ -345,11 +346,12 @@ export function ViewsScreen({
   const todayScreen =
     selected &&
     (starterViewKind(selected) === "today" || selected.name === "Today");
+  const projectsScreen = isProjectsPresentation(selected);
   const needsIdentityTasks =
     todayScreen ||
     selected?.presentation?.type === "tasknotes.calendar" ||
     selected?.presentation?.type === "tasknotes.mini-calendar" ||
-    selected?.presentation?.type === "tasknotes.projects";
+    projectsScreen;
   // On Today the full task list only feeds the summary and the first-run
   // state. Loading it scans the whole collection, so wait until the view has
   // answered rather than compete with the query that shows its first rows.
@@ -635,10 +637,9 @@ export function ViewsScreen({
       : undefined;
   const viewCaptureDefaults =
     selected?.presentation?.type === "tasknotes.planner" ||
-    selected?.presentation?.options.create === false
+    (!projectsScreen && selected?.presentation?.options.create === false)
       ? null
-      : selected?.presentation?.type === "tasknotes.projects" &&
-          !currentCreationContext
+      : projectsScreen && !currentCreationContext
         ? null
         : currentCreationPlan
           ? mergeTaskCreationDefaults(
@@ -660,11 +661,10 @@ export function ViewsScreen({
       ? todayCaptureDefaults(viewCaptureDefaults, today)
       : viewCaptureDefaults;
   const selectionAvailable =
-    selected?.presentation?.type === "tasknotes.task-list" ||
-    selected?.presentation?.type === "tasknotes.projects";
+    selected?.presentation?.type === "tasknotes.task-list" || projectsScreen;
   const presentationClass =
     selected?.presentation?.type === "tasknotes.task-list" ||
-    selected?.presentation?.type === "tasknotes.projects" ||
+    projectsScreen ||
     selected?.presentation?.type === "tasknotes.planner"
       ? " is-task-list-view"
       : selected?.presentation?.type === "tasknotes.kanban"
@@ -1752,10 +1752,12 @@ export function ViewsScreen({
             onOpenCreated={onOpenTask}
           />
         ) : null}
-        {!presentedExecution ? (
+        {!presentedExecution ||
+        (isProjectsPresentation(presentedExecution.view) &&
+          identityTasksLoading &&
+          !identityTasks.length) ? (
           <LoadingRows count={6} />
-        ) : presentedExecution.view.presentation?.type ===
-          "tasknotes.projects" ? (
+        ) : isProjectsPresentation(presentedExecution.view) ? (
           <ProjectsView
             key={`${sectionScope}:${selected?.key}`}
             sectionScope={sectionScope}
