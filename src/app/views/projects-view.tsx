@@ -12,7 +12,9 @@ import {
 import { TaskRow } from "../../components/task-row";
 import { TaskNotesSelect } from "../../components/tasknotes-controls";
 import {
+  clearProjectJump,
   onProjectJump,
+  peekProjectJump,
   setFocusedProject,
   takeProjectJump,
   useFocusedProject,
@@ -27,6 +29,7 @@ import {
   recordCompletion,
   type CollectionRecord,
 } from "../../domain/completion";
+import { projectLabel } from "../../domain/project-shortcuts";
 
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
@@ -131,14 +134,25 @@ export function ProjectsView({
         (left.path ?? "").localeCompare(right.path ?? ""),
     );
   const focusedLabel = useFocusedProject();
-  const focused = ordered.find((project) => project.label === focusedLabel);
+  const findProject = (label: string | null) =>
+    label
+      ? ordered.find(
+          (candidate) =>
+            candidate.label === label ||
+            candidate.tasks.some((task) =>
+              task.projects.some((value) => projectLabel(value) === label),
+            ),
+        )
+      : undefined;
+  const focused = findProject(focusedLabel);
   const shown = focused ? [focused] : ordered;
   const focusProject = (label: string | null) => {
-    const project = ordered.find((candidate) => candidate.label === label);
-    if (!project) return;
+    const project = findProject(label);
+    if (!project) return false;
     collapse(project.key, false);
     setFocusedProject(project.label);
     window.scrollTo({ top: 0 });
+    return true;
   };
   const jumpTo = (label: string | null) => {
     const index = ordered.findIndex((project) => project.label === label);
@@ -152,12 +166,19 @@ export function ProjectsView({
       heading?.scrollIntoView({ block: "start" });
     });
   };
-  const takeJump = useEffectEvent(() => focusProject(takeProjectJump()));
+  const applyPendingJump = useEffectEvent(() => {
+    const label = peekProjectJump();
+    if (!label) return;
+    if (focusProject(label)) takeProjectJump();
+  });
   useEffect(() => {
-    const frame = requestAnimationFrame(takeJump);
-    const stop = onProjectJump(takeJump);
+    if (!peekProjectJump()) return;
+    const frame = requestAnimationFrame(applyPendingJump);
+    return () => cancelAnimationFrame(frame);
+  }, [ordered.length, tasks]);
+  useEffect(() => {
+    const stop = onProjectJump(applyPendingJump);
     return () => {
-      cancelAnimationFrame(frame);
       stop();
       setFocusedProject(null);
     };
@@ -186,7 +207,10 @@ export function ProjectsView({
           <button
             className="project-back"
             type="button"
-            onClick={() => setFocusedProject(null)}
+            onClick={() => {
+              clearProjectJump();
+              setFocusedProject(null);
+            }}
           >
             <ChevronLeft aria-hidden="true" size={16} />
             <Trans>All projects</Trans>
