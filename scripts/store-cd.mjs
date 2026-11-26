@@ -11,6 +11,7 @@ import {
   artifactJson,
   storeLine,
   recheckRefusalReason,
+  FAILED_READS,
 } from "./mobile-release-policy.mjs";
 import { readAppleLive, playReviewBlock } from "./store-status.mjs";
 import { createStatusClient } from "./app-store-status.mjs";
@@ -569,9 +570,20 @@ async function main() {
     );
   }
 }
+// Names which evidence read failed, from a fixed set only; never a path, URL,
+// stderr or response body.
+export function failedRead(error) {
+  const read = error?.read;
+  return FAILED_READS.includes(read) ? read : null;
+}
 export async function recordFailure(receipt, error, save, hold = storeLine) {
   const reason = failureReason(error);
-  await save({ outcome: "stopped", reason });
+  const read = failedRead(error);
+  await save({
+    outcome: "stopped",
+    reason,
+    ...(read ? { failed_read: read } : {}),
+  });
   if (
     reason === "app-line-stopped" &&
     receipt.write_started === false &&

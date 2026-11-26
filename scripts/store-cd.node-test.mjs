@@ -1958,3 +1958,44 @@ test("a carried App Store read HTTP slug keeps 5xx/429 quiet and 4xx a stop", as
     assert.doesNotMatch(JSON.stringify(receipt), /SECRET/);
   }
 });
+
+test("a failed evidence read names which read failed, from a fixed set only", async () => {
+  for (const [error, expected] of [
+    [
+      Object.assign(new Error("release-evidence-unavailable"), {
+        read: "run-read",
+      }),
+      "run-read",
+    ],
+    [
+      Object.assign(new Error("release-evidence-unavailable"), {
+        read: "artifact-read",
+      }),
+      "artifact-read",
+    ],
+    [
+      Object.assign(new Error("release-evidence-unavailable"), {
+        read: "https://api.github.com/repos/x stderr",
+      }),
+      undefined,
+    ],
+    [new Error("release-evidence-unavailable"), undefined],
+  ]) {
+    const receipt = {
+      target: "google-play",
+      write_started: false,
+      boundary: "store-status.yml",
+      boundary_outcome: "success",
+    };
+    const holds = [];
+    await recordFailure(
+      receipt,
+      error,
+      async (record) => Object.assign(receipt, record),
+      async (...args) => holds.push(args),
+    );
+    assert.equal(receipt.failed_read, expected);
+    assert.equal(Object.hasOwn(receipt, "failed_read"), expected !== undefined);
+    assert.deepEqual(holds, []);
+  }
+});

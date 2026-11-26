@@ -5,6 +5,8 @@ import { join } from "node:path";
 import {
   artifactJson,
   assertLinesOpen,
+  gh,
+  readSourceRun,
   storeLine,
   latestExactGreen,
   qualifyChecks,
@@ -409,4 +411,163 @@ test("a store-line status read that never completes cancels the run and reports 
     stop.calls.filter(([path]) => path.endsWith("/cancel")).length,
     0,
   );
+});
+
+test("a GET retries a transient failure, then returns the parsed response", () => {
+  const sleeps = [];
+  let calls = 0;
+  const exec = (_cmd, args) => {
+    assert.ok(!args.includes("--method"));
+    if (++calls < 3) throw new Error("HTTP 502: https://api.github.com/x");
+    return '{"ok":true}';
+  };
+  assert.deepEqual(
+    gh(`repos/${REPO}/actions/runs/5`, {}, false, {
+      exec,
+      sleep: (delay) => sleeps.push(delay),
+    }),
+    { ok: true },
+  );
+  assert.equal(calls, 3);
+  assert.deepEqual(sleeps, [10000, 10000]);
+});
+
+test("an exhausted GET fails with the same bounded slug and names only the read", () => {
+  for (const [path, read] of [
+    [`repos/${REPO}/actions/runs/5`, "run-read"],
+    [`repos/${REPO}/actions/runs/5/artifacts?per_page=100`, "artifacts-list"],
+    [`repos/${REPO}/actions/runs/5/attempts/1/jobs?per_page=100`, "jobs-read"],
+    [
+      `repos/${REPO}/actions/workflows/ci.yml/runs?head_sha=a&per_page=100`,
+      "runs-list",
+    ],
+    [`repos/${REPO}/compare/a...main?per_page=1`, "compare-read"],
+    [`repos/${OPS}/contents/config/client-apps.json?ref=main`, "policy-read"],
+  ]) {
+    let calls = 0;
+    const sleeps = [];
+    assert.throws(
+      () =>
+        gh(path, {}, false, {
+          exec: () => {
+            calls++;
+            throw new Error("secret stderr with token ghp_x and a body");
+          },
+          sleep: (delay) => sleeps.push(delay),
+        }),
+      (error) => {
+        assert.equal(error.message, "release-evidence-unavailable");
+        assert.equal(error.read, read);
+        assert.ok(!JSON.stringify(error).includes("ghp_"));
+        return true;
+      },
+    );
+    assert.equal(calls, 3);
+    assert.deepEqual(sleeps, [10000, 10000]);
+  }
+});
+
+test("a POST is a write and is never retried", () => {
+  let calls = 0;
+  const sleeps = [];
+  assert.throws(
+    () =>
+      gh(
+        `repos/${REPO}/actions/workflows/android.yml/dispatches`,
+        { body: { ref: "main" } },
+        false,
+        {
+          exec: (_cmd, args) => {
+            assert.ok(args.includes("POST"));
+            calls++;
+            throw new Error("HTTP 502");
+          },
+          sleep: (delay) => sleeps.push(delay),
+        },
+      ),
+    (error) => {
+      assert.equal(error.message, "release-evidence-unavailable");
+      assert.equal(error.read, undefined);
+      return true;
+    },
+  );
+  assert.equal(calls, 1);
+  assert.deepEqual(sleeps, []);
+});
+
+const sourceRun = {
+  id: 9,
+  path: ".github/workflows/android.yml",
+  repository: { full_name: REPO },
+  head_repository: { full_name: REPO },
+  status: "completed",
+  conclusion: "success",
+  run_attempt: 1,
+  event: "workflow_dispatch",
+  head_branch: "main",
+  head_sha: "a".repeat(40),
+};
+
+test("a source run read stale at the completion boundary is re-read until it settles", async () => {
+  const views = [
+    { ...sourceRun, status: "in_progress", conclusion: null },
+    { ...sourceRun, conclusion: null },
+    sourceRun,
+  ];
+  const waits = [];
+  const paths = [];
+  const run = await readSourceRun("android", 9, {
+    transport: (path) => {
+      paths.push(path);
+      return views.shift();
+    },
+    wait: async (delay) => waits.push(delay),
+  });
+  assert.equal(run, sourceRun);
+  assert.deepEqual(paths, Array(3).fill(`repos/${REPO}/actions/runs/9`));
+  assert.deepEqual(waits, [10000, 10000]);
+});
+
+test("a source run that never settles refuses after the bounded re-reads", async () => {
+  for (const view of [
+    { ...sourceRun, status: "in_progress", conclusion: null },
+    { ...sourceRun, conclusion: "failure" },
+  ]) {
+    let calls = 0;
+    const waits = [];
+    await assert.rejects(
+      readSourceRun("android", 9, {
+        transport: () => (calls++, view),
+        wait: async (delay) => waits.push(delay),
+      }),
+      { message: "trusted-successful-source-run-required" },
+    );
+    assert.equal(calls, 3);
+    assert.deepEqual(waits, [10000, 10000]);
+  }
+});
+
+test("a source run identity mismatch refuses at once without a re-read", async () => {
+  for (const view of [
+    { ...sourceRun, path: ".github/workflows/ios-release.yml" },
+    { ...sourceRun, repository: { full_name: "someone/else" } },
+    { ...sourceRun, head_repository: { full_name: "someone/else" } },
+    { ...sourceRun, event: "push" },
+    { ...sourceRun, head_branch: "feature" },
+    { ...sourceRun, run_attempt: 2 },
+    { ...sourceRun, head_sha: "main" },
+    { ...sourceRun, event: "push", status: "in_progress", conclusion: null },
+  ]) {
+    let calls = 0;
+    const waits = [];
+    await assert.rejects(
+      readSourceRun("android", 9, {
+        transport: () => (calls++, view),
+        wait: async (delay) => waits.push(delay),
+      }),
+      { message: "trusted-successful-source-run-required" },
+    );
+    assert.equal(calls, 1);
+    assert.deepEqual(waits, []);
+  }
 });
