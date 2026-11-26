@@ -3581,6 +3581,11 @@ msgstr "{0}에서 일치"
 msgid "Maybe"
 msgstr "미정"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "mdbase 앱"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbase 컬렉션"

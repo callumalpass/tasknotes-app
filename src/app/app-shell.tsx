@@ -11,6 +11,7 @@ import {
   Command,
   Ellipsis,
   FilePenLine,
+  LayoutGrid,
   Library,
   Plus,
   Search,
@@ -37,6 +38,7 @@ import { ReportFailure, useFeedbackView } from "./feedback-root";
 import { CollectionAvailability } from "../components/collection-availability";
 import {
   canShowAppSwitcher,
+  TaskNotesAppsMenu,
   TaskNotesAppSwitcher,
 } from "../components/app-switcher";
 import { CollectionWriteStatus } from "../components/collection-write-status";
@@ -697,6 +699,11 @@ export function AppShell() {
             active={activePage}
             collectionUi={collectionUi}
             homeKey={homeKey}
+            mdbaseApps={
+              canShowAppSwitcher()
+                ? { collectionId: connectedCollectionId }
+                : null
+            }
             mode="mobile"
             navigationKeys={navigationKeys}
             views={views ?? []}
@@ -1417,6 +1424,7 @@ export function Navigation({
   active,
   collectionUi,
   homeKey,
+  mdbaseApps,
   mode,
   navigationKeys,
   views,
@@ -1431,6 +1439,8 @@ export function Navigation({
   /** Phones reach the collection from More; the desktop rail has its own switcher. */
   collectionUi?: CollectionUiOptions | null;
   homeKey?: string;
+  /** Phones open the mdbase apps from More; the desktop rail's wordmark opens them there. */
+  mdbaseApps?: { collectionId?: string | null } | null;
   mode: "desktop" | "mobile";
   navigationKeys: string[];
   views: TaskView[];
@@ -1508,11 +1518,15 @@ export function Navigation({
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const [appsOpen, setAppsOpen] = useState(false);
+  /** False while More hands focus to the apps menu instead of its own button. */
+  const restoreMenuFocusRef = useRef(true);
 
   useOverlay({
     open: Boolean(menuPosition),
     rootRef: menuRef,
     returnFocusRef: triggerRef,
+    restoreFocusRef: restoreMenuFocusRef,
     dismissOnTab: "always",
     onDismiss: closeMenu,
     initialFocus: () =>
@@ -1533,14 +1547,21 @@ export function Navigation({
   }, [menuPosition]);
 
   function openMenu() {
+    if (appsOpen) {
+      setAppsOpen(false);
+      return;
+    }
     if (menuPosition) {
       closeMenu();
       return;
     }
+    restoreMenuFocusRef.current = true;
     const rect = triggerRef.current?.getBoundingClientRect();
     const width = Math.min(236, innerWidth - 16);
     const height = Math.min(
-      (additionalViews.length + (collectionUi ? 3 : 2)) * 46 + 16,
+      (additionalViews.length + (collectionUi ? 3 : 2) + (mdbaseApps ? 1 : 0)) *
+        46 +
+        16,
       innerHeight - 96,
     );
     const left =
@@ -1569,6 +1590,12 @@ export function Navigation({
   function choose(route: Route) {
     closeMenu();
     onNavigate(route);
+  }
+
+  function openApps() {
+    restoreMenuFocusRef.current = false;
+    closeMenu();
+    setAppsOpen(true);
   }
 
   function renderDestination(entry: (typeof navigationEntries)[number]) {
@@ -1659,7 +1686,7 @@ export function Navigation({
                 ? "page"
                 : undefined
             }
-            aria-expanded={Boolean(menuPosition)}
+            aria-expanded={Boolean(menuPosition) || appsOpen}
             aria-haspopup="menu"
             className={
               active === "views" ||
@@ -1692,16 +1719,31 @@ export function Navigation({
                   style={shownMenuPosition}
                 >
                   {collectionUi ? (
-                    <>
-                      <MenuCollectionItem
-                        collectionUi={collectionUi}
-                        onChoose={() =>
-                          choose({ page: "more", section: "collection" })
-                        }
-                      />
-                      <hr />
-                    </>
+                    <MenuCollectionItem
+                      collectionUi={collectionUi}
+                      onChoose={() =>
+                        choose({ page: "more", section: "collection" })
+                      }
+                    />
                   ) : null}
+                  {mdbaseApps ? (
+                    <button
+                      aria-haspopup="menu"
+                      role="menuitem"
+                      type="button"
+                      onClick={openApps}
+                    >
+                      <LayoutGrid
+                        aria-hidden="true"
+                        size={19}
+                        strokeWidth={1.7}
+                      />
+                      <span>
+                        <Trans context="More menu">mdbase apps</Trans>
+                      </span>
+                    </button>
+                  ) : null}
+                  {collectionUi || mdbaseApps ? <hr /> : null}
                   {additionalViews.map((view) => {
                     const Icon = view.icon;
                     return (
@@ -1739,6 +1781,18 @@ export function Navigation({
                     </span>
                   </button>
                 </div>,
+                document.body,
+              )
+            : null}
+          {/* Outside the bottom navigation, whose tab styles would reach its rows. */}
+          {mdbaseApps
+            ? createPortal(
+                <TaskNotesAppsMenu
+                  anchorRef={triggerRef}
+                  collectionId={mdbaseApps.collectionId}
+                  open={appsOpen}
+                  onOpenChange={setAppsOpen}
+                />,
                 document.body,
               )
             : null}

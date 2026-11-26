@@ -3581,6 +3581,11 @@ msgstr "Coincidencia en {0}"
 msgid "Maybe"
 msgstr "Quizás"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "Aplicaciones de mdbase"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "Colección mdbase"

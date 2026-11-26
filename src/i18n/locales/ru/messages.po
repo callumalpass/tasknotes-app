@@ -3581,6 +3581,11 @@ msgstr "Совпадение в разделе «{0}»"
 msgid "Maybe"
 msgstr "Возможно"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "Приложения mdbase"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "Коллекция mdbase"

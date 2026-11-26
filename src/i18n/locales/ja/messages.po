@@ -3581,6 +3581,11 @@ msgstr "{0}で一致"
 msgid "Maybe"
 msgstr "未定"
 
+#: src/app/app-shell.tsx
+msgctxt "More menu"
+msgid "mdbase apps"
+msgstr "mdbaseアプリ"
+
 #: src/app/more-screen.tsx
 msgid "mdbase collection"
 msgstr "mdbaseコレクション"

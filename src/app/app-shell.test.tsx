@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "../test/render";
+import { fireEvent, render, screen, within } from "../test/render";
 import { mdbaseError } from "@mdbase-dev/sdk";
 import { createTestMdbase } from "@mdbase-dev/sdk/testing";
 
@@ -158,6 +158,57 @@ it("offers the open collection first in More on phones", async () => {
     page: "more",
     section: "collection",
   });
+});
+
+it("opens the mdbase apps from More on phones and returns focus to More", () => {
+  render(
+    <Navigation
+      active="view:today"
+      mdbaseApps={{ collectionId: "col_9" }}
+      mode="mobile"
+      navigationKeys={[]}
+      views={[]}
+      onNavigate={vi.fn()}
+    />,
+  );
+
+  const more = screen.getByRole("button", { name: "More" });
+  fireEvent.click(more);
+  const row = screen.getByRole("menuitem", { name: "mdbase apps" });
+  expect(row).toHaveAttribute("aria-haspopup", "menu");
+  fireEvent.click(row);
+
+  expect(screen.queryByRole("menu", { name: "More" })).toBeNull();
+  const apps = screen.getByRole("menu", { hidden: true });
+  expect(apps).toHaveAttribute("aria-label", "mdbase apps");
+  expect(apps).toHaveTextContent("Open this collection in");
+  expect(
+    within(apps).getByRole("menuitem", { name: /Editor/, hidden: true }),
+  ).toHaveAttribute("href", expect.stringContaining("collection=col_9"));
+  expect(apps.contains(document.activeElement)).toBe(true);
+  expect(more).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+  expect(screen.queryByRole("menu", { hidden: true })).toBeNull();
+  expect(document.activeElement).toBe(more);
+  expect(more).toHaveAttribute("aria-expanded", "false");
+});
+
+it("leaves mdbase apps out of More where the switcher is hidden", () => {
+  render(
+    <Navigation
+      active="view:today"
+      mdbaseApps={null}
+      mode="mobile"
+      navigationKeys={[]}
+      views={[]}
+      onNavigate={vi.fn()}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  expect(screen.queryByRole("menuitem", { name: "mdbase apps" })).toBeNull();
+  expect(screen.getAllByRole("menuitem")[0]).toHaveTextContent("Views");
 });
 
 it("announces a pending deletion without putting Undo inside the live region", () => {
