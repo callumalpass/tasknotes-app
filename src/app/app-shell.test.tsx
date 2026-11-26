@@ -10,6 +10,7 @@ import {
 } from "./app-shell";
 import { SCRATCHPAD_NAVIGATION_KEY } from "./navigation-views";
 import { OperationalError } from "../application/operational-error";
+import { DuplicatePortableTaskIdentityError } from "../domain/tasknotes-model";
 
 import type { TaskView } from "../domain/view";
 
@@ -108,6 +109,30 @@ it("separates reviewing the current collection's access from choosing another", 
   );
   expect(changeCollection).toHaveBeenCalledOnce();
   expect(screen.queryByText("The grant expired.")).toBeNull();
+});
+
+it("shows conflicting file paths and resolution guidance on duplicate portable identity errors", () => {
+  render(
+    <StorageErrorScreen
+      changeCollection={vi.fn()}
+      error={
+        new DuplicatePortableTaskIdentityError("task-123", [
+          "Tasks/Buy milk (conflict).md",
+          "Tasks/Buy milk.md",
+        ])
+      }
+      reauthorizeCurrentCollection={vi.fn()}
+      retry={vi.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText(/Tasks\/Buy milk \(conflict\)\.md/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Tasks\/Buy milk\.md/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Delete the duplicate copy or change its frontmatter/),
+  ).toBeInTheDocument();
 });
 
 it("routes a TaskNotes tool through Home when it is first", () => {

@@ -64,7 +64,10 @@ import type {
 } from "../domain/task";
 import { summarizeTask, todayString } from "../domain/task";
 import { taskPathCandidates } from "../domain/task-path-policy";
-import type { TaskNotesTaskModel } from "../domain/tasknotes-model";
+import {
+  DuplicatePortableTaskIdentityError,
+  type TaskNotesTaskModel,
+} from "../domain/tasknotes-model";
 import {
   splitTaskModelSettingsPatch,
   taskNotesSettingsChanges,
@@ -1111,17 +1114,19 @@ export class NextTaskRepository implements TaskRepository {
 
       // A later page's change event can retire an earlier apparent collision.
       // Check all surviving identities before publishing any of them.
-      const portableIds = new Set<string>();
+      const portableIds = new Map<string, string>();
       for (const [recordId, { value }] of rows) {
         if (!unchanged(recordId)) {
           rows.delete(recordId);
           continue;
         }
-        if (portableIds.has(value.task.id))
-          throw new Error(
-            "Two native records have the same portable TaskNotes identity. Resolve the duplicate before opening this collection.",
-          );
-        portableIds.add(value.task.id);
+        const existingPath = portableIds.get(value.task.id);
+        if (existingPath !== undefined)
+          throw new DuplicatePortableTaskIdentityError(value.task.id, [
+            existingPath,
+            value.task.path,
+          ]);
+        portableIds.set(value.task.id, value.task.path);
       }
       for (const [id, existing] of this.cache)
         if (
@@ -1333,8 +1338,9 @@ export class NextTaskRepository implements TaskRepository {
       (record) => this.decodeSummary(record)?.task.id === id,
     );
     if (page.hasMore || matches.length > 1)
-      throw new Error(
-        "Two native records have the same portable TaskNotes identity.",
+      throw new DuplicatePortableTaskIdentityError(
+        id,
+        matches.map((record) => record.path),
       );
     return matches[0]?.id;
   }
@@ -2600,9 +2606,10 @@ export class NextTaskRepository implements TaskRepository {
       if (decoded.task.id !== id) this.cache.delete(id);
       const identity = this.cache.get(decoded.task.id);
       if (identity && identity.recordId !== record.id)
-        throw new Error(
-          "Two native records have the same portable TaskNotes identity.",
-        );
+        throw new DuplicatePortableTaskIdentityError(decoded.task.id, [
+          identity.task.path,
+          decoded.task.path,
+        ]);
       this.rememberWriteState(record);
       this.bindTaskRecord(decoded.task.id, record.id);
       this.cache.set(decoded.task.id, decoded);

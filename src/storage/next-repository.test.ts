@@ -896,7 +896,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     expect(await f.repository.get(s.portableId)).toBeNull();
   });
 
-  it("refuses duplicate portable identities instead of choosing the last record", async () => {
+  it("refuses duplicate portable identities and names both conflicting paths", async () => {
     const f = await fixture();
     const s = await seed(f);
     const write = await f.client.create({
@@ -906,8 +906,9 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
       body: "Another record",
     });
     await write.confirmed;
+    const expectedPaths = [s.task.path, "duplicate.md"].sort();
     await expect(f.repository.initialize()).rejects.toThrow(
-      "same portable TaskNotes identity",
+      `Two task files have the same portable TaskNotes identity (${s.portableId}): "${expectedPaths[0]}" and "${expectedPaths[1]}". Delete the duplicate copy or change its frontmatter "id" field, then retry.`,
     );
   });
 
