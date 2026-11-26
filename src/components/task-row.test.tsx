@@ -517,3 +517,42 @@ it("makes a departing row inert and moves keyboard focus to its neighbour", () =
   expect(departing!.inert).toBe(true);
   expect(screen.getByRole("button", { name: "Book room" })).toHaveFocus();
 });
+
+it("hides the internal task marker tag from row tag chips while keeping user tags", () => {
+  const { rerender } = render(
+    <TaskRow
+      task={{ ...task, tags: ["task", "ops", "urgent"] }}
+      details={[
+        {
+          key: "tags",
+          label: "Tags",
+          value: "task, ops, urgent",
+          rawValue: ["task", "ops", "urgent"],
+        },
+      ]}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: "Tags: ops, urgent" }),
+  ).toBeVisible();
+  expect(screen.queryByRole("button", { name: /Tags:.*task/i })).toBeNull();
+
+  rerender(
+    <TaskRow
+      task={{ ...task, tags: ["task"] }}
+      details={[
+        {
+          key: "tags",
+          label: "Tags",
+          value: "task",
+          rawValue: ["task"],
+        },
+      ]}
+      onOpen={vi.fn()}
+      onToggle={vi.fn()}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: /^Tags:/ })).toBeNull();
+});

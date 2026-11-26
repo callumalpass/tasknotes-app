@@ -698,6 +698,9 @@ export function ViewsScreen({
                 ? basesProperty(choice)
                 : choice,
               sortOrderField,
+              choice === configuration.fieldMapping.dateModified
+                ? "desc"
+                : "asc",
             )
           : choice
             ? enableManualOrderSort(draft.sort, sortOrderField, defaultProperty)

@@ -25,6 +25,10 @@ describe("view editor field catalog", () => {
     expect(fields.find(({ key }) => key === "effort")).toEqual(
       field("effort", "Effort", "number"),
     );
+    expect(fields.find(({ key }) => key === "projects")?.type).toBe("list");
+    expect(fields.find(({ key }) => key === "dateModified")).toEqual(
+      field("dateModified", "Modified", "date"),
+    );
     expect(fields.at(-1)).toEqual(field("note.extra", "Extra"));
     expect(fieldOptions([fields[0]])).toEqual([
       { value: "title", label: "Title" },

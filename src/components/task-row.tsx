@@ -207,17 +207,24 @@ export function TaskRow({
     displayedTask,
     configuration,
   )
-    .filter((detail) => {
-      const field = detail.key.replace(/^note\./, "");
+    .flatMap((detail) => {
+      const field = propertyField(detail);
       if (field === configuration.fieldMapping.status || field === "status")
-        return detail.rawValue !== configuration.defaults.status;
+        return detail.rawValue !== configuration.defaults.status
+          ? [detail]
+          : [];
       if (field === configuration.fieldMapping.priority || field === "priority")
-        return (
-          detail.rawValue !== configuration.defaults.priority &&
+        return detail.rawValue !== configuration.defaults.priority &&
           detail.rawValue !== "none"
-        );
-      if (field === "archived") return detail.rawValue !== false;
-      return true;
+          ? [detail]
+          : [];
+      if (field === "archived")
+        return detail.rawValue !== false ? [detail] : [];
+      if (field === "tags" || field === "file.tags") {
+        const cleaned = withoutInternalTaskTag(detail, configuration);
+        return cleaned ? [cleaned] : [];
+      }
+      return [detail];
     })
     .map((detail) => priorityOptionDetail(detail, configuration))
     .map((detail) => relativeDateDetail(detail, displayedTask, configuration));
@@ -900,6 +907,35 @@ function detailStatusColor(
 function propertyField(detail: TaskRowDetail): string {
   const bracketed = /^note\[(?:"|')(.+)(?:"|')\]$/.exec(detail.key);
   return bracketed?.[1] ?? detail.key.replace(/^note\./, "");
+}
+
+function internalTaskTag(configuration: RowConfiguration): string | null {
+  if (configuration.taskIdentification?.method === "property") return null;
+  const tag =
+    configuration.taskIdentification?.tag?.trim() ||
+    configuration.defaults?.taskTag?.trim();
+  return (tag || "task").replace(/^#+/, "").toLocaleLowerCase();
+}
+
+function withoutInternalTaskTag(
+  detail: TaskRowDetail,
+  configuration: RowConfiguration,
+): TaskRowDetail | null {
+  const marker = internalTaskTag(configuration);
+  if (!marker) return detail;
+  const isMarker = (entry: unknown) =>
+    typeof entry === "string" &&
+    entry.trim().replace(/^#+/, "").toLocaleLowerCase() === marker;
+  if (Array.isArray(detail.rawValue)) {
+    const visible = detail.rawValue.filter((entry) => !isMarker(entry));
+    if (visible.length === detail.rawValue.length) return detail;
+    const value = formatPropertyValue(visible);
+    return value === null ? null : { ...detail, rawValue: visible, value };
+  }
+  if (typeof detail.rawValue === "string") {
+    return isMarker(detail.rawValue) ? null : detail;
+  }
+  return detail;
 }
 
 function detailRank(detail: TaskRowDetail, { fieldMapping }: RowConfiguration) {

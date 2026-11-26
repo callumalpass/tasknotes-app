@@ -929,13 +929,6 @@ export function TaskCalendarView({
               })}
             </p>
           ) : null}
-          {google.enabled && !google.signedIn ? (
-            <p className="section-copy" role="status">
-              <Trans>
-                Sign in to Google Calendar in Settings to see events.
-              </Trans>
-            </p>
-          ) : null}
           {google.editor ? (
             <GoogleEventDialog
               request={google.editor}
@@ -1243,6 +1236,14 @@ export function TaskCalendarView({
         ) : null}
         {phoneMonth ? markers : null}
       </div>
+      {google.enabled && !google.signedIn ? (
+        <p className="full-calendar-google-hint">
+          <Trans>
+            Optional: connect Google Calendar in Settings to show Google events
+            alongside your tasks.
+          </Trans>
+        </p>
+      ) : null}
       {contextAction ? (
         <TaskActions
           contextMenuRequest={contextAction}

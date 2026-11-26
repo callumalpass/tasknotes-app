@@ -282,14 +282,16 @@ function FilterGroupEditor({
         <button
           type="button"
           onClick={() =>
-            onChange(addChild(group, emptyRule(defaultField(fields))))
+            onChange(addChild(group, emptyRule(defaultField(fields), fields)))
           }
         >
           <Plus aria-hidden="true" size={15} /> <Trans>Condition</Trans>
         </button>
         <button
           type="button"
-          onClick={() => onChange(addChild(group, emptyGroup(fields[0]?.key)))}
+          onClick={() =>
+            onChange(addChild(group, emptyGroup(fields[0]?.key, fields)))
+          }
         >
           <Plus aria-hidden="true" size={15} /> <Trans>Group</Trans>
         </button>
@@ -310,13 +312,29 @@ function FilterRuleEditor({
   onRemove(): void;
 }) {
   const { t } = useLingui();
-  const field = fields.find(
-    (candidate) =>
-      candidate.key === rule.field ||
-      candidate.key ===
-        rule.field.replace(/^note\["(.+)"\]$/, "$1").replace(/^note\./, ""),
-  );
+  const field = findField(fields, rule.field);
   const noValue = rule.operator === "empty" || rule.operator === "not-empty";
+  const allOperatorOptions: Array<{ value: RuleOperator; label: string }> = [
+    { value: "equals", label: t({ message: "is" }) },
+    { value: "not-equals", label: t({ message: "is not" }) },
+    { value: "contains", label: t({ message: "contains" }) },
+    {
+      value: "not-contains",
+      label: t({ message: "does not contain" }),
+    },
+    { value: "before", label: t({ message: "is before" }) },
+    { value: "after", label: t({ message: "is after" }) },
+    { value: "on-or-before", label: t({ message: "is on or before" }) },
+    { value: "on-or-after", label: t({ message: "is on or after" }) },
+    { value: "empty", label: t({ message: "is empty" }) },
+    { value: "not-empty", label: t({ message: "is not empty" }) },
+  ];
+  const operatorOptions =
+    field?.type === "list"
+      ? allOperatorOptions.filter(
+          ({ value }) => isListOperator(value) || value === rule.operator,
+        )
+      : allOperatorOptions;
   return (
     <div className="filter-rule">
       <label>
@@ -330,21 +348,22 @@ function FilterRuleEditor({
             label: candidate.label,
           }))}
           value={field?.key ?? rule.field}
-          onChange={(field) =>
+          onChange={(nextFieldKey) => {
+            const nextField = findField(fields, nextFieldKey);
             onChange({
               ...rule,
-              field,
-              method: field === "tags" ? rule.method : undefined,
-              ...(fields.find((candidate) => candidate.key === field)?.type !==
-              "date"
+              field: nextFieldKey,
+              operator: operatorForFieldChange(rule.operator, nextField),
+              method: nextFieldKey === "tags" ? rule.method : undefined,
+              ...(nextField?.type !== "date"
                 ? {
                     dateOnly: undefined,
                     dateValue: undefined,
                     offset: undefined,
                   }
                 : {}),
-            })
-          }
+            });
+          }}
         />
       </label>
       <label>
@@ -353,21 +372,7 @@ function FilterRuleEditor({
         </span>
         <TaskNotesSelect
           ariaLabel={t({ message: "Filter condition" })}
-          options={[
-            { value: "equals", label: t({ message: "is" }) },
-            { value: "not-equals", label: t({ message: "is not" }) },
-            { value: "contains", label: t({ message: "contains" }) },
-            {
-              value: "not-contains",
-              label: t({ message: "does not contain" }),
-            },
-            { value: "before", label: t({ message: "is before" }) },
-            { value: "after", label: t({ message: "is after" }) },
-            { value: "on-or-before", label: t({ message: "is on or before" }) },
-            { value: "on-or-after", label: t({ message: "is on or after" }) },
-            { value: "empty", label: t({ message: "is empty" }) },
-            { value: "not-empty", label: t({ message: "is not empty" }) },
-          ]}
+          options={operatorOptions}
           value={rule.operator}
           onChange={(operator) =>
             onChange({ ...rule, operator: operator as RuleOperator })
@@ -818,8 +823,54 @@ function validate(value: unknown, dialect: ViewDialect): string {
   return invalid?.message ?? "";
 }
 
-function emptyRule(field = "status"): FilterRule {
-  return rule(field, "equals", "");
+const LIST_OPERATORS: readonly RuleOperator[] = [
+  "contains",
+  "not-contains",
+  "empty",
+  "not-empty",
+];
+
+function isListOperator(operator: RuleOperator): boolean {
+  return LIST_OPERATORS.includes(operator);
+}
+
+function findField(
+  fields: readonly ExpressionField[],
+  key: string,
+): ExpressionField | undefined {
+  const unwrapped = key
+    .replace(/^note\["(.+)"\]$/, "$1")
+    .replace(/^note\['(.+)'\]$/, "$1")
+    .replace(/^note\./, "");
+  return fields.find(
+    (candidate) => candidate.key === key || candidate.key === unwrapped,
+  );
+}
+
+function defaultOperator(field: ExpressionField | undefined): RuleOperator {
+  return field?.type === "list" ? "contains" : "equals";
+}
+
+function operatorForFieldChange(
+  current: RuleOperator,
+  nextField: ExpressionField | undefined,
+): RuleOperator {
+  if (nextField?.type === "list") {
+    if (isListOperator(current)) return current;
+    return current === "not-equals" ? "not-contains" : "contains";
+  }
+  if (nextField?.options?.length || nextField?.type === "date") {
+    if (current === "contains") return "equals";
+    if (current === "not-contains") return "not-equals";
+  }
+  return current;
+}
+
+function emptyRule(
+  field = "status",
+  fields: readonly ExpressionField[] = [],
+): FilterRule {
+  return rule(field, defaultOperator(findField(fields, field)), "");
 }
 
 function defaultField(fields: ExpressionField[]): string {
@@ -838,8 +889,11 @@ function defaultField(fields: ExpressionField[]): string {
   );
 }
 
-function emptyGroup(field?: string): FilterGroup {
-  return group("and", field ? [emptyRule(field)] : []);
+function emptyGroup(
+  field?: string,
+  fields: readonly ExpressionField[] = [],
+): FilterGroup {
+  return group("and", field ? [emptyRule(field, fields)] : []);
 }
 
 function rule(

@@ -47,6 +47,19 @@ function defaultFields(): ExpressionField[] {
   ];
 }
 
+const MAPPED_FIELD_TYPES: Partial<Record<string, ExpressionField["type"]>> = {
+  due: "date",
+  scheduled: "date",
+  completedDate: "date",
+  dateCreated: "date",
+  dateModified: "date",
+  projects: "list",
+  contexts: "list",
+  assignees: "list",
+  attachments: "list",
+  timeEstimate: "number",
+};
+
 export function viewFields(
   configuration: TaskCollectionConfiguration,
   sourceProperties: string[],
@@ -66,6 +79,7 @@ export function viewFields(
         label === "sortOrder"
           ? t({ message: "Manual order" })
           : (builtInFieldLabel(label) ?? humanize(label)),
+        MAPPED_FIELD_TYPES[label] ?? "text",
       ),
   );
   const custom = configuration.userFields.map((item) =>

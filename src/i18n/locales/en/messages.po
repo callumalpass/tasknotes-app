@@ -3647,6 +3647,11 @@ msgstr "Minute"
 msgid "Minutes"
 msgstr "Minutes"
 
+#: src/app/view-sort-choices.tsx
+#: src/i18n/default-labels.ts
+msgid "Modified"
+msgstr "Modified"
+
 #: src/app/task-calendar-view.tsx
 #: src/app/view-editor-form.tsx
 #: src/components/recurrence-field.tsx
@@ -4351,6 +4356,10 @@ msgstr "Optional"
 #: src/components/reminder-editor.tsx
 msgid "Optional notification text"
 msgstr "Optional notification text"
+
+#: src/app/task-calendar-view.tsx
+msgid "Optional: connect Google Calendar in Settings to show Google events alongside your tasks."
+msgstr "Optional: connect Google Calendar in Settings to show Google events alongside your tasks."
 
 #: src/components/choice-options.tsx
 #: src/i18n/ui-copy.ts
@@ -5571,10 +5580,6 @@ msgstr "Shown in this order below each item."
 #: src/components/task-vocabulary-editor.tsx
 msgid "Shown in this order wherever a status is chosen. At least one must count as done."
 msgstr "Shown in this order wherever a status is chosen. At least one must count as done."
-
-#: src/app/task-calendar-view.tsx
-msgid "Sign in to Google Calendar in Settings to see events."
-msgstr "Sign in to Google Calendar in Settings to see events."
 
 #: src/calendar-service/settings.tsx
 msgid "Sign in with Google"

@@ -400,6 +400,12 @@
   gap: 6px;
 }
 
+.full-calendar-google-hint {
+  margin: var(--space-sm) 0 0;
+  color: var(--ink-muted);
+  font-size: var(--type-supporting);
+}
+
 .full-calendar-event-secondary {
   display: flex;
   align-items: baseline;

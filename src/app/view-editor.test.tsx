@@ -238,6 +238,54 @@ describe("ViewEditor", () => {
     ]);
   });
 
+  it("offers Modified as a descending-first sort rule", async () => {
+    const createViewSource = vi.fn(
+      async (input: CreateTaskViewSourceInput) => ({
+        path: "views/recent.base",
+        format: "obsidian.base",
+        revision: "two",
+        document: input.document,
+      }),
+    );
+    renderEditor({ repository: repository({ createViewSource }) });
+
+    await screen.findByRole("dialog", { name: "New view" });
+    fireEvent.change(screen.getByLabelText("View name"), {
+      target: { value: "Recent" },
+    });
+    fireEvent.click(screen.getByRole("heading", { name: "Group & sort" }));
+    const property = screen.getByRole("combobox", {
+      name: "Property to sort",
+    });
+    fireEvent.change(property, {
+      target: { value: "dateModified" },
+    });
+    fireEvent.click(
+      within(property.closest(".add-view-property")!).getByRole("button", {
+        name: "Add",
+      }),
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "Sort property 1" }),
+    ).toHaveValue("Modified");
+    expect(
+      screen.getByRole("combobox", { name: "Sort direction 1" }),
+    ).toHaveAttribute("data-value", "desc");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+    await waitFor(() => expect(createViewSource).toHaveBeenCalledOnce());
+    const parsed = parse(createViewSource.mock.calls[0][0].document) as {
+      views: Array<{ sort: unknown }>;
+    };
+    expect(parsed.views[0].sort).toEqual([
+      {
+        property: "dateModified",
+        direction: "DESC",
+      },
+    ]);
+  });
+
   it.each(["tasknotesTaskList", "tasknotesKanban", "tasknotesCalendar"])(
     "resolves default fields in the %s editor and preview",
     async (type) => {

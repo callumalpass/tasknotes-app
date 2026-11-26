@@ -5,7 +5,10 @@ import { occurrenceTask } from "../domain/task-occurrence";
 import type { CalendarEntry } from "../domain/calendar-events";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
-import { viewPropertyDetails } from "../i18n/view-presentation";
+import {
+  formatPropertyValue,
+  viewPropertyDetails,
+} from "../i18n/view-presentation";
 import {
   calendarPriorityMarker,
   withPriorityDetail,
@@ -40,17 +43,40 @@ export function calendarRowDetails(
     );
   const fieldKey = (key: string) =>
     /^note\[(["'])(.+)\1\]$/.exec(key)?.[2] ?? key.replace(/^note\./, "");
-  const shown = details.filter((detail) => {
+  const markerTag =
+    configuration.taskIdentification?.method === "property"
+      ? null
+      : (
+          configuration.taskIdentification?.tag?.trim() ||
+          configuration.defaults?.taskTag?.trim() ||
+          "task"
+        )
+          .replace(/^#+/, "")
+          .toLocaleLowerCase();
+  const shown = details.flatMap((detail) => {
     const key = fieldKey(detail.key);
     const date = ["scheduled", configuration.fieldMapping.scheduled].includes(
       key,
     );
-    return (
-      !day ||
-      !date ||
-      typeof detail.rawValue !== "string" ||
-      taskDatePart(detail.rawValue) !== day
-    );
+    if (
+      day &&
+      date &&
+      typeof detail.rawValue === "string" &&
+      taskDatePart(detail.rawValue) === day
+    )
+      return [];
+    if (markerTag && (key === "tags" || key === "file.tags")) {
+      const isMarker = (entry: unknown) =>
+        typeof entry === "string" &&
+        entry.trim().replace(/^#+/, "").toLocaleLowerCase() === markerTag;
+      if (Array.isArray(detail.rawValue)) {
+        const visible = detail.rawValue.filter((entry) => !isMarker(entry));
+        const value = formatPropertyValue(visible);
+        return value === null ? [] : [{ ...detail, rawValue: visible, value }];
+      }
+      if (isMarker(detail.rawValue)) return [];
+    }
+    return [detail];
   });
   if (
     displayed.projects.length &&

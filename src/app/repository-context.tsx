@@ -254,6 +254,7 @@ export function RepositoryProvider({
   const readyRef = useRef(false);
   const lifecycleRef = useRef(0);
   const foregroundRef = useRef(document.visibilityState !== "hidden");
+  const lastForegroundRefreshRef = useRef(0);
   const configurationRef = useRef(configuration);
   const autoArchiveRef = useRef<AutoArchiveActivity | null>(null);
   const taskCommandsRef = useRef<TaskCommandService | null>(null);
@@ -528,8 +529,10 @@ export function RepositoryProvider({
     const show = () => {
       if (foregroundRef.current) return;
       foregroundRef.current = true;
+      lastForegroundRefreshRef.current = Date.now();
       repository.resume?.();
       void taskCommandsRef.current?.setForeground(true);
+      if (readyRef.current) invalidation.invalidateViews();
       void refresh().catch(() => undefined);
     };
     if (Capacitor.isNativePlatform()) {
@@ -541,13 +544,37 @@ export function RepositoryProvider({
     }
     const onVisibility = () =>
       document.visibilityState === "visible" ? show() : hide();
+    const onFocus = () => {
+      if (document.visibilityState === "hidden") return;
+      if (!foregroundRef.current) {
+        show();
+        return;
+      }
+      if (!readyRef.current || navigator.onLine === false) return;
+      const now = Date.now();
+      if (
+        refreshInFlight.current ||
+        now - lastForegroundRefreshRef.current < 500
+      )
+        return;
+      lastForegroundRefreshRef.current = now;
+      invalidation.invalidateViews();
+      void refresh().catch(() => undefined);
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted || !foregroundRef.current) show();
+    };
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
     window.addEventListener("pagehide", hide);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("pagehide", hide);
     };
-  }, [refresh, repository]);
+  }, [invalidation, refresh, repository]);
 
   useEffect(() => {
     if (status !== "ready" || Capacitor.isNativePlatform()) return;

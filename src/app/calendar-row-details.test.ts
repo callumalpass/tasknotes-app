@@ -95,3 +95,62 @@ it("keeps the project and other-day deadline, without repeating a timed section'
     ).find((detail) => detail.key === "due")?.rawValue,
   ).toBe("2026-11-07");
 });
+
+it("hides the internal task marker tag from calendar row details while keeping user tags", () => {
+  const model = new TaskNotesTaskModel();
+  const task = model.create(
+    {
+      title: "Tagged event",
+      scheduled: "2026-11-05",
+      tags: ["task", "ops"],
+    },
+    { id: "tagged" },
+  );
+  const execution: TaskViewExecution = {
+    view: {
+      key: "custom",
+      id: "ordinal-8",
+      documentId: "custom",
+      documentName: "Custom",
+      name: "Custom",
+      source: {
+        path: "custom.base",
+        format: "obsidian.base",
+        revision: "1",
+        writable: true,
+      },
+      properties: [{ key: "tags" }],
+    },
+    rows: [
+      {
+        task,
+        values: { tags: ["task", "ops"] },
+      },
+    ],
+    groups: [],
+    hasMore: false,
+    totalCount: 1,
+  };
+  const context = {
+    timezone: "UTC",
+    now: "2026-11-05T00:00:00Z",
+  };
+  const entry = new AppCalendarEntryIndex(model.configuration(), context)
+    .entries(
+      execution,
+      { start: "2026-11-04", end: "2026-11-06" },
+      [task],
+      context,
+    )
+    .get("2026-11-05")![0]!;
+  const details = calendarRowDetails(
+    entry,
+    execution,
+    "title",
+    model.configuration(),
+  );
+  expect(details.find((detail) => detail.key === "tags")).toMatchObject({
+    value: "ops",
+    rawValue: ["ops"],
+  });
+});

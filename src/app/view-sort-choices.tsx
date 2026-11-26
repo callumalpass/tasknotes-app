@@ -16,13 +16,15 @@ export function ViewSortChoices({
   onChoose(field: string): void;
 }) {
   const { t } = useLingui();
-  const { due, priority, scheduled, title } = configuration.fieldMapping;
+  const { dateModified, due, priority, scheduled, title } =
+    configuration.fieldMapping;
   const lead = sort?.[0];
   const leadField = lead?.property.replace(/^note\./, "");
   const choices = [
     { field: priority, label: t`Priority` },
     { field: due, label: t`Due date` },
     { field: scheduled, label: t`Scheduled date` },
+    { field: dateModified, label: t`Modified` },
     { field: title, label: t`Title` },
   ];
   return (

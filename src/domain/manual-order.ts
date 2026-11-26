@@ -67,6 +67,7 @@ export function leadSortWith(
   sort: readonly TaskViewSort[] | undefined,
   property: string,
   sortOrderField: string,
+  initialDirection: ManualOrderDirection = "asc",
 ): TaskViewSort[] {
   const rest = disableManualOrderSort(sort, sortOrderField);
   const lead = sort?.[0];
@@ -75,7 +76,11 @@ export function leadSortWith(
   return [
     {
       property: lead && reversing ? lead.property : property,
-      direction: reversing && lead.direction === "asc" ? "desc" : "asc",
+      direction: reversing
+        ? lead.direction === "asc"
+          ? "desc"
+          : "asc"
+        : initialDirection,
     },
     ...rest.filter(
       (rule) => propertyName(rule.property) !== propertyName(property),
