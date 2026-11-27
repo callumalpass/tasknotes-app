@@ -1,3 +1,4 @@
+import { editTaskNotesType } from "../domain/tasknotes-contract";
 import { projectShortcuts } from "../domain/project-shortcuts";
 import { materializeDefaultViewOrder } from "../domain/view-document";
 import { navigationTaskCounts } from "../domain/navigation-task-counts";
@@ -437,6 +438,7 @@ export class NextTaskRepository implements TaskRepository {
   private scratchFeedSnapshot?: ScratchFeedPage;
   private dataRevision = 0;
   private lastDataDay = todayString();
+  private timezone?: string;
   private lastViewMinute = Math.floor(Date.now() / 60_000);
   private readonly changeWindow = new CollectionChangeWindow(() => {
     if (this.disposed || this.scope.signal.aborted) return;
@@ -965,6 +967,8 @@ export class NextTaskRepository implements TaskRepository {
             this.catalogSignature = signature;
             this.viewTypes = viewTypes;
             this.settingsType = settingsType;
+            const previousTimezone = this.timezone;
+            this.timezone = providers[0]?.model.config.timezone;
             this.providers = providers;
             this.models = new Map(providers.map((p) => [p.typeName, p.model]));
             const modelChanged = this.modelSignature() !== before;
@@ -977,6 +981,8 @@ export class NextTaskRepository implements TaskRepository {
               this.invalidateDataGeneration();
             }
             this.reached(false);
+            if (this.timezone !== previousTimezone)
+              this.notify("configuration");
             return this.modelGeneration;
           })
           .catch((reason) => {
@@ -1471,7 +1477,7 @@ export class NextTaskRepository implements TaskRepository {
       if (
         (compared && (changed || removed)) ||
         this.viewGeneration !== views ||
-        this.lastDataDay !== todayString()
+        this.lastDataDay !== todayString(new Date(), this.timezone)
       )
         this.emit("data");
       else if (
@@ -3577,9 +3583,8 @@ export class NextTaskRepository implements TaskRepository {
           if (resource.text === undefined)
             throw new Error("The replica did not supply the task type source.");
           const parsed = parseFrontmatter(resource.text);
-          const patched = patchTaskNotesMdbaseTypeSettings(
-            parsed.frontmatter,
-            typePatch,
+          const patched = editTaskNotesType(parsed.frontmatter, (definition) =>
+            patchTaskNotesMdbaseTypeSettings(definition, typePatch),
           );
           // Nothing the type keeps changed: leave its revision alone.
           if (serializeMarkdownDocument(patched, parsed.body) === resource.text)
@@ -3589,7 +3594,7 @@ export class NextTaskRepository implements TaskRepository {
           // list different statuses, and the authority then refuses tasks
           // the app offers.
           const text = serializeMarkdownDocument(
-            reconcileTaskNotesMdbaseTypeVocabulary(patched),
+            editTaskNotesType(patched, reconcileTaskNotesMdbaseTypeVocabulary),
             parsed.body,
           );
           return () =>
@@ -3676,7 +3681,7 @@ export class NextTaskRepository implements TaskRepository {
       const revision = this.viewGeneration;
       const descriptors = new Map<string, AppBasesDescriptor>();
       const documents = new Map<string, TaskViewDocument>();
-      const timezone = runtimeTimezone();
+      const timezone = this.timezone ?? runtimeTimezone();
       const unreadable: UnreadableViewSource[] = [];
       for await (const views of iterateNativeDiscovery(async (continuation) => {
         // Each page is one relayed round trip with its own deadline; the
@@ -3782,7 +3787,8 @@ export class NextTaskRepository implements TaskRepository {
     const slot = this.viewExecutions.get(view.key);
     if (
       !slot?.execution ||
-      slot.signature !== this.viewExecutionSignature(view, runtimeTimezone())
+      slot.signature !==
+        this.viewExecutionSignature(view, this.timezone ?? runtimeTimezone())
     )
       return null;
     // Cached rows are display-only; they never certify a live native cut or
@@ -3818,7 +3824,7 @@ export class NextTaskRepository implements TaskRepository {
   private async readNativeSource(
     descriptor: AppBasesDescriptor,
     signal: AbortSignal,
-    timezone = runtimeTimezone(),
+    timezone = this.timezone ?? runtimeTimezone(),
   ) {
     signal.throwIfAborted();
     await this.initialize({ deferTaskIndex: true });
@@ -3903,7 +3909,7 @@ export class NextTaskRepository implements TaskRepository {
       signal.throwIfAborted();
       const revision = this.dataRevision;
       const descriptor = this.nativeView(view);
-      const timezone = runtimeTimezone();
+      const timezone = this.timezone ?? runtimeTimezone();
       const signature = this.viewExecutionSignature(view, timezone);
       const previous = this.viewExecutions.get(view.key);
       const slot = {
@@ -4517,7 +4523,8 @@ export class NextTaskRepository implements TaskRepository {
   }
   /** Tells listeners without retiring the current data generation. */
   private notify(kind: RepositoryChange["kind"]) {
-    if (kind === "data") this.lastDataDay = todayString();
+    if (kind === "data")
+      this.lastDataDay = todayString(new Date(), this.timezone);
     if (kind === "data" || kind === "clock")
       this.lastViewMinute = Math.floor(Date.now() / 60_000);
     if (!this.disposed)

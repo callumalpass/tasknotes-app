@@ -1,15 +1,11 @@
 import type { DescribeResult } from "@mdbase-dev/sdk";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { readableTaskNotesContract } from "../../../src/domain/tasknotes-contract";
+import { collectionTimezone } from "../../../src/domain/runtime-timezone";
 import type { DestinationType, JsonObject } from "./plan";
 
 export function discoverTypes(description: DescribeResult): DestinationType[] {
-  const contract = description.contracts.find(
-    (c) =>
-      c.id === "tasknotes.task" &&
-      c.version === TASKNOTES_SPEC_VERSION &&
-      c.digest === TASKNOTES_CONTRACT_DIGEST,
-  );
+  const contract = readableTaskNotesContract(description.contracts);
+  const timezone = collectionTimezone(description.settings);
   if (!contract)
     throw new Error(
       "This collection does not yet have the supported TaskNotes contract. Review collection setup first.",
@@ -36,6 +32,7 @@ export function discoverTypes(description: DescribeResult): DestinationType[] {
       );
     return {
       name,
+      timezone,
       definition: definition as JsonObject,
       schema: schema as JsonObject,
       fields: implementation.fields,

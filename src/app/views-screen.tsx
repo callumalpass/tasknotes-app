@@ -365,7 +365,7 @@ export function ViewsScreen({
     identityTasksQuery;
   const identityTasksLoading =
     identityTasksQuery.loading || identityTasksDeferred;
-  const today = todayString();
+  const today = todayString(new Date(), configuration.timezone);
   const todaySummary = useMemo(
     () => (todayScreen ? summarizeToday(identityTasks, today) : null),
     [identityTasks, today, todayScreen],
@@ -614,7 +614,7 @@ export function ViewsScreen({
   const currentCalendarSelection =
     calendarSelection && calendarSelection.key === selected?.key
       ? calendarSelection.date
-      : todayString();
+      : today;
   const currentCalendarCreateValue =
     calendarSelection && calendarSelection.key === selected?.key
       ? calendarSelection.createValue
@@ -1121,8 +1121,7 @@ export function ViewsScreen({
     const title = row.task.title;
     const column = destination.label ?? uiCopy("This section");
     const moved = t`Moved “${title}” to ${column}`;
-    const deadlines =
-      "due" in input && isTaskPastDue(row.task, todayString()) ? 1 : 0;
+    const deadlines = "due" in input && isTaskPastDue(row.task, today) ? 1 : 0;
     const notice = deadlines
       ? `${moved}, ${plural(deadlines, { one: "# deadline moved too", other: "# deadlines moved too" })}`
       : moved;
@@ -1206,17 +1205,12 @@ export function ViewsScreen({
 
   async function moveOverdueToToday(
     rows: readonly TaskViewRow[],
-    date = todayString(),
+    date = today,
     keepDeadlines = false,
   ) {
     if (!selected || reschedulePending) return;
     const view = selected;
-    const updates = scheduleRowsTodayUpdates(
-      rows,
-      date,
-      todayString(),
-      keepDeadlines,
-    );
+    const updates = scheduleRowsTodayUpdates(rows, date, today, keepDeadlines);
     if (!updates.length) return;
     setReschedulePending(true);
     setRescheduled(null);
@@ -1225,9 +1219,9 @@ export function ViewsScreen({
     try {
       const saved = await moveRowsToSection(
         updates.map(({ id, input }) => ({ id, input })),
-        date === todayString()
+        date === today
           ? "section:today"
-          : date > todayString()
+          : date > today
             ? "section:later"
             : "section:overdue",
       );
@@ -1893,6 +1887,7 @@ export function ViewsScreen({
             sectionAction={(lane) =>
               lane.key === "section:overdue" && lane.rows.length ? (
                 <OverdueScheduleActions
+                  today={today}
                   count={lane.rows.length}
                   deadlines={missedDeadlineCount(lane.rows)}
                   pending={reschedulePending}
@@ -1941,11 +1936,11 @@ export function ViewsScreen({
         {rescheduled && rescheduled.viewKey === selected?.key ? (
           <>
             <p aria-atomic="true" className="visually-hidden" role="status">
-              {rescheduledSummary(rescheduled)}
+              {rescheduledSummary(rescheduled, today)}
             </p>
             {!pendingDeletion ? (
               <div className="undo-toast is-above-mobile-controls">
-                <span>{rescheduledSummary(rescheduled)}</span>
+                <span>{rescheduledSummary(rescheduled, today)}</span>
                 <button
                   ref={rescheduleUndoRef}
                   type="button"
@@ -2011,18 +2006,17 @@ function addTaskPrompt(name: string) {
 }
 
 /** Moving late work also moves any deadline it missed, so the summary says so. */
-function rescheduledSummary({
-  count,
-  deadlines,
-  date: scheduled,
-}: {
-  count: number;
-  deadlines: number;
-  date: string;
-}): string {
-  const date = formatTaskDate(scheduled);
+function rescheduledSummary(
+  {
+    count,
+    deadlines,
+    date: scheduled,
+  }: { count: number; deadlines: number; date: string },
+  today: string,
+): string {
+  const date = formatTaskDate(scheduled, today);
   const moved =
-    scheduled === todayString()
+    scheduled === today
       ? plural(count, {
           one: "Moved # task to today",
           other: "Moved # tasks to today",

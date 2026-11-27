@@ -136,13 +136,13 @@ test("OAuth callback and metadata are available as static routes", async ({
   ).json();
   expect(manifest.provisions.type_packs).toHaveLength(1);
   expect(manifest.provisions.type_packs[0].manifest.version).toBe(
-    "0.3.0-rc.22",
+    "0.3.0-rc.23",
   );
   expect(manifest.requirements.contracts).toContainEqual({
     id: "tasknotes.task",
-    version: "0.3.0-rc.6",
+    version: "0.3.0-rc.7",
     digest:
-      "sha256:c400ead6e218b715d86ad31125bb3d4b2e276817da6ba8065449fd0947b24d67",
+      "sha256:1a0b33928c1e35399b0cffe808047cdca42a0881da27570a10fa6ead51dc51b2",
   });
   expect(manifest.requirements.capabilities).toEqual({
     contract_version: 2,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { todayString } from "./task";
 import { resolveTaskCollectionConfiguration } from "./task-configuration";
@@ -51,6 +51,20 @@ const configuration = resolveTaskCollectionConfiguration({
 });
 
 describe("task capture", () => {
+  it("anchors relative NLP dates on the collection's day", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-05T01:00:00Z"));
+    try {
+      const result = await parseTaskCapture(
+        "Call tomorrow at 9am",
+        { ...configuration, timezone: "America/New_York" },
+        "en-US",
+      );
+      expect(result.input.scheduled).toBe("2026-08-05T09:00");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("maps natural language into a complete creation input", async () => {
     const result = await parseTaskCapture(
       "Pay rent August 5 2026 at 9am #finance @home +admin every month 30m !high *doing",

@@ -8,6 +8,7 @@ import {
   normalizeTaskDateTime,
   taskDatePart,
   taskTimePart,
+  todayString,
 } from "./task";
 
 describe("task dates", () => {
@@ -18,11 +19,42 @@ describe("task dates", () => {
     expect(dateFromStorage("2026-08-05T09:30")).toBeInstanceOf(Date);
   });
 
-  it("normalizes local datetime input to canonical UTC second precision", () => {
-    const normalized = normalizeTaskDateTime("2026-08-05T09:30");
-    expect(normalized).toMatch(/^2026-08-0[45]T\d{2}:30:00Z$/);
-    expect(taskDatePart(normalized)).toBe("2026-08-05");
-    expect(taskTimePart(normalized)).toBe("09:30");
+  it("keeps date-only and local input and maps explicit offsets to the collection wall clock", () => {
+    const zone = "America/New_York";
+    expect(normalizeTaskDateTime("2026-08-05", zone)).toBe("2026-08-05");
+    expect(normalizeTaskDateTime("2026-08-05T09:30", zone)).toBe(
+      "2026-08-05T09:30",
+    );
+    expect(normalizeTaskDateTime("2026-08-05T01:30:42Z", zone)).toBe(
+      "2026-08-04T21:30:42",
+    );
+    expect(taskDatePart("2026-08-05T01:30:42Z", zone)).toBe("2026-08-04");
+    expect(taskTimePart("2026-08-05T01:30:42Z", zone)).toBe("21:30");
+    expect(todayString(new Date("2026-08-05T01:00Z"), zone)).toBe("2026-08-04");
+  });
+
+  it("uses the earlier overlap and moves a gap forward in the collection zone", () => {
+    const zone = "America/New_York";
+    expect(dateFromStorage("2026-11-01T01:30", zone)?.toISOString()).toBe(
+      "2026-11-01T05:30:00.000Z",
+    );
+    expect(dateFromStorage("2026-03-08T02:30", zone)?.toISOString()).toBe(
+      "2026-03-08T07:30:00.000Z",
+    );
+    expect(
+      isTaskDateOverdue(
+        "2026-11-01T01:30",
+        new Date("2026-11-01T06:00Z"),
+        zone,
+      ),
+    ).toBe(true);
+    expect(
+      isTaskDateOverdue(
+        "2026-11-01T01:30-05:00",
+        new Date("2026-11-01T06:00Z"),
+        zone,
+      ),
+    ).toBe(false);
   });
 
   it("compares timed tasks against the current moment", () => {

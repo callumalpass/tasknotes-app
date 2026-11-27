@@ -216,7 +216,10 @@ export function TaskPropertyEditor({
                 type="button"
                 disabled={saving}
                 onClick={() => {
-                  const date = shiftTaskDate(todayString(), Number(days));
+                  const date = shiftTaskDate(
+                    todayString(new Date(), configuration.timezone),
+                    Number(days),
+                  );
                   void save(
                     combineTaskDateTime(
                       date,
@@ -428,8 +431,8 @@ export function PropertyControl({
         }
         value={typeof value === "string" ? value : undefined}
         splitValue={(current) => ({
-          date: taskDatePart(current) || undefined,
-          time: taskTimePart(current) || undefined,
+          date: taskDatePart(current, configuration.timezone) || undefined,
+          time: taskTimePart(current, configuration.timezone) || undefined,
         })}
         combineValue={combineTaskDateTime}
         onChange={(next) => {

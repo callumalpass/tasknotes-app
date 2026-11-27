@@ -2,7 +2,11 @@ import type { CalendarItem } from "@tasknotes/calendar";
 import { parseOrder, type ItemOrder } from "@tasknotes/calendar";
 import { compareOverdueTasks } from "../domain/overdue-order";
 import type { GoogleCalendar, GoogleEvent } from "../calendar-service/client";
-import { calendarItem, type CalendarEntry } from "../domain/calendar-events";
+import {
+  calendarContext,
+  calendarItem,
+  type CalendarEntry,
+} from "../domain/calendar-events";
 import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
@@ -86,6 +90,7 @@ export function calendarItems(
   titleProperty: string,
   configuration: TaskCollectionConfiguration,
 ): { items: TaskCalendarItem[] } {
+  const { timezone } = calendarContext(configuration);
   const items: TaskCalendarItem[] = [];
   const seen = new Set<string>();
   for (const values of entries.values()) {
@@ -113,7 +118,7 @@ export function calendarItems(
             relativeDateDetail(detail, displayed, configuration),
           );
       items.push({
-        ...calendarItem(neutral),
+        ...calendarItem(neutral, timezone),
         ...(tracked ? { color: "var(--success)" } : {}),
         className: [
           "task-calendar-event",

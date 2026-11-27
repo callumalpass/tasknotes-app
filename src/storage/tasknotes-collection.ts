@@ -18,6 +18,7 @@ export function resolveTaskTypeDefinition(
     configuration?: Record<string, unknown>;
     /** The tasknotes.task version the catalog says the type implements. */
     version?: string;
+    timezone?: string;
     /** Frontmatter of the TaskNotes settings record, when there is one. */
     settings?: Readonly<Record<string, unknown>>;
   } = {},
@@ -59,15 +60,18 @@ export function resolveTaskTypeDefinition(
   return {
     typeName,
     model: new TaskNotesTaskModel(
-      resolveTaskCollectionConfiguration(
-        {
-          ...definition,
-          schema: { value: schema },
-          collection,
-          implements: [implementation],
-        },
-        overrides.settings ? { settings: overrides.settings } : {},
-      ),
+      {
+        ...resolveTaskCollectionConfiguration(
+          {
+            ...definition,
+            schema: { value: schema },
+            collection,
+            implements: [implementation],
+          },
+          overrides.settings ? { settings: overrides.settings } : {},
+        ),
+        timezone: overrides.timezone,
+      },
       {
         recordsFolder: taskRecordsFolder,
         pathPattern:

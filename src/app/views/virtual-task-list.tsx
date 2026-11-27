@@ -127,7 +127,9 @@ export function VirtualTaskList({
                     : undefined
                 }
                 sectionDay={
-                  entry.lane.key === "section:today" ? todayString() : undefined
+                  entry.lane.key === "section:today"
+                    ? todayString(new Date(), entry.row.task.timezone)
+                    : undefined
                 }
                 titleProperty={titleProperty}
                 onOpen={onOpen}

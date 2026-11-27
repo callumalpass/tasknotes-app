@@ -2,6 +2,7 @@ import { linkDisplayLabel } from "./completion";
 import { occurrenceTask } from "./task-occurrence";
 import {
   dateFromStorage,
+  todayString,
   formatRelativeTaskDate,
   isTaskDateOverdue,
 } from "./task";
@@ -85,7 +86,11 @@ export function viewPropertyDetails(
         ? displayed.frontmatter[field]
         : projectedValue;
     if (isNullTaskOption(property.key, value)) return [];
-    const formatted = formatPropertyValue(value, property.format);
+    const formatted = formatPropertyValue(
+      value,
+      property.format,
+      row.task.timezone,
+    );
     return formatted === null
       ? []
       : [
@@ -150,6 +155,7 @@ export function groupLabel(entries: Array<[string, unknown]>): string {
 export function formatPropertyValue(
   value: unknown,
   format?: string,
+  timezone?: string,
 ): string | null {
   if (
     value === null ||
@@ -160,7 +166,7 @@ export function formatPropertyValue(
     return null;
   if (Array.isArray(value)) {
     const values = value
-      .map((item) => formatPropertyValue(item))
+      .map((item) => formatPropertyValue(item, format, timezone))
       .filter((item): item is string => item !== null);
     return values.length ? values.join(", ") : null;
   }
@@ -170,11 +176,12 @@ export function formatPropertyValue(
     const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
     const dateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value);
     if (format === "date" || dateOnly || dateTime) {
-      const date = dateFromStorage(value);
+      const date = dateFromStorage(value, timezone);
       if (date)
         return new Intl.DateTimeFormat(undefined, {
           day: "numeric",
           month: "short",
+          timeZone: dateTime ? timezone : undefined,
           ...(dateTime
             ? {
                 hour: "numeric",
@@ -254,7 +261,7 @@ export function relativeDateDetail<
   },
 >(
   detail: Detail,
-  task: Pick<TaskSummary, "completed">,
+  task: Pick<TaskSummary, "completed" | "timezone">,
   configuration: Pick<TaskCollectionConfiguration, "fieldMapping">,
 ): Detail & { overdue?: boolean } {
   const field = notePropertyName(detail.key) ?? detail.key;
@@ -264,12 +271,19 @@ export function relativeDateDetail<
   if (
     (!scheduled && !due) ||
     typeof detail.rawValue !== "string" ||
-    !dateFromStorage(detail.rawValue)
+    !dateFromStorage(detail.rawValue, task.timezone)
   )
     return detail;
   return {
     ...detail,
-    value: formatRelativeTaskDate(detail.rawValue),
-    overdue: due && !task.completed && isTaskDateOverdue(detail.rawValue),
+    value: formatRelativeTaskDate(
+      detail.rawValue,
+      todayString(new Date(), task.timezone),
+      task.timezone,
+    ),
+    overdue:
+      due &&
+      !task.completed &&
+      isTaskDateOverdue(detail.rawValue, undefined, task.timezone),
   };
 }

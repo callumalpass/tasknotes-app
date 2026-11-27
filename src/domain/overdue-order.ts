@@ -1,11 +1,12 @@
 import { taskDatePart, type TaskSummary } from "./task";
 
 export function effectiveOverdueDate(
-  task: Pick<TaskSummary, "due" | "scheduled">,
+  task: Pick<TaskSummary, "due" | "scheduled" | "timezone">,
 ): string {
-  const dates = [taskDatePart(task.scheduled), taskDatePart(task.due)].filter(
-    Boolean,
-  );
+  const dates = [
+    taskDatePart(task.scheduled, task.timezone),
+    taskDatePart(task.due, task.timezone),
+  ].filter(Boolean);
   return dates.sort()[0] ?? "";
 }
 

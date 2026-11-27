@@ -1,6 +1,6 @@
-import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
+import { resolveTaskNotesModelConfigFromImplementation } from "@tasknotes/model/mdbase";
 import { mapTaskToFrontmatter } from "@tasknotes/model/mapping";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import { normalizeTaskDateTime } from "../../../src/domain/task";
 import type { JsonValue, JsonObject } from "@mdbase-dev/sdk";
 import { Validator, type Schema } from "@cfworker/json-schema";
 import YAML from "yaml";
@@ -9,6 +9,7 @@ import type { SourceData, TodoistTask } from "./todoist";
 export type { JsonObject };
 export interface DestinationType {
   name: string;
+  timezone?: string;
   definition: JsonObject;
   schema: JsonObject;
   fields: Record<string, string>;
@@ -33,17 +34,16 @@ export interface PlannedTask {
   errors: string[];
 }
 export function modelFor(target: DestinationType) {
-  return resolveTaskNotesModelConfigFromMdbaseType({
-    ...target.definition,
-    schema: { value: target.schema },
-    implements: [
-      {
-        contract: "tasknotes.task",
-        version: TASKNOTES_SPEC_VERSION,
-        fields: target.fields,
-        binding: target.binding,
-      },
-    ],
+  return resolveTaskNotesModelConfigFromImplementation({
+    fields: target.fields,
+    binding:
+      target.binding &&
+      typeof target.binding === "object" &&
+      !Array.isArray(target.binding)
+        ? target.binding
+        : undefined,
+    schema: target.schema,
+    match: target.definition.match,
   });
 }
 export function safeFolder(value: string): string {
@@ -87,13 +87,17 @@ export function importedIdentity(body: string): string | undefined {
     .match(/<!-- tasknotes-import:todoist:([a-f0-9]{64}) -->$/)?.[1];
 }
 
-function dateValue(date: string, errors: string[]): string | undefined {
+function dateValue(
+  date: string,
+  errors: string[],
+  timezone?: string,
+): string | undefined {
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
   if (
     /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(date) &&
     Number.isFinite(Date.parse(date))
   )
-    return date;
+    return normalizeTaskDateTime(date, timezone);
   errors.push(
     "Floating or unrecognized time needs review. This version only imports all-day dates and timestamps with explicit UTC offsets.",
   );
@@ -167,9 +171,11 @@ export async function makePlan(
           );
         const rule = recurrence(task, errors);
         const due = task.deadline
-          ? dateValue(task.deadline.date, errors)
+          ? dateValue(task.deadline.date, errors, target.timezone)
           : undefined;
-        const date = task.due ? dateValue(task.due.date, errors) : undefined;
+        const date = task.due
+          ? dateValue(task.due.date, errors, target.timezone)
+          : undefined;
         if (options.dateTarget === "due" && due && date && due !== date)
           errors.push(
             "Task date and deadline differ. Map task dates to scheduled to preserve both.",

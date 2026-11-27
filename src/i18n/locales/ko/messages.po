@@ -2650,7 +2650,7 @@ msgstr "Enter 또는 ↓로 첫 결과로 이동합니다. j / k로 이동하고
 msgid "Enter the code shown in the Google window"
 msgstr "Google 창에 표시된 코드를 입력하세요"
 
-#. placeholder {0}: formatTaskDate(shownDate)
+#. placeholder {0}: formatTaskDate(shownDate, today, configuration.timezone)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
 msgstr "Enter 키로 {0} 설정"

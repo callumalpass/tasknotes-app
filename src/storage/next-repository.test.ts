@@ -194,7 +194,7 @@ describe("native TaskRepository operations (SDK stand-in, not LAB/Core/Noise)", 
     });
     const after = (await f.repository.get(before.id))!;
     expect(after).toMatchObject({
-      scheduled: "2026-03-08T11:30:00Z",
+      scheduled: "2026-03-08T11:30",
       recurrence: before.recurrence,
       completeInstances: [],
       skippedInstances: [],

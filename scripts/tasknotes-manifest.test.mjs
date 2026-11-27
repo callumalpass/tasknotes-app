@@ -60,7 +60,7 @@ describe("TaskNotes mdbase manifest", () => {
     expect(manifest.requirements.contracts).toEqual([
       expect.objectContaining({
         id: "tasknotes.task",
-        version: "0.3.0-rc.6",
+        version: "0.3.0-rc.7",
         digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       }),
       expect.objectContaining({ id: "tasknotes.settings", version: "1.1.0" }),
@@ -126,12 +126,12 @@ describe("TaskNotes mdbase manifest", () => {
       },
     ]);
     expect(manifest.provisions.type_packs[0].manifest.resources).toHaveLength(
-      14,
+      15,
     );
     expect(manifest.provisions.type_packs[0].manifest.version).toBe(
       TASKNOTES_APP_TYPE_PACK_VERSION,
     );
-    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.22");
+    expect(TASKNOTES_APP_TYPE_PACK_VERSION).toBe("0.3.0-rc.23");
     // rc.20 keeps the tasknotes.task contracts earlier packs replaced in
     // place, so a task type outside the pack that still implements one does
     // not block setup.
@@ -145,6 +145,7 @@ describe("TaskNotes mdbase manifest", () => {
         "_contracts/tasknotes.task/0.3.0-rc.3.md",
         "_contracts/tasknotes.task/0.3.0-rc.4.md",
         "_contracts/tasknotes.task/0.3.0-rc.6.md",
+        "_contracts/tasknotes.task/0.3.0-rc.7.md",
         "_contracts/mdbase.app-settings/1.0.0.md",
         "_contracts/tasknotes.settings/1.0.0.md",
         "_contracts/mdbase.app-settings/2.0.0.md",
@@ -160,7 +161,7 @@ describe("TaskNotes mdbase manifest", () => {
       taskSeed.upgrade_from.map(
         (baseline) => parse(baseline.document.split("---\n")[1]).version,
       ),
-    ).toEqual([5, 4, 4, 3, 2, 1]);
+    ).toEqual([5, 5, 4, 4, 3, 2, 1]);
     for (const baseline of taskSeed.upgrade_from) {
       expect(baseline.digest).toBe(
         `sha256:${createHash("sha256").update(baseline.document).digest("hex")}`,
@@ -372,7 +373,7 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.6",
+        candidate.version === "0.3.0-rc.7",
     );
     const field = implementation.fields.sortOrder;
     expect(generated.type.schema.value.properties[field]).toEqual({
@@ -396,30 +397,24 @@ describe("TaskNotes mdbase manifest", () => {
     const implementation = generated.type.implements.find(
       (candidate) =>
         candidate.contract === "tasknotes.task" &&
-        candidate.version === "0.3.0-rc.6",
+        candidate.version === "0.3.0-rc.7",
     );
+    const instantSchema = { type: "string", format: "date-time" };
+    const localSchema = { type: "string", format: "local-date-time" };
     const taskDateSchema = {
-      anyOf: [
-        { type: "string", format: "date" },
-        { type: "string", format: "date-time" },
-      ],
+      anyOf: [{ type: "string", format: "date" }, instantSchema, localSchema],
     };
-
-    for (const role of ["due", "scheduled"]) {
-      const { anyOf } =
-        generated.type.schema.value.properties[implementation.fields[role]];
-      expect(anyOf).toEqual(expect.arrayContaining(taskDateSchema.anyOf));
-      const localTime = new RegExp(
-        anyOf.find((branch) => branch.pattern).pattern,
-      );
-      expect("2026-11-30T16:00").toMatch(localTime);
-      expect("2026-11-30T16:00:59").toMatch(localTime);
-      expect("2026-11-30T25:00").not.toMatch(localTime);
+    const timestamps = { anyOf: [instantSchema, localSchema] };
+    for (const [role, expected] of Object.entries({
+      due: taskDateSchema,
+      scheduled: taskDateSchema,
+      dateCreated: timestamps,
+      dateModified: timestamps,
+    })) {
+      expect(
+        generated.type.schema.value.properties[implementation.fields[role]],
+      ).toEqual(expected);
+      expect(generated.taskSchema.properties[role]).toEqual(expected);
     }
-    expect(generated.taskSchema.properties.due).toEqual(taskDateSchema);
-    expect(generated.taskSchema.properties.scheduled).toEqual(taskDateSchema);
-    expect(
-      JSON.parse(generated.taskSchemaDocument).properties.scheduled,
-    ).toEqual(taskDateSchema);
   });
 });

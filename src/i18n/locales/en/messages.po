@@ -2650,7 +2650,7 @@ msgstr "Enter or ↓ to focus the first result. j / k to move, Enter to open."
 msgid "Enter the code shown in the Google window"
 msgstr "Enter the code shown in the Google window"
 
-#. placeholder {0}: formatTaskDate(shownDate)
+#. placeholder {0}: formatTaskDate(shownDate, today, configuration.timezone)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
 msgstr "Enter to set {0}"

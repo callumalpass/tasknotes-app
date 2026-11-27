@@ -14,12 +14,16 @@ import type {
 } from "../domain/recurrence-rule";
 
 // Presentation lives here; domain parsing, storage keys and record values stay language-neutral.
-export function formatTaskDate(value: string, today = todayString()): string {
-  const datePart = taskDatePart(value);
-  const timePart = taskTimePart(value);
+export function formatTaskDate(
+  value: string,
+  today = todayString(),
+  timezone?: string,
+): string {
+  const datePart = taskDatePart(value, timezone);
+  const timePart = taskTimePart(value, timezone);
   const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   if (datePart === today) return `${t`Today`}${timeLabel}`;
-  const date = dateFromStorage(value);
+  const date = dateFromStorage(datePart);
   if (!date) return value;
   const tomorrow = dateFromStorage(today) ?? new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -35,12 +39,13 @@ export function formatTaskDate(value: string, today = todayString()): string {
 export function formatRelativeTaskDate(
   value: string,
   today = todayString(),
+  timezone?: string,
 ): string {
-  const date = dateFromStorage(taskDatePart(value));
+  const date = dateFromStorage(taskDatePart(value, timezone));
   const todayDate = dateFromStorage(today);
   if (!date || !todayDate) return value;
   const days = Math.round((date.getTime() - todayDate.getTime()) / 86_400_000);
-  const timePart = days < 0 ? "" : taskTimePart(value);
+  const timePart = days < 0 ? "" : taskTimePart(value, timezone);
   const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   const count = -days;
   const label =
@@ -77,18 +82,22 @@ export function formatTaskTime(value: string): string {
 
 export function taskMeta(
   task: TaskSummary,
-  today = todayString(),
+  today = todayString(new Date(), task.timezone),
 ): { label: string; overdue?: boolean }[] {
   const values: { label: string; overdue?: boolean }[] = [];
   if (task.scheduled)
     values.push({
-      label: formatTaskDate(task.scheduled, today),
-      overdue: !task.completed && isTaskDateOverdue(task.scheduled),
+      label: formatTaskDate(task.scheduled, today, task.timezone),
+      overdue:
+        !task.completed &&
+        isTaskDateOverdue(task.scheduled, undefined, task.timezone),
     });
   else if (task.due)
     values.push({
-      label: t`Due ${formatTaskDate(task.due, today)}`,
-      overdue: !task.completed && isTaskDateOverdue(task.due),
+      label: t`Due ${formatTaskDate(task.due, today, task.timezone)}`,
+      overdue:
+        !task.completed &&
+        isTaskDateOverdue(task.due, undefined, task.timezone),
     });
   if (task.priority !== "none" && task.priority !== "normal")
     values.push({ label: task.priority });

@@ -14,12 +14,14 @@ export function OverdueScheduleActions({
   buttonClassName = "section-heading-action",
   count,
   deadlines,
+  today = todayString(),
   pending,
   onSchedule,
 }: {
   buttonClassName?: string;
   count: number;
   deadlines: number;
+  today?: string;
   pending: boolean;
   onSchedule(date: string, keepDeadlines: boolean): Promise<void> | void;
 }) {
@@ -59,7 +61,7 @@ export function OverdueScheduleActions({
           one: "Move all to today, # overdue task",
           other: "Move all to today, # overdue tasks",
         })}
-        onClick={() => choose(todayString())}
+        onClick={() => choose(today)}
       >
         <Trans>Move all to today</Trans>
       </button>

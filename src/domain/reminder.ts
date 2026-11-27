@@ -1,3 +1,6 @@
+import { calendarDateToInstant } from "@tasknotes/model/calendar";
+import { runtimeTimezone } from "./runtime-timezone";
+import { dateFromStorage, normalizeTaskDateTime } from "./task";
 import type { TaskSummary, TaskReminder } from "./task";
 
 export type ReminderOffsetUnit = "minutes" | "hours" | "days";
@@ -48,7 +51,7 @@ export function generatedReminderDescription(offset?: string): string {
 }
 
 export function reminderFireTime(
-  task: Pick<TaskSummary, "due" | "scheduled">,
+  task: Pick<TaskSummary, "due" | "scheduled" | "timezone">,
   reminder: TaskReminder,
 ): string | undefined {
   if (reminder.type === "absolute") return validInstant(reminder.absoluteTime);
@@ -59,23 +62,35 @@ export function reminderFireTime(
         ? task.scheduled
         : undefined;
   if (!anchor || !reminder.offset) return undefined;
-  const date = dateFromTaskValue(anchor);
   const duration = parseDuration(reminder.offset);
-  if (!date || !duration) return undefined;
+  if (!duration) return undefined;
+  const zone = task.timezone ?? runtimeTimezone();
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(anchor);
+  const date = dateFromStorage(dateOnly ? `${anchor}T00:00` : anchor, zone);
+  if (!date) return undefined;
   const direction = duration.negative ? -1 : 1;
-  date.setFullYear(date.getFullYear() + direction * duration.years);
-  date.setMonth(date.getMonth() + direction * duration.months);
-  date.setDate(
-    date.getDate() + direction * (duration.weeks * 7 + duration.days),
-  );
-  date.setTime(
-    date.getTime() +
+  let timestamp = date.getTime();
+  if (duration.years || duration.months || duration.weeks || duration.days) {
+    const wall = normalizeTaskDateTime(anchor, zone)!;
+    const shifted = new Date(dateOnly ? `${wall}T00:00:00Z` : `${wall}Z`);
+    shifted.setUTCFullYear(
+      shifted.getUTCFullYear() + direction * duration.years,
+    );
+    shifted.setUTCMonth(shifted.getUTCMonth() + direction * duration.months);
+    shifted.setUTCDate(
+      shifted.getUTCDate() + direction * (duration.weeks * 7 + duration.days),
+    );
+    if (!Number.isFinite(shifted.getTime())) return undefined;
+    timestamp = calendarDateToInstant(shifted.toISOString().slice(0, -1), zone);
+  }
+  const fireAt = new Date(
+    timestamp +
       direction *
         (duration.hours * 3_600_000 +
           duration.minutes * 60_000 +
           duration.seconds * 1_000),
   );
-  return Number.isNaN(date.valueOf()) ? undefined : date.toISOString();
+  return Number.isNaN(fireAt.valueOf()) ? undefined : fireAt.toISOString();
 }
 
 function validInstant(value?: string): string | undefined {
@@ -84,13 +99,6 @@ function validInstant(value?: string): string | undefined {
   return Number.isFinite(timestamp)
     ? new Date(timestamp).toISOString()
     : undefined;
-}
-
-function dateFromTaskValue(value: string): Date | undefined {
-  const date = new Date(
-    /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value,
-  );
-  return Number.isNaN(date.valueOf()) ? undefined : date;
 }
 
 function parseDuration(value: string):

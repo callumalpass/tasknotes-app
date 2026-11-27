@@ -520,6 +520,20 @@ export function RepositoryProvider({
       void loadConnection().catch(() => undefined);
       syncIdentityConflict();
       if (change?.kind === "status") return;
+      if (change?.kind === "configuration") {
+        if (!readyRef.current) return;
+        const lifecycle = lifecycleRef.current;
+        void repository
+          .taskConfiguration()
+          .then((next) => {
+            if (lifecycle !== lifecycleRef.current) return;
+            configurationRef.current = next;
+            setConfiguration(next);
+            bump();
+          })
+          .catch(() => undefined);
+        return;
+      }
       if (change?.kind === "lifecycle" || change?.kind === "clock") {
         invalidation.invalidateViews();
         return;

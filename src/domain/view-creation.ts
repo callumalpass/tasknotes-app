@@ -35,8 +35,9 @@ export function createPlanForView(
   const draft = readViewDraft(source, view.id, view.declaration);
   const sharedFilter = readSharedFilter(source, view.declaration);
   const inferred = new ConstraintSet();
-  inferred.addFilter(sharedFilter, draft.dialect, now);
-  inferred.addFilter(draft.filter, draft.dialect, now);
+  const today = todayString(now, configuration.timezone);
+  inferred.addFilter(sharedFilter, draft.dialect, today);
+  inferred.addFilter(draft.filter, draft.dialect, today);
 
   const inferredDefaults = propertiesToCreateDefaults(
     inferred.values(),
@@ -179,11 +180,11 @@ class ConstraintSet {
   private readonly constraints = new Map<string, unknown>();
   private readonly conflicts = new Set<string>();
 
-  addFilter(filter: unknown, dialect: string, now: Date): void {
+  addFilter(filter: unknown, dialect: string, today: string): void {
     const entries =
       dialect === "obsidian-bases"
-        ? inferObsidianFilter(filter, now)
-        : inferCelFilter(filter, now);
+        ? inferObsidianFilter(filter, today)
+        : inferCelFilter(filter, today);
     for (const [property, value] of Object.entries(entries))
       this.add(property, value);
   }
@@ -225,43 +226,50 @@ class ConstraintSet {
 
 function inferObsidianFilter(
   filter: unknown,
-  now: Date,
+  today: string,
 ): Record<string, unknown> {
-  if (typeof filter === "string") return inferExpression(filter, now);
+  if (typeof filter === "string") return inferExpression(filter, today);
   const value = record(filter);
   if (Array.isArray(value.and))
     return mergeInferred(
-      value.and.map((child) => inferObsidianFilter(child, now)),
+      value.and.map((child) => inferObsidianFilter(child, today)),
     );
   // An OR (or an unknown filter object) cannot imply any one branch.
   return {};
 }
 
-function inferCelFilter(filter: unknown, now: Date): Record<string, unknown> {
+function inferCelFilter(
+  filter: unknown,
+  today: string,
+): Record<string, unknown> {
   if (typeof filter !== "string") return {};
   return mergeInferred(
-    splitTopLevelConjunction(filter).map((part) => inferExpression(part, now)),
+    splitTopLevelConjunction(filter).map((part) =>
+      inferExpression(part, today),
+    ),
   );
 }
 
 function inferExpression(
   expression: string,
-  now: Date,
+  today: string,
 ): Record<string, unknown> {
   const source = stripOuterParentheses(expression.trim());
   if (containsTopLevel(source, "||")) return {};
   const conjunction = splitTopLevelConjunction(source);
   if (conjunction.length > 1)
-    return mergeInferred(conjunction.map((part) => inferExpression(part, now)));
+    return mergeInferred(
+      conjunction.map((part) => inferExpression(part, today)),
+    );
 
   const contains = /^([\w.:-]+)\.contains\((.+)\)$/.exec(source);
   if (contains) {
-    const literal = parseLiteral(contains[2], now);
+    const literal = parseLiteral(contains[2], today);
     return literal.ok ? { [contains[1]]: [literal.value] } : {};
   }
   const equality = /^([\w.:-]+)\s*==\s*(.+)$/.exec(source);
   if (!equality) return {};
-  const literal = parseLiteral(equality[2], now);
+  const literal = parseLiteral(equality[2], today);
   return literal.ok ? { [equality[1]]: literal.value } : {};
 }
 
@@ -277,10 +285,10 @@ function mergeInferred(
 
 function parseLiteral(
   source: string,
-  now: Date,
+  today: string,
 ): { ok: true; value: unknown } | { ok: false } {
   const value = stripOuterParentheses(source.trim());
-  if (value === "today()") return { ok: true, value: todayString(now) };
+  if (value === "today()") return { ok: true, value: today };
   if (value === "true") return { ok: true, value: true };
   if (value === "false") return { ok: true, value: false };
   if (value === "null") return { ok: true, value: null };

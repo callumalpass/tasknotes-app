@@ -584,8 +584,8 @@ describe("calendar drops", () => {
     renderCalendar(execution("2026-07-24T09:30", 60), onUpdate);
     const item = items().find((candidate) => candidate.id === "scheduled-one")!;
     expect(item).toMatchObject({
-      start: "2026-07-24T09:30",
-      end: "2026-07-24T10:30",
+      start: new Date("2026-07-24T09:30").toISOString(),
+      end: new Date("2026-07-24T10:30").toISOString(),
       allDay: false,
     });
 

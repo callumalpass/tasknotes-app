@@ -1,3 +1,4 @@
+import { calendarDateToInstant } from "@tasknotes/model/calendar";
 import "@tasknotes/calendar/calendar.css";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -233,7 +234,11 @@ export function TaskCalendarView({
     const view = calendarRef.current?.getView();
     if (view) setTitle(view.title);
   }, [locale]);
-  const [range, setRange] = useState(() => initialRange(selected, mode));
+  const { configuration, materializeOccurrence } = useRepository();
+  const { timezone } = calendarContext(configuration);
+  const [range, setRange] = useState(() =>
+    initialRange(selected, mode, timezone),
+  );
   useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
   useCalendarPreviews(rootRef, (day) => {
     inspectDate(day);
@@ -245,8 +250,6 @@ export function TaskCalendarView({
     x: number;
     y: number;
   } | null>(null);
-  const { configuration, materializeOccurrence } = useRepository();
-  const { timezone } = calendarContext();
   const [historyRequest, setHistoryRequest] = useState<
     (ClearRecurringHistoryRequest & { resolve(proceed: boolean): void }) | null
   >(null);
@@ -1042,7 +1045,7 @@ export function TaskCalendarView({
                 dateStr === selected ? ["is-selected-day"] : []
               }
               dayHeaderContent={({ date, view }) =>
-                view.type === "list" ? listDayLabel(date) : null
+                view.type === "list" ? listDayLabel(date, timezone) : null
               }
               itemClassNames={({ item }) =>
                 item.data?.marker ? ["has-marker"] : []
@@ -1318,7 +1321,8 @@ function repeatsToday(item: TaskCalendarItem): boolean {
   const entry = item.data?.metadata?.entry;
   return (
     !!entry?.modelEntry.isOverdueOnToday &&
-    taskDatePart(entry.row.task.scheduled) === todayString()
+    taskDatePart(entry.row.task.scheduled, entry.row.task.timezone) ===
+      todayString(new Date(), entry.row.task.timezone)
   );
 }
 
@@ -1432,7 +1436,7 @@ function describeEvent(
   configuration: TaskCollectionConfiguration,
   labels: EventLabels,
 ) {
-  el.dataset.date = calendarDay(item.start);
+  el.dataset.date = calendarDay(item.start, configuration.timezone);
   const presentation = item.data;
   const google = presentation?.google;
   if (google && variant !== "indicator") {
@@ -1469,7 +1473,7 @@ function describeEvent(
   );
   el.setAttribute(
     "aria-label",
-    `${kind ? `${kind}: ` : ""}${calendarEventLabel(item)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
+    `${kind ? `${kind}: ` : ""}${calendarEventLabel(item, configuration.timezone)}${marker ? `, ${marker.label.toLowerCase()}` : ""}`,
   );
   el.removeAttribute("title");
 }
@@ -1493,48 +1497,59 @@ function hour12(preference: CalendarHourFormat): boolean | undefined {
   return preference === "12" ? true : preference === "24" ? false : undefined;
 }
 
-function calendarDay(value: TaskCalendarItem["start"]): string {
-  if (typeof value === "string") return taskDatePart(value);
+function calendarDay(
+  value: TaskCalendarItem["start"],
+  timezone?: string,
+): string {
+  if (typeof value === "string") return taskDatePart(value, timezone);
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : todayString(date);
+  return Number.isNaN(date.getTime()) ? "" : todayString(date, timezone);
 }
 
-function calendarEventLabel(item: TaskCalendarItem): string {
-  const start = new Date(item.start);
+function calendarEventLabel(item: TaskCalendarItem, timezone?: string): string {
+  const start =
+    typeof item.start === "string"
+      ? dateFromStorage(item.start, timezone)
+      : new Date(item.start);
   const title = item.title || t`(No title)`;
-  if (Number.isNaN(start.getTime())) return title;
+  if (!start || Number.isNaN(start.getTime())) return title;
   // An all-day date is a calendar day, not an instant: name that day everywhere.
-  const day = item.allDay ? calendarDay(item.start) : todayString(start);
+  const day = item.allDay
+    ? calendarDay(item.start, timezone)
+    : todayString(start, timezone);
   const date =
-    day === todayString()
+    day === todayString(new Date(), timezone)
       ? t`Today`
       : new Intl.DateTimeFormat(appLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
-          ...(item.allDay ? { timeZone: "UTC" } : {}),
+          timeZone: item.allDay ? "UTC" : timezone,
         }).format(item.allDay ? new Date(`${day}T00:00:00Z`) : start);
   const time = item.allDay
     ? ""
     : `, ${new Intl.DateTimeFormat(appLocale(), {
         hour: "numeric",
         minute: "2-digit",
+        timeZone: timezone,
       }).format(start)}`;
   return `${title} ${date}${time}`;
 }
 
-function listDayLabel(date: Date): string {
+function listDayLabel(date: Date, timezone: string): string {
   const label = new Intl.DateTimeFormat(appLocale(), {
     weekday: "long",
     month: "long",
     day: "numeric",
+    timeZone: timezone,
   }).format(date);
-  const day = todayString(date);
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return day === todayString()
+  const day = todayString(date, timezone);
+  const today = todayString(new Date(), timezone);
+  const tomorrow = new Date(`${today}T00:00:00Z`);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  return day === today
     ? t`Today · ${label}`
-    : day === todayString(tomorrow)
+    : day === tomorrow.toISOString().slice(0, 10)
       ? t`Tomorrow · ${label}`
       : label;
 }
@@ -1563,22 +1578,27 @@ function calendarMode(value: unknown): CalendarMode {
 function initialRange(
   selected: string,
   mode: CalendarMode,
+  timezone: string,
 ): { start: Date; end: Date } {
   const date = dateFromStorage(selected) ?? new Date();
+  const midnight = (year: number, month: number, day: number) =>
+    new Date(
+      calendarDateToInstant(todayString(new Date(year, month, day)), timezone),
+    );
   if (mode === "multiMonthYear")
     return {
-      start: new Date(date.getFullYear(), 0, 1),
-      end: new Date(date.getFullYear() + 1, 0, 1),
+      start: midnight(date.getFullYear(), 0, 1),
+      end: midnight(date.getFullYear() + 1, 0, 1),
     };
   if (mode === "dayGridMonth") {
     return {
-      start: new Date(date.getFullYear(), date.getMonth(), -7),
-      end: new Date(date.getFullYear(), date.getMonth() + 1, 14),
+      start: midnight(date.getFullYear(), date.getMonth(), -7),
+      end: midnight(date.getFullYear(), date.getMonth() + 1, 14),
     };
   }
   return {
-    start: new Date(date.getFullYear(), date.getMonth(), date.getDate() - 7),
-    end: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 14),
+    start: midnight(date.getFullYear(), date.getMonth(), date.getDate() - 7),
+    end: midnight(date.getFullYear(), date.getMonth(), date.getDate() + 14),
   };
 }
 

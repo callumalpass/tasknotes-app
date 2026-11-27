@@ -1,5 +1,5 @@
 import { resolveModelConfig } from "@tasknotes/model/config";
-import { resolveTaskNotesModelConfigFromMdbaseType } from "@tasknotes/model/mdbase";
+import { resolveTaskNotesModelConfigFromImplementation } from "@tasknotes/model/mdbase";
 import {
   applyTaskNotesAppSettingsToModelConfig,
   resolveTaskNotesAppSettings,
@@ -88,6 +88,7 @@ export type TaskCollectionConfiguration = Omit<
   archive: TaskArchiveConfiguration;
   fieldCompletions: Record<string, TaskFieldCompletionConfiguration>;
   linkWriteFormat: "wikilink" | "markdown";
+  timezone?: string;
 };
 
 export function defaultTaskCollectionConfiguration(): TaskCollectionConfiguration {
@@ -110,18 +111,23 @@ export function resolveTaskCollectionConfiguration(
     settings?: Readonly<Record<string, unknown>>;
   } = {},
 ): TaskCollectionConfiguration {
-  const base = resolveTaskNotesModelConfigFromMdbaseType(
-    value,
+  const implementation = taskNotesImplementationOf(value) ?? {};
+  const schema = record(record(value.schema).value);
+  const base = resolveTaskNotesModelConfigFromImplementation(
+    {
+      fields: record(implementation.fields),
+      binding: record(implementation.binding),
+      schema,
+      match: value.match,
+    },
     {},
     options.settings ? { settings: options.settings } : {},
   );
-  const implementation = taskNotesImplementationOf(value) ?? {};
   const extension = record(implementation.binding);
   const appSettings = resolveTaskNotesAppSettings(options.settings, {
     legacyBinding: extension,
     fallback: legacyAliases(extension),
   }).values;
-  const schema = record(record(value.schema).value);
   const properties = record(schema.properties);
   const required = new Set(stringList(schema.required));
   const collectionLinks = record(record(value.collection).links);

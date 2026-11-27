@@ -22,7 +22,7 @@ export function useCalendarEntries(
   );
   useEffect(() => () => index.clear(), [index]);
   return useMemo(() => {
-    const context = calendarContext();
+    const context = calendarContext(configuration);
     return index.entries(
       execution,
       {

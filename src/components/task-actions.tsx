@@ -1,3 +1,4 @@
+import { todayString } from "../domain/task";
 import { formatTaskDate } from "../i18n/presentation";
 import { countLabel } from "../i18n/default-labels";
 import { t } from "@lingui/core/macro";
@@ -685,11 +686,21 @@ export function TaskActions({
                           void run(() =>
                             change({
                               ...(task.due
-                                ? { due: shiftTaskDate(task.due, 1) }
+                                ? {
+                                    due: shiftTaskDate(
+                                      task.due,
+                                      1,
+                                      task.timezone,
+                                    ),
+                                  }
                                 : {}),
                               ...(task.scheduled
                                 ? {
-                                    scheduled: shiftTaskDate(task.scheduled, 1),
+                                    scheduled: shiftTaskDate(
+                                      task.scheduled,
+                                      1,
+                                      task.timezone,
+                                    ),
                                   }
                                 : {}),
                             }),
@@ -897,7 +908,14 @@ export function TaskActions({
     const scheduleTo = (action: "today" | "tomorrow" | "next-week"): void => {
       const input = rescheduleInput(
         task,
-        taskDatePart(shortcutSchedule(action, task.scheduled)),
+        taskDatePart(
+          shortcutSchedule(
+            action,
+            task.scheduled,
+            todayString(new Date(), task.timezone),
+            task.timezone,
+          ),
+        ),
       );
       void run(() => change(input, movedDueNotice(input)));
     };

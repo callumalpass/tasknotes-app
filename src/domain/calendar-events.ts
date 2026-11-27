@@ -16,6 +16,7 @@ import { TaskNotesTaskModel } from "./tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import type { TaskCollectionConfiguration } from "./task-configuration";
 import {
+  dateFromStorage,
   taskDatePart,
   taskDayStanding,
   todayString,
@@ -36,12 +37,17 @@ export interface CalendarEntry {
 /** The renderer mapping is deliberately mechanical; model permissions win. */
 export function calendarItem(
   entry: ModelCalendarEntry,
+  timezone: string,
 ): CalendarItem<{ entry: ModelCalendarEntry }> {
+  const date = (value: string) =>
+    entry.allDay
+      ? value
+      : (dateFromStorage(value, timezone)?.toISOString() ?? value);
   return {
     id: entry.id,
     title: entry.title,
-    start: entry.start,
-    end: entry.end ?? null,
+    start: date(entry.start),
+    end: entry.end ? date(entry.end) : null,
     allDay: entry.allDay,
     kind: entry.type,
     editable: entry.startEditable,
@@ -101,7 +107,7 @@ export class AppCalendarEntryIndex {
 
   constructor(
     configuration = defaultTaskCollectionConfiguration(),
-    context = calendarContext(),
+    context = calendarContext(configuration),
   ) {
     this.model = new TaskNotesTaskModel(configuration);
     this.index = createCalendarEntryIndex(context);
@@ -167,7 +173,9 @@ export class AppCalendarEntryIndex {
       rows,
       context.timezone,
       range,
-      showMissedRepeats ? todayString(new Date(context.now)) : undefined,
+      showMissedRepeats
+        ? todayString(new Date(context.now), context.timezone)
+        : undefined,
     );
   }
 
@@ -178,9 +186,11 @@ export class AppCalendarEntryIndex {
   }
 }
 
-export function calendarContext(): CalendarContext {
+export function calendarContext(
+  configuration?: Pick<TaskCollectionConfiguration, "timezone">,
+): CalendarContext {
   return {
-    timezone: runtimeTimezone(),
+    timezone: configuration?.timezone ?? runtimeTimezone(),
     now: new Date().toISOString(),
   };
 }
@@ -194,7 +204,7 @@ export function calendarEvents(
   display: CalendarSettings = {},
   configuration = defaultTaskCollectionConfiguration(),
 ): Map<string, CalendarEntry[]> {
-  const context = calendarContext();
+  const context = calendarContext(configuration);
   return new AppCalendarEntryIndex(configuration, context).entries(
     execution,
     { start: rangeStart.toISOString(), end: rangeEnd.toISOString() },
@@ -221,8 +231,18 @@ function groupCalendarEntries(
   const result = new Map<string, CalendarEntry[]>();
   const inRange =
     today &&
-    today >= range.start.slice(0, 10) &&
-    today < range.end.slice(0, 10);
+    today >=
+      calendarInstantToDate(
+        calendarDateToInstant(range.start, timezone),
+        timezone,
+        true,
+      ) &&
+    today <
+      calendarInstantToDate(
+        calendarDateToInstant(range.end, timezone),
+        timezone,
+        true,
+      );
   for (const modelEntry of [
     ...entries,
     ...(inRange ? missedRepeats(entries, rows, today) : []),
@@ -301,7 +321,7 @@ function missedRepeats(
       .map(({ taskId }) => taskId),
   );
   return [...rows].flatMap(([taskId, { task }]) => {
-    const instanceDate = taskDatePart(task.scheduled);
+    const instanceDate = taskDatePart(task.scheduled, task.timezone);
     return task.recurrence &&
       instanceDate &&
       !task.completed &&

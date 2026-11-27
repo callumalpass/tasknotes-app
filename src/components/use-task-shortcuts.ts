@@ -1,3 +1,4 @@
+import { todayString } from "../domain/task";
 import { useEffect, useRef, type RefObject } from "react";
 import {
   TASK_MENU_PANEL_EVENT,
@@ -76,7 +77,15 @@ export function useTaskShortcuts(
           return;
         } else {
           const when = shortcutScheduleLabel(action);
-          await schedule(shortcutSchedule(action, task.scheduled), when);
+          await schedule(
+            shortcutSchedule(
+              action,
+              task.scheduled,
+              todayString(new Date(), task.timezone),
+              task.timezone,
+            ),
+            when,
+          );
           announceShortcut(`Scheduled ${task.title} for ${when}.`);
         }
       } catch {

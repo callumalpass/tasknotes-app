@@ -53,6 +53,24 @@ describe("migration planning", () => {
       "Recurrence requires manual conversion",
     );
   });
+  it("imports explicit timestamps as wall times in the destination zone", async () => {
+    const source = structuredClone(exampleSource);
+    source.tasks[0].due!.date = "2026-10-02T01:15:30Z";
+    const [task] = await makePlan(
+      source,
+      new Set([source.tasks[0].id]),
+      { ...exampleTarget, timezone: "America/New_York" },
+      options,
+      "2026-09-01T12:00:00Z",
+    );
+    expect(task.errors).toEqual([]);
+    expect(task.frontmatter).toMatchObject({
+      scheduled: "2026-10-01T21:15:30",
+      due: "2026-10-05",
+      dateCreated: "2026-09-01T12:00:00Z",
+    });
+  });
+
   it("blocks floating times, ambiguous due mapping, and unselected priorities", async () => {
     const source = structuredClone(exampleSource);
     source.tasks[0].due!.date = "2026-10-02T10:00:00";

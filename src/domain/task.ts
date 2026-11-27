@@ -1,3 +1,8 @@
+import {
+  calendarDateToInstant,
+  calendarInstantToDate,
+} from "@tasknotes/model/calendar";
+import { runtimeTimezone } from "./runtime-timezone";
 import type {
   TaskDependency,
   TaskDependencyRelType,
@@ -32,6 +37,7 @@ export interface TaskSummary {
   completed: boolean;
   archived: boolean;
   priority: TaskPriority;
+  timezone?: string;
   due?: string;
   scheduled?: string;
   createdAt: string;
@@ -201,19 +207,24 @@ export interface MaterializeOccurrenceResult {
   warnings: string[];
 }
 
-export function todayString(now = new Date()): string {
+export function todayString(now = new Date(), timezone?: string): string {
+  if (timezone) return calendarInstantToDate(now.getTime(), timezone, true);
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
-export function formatTaskDate(value: string, today = todayString()): string {
-  const datePart = taskDatePart(value);
-  const timePart = taskTimePart(value);
+export function formatTaskDate(
+  value: string,
+  today = todayString(),
+  timezone?: string,
+): string {
+  const datePart = taskDatePart(value, timezone);
+  const timePart = taskTimePart(value, timezone);
   const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   if (datePart === today) return `Today${timeLabel}`;
-  const date = dateFromStorage(value);
+  const date = dateFromStorage(datePart);
   if (!date) return value;
   const todayDate = dateFromStorage(today) ?? new Date();
   const tomorrow = new Date(todayDate);
@@ -235,14 +246,15 @@ export function formatTaskDate(value: string, today = todayString()): string {
 export function formatRelativeTaskDate(
   value: string,
   today = todayString(),
+  timezone?: string,
 ): string {
-  const datePart = taskDatePart(value);
+  const datePart = taskDatePart(value, timezone);
   const date = dateFromStorage(datePart);
   const todayDate = dateFromStorage(today);
   if (!date || !todayDate) return value;
   const days = Math.round((date.getTime() - todayDate.getTime()) / 86_400_000);
   // A past day's time no longer helps scanning, so compact rows omit it.
-  const timePart = days < 0 ? "" : taskTimePart(value);
+  const timePart = days < 0 ? "" : taskTimePart(value, timezone);
   const timeLabel = timePart ? `, ${formatTaskTime(timePart)}` : "";
   const dateLabel =
     days === 0
@@ -268,45 +280,57 @@ export function formatRelativeTaskDate(
   return `${dateLabel}${timeLabel}`;
 }
 
-export function dateFromStorage(value: string): Date | null {
-  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+const offsetDateTime = /T.*(?:Z|[+-]\d{2}:\d{2})$/i;
+const floatingDateTime =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
+
+export function dateFromStorage(value: string, timezone?: string): Date | null {
+  if (offsetDateTime.test(value)) {
     const instant = new Date(value);
     return Number.isNaN(instant.valueOf()) ? null : instant;
   }
-  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(value);
+  if (floatingDateTime.test(value)) {
+    try {
+      return new Date(
+        calendarDateToInstant(
+          value.replace(" ", "T").replace(/(\.\d{3})\d+$/, "$1"),
+          timezone ?? runtimeTimezone(),
+        ),
+      );
+    } catch {
+      return null;
+    }
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
-  const date = new Date(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3]),
-    Number(match[4] ?? 0),
-    Number(match[5] ?? 0),
-  );
-  if (
-    Number.isNaN(date.valueOf()) ||
-    date.getFullYear() !== Number(match[1]) ||
-    date.getMonth() !== Number(match[2]) - 1 ||
-    date.getDate() !== Number(match[3])
-  )
-    return null;
-  return date;
+  const date = new Date(0);
+  date.setFullYear(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  date.setHours(0, 0, 0, 0);
+  return date.getFullYear() === Number(match[1]) &&
+    date.getMonth() === Number(match[2]) - 1 &&
+    date.getDate() === Number(match[3])
+    ? date
+    : null;
 }
 
-export function taskDatePart(value?: string): string {
+export function taskDatePart(value?: string, timezone?: string): string {
   if (!value) return "";
-  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+  if (offsetDateTime.test(value)) {
     const instant = dateFromStorage(value);
-    return instant ? todayString(instant) : "";
+    return instant ? todayString(instant, timezone) : "";
   }
   return value.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
 }
 
-export function taskTimePart(value?: string): string {
+export function taskTimePart(value?: string, timezone?: string): string {
   if (!value) return "";
-  if (/T/.test(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+  if (offsetDateTime.test(value)) {
     const instant = dateFromStorage(value);
     return instant
-      ? `${String(instant.getHours()).padStart(2, "0")}:${String(instant.getMinutes()).padStart(2, "0")}`
+      ? calendarInstantToDate(
+          instant.getTime(),
+          timezone ?? runtimeTimezone(),
+        ).slice(11)
       : "";
   }
   return value.match(/(?:T| )(\d{2}:\d{2})/)?.[1] ?? "";
@@ -332,11 +356,11 @@ export type TaskDayStanding = "overdue" | "today" | "later" | "anytime";
  * its row still shows the deadline it missed.
  */
 export function taskDayStanding(
-  task: Pick<TaskSummary, "scheduled" | "due">,
+  task: Pick<TaskSummary, "scheduled" | "due" | "timezone">,
   today: string,
 ): TaskDayStanding {
-  const scheduled = taskDatePart(task.scheduled);
-  const due = taskDatePart(task.due);
+  const scheduled = taskDatePart(task.scheduled, task.timezone);
+  const due = taskDatePart(task.due, task.timezone);
   if (scheduled === today) return "today";
   if ((scheduled && scheduled < today) || (due && due < today))
     return "overdue";
@@ -347,27 +371,53 @@ export function taskDayStanding(
 
 /** A due date that has passed, even when the task is planned for today. */
 export function isTaskPastDue(
-  task: Pick<TaskSummary, "due">,
+  task: Pick<TaskSummary, "due" | "timezone">,
   today: string,
 ): boolean {
-  const due = taskDatePart(task.due);
+  const due = taskDatePart(task.due, task.timezone);
   return Boolean(due && due < today);
 }
 
-export function isTaskDateOverdue(value: string, now = new Date()): boolean {
-  const date = dateFromStorage(value);
+export function isTaskDateOverdue(
+  value: string,
+  now = new Date(),
+  timezone?: string,
+): boolean {
+  const date = dateFromStorage(value, timezone);
   if (!date) return false;
-  if (taskTimePart(value)) return date.getTime() < now.getTime();
-  return taskDatePart(value) < todayString(now);
+  if (taskTimePart(value, timezone)) return date.getTime() < now.getTime();
+  return taskDatePart(value, timezone) < todayString(now, timezone);
 }
 
-export function normalizeTaskDateTime(value?: string): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
-  const instant = new Date(trimmed);
-  if (Number.isNaN(instant.valueOf())) return trimmed;
-  return instant.toISOString().replace(".000Z", "Z");
+/** A due or scheduled edit stores the collection wall time. */
+export function normalizeTaskDateTime(
+  value?: string,
+  timezone?: string,
+): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  if (floatingDateTime.test(trimmed)) return trimmed.replace(" ", "T");
+  if (!offsetDateTime.test(trimmed)) return trimmed;
+  const instant = dateFromStorage(trimmed);
+  if (!instant) return trimmed;
+  const zone = timezone ?? runtimeTimezone();
+  const second = new Intl.DateTimeFormat("en", {
+    timeZone: zone,
+    second: "2-digit",
+  })
+    .format(instant)
+    .padStart(2, "0");
+  const fraction = instant.toISOString().slice(19, 23);
+  return `${calendarInstantToDate(instant.getTime(), zone)}:${second}${fraction === ".000" ? "" : fraction}`;
+}
+
+/** Resolve a timestamp read from properties without changing persisted bytes. */
+export function readTaskInstant(
+  value?: string,
+  timezone?: string,
+): string | undefined {
+  if (!value || !floatingDateTime.test(value)) return value;
+  return dateFromStorage(value, timezone)?.toISOString() ?? value;
 }
 
 function formatTaskTime(value: string): string {
@@ -381,17 +431,19 @@ function formatTaskTime(value: string): string {
 
 export function taskMeta(
   task: TaskSummary,
-  today = todayString(),
+  today = todayString(new Date(), task.timezone),
 ): { label: string; overdue?: boolean }[] {
   const values: { label: string; overdue?: boolean }[] = [];
   if (task.scheduled) {
     values.push({
-      label: formatTaskDate(task.scheduled, today),
+      label: formatTaskDate(task.scheduled, today, task.timezone),
     });
   } else if (task.due) {
     values.push({
-      label: `Due ${formatTaskDate(task.due, today)}`,
-      overdue: !task.completed && isTaskDateOverdue(task.due),
+      label: `Due ${formatTaskDate(task.due, today, task.timezone)}`,
+      overdue:
+        !task.completed &&
+        isTaskDateOverdue(task.due, undefined, task.timezone),
     });
   }
   if (task.priority !== "none" && task.priority !== "normal")

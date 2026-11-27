@@ -26,7 +26,7 @@ export interface TaskListSection {
 export function sectionTaskViewRows(
   rows: readonly TaskViewRow[],
   mode: unknown,
-  today = todayString(),
+  today = todayString(new Date(), rows[0]?.task.timezone),
   options: { includeEmpty?: boolean; preserveOrder?: boolean } = {},
 ): TaskListSection[] {
   if (mode !== "day") return [];
@@ -59,7 +59,7 @@ export function taskListSectionMoveInput(
   task: TaskSummary,
   mode: unknown,
   destination: string,
-  today = todayString(),
+  today = todayString(new Date(), task.timezone),
 ): UpdateTaskInput | null {
   if (mode !== "day" || !isSectionKey(destination)) return null;
   if (destination === "anytime") return { scheduled: null, due: null };
@@ -69,21 +69,23 @@ export function taskListSectionMoveInput(
       ? today
       : shiftTaskDate(today, destination === "overdue" ? -1 : 1);
   const field = task.scheduled ? "scheduled" : task.due ? "due" : "scheduled";
-  const input = { [field]: setTaskDate(task[field], targetDate) };
+  const input = {
+    [field]: setTaskDate(task[field], targetDate, task.timezone),
+  };
   // A missed deadline would keep the task overdue wherever it was dropped.
-  const due = taskDatePart(task.due);
+  const due = taskDatePart(task.due, task.timezone);
   return destination !== "overdue" && due && due < today
-    ? { ...input, due: setTaskDate(task.due, targetDate) }
+    ? { ...input, due: setTaskDate(task.due, targetDate, task.timezone) }
     : input;
 }
 
 /** How many rows would have a missed deadline moved along with their plan. */
 export function missedDeadlineCount(
   rows: readonly TaskViewRow[],
-  today = todayString(),
+  today = todayString(new Date(), rows[0]?.task.timezone),
 ): number {
   return rows.filter(({ task }) => {
-    const due = taskDatePart(task.due);
+    const due = taskDatePart(task.due, task.timezone);
     return !task.completed && due && due < today;
   }).length;
 }
@@ -100,7 +102,7 @@ function isSectionKey(value: string): value is TaskListSectionKey {
  */
 export function scheduleRowsTodayUpdates(
   rows: readonly TaskViewRow[],
-  date = todayString(),
+  date = todayString(new Date(), rows[0]?.task.timezone),
   today = date,
   keepDeadlines = false,
 ): { id: string; input: UpdateTaskInput; undo: UpdateTaskInput }[] {

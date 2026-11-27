@@ -4,8 +4,10 @@ import { TASKNOTES_SETTINGS_TYPE } from "@tasknotes/model/settings";
 import { TaskNotesModelRequiredError } from "../application/ports/model-setup";
 import {
   readableTaskNotesContract,
+  TASKNOTES_READABLE_CONTRACTS,
   TASKNOTES_MISSING_CONTRACT_MESSAGE,
 } from "../domain/tasknotes-contract";
+import { collectionTimezone } from "../domain/runtime-timezone";
 import {
   resolveTaskTypeDefinition,
   type ResolvedTaskProvider,
@@ -42,15 +44,26 @@ export async function nextTaskCatalog(
 ): Promise<NextTaskCatalog> {
   const catalog = await client.describe({ signal });
   signal.throwIfAborted();
-  const contract = readableTaskNotesContract(catalog.contracts);
-  if (!contract)
+  if (!readableTaskNotesContract(catalog.contracts))
     throw new TaskNotesModelRequiredError(TASKNOTES_MISSING_CONTRACT_MESSAGE);
-  const providers: NextTaskProvider[] = [];
+  const timezone = collectionTimezone(catalog.settings);
+  const byVersion = new Map<string, NextTaskProvider[]>();
   const revisionlessSources = new Map<string, string>();
   for (const type of catalog.types) {
+    const typeContract = readableTaskNotesContract(
+      catalog.contracts.filter((candidate) =>
+        type.implements.some(
+          (item) =>
+            item.contract === candidate.id &&
+            item.version === candidate.version,
+        ),
+      ),
+    );
+    if (!typeContract) continue;
     const implementations = type.implements.filter(
       (item) =>
-        item.contract === contract.id && item.version === contract.version,
+        item.contract === typeContract.id &&
+        item.version === typeContract.version,
     );
     if (!implementations.length) continue;
     if (implementations.length !== 1)
@@ -76,17 +89,23 @@ export async function nextTaskCatalog(
       throw new Error(
         `The type ${type.name} has an invalid TaskNotes binding.`,
       );
+    const providers = byVersion.get(typeContract.version) ?? [];
     providers.push({
       ...resolveTaskTypeDefinition(definition, {
         typeName: type.name,
         fields: implementation.fields,
         configuration: binding,
-        version: contract.version,
+        version: typeContract.version,
+        timezone,
         settings: options.settings,
       }),
       sourcePath: type.path,
     });
+    byVersion.set(typeContract.version, providers);
   }
+  const providers = TASKNOTES_READABLE_CONTRACTS.flatMap(
+    ({ version }) => byVersion.get(version) ?? [],
+  );
   if (!providers.length)
     throw new TaskNotesModelRequiredError(
       "The TaskNotes contract has no implementing types.",
@@ -94,6 +113,7 @@ export async function nextTaskCatalog(
   return {
     providers,
     signature: JSON.stringify([
+      timezone,
       catalog.types
         .map((type) => [
           type.name,

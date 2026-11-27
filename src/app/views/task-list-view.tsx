@@ -116,7 +116,7 @@ export function TaskListView({
     const sections = sectionTaskViewRows(
       execution.rows,
       sectionMode,
-      todayString(),
+      todayString(new Date(), execution.rows[0]?.task.timezone),
       {
         includeEmpty: true,
         preserveOrder: Boolean(manualOrder || execution.view.sort?.length),
@@ -725,7 +725,11 @@ function ManualTaskRows({
         <ViewTaskRow
           row={row}
           properties={properties}
-          sectionDay={lane.key === "section:today" ? todayString() : undefined}
+          sectionDay={
+            lane.key === "section:today"
+              ? todayString(new Date(), row.task.timezone)
+              : undefined
+          }
           contextProperties={
             lane.mutation?.type === "group" ? lane.mutation.values : undefined
           }

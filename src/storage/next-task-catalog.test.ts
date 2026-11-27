@@ -3,7 +3,8 @@ import { MemoryReplica } from "@mdbase-dev/sdk/testing";
 import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { nextTaskProviders } from "./next-task-catalog";
+import { TASKNOTES_READABLE_CONTRACTS } from "../domain/tasknotes-contract";
+import { nextTaskCatalog, nextTaskProviders } from "./next-task-catalog";
 
 const clients: MdbaseClient[] = [];
 afterEach(() => {
@@ -72,6 +73,60 @@ describe("native task catalog adapter (not LAB)", () => {
     expect(f.resources).toHaveBeenCalledWith("_types/todo.md", {
       signal: f.signal,
     });
+  });
+
+  it.each(TASKNOTES_READABLE_CONTRACTS)(
+    "resolves the type binding for the published contract $version",
+    async ({ version, digest }) => {
+      const f = await fixture();
+      Object.assign(f.catalog.contracts[0]!, { version, digest });
+      f.catalog.types[0]!.implements[0]!.version = version;
+      const [provider] = await nextTaskProviders(f.client, f.signal);
+      expect(provider?.model.config.fieldMapping.title).toBe("headline");
+    },
+  );
+
+  it("keeps legacy types readable alongside the current primary type", async () => {
+    const f = await fixture();
+    const current = TASKNOTES_READABLE_CONTRACTS[0]!;
+    const copy = structuredClone(f.catalog.types[0]!);
+    copy.name = "current";
+    copy.implements[0]!.version = current.version;
+    f.catalog.types.push(copy);
+    f.catalog.contracts.push({
+      ...f.catalog.contracts[0]!,
+      ...current,
+      path: "_contracts/tasknotes.task/0.3.0-rc.7.md",
+      implementedBy: ["current"],
+    });
+    const providers = await nextTaskProviders(f.client, f.signal);
+    expect(providers.map((provider) => provider.typeName)).toEqual([
+      "current",
+      "todo",
+    ]);
+  });
+
+  it("changes the model and catalog signature when the collection zone changes", async () => {
+    const f = await fixture();
+    const legacy = {
+      path: "work/legacy.md",
+      frontmatter: { headline: "Legacy", dateCreated: "2026-11-01T01:30" },
+    };
+    f.catalog.settings = { timezone: "America/New_York" };
+    const before = await nextTaskCatalog(f.client, f.signal);
+    f.catalog.settings = { timezone: "Australia/Melbourne" };
+    const after = await nextTaskCatalog(f.client, f.signal);
+    expect(before.signature).not.toBe(after.signature);
+    expect(before.providers[0]!.model.readSummary(legacy).createdAt).toBe(
+      "2026-11-01T05:30:00.000Z",
+    );
+    expect(after.providers[0]!.model.readSummary(legacy).createdAt).toBe(
+      "2026-10-31T14:30:00.000Z",
+    );
+    f.catalog.settings = { timezone: "Mars/Base" };
+    await expect(nextTaskCatalog(f.client, f.signal)).rejects.toThrow(
+      "collection_timezone_invalid",
+    );
   });
 
   it.each(["digest", "version"] as const)(

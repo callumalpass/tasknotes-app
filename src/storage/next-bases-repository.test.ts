@@ -167,6 +167,33 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     );
     expect(await f.repository.cachedViewExecution(f.view)).toBeNull();
   });
+  it("captures the collection zone for native views and invalidates executions after a zone change", async () => {
+    const f = await fixture();
+    vi.spyOn(timezone, "runtimeTimezone").mockReturnValue("Pacific/Auckland");
+    f.catalog.settings = { timezone: "America/New_York" };
+    await f.repository.refresh();
+    const [view] = (await f.repository.listViews())[0]!.views;
+    await f.repository.executeView(view!);
+    expect(f.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ captureTimezone: "America/New_York" }),
+      expect.anything(),
+    );
+    expect(f.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ captureTimezone: "America/New_York" }),
+      expect.anything(),
+    );
+    expect(await f.repository.cachedViewExecution(view!)).not.toBeNull();
+
+    f.catalog.settings = { timezone: "Europe/Paris" };
+    await f.repository.refresh();
+    expect(await f.repository.cachedViewExecution(view!)).toBeNull();
+    await f.repository.executeView(view!);
+    expect(f.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ captureTimezone: "Europe/Paris" }),
+      expect.anything(),
+    );
+  });
+
   it("clears remembered executions on writes and refuses reads from suspended or disposed owners", async () => {
     const f = await fixture();
     await f.repository.executeView(f.view);
