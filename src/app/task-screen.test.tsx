@@ -10,6 +10,8 @@ import { nextTaskFixture, seedTask } from "../test/next-task-fixture";
 import { RepositoryProvider } from "./repository-context";
 import { historyScope, readHistory } from "./search-history";
 import { taskRecordLink } from "../domain/task-links";
+import { parseTaskCapture } from "../domain/task-capture";
+import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
 import { registerOverlay } from "../components/overlays/overlay-stack";
 import { TaskScreen } from "./task-screen";
 import { TaskCompletionReportContext } from "../components/task-completion-motion";
@@ -20,6 +22,13 @@ describe("TaskScreen", () => {
   let repository: NextTaskRepository;
   let client: Awaited<ReturnType<typeof nextTaskFixture>>["client"];
   let task: Task;
+
+  beforeAll(async () => {
+    // Warm the lazy tasknotes-nlp-core dynamic import before subtask creation
+    // tests run, so a cold module transform on loaded CI runners cannot
+    // exhaust findByText's 5s timeout during form submission.
+    await parseTaskCapture("warm", defaultTaskCollectionConfiguration());
+  }, 30_000);
 
   beforeEach(async () => {
     const fixture = await nextTaskFixture();
