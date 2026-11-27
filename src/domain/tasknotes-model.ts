@@ -819,9 +819,6 @@ export class TaskNotesTaskModel {
               parentTask: parentInfo,
               completedStatus: getDefaultCompletedStatus(this.config.statuses),
               currentTimestamp: now,
-              completionDate: this.config.timezone
-                ? todayString(new Date(now), this.config.timezone)
-                : undefined,
               maintainDueDateOffsetInRecurring:
                 this.config.recurrence.maintainDueDateOffset,
             })
