@@ -66,6 +66,7 @@ import { summarizeTask, todayString } from "../domain/task";
 import { taskPathCandidates } from "../domain/task-path-policy";
 import {
   DuplicatePortableTaskIdentityError,
+  duplicatePortableTaskIdentity,
   type TaskNotesTaskModel,
 } from "../domain/tasknotes-model";
 import {
@@ -301,6 +302,9 @@ export class NextTaskRepository implements TaskRepository {
   private viewTypes = new Set<string>();
   private resumeCursor?: string;
   private hasLoadedIndex = false;
+  /** Two task files claim one portable id. Every publishing path refuses it
+   * until a full index scan finds the collection unique again (#630). */
+  private identityConflict: DuplicatePortableTaskIdentityError | null = null;
   private readonly cache = new ConnectedTaskIndex<CachedTask>();
   private readonly mutations: NextMutations;
   private readonly acceptedCreates = new WeakMap<TaskCreateIntent, Task>();
@@ -440,7 +444,7 @@ export class NextTaskRepository implements TaskRepository {
     // Some mounted consumers (including Today counts) only observe metadata.
     // Maintain their loaded index even if no screen requests a task list.
     if (
-      this.hasLoadedIndex &&
+      (this.hasLoadedIndex || this.identityConflict) &&
       this.listeners.size &&
       (this.pendingTaskChanges.size || !this.indexReady)
     ) {
@@ -705,6 +709,30 @@ export class NextTaskRepository implements TaskRepository {
     this.nativeViews.clear();
   }
 
+  /** The current portable-identity conflict, or null; never starts a read. */
+  portableIdentityConflict(): DuplicatePortableTaskIdentityError | null {
+    return this.identityConflict;
+  }
+
+  /** Records a conflict for every later read and tells listeners. Paths other
+   * than the full scan ask it to confirm, so a raced read cannot stick. */
+  private refuseDuplicateIdentity(
+    conflict: DuplicatePortableTaskIdentityError,
+    verify = true,
+  ) {
+    const changed = this.identityConflict?.message !== conflict.message;
+    this.identityConflict = conflict;
+    this.retireIndex();
+    if (changed) this.notify("status");
+    if (verify && !this.disposed) {
+      const owner = this.scope.signal;
+      void this.ensureIndex().catch((reason) =>
+        this.noteOperationFailure(reason, owner),
+      );
+    }
+    return conflict;
+  }
+
   private retireIndex() {
     // A new scan covers all earlier changes. Fence outstanding direct reads as
     // well as the previous worker before forgetting the per-record evidence.
@@ -852,7 +880,9 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   async initialize(options: { deferTaskIndex?: boolean } = {}): Promise<void> {
-    if (!options.deferTaskIndex) return this.ensureIndex();
+    // Reopening over a known conflict must prove it resolved before any view.
+    if (!options.deferTaskIndex || this.identityConflict)
+      return this.ensureIndex();
     const signal = this.signal();
     await this.readCurrentGeneration(signal, "modelGeneration", () =>
       this.initializeModel(signal),
@@ -1114,20 +1144,14 @@ export class NextTaskRepository implements TaskRepository {
 
       // A later page's change event can retire an earlier apparent collision.
       // Check all surviving identities before publishing any of them.
-      const portableIds = new Map<string, string>();
-      for (const [recordId, { value }] of rows) {
-        if (!unchanged(recordId)) {
-          rows.delete(recordId);
-          continue;
-        }
-        const existingPath = portableIds.get(value.task.id);
-        if (existingPath !== undefined)
-          throw new DuplicatePortableTaskIdentityError(value.task.id, [
-            existingPath,
-            value.task.path,
-          ]);
-        portableIds.set(value.task.id, value.task.path);
-      }
+      for (const recordId of rows.keys())
+        if (!unchanged(recordId)) rows.delete(recordId);
+      const conflict = duplicatePortableTaskIdentity(
+        (function* () {
+          for (const { value } of rows.values()) yield value.task;
+        })(),
+      );
+      if (conflict) throw this.refuseDuplicateIdentity(conflict, false);
       for (const [id, existing] of this.cache)
         if (
           unchanged(existing.recordId) &&
@@ -1156,6 +1180,7 @@ export class NextTaskRepository implements TaskRepository {
       this.indexEpoch = ++this.epoch;
       this.indexReady = true;
       this.hasLoadedIndex = true;
+      this.identityConflict = null;
       for (const id of deferred) this.enqueueTaskChange(id, "put");
       this.notify("status");
       this.reached();
@@ -1338,9 +1363,11 @@ export class NextTaskRepository implements TaskRepository {
       (record) => this.decodeSummary(record)?.task.id === id,
     );
     if (page.hasMore || matches.length > 1)
-      throw new DuplicatePortableTaskIdentityError(
-        id,
-        matches.map((record) => record.path),
+      throw this.refuseDuplicateIdentity(
+        new DuplicatePortableTaskIdentityError(
+          id,
+          matches.map((record) => record.path),
+        ),
       );
     return matches[0]?.id;
   }
@@ -2606,10 +2633,12 @@ export class NextTaskRepository implements TaskRepository {
       if (decoded.task.id !== id) this.cache.delete(id);
       const identity = this.cache.get(decoded.task.id);
       if (identity && identity.recordId !== record.id)
-        throw new DuplicatePortableTaskIdentityError(decoded.task.id, [
-          identity.task.path,
-          decoded.task.path,
-        ]);
+        throw this.refuseDuplicateIdentity(
+          new DuplicatePortableTaskIdentityError(decoded.task.id, [
+            identity.task.path,
+            decoded.task.path,
+          ]),
+        );
       this.rememberWriteState(record);
       this.bindTaskRecord(decoded.task.id, record.id);
       this.cache.set(decoded.task.id, decoded);
@@ -4038,6 +4067,12 @@ export class NextTaskRepository implements TaskRepository {
         },
         () => nextTaskSummary(records[rowIndex++]!, this.models),
       );
+      // Native rows come straight from the replica, one per file, so they need
+      // the same uniqueness check as the index before they are shown (#630).
+      const conflict = duplicatePortableTaskIdentity(
+        normalized.rows.map(({ task }) => task),
+      );
+      if (conflict) throw this.refuseDuplicateIdentity(conflict);
       if (this.viewExecutions.get(view.key) === slot) {
         slot.execution = structuredClone(normalized);
         this.viewExecutions.set(view.key, slot);

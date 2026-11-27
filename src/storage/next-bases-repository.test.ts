@@ -358,7 +358,14 @@ describe("native saved-view adapter sequencing (stand-ins only)", () => {
     }));
     vi.spyOn(f.client, "get").mockImplementation(async (id) => {
       const row = rows.find((r) => r.record === id);
-      return row ? { ...f.record, id: row.record, path: row.path } : f.record;
+      return row
+        ? {
+            ...f.record,
+            id: row.record,
+            path: row.path,
+            frontmatter: { ...f.record.frontmatter, id: row.record },
+          }
+        : f.record;
     });
     f.execute
       .mockResolvedValueOnce({ ...f.reply, rows, window })

@@ -1201,3 +1201,86 @@ it("protects an accepted local task write from an older remove even while its fe
   }
   expect(await rows).toMatchObject([{ id: portableId, title: "Accepted" }]);
 });
+
+function duplicateMessage(id: string, paths: string[]) {
+  const [first, second] = [...paths].sort();
+  return `Two task files have the same portable TaskNotes identity (${id}): "${first}" and "${second}". Delete the duplicate copy or change its frontmatter "id" field, then retry.`;
+}
+
+it("reports a duplicate portable id delivered by the change feed as a repository conflict and recovers once the copy is gone (#630)", async () => {
+  const f = await fixture();
+  seedTaskView(f.replica);
+  await f.repository.initialize();
+  const statuses: string[] = [];
+  f.repository.subscribe((change) => statuses.push(change?.kind ?? ""));
+  const [document] = await f.repository.listViews();
+  const view = document!.views[0]!;
+  expect((await f.repository.executeView(view)).rows).toHaveLength(1);
+  expect(f.repository.portableIdentityConflict()).toBeNull();
+
+  // Another client duplicates the file, then gives the copy the original's id.
+  const portableId = String(f.record.frontmatter.id);
+  const copy = seedTask(
+    f.replica,
+    { title: "Original" },
+    { path: "Tasks/Original copy.md" },
+  );
+  f.replica.editElsewhere(copy.id, { frontmatter: { id: portableId } });
+  const message = duplicateMessage(portableId, [
+    f.record.path,
+    "Tasks/Original copy.md",
+  ]);
+  await vi.waitFor(() =>
+    expect(f.repository.portableIdentityConflict()?.message).toBe(message),
+  );
+  expect(statuses).toContain("status");
+  await expect(f.repository.executeView(view)).rejects.toThrow(message);
+  await expect(f.repository.listSummaries()).rejects.toThrow(message);
+  await expect(
+    f.repository.initialize({ deferTaskIndex: true }),
+  ).rejects.toThrow(message);
+
+  // Renaming the copy's id clears the conflict without a manual retry.
+  f.replica.editElsewhere(copy.id, {
+    frontmatter: { id: crypto.randomUUID() },
+  });
+  await vi.waitFor(() =>
+    expect(f.repository.portableIdentityConflict()).toBeNull(),
+  );
+  await f.repository.initialize({ deferTaskIndex: true });
+  expect((await f.repository.executeView(view)).rows).toHaveLength(2);
+});
+
+it("refuses to publish view rows that share a portable id when reopening a collection that already holds a duplicate (#630)", async () => {
+  const f = await fixture();
+  seedTaskView(f.replica);
+  const portableId = String(f.record.frontmatter.id);
+  const copy = seedTask(
+    f.replica,
+    { title: "Original" },
+    { id: portableId, path: "Tasks/Original copy.md" },
+  );
+  const message = duplicateMessage(portableId, [
+    f.record.path,
+    "Tasks/Original copy.md",
+  ]);
+  // The app opens with a deferred index and renders views straight away.
+  await f.repository.initialize({ deferTaskIndex: true });
+  const [document] = await f.repository.listViews();
+  await expect(f.repository.executeView(document!.views[0]!)).rejects.toThrow(
+    message,
+  );
+  expect(f.repository.portableIdentityConflict()?.message).toBe(message);
+  await expect(f.repository.refresh()).rejects.toThrow(message);
+  await expect(
+    f.repository.initialize({ deferTaskIndex: true }),
+  ).rejects.toThrow(message);
+
+  f.replica.deleteElsewhere(copy.id);
+  await f.repository.initialize({ deferTaskIndex: true });
+  expect(f.repository.portableIdentityConflict()).toBeNull();
+  const [reopened] = await f.repository.listViews();
+  expect(
+    (await f.repository.executeView(reopened!.views[0]!)).rows,
+  ).toMatchObject([{ task: { id: portableId } }]);
+});

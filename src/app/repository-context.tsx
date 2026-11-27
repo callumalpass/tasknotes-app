@@ -190,6 +190,11 @@ export function RepositoryProvider({
   );
   const [status, setStatus] = useState<StorageStatus>("opening");
   const [error, setError] = useState<Error | null>(null);
+  /** A duplicate portable id seen on any read (live change, reopen, view
+   * rows). It shows the storage error screen until the repository clears it. */
+  const [identityConflict, setIdentityConflict] = useState<Error | null>(
+    () => repository.portableIdentityConflict?.() ?? null,
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<RefreshResult | null>(null);
   const [connection, setConnection] = useState<RepositoryConnectionStatus>({
@@ -495,10 +500,25 @@ export function RepositoryProvider({
     repository,
   ]);
 
+  const identityConflictRef = useRef(identityConflict);
   useEffect(() => {
     if (!repository.subscribe) return;
+    const syncIdentityConflict = () => {
+      const next = repository.portableIdentityConflict?.() ?? null;
+      const previous = identityConflictRef.current;
+      if (next === previous) return;
+      identityConflictRef.current = next;
+      setIdentityConflict(next);
+      if (next || !previous) return;
+      // Resolved elsewhere: reload what was hidden, and reopen if the
+      // conflict is what stopped the opening.
+      bump();
+      if (!readyRef.current) void refresh().catch(() => undefined);
+    };
+    syncIdentityConflict();
     return repository.subscribe((change) => {
       void loadConnection().catch(() => undefined);
+      syncIdentityConflict();
       if (change?.kind === "status") return;
       if (change?.kind === "lifecycle" || change?.kind === "clock") {
         invalidation.invalidateViews();
@@ -507,7 +527,7 @@ export function RepositoryProvider({
       bump();
       void autoArchiveRef.current?.reconcile().catch(() => undefined);
     });
-  }, [bump, invalidation, loadConnection, repository]);
+  }, [bump, invalidation, loadConnection, refresh, repository]);
 
   useEffect(() => {
     const hide = () => {
@@ -723,8 +743,8 @@ export function RepositoryProvider({
       privateAccount,
       mutations,
       setTaskCompletion,
-      status,
-      error,
+      status: identityConflict && status === "ready" ? "error" : status,
+      error: (status === "ready" && identityConflict) || error,
       refreshing,
       lastRefresh,
       connection,
@@ -758,6 +778,7 @@ export function RepositoryProvider({
       setTaskCompletion,
       status,
       error,
+      identityConflict,
       refreshing,
       lastRefresh,
       connection,

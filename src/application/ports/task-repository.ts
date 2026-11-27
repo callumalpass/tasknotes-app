@@ -153,6 +153,11 @@ export interface TaskRepository {
     id: string,
     options?: { authorityRequestId?: string; expectedRevision?: number },
   ): Promise<void>;
+  /**
+   * Two task files share one portable id; set by any read that saw it and
+   * cleared once a full index scan finds ids unique again. Never starts a read.
+   */
+  portableIdentityConflict?(): Error | null;
   /** Session metadata only; null until the existing index is complete. Never starts a read. */
   todayTaskCounts?(
     today: string,

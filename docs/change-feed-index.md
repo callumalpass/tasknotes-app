@@ -74,7 +74,11 @@ The repository keeps `pendingTaskChanges: Map<recordId, "put" | "remove">`.
   missing record), each request under its own foreground deadline, decoded with
   `decodeSummary`. A record that no longer decodes as a task is removed. A
   record whose portable id changed replaces its old entry. A duplicate portable
-  id across two records falls back to a full load, which reports it as today.
+  id across two records falls back to a full load, which reports it. Since
+  #630 the repository then holds the conflict (`portableIdentityConflict()`),
+  which the app shows as the storage error screen; native view rows pass the
+  same `duplicatePortableTaskIdentity` check, and initialization rescans
+  instead of deferring the index until a full scan finds ids unique again.
 - A `ConnectedTaskIndex` reverse map (record id to task id) replaces scans of
   `knownTaskRecords`.
 - Local writes accepted while deltas are in flight are protected exactly as in

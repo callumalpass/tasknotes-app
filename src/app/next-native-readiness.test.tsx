@@ -552,3 +552,46 @@ it("re-executes the mounted view across an hour boundary without scanning tasks 
     vi.useRealTimers();
   }
 });
+
+it("shows the duplicate portable id storage error on reopen and on a live change, and recovers when the copy goes (#630)", async () => {
+  const f = await fixture();
+  seedTaskView(f.replica);
+  seedTask(
+    f.replica,
+    { title: "Shared identity" },
+    { id: "shared-id", path: "Tasks/Shared identity.md" },
+  );
+  const copy = seedTask(
+    f.replica,
+    { title: "Shared identity" },
+    { id: "shared-id", path: "Tasks/Shared identity copy.md" },
+  );
+  const duplicate =
+    /Two task files have the same portable TaskNotes identity \(shared-id\): "Tasks\/Shared identity copy\.md" and "Tasks\/Shared identity\.md"/;
+  renderShell(f.repository);
+  expect(await screen.findByText(duplicate)).toBeVisible();
+
+  // Deleting the copy elsewhere reopens the collection without a manual retry.
+  act(() => f.replica.deleteElsewhere(copy.id));
+  await waitFor(() =>
+    expect(screen.queryByText(duplicate)).not.toBeInTheDocument(),
+  );
+  await waitFor(() =>
+    expect(screen.queryByText("Opening your tasks")).not.toBeInTheDocument(),
+  );
+
+  // A live edit that gives another file the same id surfaces it again.
+  const other = seedTask(
+    f.replica,
+    { title: "Other" },
+    { path: "Tasks/Other.md" },
+  );
+  act(() =>
+    f.replica.editElsewhere(other.id, { frontmatter: { id: "shared-id" } }),
+  );
+  expect(
+    await screen.findByText(
+      /Two task files have the same portable TaskNotes identity \(shared-id\): "Tasks\/Other\.md" and "Tasks\/Shared identity\.md"/,
+    ),
+  ).toBeVisible();
+});

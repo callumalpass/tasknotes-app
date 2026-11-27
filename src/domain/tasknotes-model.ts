@@ -117,6 +117,24 @@ export class DuplicatePortableTaskIdentityError extends Error {
   }
 }
 
+/**
+ * The one portable-identity uniqueness check for every set of tasks the
+ * repository publishes (index scans, change-feed applies, view rows). A task
+ * repeated at its own path is the same file, not a duplicate.
+ */
+export function duplicatePortableTaskIdentity(
+  tasks: Iterable<{ readonly id: string; readonly path: string }>,
+): DuplicatePortableTaskIdentityError | null {
+  const paths = new Map<string, string>();
+  for (const { id, path } of tasks) {
+    const existing = paths.get(id);
+    if (existing === undefined) paths.set(id, path);
+    else if (existing !== path)
+      return new DuplicatePortableTaskIdentityError(id, [existing, path]);
+  }
+  return null;
+}
+
 export interface MaterializedOccurrenceTransition {
   occurrence: Task;
   parent: Task;
