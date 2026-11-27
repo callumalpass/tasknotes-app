@@ -82,10 +82,12 @@ export function editTaskNotesType(
     return edit(definition);
   const implementations = definition.implements as unknown[];
   const index = implementations.indexOf(implementation);
-  const compatible = [...implementations];
-  compatible[index] = { ...implementation, version: TASKNOTES_SPEC_VERSION };
-  const result = edit({ ...definition, implements: compatible });
-  const edited = [...(result.implements as Record<string, unknown>[])];
-  edited[index] = { ...edited[index], version: implementation.version };
-  return { ...result, implements: edited };
+  const result = edit({
+    ...definition,
+    implements: [{ ...implementation, version: TASKNOTES_SPEC_VERSION }],
+  });
+  const [edited] = result.implements as Record<string, unknown>[];
+  const restored = [...implementations];
+  restored[index] = { ...edited, version: implementation.version };
+  return { ...result, implements: restored };
 }

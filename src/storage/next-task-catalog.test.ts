@@ -1,9 +1,15 @@
 import type { DescribeResult, MdbaseClient } from "@mdbase-dev/sdk";
 import { MemoryReplica } from "@mdbase-dev/sdk/testing";
-import { TASKNOTES_CONTRACT_DIGEST } from "@tasknotes/model/mdbase";
+import {
+  patchTaskNotesMdbaseTypeSettings,
+  TASKNOTES_CONTRACT_DIGEST,
+} from "@tasknotes/model/mdbase";
 import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TASKNOTES_READABLE_CONTRACTS } from "../domain/tasknotes-contract";
+import {
+  editTaskNotesType,
+  TASKNOTES_READABLE_CONTRACTS,
+} from "../domain/tasknotes-contract";
 import { nextTaskCatalog, nextTaskProviders } from "./next-task-catalog";
 
 const clients: MdbaseClient[] = [];
@@ -103,6 +109,37 @@ describe("native task catalog adapter (not LAB)", () => {
     expect(providers.map((provider) => provider.typeName)).toEqual([
       "current",
       "todo",
+    ]);
+  });
+
+  it("edits the rc.7 binding when the same definition also implements rc.6", () => {
+    const previous = {
+      contract: "tasknotes.task",
+      version: TASKNOTES_SPEC_VERSION,
+      fields: { title: "oldTitle" },
+      binding: {},
+    };
+    const current = {
+      ...previous,
+      version: TASKNOTES_READABLE_CONTRACTS[0]!.version,
+      fields: { title: "headline" },
+    };
+    const edited = editTaskNotesType(
+      { implements: [previous, current] },
+      (definition) =>
+        patchTaskNotesMdbaseTypeSettings(definition, {
+          recurrence: { maintainDueDateOffset: false },
+        }),
+    );
+    expect(edited.implements).toEqual([
+      previous,
+      expect.objectContaining({
+        version: current.version,
+        fields: current.fields,
+        binding: expect.objectContaining({
+          recurrence: { maintain_due_date_offset: false },
+        }),
+      }),
     ]);
   });
 
