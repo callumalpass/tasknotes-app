@@ -294,7 +294,10 @@ it.each([
     mount();
     await submit(true);
     expect(await screen.findByRole("alert")).toHaveTextContent(copy);
-    expect(screen.getByLabelText(/pairing code/i)).toHaveFocus();
+    // Focus moves to the retry field in an effect after the alert renders.
+    await waitFor(() =>
+      expect(screen.getByLabelText(/pairing code/i)).toHaveFocus(),
+    );
     expect(screen.getByLabelText(/pairing code/i)).toHaveAttribute(
       "autocomplete",
       "one-time-code",
