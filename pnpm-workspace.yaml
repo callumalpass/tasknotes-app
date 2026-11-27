@@ -2,5 +2,5 @@ packages:
   - apps/import
 
 catalog:
-  "@mdbase-dev/sdk": 0.2.51
+  "@mdbase-dev/sdk": 0.2.53
   "@tasknotes/model": 0.3.2
