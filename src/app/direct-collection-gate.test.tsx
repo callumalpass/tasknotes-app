@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DemoTaskRepository } from "../demo/demo-task-repository";
 import { directBrowserGrant } from "../storage/direct-browser-grant";
-import { act, fireEvent, render, screen } from "../test/render";
+import { act, fireEvent, render, screen, waitFor } from "../test/render";
 import { takePairInvitation } from "./direct-invitation";
 import { DirectCollectionGate } from "./direct-collection-gate";
 import * as site from "./direct-site";
@@ -618,9 +618,13 @@ it("removes a tab-only pairing's collection state when its tab goes away", async
   mount();
   await submit(false);
   await screen.findByRole("button", { name: "Close workspace" });
-  localStorage.setItem(key, '["private search"]');
-  window.dispatchEvent(new Event("pagehide"));
-  expect(localStorage.getItem(key)).toBeNull();
+  // The pagehide listener is attached once the tab grant commits, which can
+  // land just after the workspace renders: retry until it is listening.
+  await waitFor(() => {
+    localStorage.setItem(key, '["private search"]');
+    window.dispatchEvent(new Event("pagehide"));
+    expect(localStorage.getItem(key)).toBeNull();
+  });
 });
 
 it("keeps a remembered pairing's collection state when its tab goes away", async () => {
