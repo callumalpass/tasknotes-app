@@ -50,7 +50,7 @@ export function TaskDatePanel({
   const [parsed, setParsed] = useState<{ text: string; date?: string }>();
   const hintId = useId();
   const requested = useRef("");
-  const today = todayString();
+  const today = todayString(new Date(), configuration.timezone);
   const weekday = new Date(`${today}T12:00:00`).getDay();
   const weekend = shiftTaskDate(today, (6 - weekday + 7) % 7 || 7);
   const current = task[target];
@@ -80,7 +80,9 @@ export function TaskDatePanel({
 
   function apply(date: string) {
     if (busy) return;
-    const value = date.includes("T") ? date : setTaskDate(current, date);
+    const value = date.includes("T")
+      ? date
+      : setTaskDate(current, date, configuration.timezone);
     onApply(
       target === "scheduled"
         ? { ...rescheduleInput(task, taskDatePart(date)), scheduled: value }
@@ -107,7 +109,9 @@ export function TaskDatePanel({
             >
               {option === "scheduled" ? t`Scheduled` : t`Due`}
               {task[option] ? (
-                <small>{formatTaskDate(task[option])}</small>
+                <small>
+                  {formatTaskDate(task[option], today, configuration.timezone)}
+                </small>
               ) : null}
             </button>
           ))}
@@ -137,7 +141,7 @@ export function TaskDatePanel({
       </div>
       <StandaloneCalendar
         key={target}
-        value={taskDatePart(current)}
+        value={taskDatePart(current, configuration.timezone)}
         onChoose={(date) => apply(date)}
       />
       <details className="task-date-more">
@@ -148,10 +152,13 @@ export function TaskDatePanel({
           <TaskNotesTimePicker
             ariaLabel={t`${label} time`}
             disabled={busy}
-            value={taskTimePart(current) || undefined}
+            value={taskTimePart(current, configuration.timezone) || undefined}
             onChange={(time) =>
               onApply({
-                [target]: combineTaskDateTime(taskDatePart(current), time),
+                [target]: combineTaskDateTime(
+                  taskDatePart(current, configuration.timezone),
+                  time,
+                ),
               })
             }
           />
@@ -178,7 +185,7 @@ export function TaskDatePanel({
           id={hintId}
         >
           {shownDate
-            ? t`Enter to set ${formatTaskDate(shownDate)}`
+            ? t`Enter to set ${formatTaskDate(shownDate, today, configuration.timezone)}`
             : unreadable
               ? t`Couldn’t read that date`
               : target === "scheduled"

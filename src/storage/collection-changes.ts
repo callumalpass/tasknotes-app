@@ -42,6 +42,7 @@ export function classifyChangeBatch(
     model ||=
       id === context.settingsId ||
       settingsPaths.has(path) ||
+      path === "mdbase.yaml" ||
       /^_(types|contracts|schemas)\//.test(path);
     const record = entity !== "file";
     views ||=

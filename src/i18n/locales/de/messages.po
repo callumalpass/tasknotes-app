@@ -2650,7 +2650,7 @@ msgstr "Eingabe oder ↓ springt zum ersten Ergebnis. j / k zum Bewegen, Eingabe
 msgid "Enter the code shown in the Google window"
 msgstr "Gib den im Google-Fenster angezeigten Code ein"
 
-#. placeholder {0}: formatTaskDate(shownDate)
+#. placeholder {0}: formatTaskDate(shownDate, today, configuration.timezone)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
 msgstr "Eingabetaste setzt {0}"

@@ -135,12 +135,7 @@ describe("bulk edits", () => {
         },
         { id: "timed-task" },
       );
-      // Inputs are local wall times; the model stores canonical UTC instants.
-      // Construct the expected instant independently for the chosen local day.
-      const [year, month, day] = to.split("-").map(Number);
-      const scheduled = new Date(year, month - 1, day, 10, 30)
-        .toISOString()
-        .replace(".000Z", "Z");
+      const scheduled = `${to}T10:30`;
       const change = planTaskChange(task, { kind: "schedule", date: to });
       expect(change).toEqual({
         input: { scheduled },

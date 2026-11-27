@@ -31,7 +31,7 @@ export interface TodaySummary {
  */
 export function summarizeToday(
   tasks: readonly TaskSummary[],
-  today = todayString(),
+  today = todayString(new Date(), tasks[0]?.timezone),
 ): TodaySummary {
   const active = tasks.filter((task) => !task.archived);
   const materialized = materializedOccurrenceKeys(active);
@@ -47,8 +47,8 @@ export function summarizeToday(
     }
     if (
       task.completed &&
-      taskDatePart(task.completedDate) === today &&
-      taskDatePart(task.scheduled ?? task.due) === today
+      taskDatePart(task.completedDate, task.timezone) === today &&
+      taskDatePart(task.scheduled ?? task.due, task.timezone) === today
     )
       completedToday += 1;
   }

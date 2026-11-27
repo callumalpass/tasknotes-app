@@ -1,6 +1,6 @@
 import YAML from "yaml";
-import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.22.json";
-import { TASKNOTES_SPEC_VERSION } from "@tasknotes/model/types";
+import pack from "../../../vendor/mdbase-contracts/tasknotes.task-0.3.0-rc.23.json";
+import { TASKNOTES_CURRENT_CONTRACT } from "../../../src/domain/tasknotes-contract";
 import type { DestinationType } from "./plan";
 import type { SourceData } from "./todoist";
 
@@ -16,7 +16,7 @@ const definition = YAML.parse(
 const implementation = definition.implements.find(
   (candidate: { contract: string; version: string }) =>
     candidate.contract === "tasknotes.task" &&
-    candidate.version === TASKNOTES_SPEC_VERSION,
+    candidate.version === TASKNOTES_CURRENT_CONTRACT.version,
 );
 export const exampleTarget: DestinationType = {
   name: definition.name,

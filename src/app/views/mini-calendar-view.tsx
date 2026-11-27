@@ -1,3 +1,4 @@
+import { calendarDateToInstant } from "@tasknotes/model/calendar";
 import { appLocale } from "../../i18n/app";
 import { countLabel } from "../../i18n/default-labels";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -40,7 +41,11 @@ export function MiniCalendarView({
   onToggle(task: TaskSummary, occurrenceDate?: string): void;
 }) {
   const { t } = useLingui();
-  const initial = dateFromStorage(todayString()) ?? new Date();
+  const { configuration } = useRepository();
+  const initial =
+    dateFromStorage(
+      selected || todayString(new Date(), configuration.timezone),
+    ) ?? new Date();
   const [month, setMonth] = useState(
     () => new Date(initial.getFullYear(), initial.getMonth(), 1),
   );
@@ -53,12 +58,17 @@ export function MiniCalendarView({
     () => calendarMonthGrid(month, firstDay),
     [firstDay, month],
   );
-  const { configuration } = useRepository();
   const range = useMemo(() => {
     const end = new Date(days.at(-1) ?? days[0]);
     end.setDate(end.getDate() + 1);
-    return { start: days[0], end };
-  }, [days]);
+    const zone = configuration.timezone;
+    return zone
+      ? {
+          start: new Date(calendarDateToInstant(storageDate(days[0]), zone)),
+          end: new Date(calendarDateToInstant(storageDate(end), zone)),
+        }
+      : { start: days[0], end };
+  }, [configuration.timezone, days]);
   const display = useMemo(() => ({ showTimeEntries: false }), []);
   const events = useCalendarEntries(
     execution,

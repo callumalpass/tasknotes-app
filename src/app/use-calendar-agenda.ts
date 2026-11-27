@@ -1,3 +1,4 @@
+import { calendarDateToInstant } from "@tasknotes/model/calendar";
 import { t } from "@lingui/core/macro";
 import { parseDay, type Calendar, type ItemArg } from "@tasknotes/calendar";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
@@ -38,6 +39,7 @@ export function useCalendarAgenda({
   configuration: TaskCollectionConfiguration;
   display: CalendarSettings;
 }) {
+  const zone = configuration.timezone;
   const previousSelection = useRef(selected);
   useEffect(() => {
     const changed = previousSelection.current !== selected;
@@ -112,10 +114,18 @@ export function useCalendarAgenda({
       const api = calendar.current;
       if (!api) return;
       const cells = host!.querySelectorAll<HTMLElement>(".tnc-strip-day");
-      const start = dateFromStorage(cells[0]?.dataset.date ?? "");
-      const end = dateFromStorage(cells[cells.length - 1]?.dataset.date ?? "");
-      if (start && end) {
-        end.setDate(end.getDate() + 1);
+      const firstDay = cells[0]?.dataset.date ?? "";
+      const lastDay = cells[cells.length - 1]?.dataset.date ?? "";
+      const startDay = dateFromStorage(firstDay);
+      const endDay = dateFromStorage(lastDay);
+      if (startDay && endDay) {
+        endDay.setDate(endDay.getDate() + 1);
+        const start = zone
+          ? new Date(calendarDateToInstant(firstDay, zone))
+          : startDay;
+        const end = zone
+          ? new Date(calendarDateToInstant(todayString(endDay), zone))
+          : endDay;
         setStripRange((current) =>
           current.start.getTime() === start.getTime() &&
           current.end.getTime() === end.getTime()
@@ -144,7 +154,8 @@ export function useCalendarAgenda({
           "aria-label",
           t`${label}, ${countLabel(count, "task")}`,
         );
-        if (value === todayString()) cell.setAttribute("aria-current", "date");
+        if (value === todayString(new Date(), zone))
+          cell.setAttribute("aria-current", "date");
         else cell.removeAttribute("aria-current");
         let weekday = cell.querySelector<HTMLElement>(".agenda-strip-weekday");
         if (!weekday) {
@@ -206,7 +217,7 @@ export function useCalendarAgenda({
         badge.hidden = count === 0;
         badge.setAttribute("aria-label", countLabel(count, "task"));
       }
-      compactAgendaDays(host!, selected, locale);
+      compactAgendaDays(host!, selected, locale, todayString(new Date(), zone));
       const sentinel = host!.querySelector<HTMLElement>(".tnc-list-more");
       if (sentinel) {
         let more = host!.querySelector<HTMLButtonElement>(".agenda-load-more");
@@ -245,7 +256,7 @@ export function useCalendarAgenda({
       )?.dataset.date;
       if (day) {
         observer.disconnect();
-        compactAgendaDays(host, day, locale);
+        compactAgendaDays(host, day, locale, todayString(new Date(), zone));
         observe();
       }
     };
@@ -254,7 +265,7 @@ export function useCalendarAgenda({
       observer.disconnect();
       host.removeEventListener("click", reveal, true);
     };
-  }, [root, calendar, enabled, items, locale, entries, selected]);
+  }, [root, calendar, enabled, items, locale, entries, selected, zone]);
 
   const lastShown = new Date(stripRange.end);
   lastShown.setDate(lastShown.getDate() - 1);

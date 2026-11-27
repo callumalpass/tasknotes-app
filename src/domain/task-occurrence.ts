@@ -8,6 +8,7 @@ import {
 import {
   combineTaskDateTime,
   dateFromStorage,
+  normalizeTaskDateTime,
   taskDatePart,
   taskTimePart,
   todayString,
@@ -80,7 +81,7 @@ function recurringDatesBetween(
   if (!startDate || !endDate || startDate > endDate) return [];
   const key = JSON.stringify([
     task.recurrence,
-    taskDatePart(task.scheduled ?? task.createdAt),
+    normalizeTaskDateTime(task.scheduled ?? task.createdAt, task.timezone),
     start,
     end,
   ]);
@@ -96,8 +97,8 @@ function recurringDatesBetween(
     {
       title: task.title,
       recurrence: task.recurrence,
-      scheduled: task.scheduled,
-      dateCreated: task.createdAt,
+      scheduled: normalizeTaskDateTime(task.scheduled, task.timezone),
+      dateCreated: normalizeTaskDateTime(task.createdAt, task.timezone),
     },
     startDate,
     endDate,
@@ -123,12 +124,12 @@ export function occurrenceTask(value: TaskOccurrence): TaskSummary {
   const task = value.task;
   const scheduled = combineTaskDateTime(
     value.date,
-    taskTimePart(task.scheduled),
+    taskTimePart(task.scheduled, task.timezone),
   );
   const due = task.due
     ? combineTaskDateTime(
         addDays(value.date, dueOffsetDays(task)),
-        taskTimePart(task.due),
+        taskTimePart(task.due, task.timezone),
       )
     : undefined;
   return {
@@ -176,7 +177,7 @@ export function projectTodayTasks(
       continue;
     }
     if (task.completed || task.skipped || task.archived) continue;
-    const date = taskDatePart(task.scheduled ?? task.due);
+    const date = taskDatePart(task.scheduled ?? task.due, task.timezone);
     if (!date || date <= today) append({ key: task.id, task, date });
   }
   const shownCount =
@@ -228,7 +229,7 @@ export function projectUpcomingTasks(
       continue;
     }
     if (task.completed || task.skipped || task.archived) continue;
-    const date = taskDatePart(task.scheduled ?? task.due);
+    const date = taskDatePart(task.scheduled ?? task.due, task.timezone);
     if (date > today) append({ key: task.id, task, date });
   }
 
@@ -354,7 +355,7 @@ export function rollingOccurrenceDates(
 ): string[] {
   if (!task.recurrence || task.occurrenceMaterialization !== "rolling")
     return [];
-  const today = todayString(now);
+  const today = todayString(now, task.timezone);
   const start = shiftByIsoDuration(
     today,
     task.occurrencePastHorizon ?? "P0D",
@@ -410,9 +411,10 @@ function dueOffsetDays(task: TaskSummary): number {
           parseRecurrenceRule(task.recurrence).dtstart,
         ) ??
         task.createdAt,
+      task.timezone,
     ),
   );
-  const due = dateFromStorage(taskDatePart(task.due));
+  const due = dateFromStorage(taskDatePart(task.due, task.timezone));
   if (!scheduled || !due) return 0;
   const start = Date.UTC(
     scheduled.getFullYear(),

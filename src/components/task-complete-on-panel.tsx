@@ -18,11 +18,11 @@ export function TaskCompleteOnPanel({
   onChoose,
 }: {
   busy: boolean;
-  task: Pick<TaskSummary, "scheduled" | "due" | "recurrence">;
+  task: Pick<TaskSummary, "scheduled" | "due" | "recurrence" | "timezone">;
   onChoose(date: string): void;
 }) {
   const { t } = useLingui();
-  const today = todayString();
+  const today = todayString(new Date(), task.timezone);
   const yesterday = shiftTaskDate(today, -1);
   // The task's own dates are the likeliest late answers, when they are past.
   const presets: { date: string; label: string }[] = [];
@@ -30,7 +30,7 @@ export function TaskCompleteOnPanel({
     [task.scheduled, t`Scheduled`],
     [task.due, t`Due`],
   ] as const) {
-    const date = value ? taskDatePart(value) : "";
+    const date = value ? taskDatePart(value, task.timezone) : "";
     if (!date || date >= yesterday) continue;
     if (presets.some((preset) => preset.date === date)) continue;
     presets.push({ date, label });
@@ -60,7 +60,7 @@ export function TaskCompleteOnPanel({
             onClick={() => onChoose(preset.date)}
           >
             {preset.label}
-            <small>{formatTaskDate(preset.date)}</small>
+            <small>{formatTaskDate(preset.date, today, task.timezone)}</small>
           </button>
         ))}
       </div>

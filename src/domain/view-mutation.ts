@@ -124,7 +124,7 @@ export function viewPropertyMoveInput({
       [role]:
         typeof destinationValue === "string" && destinationValue
           ? /^\d{4}-\d{2}-\d{2}$/.test(destinationValue)
-            ? setTaskDate(task[role], destinationValue)
+            ? setTaskDate(task[role], destinationValue, task.timezone)
             : destinationValue
           : null,
     };

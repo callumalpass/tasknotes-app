@@ -262,7 +262,10 @@ export function BulkTaskActions({
     else
       void run({
         kind: "schedule",
-        date: scheduleDate(action === "next-week" ? "week" : action),
+        date: scheduleDate(
+          action === "next-week" ? "week" : action,
+          configuration.timezone,
+        ),
       });
     return true;
   });
@@ -284,10 +287,13 @@ export function BulkTaskActions({
     if (
       change.kind === "schedule" &&
       change.date &&
-      change.date >= todayString() &&
+      change.date >= todayString(new Date(), configuration.timezone) &&
       change.moveDeadlines === undefined &&
       eligible.some(
-        (task) => task.due && taskDatePart(task.due) < todayString(),
+        (task) =>
+          task.due &&
+          taskDatePart(task.due, task.timezone) <
+            todayString(new Date(), configuration.timezone),
       )
     ) {
       setPicking(false);
@@ -493,7 +499,10 @@ export function BulkTaskActions({
             <OverdueDeadlineChoice
               deadlines={
                 eligible.filter(
-                  (task) => task.due && taskDatePart(task.due) < todayString(),
+                  (task) =>
+                    task.due &&
+                    taskDatePart(task.due, task.timezone) <
+                      todayString(new Date(), configuration.timezone),
                 ).length
               }
               pending={store.busy}
@@ -558,7 +567,10 @@ export function BulkTaskActions({
                     window.requestAnimationFrame(() => setPicking(true));
                     return;
                   }
-                  void run({ kind: "schedule", date: scheduleDate(value) });
+                  void run({
+                    kind: "schedule",
+                    date: scheduleDate(value, configuration.timezone),
+                  });
                 }}
               />
               <TaskNotesSelect
@@ -790,8 +802,8 @@ export function BulkTaskActions({
   );
 }
 
-function scheduleDate(value: string): string | null {
-  const today = todayString();
+function scheduleDate(value: string, timezone?: string): string | null {
+  const today = todayString(new Date(), timezone);
   if (value === "none") return null;
   if (value === "today") return today;
   return value === "tomorrow" ? shiftTaskDate(today, 1) : nextWeekStart(today);

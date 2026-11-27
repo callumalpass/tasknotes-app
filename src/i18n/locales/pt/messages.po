@@ -2650,7 +2650,7 @@ msgstr "Enter ou ↓ para ir ao primeiro resultado. j / k para mover, Enter para
 msgid "Enter the code shown in the Google window"
 msgstr "Digite o código mostrado na janela do Google"
 
-#. placeholder {0}: formatTaskDate(shownDate)
+#. placeholder {0}: formatTaskDate(shownDate, today, configuration.timezone)
 #: src/components/task-date-panel.tsx
 msgid "Enter to set {0}"
 msgstr "Enter para definir {0}"

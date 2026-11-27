@@ -1,3 +1,4 @@
+import { todayString } from "../domain/task";
 import { t } from "@lingui/core/macro";
 import { formatRelativeTaskDate } from "../i18n/presentation";
 import { useRepository } from "./repository-context";
@@ -17,10 +18,13 @@ export function useCalendarMutations(
       const updated = await editCalendar(task.id, edit);
       if (!task.recurrence && !task.recurrenceParent) {
         const { title } = task;
+        const today = todayString(new Date(), updated.timezone);
         const when = updated.scheduled
-          ? formatRelativeTaskDate(updated.scheduled)
+          ? formatRelativeTaskDate(updated.scheduled, today, updated.timezone)
           : "";
-        const date = updated.due ? formatRelativeTaskDate(updated.due) : "";
+        const date = updated.due
+          ? formatRelativeTaskDate(updated.due, today, updated.timezone)
+          : "";
         const earlier = {
           scheduled: task.scheduled ?? null,
           due: task.due ?? null,

@@ -7,6 +7,8 @@ export function taskCompletion(
   occurrenceDate?: string,
 ): boolean {
   return task.recurrence && !task.occurrenceDate
-    ? task.completeInstances.includes(occurrenceDate ?? todayString())
+    ? task.completeInstances.includes(
+        occurrenceDate ?? todayString(new Date(), task.timezone),
+      )
     : task.completed;
 }

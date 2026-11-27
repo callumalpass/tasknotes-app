@@ -5,6 +5,7 @@ export function compactAgendaDays(
   root: HTMLElement,
   selected: string,
   locale: string,
+  today = todayString(),
 ) {
   const sections = [
     ...root.querySelectorAll<HTMLElement>(".tnc-list-section[data-date]"),
@@ -39,14 +40,11 @@ export function compactAgendaDays(
     section.hidden = false;
     section.classList.remove("is-empty-range");
     const date = section.dataset.date;
-    section.classList.toggle(
-      "is-add-day",
-      date === selected || date === todayString(),
-    );
+    section.classList.toggle("is-add-day", date === selected || date === today);
     if (
       section.classList.contains("is-empty") &&
       date !== selected &&
-      date !== todayString()
+      date !== today
     ) {
       emptyRun.push(section);
     } else {

@@ -5,10 +5,11 @@ import { useRepository } from "./repository-context";
 
 /** Observe already-loaded metadata; this badge must never start collection reads. */
 export function useTodayTaskCounts(): TodayTaskCounts | null {
-  const { repository, status } = useRepository();
-  const [today, setToday] = useState(todayString);
+  const { repository, status, configuration } = useRepository();
+  const [now, setNow] = useState(() => new Date());
+  const today = todayString(now, configuration?.timezone);
   useEffect(() => {
-    const checkDay = () => setToday(todayString());
+    const checkDay = () => setNow(new Date());
     const timer = window.setInterval(checkDay, 60_000);
     window.addEventListener("focus", checkDay);
     return () => {

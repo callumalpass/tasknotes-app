@@ -5,13 +5,12 @@ import {
   getDefaultCompletedStatus,
   getDefaultSkippedStatus,
 } from "@tasknotes/model/config";
-import {
-  calendarDateToInstant,
-  planCalendarEdit,
-} from "@tasknotes/model/calendar";
+import { planCalendarEdit } from "@tasknotes/model/calendar";
 import type { CalendarTaskEdit, OccurrenceOverrides } from "./calendar-edit";
-import { getCurrentDateString } from "@tasknotes/model/date";
-import { updateToNextScheduledOccurrence } from "@tasknotes/model/recurrence";
+import {
+  addDTSTARTToRecurrenceRule,
+  updateToNextScheduledOccurrence,
+} from "@tasknotes/model/recurrence";
 import {
   mapTaskFromFrontmatter,
   mapTaskToFrontmatter,
@@ -38,7 +37,12 @@ import {
 } from "@tasknotes/model/time";
 import { evaluateCoreValidation } from "@tasknotes/model/validation";
 
-import { makeTaskPath, normalizeTaskDateTime, todayString } from "./task";
+import {
+  makeTaskPath,
+  normalizeTaskDateTime,
+  readTaskInstant,
+  todayString,
+} from "./task";
 import { expandTaskTemplate } from "./task-template";
 import { normalizeCollectionFolder, taskPath } from "./task-path-policy";
 import { isEmptyFieldValue as isEmptyCustomValue } from "./custom-field-value";
@@ -141,44 +145,6 @@ export interface MaterializedOccurrenceTransition {
   materializeNextDate?: string;
 }
 
-/** Calendar plans carry wall-clock times in the calendar's timezone; stored
- * task times are instants, as create and update write them. */
-/** A calendar plan's wall-clock time on the calendar's timezone, as the stored instant. */
-export function storedCalendarTime<Value>(
-  value: Value,
-  timezone: string,
-): Value {
-  if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T/.test(value) ||
-    /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
-  )
-    return value;
-  return new Date(calendarDateToInstant(value, timezone))
-    .toISOString()
-    .replace(".000Z", "Z") as Value;
-}
-
-function storedCalendarPlan<Plan extends ReturnType<typeof planCalendarEdit>>(
-  plan: Plan,
-  timezone: string,
-  dateFields: readonly string[],
-): Plan {
-  return {
-    ...plan,
-    updatedTask: {
-      ...plan.updatedTask,
-      scheduled: storedCalendarTime(plan.updatedTask.scheduled, timezone),
-      due: storedCalendarTime(plan.updatedTask.due, timezone),
-    },
-    frontmatterPatch: plan.frontmatterPatch.map((operation) =>
-      operation.op === "set" && dateFields.includes(operation.field)
-        ? { ...operation, value: storedCalendarTime(operation.value, timezone) }
-        : operation,
-    ),
-  };
-}
-
 export class TaskNotesTaskModel {
   readonly config: TaskCollectionConfiguration;
   private readonly recordsFolder: string;
@@ -206,6 +172,7 @@ export class TaskNotesTaskModel {
       },
       fieldCompletions: structuredClone(config.fieldCompletions ?? {}),
       linkWriteFormat: config.linkWriteFormat ?? "wikilink",
+      timezone: config.timezone,
     };
     this.recordsFolder = options.recordsFolder ?? "tasks";
     this.pathPattern = options.pathPattern;
@@ -219,6 +186,7 @@ export class TaskNotesTaskModel {
       archive: { ...this.config.archive },
       fieldCompletions: structuredClone(this.config.fieldCompletions),
       linkWriteFormat: this.config.linkWriteFormat,
+      timezone: this.config.timezone,
     };
   }
 
@@ -292,15 +260,18 @@ export class TaskNotesTaskModel {
     context: { id: string; now?: string; currentDate?: string },
   ): Task {
     const title = requiredTitle(input.title);
-    const now = context.now ?? new Date().toISOString();
+    const now =
+      context.now === undefined
+        ? new Date().toISOString()
+        : taskWriteInstant(context.now);
     const info: TaskInfo = {
       id: context.id,
       path: makeTaskPath(title, context.id, this.recordsFolder),
       title,
       status: input.status ?? this.config.defaults.status,
       priority: input.priority ?? this.config.defaults.priority,
-      due: normalizeTaskDateTime(input.due),
-      scheduled: normalizeTaskDateTime(input.scheduled),
+      due: normalizeTaskDateTime(input.due, this.config.timezone),
+      scheduled: normalizeTaskDateTime(input.scheduled, this.config.timezone),
       details: input.body ?? "",
       tags: input.tags,
       contexts: input.contexts,
@@ -315,7 +286,7 @@ export class TaskNotesTaskModel {
       occurrence_template: input.occurrenceTemplate,
       occurrence_past_horizon: input.occurrencePastHorizon,
       occurrence_future_horizon: input.occurrenceFutureHorizon,
-      reminders: input.reminders,
+      reminders: normalizeReminders(input.reminders),
       timeEstimate: input.timeEstimate,
       sortOrder: input.sortOrder,
       customProperties: withUserFieldDefaults(
@@ -329,7 +300,8 @@ export class TaskNotesTaskModel {
     if (info.recurrence && !info.scheduled) {
       // Persist the next planned occurrence so list filters and calendars use
       // the same date. Due remains the entered deadline relative to that date.
-      const today = context.currentDate ?? todayString(new Date(now));
+      const today =
+        context.currentDate ?? todayString(new Date(now), this.config.timezone);
       const next = updateToNextScheduledOccurrence(
         // Recurrence uses calendar dates, not the UTC day of dateCreated.
         // Seed an undated rule with the local day; explicit DTSTART still wins.
@@ -343,7 +315,8 @@ export class TaskNotesTaskModel {
       !info.recurrence &&
       isCompletedStatus(info.status, this.config.statuses)
     )
-      info.completedDate = context.currentDate ?? todayString(new Date(now));
+      info.completedDate =
+        context.currentDate ?? todayString(new Date(now), this.config.timezone);
     this.assertValid(info);
     this.assertCustomFields(info.customProperties);
     const frontmatter = this.writeFrontmatter({}, info, context.id, 1);
@@ -374,6 +347,17 @@ export class TaskNotesTaskModel {
         new Date(context.now ?? new Date().toISOString()),
       );
       const frontmatter = { ...expanded.frontmatter, ...task.frontmatter };
+      for (const field of [
+        this.config.fieldMapping.due,
+        this.config.fieldMapping.scheduled,
+      ]) {
+        const value = frontmatter[field];
+        if (typeof value === "string")
+          frontmatter[field] = normalizeTaskDateTime(
+            value,
+            this.config.timezone,
+          );
+      }
       const body = expanded.body.trim() ? expanded.body : task.body;
       return this.read({ path: task.path, frontmatter, body });
     } catch (reason) {
@@ -400,7 +384,10 @@ export class TaskNotesTaskModel {
     context: { now?: string; currentDate?: string } = {},
   ): Task {
     const original = this.taskInfo(current);
-    const now = context.now ?? new Date().toISOString();
+    const now =
+      context.now === undefined
+        ? new Date().toISOString()
+        : taskWriteInstant(context.now);
     const updates: Partial<TaskInfo> & { details?: string } = {};
     if (input.title !== undefined) updates.title = requiredTitle(input.title);
     if (input.status !== undefined) updates.status = input.status;
@@ -422,9 +409,15 @@ export class TaskNotesTaskModel {
     if (input.priority !== undefined) updates.priority = input.priority;
     if (input.archived !== undefined) updates.archived = input.archived;
     if (input.due !== undefined)
-      updates.due = normalizeTaskDateTime(input.due ?? undefined);
+      updates.due = normalizeTaskDateTime(
+        input.due ?? undefined,
+        this.config.timezone,
+      );
     if (input.scheduled !== undefined)
-      updates.scheduled = normalizeTaskDateTime(input.scheduled ?? undefined);
+      updates.scheduled = normalizeTaskDateTime(
+        input.scheduled ?? undefined,
+        this.config.timezone,
+      );
     if (input.body !== undefined) updates.details = input.body;
     if (input.tags !== undefined) updates.tags = input.tags;
     if (input.contexts !== undefined) updates.contexts = input.contexts;
@@ -450,7 +443,8 @@ export class TaskNotesTaskModel {
     if (input.occurrenceFutureHorizon !== undefined)
       updates.occurrence_future_horizon =
         input.occurrenceFutureHorizon ?? undefined;
-    if (input.reminders !== undefined) updates.reminders = input.reminders;
+    if (input.reminders !== undefined)
+      updates.reminders = normalizeReminders(input.reminders);
     if (input.timeEstimate !== undefined)
       updates.timeEstimate = input.timeEstimate ?? undefined;
     if (input.sortOrder !== undefined)
@@ -464,52 +458,66 @@ export class TaskNotesTaskModel {
         input.customProperties,
       );
 
-    // A repeat change makes the model plan the next occurrence on the wall
-    // clock, so it plans on local times and the result is stored as instants.
-    const floating = updates.recurrence !== undefined;
-    const rawPlan = buildTaskUpdatePlan({
-      originalTask: floating ? withFloatingTaskTimes(original) : original,
-      updates: floating
-        ? {
-            ...updates,
-            ...("scheduled" in updates
-              ? { scheduled: floatingLocalDateTime(updates.scheduled) }
-              : {}),
-            ...("due" in updates
-              ? { due: floatingLocalDateTime(updates.due) }
-              : {}),
-          }
-        : updates,
+    // The recurrence planner shifts civil dates. Convert existing instants
+    // before planning, and retain original bytes for dates it did not change.
+    const recurrenceChanged =
+      updates.recurrence !== undefined &&
+      updates.recurrence !== original.recurrence;
+    const anchor = recurrenceChanged
+      ? this.withFloatingTaskTimes(original)
+      : original;
+    const plan = buildTaskUpdatePlan({
+      originalTask: anchor,
+      updates,
       fieldMapping: this.config.fieldMapping,
       taskTag: this.config.defaults.taskTag,
       storeTitleInFilename: this.config.storeTitleInFilename,
       userFields: this.config.userFields,
       statuses: this.config.statuses,
       now,
-      currentDateString: context.currentDate ?? getCurrentDateString(),
+      currentDateString:
+        context.currentDate ?? todayString(new Date(now), this.config.timezone),
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
-    const timeFields = new Set([
-      this.config.fieldMapping.scheduled,
-      this.config.fieldMapping.due,
-    ]);
-    const plan = floating
-      ? {
-          ...rawPlan,
-          updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
-          frontmatterPatch: rawPlan.frontmatterPatch.map((operation) =>
-            operation.op === "set" && timeFields.has(operation.field)
-              ? {
-                  ...operation,
-                  value: normalizeTaskDateTime(
-                    operation.value as string | undefined,
-                  ),
-                }
-              : operation,
-          ),
-        }
-      : rawPlan;
+    if (
+      recurrenceChanged &&
+      this.config.timezone &&
+      !input.preserveRecurrenceSchedule
+    ) {
+      const entered = { ...anchor, ...updates };
+      if (!(
+        original.recurrence &&
+        entered.scheduled &&
+        entered.recurrence_anchor === "completion"
+      )) {
+        const next = updateToNextScheduledOccurrence(
+          {
+            ...entered,
+            dateCreated: normalizeTaskDateTime(
+              entered.dateCreated,
+              this.config.timezone,
+            ),
+          },
+          this.config.recurrence.maintainDueDateOffset,
+          { today: todayString(new Date(now), this.config.timezone) },
+        );
+        plan.updatedTask.scheduled = next.scheduled ?? entered.scheduled;
+        plan.updatedTask.due = next.due ?? entered.due;
+        if (entered.recurrence && !/DTSTART[:;]/.test(entered.recurrence))
+          plan.updatedTask.recurrence =
+            addDTSTARTToRecurrenceRule({
+              ...plan.updatedTask,
+              recurrence: entered.recurrence,
+            }) ?? entered.recurrence;
+      }
+    }
+    if (recurrenceChanged) {
+      for (const field of ["due", "scheduled"] as const) {
+        if (!(field in updates) && plan.updatedTask[field] === anchor[field])
+          plan.updatedTask[field] = original[field];
+      }
+    }
     const plannedTask =
       input.preserveRecurrenceSchedule && input.recurrence !== undefined
         ? {
@@ -527,7 +535,16 @@ export class TaskNotesTaskModel {
     this.assertCustomFields(updatedTask.customProperties);
     const revision = current.revision + 1;
     const base = this.canonicalizeAliases(current.frontmatter, true);
-    const patched = applyFrontmatterPatch(base, plan.frontmatterPatch);
+    const patched = applyFrontmatterPatch(
+      base,
+      plan.frontmatterPatch.filter(
+        ({ field }) => field !== this.config.fieldMapping.dateCreated,
+      ),
+    );
+    for (const role of ["due", "scheduled"] as const) {
+      if (plannedTask[role] === undefined)
+        delete patched[this.config.fieldMapping[role]];
+    }
     if (input.customProperties !== undefined) {
       for (const field of this.config.userFields.filter(
         (candidate) => !candidate.readOnly,
@@ -546,16 +563,16 @@ export class TaskNotesTaskModel {
   }
 
   editCalendar(current: Task, edit: CalendarTaskEdit): Task {
-    const plan = storedCalendarPlan(
-      planCalendarEdit({
-        task: this.taskInfo(current),
-        ...edit,
-        now: edit.now ?? new Date().toISOString(),
-        fieldMapping: this.config.fieldMapping,
-      }),
-      edit.timezone,
-      [this.config.fieldMapping.scheduled, this.config.fieldMapping.due],
-    );
+    const plan = planCalendarEdit({
+      task: this.taskInfo(current),
+      ...edit,
+      timezone: this.config.timezone ?? edit.timezone,
+      now:
+        edit.now === undefined
+          ? new Date().toISOString()
+          : taskWriteInstant(edit.now),
+      fieldMapping: this.config.fieldMapping,
+    });
     this.assertValid(plan.updatedTask, this.taskInfo(current));
     this.assertCustomFields(plan.updatedTask.customProperties);
     const revision = current.revision + 1;
@@ -579,20 +596,22 @@ export class TaskNotesTaskModel {
   ): Task {
     if (current.recurrence) {
       const original = this.taskInfo(current);
-      const now = context.now ?? new Date().toISOString();
-      const rawPlan = buildRecurringTaskCompletePlan({
-        freshTask: withFloatingTaskTimes(original),
-        targetDate: context.currentDate
-          ? new Date(`${context.currentDate}T12:00:00`)
-          : undefined,
+      const now =
+        context.now === undefined
+          ? new Date().toISOString()
+          : taskWriteInstant(context.now);
+      const plan = buildRecurringTaskCompletePlan({
+        freshTask: this.withFloatingTaskTimes(original),
+        targetDate: this.recurringActionDate(
+          original,
+          now,
+          context.currentDate,
+        ),
         currentTimestamp: now,
         maintainDueDateOffsetInRecurring:
           this.config.recurrence.maintainDueDateOffset,
       });
-      const plan = {
-        ...rawPlan,
-        updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
-      };
+      this.advanceRecurringDates(plan.updatedTask, original, now);
       const base = this.canonicalizeAliases(current.frontmatter, true);
       const patched = applyFrontmatterPatch(
         base,
@@ -628,20 +647,18 @@ export class TaskNotesTaskModel {
   ): Task {
     if (!current.recurrence) throw new Error("Task is not recurring.");
     const original = this.taskInfo(current);
-    const now = context.now ?? new Date().toISOString();
-    const rawPlan = buildRecurringTaskSkippedPlan({
-      freshTask: withFloatingTaskTimes(original),
-      targetDate: context.currentDate
-        ? new Date(`${context.currentDate}T12:00:00`)
-        : undefined,
+    const now =
+      context.now === undefined
+        ? new Date().toISOString()
+        : taskWriteInstant(context.now);
+    const plan = buildRecurringTaskSkippedPlan({
+      freshTask: this.withFloatingTaskTimes(original),
+      targetDate: this.recurringActionDate(original, now, context.currentDate),
       currentTimestamp: now,
       maintainDueDateOffsetInRecurring:
         this.config.recurrence.maintainDueDateOffset,
     });
-    const plan = {
-      ...rawPlan,
-      updatedTask: withCanonicalTaskTimes(rawPlan.updatedTask),
-    };
+    this.advanceRecurringDates(plan.updatedTask, original, now);
     const base = this.canonicalizeAliases(current.frontmatter, true);
     const patched = applyFrontmatterPatch(
       base,
@@ -667,8 +684,11 @@ export class TaskNotesTaskModel {
     | (MaterializeOccurrenceResult & { created: true })
     | { created: false; task: Existing; warnings: string[] }
   > {
-    const now = context.now ?? new Date().toISOString();
-    const parentInfo = this.taskInfo(parent);
+    const now =
+      context.now === undefined
+        ? new Date().toISOString()
+        : taskWriteInstant(context.now);
+    const parentInfo = this.withFloatingTaskTimes(this.taskInfo(parent));
     const occurrenceInfos = existingOccurrences.map((task) =>
       this.taskInfo(task),
     );
@@ -778,9 +798,13 @@ export class TaskNotesTaskModel {
     action: "toggle" | "skip",
     context: { now?: string } = {},
   ): MaterializedOccurrenceTransition {
-    const now = context.now ?? new Date().toISOString();
+    const now =
+      context.now === undefined
+        ? new Date().toISOString()
+        : taskWriteInstant(context.now);
     const occurrenceInfo = this.taskInfo(occurrence);
-    const parentInfo = this.taskInfo(parent);
+    const originalParent = this.taskInfo(parent);
+    const parentInfo = this.withFloatingTaskTimes(originalParent);
     const plan =
       action === "toggle"
         ? isCompletedStatus(occurrenceInfo.status, this.config.statuses)
@@ -818,6 +842,7 @@ export class TaskNotesTaskModel {
       plan.updatedOccurrenceTask,
       now,
     );
+    this.preserveUnchangedTaskTimes(plan.updatedParentTask, originalParent);
     return {
       occurrence: this.finishPlannedTask(occurrence, updatedOccurrence),
       parent: this.finishPlannedTask(parent, plan.updatedParentTask),
@@ -956,8 +981,9 @@ export class TaskNotesTaskModel {
       priority: info.priority,
       due: info.due,
       scheduled: info.scheduled,
-      createdAt: info.dateCreated ?? "",
-      updatedAt: info.dateModified ?? "",
+      timezone: this.config.timezone,
+      createdAt: readTaskInstant(info.dateCreated, this.config.timezone) ?? "",
+      updatedAt: readTaskInstant(info.dateModified, this.config.timezone) ?? "",
       completedDate: info.completedDate,
       tags: info.tags ?? [],
       contexts: info.contexts ?? [],
@@ -999,6 +1025,11 @@ export class TaskNotesTaskModel {
     id: string,
     revision: number,
   ): Record<string, unknown> {
+    const createdField = this.config.fieldMapping.dateCreated;
+    const created = base[createdField];
+    const preserveCreated =
+      typeof created === "string" &&
+      readTaskInstant(created, this.config.timezone) === info.dateCreated;
     return {
       ...base,
       ...mapTaskToFrontmatter(
@@ -1008,6 +1039,7 @@ export class TaskNotesTaskModel {
         this.config.storeTitleInFilename,
         this.config.userFields,
       ),
+      ...(preserveCreated ? { [createdField]: created } : {}),
       // The model omits empty reminders, but a Connect patch must retain []:
       // removing the property becomes null, which the array schema rejects.
       ...(info.reminders?.length === 0
@@ -1180,7 +1212,7 @@ export class TaskNotesTaskModel {
 
   /** Shared normalized adapter, including configured aliases and provider metadata. */
   taskInfo(current: TaskSummary): TaskInfo {
-    return this.completeTaskInfo(
+    const info = this.completeTaskInfo(
       mapTaskFromFrontmatter(
         this.config.fieldMapping,
         this.canonicalizeAliases(current.frontmatter, false),
@@ -1195,6 +1227,61 @@ export class TaskNotesTaskModel {
         ? current.body
         : undefined,
     );
+    return {
+      ...info,
+      dateCreated: readTaskInstant(info.dateCreated, this.config.timezone),
+      dateModified: readTaskInstant(info.dateModified, this.config.timezone),
+    };
+  }
+
+  private withFloatingTaskTimes<T extends Partial<TaskInfo>>(task: T): T {
+    return {
+      ...task,
+      scheduled: normalizeTaskDateTime(task.scheduled, this.config.timezone),
+      due: normalizeTaskDateTime(task.due, this.config.timezone),
+    };
+  }
+
+  private advanceRecurringDates(
+    updated: TaskInfo,
+    original: TaskInfo,
+    now: string,
+  ): void {
+    const anchor = this.withFloatingTaskTimes(original);
+    const next = updateToNextScheduledOccurrence(
+      { ...updated, scheduled: anchor.scheduled, due: anchor.due },
+      this.config.recurrence.maintainDueDateOffset,
+      { today: todayString(new Date(now), this.config.timezone) },
+    );
+    updated.scheduled = next.scheduled ?? anchor.scheduled;
+    updated.due = next.due ?? anchor.due;
+    this.preserveUnchangedTaskTimes(updated, original);
+  }
+
+  private preserveUnchangedTaskTimes(
+    updated: TaskInfo,
+    original: TaskInfo,
+  ): void {
+    for (const field of ["due", "scheduled"] as const) {
+      if (
+        updated[field] ===
+        normalizeTaskDateTime(original[field], this.config.timezone)
+      )
+        updated[field] = original[field];
+    }
+  }
+
+  private recurringActionDate(
+    task: TaskInfo,
+    now: string,
+    date?: string,
+  ): Date | undefined {
+    const day =
+      date ??
+      (task.recurrence_anchor === "completion" || !task.scheduled
+        ? todayString(new Date(now), this.config.timezone)
+        : undefined);
+    return day ? new Date(`${day}T00:00:00Z`) : undefined;
   }
 
   private finishPlannedTask(current: Task, updated: TaskInfo): Task {
@@ -1221,7 +1308,20 @@ export class TaskNotesTaskModel {
     const fallbackPath = makeTaskPath(title, id, this.recordsFolder);
     const info = this.completeTaskInfo(
       {
-        ...planned,
+        ...this.withFloatingTaskTimes(planned),
+        dateCreated:
+          planned.dateCreated &&
+          taskWriteInstant(
+            readTaskInstant(planned.dateCreated, this.config.timezone) ??
+              planned.dateCreated,
+          ),
+        dateModified:
+          planned.dateModified &&
+          taskWriteInstant(
+            readTaskInstant(planned.dateModified, this.config.timezone) ??
+              planned.dateModified,
+          ),
+        reminders: normalizeReminders(planned.reminders),
         id,
         path: fallbackPath,
         title,
@@ -1314,6 +1414,16 @@ function normalizeTimeEntries(
   });
 }
 
+function taskWriteInstant(value: string): string {
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(value))
+    throw new Error(
+      "invalid_datetime_value: An explicit timezone is required.",
+    );
+  if (!Number.isFinite(Date.parse(value)))
+    throw new Error("invalid_datetime_value: The timestamp is invalid.");
+  return value;
+}
+
 function canonicalInstant(value: string): string {
   const trimmed = value.trim();
   if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(trimmed))
@@ -1396,6 +1506,16 @@ function taskAsCreateInput(task: Task): CreateTaskInput {
   };
 }
 
+function normalizeReminders(
+  reminders: CreateTaskInput["reminders"],
+): CreateTaskInput["reminders"] {
+  return reminders?.map((reminder) =>
+    reminder.type === "absolute" && reminder.absoluteTime
+      ? { ...reminder, absoluteTime: taskWriteInstant(reminder.absoluteTime) }
+      : reminder,
+  );
+}
+
 function normalizeDependencies(
   dependencies: CreateTaskInput["blockedBy"],
 ): NonNullable<CreateTaskInput["blockedBy"]> | undefined {
@@ -1415,32 +1535,6 @@ function normalizeDependencies(
       },
     ];
   });
-}
-
-function withFloatingTaskTimes(task: TaskInfo): TaskInfo {
-  return {
-    ...task,
-    scheduled: floatingLocalDateTime(task.scheduled),
-    due: floatingLocalDateTime(task.due),
-  };
-}
-
-function withCanonicalTaskTimes(task: TaskInfo): TaskInfo {
-  return {
-    ...task,
-    scheduled: normalizeTaskDateTime(task.scheduled),
-    due: normalizeTaskDateTime(task.due),
-  };
-}
-
-function floatingLocalDateTime(value?: string): string | undefined {
-  if (!value || /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.valueOf())) return value;
-  const local = new Date(
-    parsed.valueOf() - parsed.getTimezoneOffset() * 60_000,
-  );
-  return local.toISOString().replace(/\.\d{3}Z$/, "");
 }
 
 function requiredTitle(value: string): string {

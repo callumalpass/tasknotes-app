@@ -425,7 +425,7 @@ describe("TaskNotes task model app boundary", () => {
     expect(
       generated.create(
         { title: "Generated filename" },
-        { id: "generated", now: "2026-07-26T12:34:56" },
+        { id: "generated", now: new Date("2026-07-26T12:34:56").toISOString() },
       ).path,
     ).toBe("tasks/20260726123456.md");
 
@@ -570,7 +570,7 @@ describe("TaskNotes task model app boundary", () => {
         currentDate: "2026-08-05",
       });
       expect(completed.completeInstances).toEqual(["2026-08-05"]);
-      expect(completed.scheduled).toBe(canonicalLocal("2026-08-06T09:00"));
+      expect(completed.scheduled).toBe("2026-08-06T09:00");
 
       const skipped = model.skip(completed, {
         now: "2026-08-06T10:00:00.000Z",
@@ -578,7 +578,7 @@ describe("TaskNotes task model app boundary", () => {
       });
       expect(skipped.completeInstances).toEqual(["2026-08-05"]);
       expect(skipped.skippedInstances).toEqual(["2026-08-06"]);
-      expect(skipped.scheduled).toBe(canonicalLocal("2026-08-07T09:00"));
+      expect(skipped.scheduled).toBe("2026-08-07T09:00");
     } finally {
       vi.useRealTimers();
     }
@@ -914,7 +914,106 @@ Occurrence body for {{title}}`,
     });
   });
 
-  it("stores calendar moves of timed tasks as instants", () => {
+  it("stores floating due and scheduled and retains instants for timestamps, time entries, and reminders", () => {
+    const model = new TaskNotesTaskModel({ timezone: "America/New_York" });
+    const task = model.create(
+      {
+        title: "Call",
+        due: "2026-03-08",
+        scheduled: "2026-03-08T02:30",
+        reminders: [
+          {
+            id: "call",
+            type: "absolute",
+            absoluteTime: "2026-03-08T07:00:00Z",
+          },
+        ],
+      },
+      { id: "call", now: "2026-03-07T18:00:00Z" },
+    );
+    expect(task.frontmatter).toMatchObject({
+      due: "2026-03-08",
+      scheduled: "2026-03-08T02:30",
+      dateCreated: "2026-03-07T18:00:00Z",
+      dateModified: "2026-03-07T18:00:00Z",
+      reminders: [{ absoluteTime: "2026-03-08T07:00:00Z" }],
+    });
+    const updated = model.update(
+      task,
+      {
+        due: "2026-03-08T07:12:30Z",
+        timeEntries: [
+          {
+            startTime: "2026-03-08T07:00:00Z",
+            endTime: "2026-03-08T07:15:00Z",
+          },
+        ],
+      },
+      { now: "2026-03-08T08:00:00Z" },
+    );
+    expect(updated.frontmatter).toMatchObject({
+      due: "2026-03-08T03:12:30",
+      scheduled: "2026-03-08T02:30",
+      dateCreated: "2026-03-07T18:00:00Z",
+      dateModified: "2026-03-08T08:00:00Z",
+      timeEntries: [
+        { startTime: "2026-03-08T07:00:00Z", endTime: "2026-03-08T07:15:00Z" },
+      ],
+    });
+  });
+
+  it("resolves old floating timestamps on read without changing legacy task dates", () => {
+    const model = new TaskNotesTaskModel({ timezone: "America/New_York" });
+    const frontmatter = {
+      title: "Legacy",
+      status: "open",
+      dateCreated: "2026-03-08T02:30",
+      dateModified: "2026-11-01T01:30:00",
+      scheduled: "2026-11-01T01:30:00-05:00",
+      due: "2026-11-01T01:30:00",
+    };
+    const task = model.read({ path: "tasks/legacy.md", frontmatter, body: "" });
+    expect(task).toMatchObject({
+      createdAt: "2026-03-08T07:30:00.000Z",
+      updatedAt: "2026-11-01T05:30:00.000Z",
+      scheduled: frontmatter.scheduled,
+      due: frontmatter.due,
+      frontmatter,
+    });
+    expect(
+      model.update(task, { title: "Edited" }, { now: "2026-11-02T00:00:00Z" })
+        .frontmatter,
+    ).toMatchObject({
+      dateCreated: frontmatter.dateCreated,
+      dateModified: "2026-11-02T00:00:00Z",
+      scheduled: frontmatter.scheduled,
+    });
+  });
+
+  it("advances a recurring wall time across DST without changing its hour", () => {
+    const model = new TaskNotesTaskModel({ timezone: "America/New_York" });
+    const task = model.create(
+      {
+        title: "Standup",
+        scheduled: "2026-03-07T09:00",
+        due: "2026-03-07T10:00",
+        recurrence: "DTSTART:20260307T090000Z;FREQ=DAILY",
+      },
+      { id: "standup", now: "2026-03-07T13:00:00Z" },
+    );
+    const advanced = model.toggle(task, {
+      currentDate: "2026-03-07",
+      now: "2026-03-07T14:00:00Z",
+    });
+    expect(advanced.frontmatter).toMatchObject({
+      scheduled: "2026-03-08T09:00",
+      due: "2026-03-08T10:00",
+      dateModified: "2026-03-07T14:00:00Z",
+    });
+  });
+
+  it("stores timed calendar moves as collection wall times", () => {
+    const model = new TaskNotesTaskModel({ timezone: "Australia/Melbourne" });
     const task = model.create(
       { title: "Call", scheduled: "2026-10-29T00:30:00Z" },
       { id: "call", now: "2026-10-27T00:00:00Z" },
@@ -932,7 +1031,7 @@ Occurrence body for {{title}}`,
       timezone,
       now: "2026-10-27T01:00:00Z",
     });
-    expect(moved.frontmatter.scheduled).toBe("2026-10-30T00:30:00Z");
+    expect(moved.frontmatter.scheduled).toBe("2026-10-30T11:30");
   });
 
   it("keeps an evening task's day when it starts repeating west of UTC", () => {
@@ -942,6 +1041,7 @@ Occurrence body for {{title}}`,
     vi.setSystemTime(new Date("2026-10-27T03:30:00Z"));
     try {
       // Thursday 29 October, 8:41 PM in New York.
+      const model = new TaskNotesTaskModel({ timezone: "America/New_York" });
       const task = model.create(
         { title: "Evening", scheduled: "2026-10-30T00:41:00Z" },
         { id: "evening", now: "2026-10-27T03:30:00Z" },
@@ -951,14 +1051,15 @@ Occurrence body for {{title}}`,
         { recurrence: "DTSTART:20261029T204100Z;FREQ=DAILY;INTERVAL=1" },
         { now: "2026-10-27T03:30:00Z", currentDate: "2026-10-26" },
       );
-      expect(repeating.frontmatter.scheduled).toBe("2026-10-30T00:41:00Z");
+      expect(repeating.frontmatter.scheduled).toBe("2026-10-29T20:41:00");
     } finally {
       vi.useRealTimers();
       vi.unstubAllEnvs();
     }
   });
 
-  it("stores a moved occurrence of a timed series as an instant", async () => {
+  it("stores a moved occurrence of a timed series as a wall time", async () => {
+    const model = new TaskNotesTaskModel({ timezone: "America/New_York" });
     const series = model.create(
       {
         title: "Standup",
@@ -989,7 +1090,7 @@ Occurrence body for {{title}}`,
       [],
       { id: "moved", overrides: choice.occurrence.overrides },
     );
-    expect(result.task.frontmatter.scheduled).toBe("2026-11-03T15:44:00Z");
+    expect(result.task.frontmatter.scheduled).toBe("2026-11-03T10:44");
   });
 });
 
@@ -1015,8 +1116,4 @@ function status(
 
 function priority(value: string, label: string, weight: number) {
   return { id: value, value, label, color: "#808080", weight };
-}
-
-function canonicalLocal(value: string): string {
-  return new Date(value).toISOString().replace(".000Z", "Z");
 }

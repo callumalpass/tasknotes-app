@@ -102,6 +102,7 @@ export function shortcutSchedule(
   action: Extract<TaskShortcutAction, "today" | "tomorrow" | "next-week">,
   current: string | undefined,
   today = todayString(),
+  timezone?: string,
 ): string {
   const target =
     action === "today"
@@ -109,7 +110,7 @@ export function shortcutSchedule(
       : action === "tomorrow"
         ? shiftTaskDate(today, 1)
         : nextWeekStart(today);
-  return setTaskDate(current, target);
+  return setTaskDate(current, target, timezone);
 }
 
 export function shortcutScheduleLabel(

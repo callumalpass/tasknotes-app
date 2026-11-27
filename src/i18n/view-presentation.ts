@@ -2,7 +2,7 @@ import { t } from "@lingui/core/macro";
 import { appLocale } from "./app";
 import { builtInFieldLabel } from "./default-labels";
 import { formatRelativeTaskDate } from "./presentation";
-import { dateFromStorage } from "../domain/task";
+import { dateFromStorage, todayString } from "../domain/task";
 import {
   formatPropertyValue as domainFormatPropertyValue,
   propertyLabel as domainPropertyLabel,
@@ -30,10 +30,11 @@ export function propertyLabel(key: string): string {
 export function formatPropertyValue(
   value: unknown,
   format?: string,
+  timezone?: string,
 ): string | null {
   if (Array.isArray(value)) {
     const values = value
-      .map((item) => formatPropertyValue(item))
+      .map((item) => formatPropertyValue(item, format, timezone))
       .filter((item): item is string => item !== null);
     return values.length ? values.join(", ") : null;
   }
@@ -44,11 +45,12 @@ export function formatPropertyValue(
     const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
     const dateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value);
     if (format === "date" || dateOnly || dateTime) {
-      const date = dateFromStorage(value);
+      const date = dateFromStorage(value, timezone);
       if (date)
         return new Intl.DateTimeFormat(appLocale(), {
           day: "numeric",
           month: "short",
+          timeZone: dateTime ? timezone : undefined,
           ...(dateTime ? { hour: "numeric", minute: "2-digit" } : {}),
           year:
             date.getFullYear() === new Date().getFullYear()
@@ -58,13 +60,13 @@ export function formatPropertyValue(
     }
   }
   // Reuse link, HTML-to-text, object and ordinary user-value handling without translating it.
-  return domainFormatPropertyValue(value, format);
+  return domainFormatPropertyValue(value, format, timezone);
 }
 
 export function viewPropertyDetails(
   ...args: Parameters<typeof domainViewPropertyDetails>
 ): ViewPropertyDetail[] | undefined {
-  const [, properties] = args;
+  const [row, properties] = args;
   return domainViewPropertyDetails(...args)?.map((detail) => {
     const definition = properties.find(
       (property) => property.key === detail.key,
@@ -73,8 +75,11 @@ export function viewPropertyDetails(
       ...detail,
       label: definition?.label ?? propertyLabel(detail.key),
       value:
-        formatPropertyValue(detail.rawValue, definition?.format) ??
-        detail.value,
+        formatPropertyValue(
+          detail.rawValue,
+          definition?.format,
+          row.task.timezone,
+        ) ?? detail.value,
     };
   });
 }
@@ -94,7 +99,14 @@ export function relativeDateDetail<
   const result = domainRelativeDateDetail(detail, task, configuration);
   return result === detail
     ? result
-    : { ...result, value: formatRelativeTaskDate(detail.rawValue as string) };
+    : {
+        ...result,
+        value: formatRelativeTaskDate(
+          detail.rawValue as string,
+          todayString(new Date(), task.timezone),
+          task.timezone,
+        ),
+      };
 }
 
 export function groupLabel(entries: Array<[string, unknown]>): string {

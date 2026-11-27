@@ -2,10 +2,10 @@ import { t as translate } from "@lingui/core/macro";
 import { appLocale } from "../i18n/app";
 import { t } from "@lingui/core/macro";
 import { countLabel, type CountKind } from "../i18n/default-labels";
-import { formatRelativeTaskDate } from "../i18n/presentation";
+import { formatRelativeTaskDate as formatRelativeDate } from "../i18n/presentation";
 import { linkDisplayLabel } from "../domain/completion";
 import { isEmptyFieldValue } from "../domain/custom-field-value";
-import { activeTimeEntry, type Task } from "../domain/task";
+import { activeTimeEntry, todayString, type Task } from "../domain/task";
 import {
   occurrenceTask,
   taskOccurrenceForDate,
@@ -44,6 +44,10 @@ export function scheduleSummary(
   occurrenceDate?: string,
   projectLabels: ReadonlyMap<string, string> = new Map(),
 ): string {
+  const timezone = task.timezone ?? configuration.timezone;
+  const today = todayString(new Date(), timezone);
+  const formatRelativeTaskDate = (value: string) =>
+    formatRelativeDate(value, today, timezone);
   const dates =
     occurrenceDate && draft.recurrence
       ? occurrenceTask(

@@ -145,7 +145,8 @@ export function TaskRow({
   const missedDeadline =
     !displayedTask.completed &&
     !!displayedTask.due &&
-    taskDatePart(displayedTask.due) < todayString();
+    taskDatePart(displayedTask.due, displayedTask.timezone) <
+      todayString(new Date(), displayedTask.timezone);
   const status = configuration.statuses.find(
     (candidate) => candidate.value === displayedTask.status,
   );

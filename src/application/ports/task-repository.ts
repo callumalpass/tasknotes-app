@@ -262,7 +262,7 @@ export interface CollectionInfo {
 export interface RepositoryChange {
   /** lifecycle means foreground cursors were interrupted and must be reopened;
    * it does not imply collection data or availability changed. */
-  kind: "data" | "status" | "lifecycle" | "clock";
+  kind: "data" | "status" | "lifecycle" | "clock" | "configuration";
 }
 
 export interface RepositoryConnectionStatus {

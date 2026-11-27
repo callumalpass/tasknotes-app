@@ -49,6 +49,7 @@ import { recurrencePreset } from "../domain/recurrence-rule";
 import {
   activeTimeEntry,
   taskDatePart,
+  todayString,
   type Task,
   type TaskTimeEntry,
 } from "../domain/task";
@@ -631,6 +632,9 @@ function DateRow({
   const trigger = useRef<HTMLButtonElement>(null);
   const label = field === "scheduled" ? t`Scheduled` : t`Due`;
   const value = draft[field];
+  const { configuration } = useRepository();
+  const timezone = configuration.timezone;
+  const today = todayString(new Date(), timezone);
   return (
     <PropertyRow
       propertyKey={field}
@@ -646,16 +650,20 @@ function DateRow({
     >
       <button
         ref={trigger}
-        aria-description={value ? formatTaskDate(value) : t`No date`}
+        aria-description={
+          value ? formatTaskDate(value, today, timezone) : t`No date`
+        }
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={t`${label} date`}
         className="task-property-trigger"
-        data-value={value ? taskDatePart(value) : undefined}
+        data-value={value ? taskDatePart(value, timezone) : undefined}
         type="button"
         onClick={() => setOpen((current) => !current)}
       >
-        <span>{value ? formatTaskDate(value) : t`No date`}</span>
+        <span>
+          {value ? formatTaskDate(value, today, timezone) : t`No date`}
+        </span>
       </button>
       {open ? (
         <TaskDatePopover

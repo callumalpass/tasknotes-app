@@ -14,7 +14,7 @@ export function navigationTaskCounts(
     if (!task.scheduled && !task.due) inbox++;
     if (
       [task.scheduled, task.due].some((value) => {
-        const day = taskDatePart(value);
+        const day = taskDatePart(value, task.timezone);
         return day && day < until;
       })
     )

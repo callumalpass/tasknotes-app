@@ -1,3 +1,4 @@
+import { calendarInstantToDate } from "@tasknotes/model/calendar";
 import type { NlpTriggerConfig } from "@tasknotes/model/types";
 import {
   combineTaskDateTime,
@@ -78,7 +79,7 @@ export async function parseTaskCapture(
   if (monthly) {
     data.recurrence = `FREQ=MONTHLY;BYMONTHDAY=${monthly.day}`;
     if (!data.scheduledDate && !data.dueDate)
-      data.scheduledDate = nextMonthDay(monthly.day);
+      data.scheduledDate = nextMonthDay(monthly.day, configuration.timezone);
   }
   let { spans } = parsed;
   data.projects = data.projects?.map((project) =>
@@ -122,8 +123,8 @@ function monthlyPhrase(text: string, locale: string) {
 }
 
 /** The next date with this day, skipping months too short to have it. */
-function nextMonthDay(day: number): string {
-  const today = todayString();
+function nextMonthDay(day: number, timezone?: string): string {
+  const today = todayString(new Date(), timezone);
   const [year, month] = today.split("-").map(Number);
   for (let offset = 0; ; offset++) {
     const date = new Date(Date.UTC(year, month - 1 + offset, day));
@@ -316,7 +317,15 @@ function captureParser(
         type: field.type,
         defaultValue: field.defaultValue,
       })),
-      { dateLocale: locale },
+      {
+        dateLocale: locale,
+        referenceDate: configuration.timezone
+          ? () =>
+              new Date(
+                calendarInstantToDate(Date.now(), configuration.timezone!),
+              )
+          : undefined,
+      },
     );
   });
   cached.set(key, created);
@@ -369,10 +378,18 @@ export function taskCapturePreview(
   configuration: TaskCollectionConfiguration,
 ): TaskCapturePreview[] {
   const preview: TaskCapturePreview[] = [];
+  const timezone = configuration.timezone;
+  const today = todayString(new Date(), timezone);
   if (input.scheduled)
-    preview.push({ key: "scheduled", label: formatTaskDate(input.scheduled) });
+    preview.push({
+      key: "scheduled",
+      label: formatTaskDate(input.scheduled, today, timezone),
+    });
   if (input.due)
-    preview.push({ key: "due", label: `Due ${formatTaskDate(input.due)}` });
+    preview.push({
+      key: "due",
+      label: `Due ${formatTaskDate(input.due, today, timezone)}`,
+    });
   if (input.status) {
     const status = configuration.statuses.find(
       (entry) => entry.value === input.status,

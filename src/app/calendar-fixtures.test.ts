@@ -46,7 +46,8 @@ describe("shared calendar contract through app mapping and exact repository pers
   for (const fixture of calendarFixtures) {
     it(fixture.name, async () => {
       // The repository's real type mapping differs from the fixture's plugin mapping.
-      const { repository: empty, close } = await nextTaskFixture();
+      const { repository: empty, catalog, close } = await nextTaskFixture();
+      catalog.settings = { timezone: fixture.input.timezone };
       await empty.initialize();
       const configuration = await empty.taskConfiguration();
       close();
@@ -111,10 +112,16 @@ describe("shared calendar contract through app mapping and exact repository pers
         [...fixture.expectedEntries].sort((a, b) => a.id.localeCompare(b.id)),
       );
       for (const expected of fixture.expectedEntries) {
+        const rendered = (value: string) =>
+          expected.allDay
+            ? value
+            : new Date(
+                calendarDateToInstant(value, fixture.input.timezone),
+              ).toISOString();
         expect(items.find((item) => item.id === expected.id)).toMatchObject({
           title: expected.title,
-          start: expected.start,
-          end: expected.end ?? null,
+          start: rendered(expected.start),
+          end: expected.end ? rendered(expected.end) : null,
           allDay: expected.allDay,
           kind: expected.type,
           editable: expected.startEditable,
@@ -127,6 +134,7 @@ describe("shared calendar contract through app mapping and exact repository pers
       for (const edit of fixture.edits) {
         // Independent gestures against the same original snapshot.
         const freshFixture = await nextTaskFixture();
+        freshFixture.catalog.settings = { timezone: fixture.input.timezone };
         for (const record of records)
           seedRecord(freshFixture.replica, { ...record, types: ["task"] });
         const fresh = freshFixture.repository;
@@ -144,27 +152,11 @@ describe("shared calendar contract through app mapping and exact repository pers
           ...operation,
           field: mappedField(operation.field, configuration.fieldMapping),
         }));
-        // The contract states times on the fixture's wall clock; the app
-        // stores the same moments as instants.
-        const moment = (value: unknown) =>
-          typeof value === "string" && value.includes("T")
-            ? calendarDateToInstant(value, fixture.input.timezone)
-            : value;
-        const dateFields = [
-          configuration.fieldMapping.scheduled,
-          configuration.fieldMapping.due,
-        ];
         const expected = applyFrontmatterPatch(before.frontmatter, patch);
         for (const operation of patch)
-          if (dateFields.includes(operation.field))
-            expect(
-              moment(after.frontmatter[operation.field]),
-              operation.field,
-            ).toEqual(moment(expected[operation.field]));
-          else
-            expect(after.frontmatter[operation.field], operation.field).toEqual(
-              expected[operation.field],
-            );
+          expect(after.frontmatter[operation.field], operation.field).toEqual(
+            expected[operation.field],
+          );
         const planned: Record<string, unknown> = {
           ...model.taskInfo(before),
           ...edit.expectedUpdates,
@@ -183,14 +175,10 @@ describe("shared calendar contract through app mapping and exact repository pers
         }
         expect({
           ...actual,
-          scheduled: moment(actual.scheduled),
-          due: moment(actual.due),
           complete_instances: actual.complete_instances ?? [],
           skipped_instances: actual.skipped_instances ?? [],
         }).toMatchObject({
           ...planned,
-          scheduled: moment(planned.scheduled),
-          due: moment(planned.due),
           complete_instances: planned.complete_instances ?? [],
           skipped_instances: planned.skipped_instances ?? [],
         });

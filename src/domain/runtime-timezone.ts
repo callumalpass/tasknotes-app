@@ -18,3 +18,26 @@ export function runtimeTimezone(): string {
   }
   return timezone;
 }
+
+/** A configured zone belongs to this collection, including when the device travels. */
+export function collectionTimezone(settings: unknown): string | undefined {
+  if (
+    typeof settings !== "object" ||
+    settings === null ||
+    !("timezone" in settings)
+  )
+    return undefined;
+  const zone = settings.timezone;
+  if (zone === undefined || zone === null) return undefined;
+  if (typeof zone === "string" && zone && !/^(?:[+-]|local$)/i.test(zone)) {
+    try {
+      return new Intl.DateTimeFormat("en", { timeZone: zone }).resolvedOptions()
+        .timeZone;
+    } catch {
+      // Report a bad collection setting rather than using the device's zone.
+    }
+  }
+  throw new Error(
+    "collection_timezone_invalid: The collection did not provide a valid IANA timezone.",
+  );
+}
