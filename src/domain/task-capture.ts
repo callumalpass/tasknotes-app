@@ -378,10 +378,18 @@ export function taskCapturePreview(
   configuration: TaskCollectionConfiguration,
 ): TaskCapturePreview[] {
   const preview: TaskCapturePreview[] = [];
+  const timezone = configuration.timezone;
+  const today = todayString(new Date(), timezone);
   if (input.scheduled)
-    preview.push({ key: "scheduled", label: formatTaskDate(input.scheduled) });
+    preview.push({
+      key: "scheduled",
+      label: formatTaskDate(input.scheduled, today, timezone),
+    });
   if (input.due)
-    preview.push({ key: "due", label: `Due ${formatTaskDate(input.due)}` });
+    preview.push({
+      key: "due",
+      label: `Due ${formatTaskDate(input.due, today, timezone)}`,
+    });
   if (input.status) {
     const status = configuration.statuses.find(
       (entry) => entry.value === input.status,

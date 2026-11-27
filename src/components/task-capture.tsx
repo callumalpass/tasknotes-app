@@ -34,9 +34,10 @@ import {
 export type { CaptureFollowUp as TaskCaptureFollowUp } from "../application/capture-session";
 import {
   combineTaskDateTime,
-  formatTaskDate,
+  formatTaskDate as formatDate,
   taskDatePart,
   taskTimePart,
+  todayString,
 } from "../domain/task";
 import { recurrenceLabel } from "../i18n/presentation";
 import { successFeedback } from "../native/feedback";
@@ -97,6 +98,12 @@ export function TaskCapture({
   onAccepted?(task: TaskSummary, version: number): void;
 }) {
   const { t } = useLingui();
+  const formatTaskDate = (value: string) =>
+    formatDate(
+      value,
+      todayString(new Date(), configuration.timezone),
+      configuration.timezone,
+    );
   const [localSession] = useState(() => new CaptureSession());
   const session = providedSession ?? localSession;
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
@@ -969,6 +976,7 @@ function CaptureTargetField({
   if (field === "scheduled" || field === "due")
     return (
       <CaptureDateTime
+        timezone={configuration.timezone}
         label={field === "scheduled" ? t`Scheduled` : t`Due`}
         value={input[field]}
         onChange={(value) => onChange({ [field]: value })}
@@ -1058,11 +1066,13 @@ function CaptureDetails({
       >
         <div className="capture-details-grid">
           <CaptureDateTime
+            timezone={configuration.timezone}
             label={t({ message: "Scheduled" })}
             value={input.scheduled}
             onChange={(scheduled) => onChange({ scheduled })}
           />
           <CaptureDateTime
+            timezone={configuration.timezone}
             label={t({ message: "Due" })}
             value={input.due}
             onChange={(due) => onChange({ due })}
@@ -1243,10 +1253,12 @@ function cleanTemplateWarning(value: string): string {
 
 function CaptureDateTime({
   label,
+  timezone,
   value,
   onChange,
 }: {
   label: string;
+  timezone?: string;
   value?: string;
   onChange(value?: string): void;
 }) {
@@ -1255,8 +1267,8 @@ function CaptureDateTime({
       combineValue={combineTaskDateTime}
       label={label}
       splitValue={(current) => ({
-        date: taskDatePart(current) || undefined,
-        time: taskTimePart(current) || undefined,
+        date: taskDatePart(current, timezone) || undefined,
+        time: taskTimePart(current, timezone) || undefined,
       })}
       value={value}
       onChange={onChange}
