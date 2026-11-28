@@ -33,13 +33,21 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   private counts: TodayTaskCounts = { total: 0, overdue: 0 };
 
   /** No queries or sorting; changes adjust two counters. Rollover scans metadata once. */
-  todayCounts(today: string): TodayTaskCounts {
+  todayCounts(today: string, hidden?: readonly string[]): TodayTaskCounts {
     if (today !== this.countDay) {
       this.countDay = today;
       this.counts = { total: 0, overdue: 0 };
       for (const { task } of this.values()) this.adjustCounts(task, 1);
     }
-    return { ...this.counts };
+    const counts = { ...this.counts };
+    for (const id of new Set(hidden)) {
+      const entry = this.get(id);
+      if (!entry) continue;
+      const part = todayTaskContribution(entry.task, today);
+      counts.total -= part.total;
+      counts.overdue -= part.overdue;
+    }
+    return counts;
   }
 
   private adjustCounts(task: TaskSummary, direction: 1 | -1) {

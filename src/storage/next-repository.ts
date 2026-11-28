@@ -3445,8 +3445,8 @@ export class NextTaskRepository implements TaskRepository {
     );
   }
 
-  todayTaskCounts(today: string) {
-    return this.indexReady ? this.cache.todayCounts(today) : null;
+  todayTaskCounts(today: string, hidden?: readonly string[]) {
+    return this.indexReady ? this.cache.todayCounts(today, hidden) : null;
   }
 
   projectShortcuts() {
@@ -3466,19 +3466,37 @@ export class NextTaskRepository implements TaskRepository {
       : null;
   }
 
-  cachedInboxCount(view: TaskView): number | null {
+  cachedInboxCount(view: TaskView, hidden?: readonly string[]): number | null {
     const entry = this.inboxCounts.get(view.key);
-    return entry?.documentId === view.documentId &&
-      entry.revision === view.source.revision
-      ? entry.count
-      : null;
+    if (
+      entry?.documentId !== view.documentId ||
+      entry.revision !== view.source.revision
+    )
+      return null;
+    if (!hidden?.length || !entry.count) return entry.count;
+    // Eviction may leave only the scalar count. Never guess whether the
+    // hidden task belonged to this particular saved Base.
+    const slot = this.viewExecutions.get(view.key);
+    if (
+      !slot?.execution ||
+      slot.execution.hasMore ||
+      slot.signature !==
+        this.viewExecutionSignature(view, this.timezone ?? runtimeTimezone())
+    )
+      return null;
+    const excluded = new Set(hidden);
+    return slot.execution.rows.reduce(
+      (count, { task }) => count + Number(!excluded.has(task.id)),
+      0,
+    );
   }
 
-  navigationTaskCounts(today: string) {
+  navigationTaskCounts(today: string, hidden?: readonly string[]) {
     return this.indexReady
       ? navigationTaskCounts(
           [...this.cache.values()].map(({ task }) => task),
           today,
+          hidden,
         )
       : null;
   }

@@ -97,6 +97,7 @@ interface RepositoryContextValue {
     bulk?: boolean;
     outcomeUnknown: boolean;
   } | null;
+  hiddenDeletionIds?: readonly string[];
   deletionError: OperationalError | null;
   createTask(input: CreateTaskInput, intent?: TaskCreateIntent): Promise<Task>;
   updateTask: TaskRepository["update"];
@@ -766,6 +767,10 @@ export function RepositoryProvider({
       configuration,
       reminderAuthority,
       pendingDeletion,
+      hiddenDeletionIds:
+        pendingDeletion && !(pendingDeletion.bulk && deletionError)
+          ? (pendingDeletion.ids ?? [pendingDeletion.id])
+          : undefined,
       deletionError,
       createTask,
       updateTask,
@@ -883,8 +888,7 @@ function useRepositoryTaskQuery<Value>(
   },
 ): TaskQueryState<Value> {
   const {
-    pendingDeletion,
-    deletionError,
+    hiddenDeletionIds,
     repository,
     status,
     error: openingError,
@@ -949,15 +953,9 @@ function useRepositoryTaskQuery<Value>(
     };
   const tasks = state.key === key ? (state.data ?? []) : [];
   return {
-    tasks:
-      pendingDeletion && !(pendingDeletion.bulk && deletionError)
-        ? tasks.filter(
-            (task) =>
-              !(pendingDeletion.ids ?? [pendingDeletion.id]).includes(
-                reader.id(task),
-              ),
-          )
-        : tasks,
+    tasks: hiddenDeletionIds
+      ? tasks.filter((task) => !hiddenDeletionIds.includes(reader.id(task)))
+      : tasks,
     loading:
       status === "opening" || state.key !== key || state.status === "loading",
     refreshing: state.status === "refreshing",

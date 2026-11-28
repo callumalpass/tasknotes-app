@@ -19,5 +19,8 @@ it("counts undated open tasks and dated work in the upcoming week without mutati
     inbox: 1,
     upcoming: 2,
   });
+  expect(
+    navigationTaskCounts(tasks, "2026-11-04", ["undated", "next"]),
+  ).toEqual({ inbox: 0, upcoming: 1 });
   expect(tasks).toEqual(before);
 });
