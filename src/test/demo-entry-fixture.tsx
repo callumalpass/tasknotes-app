@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { TaskNotesApp } from "../app/tasknotes-app";
 import { DemoApp } from "../demo/demo-app";
+import { demoTasks } from "../demo/demo-tasks";
+import type { DemoSeed } from "../demo/demo-seed";
 import { storeDemoSeed } from "../demo/store-dataset";
 import { manyOptionsDefinition } from "./many-options-definition";
+
+const largeCollection: DemoSeed = {
+  tasks: (model) => demoTasks(model, 10_000),
+  scratchpads: () => [],
+};
 
 /** Original demo semantics, retained solely for local browser assertions.
  * This entry is unreachable and omitted outside the exact e2e build mode;
@@ -18,7 +25,12 @@ export function DemoEntryFixture() {
   const [demo] = useState(
     () => new URL(location.href).searchParams.get("demo") ?? "0",
   );
-  const seed = demo === "store" ? storeDemoSeed : undefined;
+  const seed =
+    demo === "store"
+      ? storeDemoSeed
+      : demo === "10000"
+        ? largeCollection
+        : undefined;
   const count = seed ? 1 : Number(demo);
   const many = new URL(location.href).searchParams.has("many-options");
   return count > 0 ? (
