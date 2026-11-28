@@ -57,6 +57,7 @@ export function summarizeToday(
     today,
     shiftTaskDate(today, NEXT_HORIZON_DAYS),
     1,
+    materialized,
   ).groups[0]?.tasks[0];
   return { completedToday, ...(next ? { next } : {}) };
 }

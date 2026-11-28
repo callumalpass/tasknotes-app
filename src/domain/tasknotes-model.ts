@@ -14,6 +14,7 @@ import {
 import {
   mapTaskFromFrontmatter,
   mapTaskToFrontmatter,
+  normalizeDependencyList,
 } from "@tasknotes/model/mapping";
 import {
   applyFrontmatterPatch,
@@ -962,15 +963,9 @@ export class TaskNotesTaskModel {
     frontmatter: Record<string, unknown>,
     revision: number,
   ): TaskSummary {
-    const storedDependencies = mapTaskFromFrontmatter(
-      this.config.fieldMapping,
-      frontmatter,
-      info.path,
-      this.config.storeTitleInFilename,
-      this.config.userFields,
-      this.config.statuses,
-      this.config.priorities,
-    ).blockedBy;
+    const storedDependencies = normalizeDependencyList(
+      frontmatter[this.config.fieldMapping.blockedBy],
+    );
     return {
       id: info.id ?? info.path,
       path: info.path,
