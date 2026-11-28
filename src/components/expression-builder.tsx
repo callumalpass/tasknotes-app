@@ -21,6 +21,7 @@ export interface ExpressionField {
   key: string;
   label: string;
   type?: "text" | "number" | "boolean" | "date" | "list";
+  suggestions?: Array<{ value: string; label: string }>;
   options?: Array<{ value: string; label: string }>;
 }
 
@@ -384,7 +385,17 @@ function FilterRuleEditor({
           <span>
             <Trans>Value</Trans>
           </span>
-          {field?.options?.length ? (
+          {field?.suggestions ? (
+            <TaskNotesCombobox
+              ariaLabel={t({ message: "Filter value" })}
+              options={field.suggestions}
+              limit={50}
+              value={rule.value}
+              onChange={(value) =>
+                onChange({ ...rule, value, literal: JSON.stringify(value) })
+              }
+            />
+          ) : field?.options?.length ? (
             <TaskNotesSelect
               ariaLabel={t({ message: "Filter value" })}
               options={[

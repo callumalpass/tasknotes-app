@@ -333,6 +333,7 @@ export function ViewEditor({
                 initialSection={initialSection}
                 autoFocusName={!view || duplicate}
                 configuration={configuration}
+                tasks={tasks}
                 draft={draft}
                 repository={repository}
                 sourcePath={duplicate ? undefined : source?.path}

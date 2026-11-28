@@ -78,12 +78,13 @@ it("starts sidebar destination and project names with their visible text", () =>
   const today = view("today", "Today");
   const upcoming = view("upcoming", "Upcoming");
   const inbox = view("inbox", "Inbox");
+  const archive = view("archive", "Archive");
   render(
     <Navigation
       active="view:today"
       mode="desktop"
-      navigationKeys={[today.key, upcoming.key, inbox.key]}
-      views={[today, upcoming, inbox]}
+      navigationKeys={[today.key, upcoming.key, inbox.key, archive.key]}
+      views={[today, upcoming, inbox, archive]}
       todayCounts={{ total: 5, overdue: 4 }}
       navigationCounts={{ inbox: 0, upcoming: 9 }}
       projects={[{ label: "Field research", count: 3 }]}
@@ -101,6 +102,11 @@ it("starts sidebar destination and project names with their visible text", () =>
     "Today, 5 tasks, 4 overdue (g t)",
   );
   const project = screen.getByRole("button", { name: "Field research 3" });
+  const archiveButton = screen.getByRole("button", { name: "Archive" });
+  expect(
+    project.compareDocumentPosition(archiveButton) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expectLabelInName(project);
   expect(project).toHaveAccessibleDescription("Field research, 3 tasks");
 });

@@ -46,6 +46,8 @@ import type {
   ViewRenderer,
 } from "../domain/view-document";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
+import type { TaskSummary } from "../domain/task";
+import { projectLabel } from "../domain/project-shortcuts";
 import type { TaskRepository } from "../application/ports/task-repository";
 
 interface ViewEditorFormProps {
@@ -53,6 +55,7 @@ interface ViewEditorFormProps {
   autoFocusName: boolean;
   draft: EditableViewDraft;
   configuration: TaskCollectionConfiguration;
+  tasks: TaskSummary[] | null;
   repository: TaskRepository;
   sourcePath?: string;
   onChange(draft: EditableViewDraft): void;
@@ -69,6 +72,7 @@ export function ViewEditorForm({
   draft,
   configuration,
   repository,
+  tasks,
   sourcePath,
   onChange,
   onFilterValidityChange,
@@ -91,6 +95,18 @@ export function ViewEditorForm({
     target?.closest<HTMLElement>("button, summary")?.focus();
     target?.scrollIntoView?.({ block: "start" });
   }, [initialSection]);
+  const projectOptions = useMemo(() => {
+    const targets = new Set<string>();
+    for (const task of tasks ?? [])
+      for (const project of task.projects) targets.add(project);
+    return Array.from(targets, (value) => ({
+      value,
+      label: projectLabel(value),
+    })).sort(
+      (a, b) =>
+        a.label.localeCompare(b.label) || a.value.localeCompare(b.value),
+    );
+  }, [tasks]);
   const fields = useMemo(
     () =>
       viewFields(configuration, [
@@ -98,8 +114,14 @@ export function ViewEditorForm({
         ...draft.computedProperties.map(({ name }) =>
           computedPropertyReference(draft.dialect, name.trim()),
         ),
-      ]),
+      ]).map((candidate) =>
+        candidate.key === configuration.fieldMapping.projects ||
+        candidate.key === "projects"
+          ? { ...candidate, suggestions: projectOptions }
+          : candidate,
+      ),
     [
+      projectOptions,
       configuration,
       draft.availableProperties,
       draft.computedProperties,
