@@ -5,7 +5,8 @@ import { useRepository } from "./repository-context";
 
 /** Observe already-loaded metadata; this badge must never start collection reads. */
 export function useTodayTaskCounts(): TodayTaskCounts | null {
-  const { repository, status, configuration } = useRepository();
+  const { repository, status, configuration, hiddenDeletionIds } =
+    useRepository();
   const [now, setNow] = useState(() => new Date());
   const today = todayString(now, configuration?.timezone);
   useEffect(() => {
@@ -22,7 +23,7 @@ export function useTodayTaskCounts(): TodayTaskCounts | null {
     () =>
       JSON.stringify(
         status === "ready"
-          ? (repository.todayTaskCounts?.(today) ?? null)
+          ? (repository.todayTaskCounts?.(today, hiddenDeletionIds) ?? null)
           : null,
       ),
     () => "null",

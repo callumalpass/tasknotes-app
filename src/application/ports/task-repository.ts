@@ -161,11 +161,13 @@ export interface TaskRepository {
   /** Session metadata only; null until the existing index is complete. Never starts a read. */
   todayTaskCounts?(
     today: string,
+    hidden?: readonly string[],
   ): import("../../domain/today-summary").TodayTaskCounts | null;
   /** Task rows from a current, complete Inbox execution. Reading never starts a query. */
-  cachedInboxCount?(view: TaskView): number | null;
+  cachedInboxCount?(view: TaskView, hidden?: readonly string[]): number | null;
   navigationTaskCounts?(
     today: string,
+    hidden?: readonly string[],
   ): { inbox: number; upcoming: number } | null;
   /**
    * Session metadata only; null until the index has loaded once. Never starts

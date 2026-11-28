@@ -1,11 +1,15 @@
-import { act, render, screen } from "../test/render";
+import { act, fireEvent, render, screen } from "../test/render";
 import { expect, it } from "vitest";
-import { nextTaskFixture, seedRecord } from "../test/next-task-fixture";
+import {
+  nextTaskFixture,
+  seedRecord,
+  seedTaskView,
+} from "../test/next-task-fixture";
 import { MemoryMutationJournal } from "../test/memory-mutation-journal";
 import { taskNotesDefaultBaseSources } from "../domain/default-view-source";
 import type { TaskView } from "../domain/view";
 import { Navigation } from "./app-shell";
-import { RepositoryProvider } from "./repository-context";
+import { RepositoryProvider, useRepository } from "./repository-context";
 import { useNavigationTaskCounts } from "./use-navigation-task-counts";
 
 function InboxNavigation({ view }: { view: TaskView }) {
@@ -96,3 +100,56 @@ it.each([0, 3])(
     }
   },
 );
+
+it("hides only pending Inbox members immediately and restores the badge on undo", async () => {
+  const f = await nextTaskFixture();
+  try {
+    const inbox = taskNotesDefaultBaseSources(
+      await f.repository.taskConfiguration(),
+    ).find((source) => source.name === "Inbox")!;
+    const base = seedTaskView(f.replica, {
+      path: inbox.path,
+      name: inbox.name,
+    });
+    f.replica.editElsewhere(base.record, { body: inbox.document });
+    const task = await f.repository.create({ title: "Only Inbox task" });
+    const [document] = await f.repository.listViews();
+    const view = document!.views[0]!;
+    function Actions() {
+      const { deleteTask, undoTaskDeletion } = useRepository();
+      return (
+        <>
+          <button onClick={() => void deleteTask(task.id)}>Delete</button>
+          <button onClick={() => void undoTaskDeletion()}>Undo</button>
+        </>
+      );
+    }
+    const journal = new MemoryMutationJournal();
+    const mount = () =>
+      render(
+        <RepositoryProvider repository={f.repository} mutationJournal={journal}>
+          <InboxNavigation view={view} />
+          <Actions />
+        </RepositoryProvider>,
+      );
+    const first = mount();
+    await act(async () => {
+      await f.repository.executeView(view);
+    });
+    await screen.findByRole("button", { name: "Inbox 1" });
+    expect(f.repository.cachedInboxCount(view, ["outside-inbox"])).toBe(1);
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await screen.findByRole("button", { name: "Inbox 0" });
+    expect(await f.repository.get(task.id)).not.toBeNull();
+    first.unmount();
+    mount();
+    await act(async () => {
+      await f.repository.executeView(view);
+    });
+    await screen.findByRole("button", { name: "Inbox 0" });
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await screen.findByRole("button", { name: "Inbox 1" });
+  } finally {
+    f.close();
+  }
+});

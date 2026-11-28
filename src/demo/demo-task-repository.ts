@@ -550,9 +550,11 @@ export class DemoTaskRepository implements TaskRepository {
     if (this.tasks.delete(id)) this.changed();
   }
 
-  todayTaskCounts(today: string) {
+  todayTaskCounts(today: string, hidden?: readonly string[]) {
     const counts = { total: 0, overdue: 0 };
+    const excluded = new Set(hidden);
     for (const task of this.tasks.values()) {
+      if (excluded.has(task.id)) continue;
       const part = todayTaskContribution(task, today);
       counts.total += part.total;
       counts.overdue += part.overdue;
@@ -564,8 +566,8 @@ export class DemoTaskRepository implements TaskRepository {
     return projectShortcuts(this.tasks.values());
   }
 
-  navigationTaskCounts(today: string) {
-    return navigationTaskCounts(this.tasks.values(), today);
+  navigationTaskCounts(today: string, hidden?: readonly string[]) {
+    return navigationTaskCounts(this.tasks.values(), today, hidden);
   }
 
   runningTimers() {

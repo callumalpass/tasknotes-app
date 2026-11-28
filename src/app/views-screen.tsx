@@ -186,7 +186,7 @@ export function ViewsScreen({
     updateTasks,
     configuration,
     pendingDeletion,
-    deletionError,
+    hiddenDeletionIds,
   } = useRepository();
   // A completed row that leaves the results is held where it was, so it can
   // linger and fold away; rows that stay (or move) are left to the result.
@@ -502,10 +502,8 @@ export function ViewsScreen({
         : { execution: ranked, departing: new Map<string, number | null>() };
     return {
       execution:
-        held.execution &&
-        pendingDeletion &&
-        !(pendingDeletion.bulk && deletionError)
-          ? (pendingDeletion.ids ?? [pendingDeletion.id]).reduce(
+        held.execution && hiddenDeletionIds
+          ? hiddenDeletionIds.reduce(
               (result, id) => executionWithoutTask(result, id),
               held.execution,
             )
@@ -517,8 +515,7 @@ export function ViewsScreen({
     departures,
     manualOrder,
     manualRanks,
-    pendingDeletion,
-    deletionError,
+    hiddenDeletionIds,
     selected,
     visibleExecution,
   ]);

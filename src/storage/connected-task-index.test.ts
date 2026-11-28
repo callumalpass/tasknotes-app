@@ -155,6 +155,10 @@ it("maintains Today counters incrementally, with one rebuild at day rollover", (
   index.set(a.id, { task: a });
   index.set(b.id, { task: b });
   const enumerate = vi.spyOn(index, "values");
+  expect(index.todayCounts(today, [b.id, b.id, "missing"])).toEqual({
+    total: 1,
+    overdue: 0,
+  });
   expect(index.todayCounts(today)).toEqual({ total: 2, overdue: 1 });
   index.set(a.id, { task: { ...a, completed: true } });
   expect(index.todayCounts(today)).toEqual({ total: 1, overdue: 1 });
