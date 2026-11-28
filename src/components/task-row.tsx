@@ -1,5 +1,4 @@
 import { useTaskSelecting, useTaskSelection } from "../app/use-task-selection";
-import { taskMeta } from "../i18n/presentation";
 import { linkDisplayLabel, linkTarget } from "../domain/completion";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui, Trans } from "@lingui/react/macro";
@@ -141,7 +140,6 @@ export function TaskRow({
     }
   }
   const displayedTask = occurrence ? occurrenceTask(occurrence) : task;
-  const metadata = taskMeta(displayedTask);
   const missedDeadline =
     !displayedTask.completed &&
     !!displayedTask.due &&
@@ -199,7 +197,7 @@ export function TaskRow({
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const allDetails = withDistinctStatus(
     withRaisedPriority(
-      details ?? defaultTaskDetails(displayedTask, metadata, configuration),
+      details ?? defaultTaskDetails(displayedTask, configuration),
       ensurePriority,
       displayedTask,
       configuration,
@@ -1130,13 +1128,10 @@ function isCompactDetail(
 
 function defaultTaskDetails(
   task: TaskSummary,
-  metadata: ReturnType<typeof taskMeta>,
   configuration: import("../domain/task-configuration").TaskCollectionConfiguration,
 ): TaskRowDetail[] {
-  let index = 0;
   const details: TaskRowDetail[] = [];
   if (task.scheduled) {
-    index++;
     details.push({
       key: "scheduled",
       label: t({ message: "Scheduled" }),
@@ -1145,7 +1140,6 @@ function defaultTaskDetails(
     });
   }
   if (task.due) {
-    if (!task.scheduled) index++;
     details.push({
       key: "due",
       label: t({ message: "Due" }),
@@ -1166,7 +1160,7 @@ function defaultTaskDetails(
     details.push({
       key: "priority",
       label: t({ message: "Priority" }),
-      value: metadata[index]?.label ?? task.priority,
+      value: task.priority,
       rawValue: task.priority,
     });
   return details;

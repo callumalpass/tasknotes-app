@@ -288,7 +288,7 @@ describe("Google events alongside task calendars", () => {
     ).toBe(true);
   });
 
-  it("reads an agenda event as a row under each of its days", () => {
+  it("reads an agenda event as a row under each of its days", async () => {
     const { item } = overlay();
     const current = execution("2026-07-01");
     current.view.presentation!.options.calendarView = "listWeek";
@@ -306,7 +306,9 @@ describe("Google events alongside task calendars", () => {
     };
     el.append((calendar.props!.listItemContent as (arg: unknown) => Node)(arg));
     document.body.append(el);
-    act(() => (calendar.props!.itemDidMount as (arg: unknown) => void)(arg));
+    await act(async () =>
+      (calendar.props!.itemDidMount as (arg: unknown) => void)(arg),
+    );
     // The wrapper stays the one button that opens the event.
     expect(el).toHaveAccessibleName("Planning, All day · Day 2 of 2, Work");
     expect(el.querySelector(".google-event-row-title")).toHaveTextContent(
@@ -817,7 +819,9 @@ describe("shared agenda", () => {
     };
     el.append((calendar.props!.listItemContent as (arg: unknown) => Node)(arg));
     view.container.append(el);
-    act(() => (calendar.props!.itemDidMount as (arg: unknown) => void)(arg));
+    await act(async () =>
+      (calendar.props!.itemDidMount as (arg: unknown) => void)(arg),
+    );
     expect(el).not.toHaveAttribute("role");
     expect(el).not.toHaveAttribute("tabindex");
     expect(el.querySelector(".task-row")).toBeTruthy();
@@ -831,7 +835,9 @@ describe("shared agenda", () => {
     );
     expect(onToggle).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledTimes(1);
-    act(() => (calendar.props!.itemWillUnmount as (arg: unknown) => void)(arg));
+    await act(async () =>
+      (calendar.props!.itemWillUnmount as (arg: unknown) => void)(arg),
+    );
     expect(el.querySelector(".task-row")).toBeNull();
   });
 });

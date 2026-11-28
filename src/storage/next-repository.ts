@@ -1,5 +1,4 @@
 import { editTaskNotesType } from "../domain/tasknotes-contract";
-import { projectShortcuts } from "../domain/project-shortcuts";
 import { materializeDefaultViewOrder } from "../domain/view-document";
 import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
@@ -173,7 +172,7 @@ import { nextTaskDocument, nextTaskSummary } from "./next-task-records";
 import { peopleView } from "./mdbase-people";
 import { classifyChangeBatch } from "./collection-changes";
 import { ConnectedTaskIndex } from "./connected-task-index";
-import { BoundedCache } from "./bounded-cache";
+import { BoundedCache, viewExecutionBytes } from "./bounded-cache";
 import { NextCollectionFileStore } from "./next-files";
 import {
   CollectionChangeWindow,
@@ -323,14 +322,15 @@ export class NextTaskRepository implements TaskRepository {
   private readonly viewExecutions = new BoundedCache<{
     signature: string;
     execution: TaskViewExecution | null;
-  }>(
-    16,
-    8 * 1024 * 1024,
-    (slot) =>
-      2 *
-      (slot.signature.length +
-        (slot.execution ? JSON.stringify(slot.execution).length : 0)),
-  );
+  }>(16, 8 * 1024 * 1024, (slot, budget) => {
+    const signatureBytes = 2 * slot.signature.length;
+    return (
+      signatureBytes +
+      (slot.execution
+        ? viewExecutionBytes(slot.execution, budget - signatureBytes)
+        : 0)
+    );
+  });
   private readonly inboxCounts = new Map<
     string,
     { documentId: string; revision: string; count: number }
@@ -3450,9 +3450,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   projectShortcuts() {
-    return this.indexReady
-      ? projectShortcuts([...this.cache.values()].map(({ task }) => task))
-      : [];
+    return this.indexReady ? this.cache.projectShortcuts() : [];
   }
 
   /**
@@ -4112,8 +4110,9 @@ export class NextTaskRepository implements TaskRepository {
       );
       if (conflict) throw this.refuseDuplicateIdentity(conflict);
       if (this.viewExecutions.get(view.key) === slot) {
-        slot.execution = structuredClone(normalized);
-        this.viewExecutions.set(view.key, slot);
+        slot.execution = normalized;
+        if (this.viewExecutions.set(view.key, slot))
+          slot.execution = structuredClone(normalized);
         if (
           starterViewKind(view) === "inbox" &&
           !normalized.hasMore &&

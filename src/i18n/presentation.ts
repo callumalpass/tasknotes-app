@@ -1,3 +1,4 @@
+import { dateFormatter } from "./date-formatter";
 import { plural, selectOrdinal, t } from "@lingui/core/macro";
 import { appLocale } from "./app";
 import {
@@ -28,7 +29,7 @@ export function formatTaskDate(
   const tomorrow = dateFromStorage(today) ?? new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   if (datePart === todayString(tomorrow)) return `${t`Tomorrow`}${timeLabel}`;
-  const label = new Intl.DateTimeFormat(appLocale(), {
+  const label = dateFormatter({
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -58,10 +59,10 @@ export function formatRelativeTaskDate(
           : days < 0 && days >= -6
             ? plural(count, { one: "# day ago", other: "# days ago" })
             : days > 0 && days <= 6
-              ? new Intl.DateTimeFormat(appLocale(), {
+              ? dateFormatter({
                   weekday: "short",
                 }).format(date)
-              : new Intl.DateTimeFormat(appLocale(), {
+              : dateFormatter({
                   day: "numeric",
                   month: "short",
                   year:
@@ -74,7 +75,7 @@ export function formatRelativeTaskDate(
 
 export function formatTaskTime(value: string): string {
   const [hours, minutes] = value.split(":").map(Number);
-  return new Intl.DateTimeFormat(appLocale(), {
+  return dateFormatter({
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(2024, 0, 1, hours, minutes));
@@ -140,12 +141,12 @@ export function weekdayName(
   value: RecurrenceWeekday,
   width: "long" | "narrow" = "long",
 ): string {
-  return new Intl.DateTimeFormat(appLocale(), { weekday: width }).format(
+  return dateFormatter({ weekday: width }).format(
     new Date(2024, 0, 1 + weekdays.indexOf(value)),
   );
 }
 export function monthName(value: number): string {
-  return new Intl.DateTimeFormat(appLocale(), { month: "long" }).format(
+  return dateFormatter({ month: "long" }).format(
     new Date(2024, Math.max(0, Math.min(11, value - 1)), 1),
   );
 }
@@ -253,7 +254,7 @@ export function recurrenceRuleSummary(draft: RecurrenceRuleDraft): string {
     const ending = plural(count, { one: "# time", other: "# times" });
     summary = t`${summary}, ${ending}`;
   } else if (draft.end === "until" && draft.until) {
-    const until = new Intl.DateTimeFormat(appLocale(), {
+    const until = dateFormatter({
       day: "numeric",
       month: "short",
       year: "numeric",

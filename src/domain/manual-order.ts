@@ -262,12 +262,13 @@ function decode(value?: string): number | null {
   return result;
 }
 
+const collator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
 function compareRankValues(left?: string, right?: string): number {
   if (left && right) {
-    const collator = new Intl.Collator(undefined, {
-      numeric: true,
-      sensitivity: "base",
-    });
     const compared = collator.compare(left, right);
     return compared || left.localeCompare(right);
   }

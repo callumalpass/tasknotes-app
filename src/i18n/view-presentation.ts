@@ -1,3 +1,4 @@
+import { dateFormatter } from "./date-formatter";
 import { t } from "@lingui/core/macro";
 import { appLocale } from "./app";
 import { builtInFieldLabel } from "./default-labels";
@@ -47,7 +48,7 @@ export function formatPropertyValue(
     if (format === "date" || dateOnly || dateTime) {
       const date = dateFromStorage(value, timezone);
       if (date)
-        return new Intl.DateTimeFormat(appLocale(), {
+        return dateFormatter({
           day: "numeric",
           month: "short",
           timeZone: dateTime ? timezone : undefined,
@@ -68,7 +69,7 @@ export function viewPropertyDetails(
 ): ViewPropertyDetail[] | undefined {
   return domainViewPropertyDetails(row, properties, {
     ...options,
-    formatValue: formatPropertyValue,
+    formatValue: options?.formatValue ?? formatPropertyValue,
     labelFor: propertyLabel,
   });
 }

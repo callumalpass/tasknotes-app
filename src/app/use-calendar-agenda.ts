@@ -57,6 +57,20 @@ export function useCalendarAgenda({
   const [slots, setSlots] = useState<
     ReadonlyMap<HTMLElement, ItemArg<CalendarEventData>>
   >(new Map());
+  const mountedSlots = useRef(
+    new Map<HTMLElement, ItemArg<CalendarEventData>>(),
+  );
+  const publishing = useRef(false);
+  // A calendar redraw mounts or removes a batch synchronously. Publish one
+  // immutable portal snapshot after the batch instead of copying it per row.
+  function publishSlots() {
+    if (publishing.current) return;
+    publishing.current = true;
+    queueMicrotask(() => {
+      publishing.current = false;
+      setSlots(new Map(mountedSlots.current));
+    });
+  }
   const [stripRange, setStripRange] = useState(() => {
     const start = new Date();
     const end = new Date(start);
@@ -90,18 +104,14 @@ export function useCalendarAgenda({
       arg.el.removeAttribute("tabindex");
       arg.el.removeAttribute("aria-label");
     }
-    setSlots((current) => new Map(current).set(slot, arg));
+    mountedSlots.current.set(slot, arg);
+    publishSlots();
   }
 
   function unmount({ el }: ItemArg<CalendarEventData>) {
     const slot = el.querySelector<HTMLElement>(AGENDA_SLOTS);
     if (!slot) return;
-    setSlots((current) => {
-      if (!current.has(slot)) return current;
-      const next = new Map(current);
-      next.delete(slot);
-      return next;
-    });
+    if (mountedSlots.current.delete(slot)) publishSlots();
   }
 
   useEffect(() => {
