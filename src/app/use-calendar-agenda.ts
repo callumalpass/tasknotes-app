@@ -247,11 +247,21 @@ export function useCalendarAgenda({
         }
         more.textContent = t`Show more days`;
       }
-      api.strip?.measure();
+      // The calendar observes its strip size. Reading layout again here
+      // forces a synchronous reflow when virtual rows have just mounted.
+      if (!host!.ownerDocument.defaultView?.ResizeObserver)
+        api.strip?.measure();
     }
     const observe = () =>
       observer.observe(host, { childList: true, subtree: true });
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((changes) => {
+      if (
+        changes.every(
+          ({ target }) =>
+            target instanceof Element && target.closest(AGENDA_SLOTS),
+        )
+      )
+        return;
       // Do not observe our own labels (or recursively redraw them).
       observer.disconnect();
       decorate();

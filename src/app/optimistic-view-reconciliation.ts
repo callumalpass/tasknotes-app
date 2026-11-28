@@ -5,6 +5,7 @@ import type { TaskSummary, UpdateTaskInput } from "../domain/task";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewRow, TaskViewExecution } from "../domain/view";
 import {
+  compareTaskRanks,
   sortTasksByManualOrder,
   type ManualOrderConfiguration,
 } from "../domain/manual-order";
@@ -34,32 +35,40 @@ export function executionWithManualRanks(
   order: ManualOrderConfiguration,
   sortOrderField: string,
 ): TaskViewExecution {
-  const rows = execution.rows.map((row) => {
-    const rank = ranks.get(row.task.id);
-    if (!rank || rank.viewKey !== viewKey) return row;
-    return {
-      ...row,
-      task: {
-        ...row.task,
-        sortOrder: rank.sortOrder,
-        frontmatter: {
-          ...row.task.frontmatter,
-          [sortOrderField]: rank.sortOrder,
-        },
-      },
-    };
-  });
-  const rowByTask = new Map(rows.map((row) => [row.task.id, row]));
+  const rows = ranks.size
+    ? execution.rows.map((row) => {
+        const rank = ranks.get(row.task.id);
+        if (!rank || rank.viewKey !== viewKey) return row;
+        return {
+          ...row,
+          task: {
+            ...row.task,
+            sortOrder: rank.sortOrder,
+            frontmatter: {
+              ...row.task.frontmatter,
+              [sortOrderField]: rank.sortOrder,
+            },
+          },
+        };
+      })
+    : execution.rows;
+  const compare = (left: TaskViewRow, right: TaskViewRow) =>
+    compareTaskRanks(left.task, right.task, order.direction);
+  const ordered = rows.every(
+    (row, i) => i === 0 || compare(rows[i - 1], row) <= 0,
+  )
+    ? rows
+    : [...rows].sort(compare);
+  // Source sort metadata can arrive after the rows. Preserve the execution
+  // when it already presents that order, including ties in authority order.
+  if (ordered === execution.rows && execution.view.sort?.length)
+    return execution;
   return {
     ...execution,
-    view: {
-      ...execution.view,
-      sort: execution.view.sort?.length ? execution.view.sort : [order],
-    },
-    rows: sortTasksByManualOrder(
-      rows.map(({ task }) => task),
-      order.direction,
-    ).map((task) => rowByTask.get(task.id)!),
+    view: execution.view.sort?.length
+      ? execution.view
+      : { ...execution.view, sort: [order] },
+    rows: ordered,
   };
 }
 
