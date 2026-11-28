@@ -1,6 +1,5 @@
 import { editTaskNotesType } from "../domain/tasknotes-contract";
 import { materializeDefaultViewOrder } from "../domain/view-document";
-import { navigationTaskCounts } from "../domain/navigation-task-counts";
 import type {
   CalendarTaskEdit,
   OccurrenceOverrides,
@@ -1597,6 +1596,7 @@ export class NextTaskRepository implements TaskRepository {
 
   async listSummaries(
     query: Omit<TaskListQuery, "search"> = {},
+    options?: { onlyWithOccurrenceChildren?: boolean },
   ): Promise<TaskSummary[]> {
     if (query.limit === 0) return [];
     const signal = this.lifetimeSignal();
@@ -1604,6 +1604,11 @@ export class NextTaskRepository implements TaskRepository {
     signal.throwIfAborted();
     const paths = await this.assignedPaths(query.assignedTo, signal);
     signal.throwIfAborted();
+    if (
+      options?.onlyWithOccurrenceChildren &&
+      !this.cache.hasOccurrenceChildren()
+    )
+      return [];
     return this.cache.list(query, undefined, paths);
   }
 
@@ -3546,13 +3551,7 @@ export class NextTaskRepository implements TaskRepository {
   }
 
   navigationTaskCounts(today: string, hidden?: readonly string[]) {
-    return this.indexReady
-      ? navigationTaskCounts(
-          [...this.cache.values()].map(({ task }) => task),
-          today,
-          hidden,
-        )
-      : null;
+    return this.indexReady ? this.cache.navigationCounts(today, hidden) : null;
   }
 
   async stats() {

@@ -1,3 +1,4 @@
+import { runtimeTimezone } from "./runtime-timezone";
 import { taskDatePart, type TaskSummary } from "./task";
 
 export function navigationTaskCounts(
@@ -23,4 +24,31 @@ export function navigationTaskCounts(
       upcoming++;
   }
   return { inbox, upcoming };
+}
+
+/** One day and deletion mask per index. Owners clear it when task metadata changes. */
+export class NavigationCountCache {
+  private snapshot?: {
+    key: string;
+    counts: ReturnType<typeof navigationTaskCounts>;
+  };
+
+  read(
+    today: string,
+    hidden: readonly string[] | undefined,
+    tasks: () => Iterable<TaskSummary>,
+  ) {
+    const key = JSON.stringify([today, runtimeTimezone(), hidden ?? []]);
+    if (this.snapshot?.key !== key) {
+      this.snapshot = {
+        key,
+        counts: navigationTaskCounts(tasks(), today, hidden),
+      };
+    }
+    return { ...this.snapshot.counts };
+  }
+
+  clear() {
+    this.snapshot = undefined;
+  }
 }

@@ -105,7 +105,11 @@ export interface TaskRepository {
   /** Reconcile durable timer membership using this repository's authority and lifecycle. */
   reconcileReminders?(): Promise<void>;
   /** Lightweight metadata; no body is fetched or represented as empty. */
-  listSummaries(query?: Omit<TaskListQuery, "search">): Promise<TaskSummary[]>;
+  listSummaries(
+    query?: Omit<TaskListQuery, "search">,
+    /** Calendar identity resolution needs the full alias set only when an occurrence child exists. */
+    options?: { onlyWithOccurrenceChildren?: boolean },
+  ): Promise<TaskSummary[]>;
   /** Metadata plus observed match evidence; never downloads bodies. */
   search(
     query: TaskListQuery,

@@ -53,7 +53,12 @@ export function SearchScreen({
       ? people.directory.current.personPath
       : undefined;
   const peopleBlocked = assignedToMe && personPath === undefined;
-  const deferred = useDebounced(query, 160);
+  const [deferred, setDeferred] = useState("");
+  useEffect(() => {
+    if (query === deferred) return;
+    const timeout = window.setTimeout(() => setDeferred(query), 160);
+    return () => window.clearTimeout(timeout);
+  }, [query, deferred]);
   const { setTaskCompletion } = useRepository();
   const [limit, setLimit] = useState(300);
   const {
@@ -102,9 +107,14 @@ export function SearchScreen({
   // Too large is final for this search: retrying cannot change it.
   const tooBroad = connectProblemFromError(error)?.code === "too_large";
   const waiting = query !== deferred;
-  const chooseQuery = (value: string) => {
+  const editQuery = (value: string) => {
     setQuery(value);
     setLimit(300);
+  };
+  // A chosen suggestion or history entry is already a complete query.
+  const chooseQuery = (value: string) => {
+    editQuery(value);
+    setDeferred(value);
   };
   const history = useSearchHistory();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -190,7 +200,7 @@ export function SearchScreen({
               : undefined
           }
           value={query}
-          onChange={(event) => chooseQuery(event.target.value)}
+          onChange={(event) => editQuery(event.target.value)}
           onKeyDown={(event) => {
             if (["Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key))
               setKeyboardNavigation(true);
@@ -637,13 +647,4 @@ function collect(
 
 function cleanField(value: string): string {
   return linkDisplayLabel(value.replace(/^#/, ""));
-}
-
-function useDebounced<T>(value: T, delay: number): T {
-  const [deferred, setDeferred] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDeferred(value), delay);
-    return () => window.clearTimeout(timeout);
-  }, [delay, value]);
-  return deferred;
 }

@@ -392,6 +392,7 @@ function renderToday(
     onOpenTask?: (task: Task, occurrence?: string) => void;
   } = {},
   catalogView = todayView,
+  viewKey = todayView.key,
 ) {
   return render(
     <RepositoryProvider
@@ -407,7 +408,7 @@ function renderToday(
         }))}
         navigationViewKeys={[todayView.key, upcomingView.key]}
         operational
-        viewKey={todayView.key}
+        viewKey={viewKey}
         views={[catalogView, upcomingView]}
         onBack={() => undefined}
         onOpenTask={handlers.onOpenTask ?? (() => undefined)}
@@ -509,5 +510,27 @@ it("keeps missed deadlines when asked to move only the plan", async () => {
     expect(updateMany).toHaveBeenCalledWith([
       { id: "late", input: { scheduled: `${today}T09:30` } },
     ]),
+  );
+});
+
+it("requests occurrence identities when opening a calendar", async () => {
+  const row = task("visible", "Visible task", { scheduled: todayString() });
+  const listSummaries = vi.fn(async () => [row]);
+  const repo = repository([row], {
+    listSummaries,
+    executeView: async () => ({
+      view: upcomingView,
+      rows: [{ task: row, values: {} }],
+      groups: [],
+      totalCount: 1,
+      hasMore: false,
+    }),
+  });
+  renderToday(repo, {}, todayView, upcomingView.key);
+  await waitFor(() =>
+    expect(listSummaries).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "all", limit: 50_000 }),
+      { onlyWithOccurrenceChildren: true },
+    ),
   );
 });

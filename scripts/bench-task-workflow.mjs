@@ -11,6 +11,7 @@ assert.ok(
 const browser = await chromium.launch();
 const rounds = Number(process.env.TASKNOTES_BENCH_ROUNDS ?? 7);
 const results = {};
+const focused = process.env.TASKNOTES_BENCH_FOCUS === "calendar-search";
 const view = (slug) =>
   "/views/" + encodeURIComponent("TaskNotes/Views/" + slug + ".base#" + slug);
 
@@ -69,8 +70,14 @@ async function sample(origin, size) {
         ["Scratchpad", "/scratchpad", ".scratchpad-document-stream"],
         ["Search", "/search", ".browse-fields"],
         ["Today", view("today"), ".task-row-title"],
-      ])
+      ]) {
+        if (
+          focused &&
+          !["Upcoming", "Calendar", "Search", "Today"].includes(name)
+        )
+          continue;
         await measure(mode + " " + name, () => go(path, selector));
+      }
 
       const prefix = mode + " ";
       const project = page.locator(
@@ -99,6 +106,18 @@ async function sample(origin, size) {
       });
       await go("/search", "#task-search");
       const search = page.getByRole("searchbox", { name: "Search tasks" });
+      if (focused) {
+        const chip = page
+          .locator(".browse-fields")
+          .getByRole("button", { name: "work", exact: true });
+        await chip.waitFor();
+        await measure(prefix + "choose tag", async () => {
+          await chip.click();
+          await ready(".search-results .task-row-title");
+        });
+        await page.getByRole("button", { name: "Clear search" }).click();
+        await chip.waitFor();
+      }
       const row = page
         .locator(".search-results .task-row-title")
         .filter({ hasText: title });
@@ -154,6 +173,7 @@ async function sample(origin, size) {
           count,
         );
       });
+      if (focused) continue;
       await go(view("upcoming"), ".tnc-list-lead .task-row-title");
       const lead = page.locator(".tnc-list-lead");
       const group = lead.locator(".agenda-row-group").nth(80);

@@ -137,7 +137,7 @@
   color: var(--color-danger);
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 560px) {
   /* Give the button its own column. Only the centred 20px box is painted. */
   .markdown-source-editor .cm-lp-task {
     width: 44px;
@@ -164,7 +164,9 @@
     background: var(--accent);
     border-color: var(--accent);
   }
+}
 
+@media (pointer: coarse) {
   .cm-lp-table-menu .mdbase-menu-item {
     min-height: 44px;
   }

@@ -50,6 +50,35 @@ it("hands Enter to the first result and exposes the navigation hint", async () =
     "Enter or ↓ to focus the first result. j / k to move, Enter to open.",
   );
 });
+it("submits a chosen tag immediately and debounces further typing", () => {
+  fixture.query.mockReturnValue({
+    tasks: [
+      {
+        task: {
+          id: "one",
+          title: "First",
+          projects: [],
+          contexts: [],
+          tags: ["work"],
+        },
+        bodyMatches: [],
+      },
+    ],
+    retry: fixture.retry,
+  });
+  render(<SearchScreen onOpen={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "work" }));
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ search: "work" }),
+  );
+  fireEvent.change(screen.getByRole("searchbox"), {
+    target: { value: "worker" },
+  });
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ search: "work" }),
+  );
+});
+
 it("keeps browse groups expanded when the display language changes", async () => {
   fixture.query.mockReturnValue({
     tasks: Array.from({ length: 6 }, (_, index) => ({

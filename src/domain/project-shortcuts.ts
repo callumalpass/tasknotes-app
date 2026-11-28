@@ -62,19 +62,33 @@ export function projectShortcuts(
   limit = 6,
 ): ProjectShortcut[] {
   const all = [...tasks];
-  const taskLinks = new Set(
-    all
-      .filter((task) => !isMarkedProjectNote(task))
-      .flatMap((task) => taskLinkKeys(task.path)),
-  );
-  const counts = new Map<string, number>();
+  // Count repeated references before resolving their target and display label.
+  const references = new Map<string, number>();
   for (const task of all) {
     if (task.completed || task.archived) continue;
-    for (const value of task.projects) {
-      if (taskLinks.has(linkTarget(value).toLocaleLowerCase())) continue;
-      const label = projectLabel(value);
-      counts.set(label, (counts.get(label) ?? 0) + 1);
+    for (const value of task.projects)
+      references.set(value, (references.get(value) ?? 0) + 1);
+  }
+  const targets = new Map(
+    [...references.keys()].map((value) => [
+      value,
+      linkTarget(value).toLocaleLowerCase(),
+    ]),
+  );
+  const projectTargets = new Set(targets.values());
+  for (const task of all) {
+    const [path, basename] = taskLinkKeys(task.path);
+    if (!projectTargets.has(path) && !projectTargets.has(basename)) continue;
+    if (!isMarkedProjectNote(task)) {
+      projectTargets.delete(path);
+      projectTargets.delete(basename);
     }
+  }
+  const counts = new Map<string, number>();
+  for (const [value, count] of references) {
+    if (!projectTargets.has(targets.get(value)!)) continue;
+    const label = projectLabel(value);
+    counts.set(label, (counts.get(label) ?? 0) + count);
   }
   return [...counts]
     .map(([label, count]) => ({ label, count }))

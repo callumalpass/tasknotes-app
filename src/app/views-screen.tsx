@@ -347,20 +347,22 @@ export function ViewsScreen({
     selected &&
     (starterViewKind(selected) === "today" || selected.name === "Today");
   const projectsScreen = isProjectsPresentation(selected);
-  const needsIdentityTasks =
-    todayScreen ||
+  const calendarScreen =
     selected?.presentation?.type === "tasknotes.calendar" ||
-    selected?.presentation?.type === "tasknotes.mini-calendar" ||
-    projectsScreen;
+    selected?.presentation?.type === "tasknotes.mini-calendar";
+  const needsIdentityTasks = todayScreen || calendarScreen || projectsScreen;
   // On Today the full task list only feeds the summary and the first-run
   // state. Loading it scans the whole collection, so wait until the view has
   // answered rather than compete with the query that shows its first rows.
   const [todayViewAnswered, setTodayViewAnswered] = useState(false);
   const identityTasksDeferred = !!todayScreen && !todayViewAnswered;
-  const identityTasksQuery = useTasks({
-    status: "all",
-    limit: needsIdentityTasks && !identityTasksDeferred ? 50_000 : 0,
-  });
+  const identityTasksQuery = useTasks(
+    {
+      status: "all",
+      limit: needsIdentityTasks && !identityTasksDeferred ? 50_000 : 0,
+    },
+    calendarScreen && !todayScreen ? "calendar-identities" : "summaries",
+  );
   const { tasks: identityTasks, error: identityTasksError } =
     identityTasksQuery;
   const identityTasksLoading =

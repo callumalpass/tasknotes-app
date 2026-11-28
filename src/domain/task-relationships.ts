@@ -40,21 +40,28 @@ export function taskRelationships(
   const blocking: TaskSummary[] = [];
   const subtasks: TaskSummary[] = [];
 
+  // Reused project links and blocker references have one answer for this
+  // drawer, regardless of how many tasks point at them.
+  const matches = new Map<string, boolean>();
+  function pointsToCurrent(link: string) {
+    let match = matches.get(link);
+    if (match === undefined) {
+      match = recordMatchesLink(current.path, link);
+      matches.set(link, match);
+    }
+    return match;
+  }
+
   for (const candidate of tasks) {
     if (candidate.id === current.id) continue;
     if (
       (candidate.blockedBy ?? []).some(
         (dependency) =>
-          dependency.uid === current.id ||
-          recordMatchesLink(current.path, dependency.uid),
+          dependency.uid === current.id || pointsToCurrent(dependency.uid),
       )
     )
       blocking.push(candidate);
-    if (
-      (candidate.projects ?? []).some((project) =>
-        recordMatchesLink(current.path, project),
-      )
-    )
+    if ((candidate.projects ?? []).some(pointsToCurrent))
       subtasks.push(candidate);
   }
 
