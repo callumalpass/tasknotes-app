@@ -1501,6 +1501,7 @@ export function ViewsScreen({
               <p className="view-date">
                 <span className="today-date-text">
                   {new Intl.DateTimeFormat(appLocale(), {
+                    timeZone: configuration.timezone,
                     weekday: "long",
                     month: "long",
                     day: "numeric",
