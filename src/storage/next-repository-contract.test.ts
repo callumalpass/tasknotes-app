@@ -5,6 +5,7 @@ import type {
   RepositoryChange,
 } from "../application/ports/task-repository";
 import { todayString, type TaskListQuery } from "../domain/task";
+import { SCRATCHPAD_TYPE } from "../domain/scratchpad";
 import type { TaskView, TaskViewExecution } from "../domain/view";
 
 import {
@@ -280,6 +281,35 @@ describe("SDK TaskRepository behavior (protocol stand-in)", () => {
     expect(await repository.search({ search: "needle absent" })).toEqual([]);
     expect(await repository.search({ search, limit: 0 })).toEqual([]);
     expect(await repository.search({ search: "   " })).toHaveLength(2);
+  });
+
+  it("reuses earlier search words only at the authority's current revision", async () => {
+    const seeded = seedTask(fixture.replica, {
+      title: "Review",
+      body: "Ordinary reference",
+    });
+    await repository.refresh();
+    const query = vi.spyOn(fixture.client, "query");
+    const bodyQueries = () =>
+      query.mock.calls.flatMap(([input]) =>
+        input.where?.startsWith("file.body.") ? [input.where] : [],
+      );
+
+    expect(await repository.search({ search: "ordinary ref" })).toMatchObject([
+      { bodyMatches: ["ordinary", "ref"] },
+    ]);
+    expect(bodyQueries()).toHaveLength(2);
+
+    query.mockClear();
+    expect(await repository.search({ search: "ordinary refe" })).toMatchObject([
+      { bodyMatches: ["ordinary", "refe"] },
+    ]);
+    expect(bodyQueries()).toEqual(['file.body.lower().contains("refe")']);
+
+    fixture.replica.editElsewhere(seeded.id, { body: "Changed reference" });
+    query.mockClear();
+    expect(await repository.search({ search: "ordinary refer" })).toEqual([]);
+    expect(bodyQueries()).toContain('file.body.lower().contains("ordinary")');
   });
 
   it("keeps archived counts separate from total/open/completed", async () => {
@@ -680,7 +710,13 @@ describe("SDK TaskRepository behavior (protocol stand-in)", () => {
       });
       created.push(next.previous.id);
     }
+    const query = vi.spyOn(fixture.client, "query");
     const first = await repository.listScratchFeed!({ limit: 1 });
+    const noteQueries = () =>
+      query.mock.calls.filter(([input]) =>
+        input.types?.includes(SCRATCHPAD_TYPE),
+      );
+    expect(noteQueries()).toHaveLength(1);
     expect(first.items).toHaveLength(1);
     expect(first.nextCursor).toBeTruthy();
     const items = [...first.items];
@@ -696,6 +732,7 @@ describe("SDK TaskRepository behavior (protocol stand-in)", () => {
       expect.arrayContaining(created),
     );
     expect(items.map((item) => item.id)).not.toContain(first.current.id);
+    expect(noteQueries()).toHaveLength(1);
     await expect(
       repository.listScratchFeed!({ cursor: "invalid" }),
     ).rejects.toThrow("The scratchpad feed page is invalid. Reload it.");

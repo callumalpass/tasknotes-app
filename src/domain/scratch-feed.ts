@@ -45,26 +45,36 @@ export function scratchFeedPage(
   items: readonly ScratchFeedItem[],
   request: ScratchFeedPageRequest = {},
 ): ScratchFeedPage {
+  return prepareScratchFeed(current, items)(request);
+}
+
+/** Order one history snapshot once, including across continuation requests. */
+export function prepareScratchFeed(
+  current: ScratchpadDocument,
+  items: readonly ScratchFeedItem[],
+): (request: ScratchFeedPageRequest) => ScratchFeedPage {
   const ordered = [...items]
     .filter((item) => item.kind === "image" || item.id !== current.id)
     .sort(compareScratchFeedNewestFirst);
-  const limit = Math.max(1, Math.min(Math.floor(request.limit ?? 20), 100));
-  let start = 0;
-  if (request.cursor) {
-    const key = decodeCursor(request.cursor);
-    start = ordered.findIndex((item) => feedKey(item) === key);
-    if (start < 0)
-      throw new Error("The scratchpad feed page has expired. Reload it.");
-    start += 1;
-  }
-  const page = ordered.slice(start, start + limit);
-  const last = page.at(-1);
-  return {
-    current,
-    items: page,
-    ...(last && start + page.length < ordered.length
-      ? { nextCursor: encodeURIComponent(feedKey(last)) }
-      : {}),
+  return (request) => {
+    const limit = Math.max(1, Math.min(Math.floor(request.limit ?? 20), 100));
+    let start = 0;
+    if (request.cursor) {
+      const key = decodeCursor(request.cursor);
+      start = ordered.findIndex((item) => feedKey(item) === key);
+      if (start < 0)
+        throw new Error("The scratchpad feed page has expired. Reload it.");
+      start += 1;
+    }
+    const page = ordered.slice(start, start + limit);
+    const last = page.at(-1);
+    return {
+      current,
+      items: page,
+      ...(last && start + page.length < ordered.length
+        ? { nextCursor: encodeURIComponent(feedKey(last)) }
+        : {}),
+    };
   };
 }
 
