@@ -52,12 +52,10 @@ for (const [width, height, hasTouch] of [
           };
         });
       const inactive = await measure();
-      await test
-        .info()
-        .attach("inactive geometry", {
-          body: JSON.stringify(inactive),
-          contentType: "application/json",
-        });
+      await test.info().attach("inactive geometry", {
+        body: JSON.stringify(inactive),
+        contentType: "application/json",
+      });
       expect
         .soft(inactive, JSON.stringify(inactive))
         .toMatchObject({ width: 44, height: 44, overlaps: [] });
@@ -72,12 +70,10 @@ for (const [width, height, hasTouch] of [
         await expect(button).toBeVisible();
       }
       const active = await measure();
-      await test
-        .info()
-        .attach("active geometry", {
-          body: JSON.stringify(active),
-          contentType: "application/json",
-        });
+      await test.info().attach("active geometry", {
+        body: JSON.stringify(active),
+        contentType: "application/json",
+      });
       expect(active).toMatchObject({ width: 44, height: 44, overlaps: [] });
       expect(
         await page.evaluate(
