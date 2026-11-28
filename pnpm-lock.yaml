@@ -13,6 +13,11 @@ catalogs:
       specifier: 0.3.2
       version: 0.3.2
 
+patchedDependencies:
+  '@tasknotes/calendar@0.1.10':
+    hash: 1f52e22465771c139cc2a7d4a96396a9bc323edc1bf05082b249fbe6b2f52db6
+    path: patches/@tasknotes__calendar@0.1.10.patch
+
 importers:
 
   .:
@@ -94,7 +99,7 @@ importers:
         version: 3.14.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tasknotes/calendar':
         specifier: 0.1.10
-        version: 0.1.10(react@19.2.8)
+        version: 0.1.10(patch_hash=1f52e22465771c139cc2a7d4a96396a9bc323edc1bf05082b249fbe6b2f52db6)(react@19.2.8)
       '@tasknotes/direct-sdk':
         specifier: file:vendor/sdk-self-hosted-9df3f92db395da1a1c61744f74846f756b6852511619e696c7c6bb9c32a7308f.tgz
         version: '@mdbase-dev/sdk@file:vendor/sdk-self-hosted-9df3f92db395da1a1c61744f74846f756b6852511619e696c7c6bb9c32a7308f.tgz'
@@ -6363,7 +6368,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.17.9': {}
 
-  '@tasknotes/calendar@0.1.10(react@19.2.8)':
+  '@tasknotes/calendar@0.1.10(patch_hash=1f52e22465771c139cc2a7d4a96396a9bc323edc1bf05082b249fbe6b2f52db6)(react@19.2.8)':
     optionalDependencies:
       react: 19.2.8
 

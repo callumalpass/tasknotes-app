@@ -4,3 +4,6 @@ packages:
 catalog:
   "@mdbase-dev/sdk": 0.2.58
   "@tasknotes/model": 0.3.2
+
+patchedDependencies:
+  "@tasknotes/calendar@0.1.10": patches/@tasknotes__calendar@0.1.10.patch

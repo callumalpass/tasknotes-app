@@ -2898,3 +2898,9 @@
 .google-calendar-settings-actions .google-event-delete {
   margin-right: 0;
 }
+
+/* A dense agenda measures groups as their native slots gain React controls.
+   Keep browser scroll anchoring from following a transient slot or footer. */
+.full-calendar-view.is-agenda:has(.agenda-row-group) {
+  overflow-anchor: none;
+}

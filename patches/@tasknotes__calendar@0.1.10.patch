@@ -1,0 +1,289 @@
+diff --git a/dist/cjs/index.cjs b/dist/cjs/index.cjs
+index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57de64bc1b 100644
+--- a/dist/cjs/index.cjs
++++ b/dist/cjs/index.cjs
+@@ -1504,7 +1504,7 @@ var ListView = class {
+     const inLead = /* @__PURE__ */ new Set();
+     const keep = /* @__PURE__ */ new Set();
+     let itemCount = 0;
+-    let prev = null;
++    let prev = this.lead?.section ?? null;
+     for (const day of days) {
+       let items = this.itemsOn(day);
+       if (includes) {
+@@ -1531,13 +1531,13 @@ var ListView = class {
+         section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
+         if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
+         opts.dayHeaderDidMount?.({ ...arg, el: heading });
+-        pool = new ItemPool(ctx, rows);
++        pool = this.rowPool(rows);
+         this.sections.set(day, section);
+         this.pools.set(day, pool);
+       }
+       section.classList.toggle("is-empty", !items.length);
+       itemCount += items.length;
+-      this.fill(pool, items, () => day);
++      pool.render(items, () => day);
+       if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
+         if (prev) prev.after(section);
+         else this.body.prepend(section);
+@@ -1568,18 +1568,29 @@ var ListView = class {
+       this.loader.observe(this.sentinel);
+     }
+   }
++  rowPool(container) {
++    const create = (host) => {
++      const pool = new ItemPool(this.ctx, host);
++      return {
++        render: (items, dayFor) => this.fill(pool, items, dayFor),
++        clear: () => pool.clear(),
++        elementsFor: (id) => pool.elementsFor(id)
++      };
++    };
++    return (this.agenda && this.ctx.opts.listRowPool ? this.ctx.opts.listRowPool(container, create) : create(container));
++  }
+   /** Places items in a pool, keeping DOM order equal to item order. */
+   fill(pool, items, dayFor) {
+     pool.begin();
++    let previous = null;
+     for (const n of items) {
+       const d = dayFor(n);
+-      pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const el = pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const next = previous ? previous.nextSibling : pool.container.firstChild;
++      if (el !== next) pool.container.insertBefore(el, next);
++      previous = el;
+     }
+     pool.end();
+-    for (const n of items) {
+-      const el = pool.elementsFor(n.id)[0];
+-      if (el) pool.container.append(el);
+-    }
+   }
+   renderLead(items) {
+     const { ctx } = this;
+@@ -1598,12 +1609,12 @@ var ListView = class {
+       const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
+       const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
+       const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
+-      this.lead = { section, slot, pool: new ItemPool(ctx, rows) };
++      this.lead = { section, slot, pool: this.rowPool(rows) };
+       opts.listLeadDidMount?.({ el: slot });
+     }
+     if (this.body.firstChild !== this.lead.section) this.body.prepend(this.lead.section);
+     const first = ctx.days[0] ?? ctx.view.range.startDay;
+-    this.fill(this.lead.pool, items, (n) => Math.max(n.startDay, first));
++    this.lead.pool.render(items, (n) => Math.max(n.startDay, first));
+   }
+   addRow(day) {
+     const { ctx } = this;
+diff --git a/dist/cjs/react.cjs b/dist/cjs/react.cjs
+index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..d0c7547fddc1571d1a904b73890bf91731ef242a 100644
+--- a/dist/cjs/react.cjs
++++ b/dist/cjs/react.cjs
+@@ -1412,7 +1412,7 @@ var ListView = class {
+     const inLead = /* @__PURE__ */ new Set();
+     const keep = /* @__PURE__ */ new Set();
+     let itemCount = 0;
+-    let prev = null;
++    let prev = this.lead?.section ?? null;
+     for (const day of days) {
+       let items = this.itemsOn(day);
+       if (includes) {
+@@ -1439,13 +1439,13 @@ var ListView = class {
+         section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
+         if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
+         opts.dayHeaderDidMount?.({ ...arg, el: heading });
+-        pool = new ItemPool(ctx, rows);
++        pool = this.rowPool(rows);
+         this.sections.set(day, section);
+         this.pools.set(day, pool);
+       }
+       section.classList.toggle("is-empty", !items.length);
+       itemCount += items.length;
+-      this.fill(pool, items, () => day);
++      pool.render(items, () => day);
+       if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
+         if (prev) prev.after(section);
+         else this.body.prepend(section);
+@@ -1476,18 +1476,29 @@ var ListView = class {
+       this.loader.observe(this.sentinel);
+     }
+   }
++  rowPool(container) {
++    const create = (host) => {
++      const pool = new ItemPool(this.ctx, host);
++      return {
++        render: (items, dayFor) => this.fill(pool, items, dayFor),
++        clear: () => pool.clear(),
++        elementsFor: (id) => pool.elementsFor(id)
++      };
++    };
++    return (this.agenda && this.ctx.opts.listRowPool ? this.ctx.opts.listRowPool(container, create) : create(container));
++  }
+   /** Places items in a pool, keeping DOM order equal to item order. */
+   fill(pool, items, dayFor) {
+     pool.begin();
++    let previous = null;
+     for (const n of items) {
+       const d = dayFor(n);
+-      pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const el = pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const next = previous ? previous.nextSibling : pool.container.firstChild;
++      if (el !== next) pool.container.insertBefore(el, next);
++      previous = el;
+     }
+     pool.end();
+-    for (const n of items) {
+-      const el = pool.elementsFor(n.id)[0];
+-      if (el) pool.container.append(el);
+-    }
+   }
+   renderLead(items) {
+     const { ctx } = this;
+@@ -1506,12 +1517,12 @@ var ListView = class {
+       const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
+       const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
+       const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
+-      this.lead = { section, slot, pool: new ItemPool(ctx, rows) };
++      this.lead = { section, slot, pool: this.rowPool(rows) };
+       opts.listLeadDidMount?.({ el: slot });
+     }
+     if (this.body.firstChild !== this.lead.section) this.body.prepend(this.lead.section);
+     const first = ctx.days[0] ?? ctx.view.range.startDay;
+-    this.fill(this.lead.pool, items, (n) => Math.max(n.startDay, first));
++    this.lead.pool.render(items, (n) => Math.max(n.startDay, first));
+   }
+   addRow(day) {
+     const { ctx } = this;
+diff --git a/dist/esm/chunk-5PHSJK36.js b/dist/esm/chunk-5PHSJK36.js
+index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14b302ec0b 100644
+--- a/dist/esm/chunk-5PHSJK36.js
++++ b/dist/esm/chunk-5PHSJK36.js
+@@ -789,7 +789,7 @@ var ListView = class {
+     const inLead = /* @__PURE__ */ new Set();
+     const keep = /* @__PURE__ */ new Set();
+     let itemCount = 0;
+-    let prev = null;
++    let prev = this.lead?.section ?? null;
+     for (const day of days) {
+       let items = this.itemsOn(day);
+       if (includes) {
+@@ -816,13 +816,13 @@ var ListView = class {
+         section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
+         if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
+         opts.dayHeaderDidMount?.({ ...arg, el: heading });
+-        pool = new ItemPool(ctx, rows);
++        pool = this.rowPool(rows);
+         this.sections.set(day, section);
+         this.pools.set(day, pool);
+       }
+       section.classList.toggle("is-empty", !items.length);
+       itemCount += items.length;
+-      this.fill(pool, items, () => day);
++      pool.render(items, () => day);
+       if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
+         if (prev) prev.after(section);
+         else this.body.prepend(section);
+@@ -853,18 +853,29 @@ var ListView = class {
+       this.loader.observe(this.sentinel);
+     }
+   }
++  rowPool(container) {
++    const create = (host) => {
++      const pool = new ItemPool(this.ctx, host);
++      return {
++        render: (items, dayFor) => this.fill(pool, items, dayFor),
++        clear: () => pool.clear(),
++        elementsFor: (id) => pool.elementsFor(id)
++      };
++    };
++    return (this.agenda && this.ctx.opts.listRowPool ? this.ctx.opts.listRowPool(container, create) : create(container));
++  }
+   /** Places items in a pool, keeping DOM order equal to item order. */
+   fill(pool, items, dayFor) {
+     pool.begin();
++    let previous = null;
+     for (const n of items) {
+       const d = dayFor(n);
+-      pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const el = pool.place(n.id, { n, day: d, isStart: n.startDay === d, isEnd: n.endDay === d + 1, variant: "list", mirror: false });
++      const next = previous ? previous.nextSibling : pool.container.firstChild;
++      if (el !== next) pool.container.insertBefore(el, next);
++      previous = el;
+     }
+     pool.end();
+-    for (const n of items) {
+-      const el = pool.elementsFor(n.id)[0];
+-      if (el) pool.container.append(el);
+-    }
+   }
+   renderLead(items) {
+     const { ctx } = this;
+@@ -883,12 +894,12 @@ var ListView = class {
+       const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
+       const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
+       const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
+-      this.lead = { section, slot, pool: new ItemPool(ctx, rows) };
++      this.lead = { section, slot, pool: this.rowPool(rows) };
+       opts.listLeadDidMount?.({ el: slot });
+     }
+     if (this.body.firstChild !== this.lead.section) this.body.prepend(this.lead.section);
+     const first = ctx.days[0] ?? ctx.view.range.startDay;
+-    this.fill(this.lead.pool, items, (n) => Math.max(n.startDay, first));
++    this.lead.pool.render(items, (n) => Math.max(n.startDay, first));
+   }
+   addRow(day) {
+     const { ctx } = this;
+diff --git a/dist/types/dom/options.d.cts b/dist/types/dom/options.d.cts
+index 0814ca846b4d4046235ac302844cf53f7bd1d7a3..ec19c098ee52b6bed4a1ec61e9a6125b33f1b028 100644
+--- a/dist/types/dom/options.d.cts
++++ b/dist/types/dom/options.d.cts
+@@ -1,6 +1,12 @@
+ import type { Day } from "../core/date.cjs";
+ import type { ItemOrder } from "../core/layout.cjs";
+-import type { CalendarItem, DateInput, DateRange, DependencyType } from "../core/types.cjs";
++import type { CalendarItem, NormalizedItem, DateInput, DateRange, DependencyType } from "../core/types.cjs";
++/** Native list rows for one ordered section or a window within it. */
++export interface ListRowPool<D> {
++    render(items: readonly NormalizedItem<D>[], dayFor: (item: NormalizedItem<D>) => Day): void;
++    elementsFor(id: string): HTMLElement[];
++    clear(): void;
++}
+ /**
+  * How an item element is drawn: "timed" (time-grid block), "bar" (all-day or
+  * multi-day bar), "dot" (timed item in a day cell), "indicator" (a dot in a
+@@ -299,6 +305,7 @@ export interface CalendarOptions<D = unknown> {
+      * dragged onto a strip day or another day's section move there.
+      */
+     listAgenda: boolean;
++    listRowPool?: (container: HTMLElement, create: (host: HTMLElement) => ListRowPool<D>) => ListRowPool<D>;
+     /**
+      * Puts the agenda's date strip above the "day", "days" and "week" views
+      * too. Picking a strip day moves the grid to it, and items dragged onto a
+diff --git a/dist/types/dom/options.d.ts b/dist/types/dom/options.d.ts
+index 4e9662325c28cd0cc629858848adaa63cc36c001..4a5809d7b1acb0815ae7c4ead383602156a9a38f 100644
+--- a/dist/types/dom/options.d.ts
++++ b/dist/types/dom/options.d.ts
+@@ -1,6 +1,12 @@
+ import type { Day } from "../core/date.js";
+ import type { ItemOrder } from "../core/layout.js";
+-import type { CalendarItem, DateInput, DateRange, DependencyType } from "../core/types.js";
++import type { CalendarItem, NormalizedItem, DateInput, DateRange, DependencyType } from "../core/types.js";
++/** Native list rows for one ordered section or a window within it. */
++export interface ListRowPool<D> {
++    render(items: readonly NormalizedItem<D>[], dayFor: (item: NormalizedItem<D>) => Day): void;
++    elementsFor(id: string): HTMLElement[];
++    clear(): void;
++}
+ /**
+  * How an item element is drawn: "timed" (time-grid block), "bar" (all-day or
+  * multi-day bar), "dot" (timed item in a day cell), "indicator" (a dot in a
+@@ -299,6 +305,7 @@ export interface CalendarOptions<D = unknown> {
+      * dragged onto a strip day or another day's section move there.
+      */
+     listAgenda: boolean;
++    listRowPool?: (container: HTMLElement, create: (host: HTMLElement) => ListRowPool<D>) => ListRowPool<D>;
+     /**
+      * Puts the agenda's date strip above the "day", "days" and "week" views
+      * too. Picking a strip day moves the grid to it, and items dragged onto a
