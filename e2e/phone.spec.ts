@@ -191,9 +191,17 @@ test("touch month selection consumes its compatibility click, not the next inten
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.setViewportSize({ width: 412, height: 713 });
+  await page.setViewportSize({ width: 360, height: 713 });
   await page.clock.setFixedTime(new Date("2026-11-06T10:00:00"));
   await page.goto(route("calendar"));
+  for (const name of ["Previous period", "Next period"]) {
+    const bounds = await page
+      .getByRole("button", { name, exact: true })
+      .boundingBox();
+    expect(bounds?.width).toBeGreaterThanOrEqual(44);
+    expect(bounds?.height).toBeGreaterThanOrEqual(44);
+  }
+  await expectNoHorizontalOverflow(page);
   const day = page.locator('.tnc-dg-day[data-date="2026-11-06"]');
   await expect(day).toBeVisible();
   await day.tap();

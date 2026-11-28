@@ -8,7 +8,7 @@ import {
 } from "./task";
 import {
   materializedOccurrenceKeys,
-  projectUpcomingTasks,
+  nextUpcomingTask,
   type TaskOccurrenceEntry,
 } from "./task-occurrence";
 
@@ -52,13 +52,12 @@ export function summarizeToday(
     )
       completedToday += 1;
   }
-  const next = projectUpcomingTasks(
+  const next = nextUpcomingTask(
     active,
     today,
     shiftTaskDate(today, NEXT_HORIZON_DAYS),
-    1,
     materialized,
-  ).groups[0]?.tasks[0];
+  );
   return { completedToday, ...(next ? { next } : {}) };
 }
 

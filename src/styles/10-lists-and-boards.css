@@ -203,13 +203,13 @@
 .projects-view.is-focused {
   gap: 8px;
 }
-.projects-view.is-focused .project-group > header h2 {
+.projects-view.is-focused .project-group-header h2 {
   font-size: var(--type-section);
 }
 .projects-view.is-focused .project-toggle {
   cursor: default;
 }
-.project-group > header .project-toggle {
+.project-group-header .project-toggle {
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -242,7 +242,7 @@
   overflow-wrap: anywhere;
 }
 
-.project-group > header {
+.project-group-header {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
@@ -252,12 +252,12 @@
   padding-bottom: 9px;
 }
 
-.project-group > header h2 {
+.project-group-header h2 {
   margin: 0;
   font-size: var(--type-control);
 }
 
-.project-group > header small {
+.project-group-header small {
   display: block;
   margin-top: 2px;
   overflow-wrap: anywhere;
@@ -266,7 +266,7 @@
   font-size: var(--type-label);
 }
 
-.project-group > header button {
+.project-group-header button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -277,6 +277,14 @@
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.project-window-heading {
+  padding-top: 30px;
+}
+
+.project-window .project-group-header[data-expanded="true"] {
+  border-bottom: 1px solid var(--line);
 }
 
 .saved-view-groups {

@@ -11,6 +11,24 @@ const largeCollection: DemoSeed = {
   scratchpads: () => [],
 };
 
+const manyProjects: DemoSeed = {
+  tasks: (model) => {
+    const now = new Date().toISOString();
+    return Array.from({ length: 10_000 }, (_, index) => {
+      const project = String(Math.floor(index / 80) + 1).padStart(3, "0");
+      const number = String((index % 80) + 1).padStart(2, "0");
+      return model.create(
+        {
+          title: `Task ${project}-${number}`,
+          projects: [`[[Projects/Project ${project}]]`],
+        },
+        { id: `project-task-${index}`, now },
+      );
+    });
+  },
+  scratchpads: () => [],
+};
+
 /** Original demo semantics, retained solely for local browser assertions.
  * This entry is unreachable and omitted outside the exact e2e build mode;
  * none of its behavior qualifies native source writes or model readiness.
@@ -30,7 +48,9 @@ export function DemoEntryFixture() {
       ? storeDemoSeed
       : demo === "10000"
         ? largeCollection
-        : undefined;
+        : demo === "projects-scale"
+          ? manyProjects
+          : undefined;
   const count = seed ? 1 : Number(demo);
   const many = new URL(location.href).searchParams.has("many-options");
   return count > 0 ? (

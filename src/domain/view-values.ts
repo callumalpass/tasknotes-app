@@ -66,6 +66,7 @@ export function viewPropertyDetails(
     labelFor?: typeof propertyLabel;
   } = {},
 ): ViewPropertyDetail[] | undefined {
+  const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
   return resolvedViewProperties(properties).flatMap((property) => {
     if (
       property.hidden ||
@@ -74,11 +75,16 @@ export function viewPropertyDetails(
     )
       return [];
     const field = notePropertyName(property.key) ?? property.key;
-    const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
     const projectedValue =
       !properties.length && field in displayed
         ? displayed[field as keyof TaskSummary]
-        : viewPropertyValue(row, property.key, occurrence);
+        : rowPropertyValue(
+            row,
+            property.key,
+            field,
+            displayed,
+            Boolean(occurrence),
+          );
     const value =
       isViewValueDiagnostic(projectedValue) &&
       projectedValue.kind === "unavailable" &&
@@ -119,8 +125,23 @@ export function viewPropertyValue(
   occurrence?: TaskOccurrence,
 ): unknown {
   const displayed = occurrence ? occurrenceTask(occurrence) : row.task;
-  const field = notePropertyName(key) ?? key;
-  if (occurrence && Object.prototype.hasOwnProperty.call(displayed, field))
+  return rowPropertyValue(
+    row,
+    key,
+    notePropertyName(key) ?? key,
+    displayed,
+    Boolean(occurrence),
+  );
+}
+
+function rowPropertyValue(
+  row: TaskViewRow,
+  key: string,
+  field: string,
+  displayed: TaskSummary,
+  isOccurrence: boolean,
+): unknown {
+  if (isOccurrence && Object.prototype.hasOwnProperty.call(displayed, field))
     return displayed[field as keyof TaskSummary];
   if (Object.prototype.hasOwnProperty.call(row.values, key))
     return row.values[key];

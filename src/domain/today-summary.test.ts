@@ -71,6 +71,53 @@ describe("summarizeToday", () => {
     expect([next?.task.id, next?.date]).toEqual(["weekly", "2026-07-29"]);
     expect(summarizeToday([finished], today).next).toBeUndefined();
   });
+  it("keeps source order on ties and ignores handled repeat dates", () => {
+    const series = task("series", {
+      completed: false,
+      recurrence: "FREQ=DAILY",
+      scheduled: today,
+      completeInstances: ["2026-07-27"],
+      skippedInstances: ["2026-07-28"],
+    });
+    const materialized = task("materialized", {
+      recurrenceParent: "[[tasks/series]]",
+      occurrenceDate: "2026-07-29",
+      completed: true,
+      scheduled: "2026-07-29",
+    });
+    const sameDay = task("same-day", {
+      completed: false,
+      scheduled: "2026-07-30",
+    });
+    expect(
+      summarizeToday([series, materialized, sameDay], today).next,
+    ).toMatchObject({
+      task: { id: "series" },
+      date: "2026-07-30",
+    });
+    expect(
+      summarizeToday([sameDay, series, materialized], today).next,
+    ).toMatchObject({
+      task: { id: "same-day" },
+      date: "2026-07-30",
+    });
+  });
+
+  it("still suggests a dated task beyond the repeat horizon", () => {
+    const series = task("future-series", {
+      completed: false,
+      recurrence: "DTSTART:20261111;FREQ=DAILY",
+      scheduled: "2026-11-11",
+    });
+    const dated = task("future-task", {
+      completed: false,
+      due: "2026-11-12",
+    });
+    expect(summarizeToday([series, dated], today).next).toMatchObject({
+      task: { id: "future-task" },
+      date: "2026-11-12",
+    });
+  });
 });
 
 function task(id: string, patch: Partial<TaskSummary> = {}): TaskSummary {
