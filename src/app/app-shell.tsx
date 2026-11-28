@@ -132,6 +132,7 @@ import { TaskScreen, warmTaskNotesEditor } from "./task-screen";
 import {
   useNavigationViews,
   type ViewDiscoveryFailure,
+  type UnreadableViewFile,
 } from "./use-navigation-views";
 import { SelfHostedEntry } from "./self-hosted-entry";
 import { useAddStarterViews } from "./use-starter-views";
@@ -215,7 +216,7 @@ export function AppShell() {
     views,
     discovery,
     discoveryFailure,
-    unreadableViewPaths,
+    unreadableViewFiles,
     refreshing: discoveringViews,
     navigationViews,
     navigationKeys,
@@ -476,7 +477,7 @@ export function AppShell() {
     <ViewDiscoveryNotice
       outcome={discovery}
       failure={discoveryFailure}
-      unreadablePaths={unreadableViewPaths}
+      unreadableFiles={unreadableViewFiles}
       refreshing={discoveringViews}
       onRetry={() => void refreshViews()}
       onStarterViewsAdded={refreshViews}
@@ -832,7 +833,7 @@ export function AppShell() {
 export function ViewDiscoveryNotice({
   outcome,
   failure = null,
-  unreadablePaths = [],
+  unreadableFiles = [],
   refreshing,
   onRetry,
   onCreate,
@@ -842,7 +843,7 @@ export function ViewDiscoveryNotice({
   failure?: ViewDiscoveryFailure | null;
   /** Files discovery skipped (whether they hold views is unknown); named
    * instead of the empty-views notice. */
-  unreadablePaths?: readonly string[];
+  unreadableFiles?: readonly UnreadableViewFile[];
   refreshing: boolean;
   onRetry(): void;
   onCreate(): void;
@@ -852,8 +853,8 @@ export function ViewDiscoveryNotice({
   const waitingForComputer =
     useContext(ConnectionNoticeContext) === "waiting_for_computer";
   if (waitingForComputer && outcome === "error") return null;
-  if ((outcome === "ok" || outcome === "empty") && unreadablePaths.length)
-    return <UnreadableViewsNotice paths={unreadablePaths} />;
+  if ((outcome === "ok" || outcome === "empty") && unreadableFiles.length)
+    return <UnreadableViewsNotice files={unreadableFiles} />;
   if (outcome === "empty" && onStarterViewsAdded)
     return (
       <EmptyViewsNotice
@@ -899,25 +900,53 @@ export function ViewDiscoveryNotice({
  * included, since it cannot tell whether one held views. Every other view
  * still loaded. The notice
  * clears itself when a fixed file is rediscovered on the next data change. */
-function UnreadableViewsNotice({ paths }: { paths: readonly string[] }) {
+function UnreadableViewsNotice({
+  files,
+}: {
+  files: readonly UnreadableViewFile[];
+}) {
+  const unreadable = files.filter(
+    (file) =>
+      file.reason !== "view_metadata_unavailable" ||
+      file.detail !== "record_types_unresolved",
+  );
+  const unresolved = files.length - unreadable.length;
   return (
     <section
       className="view-discovery-notice"
       aria-label={translate({ message: "Views availability" })}
     >
-      <p role="status">
-        {plural(paths.length, {
-          1: "Couldn't read this file, so any views in it aren't shown:",
-          other: "Couldn't read # files, so any views in them aren't shown:",
-        })}
-      </p>
-      <ul className="view-discovery-sources">
-        {paths.map((path) => (
-          <li key={path} translate="no">
-            {path}
-          </li>
-        ))}
-      </ul>
+      {unresolved > 0 && (
+        <p role="status">
+          {translate`Files skipped because their types could not be resolved: ${unresolved}. Check the type definitions if these files contain views.`}
+        </p>
+      )}
+      {unreadable.length > 0 && (
+        <>
+          <p role="status">
+            {plural(unreadable.length, {
+              1: "Couldn't read this file, so any views in it aren't shown:",
+              other:
+                "Couldn't read # files, so any views in them aren't shown:",
+            })}
+          </p>
+          <ul className="view-discovery-sources">
+            {unreadable.map(({ path, reason, detail }) => (
+              <li key={path}>
+                <span translate="no">{path}</span>
+                {" — "}
+                {detail === "base_raw_frontmatter_unavailable" ? (
+                  translate({
+                    message: "Check that the file's YAML frontmatter is valid.",
+                  })
+                ) : (
+                  <span translate="no">{detail || reason}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

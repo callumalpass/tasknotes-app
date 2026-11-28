@@ -37,7 +37,13 @@ it("names view files discovery could not read instead of saying there are no vie
   render(
     <ViewDiscoveryNotice
       outcome="empty"
-      unreadablePaths={["TaskNotes/Views/tasks-default.base"]}
+      unreadableFiles={[
+        {
+          path: "TaskNotes/Views/tasks-default.base",
+          reason: "view_metadata_unavailable",
+          detail: "base_raw_frontmatter_unavailable",
+        },
+      ]}
       refreshing={false}
       onRetry={vi.fn()}
       onCreate={vi.fn()}
@@ -50,6 +56,9 @@ it("names view files discovery could not read instead of saying there are no vie
   expect(screen.getByRole("listitem")).toHaveTextContent(
     "TaskNotes/Views/tasks-default.base",
   );
+  expect(screen.getByRole("listitem")).toHaveTextContent(
+    "Check that the file's YAML frontmatter is valid.",
+  );
   expect(screen.queryByText("No views yet.")).toBeNull();
 });
 
@@ -57,18 +66,35 @@ it("counts several unreadable view files alongside loaded views", () => {
   render(
     <ViewDiscoveryNotice
       outcome="ok"
-      unreadablePaths={["Views/a.base", "Views/b.base"]}
+      unreadableFiles={[
+        ...["Views/a.base", "Views/b.base"].map((path) => ({
+          path,
+          reason: "view_unsupported_construct",
+          detail: "unrecognized_projection",
+        })),
+        ...Array.from({ length: 188 }, (_, i) => ({
+          path: `book-${i}.md`,
+          reason: "view_metadata_unavailable",
+          detail: "record_types_unresolved",
+        })),
+      ]}
       refreshing={false}
       onRetry={vi.fn()}
       onCreate={vi.fn()}
     />,
   );
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Couldn't read 2 files, so any views in them aren't shown:",
-  );
+  expect(
+    screen.getByText(
+      /Files skipped because their types could not be resolved: 188/,
+    ),
+  ).toBeVisible();
+  expect(screen.getByText(/Couldn't read 2 files/)).toBeVisible();
   expect(
     screen.getAllByRole("listitem").map((item) => item.textContent),
-  ).toEqual(["Views/a.base", "Views/b.base"]);
+  ).toEqual([
+    "Views/a.base — unrecognized_projection",
+    "Views/b.base — unrecognized_projection",
+  ]);
 });
 
 it("says a view file is at fault when an older replica refuses all views", () => {

@@ -122,7 +122,7 @@ msgstr "（未保存の変更）"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {画像を追加しています…} other {画像を#件追加しています…}}"
 
-#. placeholder {0}: paths.length
+#. placeholder {0}: unreadable.length
 #: src/app/app-shell.tsx
 msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
 msgstr "{0, plural, =1 {このファイルを読み取れないため、含まれるビューは表示されません:} other {#件のファイルを読み取れないため、含まれるビューは表示されません:}}"
@@ -1423,6 +1423,10 @@ msgstr "厳格モードの完了を確認"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "コレクションが接続されていることを確認して、もう一度お試しください。"
+
+#: src/app/app-shell.tsx
+msgid "Check that the file's YAML frontmatter is valid."
+msgstr "ファイルの YAML フロントマターが正しいか確認してください。"
 
 #: src/app/app-shell.tsx
 #: src/components/collection-write-status.tsx
@@ -2756,6 +2760,10 @@ msgstr "ファイル名"
 #: src/i18n/default-labels.ts
 msgid "File path"
 msgstr "ファイルパス"
+
+#: src/app/app-shell.tsx
+msgid "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
+msgstr "型を特定できずにスキップしたファイル数: {unresolved}。これらのファイルにビューが含まれる場合は、型定義を確認してください。"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx
