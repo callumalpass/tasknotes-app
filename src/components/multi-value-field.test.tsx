@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "../test/render";
+import { deferred } from "../test/deferred";
 import { useState, type ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -81,6 +82,8 @@ it("commits typed text rather than a suggestion answering an earlier query", asy
   fireEvent.focus(input);
   await screen.findByRole("option", { name: "task" });
   fireEvent.change(input, { target: { value: "research" } });
+  expect(input).not.toHaveAttribute("aria-activedescendant");
+  expect(screen.queryByRole("option", { name: "task" })).toBeNull();
   fireEvent.keyDown(input, { key: "Enter" });
   expect(screen.getByTestId("values")).toHaveTextContent('["research"]');
 });
@@ -148,11 +151,43 @@ describe("single choice", () => {
     expect(onPick).toHaveBeenCalledWith(operations.value, "Operations");
   });
 
-  it("waits for matches rather than committing the typed text", async () => {
+  it("commits the current match on one Enter while suggestions are pending", async () => {
     const onPick = vi.fn();
+    const answer = deferred<(typeof operations)[]>();
     render(
       <MultiValueField
-        completeField={async () => [operations]}
+        completeField={async ({ query }) => (query ? answer.promise : [note])}
+        completion={completion}
+        field="projects"
+        label="Project"
+        placeholder="Find a project"
+        values={[]}
+        onPick={onPick}
+      />,
+    );
+    const input = screen.getByRole("combobox", { name: "Project" });
+    fireEvent.focus(input);
+    const previous = await screen.findByRole("option", { name: "Task one" });
+    expect(input).toHaveAttribute("aria-activedescendant", previous.id);
+    fireEvent.change(input, { target: { value: "Ope" } });
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+    expect(previous).not.toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).not.toHaveBeenCalled();
+    answer.resolve([operations]);
+    await waitFor(() => expect(onPick).toHaveBeenCalledTimes(1));
+    expect(onPick).toHaveBeenCalledWith(operations.value, "Operations");
+  });
+
+  it("discards a pending Enter when the query changes again", async () => {
+    const onPick = vi.fn();
+    const answer = deferred<(typeof operations)[]>();
+    const complete = vi.fn<
+      ComponentProps<typeof MultiValueField>["completeField"]
+    >(async ({ query }) => (query === "Ope" ? answer.promise : [note]));
+    render(
+      <MultiValueField
+        completeField={complete}
         completion={completion}
         field="projects"
         label="Project"
@@ -165,9 +200,13 @@ describe("single choice", () => {
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "Ope" } });
     fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(complete).toHaveBeenCalled());
+    fireEvent.change(input, { target: { value: "Task" } });
+    answer.resolve([operations]);
+    const current = await screen.findByRole("option", { name: "Task one" });
+    expect(input).toHaveAttribute("aria-activedescendant", current.id);
     expect(onPick).not.toHaveBeenCalled();
-    await screen.findByRole("option", { name: "Operations" });
     fireEvent.keyDown(input, { key: "Enter" });
-    expect(onPick).toHaveBeenCalledWith(operations.value, "Operations");
+    expect(onPick).toHaveBeenCalledExactlyOnceWith(note.value, note.label);
   });
 });

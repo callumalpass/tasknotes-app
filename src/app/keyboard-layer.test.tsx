@@ -122,6 +122,49 @@ it("opens the palette when the sidebar asks and runs navigation", async () => {
   }
 });
 
+it("only exposes task results for the current command palette query", async () => {
+  vi.useFakeTimers();
+  useTaskSearch.mockImplementation((query) => {
+    const search = (query as { search: string }).search;
+    const matches: Record<string, { id: string; title: string }> = {
+      zebra: { id: "old", title: "Zebra contract" },
+      aardvark: { id: "new", title: "Aardvark contract" },
+    };
+    return {
+      tasks: search in matches ? [{ task: matches[search] }] : [],
+      loading: false,
+    };
+  });
+  try {
+    const { navigate } = renderLayer();
+    fireEvent.keyDown(document.body, { key: "k", metaKey: true });
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "zebra" } });
+    await act(() => vi.advanceTimersByTime(140));
+    const oldResult = screen.getByRole("option", { name: "Zebra contract" });
+    expect(input).toHaveAttribute("aria-activedescendant", oldResult.id);
+
+    fireEvent.change(input, { target: { value: "aardvark" } });
+    expect(oldResult).not.toBeInTheDocument();
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await act(() => vi.advanceTimersByTime(140));
+    expect(navigate).not.toHaveBeenCalled();
+    const newResult = screen.getByRole("option", { name: "Aardvark contract" });
+    expect(input).toHaveAttribute("aria-activedescendant", newResult.id);
+    fireEvent.keyDown(input, { key: "Enter" });
+    await act(() => vi.runAllTimers());
+    expect(navigate).toHaveBeenCalledExactlyOnceWith({
+      page: "task",
+      id: "new",
+    });
+  } finally {
+    useTaskSearch.mockReset();
+    vi.useRealTimers();
+  }
+});
+
 it("announces row actions politely, repeating identical messages", () => {
   const { container } = render(
     <KeyboardLayer

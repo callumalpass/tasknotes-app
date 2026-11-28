@@ -1,5 +1,12 @@
 import { useLingui, Trans } from "@lingui/react/macro";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { Check, X } from "lucide-react";
 
 import { linkDisplayLabel } from "../domain/completion";
@@ -9,6 +16,8 @@ import type {
   FieldCompletionRequest,
 } from "../domain/completion";
 import type { TaskFieldCompletionConfiguration } from "../domain/task-configuration";
+
+const noOptions: readonly FieldCompletion[] = [];
 
 export function MultiValueField({
   label,
@@ -46,16 +55,21 @@ export function MultiValueField({
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const blurTimer = useRef<number | null>(null);
+  const pendingPick = useRef(false);
   const [query, setQuery] = useState("");
-  const [options, setOptions] = useState<FieldCompletion[]>([]);
+  const [answer, setAnswer] = useState<{
+    query: string;
+    options: FieldCompletion[];
+  } | null>(null);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [answeredQuery, setAnsweredQuery] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
     {},
   );
+  const currentAnswer = open && answer?.query === query ? answer : null;
+  const options = currentAnswer?.options ?? noOptions;
+  const loading = open && !currentAnswer;
   useEffect(() => {
     document
       .getElementById(`${id}-option-${activeIndex}`)
@@ -65,12 +79,24 @@ export function MultiValueField({
   const labelFor = (value: string) =>
     selectedLabels[value] ?? valueLabels?.get(value) ?? valueLabel(value);
 
+  const receiveAnswer = useEffectEvent(
+    (answeredQuery: string, available: FieldCompletion[]) => {
+      if (!open || answeredQuery !== query) return;
+      setAnswer({ query, options: available });
+      setActiveIndex(0);
+      if (!pendingPick.current) return;
+      pendingPick.current = false;
+      const first = available[0];
+      // A queued Enter may select a match. Using the raw text is explicit.
+      if (first) add(first.value, first.label);
+    },
+  );
+
   useEffect(() => {
     if (!open) return;
     let active = true;
     const timeout = window.setTimeout(
       () => {
-        setLoading(true);
         void completeField({
           field,
           kind: completion.kind,
@@ -78,8 +104,8 @@ export function MultiValueField({
           limit: 12,
           targetTypes: completion.targetTypes,
           configuredValues: completion.values,
-        })
-          .then((next) => {
+        }).then(
+          (next) => {
             if (!active) return;
             const selected = new Set(
               values.map((value) => value.toLocaleLowerCase()),
@@ -88,18 +114,15 @@ export function MultiValueField({
               (option) => !selected.has(option.value.toLocaleLowerCase()),
             );
             const used = available.filter(({ kind }) => kind === "value");
-            setOptions(
+            receiveAnswer(
+              query,
               usedFirst && !query.trim() && used.length ? used : available,
             );
-            setActiveIndex(0);
-            setAnsweredQuery(query);
-          })
-          .catch(() => {
-            if (active) setOptions([]);
-          })
-          .finally(() => {
-            if (active) setLoading(false);
-          });
+          },
+          () => {
+            if (active) receiveAnswer(query, []);
+          },
+        );
       },
       completion.kind === "records" ? 160 : 40,
     );
@@ -120,7 +143,7 @@ export function MultiValueField({
     const next = value.trim();
     if (!next) return;
     if (onPick) {
-      setQuery("");
+      if (query) changeQuery("");
       onPick(next, label ?? labelFor(next));
       return;
     }
@@ -135,22 +158,27 @@ export function MultiValueField({
         setSelectedLabels((current) => ({ ...current, [next]: label }));
       setAnnouncement(t`${label ?? labelFor(next)} added`);
     }
-    setQuery("");
+    if (query) changeQuery("");
     setOpen(true);
     inputRef.current?.focus();
   }
 
-  function addQuery() {
-    const answered = answeredQuery === query;
-    // A single choice never commits what was typed in place of a match still loading.
-    if (onPick && !answered) return;
-    // Suggestions answering an earlier query never replace what was typed since.
-    const option = answered ? options[activeIndex] : undefined;
-    if (option) add(option.value, option.label);
-    else add(query.replace(/,$/, ""));
+  function changeQuery(value: string) {
+    pendingPick.current = false;
+    setQuery(value);
+    setAnswer(null);
+    setActiveIndex(0);
+  }
+
+  function closeSuggestions() {
+    pendingPick.current = false;
+    setAnswer(null);
+    setActiveIndex(0);
+    setOpen(false);
   }
 
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setOpen(true);
@@ -165,9 +193,16 @@ export function MultiValueField({
       return;
     }
     if (event.key === "Enter" || event.key === ",") {
+      if (onPick && loading) {
+        event.preventDefault();
+        if (event.key === "Enter") pendingPick.current = true;
+        return;
+      }
       if (!query.trim() && !options.length) return;
       event.preventDefault();
-      addQuery();
+      const option = options[activeIndex];
+      if (option) add(option.value, option.label);
+      else if (!onPick || currentAnswer) add(query.replace(/,$/, ""));
       return;
     }
     if (event.key === "Backspace" && !query && values.length && !onPick) {
@@ -183,7 +218,7 @@ export function MultiValueField({
         // A typed value is kept, as it is when the field loses focus.
         if (query.trim() && !onPick) add(query);
         onEscape();
-      } else if (open) setOpen(false);
+      } else if (open) closeSuggestions();
       else event.currentTarget.blur();
     }
   }
@@ -215,9 +250,7 @@ export function MultiValueField({
         ))}
         <input
           aria-activedescendant={
-            showOptions && !loading && options[activeIndex]
-              ? `${id}-option-${activeIndex}`
-              : undefined
+            options[activeIndex] ? `${id}-option-${activeIndex}` : undefined
           }
           aria-autocomplete="list"
           aria-controls={`${id}-options`}
@@ -230,16 +263,24 @@ export function MultiValueField({
           role="combobox"
           value={query}
           onBlur={() => {
+            pendingPick.current = false;
             blurTimer.current = window.setTimeout(() => {
+              blurTimer.current = null;
               if (query.trim() && !onPick) add(query);
-              setOpen(false);
+              closeSuggestions();
             }, 120);
           }}
           onChange={(event) => {
-            setQuery(event.target.value);
+            changeQuery(event.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            if (blurTimer.current !== null) {
+              window.clearTimeout(blurTimer.current);
+              blurTimer.current = null;
+            }
+            setOpen(true);
+          }}
           onKeyDown={keyDown}
         />
       </div>
