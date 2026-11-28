@@ -48,24 +48,32 @@
   position: relative;
   display: inline-block;
   box-sizing: border-box;
-  width: 17px;
-  height: 17px;
+  width: 44px;
+  height: 44px;
   margin: 0;
   padding: 0;
-  vertical-align: -3px;
+  vertical-align: middle;
   color: var(--paper);
   background: transparent;
-  border: 1.75px solid var(--ink-muted);
-  border-radius: 5px;
+  border: 0;
   cursor: pointer;
+  border-radius: 0;
   appearance: none;
 }
 
-.markdown-source-editor .cm-lp-task:hover {
+.markdown-source-editor .cm-lp-task::before {
+  position: absolute;
+  inset: 12px;
+  content: "";
+  border: 1.75px solid var(--ink-muted);
+  border-radius: 5px;
+}
+
+.markdown-source-editor .cm-lp-task:hover::before {
   border-color: var(--accent);
 }
 
-.markdown-source-editor .cm-lp-task[aria-checked="true"] {
+.markdown-source-editor .cm-lp-task[aria-checked="true"]::before {
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -137,37 +145,13 @@
   color: var(--color-danger);
 }
 
-@media (pointer: coarse), (max-width: 560px) {
-  /* Give the button its own column. Only the centred 20px box is painted. */
-  .markdown-source-editor .cm-lp-task {
-    width: 44px;
-    height: 44px;
-    vertical-align: middle;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .markdown-source-editor .cm-lp-task::before {
-    position: absolute;
-    inset: 12px;
-    content: "";
-    border: 1.75px solid var(--ink-muted);
-    border-radius: 5px;
-  }
-
-  .markdown-source-editor .cm-lp-task[aria-checked="true"] {
-    background: transparent;
-  }
-
-  .markdown-source-editor .cm-lp-task[aria-checked="true"]::before {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-}
-
 @media (pointer: coarse) {
   .cm-lp-table-menu .mdbase-menu-item {
     min-height: 44px;
   }
+}
+
+/* The editor positions these buttons only while a table is active. */
+.scratchpad-note-text .cm-lp-table-controls:not(.cm-lp-table-controls-visible) {
+  display: none;
 }
