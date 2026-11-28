@@ -38,6 +38,10 @@
   color: var(--ink);
   box-shadow: 0 8px 28px var(--color-shadow);
 }
+/* Open pickers must receive the pointer above the workspace feedback layer. */
+.bulk-actions:has(.tasknotes-popover[data-state="open"]) {
+  z-index: 26;
+}
 .bulk-selection-count {
   display: flex;
   align-items: center;
