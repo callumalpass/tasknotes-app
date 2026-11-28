@@ -1,5 +1,6 @@
 import { generateRecurringInstances } from "@tasknotes/model/recurrence";
 import { normalizeTaskReference } from "@tasknotes/model/operations";
+import { shiftTaskDate } from "./task-date-actions";
 import {
   parseRecurrenceRule,
   recurrenceStartStorageValue,
@@ -254,6 +255,43 @@ export function projectUpcomingTasks(
       0,
     ),
   };
+}
+
+/** Find the first upcoming entry when the caller only needs one suggestion. */
+export function nextUpcomingTask(
+  tasks: readonly TaskSummary[],
+  today: string,
+  recurrenceEnd: string,
+  materialized: ReadonlySet<string>,
+): TaskOccurrenceEntry | undefined {
+  const tomorrow = shiftTaskDate(today, 1);
+  let next: TaskOccurrenceEntry | undefined;
+  let repeatThrough = recurrenceEnd;
+  for (const task of tasks) {
+    if (task.recurrence) {
+      for (const date of recurringDatesBetween(task, tomorrow, repeatThrough)) {
+        const occurrence = taskOccurrenceForDate(task, date);
+        if (
+          occurrence.completed ||
+          occurrence.skipped ||
+          materialized.has(occurrence.key)
+        )
+          continue;
+        next = { key: occurrence.key, task, occurrence, date };
+        break;
+      }
+    } else if (!task.completed && !task.skipped && !task.archived) {
+      const date = taskDatePart(task.scheduled ?? task.due, task.timezone);
+      if (date > today && (!next || date < next.date))
+        next = { key: task.id, task, date };
+    }
+    // Same-day ties keep the first task in source order. The repeating-task
+    // horizon still applies when the earliest dated task is beyond it.
+    if (next?.date === tomorrow) break;
+    if (next && next.date <= repeatThrough)
+      repeatThrough = shiftTaskDate(next.date, -1);
+  }
+  return next;
 }
 
 export function findOccurrenceParent(

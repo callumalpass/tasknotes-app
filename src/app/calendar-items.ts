@@ -7,7 +7,7 @@ import {
   calendarItem,
   type CalendarEntry,
 } from "../domain/calendar-events";
-import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
+import { type TaskOccurrence } from "../domain/task-occurrence";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
 import {
@@ -114,9 +114,11 @@ export function calendarItems(
       const neutral = entry.modelEntry;
       if (seen.has(neutral.id)) continue;
       seen.add(neutral.id);
-      const displayed = entry.occurrence
-        ? occurrenceTask(entry.occurrence)
-        : entry.task;
+      const displayed = {
+        completed: entry.occurrence?.completed ?? entry.task.completed,
+        priority: entry.task.priority,
+        timezone: entry.task.timezone,
+      };
       const tracked = neutral.type === "timeEntry";
       const marker = tracked
         ? undefined
@@ -172,7 +174,8 @@ export function calendarItems(
           details,
           ...(tracked
             ? { kind: "Tracked time" }
-            : neutral.type === "due" && displayed.scheduled
+            : neutral.type === "due" &&
+                (entry.occurrence || entry.task.scheduled)
               ? { kind: "Due" }
               : {}),
           recurring: Boolean(neutral.recurringKind),

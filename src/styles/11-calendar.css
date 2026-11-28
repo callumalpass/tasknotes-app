@@ -127,7 +127,7 @@
 .full-calendar-navigation button:last-child {
   display: grid;
   place-items: center;
-  width: 44px;
+  min-width: 44px;
   padding: 0;
 }
 

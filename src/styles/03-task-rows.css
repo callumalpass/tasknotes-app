@@ -20,6 +20,7 @@
   .task-list-view,
   .full-calendar-day-tasks,
   .search-results,
+  .project-window,
   .project-group {
     overflow-x: clip;
   }

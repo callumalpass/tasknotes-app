@@ -14,7 +14,7 @@ export interface CalendarPriorityMarker {
  * completed work stays unmarked so titles keep the room.
  */
 export function calendarPriorityMarker(
-  task: TaskSummary,
+  task: Pick<TaskSummary, "completed" | "priority">,
   configuration: TaskCollectionConfiguration,
 ): CalendarPriorityMarker | undefined {
   if (task.completed || !task.priority || task.priority === "none") return;

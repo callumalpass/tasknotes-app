@@ -1,3 +1,4 @@
+import { FOCUS_ADJACENT_TASK } from "../components/bounded-list";
 import { t } from "@lingui/core/macro";
 import { hasOpenOverlay } from "../components/overlays/overlay-stack";
 import { todayString } from "../domain/task";
@@ -240,6 +241,17 @@ export function focusAdjacentTaskRow(
   const current = active?.closest<HTMLElement>(ROW_SELECTOR) ?? null;
   const region =
     current?.closest("#main-content, .detail-inspector") ?? main ?? document;
+  if (
+    current &&
+    !current.dispatchEvent(
+      new CustomEvent(FOCUS_ADJACENT_TASK, {
+        bubbles: true,
+        cancelable: true,
+        detail: direction,
+      }),
+    )
+  )
+    return true;
   const rows = taskRowsIn(region);
   if (!rows.length) return false;
   if (!current || !rows.includes(current)) {
