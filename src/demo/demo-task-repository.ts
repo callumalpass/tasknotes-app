@@ -45,7 +45,11 @@ import {
   taskNotesDefaultBaseSources,
   taskNotesViewSourcePath,
 } from "../domain/default-view-source";
-import { todayTaskContribution } from "../domain/today-summary";
+import { runtimeTimezone } from "../domain/runtime-timezone";
+import {
+  todayTaskContribution,
+  type TodayTaskCounts,
+} from "../domain/today-summary";
 import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
@@ -134,6 +138,7 @@ export class DemoTaskRepository implements TaskRepository {
     viewExecutionBytes,
   );
   private readonly navigation = new NavigationCountCache();
+  private todayCounts?: { day: string; zone: string; counts: TodayTaskCounts };
   private shortcuts?: ReturnType<typeof projectShortcuts>;
   private relations?: ReturnType<typeof taskRowRelations>;
   private readonly sources = new Map<string, TaskViewSourceDocument>();
@@ -412,6 +417,7 @@ export class DemoTaskRepository implements TaskRepository {
         }),
       );
       this.tasks.set(id, task);
+      this.todayCounts = undefined;
       return task;
     });
     this.changed();
@@ -566,13 +572,23 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   todayTaskCounts(today: string, hidden?: readonly string[]) {
-    const counts = { total: 0, overdue: 0 };
-    const excluded = new Set(hidden);
-    for (const task of this.tasks.values()) {
-      if (excluded.has(task.id)) continue;
+    const zone = runtimeTimezone();
+    if (this.todayCounts?.day !== today || this.todayCounts.zone !== zone) {
+      const counts = { total: 0, overdue: 0 };
+      for (const task of this.tasks.values()) {
+        const part = todayTaskContribution(task, today);
+        counts.total += part.total;
+        counts.overdue += part.overdue;
+      }
+      this.todayCounts = { day: today, zone, counts };
+    }
+    const counts = { ...this.todayCounts.counts };
+    for (const id of new Set(hidden)) {
+      const task = this.tasks.get(id);
+      if (!task) continue;
       const part = todayTaskContribution(task, today);
-      counts.total += part.total;
-      counts.overdue += part.overdue;
+      counts.total -= part.total;
+      counts.overdue -= part.overdue;
     }
     return counts;
   }
@@ -1158,6 +1174,7 @@ export class DemoTaskRepository implements TaskRepository {
 
   private changed(): void {
     this.navigation.clear();
+    this.todayCounts = undefined;
     this.shortcuts = undefined;
     this.relations = undefined;
     this.viewExecutions.clear();
