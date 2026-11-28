@@ -122,7 +122,7 @@ msgstr "(modifications non enregistrées)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Ajout de l’image…} one {Ajout de # image…} other {Ajout de # images…}}"
 
-#. placeholder {0}: paths.length
+#. placeholder {0}: unreadable.length
 #: src/app/app-shell.tsx
 msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
 msgstr "{0, plural, =1 {Impossible de lire ce fichier ; les vues qu’il contient ne sont pas affichées :} one {Impossible de lire # fichier ; les vues qu’il contient ne sont pas affichées :} other {Impossible de lire # fichiers ; les vues qu’ils contiennent ne sont pas affichées :}}"
@@ -1424,6 +1424,10 @@ msgstr "Vérifier l’achèvement du mode strict"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "Vérifiez que la collection est connectée, puis réessayez."
+
+#: src/app/app-shell.tsx
+msgid "Check that the file's YAML frontmatter is valid."
+msgstr "Vérifiez que l’en-tête YAML du fichier est valide."
 
 #: src/app/app-shell.tsx
 #: src/components/collection-write-status.tsx
@@ -2757,6 +2761,10 @@ msgstr "Nom du fichier"
 #: src/i18n/default-labels.ts
 msgid "File path"
 msgstr "Chemin du fichier"
+
+#: src/app/app-shell.tsx
+msgid "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
+msgstr "Fichiers ignorés car leur type n’a pas pu être déterminé : {unresolved}. Vérifiez les définitions de types si ces fichiers contiennent des vues."
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx

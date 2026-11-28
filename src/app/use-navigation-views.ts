@@ -36,6 +36,9 @@ const UNREADABLE_SOURCE_REASONS: ReadonlySet<string> = new Set([
   "view_metadata_unavailable",
   "view_unsupported_construct",
 ]);
+export type UnreadableViewFile = NonNullable<TaskViewDocument["unreadable"]> & {
+  path: string;
+};
 export type ViewDiscoveryFailure = "unreadable_source" | "other";
 
 interface ViewCatalog {
@@ -57,7 +60,7 @@ export function useNavigationViews(): {
   /** Why the latest discovery failed; null unless `discovery` is "error". */
   discoveryFailure: ViewDiscoveryFailure | null;
   /** View files the latest discovery could not read, by path. */
-  unreadableViewPaths: string[];
+  unreadableViewFiles: UnreadableViewFile[];
   refreshing: boolean;
   refresh(): Promise<void>;
   toggleNavigationView(key: string): void;
@@ -248,10 +251,12 @@ export function useNavigationViews(): {
     () => (catalog.documents ? flattenViewDocuments(catalog.documents) : null),
     [catalog.documents],
   );
-  const unreadableViewPaths = useMemo(
+  const unreadableViewFiles = useMemo(
     () =>
       (catalog.documents ?? []).flatMap((document) =>
-        document.unreadable ? [document.source.path] : [],
+        document.unreadable
+          ? [{ path: document.source.path, ...document.unreadable }]
+          : [],
       ),
     [catalog.documents],
   );
@@ -287,7 +292,7 @@ export function useNavigationViews(): {
     loading: catalog.documents === null && discovery !== "error",
     discovery,
     discoveryFailure: discovery === "error" ? discoveryFailure : null,
-    unreadableViewPaths,
+    unreadableViewFiles,
     refreshing,
     refresh,
     toggleNavigationView,

@@ -122,7 +122,7 @@ msgstr "(unsaved changes)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 
-#. placeholder {0}: paths.length
+#. placeholder {0}: unreadable.length
 #: src/app/app-shell.tsx
 msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
 msgstr "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
@@ -1423,6 +1423,10 @@ msgstr "Check strict completion"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "Check that the collection is connected, then try again."
+
+#: src/app/app-shell.tsx
+msgid "Check that the file's YAML frontmatter is valid."
+msgstr "Check that the file's YAML frontmatter is valid."
 
 #: src/app/app-shell.tsx
 #: src/components/collection-write-status.tsx
@@ -2756,6 +2760,10 @@ msgstr "File name"
 #: src/i18n/default-labels.ts
 msgid "File path"
 msgstr "File path"
+
+#: src/app/app-shell.tsx
+msgid "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
+msgstr "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx

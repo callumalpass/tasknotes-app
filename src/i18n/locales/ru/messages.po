@@ -122,7 +122,7 @@ msgstr "(несохранённые изменения)"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {Добавление изображения…} one {Добавление # изображения…} few {Добавление # изображений…} many {Добавление # изображений…} other {Добавление # изображения…}}"
 
-#. placeholder {0}: paths.length
+#. placeholder {0}: unreadable.length
 #: src/app/app-shell.tsx
 msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
 msgstr "{0, plural, =1 {Не удалось прочитать этот файл, поэтому представления в нём не показаны:} one {Не удалось прочитать # файл, поэтому представления в них не показаны:} few {Не удалось прочитать # файла, поэтому представления в них не показаны:} many {Не удалось прочитать # файлов, поэтому представления в них не показаны:} other {Не удалось прочитать # файла, поэтому представления в них не показаны:}}"
@@ -1423,6 +1423,10 @@ msgstr "Проверить завершение строгого режима"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "Убедитесь, что коллекция подключена, и попробуйте ещё раз."
+
+#: src/app/app-shell.tsx
+msgid "Check that the file's YAML frontmatter is valid."
+msgstr "Проверьте корректность YAML-заголовка файла."
 
 #: src/app/app-shell.tsx
 #: src/components/collection-write-status.tsx
@@ -2756,6 +2760,10 @@ msgstr "Имя файла"
 #: src/i18n/default-labels.ts
 msgid "File path"
 msgstr "Путь к файлу"
+
+#: src/app/app-shell.tsx
+msgid "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
+msgstr "Пропущено файлов, тип которых не удалось определить: {unresolved}. Если эти файлы содержат представления, проверьте определения типов."
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx

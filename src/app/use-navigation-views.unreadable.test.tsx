@@ -51,19 +51,23 @@ function show(listViews: TaskRepository["listViews"]) {
 }
 
 function Probe() {
-  const { discovery, discoveryFailure, unreadableViewPaths } =
+  const { discovery, discoveryFailure, unreadableViewFiles } =
     useNavigationViews();
   return (
     <p>
       {discovery}/{discoveryFailure ?? "none"}/
-      {unreadableViewPaths.join(",") || "nothing"}
+      {unreadableViewFiles
+        .map(({ path, reason, detail }) => [path, reason, detail].join("|"))
+        .join(",") || "nothing"}
     </p>
   );
 }
 
 it("lists the paths of view files discovery could not read", async () => {
   show(async () => [unreadable]);
-  await screen.findByText(`empty/none/${source.path}`);
+  await screen.findByText(
+    `empty/none/${source.path}|view_metadata_unavailable|base_raw_frontmatter_unavailable`,
+  );
 });
 
 it("tells an unreadable view file from other failures when discovery is refused", async () => {

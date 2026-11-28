@@ -122,7 +122,7 @@ msgstr "（有未保存的更改）"
 msgid "{0, plural, =1 {Adding image…} other {Adding # images…}}"
 msgstr "{0, plural, =1 {正在添加图片…} other {正在添加 # 张图片…}}"
 
-#. placeholder {0}: paths.length
+#. placeholder {0}: unreadable.length
 #: src/app/app-shell.tsx
 msgid "{0, plural, =1 {Couldn't read this file, so any views in it aren't shown:} other {Couldn't read # files, so any views in them aren't shown:}}"
 msgstr "{0, plural, =1 {无法读取此文件，因此不显示其中的视图：} other {无法读取 # 个文件，因此不显示其中的视图：}}"
@@ -1423,6 +1423,10 @@ msgstr "检查严格模式完成状态"
 #: src/app/more-screen.tsx
 msgid "Check that the collection is connected, then try again."
 msgstr "请确认集合已连接，然后重试。"
+
+#: src/app/app-shell.tsx
+msgid "Check that the file's YAML frontmatter is valid."
+msgstr "请检查文件开头的 YAML 元数据格式是否正确。"
 
 #: src/app/app-shell.tsx
 #: src/components/collection-write-status.tsx
@@ -2756,6 +2760,10 @@ msgstr "文件名"
 #: src/i18n/default-labels.ts
 msgid "File path"
 msgstr "文件路径"
+
+#: src/app/app-shell.tsx
+msgid "Files skipped because their types could not be resolved: {unresolved}. Check the type definitions if these files contain views."
+msgstr "因无法确定类型而跳过的文件数：{unresolved}。如果这些文件包含视图，请检查类型定义。"
 
 #: src/app/view-editor-form.tsx
 #: src/app/views-screen.tsx
