@@ -193,6 +193,51 @@ describe("TaskScreen across an immediate reload", () => {
     second.unload();
   });
 
+  it("recovers a cleared estimate after a failed offline save and a concurrent body edit", async () => {
+    const mdbase = await createTestMdbase();
+    const replica = mdbase.fixture.replica();
+    const first = await openPage(
+      replica,
+      mdbase.fixture.client(),
+      async (repository) =>
+        (
+          await repository.create({
+            title: "Shared estimate",
+            timeEstimate: 30,
+            body: "Original",
+          })
+        ).id,
+    );
+    const path = (await first.repository.get(first.id))!.path;
+    const blocked = vi
+      .spyOn(first.repository, "update")
+      .mockRejectedValue(new Error("Offline"));
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Time" }));
+    fireEvent.change(await screen.findByLabelText("Estimate (minutes)"), {
+      target: { value: "" },
+    });
+    await waitFor(() => expect(blocked).toHaveBeenCalled());
+    first.unload();
+    replica.editElsewhere(path, { body: "Newer CLI body" });
+    const second = await openPage(
+      replica,
+      await reconnect(replica),
+      async () => first.id,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restore unsaved edits" }),
+    );
+    await waitFor(
+      async () => {
+        const saved = await second.repository.get(first.id);
+        expect(saved?.body).toBe("Newer CLI body");
+        expect(saved?.timeEstimate).toBeUndefined();
+      },
+      { timeout: 3000 },
+    );
+    second.unload();
+  });
+
   it.each(["available", "unavailable"] as const)(
     "waits for the recovery scope before exposing title editing (%s)",
     async (outcome) => {

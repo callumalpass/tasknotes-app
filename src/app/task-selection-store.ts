@@ -19,41 +19,51 @@ export class TaskSelectionStore {
   };
   snapshot = () => this.version;
   isSelected = (id: string) => this.selected.has(id);
+  private byId = new Map<string, { task: TaskSummary; index: number }>();
+  private order: string[] = [];
+  private selectedSnapshot?: TaskSummary[];
   get tasks(): TaskSummary[] {
-    return [
-      ...new Map(
-        [...this.lists.values()].flatMap((tasks) =>
-          tasks.map((task) => [task.id, task] as const),
-        ),
-      ).values(),
-    ];
+    return Array.from(this.byId.values(), (row) => row.task);
   }
-  get ids(): string[] {
-    return this.tasks.map((task) => task.id);
+  get ids(): readonly string[] {
+    return this.order;
   }
-  get selectedTasks(): TaskSummary[] {
-    return this.tasks.filter((task) => this.selected.has(task.id));
+  get selectedTasks(): readonly TaskSummary[] {
+    return (this.selectedSnapshot ??= [...this.selected]
+      .map((id) => this.byId.get(id)!)
+      .sort((left, right) => left.index - right.index)
+      .map((row) => row.task));
   }
   get count(): number {
     return this.selected.size;
   }
 
   register(owner: object, tasks: readonly TaskSummary[]) {
-    const before = this.ids.join("\0");
-    const revisions = new Map(
-      this.selectedTasks.map((task) => [task.id, task.revision]),
-    );
+    if (tasks === this.lists.get(owner)) return;
+    const previous = this.byId;
+    const previousOrder = this.order;
     this.lists.set(owner, tasks);
-    const ids = new Set(this.ids);
-    const removed = [...this.selected].some((id) => !ids.has(id));
-    this.selected = new Set([...this.selected].filter((id) => ids.has(id)));
-    if (this.anchor && !ids.has(this.anchor)) this.anchor = null;
+    this.byId = new Map();
+    for (const list of this.lists.values())
+      for (const task of list)
+        this.byId.set(task.id, {
+          task,
+          index: this.byId.get(task.id)?.index ?? this.byId.size,
+        });
+    this.order = [...this.byId.keys()];
+    this.selectedSnapshot = undefined;
+    let selectionChanged = false;
+    for (const id of this.selected) {
+      const row = this.byId.get(id);
+      if (!row) this.selected.delete(id);
+      if (!row || row.task.revision !== previous.get(id)?.task.revision)
+        selectionChanged = true;
+    }
+    if (this.anchor && !this.byId.has(this.anchor)) this.anchor = null;
     if (
-      removed ||
-      before !== this.ids.join("\0") ||
-      this.selectedTasks.some(
-        (task) => revisions.get(task.id) !== task.revision,
-      )
+      selectionChanged ||
+      previousOrder.length !== this.order.length ||
+      previousOrder.some((id, index) => id !== this.order[index])
     )
       this.publish();
   }
@@ -74,7 +84,7 @@ export class TaskSelectionStore {
     this.publish();
   };
   toggle(id: string) {
-    if (this.busy || !this.ids.includes(id)) return;
+    if (this.busy || !this.byId.has(id)) return;
     this.mode = true;
     if (this.selected.has(id)) this.selected.delete(id);
     else this.selected.add(id);
@@ -114,6 +124,7 @@ export class TaskSelectionStore {
     this.publish();
   }
   private publish() {
+    this.selectedSnapshot = undefined;
     this.version++;
     for (const listener of this.listeners) listener();
   }

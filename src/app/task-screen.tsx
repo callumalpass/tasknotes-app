@@ -57,14 +57,16 @@ import { rememberOpenedTask } from "./search-history";
 import { TaskPaneNavigation } from "./task-editor-layout";
 import { formatOccurrenceDate, toDraft, type Draft } from "./task-editor-draft";
 import {
-  changedFields,
-  followIncomingDraft,
+  applyTaskEdit,
+  editorPatch,
+  mergeTaskEdits,
+  type TaskEdit,
   readTaskEdit,
   writeTaskEdit,
   type StoredTaskEdit,
 } from "./task-edit-recovery";
 
-import type { Task, UpdateTaskInput } from "../domain/task";
+import type { Task } from "../domain/task";
 import type { FieldCompletionRequest } from "../domain/completion";
 
 const taskNotesEditor = preloadable(
@@ -317,11 +319,12 @@ function TaskEditor({
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
   const savesInFlight = useRef(new Map<number, Promise<void>>());
-  // The task as opened; local copies hold only the fields edited since.
-  const openedDraft = useRef(draft);
-  // The version this editor last saw from mdbase, field by field. A field
-  // whose draft still matches it has no local edit and follows newer versions.
-  const knownDraft = useRef(draft);
+  // Keep explicit intent until the receipt settles. Equality with an optimistic
+  // snapshot (including a change back to the original value) is not confirmation.
+  const localEdit = useRef<TaskEdit>({});
+  // A later save submits only what changed since capture. The recovery copy
+  // also includes earlier writes still waiting for their receipts.
+  const unsent = useRef<TaskEdit>({});
   const editScope = useRef(recoveryScope);
   const { onTaskDraft, taskEditStorage } =
     useContext(CollectionGateContext) ?? {};
@@ -336,12 +339,10 @@ function TaskEditor({
     (unsaved: boolean) => {
       const scope = editScope.current;
       if (!scope) return;
-      const fields = {
-        ...recoveredRef.current?.fields,
-        ...(unsaved
-          ? changedFields(openedDraft.current, draftRef.current)
-          : {}),
-      };
+      const fields = mergeTaskEdits(
+        recoveredRef.current?.fields ?? {},
+        unsaved ? localEdit.current : {},
+      );
       onTaskDraft?.(fields);
       const kept = writeTaskEdit(scope, task.id, fields, taskEditStorage);
       if (mounted.current) setBackupUnavailable(!kept);
@@ -378,9 +379,34 @@ function TaskEditor({
   }, []);
 
   const persist = useCallback(
-    (value: Draft, version: number): Promise<void> => {
+    function save(
+      value: Draft,
+      version: number,
+      reviewedRevision?: string | number,
+    ): Promise<void> {
       const existing = savesInFlight.current.get(version);
       if (existing) return existing;
+      const previous = [...savesInFlight.current.values()].at(-1);
+      if (previous)
+        return previous.then(() =>
+          dirtyRef.current
+            ? save(draftRef.current, editVersion.current, reviewedRevision)
+            : undefined,
+        );
+      const target = { kind: "task", id: task.id } as const;
+      if (
+        reviewedRevision === undefined &&
+        repository.writeState?.(target) === "failed" &&
+        repository.writeRejection?.(target)?.changedElsewhere
+      )
+        return Promise.reject(
+          new Error(
+            t({
+              message:
+                "Keep or discard your unsaved edit before making another change.",
+            }),
+          ),
+        );
       if (!value.title.trim()) {
         if (mounted.current) {
           setSaveError(t({ message: "Add a title before leaving this task." }));
@@ -392,35 +418,17 @@ function TaskEditor({
         setSaveState("saving");
         setSaveError(null);
       }
+      const input = unsent.current;
+      unsent.current = {};
       const run = (async () => {
         try {
-          const input: UpdateTaskInput = {
-            title: value.title,
-            status: value.status,
-            priority: value.priority,
-            due: value.due ?? null,
-            scheduled: value.scheduled ?? null,
-            body: value.body,
-            tags: value.tags,
-            contexts: value.contexts,
-            projects: value.projects,
-            // Only an actual assignment edit writes the field.
-            ...(sameIds(value.assignees ?? [], task.assignees ?? [])
-              ? {}
-              : { assignees: value.assignees ?? [] }),
-            blockedBy: value.blockedBy,
-            recurrence: value.recurrence ?? null,
-            recurrenceAnchor: value.recurrenceAnchor,
-            occurrenceMaterialization: value.occurrenceMaterialization,
-            occurrenceNextTrigger: value.occurrenceNextTrigger,
-            occurrenceTemplate: value.occurrenceTemplate ?? null,
-            occurrencePastHorizon: value.occurrencePastHorizon ?? null,
-            occurrenceFutureHorizon: value.occurrenceFutureHorizon ?? null,
-            reminders: value.reminders,
-            timeEstimate: value.timeEstimate ?? null,
-            customProperties: value.customProperties,
-          };
-          await updateTask(task.id, input);
+          if (reviewedRevision !== undefined)
+            await updateTask(task.id, input, {
+              expectedRevision: reviewedRevision,
+            });
+          else await updateTask(task.id, input);
+          if (!repository.writeState?.(target))
+            localEdit.current = unsent.current;
           if (editVersion.current === version) {
             // Backup cleanup belongs to the mounted editor's confirmation
             // effect, never a late completion from an unloaded editor.
@@ -431,6 +439,7 @@ function TaskEditor({
             }
           }
         } catch (reason) {
+          unsent.current = mergeTaskEdits(input, unsent.current);
           const error =
             reason instanceof Error ? reason : new Error(String(reason));
           if (mounted.current && editVersion.current === version) {
@@ -445,7 +454,7 @@ function TaskEditor({
       savesInFlight.current.set(version, run);
       return run;
     },
-    [task.assignees, task.id, updateTask, t],
+    [repository, task.id, updateTask, t],
   );
 
   // Once mdbase confirms every save, the device copy is no longer needed.
@@ -456,6 +465,7 @@ function TaskEditor({
       repository.writeState?.({ kind: "task", id: task.id })
     )
       return;
+    localEdit.current = {};
     if (!recovered) recoveredRef.current = null;
     storeEdit(false);
   }, [dirty, recovered, repository, storeEdit, task.id, writeState]);
@@ -500,6 +510,9 @@ function TaskEditor({
   );
 
   function change(patch: Partial<Draft>) {
+    const edited = editorPatch(draftRef.current, patch);
+    localEdit.current = mergeTaskEdits(localEdit.current, edited);
+    unsent.current = mergeTaskEdits(unsent.current, edited);
     setSaveState("saving");
     editVersion.current += 1;
     const next = { ...draftRef.current, ...patch };
@@ -516,13 +529,18 @@ function TaskEditor({
     // Hide the choice, but keep these explicit fields until confirmation.
     // They may equal an optimistic baseline that head later rolls back.
     setRecovered(null);
-    if (edit) change(edit.fields);
+    if (edit) {
+      localEdit.current = mergeTaskEdits(edit.fields, localEdit.current);
+      unsent.current = mergeTaskEdits(edit.fields, unsent.current);
+      recoveredRef.current = null;
+      change(applyTaskEdit(draftRef.current, localEdit.current));
+    }
   }
 
   function discardRecoveredEdit() {
     recoveredRef.current = null;
     setRecovered(null);
-    storeEdit(dirtyRef.current);
+    storeEdit(true);
   }
 
   // An edit refused after a reload comes back from the device copy, so the
@@ -548,16 +566,10 @@ function TaskEditor({
   // does. A refused save keeps its own review flow.
   const followIncomingTask = useEffectEvent((incoming: Task) => {
     if (rejected) return;
-    const next = followIncomingDraft(
-      { known: knownDraft, opened: openedDraft },
-      draftRef.current,
-      {
-        ...toDraft(incoming),
-        ...(writeState ? recoveredRef.current?.fields : {}),
-      },
-      dirtyRef.current || savesInFlight.current.size > 0 || !!writeState,
-    );
-    if (!next) return;
+    const base = toDraft(incoming);
+    const pending =
+      dirtyRef.current || savesInFlight.current.size > 0 || !!writeState;
+    const next = pending ? applyTaskEdit(base, localEdit.current) : base;
     draftRef.current = next;
     setDraft(next);
   });
@@ -585,10 +597,16 @@ function TaskEditor({
     try {
       // Only the fields this person changed go on top of the latest version,
       // so a change made elsewhere to other fields is kept too.
-      const mine = {
-        ...recoveredRef.current?.fields,
-        ...changedFields(openedDraft.current, draftRef.current),
-      };
+      const latest = await repository.get(task.id);
+      if (!latest)
+        throw new Error(
+          translate({ message: "This task is no longer available." }),
+        );
+      if (!mounted.current) return;
+      const mine = mergeTaskEdits(
+        recoveredRef.current?.fields ?? {},
+        localEdit.current,
+      );
       if (!Object.keys(mine).length)
         throw new Error(
           translate({
@@ -596,21 +614,19 @@ function TaskEditor({
               "Your edit is no longer available on this device. Discard it to load the latest version.",
           }),
         );
-      const latest = await repository.get(task.id);
-      if (!latest)
-        throw new Error(
-          translate({ message: "This task is no longer available." }),
-        );
-      if (!mounted.current) return;
       const base = toDraft(latest);
-      const next = { ...base, ...mine };
-      openedDraft.current = base;
-      knownDraft.current = base;
+      const next = applyTaskEdit(base, mine);
+      localEdit.current = mine;
+      unsent.current = mine;
       draftRef.current = next;
       setDraft(next);
       editVersion.current += 1;
       storeEdit(true);
-      await persist(next, editVersion.current);
+      await persist(
+        next,
+        editVersion.current,
+        latest.recordVersion ?? latest.revision,
+      );
     } catch (reason) {
       if (mounted.current)
         setResolveError(
@@ -625,16 +641,18 @@ function TaskEditor({
     if (resolving) return;
     setResolving(true);
     setResolveError(null);
+    const version = editVersion.current;
     try {
       const latest = await repository.get(task.id);
       if (!latest)
         throw new Error(
           translate({ message: "This task is no longer available." }),
         );
-      if (!mounted.current) return;
+      if (!mounted.current || version !== editVersion.current) return;
       editVersion.current += 1;
       const next = toDraft(latest);
-      knownDraft.current = next;
+      localEdit.current = {};
+      unsent.current = {};
       draftRef.current = next;
       dirtyRef.current = false;
       setDraft(next);
@@ -664,15 +682,9 @@ function TaskEditor({
     requireChoice();
     const embed = `!${reference}`;
     if (draftRef.current.body.includes(embed)) return;
-    editVersion.current += 1;
-    const version = editVersion.current;
     const body = `${draftRef.current.body.trimEnd()}${draftRef.current.body.trim() ? "\n\n" : ""}${embed}\n`;
-    const next = { ...draftRef.current, body };
-    draftRef.current = next;
-    dirtyRef.current = true;
-    setDraft(next);
-    setDirty(true);
-    await persist(next, version);
+    change({ body });
+    await persist(draftRef.current, editVersion.current);
   }
 
   const refused = Boolean(rejection);
@@ -734,8 +746,13 @@ function TaskEditor({
     }
   }
 
-  const currentIndex = taskOrder.findIndex(
-    (target) => target.id === task.id && target.occurrence === occurrenceDate,
+  const currentIndex = useMemo(
+    () =>
+      taskOrder.findIndex(
+        (target) =>
+          target.id === task.id && target.occurrence === occurrenceDate,
+      ),
+    [taskOrder, task.id, occurrenceDate],
   );
   const previousTask =
     currentIndex > 0 ? taskOrder[currentIndex - 1] : undefined;
@@ -1198,12 +1215,5 @@ function useDetailsBesideWork(): boolean {
     subscribeDetailsBesideWork,
     () => window.matchMedia?.(DETAILS_BESIDE_WORK).matches ?? false,
     () => false,
-  );
-}
-
-function sameIds(left: readonly string[], right: readonly string[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
   );
 }

@@ -32,6 +32,23 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("merges an editor property change or clear into the latest record", () => {
+    const peer = model.create(
+      {
+        title: "Shared",
+        customProperties: { energy: 4, client: "CLI" },
+      },
+      { id: "shared" },
+    );
+    for (const energy of [1, null]) {
+      const saved = model.update(peer, { customPropertyPatch: { energy } });
+      expect(saved.customProperties.client).toBe("CLI");
+      expect(saved.customProperties.energy).toBe(energy ?? undefined);
+      expect(saved.frontmatter.client).toBe("CLI");
+      expect(saved.frontmatter.energy).toBe(energy ?? undefined);
+    }
+  });
+
   it("reads projects: null as an empty project list", () => {
     const created = model.create({ title: "No project" }, { id: "no-project" });
     const task = model.read({

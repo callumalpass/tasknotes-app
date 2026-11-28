@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MdbaseError,
+  memoryWriteLedgerStore,
   toPlain,
   type DescribeResult,
   type JsonValue,
@@ -65,6 +66,7 @@ export interface NextSmokeControl {
 declare global {
   interface Window {
     __TASKNOTES_NEXT_SMOKE__?: NextSmokeInput;
+    __TASKNOTES_OPEN_DEVICE__?: (page: Window) => Promise<TaskRepository>;
     __TASKNOTES_NEXT_SMOKE_CONTROL__?: NextSmokeControl;
   }
 }
@@ -83,25 +85,26 @@ const views: AppBasesDescriptor[] = names.map((name, i) => ({
   implementations: [],
 }));
 
+type SmokeTaskType = {
+  implements: Array<{
+    contract: string;
+    fields: Record<string, string>;
+    binding: JsonValue;
+  }>;
+};
+
 /** Local browser protocol stand-in, not native Core/auth/grant/READ evidence.
  * One original SDK client supplies CRUD and the synthetic Bases/catalog seam.
  * This module is reachable ONLY in the explicit e2e build on a loopback origin.
  */
-async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
+export function smokeDevice(input: NextSmokeInput) {
   const replicaOptions = {
     collection,
     confirmDelayMs: input.slowConfirmation ? null : 0,
   };
   const replica = new MemoryReplica(replicaOptions);
   const generated = buildTaskNotesMdbaseResources({ profiles: ["core-lite"] });
-  const type = (input.typeDefinition ?? generated.type) as {
-    implements: Array<{
-      contract: string;
-      version: string;
-      fields: Record<string, string>;
-      binding: JsonValue;
-    }>;
-  };
+  const type = (input.typeDefinition ?? generated.type) as SmokeTaskType;
   replica.seedResource(
     "_types/task.md",
     serializeMarkdownDocument(type, "Synthetic task type"),
@@ -111,8 +114,31 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
       ...record,
       types: record.types ?? ["task"],
     });
+  const ledger = memoryWriteLedgerStore();
+  return {
+    replica,
+    ledger,
+    open: async (page: Window) => {
+      const repository = await heldFixture(input, type, replica, ledger, page);
+      if (page !== window)
+        page.addEventListener("pagehide", () => repository.dispose?.(), {
+          once: true,
+        });
+      return repository;
+    },
+  };
+}
+
+async function heldFixture(
+  input: NextSmokeInput,
+  type: SmokeTaskType,
+  replica: MemoryReplica,
+  ledger: ReturnType<typeof memoryWriteLedgerStore>,
+  page: Window,
+): Promise<TaskRepository> {
   const client = await connect({
     connector: replica.connector(),
+    ledger,
     app: { name: "tasknotes-next-smoke", version: "fixture" },
     reconnect: false,
   });
@@ -139,7 +165,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
     errors: [],
     updates: [],
     confirm: () => {
-      replicaOptions.confirmDelayMs = 0;
+      replica.stallConfirmations(false);
       replica.confirmAll();
     },
     releaseReads: () => {
@@ -157,7 +183,7 @@ async function heldFixture(input: NextSmokeInput): Promise<TaskRepository> {
         body: r.body,
       })),
   };
-  window.__TASKNOTES_NEXT_SMOKE_CONTROL__ = control;
+  page.__TASKNOTES_NEXT_SMOKE_CONTROL__ = control;
   const available = () => {
     if (control.offline)
       throw new MdbaseError({
@@ -420,7 +446,10 @@ function FixtureInstallation() {
       <p>Local SDK protocol fixture; not native authorization or readiness.</p>
       <button
         onClick={() => {
-          held.current ??= heldFixture(window.__TASKNOTES_NEXT_SMOKE__!);
+          held.current ??= (
+            window.__TASKNOTES_OPEN_DEVICE__ ??
+            smokeDevice(window.__TASKNOTES_NEXT_SMOKE__!).open
+          )(window);
           void held.current.then(setRepository);
         }}
       >
