@@ -697,6 +697,18 @@
   font-size: var(--type-control);
 }
 
+.tasknotes-time-entry {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 9px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
 .tasknotes-time-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;

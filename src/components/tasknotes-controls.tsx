@@ -842,6 +842,8 @@ export function TaskNotesTimePicker({
   const now = new Date();
   const [hour, setHour] = useState(parsed?.hour ?? now.getHours());
   const [minute, setMinute] = useState(parsed?.minute ?? now.getMinutes());
+  const [typedTime, setTypedTime] = useState<string | null>(null);
+  const invalidTime = typedTime !== null && !parseTypedTime(typedTime);
   const hourRefs = useRef(new Map<number, HTMLButtonElement>());
   const minuteRefs = useRef(new Map<number, HTMLButtonElement>());
   const timeFormat = pickerTimeFormat();
@@ -852,6 +854,7 @@ export function TaskNotesTimePicker({
     }).format(new Date(2000, 0, 1, selectedHour));
 
   function openTimePicker() {
+    setTypedTime(null);
     const next = parseTimeValue(value);
     setHour(next?.hour ?? new Date().getHours());
     setMinute(next?.minute ?? new Date().getMinutes());
@@ -868,7 +871,14 @@ export function TaskNotesTimePicker({
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
+  function commitTime() {
+    onChange(timeValue(hour, minute));
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
   function updateSelection(nextHour: number, nextMinute: number) {
+    setTypedTime(null);
     setHour(nextHour);
     setMinute(nextMinute);
   }
@@ -934,6 +944,29 @@ export function TaskNotesTimePicker({
             <div className="tasknotes-time-value">
               {timeLabel(hour, minute)}
             </div>
+            <input
+              aria-label={t({ message: "Time" })}
+              aria-invalid={invalidTime}
+              className="tasknotes-time-entry"
+              type="text"
+              value={typedTime ?? timeValue(hour, minute)}
+              onFocus={(event) => event.currentTarget.select()}
+              onChange={(event) => {
+                const text = event.target.value;
+                setTypedTime(text);
+                const next = parseTypedTime(text);
+                if (next) {
+                  setHour(next.hour);
+                  setMinute(next.minute);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (!invalidTime) commitTime();
+              }}
+            />
             <div className="tasknotes-time-columns">
               <TimeColumn
                 label={t({ message: "Hour" })}
@@ -976,11 +1009,8 @@ export function TaskNotesTimePicker({
               <button
                 className="text-action"
                 type="button"
-                onClick={() => {
-                  onChange(timeValue(hour, minute));
-                  setOpen(false);
-                  triggerRef.current?.focus();
-                }}
+                disabled={invalidTime}
+                onClick={commitTime}
               >
                 <Trans>Done</Trans>
               </button>
@@ -1360,6 +1390,20 @@ function parseTimeValue(
   const hour = Number(match[1]);
   const minute = Number(match[2]);
   return hour <= 23 && minute <= 59 ? { hour, minute } : null;
+}
+
+function parseTypedTime(value: string) {
+  const match = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec(value.trim());
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2] ?? 0);
+  const period = match[3]?.toLowerCase();
+  if (minute > 59 || hour > 23) return null;
+  if (period) {
+    if (hour < 1 || hour > 12) return null;
+    hour = (hour % 12) + (period === "pm" ? 12 : 0);
+  }
+  return { hour, minute };
 }
 
 function timeValue(hour: number, minute: number): string {
