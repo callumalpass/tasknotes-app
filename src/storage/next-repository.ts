@@ -152,6 +152,7 @@ import {
 } from "../domain/task-occurrence";
 import {
   newViewSourcePath,
+  starterViewKind,
   viewSourceFormat,
   viewSourceRecord,
 } from "../domain/default-view-source";
@@ -330,6 +331,10 @@ export class NextTaskRepository implements TaskRepository {
       (slot.signature.length +
         (slot.execution ? JSON.stringify(slot.execution).length : 0)),
   );
+  private readonly inboxCounts = new Map<
+    string,
+    { documentId: string; revision: string; count: number }
+  >();
   private nativeViews = new Map<string, AppBasesDescriptor>();
   /** The one native discovery pass in flight, shared by every caller. */
   private discovery: {
@@ -3461,6 +3466,14 @@ export class NextTaskRepository implements TaskRepository {
       : null;
   }
 
+  cachedInboxCount(view: TaskView): number | null {
+    const entry = this.inboxCounts.get(view.key);
+    return entry?.documentId === view.documentId &&
+      entry.revision === view.source.revision
+      ? entry.count
+      : null;
+  }
+
   navigationTaskCounts(today: string) {
     return this.indexReady
       ? navigationTaskCounts(
@@ -3911,6 +3924,7 @@ export class NextTaskRepository implements TaskRepository {
       const descriptor = this.nativeView(view);
       const timezone = this.timezone ?? runtimeTimezone();
       const signature = this.viewExecutionSignature(view, timezone);
+      const minute = this.lastViewMinute;
       const previous = this.viewExecutions.get(view.key);
       const slot = {
         signature,
@@ -4082,6 +4096,21 @@ export class NextTaskRepository implements TaskRepository {
       if (this.viewExecutions.get(view.key) === slot) {
         slot.execution = structuredClone(normalized);
         this.viewExecutions.set(view.key, slot);
+        if (
+          starterViewKind(view) === "inbox" &&
+          !normalized.hasMore &&
+          minute === this.lastViewMinute
+        ) {
+          // A Base can filter on inline tags or arbitrary user-authored rules.
+          // Only its decoded task rows can certify the Inbox badge.
+          const previous = this.cachedInboxCount(view);
+          this.inboxCounts.set(view.key, {
+            documentId: view.documentId,
+            revision: view.source.revision,
+            count: normalized.rows.length,
+          });
+          if (previous !== normalized.rows.length) this.notify("status");
+        }
       }
       return normalized;
     });
@@ -4476,6 +4505,7 @@ export class NextTaskRepository implements TaskRepository {
     this.sourceRecords.clear();
     this.viewCatalog = [];
     this.viewExecutions.clear();
+    this.inboxCounts.clear();
     this.scratchFeedSnapshot = undefined;
     this.listeners.clear();
   }
@@ -4515,6 +4545,7 @@ export class NextTaskRepository implements TaskRepository {
   private invalidateDataGeneration() {
     this.dataRevision++;
     this.viewExecutions.clear();
+    this.inboxCounts.clear();
     this.scratchFeedSnapshot = undefined;
   }
   private emit(kind: RepositoryChange["kind"]) {
@@ -4525,6 +4556,8 @@ export class NextTaskRepository implements TaskRepository {
   private notify(kind: RepositoryChange["kind"]) {
     if (kind === "data")
       this.lastDataDay = todayString(new Date(), this.timezone);
+    if (kind === "clock" || kind === "configuration" || kind === "lifecycle")
+      this.inboxCounts.clear();
     if (kind === "data" || kind === "clock")
       this.lastViewMinute = Math.floor(Date.now() / 60_000);
     if (!this.disposed)

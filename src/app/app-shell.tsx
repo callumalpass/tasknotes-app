@@ -102,7 +102,10 @@ import { countLabel } from "../i18n/default-labels";
 import type { TodayTaskCounts } from "../domain/today-summary";
 import { useTodayTaskCounts } from "./use-today-task-counts";
 import { TaskRowRelationsProvider } from "./task-row-relations";
-import { useNavigationTaskCounts } from "./use-navigation-task-counts";
+import {
+  useNavigationTaskCounts,
+  type NavigationCounts,
+} from "./use-navigation-task-counts";
 import {
   readSidebarCollapsed,
   saveSidebarCollapsed,
@@ -159,7 +162,6 @@ export function AppShell() {
   const { t } = useLingui();
   const keyboardOccluded = useKeyboardOcclusion();
   const todayCounts = useTodayTaskCounts();
-  const navigationCounts = useNavigationTaskCounts();
   const projectLinks = useProjectShortcuts();
   const [sidebarCollapsed, setSidebarCollapsed] =
     useState(readSidebarCollapsed);
@@ -223,6 +225,7 @@ export function AppShell() {
     toggleNavigationView,
     moveNavigationView,
   } = useNavigationViews();
+  const navigationCounts = useNavigationTaskCounts(navigationViews);
   const { route, workspaceRoute, navigate, detailRef, taskOrder } =
     useWorkspaceNavigation(navigationViews);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -1463,7 +1466,7 @@ export function Navigation({
   onMove?(key: string, direction: -1 | 1): void;
   onCommands?(): void;
   todayCounts?: TodayTaskCounts | null;
-  navigationCounts?: { inbox: number; upcoming: number } | null;
+  navigationCounts?: NavigationCounts | null;
   projects?: ProjectShortcut[];
 }) {
   const { t } = useLingui();
@@ -1623,15 +1626,19 @@ export function Navigation({
       shortcut,
       today,
     } = entry;
-    const countKind = entry.kind;
+    const count =
+      entry.kind === "inbox" && navigationCounts?.inboxByView
+        ? navigationCounts.inboxByView[navigationKey]
+        : entry.kind === "inbox" || entry.kind === "upcoming"
+          ? navigationCounts?.[entry.kind]
+          : null;
     const counts =
       mode !== "desktop"
         ? null
         : today
           ? todayCounts
-          : navigationCounts &&
-              (countKind === "inbox" || countKind === "upcoming")
-            ? { total: navigationCounts[countKind], overdue: 0 }
+          : count != null
+            ? { total: count, overdue: 0 }
             : null;
     const accessibleLabel = counts
       ? counts.overdue

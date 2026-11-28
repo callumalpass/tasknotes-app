@@ -4,6 +4,8 @@ import {
   pinnedBasesWitnessBytes,
   sha256,
 } from "../storage/next-resource-core.test-helper.mjs";
+import { taskNotesDefaultBaseSources } from "./default-view-source";
+import { defaultTaskCollectionConfiguration } from "./task-configuration";
 import bases from "../../vendor/mdbase-contracts/obsidian.base-1.0.0.json";
 import {
   createViewDocument,
@@ -39,7 +41,15 @@ beforeAll(async () => {
     .exports as unknown as WitnessRuntime;
 });
 
-function validate(source: string) {
+function validate(
+  source: string,
+  records: Array<{
+    id: string;
+    path: string;
+    source: string;
+    captured_tags: string[];
+  }> = [],
+) {
   const input = new TextEncoder().encode(
     JSON.stringify({
       op: "bases_view",
@@ -52,7 +62,7 @@ function validate(source: string) {
         )!.target,
         source: resource.document,
       })),
-      records: [],
+      records,
       property_types: {},
     }) + "\n",
   );
@@ -130,4 +140,22 @@ it("admits views sorted by dateModified descending through native Bases", () => 
   };
   const document = createViewDocument("obsidian.base", draft);
   expect(validate(document)).toEqual({ rows: [], groups: [] });
+});
+
+it("selects CLI notes for the starter Inbox by the task marker even without portable ids", () => {
+  const inbox = taskNotesDefaultBaseSources(
+    defaultTaskCollectionConfiguration(),
+  ).find((source) => source.name === "Inbox")!;
+  const records = Array.from({ length: 40 }, (_, index) => ({
+    id: String(index),
+    path: `tasks/task-${index}.md`,
+    source: `---\ntype: task\ntitle: Seed Task ${index}\nstatus: open\npriority: normal\n---\n`,
+    captured_tags: [] as string[],
+  }));
+  expect(validate(inbox.document, records)).toEqual({ rows: [], groups: [] });
+  for (const record of records.slice(0, 3)) {
+    record.source += "#task\n";
+    record.captured_tags = ["task"];
+  }
+  expect(validate(inbox.document, records).rows).toHaveLength(3);
 });
