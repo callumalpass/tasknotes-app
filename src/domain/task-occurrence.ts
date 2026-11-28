@@ -194,8 +194,8 @@ export function projectUpcomingTasks(
   today: string,
   recurrenceEnd: string,
   limit: number,
+  materialized = materializedOccurrenceKeys(tasks),
 ): UpcomingTaskProjection {
-  const materialized = materializedOccurrenceKeys(tasks);
   const buckets = new Map<
     string,
     { tasks: TaskOccurrenceEntry[]; totalCount: number }
@@ -284,10 +284,11 @@ export function findMaterializedOccurrenceTask(
 export function materializedOccurrenceKeys(
   tasks: readonly TaskSummary[],
 ): Set<string> {
-  const parents = buildOccurrenceParentIndex(tasks);
+  let parents: OccurrenceParentIndex | undefined;
   const keys = new Set<string>();
   for (const task of tasks) {
     if (!task.recurrenceParent || !task.occurrenceDate) continue;
+    parents ??= buildOccurrenceParentIndex(tasks);
     const parent = parents.resolve(task.recurrenceParent);
     if (parent) keys.add(`${parent.id}:${task.occurrenceDate}`);
   }
