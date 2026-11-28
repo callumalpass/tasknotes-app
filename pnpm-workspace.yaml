@@ -2,7 +2,7 @@ packages:
   - apps/import
 
 catalog:
-  "@mdbase-dev/sdk": 0.2.59
+  "@mdbase-dev/sdk": 0.2.61
   "@tasknotes/model": 0.3.2
 
 patchedDependencies:
