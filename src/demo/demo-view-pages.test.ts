@@ -10,7 +10,9 @@ it("keeps whole-board group counts and page snapshots while projecting pages on 
   const iterator = repository
     .iterateView(view, { cumulative: true })
     [Symbol.asyncIterator]();
-  const first = (await iterator.next()).value!;
+  const page = await iterator.next();
+  if (page.done) throw new Error("Expected the first board page");
+  const first = page.value;
   expect(first.rows).toEqual(full.rows.slice(0, 200));
   expect(first.groups).toEqual(full.groups);
   expect(first.groups.reduce((sum, group) => sum + group.count, 0)).toBe(405);
