@@ -9,7 +9,11 @@ for (const [width, height, hasTouch] of [
   [390, 844, true],
 ] as const) {
   test.describe(`${width}×${height} ${hasTouch ? "coarse" : "fine"}`, () => {
-    test.use({ viewport: { width, height }, hasTouch });
+    test.use({
+      viewport: { width, height },
+      hasTouch,
+      reducedMotion: "reduce",
+    });
     test("Scratchpad checkbox clears inactive and active table controls", async ({
       page,
     }) => {
@@ -82,18 +86,10 @@ for (const [width, height, hasTouch] of [
       ).toBeLessThanOrEqual(0);
       for (const colorScheme of ["light", "dark"] as const) {
         await page.emulateMedia({ colorScheme });
-        await page.evaluate(async () => {
-          document.documentElement.getBoundingClientRect();
-          await Promise.allSettled(
-            document
-              .getAnimations()
-              .filter(
-                (animation) =>
-                  animation.effect?.getTiming().iterations !== Infinity,
-              )
-              .map((animation) => animation.finished),
-          );
-        });
+        await expect(page.locator("html")).toHaveCSS(
+          "color-scheme",
+          colorScheme,
+        );
         expect(
           (
             await new AxeBuilder({ page })
