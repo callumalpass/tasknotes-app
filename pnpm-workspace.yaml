@@ -7,3 +7,4 @@ catalog:
 
 patchedDependencies:
   "@tasknotes/calendar@0.1.10": patches/@tasknotes__calendar@0.1.10.patch
+  "@tasknotes/model@0.3.2": patches/@tasknotes__model@0.3.2.patch

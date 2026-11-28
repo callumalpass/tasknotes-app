@@ -33,12 +33,19 @@ export function assertImportWorkspace({ app, importer, workspace, lock, pin }) {
     /^\d+\.\d+\.\d+(?:-[\w.-]+)?(?:\+[\w.-]+)?$/,
     "TaskNotes model must have an exact pin",
   );
+  const version = workspace.catalog["@tasknotes/model"];
+  const modelKey = `@tasknotes/model@${version}`;
+  const patchPath = workspace.patchedDependencies?.[modelKey];
+  const patch = lock.patchedDependencies?.[modelKey];
+  assert.equal(patch?.path, patchPath, "Model patch must match the workspace");
+  if (patch) assert.match(patch.hash, /^[a-f0-9]{64}$/);
+  const lockedModel = patch ? `${version}(patch_hash=${patch.hash})` : version;
   for (const name of [".", "apps/import"]) {
     const model = lock.importers[name].dependencies["@tasknotes/model"];
     assert.equal(model.specifier, "catalog:");
     assert.equal(
       model.version,
-      workspace.catalog["@tasknotes/model"],
+      lockedModel,
       "Both apps must lock the same model",
     );
   }

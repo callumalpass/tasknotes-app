@@ -1,0 +1,52 @@
+diff --git a/dist/cjs/index.cjs b/dist/cjs/index.cjs
+index 965afce97fd82ff052a0b42ca238d19e2098b246..092fa8e01e9a2c7e298e01501cdd26ee4a17f02f 100644
+--- a/dist/cjs/index.cjs
++++ b/dist/cjs/index.cjs
+@@ -2216,7 +2216,7 @@ function replaceTimeEntries(task, entries, currentTimestamp) {
+ // src/validation.ts
+ function validateTask(task) {
+   const issues = [];
+-  const parsed = taskInfoSchema.partial().safeParse(task);
++  const parsed = taskDocumentSchema.shape.task.safeParse(task);
+   if (!parsed.success) {
+     for (const issue of parsed.error.issues) {
+       issues.push({
+diff --git a/dist/cjs/validation.cjs b/dist/cjs/validation.cjs
+index f09edf966f462518ea6e00b6bfcaac74c25f8546..dfe5802f0bbb1be4d70a9fa51235448169a84109 100644
+--- a/dist/cjs/validation.cjs
++++ b/dist/cjs/validation.cjs
+@@ -448,7 +448,7 @@ var taskDocumentSchema = import_zod.z.object({
+ // src/validation.ts
+ function validateTask(task) {
+   const issues = [];
+-  const parsed = taskInfoSchema.partial().safeParse(task);
++  const parsed = taskDocumentSchema.shape.task.safeParse(task);
+   if (!parsed.success) {
+     for (const issue of parsed.error.issues) {
+       issues.push({
+diff --git a/dist/esm/index.js b/dist/esm/index.js
+index d11788e7148072ae7652e9841d3154e11c866a0a..1bf74c74612d31c9c168edeb18dd1992b042a373 100644
+--- a/dist/esm/index.js
++++ b/dist/esm/index.js
+@@ -1948,7 +1948,7 @@ function replaceTimeEntries(task, entries, currentTimestamp) {
+ // src/validation.ts
+ function validateTask(task) {
+   const issues = [];
+-  const parsed = taskInfoSchema.partial().safeParse(task);
++  const parsed = taskDocumentSchema.shape.task.safeParse(task);
+   if (!parsed.success) {
+     for (const issue of parsed.error.issues) {
+       issues.push({
+diff --git a/dist/esm/validation.js b/dist/esm/validation.js
+index 98e54a4da75108fed11a7bc3316bb392d20f1fc7..694f8ab13d4e10479559697f2f585cefed022918 100644
+--- a/dist/esm/validation.js
++++ b/dist/esm/validation.js
+@@ -421,7 +421,7 @@ var taskDocumentSchema = z.object({
+ // src/validation.ts
+ function validateTask(task) {
+   const issues = [];
+-  const parsed = taskInfoSchema.partial().safeParse(task);
++  const parsed = taskDocumentSchema.shape.task.safeParse(task);
+   if (!parsed.success) {
+     for (const issue of parsed.error.issues) {
+       issues.push({
