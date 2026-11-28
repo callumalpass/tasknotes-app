@@ -2,7 +2,7 @@ import { t } from "@lingui/core/macro";
 import { appLocale } from "./app";
 import { builtInFieldLabel } from "./default-labels";
 import { formatRelativeTaskDate } from "./presentation";
-import { dateFromStorage, todayString } from "../domain/task";
+import { dateFromStorage } from "../domain/task";
 import {
   formatPropertyValue as domainFormatPropertyValue,
   propertyLabel as domainPropertyLabel,
@@ -64,23 +64,12 @@ export function formatPropertyValue(
 }
 
 export function viewPropertyDetails(
-  ...args: Parameters<typeof domainViewPropertyDetails>
+  ...[row, properties, options]: Parameters<typeof domainViewPropertyDetails>
 ): ViewPropertyDetail[] | undefined {
-  const [row, properties] = args;
-  return domainViewPropertyDetails(...args)?.map((detail) => {
-    const definition = properties.find(
-      (property) => property.key === detail.key,
-    );
-    return {
-      ...detail,
-      label: definition?.label ?? propertyLabel(detail.key),
-      value:
-        formatPropertyValue(
-          detail.rawValue,
-          definition?.format,
-          row.task.timezone,
-        ) ?? detail.value,
-    };
+  return domainViewPropertyDetails(row, properties, {
+    ...options,
+    formatValue: formatPropertyValue,
+    labelFor: propertyLabel,
   });
 }
 
@@ -96,17 +85,12 @@ export function relativeDateDetail<
   task: Parameters<typeof domainRelativeDateDetail>[1],
   configuration: Parameters<typeof domainRelativeDateDetail>[2],
 ): Detail & { overdue?: boolean } {
-  const result = domainRelativeDateDetail(detail, task, configuration);
-  return result === detail
-    ? result
-    : {
-        ...result,
-        value: formatRelativeTaskDate(
-          detail.rawValue as string,
-          todayString(new Date(), task.timezone),
-          task.timezone,
-        ),
-      };
+  return domainRelativeDateDetail(
+    detail,
+    task,
+    configuration,
+    formatRelativeTaskDate,
+  );
 }
 
 export function groupLabel(entries: Array<[string, unknown]>): string {

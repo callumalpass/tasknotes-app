@@ -56,10 +56,14 @@ export function viewPropertyDetails(
     identityProperty,
     omittedProperties = [],
     occurrence,
+    formatValue = formatPropertyValue,
+    labelFor = propertyLabel,
   }: {
     identityProperty?: string;
     omittedProperties?: readonly string[];
     occurrence?: TaskOccurrence;
+    formatValue?: typeof formatPropertyValue;
+    labelFor?: typeof propertyLabel;
   } = {},
 ): ViewPropertyDetail[] | undefined {
   return resolvedViewProperties(properties).flatMap((property) => {
@@ -86,17 +90,13 @@ export function viewPropertyDetails(
         ? displayed.frontmatter[field]
         : projectedValue;
     if (isNullTaskOption(property.key, value)) return [];
-    const formatted = formatPropertyValue(
-      value,
-      property.format,
-      row.task.timezone,
-    );
+    const formatted = formatValue(value, property.format, row.task.timezone);
     return formatted === null
       ? []
       : [
           {
             key: property.key,
-            label: property.label ?? propertyLabel(property.key),
+            label: property.label ?? labelFor(property.key),
             value: formatted,
             rawValue: value,
             ...(property.description
@@ -263,6 +263,7 @@ export function relativeDateDetail<
   detail: Detail,
   task: Pick<TaskSummary, "completed" | "timezone">,
   configuration: Pick<TaskCollectionConfiguration, "fieldMapping">,
+  formatDate = formatRelativeTaskDate,
 ): Detail & { overdue?: boolean } {
   const field = notePropertyName(detail.key) ?? detail.key;
   const scheduled =
@@ -276,7 +277,7 @@ export function relativeDateDetail<
     return detail;
   return {
     ...detail,
-    value: formatRelativeTaskDate(
+    value: formatDate(
       detail.rawValue,
       todayString(new Date(), task.timezone),
       task.timezone,
