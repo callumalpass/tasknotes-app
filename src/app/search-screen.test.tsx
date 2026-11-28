@@ -57,6 +57,7 @@ it("submits a chosen tag immediately and debounces further typing", () => {
         task: {
           id: "one",
           title: "First",
+          attachments: [],
           projects: [],
           contexts: [],
           tags: ["work"],
