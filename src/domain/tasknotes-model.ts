@@ -148,6 +148,8 @@ export interface MaterializedOccurrenceTransition {
 
 export class TaskNotesTaskModel {
   readonly config: TaskCollectionConfiguration;
+  private readonly fieldAliases: { canonical: string; aliases: string[] }[];
+  private readonly customFieldAliases: { key: string; lower: string }[];
   private readonly recordsFolder: string;
   private readonly pathPattern?: string;
 
@@ -175,6 +177,21 @@ export class TaskNotesTaskModel {
       linkWriteFormat: config.linkWriteFormat ?? "wikilink",
       timezone: config.timezone,
     };
+    const mapping = this.config.fieldMapping;
+    this.fieldAliases = Object.entries(READ_ALIASES).flatMap(
+      ([role, aliases]) => {
+        const canonical = mapping[role as keyof typeof mapping];
+        return canonical ? [{ canonical, aliases }] : [];
+      },
+    );
+    const reserved = new Set(
+      [...Object.values(mapping), "id", "tags", "type", "types"].map((name) =>
+        name.toLocaleLowerCase(),
+      ),
+    );
+    this.customFieldAliases = this.config.userFields
+      .map(({ key }) => ({ key, lower: key.toLocaleLowerCase() }))
+      .filter(({ lower }) => !reserved.has(lower));
     this.recordsFolder = options.recordsFolder ?? "tasks";
     this.pathPattern = options.pathPattern;
   }
@@ -1070,12 +1087,7 @@ export class TaskNotesTaskModel {
     removeAliases: boolean,
   ): Record<string, unknown> {
     const result = { ...source };
-    for (const [role, aliases] of Object.entries(READ_ALIASES) as [
-      keyof TaskNotesModelConfig["fieldMapping"],
-      string[],
-    ][]) {
-      const canonical = this.config.fieldMapping[role];
-      if (!canonical) continue;
+    for (const { canonical, aliases } of this.fieldAliases) {
       if (!Object.prototype.hasOwnProperty.call(result, canonical)) {
         const alias = aliases.find((candidate) =>
           Object.prototype.hasOwnProperty.call(result, candidate),
@@ -1087,27 +1099,17 @@ export class TaskNotesTaskModel {
           if (alias !== canonical) delete result[alias];
       }
     }
-    if (this.config.userFields.length) {
-      const reserved = new Set(
-        [
-          ...Object.values(this.config.fieldMapping),
-          "id",
-          "tags",
-          "type",
-          "types",
-        ].map((name) => name.toLocaleLowerCase()),
-      );
+    if (this.customFieldAliases.length) {
       const existingKeys = Object.keys(result);
-      for (const field of this.config.userFields) {
-        const lower = field.key.toLocaleLowerCase();
-        if (reserved.has(lower)) continue;
+      for (const { key, lower } of this.customFieldAliases) {
+        if (!removeAliases && Object.hasOwn(result, key)) continue;
         const matches = existingKeys.filter(
           (candidate) =>
-            candidate !== field.key && candidate.toLocaleLowerCase() === lower,
+            candidate !== key && candidate.toLocaleLowerCase() === lower,
         );
         if (!matches.length) continue;
-        if (!Object.prototype.hasOwnProperty.call(result, field.key)) {
-          result[field.key] = result[matches[0]!];
+        if (!Object.prototype.hasOwnProperty.call(result, key)) {
+          result[key] = result[matches[0]!];
         }
         if (removeAliases) {
           for (const alias of matches) delete result[alias];

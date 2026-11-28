@@ -32,6 +32,27 @@ describe("TaskNotes task model app boundary", () => {
     ],
   });
 
+  it("preserves custom field alias precedence and removes legacy spellings only on write", () => {
+    const frontmatter = {
+      title: "Legacy",
+      status: "todo",
+      Energy: 1,
+      ENERGY: 3,
+      Client: "Legacy",
+      client: "Canonical",
+    };
+    const input = { path: "tasks/legacy.md", body: "", frontmatter };
+    expect(model.readSummary(input).customProperties).toMatchObject({
+      energy: 1,
+      client: "Canonical",
+    });
+    const saved = model.update(model.read(input), { title: "Edited" });
+    expect(saved.frontmatter).toMatchObject({ energy: 1, client: "Canonical" });
+    for (const alias of ["Energy", "ENERGY", "Client"])
+      expect(saved.frontmatter).not.toHaveProperty(alias);
+    expect(frontmatter.Energy).toBe(1);
+  });
+
   it("merges an editor property change or clear into the latest record", () => {
     const peer = model.create(
       {

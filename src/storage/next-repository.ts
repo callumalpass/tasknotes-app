@@ -914,15 +914,18 @@ export class NextTaskRepository implements TaskRepository {
     signal: AbortSignal,
     fence: "modelGeneration" | "viewGeneration" | "dataRevision",
     read: () => Promise<Result>,
-    waitForQuiet = true,
+    pacing: "quiet" | "notification" | "on-conflict" = "quiet",
   ): Promise<Result> {
     // A lifetime-owned READ has no overall deadline, so refusals that no
     // local change explains are bounded here as they were by the deadline.
     let unexplainedSince: number | null = null;
+    // Exact reads keep every generation and record check. Only a retired read
+    // needs to wait for coalescing before trying again.
+    let coalesce = pacing !== "on-conflict";
     for (;;) {
       signal.throwIfAborted();
-      if (this.changeWindow.unsettled)
-        await this.changeWindow.quiet(signal, waitForQuiet);
+      if (coalesce && this.changeWindow.unsettled)
+        await this.changeWindow.quiet(signal, pacing !== "notification");
       const generation = this[fence];
       try {
         const result = await read();
@@ -940,6 +943,7 @@ export class NextTaskRepository implements TaskRepository {
             reason.reason !== "view_discovery_stale")
         )
           throw reason;
+        coalesce = true;
         // A currentness refusal is a retired READ, not a failed collection.
         // When a local change event retired it, the new generation already
         // exists: reread at once (a coalesced native change still waits for
@@ -1036,21 +1040,26 @@ export class NextTaskRepository implements TaskRepository {
    * the repository lifetime and each page keeps its own foreground deadline:
    * on a relayed collection one deadline over the whole pass refused every
    * caller once the collection was large enough or the link slow (#512). */
-  private async ensureIndex(): Promise<void> {
+  private async ensureIndex(
+    pacing: "notification" | "on-conflict" = "notification",
+  ): Promise<void> {
     const signal = this.lifetimeSignal();
     await this.readCurrentGeneration(
       signal,
       "modelGeneration",
       () => this.loadIndex(signal),
-      false,
+      pacing,
     );
   }
 
   /** The task model alone: a fixed number of requests, one deadline. */
   private async ensureModel(): Promise<void> {
     const signal = this.lifetimeSignal();
-    await this.readCurrentGeneration(signal, "modelGeneration", () =>
-      this.initializeModel(this.requestSignal(signal)),
+    await this.readCurrentGeneration(
+      signal,
+      "modelGeneration",
+      () => this.initializeModel(this.requestSignal(signal)),
+      "on-conflict",
     );
   }
 
@@ -1059,6 +1068,7 @@ export class NextTaskRepository implements TaskRepository {
       signal,
       "modelGeneration",
       () => this.initializeModel(signal),
+      "on-conflict",
     );
     return () => {
       if (this.modelGeneration !== generation) throw collectionChanged();
@@ -2662,7 +2672,7 @@ export class NextTaskRepository implements TaskRepository {
 
   async getSummary(id: string): Promise<TaskSummary | null> {
     const owner = this.lifetimeSignal();
-    await this.ensureIndex();
+    await this.ensureIndex("on-conflict");
     const signal = this.requestSignal(owner);
     signal.throwIfAborted();
     const entry = this.cache.get(id);
