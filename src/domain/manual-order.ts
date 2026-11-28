@@ -171,10 +171,19 @@ export function sortTasksByManualOrder(
 ): TaskSummary[] {
   const original = new Map(tasks.map((task, index) => [task.id, index]));
   return [...tasks].sort((left, right) => {
-    const compared = compareRankValues(left.sortOrder, right.sortOrder);
-    if (compared) return direction === "desc" ? -compared : compared;
+    const compared = compareTaskRanks(left, right, direction);
+    if (compared) return compared;
     return (original.get(left.id) ?? 0) - (original.get(right.id) ?? 0);
   });
+}
+
+export function compareTaskRanks(
+  left: TaskSummary,
+  right: TaskSummary,
+  direction: ManualOrderDirection,
+): number {
+  const compared = compareRankValues(left.sortOrder, right.sortOrder);
+  return direction === "desc" ? -compared : compared;
 }
 
 export function isTaskNotesSortRank(value?: string): boolean {

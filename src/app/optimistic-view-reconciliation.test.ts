@@ -4,6 +4,7 @@ import { viewPropertyMoveInput } from "../domain/view-mutation";
 import { kanbanRowValue } from "./views/kanban-columns";
 import {
   executionWithDepartures,
+  executionWithManualRanks,
   removeConfirmedBoardMoves,
   settledRowCount,
   type CompletionDeparture,
@@ -203,4 +204,45 @@ describe("completion departures", () => {
     );
     expect(result.execution.groups).toEqual([work, home]);
   });
+});
+
+it("preserves an already ranked execution and reorders rows when the direction changes", () => {
+  const order = { property: "sortOrder", direction: "desc" } as const;
+  const rows = ["8", "5", "5"].map((sortOrder, i) => ({
+    ...row,
+    task: { ...task, id: String(i), sortOrder },
+  }));
+  const original: TaskViewExecution = {
+    view: {
+      key: "tasks.base#view",
+      documentId: "tasks.base",
+      documentName: "Tasks",
+      id: "view",
+      name: "Tasks",
+      properties: [],
+      source: {
+        path: "tasks.base",
+        format: "base",
+        revision: "1",
+        writable: true,
+      },
+      sort: [order],
+    },
+    rows,
+    groups: [],
+    hasMore: false,
+    totalCount: rows.length,
+  };
+  expect(
+    executionWithManualRanks(original, new Map(), "view", order, "sortOrder"),
+  ).toBe(original);
+  expect(
+    executionWithManualRanks(
+      original,
+      new Map(),
+      "view",
+      { ...order, direction: "asc" },
+      "sortOrder",
+    ).rows,
+  ).toEqual([rows[1], rows[2], rows[0]]);
 });

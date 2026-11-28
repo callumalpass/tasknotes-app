@@ -1,8 +1,75 @@
+diff --git a/dist/cjs/core.cjs b/dist/cjs/core.cjs
+index 26a210211cd31a79c1559769ae989031e73e6090..2d1718cf66965e5ba21aff951854c81437a59b29 100644
+--- a/dist/cjs/core.cjs
++++ b/dist/cjs/core.cjs
+@@ -581,20 +581,21 @@ function layoutRow(items, days, order = defaultOrder) {
+   });
+   const levelEnds = [];
+   const placements = [];
++  let previousCol = -1;
++  let nextLevel = 0;
+   for (const n of sorted) {
+     const startCol = colOf(n.startDay);
+     const endCol = colOf(n.endDay);
+     if (endCol <= startCol) continue;
+-    let level = 0;
+-    for (; ; level++) {
+-      const occ = levelEnds[level] ??= [];
+-      let free = true;
+-      for (let c = startCol; c < endCol; c++) if (occ[c]) free = false;
+-      if (free) {
+-        for (let c = startCol; c < endCol; c++) occ[c] = 1;
+-        break;
+-      }
++    // Starts are sorted. A level is free when its previous span has ended.
++    // Within one start column, every level we passed is still occupied.
++    if (startCol !== previousCol) {
++      previousCol = startCol;
++      nextLevel = 0;
+     }
++    while (nextLevel < levelEnds.length && levelEnds[nextLevel] > startCol) nextLevel++;
++    const level = nextLevel++;
++    levelEnds[level] = endCol;
+     for (let c = startCol; c < endCol; c++) countByCol[c]++;
+     placements.push({
+       item: n,
 diff --git a/dist/cjs/index.cjs b/dist/cjs/index.cjs
-index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57de64bc1b 100644
+index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef6901912144198bb4ea0f 100644
 --- a/dist/cjs/index.cjs
 +++ b/dist/cjs/index.cjs
-@@ -1504,7 +1504,7 @@ var ListView = class {
+@@ -593,20 +593,21 @@ function layoutRow(items, days, order = defaultOrder) {
+   });
+   const levelEnds = [];
+   const placements = [];
++  let previousCol = -1;
++  let nextLevel = 0;
+   for (const n of sorted) {
+     const startCol = colOf(n.startDay);
+     const endCol = colOf(n.endDay);
+     if (endCol <= startCol) continue;
+-    let level = 0;
+-    for (; ; level++) {
+-      const occ = levelEnds[level] ??= [];
+-      let free = true;
+-      for (let c = startCol; c < endCol; c++) if (occ[c]) free = false;
+-      if (free) {
+-        for (let c = startCol; c < endCol; c++) occ[c] = 1;
+-        break;
+-      }
+-    }
++    // Starts are sorted. A level is free when its previous span has ended.
++    // Within one start column, every level we passed is still occupied.
++    if (startCol !== previousCol) {
++      previousCol = startCol;
++      nextLevel = 0;
++    }
++    while (nextLevel < levelEnds.length && levelEnds[nextLevel] > startCol) nextLevel++;
++    const level = nextLevel++;
++    levelEnds[level] = endCol;
+     for (let c = startCol; c < endCol; c++) countByCol[c]++;
+     placements.push({
+       item: n,
+@@ -1504,7 +1505,7 @@ var ListView = class {
      const inLead = /* @__PURE__ */ new Set();
      const keep = /* @__PURE__ */ new Set();
      let itemCount = 0;
@@ -11,7 +78,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57
      for (const day of days) {
        let items = this.itemsOn(day);
        if (includes) {
-@@ -1531,13 +1531,13 @@ var ListView = class {
+@@ -1531,13 +1532,13 @@ var ListView = class {
          section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
          if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
          opts.dayHeaderDidMount?.({ ...arg, el: heading });
@@ -27,7 +94,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57
        if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
          if (prev) prev.after(section);
          else this.body.prepend(section);
-@@ -1568,18 +1568,29 @@ var ListView = class {
+@@ -1568,18 +1569,29 @@ var ListView = class {
        this.loader.observe(this.sentinel);
      }
    }
@@ -62,7 +129,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57
    }
    renderLead(items) {
      const { ctx } = this;
-@@ -1598,12 +1609,12 @@ var ListView = class {
+@@ -1598,12 +1610,12 @@ var ListView = class {
        const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
        const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
        const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
@@ -78,10 +145,42 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..eb6722691e19dcae8bb1341ee15dad57
    addRow(day) {
      const { ctx } = this;
 diff --git a/dist/cjs/react.cjs b/dist/cjs/react.cjs
-index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..d0c7547fddc1571d1a904b73890bf91731ef242a 100644
+index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a8befccf1 100644
 --- a/dist/cjs/react.cjs
 +++ b/dist/cjs/react.cjs
-@@ -1412,7 +1412,7 @@ var ListView = class {
+@@ -929,20 +929,21 @@ function layoutRow(items, days, order = defaultOrder) {
+   });
+   const levelEnds = [];
+   const placements = [];
++  let previousCol = -1;
++  let nextLevel = 0;
+   for (const n of sorted) {
+     const startCol = colOf(n.startDay);
+     const endCol = colOf(n.endDay);
+     if (endCol <= startCol) continue;
+-    let level = 0;
+-    for (; ; level++) {
+-      const occ = levelEnds[level] ??= [];
+-      let free = true;
+-      for (let c = startCol; c < endCol; c++) if (occ[c]) free = false;
+-      if (free) {
+-        for (let c = startCol; c < endCol; c++) occ[c] = 1;
+-        break;
+-      }
+-    }
++    // Starts are sorted. A level is free when its previous span has ended.
++    // Within one start column, every level we passed is still occupied.
++    if (startCol !== previousCol) {
++      previousCol = startCol;
++      nextLevel = 0;
++    }
++    while (nextLevel < levelEnds.length && levelEnds[nextLevel] > startCol) nextLevel++;
++    const level = nextLevel++;
++    levelEnds[level] = endCol;
+     for (let c = startCol; c < endCol; c++) countByCol[c]++;
+     placements.push({
+       item: n,
+@@ -1412,7 +1413,7 @@ var ListView = class {
      const inLead = /* @__PURE__ */ new Set();
      const keep = /* @__PURE__ */ new Set();
      let itemCount = 0;
@@ -90,7 +189,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..d0c7547fddc1571d1a904b73890bf917
      for (const day of days) {
        let items = this.itemsOn(day);
        if (includes) {
-@@ -1439,13 +1439,13 @@ var ListView = class {
+@@ -1439,13 +1440,13 @@ var ListView = class {
          section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
          if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
          opts.dayHeaderDidMount?.({ ...arg, el: heading });
@@ -106,7 +205,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..d0c7547fddc1571d1a904b73890bf917
        if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
          if (prev) prev.after(section);
          else this.body.prepend(section);
-@@ -1476,18 +1476,29 @@ var ListView = class {
+@@ -1476,18 +1477,29 @@ var ListView = class {
        this.loader.observe(this.sentinel);
      }
    }
@@ -141,7 +240,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..d0c7547fddc1571d1a904b73890bf917
    }
    renderLead(items) {
      const { ctx } = this;
-@@ -1506,12 +1517,12 @@ var ListView = class {
+@@ -1506,12 +1518,12 @@ var ListView = class {
        const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
        const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
        const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
@@ -235,6 +334,41 @@ index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14
    }
    addRow(day) {
      const { ctx } = this;
+diff --git a/dist/esm/chunk-66A6EMCU.js b/dist/esm/chunk-66A6EMCU.js
+index 925e67d730fb732410ba9d81684710f2cee3dace..7ce9229a90a65fb313276376da5b3a19b4bd9868 100644
+--- a/dist/esm/chunk-66A6EMCU.js
++++ b/dist/esm/chunk-66A6EMCU.js
+@@ -516,20 +516,21 @@ function layoutRow(items, days, order = defaultOrder) {
+   });
+   const levelEnds = [];
+   const placements = [];
++  let previousCol = -1;
++  let nextLevel = 0;
+   for (const n of sorted) {
+     const startCol = colOf(n.startDay);
+     const endCol = colOf(n.endDay);
+     if (endCol <= startCol) continue;
+-    let level = 0;
+-    for (; ; level++) {
+-      const occ = levelEnds[level] ??= [];
+-      let free = true;
+-      for (let c = startCol; c < endCol; c++) if (occ[c]) free = false;
+-      if (free) {
+-        for (let c = startCol; c < endCol; c++) occ[c] = 1;
+-        break;
+-      }
++    // Starts are sorted. A level is free when its previous span has ended.
++    // Within one start column, every level we passed is still occupied.
++    if (startCol !== previousCol) {
++      previousCol = startCol;
++      nextLevel = 0;
+     }
++    while (nextLevel < levelEnds.length && levelEnds[nextLevel] > startCol) nextLevel++;
++    const level = nextLevel++;
++    levelEnds[level] = endCol;
+     for (let c = startCol; c < endCol; c++) countByCol[c]++;
+     placements.push({
+       item: n,
 diff --git a/dist/types/dom/options.d.cts b/dist/types/dom/options.d.cts
 index 0814ca846b4d4046235ac302844cf53f7bd1d7a3..ec19c098ee52b6bed4a1ec61e9a6125b33f1b028 100644
 --- a/dist/types/dom/options.d.cts

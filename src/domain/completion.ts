@@ -107,7 +107,10 @@ export function recordMatchesLink(path: string, link: string): boolean {
 }
 
 function cleanTarget(value: string): string {
-  let target = value.split("#", 1)[0].trim().replaceAll("\\", "/");
+  // Most task paths and project names are already plain, relative targets.
+  const trimmed = value.trim();
+  if (!/[#%\\]|^\/|\/\//.test(trimmed)) return trimmed.replace(/\.md$/i, "");
+  let target = trimmed.split("#", 1)[0].trim().replaceAll("\\", "/");
   try {
     target = decodeURIComponent(target);
   } catch {

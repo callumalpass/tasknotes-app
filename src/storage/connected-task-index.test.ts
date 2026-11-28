@@ -83,6 +83,43 @@ describe("session task index", () => {
           }
   });
 
+  it("reuses navigation counts until the day, hidden tasks or indexed records change", () => {
+    const index = new ConnectedTaskIndex<{ task: Task }>();
+    const undated = task("inbox");
+    const next = task("next", { scheduled: "2026-11-11" });
+    index.set(undated.id, { task: undated });
+    index.set(next.id, { task: next });
+    const reads = vi.spyOn(index, "values");
+    expect(index.navigationCounts("2026-11-04")).toEqual({
+      inbox: 1,
+      upcoming: 0,
+    });
+    index.navigationCounts("2026-11-04").inbox = 50;
+    expect(index.navigationCounts("2026-11-04", [])).toEqual({
+      inbox: 1,
+      upcoming: 0,
+    });
+    expect(reads).toHaveBeenCalledTimes(1);
+    expect(index.navigationCounts("2026-11-05", ["inbox"])).toEqual({
+      inbox: 0,
+      upcoming: 1,
+    });
+    index.set(next.id, { task: { ...next, completed: true } });
+    expect(index.navigationCounts("2026-11-05", ["inbox"])).toEqual({
+      inbox: 0,
+      upcoming: 0,
+    });
+    expect(index.navigationCounts("2026-11-05")).toEqual({
+      inbox: 1,
+      upcoming: 0,
+    });
+    index.delete(undated.id);
+    expect(index.navigationCounts("2026-11-05")).toEqual({
+      inbox: 0,
+      upcoming: 0,
+    });
+  });
+
   it("indexes rolling parents without scanning ordinary tasks on each refresh", () => {
     const index = new ConnectedTaskIndex<{ task: Task }>();
     const parent = task("parent", {

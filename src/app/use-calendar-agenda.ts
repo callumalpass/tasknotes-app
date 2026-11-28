@@ -144,6 +144,7 @@ export function useCalendarAgenda({
       });
       const shortWeekday = dateFormatter({ weekday: "short" });
       const today = todayString(new Date(), zone);
+      let addedStripLabels = false;
       for (const cell of cells) {
         const value = cell.dataset.date ?? "";
         const day = parseDay(value);
@@ -168,6 +169,7 @@ export function useCalendarAgenda({
           weekday.className = "agenda-strip-weekday";
           weekday.setAttribute("aria-hidden", "true");
           cell.prepend(weekday);
+          addedStripLabels = true;
         }
         weekday.textContent = shortWeekday.format(date);
         let badge = cell.querySelector<HTMLElement>(".agenda-strip-count");
@@ -247,11 +249,21 @@ export function useCalendarAgenda({
         }
         more.textContent = t`Show more days`;
       }
-      api.strip?.measure();
+      // Navigation can measure the bare strip before its labels are restored.
+      // If its final height is unchanged, ResizeObserver won't correct that value.
+      if (addedStripLabels || !host!.ownerDocument.defaultView?.ResizeObserver)
+        api.strip?.measure();
     }
     const observe = () =>
       observer.observe(host, { childList: true, subtree: true });
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((changes) => {
+      if (
+        changes.every(
+          ({ target }) =>
+            target instanceof Element && target.closest(AGENDA_SLOTS),
+        )
+      )
+        return;
       // Do not observe our own labels (or recursively redraw them).
       observer.disconnect();
       decorate();

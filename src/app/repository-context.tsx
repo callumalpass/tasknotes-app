@@ -853,6 +853,12 @@ const summaryQuery = {
     repository.listSummaries(query),
   id: (task: TaskSummary) => task.id,
 };
+const calendarIdentityQuery = {
+  ...summaryQuery,
+  kind: "calendar-identities",
+  load: (repository: TaskRepository, query: TaskListQuery) =>
+    repository.listSummaries(query, { onlyWithOccurrenceChildren: true }),
+};
 const searchQuery = {
   kind: "search",
   load: (
@@ -865,8 +871,12 @@ const searchQuery = {
 
 export function useTasks(
   query: Omit<TaskListQuery, "search">,
+  purpose: "calendar-identities" | "summaries" = "summaries",
 ): TaskQueryState<TaskSummary> {
-  return useRepositoryTaskQuery(query, summaryQuery);
+  return useRepositoryTaskQuery(
+    query,
+    purpose === "calendar-identities" ? calendarIdentityQuery : summaryQuery,
+  );
 }
 
 export function useTaskSearch(

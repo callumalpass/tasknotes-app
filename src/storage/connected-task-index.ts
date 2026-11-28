@@ -1,3 +1,4 @@
+import { NavigationCountCache } from "../domain/navigation-task-counts";
 import {
   projectShortcuts,
   type ProjectShortcut,
@@ -29,6 +30,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   private readonly recordIds = new Map<string, string>();
   private readonly rolling = new Map<string, TaskSummary>();
   private ordered?: TaskSummary[];
+  private readonly navigation = new NavigationCountCache();
   private shortcuts?: ProjectShortcut[];
   private relations?: TaskRowRelations;
   private readonly searchMetadata = new WeakMap<TaskSummary, string>();
@@ -90,6 +92,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       if (value.recordId) records.add(value.recordId);
     }
     if (previous?.task !== value.task) {
+      this.navigation.clear();
       this.ordered = undefined;
       this.relations = undefined;
       this.shortcuts = undefined;
@@ -108,6 +111,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       this.recordIds.delete(previous.recordId);
     if (previous.recordId)
       for (const records of this.trackers) records.add(previous.recordId);
+    this.navigation.clear();
     this.ordered = undefined;
     this.relations = undefined;
     this.shortcuts = undefined;
@@ -128,6 +132,12 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     return this.relations;
   }
 
+  navigationCounts(today: string, hidden?: readonly string[]) {
+    return this.navigation.read(today, hidden, () =>
+      Array.from(this.values(), ({ task }) => task),
+    );
+  }
+
   projectShortcuts(): ProjectShortcut[] {
     this.shortcuts ??= projectShortcuts(
       Array.from(this.values(), ({ task }) => task),
@@ -142,6 +152,13 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   atPath(path: string): Value | undefined {
     const id = this.paths.get(path);
     return id === undefined ? undefined : this.get(id);
+  }
+
+  hasOccurrenceChildren(): boolean {
+    for (const { task } of this.values()) {
+      if (task.recurrenceParent && task.occurrenceDate) return true;
+    }
+    return false;
   }
 
   rollingParents(): TaskSummary[] {

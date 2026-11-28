@@ -323,7 +323,7 @@
   }
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 560px) {
   .scratchpad-note-text {
     --scratch-line-pad: 2px;
     --scratch-marker-width: 44px;
@@ -332,7 +332,9 @@
   .scratchpad-note-text .cm-scratch-item {
     min-height: 48px;
   }
+}
 
+@media (pointer: coarse) {
   .scratchpad-note-text .cm-gutters,
   .scratchpad-note-text .cm-scratch-fold-gutter,
   .scratchpad-note-text .cm-scratch-fold {

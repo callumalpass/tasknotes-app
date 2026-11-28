@@ -1,6 +1,6 @@
 import { projectShortcuts } from "../domain/project-shortcuts";
 import { TaskRevisionChangedError } from "../application/ports/task-repository";
-import { navigationTaskCounts } from "../domain/navigation-task-counts";
+import { NavigationCountCache } from "../domain/navigation-task-counts";
 import { taskRowRelations } from "../domain/task-row-relations";
 import type {
   CalendarTaskEdit,
@@ -133,6 +133,7 @@ export class DemoTaskRepository implements TaskRepository {
     8 * 1024 * 1024,
     viewExecutionBytes,
   );
+  private readonly navigation = new NavigationCountCache();
   private shortcuts?: ReturnType<typeof projectShortcuts>;
   private relations?: ReturnType<typeof taskRowRelations>;
   private readonly sources = new Map<string, TaskViewSourceDocument>();
@@ -271,7 +272,19 @@ export class DemoTaskRepository implements TaskRepository {
     );
   }
 
-  async listSummaries(query: Omit<TaskListQuery, "search"> = {}) {
+  async listSummaries(
+    query: Omit<TaskListQuery, "search"> = {},
+    options?: { onlyWithOccurrenceChildren?: boolean },
+  ) {
+    if (options?.onlyWithOccurrenceChildren) {
+      this.operationController.signal.throwIfAborted();
+      if (
+        ![...this.tasks.values()].some(
+          (task) => task.recurrenceParent && task.occurrenceDate,
+        )
+      )
+        return [];
+    }
     return (await this.list(query)).map(summarizeTask);
   }
 
@@ -569,7 +582,7 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   navigationTaskCounts(today: string, hidden?: readonly string[]) {
-    return navigationTaskCounts(this.tasks.values(), today, hidden);
+    return this.navigation.read(today, hidden, () => this.tasks.values());
   }
 
   runningTimers() {
@@ -1144,6 +1157,7 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   private changed(): void {
+    this.navigation.clear();
     this.shortcuts = undefined;
     this.relations = undefined;
     this.viewExecutions.clear();

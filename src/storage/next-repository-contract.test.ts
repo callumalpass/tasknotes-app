@@ -501,9 +501,19 @@ describe("SDK TaskRepository behavior (protocol stand-in)", () => {
       scheduled: "2026-08-05",
       recurrence: "FREQ=DAILY;INTERVAL=1;DTSTART=20260805",
     });
+    const identityQuery = { status: "all", limit: 50_000 } as const;
+    const calendarIdentities = () =>
+      repository.listSummaries(identityQuery, {
+        onlyWithOccurrenceChildren: true,
+      });
+    await repository.create({ title: "Unrelated alias candidate" });
+    expect(await calendarIdentities()).toEqual([]);
     const first = await repository.materializeOccurrence(
       parent.id,
       "2026-08-05",
+    );
+    expect(await calendarIdentities()).toEqual(
+      await repository.listSummaries(identityQuery),
     );
     expect(first.created).toBe(true);
     expect(
