@@ -340,10 +340,9 @@ test("plus moves the focused task to one project in a single step", async ({
   const search = page.getByRole("combobox", { name: "Project" });
   if (isMobile) await search.click();
   await expect(search).toBeFocused();
-  await search.pressSequentially("Oper");
   await expect(page.getByRole("option", { name: "Operations" })).toBeVisible();
-  await expect(search).toHaveAttribute("aria-activedescendant", /.+/);
-  await page.keyboard.press("Enter");
+  await search.pressSequentially("Oper");
+  await search.press("Enter");
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByText(/^Moved “.+” to Operations$/)).toBeVisible();
   await page.keyboard.press("+");

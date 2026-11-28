@@ -115,7 +115,7 @@ export function CommandPalette({
             onChange={(event) => onQueryChange(event.target.value)}
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing) return;
-              const last = options.length - 1;
+              const last = Math.max(0, options.length - 1);
               if (event.key === "ArrowDown") {
                 event.preventDefault();
                 setActiveIndex(active >= last ? 0 : active + 1);

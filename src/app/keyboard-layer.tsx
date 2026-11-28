@@ -266,6 +266,7 @@ function SearchingCommandPalette({
     return () => window.clearTimeout(timeout);
   }, [query]);
   const searchText = debouncedQuery.trim();
+  const searchIsCurrent = query.trim() === searchText;
   const { tasks: results, loading } = useTaskSearch({
     status: "all",
     search: searchText,
@@ -273,7 +274,7 @@ function SearchingCommandPalette({
   });
   const taskResults = useMemo<PaletteCommand[]>(
     () =>
-      searchText
+      searchText && searchIsCurrent
         ? results.map(({ task }) => ({
             id: `find:${task.id}`,
             label: task.title,
@@ -282,16 +283,14 @@ function SearchingCommandPalette({
             run: () => navigate({ page: "task", id: task.id }),
           }))
         : [],
-    [navigate, results, searchText, t],
+    [navigate, results, searchIsCurrent, searchText, t],
   );
   return (
     <CommandPalette
       commands={commands}
       open
       query={query}
-      searchingTasks={Boolean(
-        query.trim() && (loading || query !== debouncedQuery),
-      )}
+      searchingTasks={Boolean(query.trim() && (loading || !searchIsCurrent))}
       taskResults={taskResults}
       onClose={onClose}
       onQueryChange={onQueryChange}
