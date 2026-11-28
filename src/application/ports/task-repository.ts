@@ -162,6 +162,8 @@ export interface TaskRepository {
   todayTaskCounts?(
     today: string,
   ): import("../../domain/today-summary").TodayTaskCounts | null;
+  /** Task rows from a current, complete Inbox execution. Reading never starts a query. */
+  cachedInboxCount?(view: TaskView): number | null;
   navigationTaskCounts?(
     today: string,
   ): { inbox: number; upcoming: number } | null;
