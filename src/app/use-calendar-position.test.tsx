@@ -52,10 +52,13 @@ it("reanchors the selected agenda section when detail changes the pane width in 
   );
   act(() => resize());
   expect(section.scrollIntoView).not.toHaveBeenCalled();
-  bounds(root.current, 0, 0, 550, 700);
+  bounds(root.current, 0, 180, 800, 700);
+  act(() => resize());
+  expect(section.scrollIntoView).not.toHaveBeenCalled();
+  bounds(root.current, 0, -250, 550, 700);
   act(() => resize());
   expect(section.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
-  bounds(root.current, 0, 0, 900, 700);
+  bounds(root.current, 0, -250, 900, 700);
   act(() => resize());
   expect(section.scrollIntoView).toHaveBeenCalledTimes(2);
 });

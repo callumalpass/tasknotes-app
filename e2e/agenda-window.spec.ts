@@ -6,6 +6,7 @@ test.use({ timezoneId: "UTC", reducedMotion: "reduce" });
 test("a dense agenda keeps day totals, row focus and collapse while scrolling", async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
   await page.goto(
     "views/TaskNotes%2FViews%2Fupcoming.base%23upcoming?demo=10000",
@@ -14,7 +15,10 @@ test("a dense agenda keeps day totals, row focus and collapse while scrolling", 
   const groups = lead.locator(".agenda-row-group");
   const toggle = lead.getByRole("button", { name: /^Overdue \d+$/ });
   const titles = page.locator(".tnc-item--list .task-row-title");
-  await expect(titles.first()).toBeVisible();
+  // Cold admission seeds 10k records before the calendar can mount a pool.
+  await expect(groups.first().locator(".task-row-title").first()).toBeVisible({
+    timeout: 30_000,
+  });
   expect(await groups.count()).toBeGreaterThan(100);
   expect(await titles.count()).toBeLessThan(160);
 

@@ -785,6 +785,26 @@ describe("shared agenda", () => {
     });
   });
 
+  it.each([
+    { days: 1, scheduled: "2026-07-04", included: true },
+    { days: 1, scheduled: "2026-07-05", included: false },
+    { days: 20, scheduled: "2026-07-20", included: true },
+  ])(
+    "projects the initial $days-day agenda and its strip through the correct end ($scheduled)",
+    ({ days, scheduled, included }) => {
+      const current = execution(scheduled);
+      current.view.presentation!.options = {
+        calendarView: "listWeek",
+        listDayCount: days,
+      };
+      // July 1 is a Wednesday in the helper's Sunday-first view.
+      renderCalendar(current, vi.fn());
+      expect(items().some((item) => item.id === "scheduled-one")).toBe(
+        included,
+      );
+    },
+  );
+
   it("mounts ordinary task controls without a surrounding calendar button", async () => {
     const current = execution("2026-07-24T09:30");
     current.view.presentation!.options.calendarView = "listWeek";

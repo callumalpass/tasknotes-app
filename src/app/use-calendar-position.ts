@@ -17,10 +17,13 @@ export function useCalendarPosition(
     let width = root.getBoundingClientRect().width;
     let frame = 0;
     const observer = new ResizeObserver(() => {
-      const nextWidth = root.getBoundingClientRect().width;
-      if (nextWidth === width) return;
-      width = nextWidth;
+      const bounds = root.getBoundingClientRect();
+      if (bounds.width === width) return;
+      width = bounds.width;
       cancelAnimationFrame(frame);
+      // The sidebar can settle after the first agenda paint. Keep the start
+      // of the agenda visible until the user has scrolled into its days.
+      if (bounds.top >= 0) return;
       frame = requestAnimationFrame(() => {
         root
           .querySelector(`.tnc-list-day[data-date="${selected}"]`)

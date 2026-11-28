@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import {
   AppCalendarEntryIndex,
+  type CalendarEntry,
   calendarContext,
   calendarSettings,
 } from "../domain/calendar-events";
@@ -13,7 +14,7 @@ const noMaterializations: readonly TaskSummary[] = [];
 
 export function useCalendarEntries(
   execution: TaskViewExecution,
-  range: { start: Date; end: Date },
+  range: { start: Date; end: Date } | null,
   identityTasks: readonly TaskSummary[],
   configuration: TaskCollectionConfiguration,
   display: CalendarSettings,
@@ -33,6 +34,7 @@ export function useCalendarEntries(
     [identityTasks],
   );
   return useMemo(() => {
+    if (!range) return new Map<string, CalendarEntry[]>();
     const context = calendarContext(configuration);
     return index.entries(
       execution,

@@ -1,5 +1,8 @@
+let currentTimezone: string | undefined;
+
 /** Return the current runtime's canonical IANA timezone. */
 export function runtimeTimezone(): string {
+  if (currentTimezone) return currentTimezone;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (
     !timezone ||
@@ -16,6 +19,12 @@ export function runtimeTimezone(): string {
       `runtime_timezone_invalid: This device reported an invalid timezone (${timezone}).`,
     );
   }
+  // A synchronous batch of floating dates shares one device zone. Resolve it
+  // again on the next turn so a resumed or travelling device sees its new zone.
+  currentTimezone = timezone;
+  queueMicrotask(() => {
+    currentTimezone = undefined;
+  });
   return timezone;
 }
 

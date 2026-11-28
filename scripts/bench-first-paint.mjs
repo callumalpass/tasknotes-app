@@ -1,4 +1,4 @@
-/* global window, requestAnimationFrame */
+/* global document, window, requestAnimationFrame */
 // First usable task row in the local SDK protocol fixture.
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
@@ -8,6 +8,7 @@ const origins = (
 ).map((url) => new URL(url));
 for (const origin of origins)
   assert.ok(["localhost", "127.0.0.1"].includes(origin.hostname));
+const size = Number(process.env.TASKNOTES_BENCH_TASKS ?? 10000);
 const browser = await chromium.launch();
 const results = Object.fromEntries(
   origins.map(({ origin }) => [origin, { cold: [], warm: [] }]),
@@ -22,9 +23,10 @@ async function openCollection(origin) {
   });
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
-  await page.addInitScript(() => {
+  await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
+  await page.addInitScript((size) => {
     window.__TASKNOTES_NEXT_SMOKE__ = {
-      records: Array.from({ length: 10_000 }, (_, index) => ({
+      records: Array.from({ length: size }, (_, index) => ({
         path: `Tasks/T${index}.md`,
         frontmatter: {
           type: "task",
@@ -38,7 +40,7 @@ async function openCollection(origin) {
         body: "Task detail. ".repeat(80),
       })),
     };
-  });
+  }, size);
   for (const mode of ["cold", "warm"]) {
     await page.goto(origin.href);
     const open = page.getByRole("button", {
@@ -46,31 +48,30 @@ async function openCollection(origin) {
     });
     await open.waitFor();
     // Include seeding, SDK open, React commit and a paint opportunity.
-    await open.evaluate((button) => {
-      performance.mark("fixture-open");
-      button.click();
-    });
-    await page.locator(".task-row-title").first().waitFor();
-    samples[mode].push(
-      await page.evaluate(async () => {
-        await new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        );
-        return Math.round(
-          performance.measure("first task", "fixture-open").duration,
-        );
-      }),
+    const start = performance.now();
+    await open.evaluate((button) => button.click());
+    await page.waitForFunction(
+      () =>
+        document.querySelector(".task-row-title")?.getBoundingClientRect()
+          .height > 0,
     );
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
+    samples[mode].push(Math.round(performance.now() - start));
   }
   await context.close();
 }
 try {
-  for (let round = 0; round < 5; round++) {
+  for (let round = 0; round < 7; round++) {
     for (const origin of round % 2 ? [...origins].reverse() : origins)
       await openCollection(origin);
     console.log(JSON.stringify({ round, results }));
   }
-  console.log(JSON.stringify({ chromium: browser.version(), results }));
+  console.log(JSON.stringify({ size, chromium: browser.version(), results }));
 } finally {
   await browser.close();
 }
