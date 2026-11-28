@@ -606,6 +606,22 @@ describe("TaskScreen with a change made in another tab", () => {
     await act(async () => void (await repository.refresh()));
   }
 
+  it("preserves a peer body update arriving after the title save starts", async () => {
+    const title = await screen.findByLabelText("Task title", { exact: true });
+    const update = repository.update.bind(repository);
+    vi.spyOn(repository, "update").mockImplementationOnce(async (...args) => {
+      fixture.replica.editElsewhere(task.path, { body: "From the CLI" });
+      return update(...args);
+    });
+    fireEvent.change(title, { target: { value: "Local title" } });
+    fireEvent.blur(title);
+    await waitFor(async () => {
+      const saved = await repository.get(task.id);
+      expect(saved?.title).toBe("Local title");
+      expect(saved?.body).toBe("From the CLI");
+    });
+  });
+
   it("shows a title changed elsewhere after this tab saved its own", async () => {
     const title = await screen.findByLabelText("Task title", { exact: true });
     fireEvent.change(title, { target: { value: "Beta" } });

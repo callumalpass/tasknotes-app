@@ -99,7 +99,15 @@ export function ViewEditor({
   const confirmationRef = useRef<HTMLElement>(null);
   const focusedInitialEditor = useRef(false);
   const fingerprint = useMemo(() => draftFingerprint(draft), [draft]);
-  const deferredDraft = useDeferredValue(draft);
+  const { dialect, filter, computedProperties, sort } = draft ?? {};
+  const previewQuery = useMemo(
+    () =>
+      dialect && computedProperties && sort
+        ? { dialect, filter, computedProperties, sort }
+        : null,
+    [dialect, filter, computedProperties, sort],
+  );
+  const deferredDraft = useDeferredValue(previewQuery);
   const livePreview = useMemo(
     () =>
       deferredDraft && tasks

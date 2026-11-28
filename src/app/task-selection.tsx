@@ -53,7 +53,7 @@ export function TaskSelectionList({
   const owner = useRef({});
   useLayoutEffect(() => {
     store?.register(owner.current, enabled ? tasks : []);
-  });
+  }, [store, enabled, tasks]);
   useLayoutEffect(() => {
     const token = owner.current;
     return () => store?.unregister(token);

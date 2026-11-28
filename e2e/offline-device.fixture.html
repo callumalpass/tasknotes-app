@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Offline edit test device</title>
+  </head>
+  <body>
+    <script type="module">
+      import { smokeDevice } from "../src/test/next-entry-smoke-fixture.tsx";
+      window.offlineTestDevice = smokeDevice(window.__TASKNOTES_NEXT_SMOKE__);
+    </script>
+  </body>
+</html>

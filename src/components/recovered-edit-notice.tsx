@@ -17,6 +17,7 @@ const FIELD_LABELS: Record<string, string> = {
   reminders: "Reminders",
   timeEstimate: "Estimate",
   customProperties: "Properties",
+  customPropertyPatch: "Properties",
 };
 
 /** Edits typed on this device that mdbase had not captured when the page

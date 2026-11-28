@@ -1,22 +1,78 @@
 import { historyScope } from "./search-history";
 
 import type { CollectionInfo } from "../application/ports/task-repository";
+import type { UpdateTaskInput } from "../domain/task";
 import type { Draft } from "./task-editor-draft";
 
-/**
- * A copy of the task edits this device has not yet handed to mdbase.
- *
- * Saving a task goes through reads and the SDK before the write is captured on
- * the device, which a reload or a closed tab can interrupt. Each edit is
- * therefore written here synchronously, and removed only once mdbase has
- * captured the save (or the person discards it). On the next open, edits that
- * the task does not already show are offered back for review.
- */
+/** Only explicit editor changes. Null represents a clear, including after JSON storage. */
+export type TaskEdit = Pick<
+  UpdateTaskInput,
+  keyof Draft | "customPropertyPatch"
+>;
+
+export function mergeTaskEdits(first: TaskEdit, second: TaskEdit): TaskEdit {
+  return {
+    ...first,
+    ...second,
+    ...(first.customPropertyPatch && second.customPropertyPatch
+      ? {
+          customPropertyPatch: {
+            ...first.customPropertyPatch,
+            ...second.customPropertyPatch,
+          },
+        }
+      : {}),
+  };
+}
+
+export function applyTaskEdit(base: Draft, edit: TaskEdit): Draft {
+  const { customPropertyPatch, ...fields } = edit;
+  const next = {
+    ...base,
+    ...Object.fromEntries(
+      Object.entries(fields).map(([key, value]) => [key, value ?? undefined]),
+    ),
+  };
+  if (customPropertyPatch) {
+    next.customProperties = { ...next.customProperties };
+    for (const [key, value] of Object.entries(customPropertyPatch)) {
+      if (value == null) delete next.customProperties[key];
+      else next.customProperties[key] = value;
+    }
+  }
+  return next;
+}
+
+export function editorPatch(base: Draft, patch: Partial<Draft>): TaskEdit {
+  const { customProperties, ...fields } = patch;
+  const edit: TaskEdit = Object.fromEntries(
+    Object.entries(fields)
+      .filter(([key, value]) => !same(base[key as keyof Draft], value))
+      .map(([key, value]) => [key, value ?? null]),
+  );
+  if (customProperties) {
+    const changes = Object.fromEntries(
+      [
+        ...new Set([
+          ...Object.keys(base.customProperties),
+          ...Object.keys(customProperties),
+        ]),
+      ]
+        .filter(
+          (key) => !same(base.customProperties[key], customProperties[key]),
+        )
+        .map((key) => [key, customProperties[key] ?? null]),
+    );
+    if (Object.keys(changes).length) edit.customPropertyPatch = changes;
+  }
+  return edit;
+}
+
 export interface StoredTaskEdit {
   readonly version: 1;
   readonly savedAt: string;
-  /** Only the fields that differ from the task as it was opened. */
-  readonly fields: Partial<Draft>;
+  /** Fields edited locally and still awaiting capture, confirmation or review. */
+  readonly fields: TaskEdit;
 }
 
 export interface TaskEditStorage {
@@ -59,63 +115,21 @@ function defaultStorage(): TaskEditStorage | undefined {
 }
 
 function same(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-}
-
-/** The fields of `draft` that differ from `base`. */
-export function changedFields(base: Draft, draft: Draft): Partial<Draft> {
-  const out: Record<string, unknown> = {};
-  for (const field of Object.keys(draft) as (keyof Draft)[])
-    if (!same(base[field], draft[field])) out[field] = draft[field];
-  return out as Partial<Draft>;
-}
-
-/**
- * Follow a newer version of the task in every field without a local edit, and
- * return the draft to show, or null when it is unchanged.
- *
- * `known` holds the version the editor last saw, field by field. A field whose
- * draft differs from it is an edit in progress and is kept, unless it already
- * equals the incoming value (this editor's own save). With nothing unsaved or
- * saving (`pending` false), every local value has been saved, so any
- * difference from the incoming version is newer or normalised data. Adopted
- * fields also move `opened`, so they never count as this person's edit.
- */
-export function followIncomingDraft(
-  baselines: { known: { current: Draft }; opened: { current: Draft } },
-  local: Draft,
-  remote: Draft,
-  pending: boolean,
-): Draft | null {
-  const { known, opened } = baselines;
-  let adopted: Partial<Draft>;
-  if (!pending) {
-    adopted = changedFields(local, remote);
-    known.current = remote;
-  } else {
-    const editedLocally = changedFields(known.current, local);
-    const differsFromRemote = changedFields(remote, local);
-    const nextKnown: Record<string, unknown> = { ...known.current };
-    const fields: Record<string, unknown> = {};
-    for (const field of Object.keys(changedFields(known.current, remote))) {
-      if (field in editedLocally && field in differsFromRemote) continue;
-      nextKnown[field] = remote[field as keyof Draft];
-      if (!(field in editedLocally))
-        fields[field] = remote[field as keyof Draft];
-    }
-    known.current = nextKnown as Draft;
-    adopted = fields as Partial<Draft>;
-  }
-  if (!Object.keys(adopted).length) return null;
-  opened.current = { ...opened.current, ...adopted };
-  return { ...local, ...adopted };
+  if ((left ?? null) === (right ?? null)) return true;
+  return (
+    left != null &&
+    right != null &&
+    typeof left === "object" &&
+    typeof right === "object" &&
+    JSON.stringify(left) === JSON.stringify(right)
+  );
 }
 
 /** False when this browser cannot keep the copy (storage full or blocked). */
 export function writeTaskEdit(
   scope: string,
   taskId: string,
-  fields: Partial<Draft>,
+  fields: TaskEdit,
   storage = defaultStorage(),
 ): boolean {
   if (!storage) return false;
@@ -170,15 +184,38 @@ export function readTaskEdit(
       parsed?.version === 1 &&
       parsed.fields &&
       typeof parsed.fields === "object"
-    )
-      stored = parsed as StoredTaskEdit;
+    ) {
+      // Older copies contained the whole custom-properties object. Missing
+      // keys carry no deletion intent and can belong to a newer peer edit.
+      const { customProperties, customPropertyPatch, ...fields } =
+        parsed.fields;
+      stored = {
+        version: 1,
+        savedAt: parsed.savedAt ?? "",
+        fields: {
+          ...Object.fromEntries(
+            Object.entries(fields).filter(([key]) =>
+              Object.hasOwn(current, key),
+            ),
+          ),
+          ...(customProperties || customPropertyPatch
+            ? {
+                customPropertyPatch: {
+                  ...customProperties,
+                  ...customPropertyPatch,
+                },
+              }
+            : {}),
+        },
+      };
+    }
   } catch {
     stored = null;
   }
   const fields = stored
     ? unconfirmed
       ? stored.fields
-      : changedFields(current, { ...current, ...stored.fields })
+      : editorPatch(current, applyTaskEdit(current, stored.fields))
     : {};
   if (!stored || !Object.keys(fields).length) {
     clearTaskEdit(scope, taskId, storage);

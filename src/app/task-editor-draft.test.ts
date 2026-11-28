@@ -1,3 +1,9 @@
+import {
+  applyTaskEdit,
+  readTaskEdit,
+  writeTaskEdit,
+  tabTaskEdits,
+} from "./task-edit-recovery";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { defaultTaskCollectionConfiguration } from "../domain/task-configuration";
@@ -55,5 +61,24 @@ describe("task schedule summary", () => {
     expect(
       scheduleSummary(task, draft, defaultTaskCollectionConfiguration()),
     ).toBe("Normal · Scheduled Today · Due Fri");
+  });
+});
+
+it("restores legacy custom property edits without clearing peer-only keys", () => {
+  const storage = tabTaskEdits();
+  const current = toDraft(
+    new TaskNotesTaskModel().create({ title: "Shared" }, { id: "shared" }),
+  );
+  current.customProperties = { owner: "CLI", energy: 1 };
+  writeTaskEdit(
+    "scope",
+    "shared",
+    { customProperties: { energy: 2 } },
+    storage,
+  );
+  const recovered = readTaskEdit("scope", "shared", current, storage, true)!;
+  expect(applyTaskEdit(current, recovered.fields).customProperties).toEqual({
+    owner: "CLI",
+    energy: 2,
   });
 });

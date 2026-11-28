@@ -452,11 +452,22 @@ export class TaskNotesTaskModel {
       updates.sortOrder = input.sortOrder ?? undefined;
     if (input.timeEntries !== undefined)
       updates.timeEntries = normalizeTimeEntries(input.timeEntries);
-    if (input.customProperties !== undefined)
+    const customProperties = input.customPropertyPatch
+      ? {
+          ...(input.customProperties ?? original.customProperties),
+          ...input.customPropertyPatch,
+        }
+      : input.customProperties;
+    if (customProperties) {
+      for (const key of Object.keys(input.customPropertyPatch ?? {}))
+        if (isEmptyCustomValue(customProperties[key]))
+          delete customProperties[key];
+    }
+    if (customProperties !== undefined)
       updates.customProperties = updatedCustomProperties(
         this.config,
         original.customProperties,
-        input.customProperties,
+        customProperties,
       );
 
     // The recurrence planner shifts civil dates. Convert existing instants
@@ -546,11 +557,11 @@ export class TaskNotesTaskModel {
       if (plannedTask[role] === undefined)
         delete patched[this.config.fieldMapping[role]];
     }
-    if (input.customProperties !== undefined) {
+    if (customProperties !== undefined) {
       for (const field of this.config.userFields.filter(
         (candidate) => !candidate.readOnly,
       )) {
-        const value = input.customProperties[field.key];
+        const value = customProperties[field.key];
         if (isEmptyCustomValue(value)) delete patched[field.key];
       }
     }

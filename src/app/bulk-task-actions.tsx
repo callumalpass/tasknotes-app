@@ -5,6 +5,7 @@ import {
   useEffectEvent,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -97,37 +98,47 @@ export function BulkTaskActions({
   const deletionFailureHandled = useRef<unknown>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   const selected = store.selectedTasks;
-  const eligible = selected.filter(
-    (task) => !task.recurrence && !task.recurrenceParent,
+  const eligible = useMemo(
+    () => selected.filter((task) => !task.recurrence && !task.recurrenceParent),
+    [selected],
   );
   const excluded = selected.length - eligible.length;
   const hasSelection = selected.length > 0;
-  const sharedPriority = eligible.every(
-    (task) => task.priority === eligible[0]?.priority,
-  )
-    ? (eligible[0]?.priority ?? "")
-    : "";
-  const sharedStatus = eligible.every(
-    (task) => task.status === eligible[0]?.status,
-  )
-    ? (eligible[0]?.status ?? "")
-    : "";
-  // The tags that mark a record as a task or as archived are not labels.
-  const reservedTags = [
-    configuration.defaults.taskTag,
-    configuration.fieldMapping.archiveTag,
-  ];
-  // A tag every selected task carries is offered for removal; any other is added.
-  const sharedTags = (eligible[0]?.tags ?? []).filter(
-    (tag) =>
-      !reservedTags.includes(tag) &&
-      eligible.every((task) => task.tags.includes(tag)),
+  const taskTag = configuration.defaults.taskTag;
+  const archiveTag = configuration.fieldMapping.archiveTag;
+  const { sharedPriority, sharedStatus, sharedTags, selectionTags } =
+    useMemo(() => {
+      const first = eligible[0];
+      const sharedTags = (first?.tags ?? []).filter(
+        (tag) =>
+          tag !== taskTag &&
+          tag !== archiveTag &&
+          eligible.every((task) => task.tags.includes(tag)),
+      );
+      return {
+        sharedTags,
+        selectionTags: [...new Set(eligible.flatMap((task) => task.tags))],
+        sharedPriority: eligible.every(
+          (task) => task.priority === first?.priority,
+        )
+          ? (first?.priority ?? "")
+          : "",
+        sharedStatus: eligible.every((task) => task.status === first?.status)
+          ? (first?.status ?? "")
+          : "",
+      };
+    }, [eligible, taskTag, archiveTag]);
+  const otherTags = useMemo(
+    () =>
+      [...new Set([...selectionTags, ...knownTags])].filter(
+        (tag) =>
+          !sharedTags.includes(tag) && tag !== taskTag && tag !== archiveTag,
+      ),
+    [selectionTags, knownTags, sharedTags, taskTag, archiveTag],
   );
-  const otherTags = [
-    ...new Set([...eligible.flatMap((task) => task.tags), ...knownTags]),
-  ].filter((tag) => !sharedTags.includes(tag) && !reservedTags.includes(tag));
   const namedTag = newTag?.trim().replace(/^#+/, "") ?? "";
-  const canAddNamedTag = Boolean(namedTag) && !reservedTags.includes(namedTag);
+  const canAddNamedTag =
+    Boolean(namedTag) && namedTag !== taskTag && namedTag !== archiveTag;
   const shownNotice = notice?.navigationKey === navigationKey ? notice : null;
   const currentNavigation = useRef(navigationKey);
   useEffect(() => {

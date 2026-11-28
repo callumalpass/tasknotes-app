@@ -7,6 +7,11 @@ import {
 import type { TaskSummary } from "./task";
 import type { EditableViewDraft } from "./view-document";
 
+type PreviewQuery = Pick<
+  EditableViewDraft,
+  "dialect" | "filter" | "computedProperties" | "sort"
+>;
+
 export interface ViewDraftPreview {
   kind: "live" | "current" | "unavailable";
   count?: number;
@@ -14,9 +19,15 @@ export interface ViewDraftPreview {
 }
 
 export function previewViewDraft(
-  draft: EditableViewDraft,
+  draft: PreviewQuery,
   tasks: readonly TaskSummary[],
 ): ViewDraftPreview {
+  if (
+    draft.dialect === "obsidian-bases" &&
+    draft.filter == null &&
+    !draft.sort.length
+  )
+    return { kind: "live", count: tasks.length, tasks: tasks.slice(0, 3) };
   const matching = tasksForViewDraft(draft, tasks);
   if (!matching) return { kind: "unavailable", tasks: [] };
   return {
@@ -28,7 +39,7 @@ export function previewViewDraft(
 
 /** Evaluate an editable Obsidian Bases view against an in-memory task set. */
 export function tasksForViewDraft<Value extends TaskSummary>(
-  draft: EditableViewDraft,
+  draft: PreviewQuery,
   tasks: readonly Value[],
 ): Value[] | null {
   if (draft.dialect !== "obsidian-bases") return null;
@@ -53,7 +64,7 @@ export function tasksForViewDraft<Value extends TaskSummary>(
 }
 
 export function computedViewValues(
-  draft: EditableViewDraft,
+  draft: PreviewQuery,
   task: TaskSummary,
 ): Record<string, unknown> {
   if (draft.dialect !== "obsidian-bases" || !draft.computedProperties.length)
@@ -95,7 +106,7 @@ function taskProperties(task: TaskSummary): Record<string, unknown> {
 
 function sortTasks<Value extends TaskSummary>(
   tasks: readonly Value[],
-  draft: EditableViewDraft,
+  draft: PreviewQuery,
 ): Value[] {
   if (!draft.sort.length) return [...tasks];
   const rules = draft.sort.map((rule) => ({

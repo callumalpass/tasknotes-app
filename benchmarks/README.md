@@ -63,3 +63,17 @@ For a browser trace, run `pnpm dev:e2e` and then
 mounts, history pagination and the expanded note body. Timings include a
 paint opportunity and the Search debounce. These are post-open interactions.
 The production cold-open apply stage in #602 is outside these measurements.
+
+## Task detail, filter editor and bulk selection at 10,000 tasks
+
+Run `rpnpm bench:editor-interactions`. Each of three runs seeds a fresh demo
+repository. The React/jsdom benchmark opens the last task in navigation order,
+makes ten successive title changes and flushes on blur. It opens the
+view editor's Filter section and applies a Bases expression for each of tags,
+contexts, projects and status, checks the match counts, and changes the view
+name five times. It then registers the 10,000 rows, selects 32 in succession
+and applies a priority change through the bulk command. Each run reports the
+number of navigation IDs read during typing, preview evaluations during
+renaming and elapsed milliseconds. Timings include the demo repository and
+React updates. Browser painting, native sync and network latency need separate
+measurements.

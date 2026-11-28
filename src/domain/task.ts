@@ -146,6 +146,8 @@ export interface UpdateTaskInput {
   sortOrder?: string | null;
   timeEntries?: TaskTimeEntry[];
   customProperties?: Record<string, unknown>;
+  /** Editor changes to individual properties. Null clears the named property. */
+  customPropertyPatch?: Record<string, unknown>;
   /** Keep concrete execution dates unchanged during a pattern-only RRULE edit. */
   preserveRecurrenceSchedule?: boolean;
 }
