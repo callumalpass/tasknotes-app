@@ -60,7 +60,8 @@
     "format:check": "prettier --check .",
     "cap:sync": "pnpm build && cap sync",
     "android": "pnpm cap:sync && cap run android",
-    "store:screenshots": "node scripts/store-screenshots.mjs"
+    "store:screenshots": "node scripts/store-screenshots.mjs",
+    "bench:collection-session": "tsc -p benchmarks/tsconfig.json && TASKNOTES_BENCH_SESSION=1 vitest run --config benchmarks/vitest.config.ts benchmarks/collection-session.perf.ts"
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "8.0.0",

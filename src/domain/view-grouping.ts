@@ -25,9 +25,10 @@ export function groupTaskViewRows(
       lookup = { fields, indices: new Map() };
       byFields.set(signature, lookup);
     }
-    const key = JSON.stringify(
-      fields.map((field) => valueKey(group.values[field])),
-    );
+    const key =
+      fields.length === 1
+        ? valueKey(group.values[fields[0]!])
+        : JSON.stringify(fields.map((field) => valueKey(group.values[field])));
     if (!lookup.indices.has(key)) lookup.indices.set(key, groups.length);
     groups.push({
       key: `${sourceIndex}:${valueKey(group.values)}`,
@@ -43,9 +44,12 @@ export function groupTaskViewRows(
   execution.rows.forEach((row, rowIndex) => {
     let first = assigned.get(row.task.id)?.groupIndex ?? Infinity;
     for (const { fields, indices } of byFields.values()) {
-      const key = JSON.stringify(
-        fields.map((field) => valueKey(rowGroupValue(row, field))),
-      );
+      const key =
+        fields.length === 1
+          ? valueKey(rowGroupValue(row, fields[0]!))
+          : JSON.stringify(
+              fields.map((field) => valueKey(rowGroupValue(row, field))),
+            );
       const groupIndex = indices.get(key);
       if (groupIndex === undefined || groupIndex >= first) continue;
       first = groupIndex;

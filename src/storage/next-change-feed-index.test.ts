@@ -11,6 +11,7 @@ import {
   seedTaskView,
   taskQueryWhere,
 } from "../test/next-task-fixture";
+import { CollectionChangeWindow } from "./collection-change-window";
 import { deferred } from "../test/deferred";
 import { rememberTaskEdit } from "../app/task-edit-undo";
 import { takeUndo } from "../app/undo-history";
@@ -691,6 +692,25 @@ it("does not archive with settings retired during the task read", async () => {
     (await f.repository.setArchived(String(f.record.frontmatter.id), true))
       .path,
   ).toMatch(/^New\//);
+});
+
+it("reads the latest task and captures edits while a UI notification is pending", async () => {
+  const f = await fixture(false, true);
+  await f.repository.initialize();
+  f.replica.editElsewhere(f.id, { frontmatter: { title: "Peer edit" } });
+  f.push([f.change]);
+  const quiet = vi.spyOn(CollectionChangeWindow.prototype, "quiet");
+  const id = String(f.record.frontmatter.id);
+  expect(await f.repository.getSummary(id)).toMatchObject({
+    title: "Peer edit",
+  });
+  expect(await f.repository.update(id, { priority: "high" })).toMatchObject({
+    title: "Peer edit",
+    priority: "high",
+  });
+  expect(quiet).not.toHaveBeenCalled();
+  expect(await f.client.pendingWrites()).toHaveLength(1);
+  f.replica.confirmAll();
 });
 
 it("allows a prepared task edit across a refresh that verifies the same model", async () => {

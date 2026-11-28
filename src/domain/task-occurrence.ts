@@ -77,9 +77,6 @@ function recurringDatesBetween(
   start: string,
   end: string,
 ): readonly string[] {
-  const startDate = utcStorageDate(start);
-  const endDate = utcStorageDate(end);
-  if (!startDate || !endDate || startDate > endDate) return [];
   const key = JSON.stringify([
     task.recurrence,
     normalizeTaskDateTime(task.scheduled ?? task.createdAt, task.timezone),
@@ -92,6 +89,9 @@ function recurringDatesBetween(
     recurrenceDateCache.set(key, cached);
     return cached;
   }
+  const startDate = utcStorageDate(start);
+  const endDate = utcStorageDate(end);
+  if (!startDate || !endDate || startDate > endDate) return [];
   startDate.setUTCDate(startDate.getUTCDate() - 1);
   endDate.setUTCDate(endDate.getUTCDate() + 1);
   const dates = generateRecurringInstances(
