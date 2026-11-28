@@ -291,12 +291,14 @@ export function TaskNotesCombobox({
   onChange,
   ariaLabel,
   placeholder,
+  limit,
 }: {
   value: string;
   options: readonly TaskNotesOption[];
   onChange(value: string): void;
   ariaLabel: string;
   placeholder?: string;
+  limit?: number;
 }) {
   const { t } = useLingui();
   const id = useId();
@@ -305,11 +307,13 @@ export function TaskNotesCombobox({
   const { open, rootRef, setOpen } = useDismissablePopover(inputRef);
   const filtered = useMemo(() => {
     const query = value.trim().toLocaleLowerCase();
-    if (!query) return options;
-    return options.filter((option) =>
-      `${option.label}\n${option.value}`.toLocaleLowerCase().includes(query),
-    );
-  }, [options, value]);
+    if (!query) return options.slice(0, limit);
+    return options
+      .filter((option) =>
+        `${option.label}\n${option.value}`.toLocaleLowerCase().includes(query),
+      )
+      .slice(0, limit);
+  }, [options, value, limit]);
   useAnchoredPopover({
     open: open && filtered.length > 0,
     present: filtered.length,

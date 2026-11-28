@@ -1688,6 +1688,7 @@ export function Navigation({
       {mode === "desktop" ? (
         <div className="navigation-destinations">
           {items.map(renderDestination)}
+          <SidebarProjects projects={projects} />
           <div
             aria-label={t({ message: "Views" })}
             className="navigation-view-section"
@@ -1695,7 +1696,6 @@ export function Navigation({
           >
             {additionalViews.map(renderDestination)}
           </div>
-          <SidebarProjects projects={projects} />
         </div>
       ) : (
         <>

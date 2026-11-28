@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "../test/render";
 import { parse } from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { TaskNotesTaskModel } from "../domain/tasknotes-model";
 import { taskRepositoryStub } from "../test/task-repository-stub";
 import { suggestedFilterAndSortFields } from "../domain/view-document";
 import { RepositoryProvider } from "./repository-context";
@@ -123,6 +124,44 @@ describe("ViewEditor", () => {
       { property: "due", direction: "DESC" },
     ]);
     expect(onChanged).toHaveBeenCalledOnce();
+  });
+
+  it("previews and saves a Projects condition with the selected stored target", async () => {
+    const source = baseSource(
+      `views: [{ type: tasknotesTaskList, name: Work, filters: 'projects.contains("old")' }]`,
+    );
+    const target = "Projects/Alpha Project.md";
+    const task = new TaskNotesTaskModel().create(
+      { title: "Prepare launch", projects: [target] },
+      { id: "one" },
+    );
+    const updateViewSource = vi.fn(
+      async (input: UpdateTaskViewSourceInput) => ({
+        ...source,
+        document: input.document,
+      }),
+    );
+    renderEditor({
+      repository: repository({
+        source,
+        listSummaries: async () => [task],
+        updateViewSource,
+      }),
+      view: savedView(),
+      initialSection: "view-filter",
+    });
+    const input = await screen.findByRole("combobox", { name: "Filter value" });
+    fireEvent.change(input, { target: { value: "Alpha" } });
+    const option = await screen.findByRole("option", {
+      name: /Alpha Project.*Projects\/Alpha Project.md/,
+    });
+    fireEvent.click(option);
+    expect(await screen.findByText("1 task match this draft")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+    await waitFor(() => expect(updateViewSource).toHaveBeenCalledOnce());
+    expect(
+      parse(updateViewSource.mock.calls[0][0].document).views[0].filters,
+    ).toBe('projects.contains("Projects/Alpha Project.md")');
   });
 
   it("duplicates a saved view into a new provider-neutral source", async () => {
