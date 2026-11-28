@@ -128,7 +128,7 @@ import {
   scratchImageFrontmatter,
 } from "./scratch-images";
 import {
-  scratchFeedPage,
+  prepareScratchFeed,
   scratchpadFeedItem,
   type ScratchFeedPage,
   type ScratchFeedPageRequest,
@@ -440,7 +440,18 @@ export class NextTaskRepository implements TaskRepository {
       this.conflictedRecords.add(record.id);
     else this.conflictedRecords.delete(record.id);
   }
-  private scratchFeedSnapshot?: ScratchFeedPage;
+  private scratchFeedSnapshot?: ReturnType<typeof prepareScratchFeed>;
+  private readonly bodySearchCache = new BoundedCache<{
+    asOf: number;
+    paths: Set<string>;
+  }>(16, 2 * 1024 * 1024, ({ paths }, budget) => {
+    let bytes = 64;
+    for (const path of paths) {
+      bytes += 48 + path.length * 2;
+      if (bytes > budget) break;
+    }
+    return bytes;
+  });
   private dataRevision = 0;
   private lastDataDay = todayString();
   private timezone?: string;
@@ -1791,7 +1802,11 @@ export class NextTaskRepository implements TaskRepository {
     return note.revision === "" && note.id === this.unsavedScratchpad?.id;
   }
 
-  getActiveScratchpad(): Promise<ScratchpadDocument> {
+  async getActiveScratchpad(): Promise<ScratchpadDocument> {
+    return (await this.resolveActiveScratchpad()).current;
+  }
+
+  private resolveActiveScratchpad() {
     const signal = this.signal();
     let target: { nativeId: string; portableId: string };
     let recordIds: string[] = [];
@@ -1804,29 +1819,34 @@ export class NextTaskRepository implements TaskRepository {
       );
       this.reached();
       this.emit("data");
-      return current;
+      return { current, records: undefined, revision: this.dataRevision };
     };
-    return this.mutations.run(
+    return this.mutations.run<{
+      current: ScratchpadDocument;
+      records?: RecordView[];
+      revision: number;
+    }>(
       {
         key: JSON.stringify(["scratchpad:active"]),
         recordIds: () => recordIds,
         ack: (_, signal) =>
           this.readScratchWriteRecords(witnesses, "scratchpad", signal),
         prepare: async (mutationId, requestSignal) => {
+          const revision = this.dataRevision;
           const records = await this.scratchpadRecords(requestSignal);
-          if (
-            !records.some(
-              (record) => this.scratchpad(record).state === "active",
-            )
-          )
-            return { value: this.unsaved() };
-          const current = this.currentScratchpad(records);
-          const duplicates = records.filter(
-            (record) =>
-              record.id !== current.id &&
-              this.scratchpad(record).state === "active",
+          const active = records.filter(
+            (record) => record.frontmatter.state === "active",
           );
-          if (!duplicates.length) return { value: this.scratchpad(current) };
+          if (active.length <= 1) {
+            const current = active[0]
+              ? this.scratchpad(active[0])
+              : this.unsaved();
+            return { value: { current, records, revision } };
+          }
+          const current = this.currentScratchpad(active);
+          const duplicates = active.filter(
+            (record) => record.id !== current.id,
+          );
           for (const record of [current, ...duplicates])
             this.requireUnprotectedRecord(record);
           recordIds = [current, ...duplicates].map((record) => record.id);
@@ -2278,32 +2298,26 @@ export class NextTaskRepository implements TaskRepository {
   ): Promise<ScratchFeedPage> {
     const signal = this.signal();
     signal.throwIfAborted();
-    if (!request.cursor || !this.scratchFeedSnapshot) {
-      const current = await this.getActiveScratchpad();
-      const revision = this.dataRevision;
-      const records = await this.scratchpadRecords(signal);
-      const images = await this.scratchImageRecords(signal);
-      signal.throwIfAborted();
-      const snapshot = {
-        current,
-        items: [
-          ...records.map((record) =>
-            scratchpadFeedItem(this.scratchpad(record)),
-          ),
-          ...images.map((record) => this.scratchImage(record)),
-        ].filter((item) => item.kind === "image" || item.id !== current.id),
-      };
-      // A write can finish while either query is awaiting the authority. The
-      // returned read is still an observed snapshot, but must not reinstall a
-      // continuation that a newer data event already invalidated.
-      if (revision === this.dataRevision) this.scratchFeedSnapshot = snapshot;
-      return scratchFeedPage(snapshot.current, snapshot.items, request);
-    }
-    return scratchFeedPage(
-      this.scratchFeedSnapshot.current,
-      this.scratchFeedSnapshot.items,
-      request,
-    );
+    if (request.cursor && this.scratchFeedSnapshot)
+      return this.scratchFeedSnapshot(request);
+    const active = await this.resolveActiveScratchpad();
+    const revision = this.dataRevision;
+    // Active-note resolution already validated the entire history. Only reread
+    // after a repair or a newer data event overtook that scan.
+    const records =
+      active.records && active.revision === revision
+        ? active.records
+        : await this.scratchpadRecords(signal);
+    const images = await this.scratchImageRecords(signal);
+    signal.throwIfAborted();
+    const snapshot = prepareScratchFeed(active.current, [
+      ...records.map((record) => scratchpadFeedItem(this.scratchpad(record))),
+      ...images.map((record) => this.scratchImage(record)),
+    ]);
+    // A write can finish while the authority is answering. Do not reinstall a
+    // continuation that a newer data event already invalidated.
+    if (revision === this.dataRevision) this.scratchFeedSnapshot = snapshot;
+    return snapshot(request);
   }
 
   async getScratchImage(
@@ -2530,35 +2544,67 @@ export class NextTaskRepository implements TaskRepository {
     return paths;
   }
 
+  private async searchBodyToken(token: string, signal: AbortSignal) {
+    const paths = new Set<string>();
+    let asOf: number | undefined;
+    for await (const page of this.pagesWithinBudget(
+      {
+        types: [...this.models.keys()],
+        where: `file.body.lower().contains(${JSON.stringify(token)})`,
+        limit: 1000,
+      },
+      undefined,
+      signal,
+    )) {
+      signal.throwIfAborted();
+      if (!page.complete)
+        throw nativeUnsupported(
+          "The replica has not supplied complete search matches.",
+        );
+      if (asOf !== undefined && asOf !== page.asOf) throw collectionChanged();
+      asOf = page.asOf;
+      for (const record of page.records) paths.add(record.path);
+    }
+    return { asOf, paths };
+  }
+
   async search(query: TaskListQuery, options: { signal?: AbortSignal } = {}) {
-    // Each token reads every note's body, a page at a time, after the task
-    // index: owned by the caller, each page under its own deadline (#512).
     const signal = this.lifetimeSignal(options.signal);
     try {
       await this.ensureIndex();
       signal.throwIfAborted();
       const tokens = taskSearchTokens(query.search);
-      const matches = new Map<string, Set<string>>();
-      for (const token of tokens) {
-        const ids = new Set<string>();
-        for await (const page of this.pagesWithinBudget(
-          {
-            types: [...this.models.keys()],
-            where: `file.body.lower().contains(${JSON.stringify(token)})`,
-            limit: 1000,
-          },
-          undefined,
-          signal,
-        )) {
-          signal.throwIfAborted();
-          if (!page.complete)
-            throw nativeUnsupported(
-              "The replica has not supplied complete search matches.",
-            );
-          page.records.forEach((record) => ids.add(record.path));
-        }
-        matches.set(token, ids);
-      }
+      const matches = await this.readCurrentGeneration(
+        signal,
+        "dataRevision",
+        async () => {
+          const matches = new Map<string, Set<string>>();
+          const last = tokens.at(-1);
+          if (last === undefined) return matches;
+          const revision = this.dataRevision;
+          // The word being typed gets a fresh authority read. Earlier words
+          // can reuse complete path sets from the very same replica cut.
+          const latest = await this.searchBodyToken(last, signal);
+          matches.set(last, latest.paths);
+          const fresh = new Map([[last, latest.paths]]);
+          for (const token of tokens.slice(0, -1)) {
+            const cached = this.bodySearchCache.get(token);
+            if (cached && cached.asOf === latest.asOf) {
+              matches.set(token, cached.paths);
+              continue;
+            }
+            const result = await this.searchBodyToken(token, signal);
+            if (result.asOf !== latest.asOf) throw collectionChanged();
+            fresh.set(token, result.paths);
+            matches.set(token, result.paths);
+          }
+          this.assertCurrentData(revision);
+          if (latest.asOf !== undefined)
+            for (const [token, paths] of fresh)
+              this.bodySearchCache.set(token, { asOf: latest.asOf, paths });
+          return matches;
+        },
+      );
       const paths = await this.assignedPaths(query.assignedTo, signal);
       signal.throwIfAborted();
       return this.cache
@@ -4503,6 +4549,7 @@ export class NextTaskRepository implements TaskRepository {
       }
       this.indexLoading = null;
       this.scratchFeedSnapshot = undefined;
+      this.bodySearchCache.clear();
       this.emit("lifecycle");
     }
   }
@@ -4524,6 +4571,7 @@ export class NextTaskRepository implements TaskRepository {
     this.viewExecutions.clear();
     this.inboxCounts.clear();
     this.scratchFeedSnapshot = undefined;
+    this.bodySearchCache.clear();
     this.listeners.clear();
   }
   private noteOperationFailure(reason: unknown, signal: AbortSignal): boolean {
@@ -4564,6 +4612,7 @@ export class NextTaskRepository implements TaskRepository {
     this.viewExecutions.clear();
     this.inboxCounts.clear();
     this.scratchFeedSnapshot = undefined;
+    this.bodySearchCache.clear();
   }
   private emit(kind: RepositoryChange["kind"]) {
     if (kind === "data") this.invalidateDataGeneration();

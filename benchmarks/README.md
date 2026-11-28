@@ -44,3 +44,22 @@ Compare reports only with matching authority, repository, SDK, dataset and
 machine context. These tests establish repository behavior and synthetic work;
 they do not establish live collection or Core latency. No production query,
 SDK, sample count or dataset was changed to fit the timeout.
+
+## Search, task list and Scratchpad at 10,000 records
+
+Run `rpnpm run bench:view-interactions`. The first round warms the fixture and
+the report uses the median of seven rounds. Search measures four successive
+prefixes, with and without two earlier words. The SDK client runs against
+MemoryReplica, and the work counters capture response frames and bytes. The
+task-list case applies a Bases filter and sort to 10,000 tasks, then groups the
+8,000 matches into 250 groups. The Notes case opens the first Scratchpad
+history page from 10,000 notes with 2 KiB bodies, then loads an older page and
+formats its first preview.
+
+For a browser trace, run `pnpm dev:e2e` and then
+`node scripts/bench-view-interactions.mjs http://127.0.0.1:4173`. This uses a
+10,000-task demo for Search and Inbox, and the local SDK protocol fixture with
+10,000 notes for Scratchpad. It checks visible search results, bounded list
+mounts, history pagination and the expanded note body. Timings include a
+paint opportunity and the Search debounce. These are post-open interactions.
+The production cold-open apply stage in #602 is outside these measurements.
