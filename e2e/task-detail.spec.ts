@@ -251,3 +251,45 @@ for (const source of ["today", "search"] as const)
         .inputValue(),
     );
   });
+
+test("narrow Notes tables keep short words intact and scroll wide rows inside Notes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 760 });
+  await page.goto("?demo=60");
+  await page.locator(".task-row-title").first().click();
+  const notes = page.getByRole("textbox", { name: "Notes", exact: true });
+  const title = page.getByRole("textbox", { name: "Task title", exact: true });
+  const description = "A sentence with several words. ".repeat(10);
+  await notes.fill(
+    `| Item | Description |\n| --- | --- |\n| cell | ${description} |\n\n`,
+  );
+  await title.focus();
+  for (const word of ["Item", "cell"]) {
+    const text = notes.getByText(word, { exact: true }).first();
+    await expect(text).toBeVisible();
+    expect(
+      await text.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return new Set(Array.from(range.getClientRects(), (rect) => rect.top))
+          .size;
+      }),
+    ).toBe(1);
+  }
+  const token = "x".repeat(120);
+  await notes.fill(
+    `| Item | Identifier |\n| --- | --- |\n| cell | ${token} |\n\n`,
+  );
+  await title.focus();
+  const frame = notes.locator(".cm-lp-table-frame");
+  await expect(frame).toContainText(token);
+  expect(await frame.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
+    true,
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
