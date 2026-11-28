@@ -35,6 +35,7 @@ it("names the code behind the generic copy, and nothing for actionable problems"
     developerMessage: describeError("internal")?.developerMessage ?? null,
   });
   // Warnings and information already say what to do.
+  expect(openProblemReference(phase("open_in_another_tab"))).toBeNull();
   expect(openProblemReference(phase("device_offline"))).toBeNull();
   expect(openProblemReference(phase("setup_required"))).toBeNull();
 });

@@ -138,10 +138,31 @@
 }
 
 @media (pointer: coarse) {
+  /* Give the button its own column. Only the centred 20px box is painted. */
   .markdown-source-editor .cm-lp-task {
-    width: 20px;
-    height: 20px;
-    vertical-align: -4px;
+    width: 44px;
+    height: 44px;
+    vertical-align: middle;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .markdown-source-editor .cm-lp-task::before {
+    position: absolute;
+    inset: 12px;
+    content: "";
+    border: 1.75px solid var(--ink-muted);
+    border-radius: 5px;
+  }
+
+  .markdown-source-editor .cm-lp-task[aria-checked="true"] {
+    background: transparent;
+  }
+
+  .markdown-source-editor .cm-lp-task[aria-checked="true"]::before {
+    background: var(--accent);
+    border-color: var(--accent);
   }
 
   .cm-lp-table-menu .mdbase-menu-item {

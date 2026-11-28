@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   calendarServiceClient,
   CalendarServiceError,
@@ -47,8 +53,10 @@ export function useGoogleEvents(range: { start: Date; end: Date }) {
   const { sessionId, calendars, selected, busy } = useCalendarService();
   const [revision, setRevision] = useState(0);
   const [loaded, setLoaded] = useState<LoadedEvents | null>(null);
-  const known = new Set(calendars.map((calendar) => calendar.id));
-  const visible = selected.filter((id) => known.has(id));
+  const visible = useMemo(() => {
+    const known = new Set(calendars.map((calendar) => calendar.id));
+    return selected.filter((id) => known.has(id));
+  }, [calendars, selected]);
   const visibleKey = visible.join();
   const start = range.start.getTime();
   const end = range.end.getTime();
@@ -118,10 +126,15 @@ export function useGoogleEvents(range: { start: Date; end: Date }) {
   }, [sessionId, visibleKey]);
 
   const current = loaded?.sessionId === sessionId ? loaded : null;
-  return {
-    events:
+  // The calendar uses this list to decide when to rebuild its item projection.
+  const events = useMemo(
+    () =>
       current?.events.filter((event) => visible.includes(event.calendar_id)) ??
       [],
+    [current, visible],
+  );
+  return {
+    events,
     omitted: current?.omitted ?? 0,
     failure: current?.failure ?? null,
     loading: Boolean(sessionId) && !busy && visible.length > 0 && !current,

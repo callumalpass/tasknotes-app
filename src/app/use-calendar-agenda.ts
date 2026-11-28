@@ -2,7 +2,7 @@ import { calendarDateToInstant } from "@tasknotes/model/calendar";
 import { t } from "@lingui/core/macro";
 import { parseDay, type Calendar, type ItemArg } from "@tasknotes/calendar";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { appLocale } from "../i18n/app";
+import { dateFormatter } from "../i18n/date-formatter";
 import { countLabel } from "../i18n/default-labels";
 import { dateFromStorage, todayString, type TaskSummary } from "../domain/task";
 import type { CalendarSettings } from "@tasknotes/model/calendar";
@@ -143,6 +143,14 @@ export function useCalendarAgenda({
             : { start, end },
         );
       }
+      const fullDate = dateFormatter({
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      const shortWeekday = dateFormatter({ weekday: "short" });
+      const today = todayString(new Date(), zone);
       for (const cell of cells) {
         const value = cell.dataset.date ?? "";
         const day = parseDay(value);
@@ -154,18 +162,12 @@ export function useCalendarAgenda({
             (api.opts.allDaySlot || !modelEntry.allDay),
         ).length;
         const date = new Date(`${value}T12:00:00`);
-        const label = new Intl.DateTimeFormat(appLocale(), {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }).format(date);
+        const label = fullDate.format(date);
         cell.setAttribute(
           "aria-label",
           t`${label}, ${countLabel(count, "task")}`,
         );
-        if (value === todayString(new Date(), zone))
-          cell.setAttribute("aria-current", "date");
+        if (value === today) cell.setAttribute("aria-current", "date");
         else cell.removeAttribute("aria-current");
         let weekday = cell.querySelector<HTMLElement>(".agenda-strip-weekday");
         if (!weekday) {
@@ -174,9 +176,7 @@ export function useCalendarAgenda({
           weekday.setAttribute("aria-hidden", "true");
           cell.prepend(weekday);
         }
-        weekday.textContent = new Intl.DateTimeFormat(appLocale(), {
-          weekday: "short",
-        }).format(date);
+        weekday.textContent = shortWeekday.format(date);
         let badge = cell.querySelector<HTMLElement>(".agenda-strip-count");
         if (!badge) {
           badge = document.createElement("span");
@@ -233,7 +233,7 @@ export function useCalendarAgenda({
         badge.hidden = count === 0;
         badge.setAttribute("aria-label", countLabel(count, "task"));
       }
-      compactAgendaDays(host!, selected, locale, todayString(new Date(), zone));
+      compactAgendaDays(host!, selected, locale, today);
       const sentinel = host!.querySelector<HTMLElement>(".tnc-list-more");
       if (sentinel) {
         let more = host!.querySelector<HTMLButtonElement>(".agenda-load-more");

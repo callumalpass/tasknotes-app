@@ -69,12 +69,18 @@ describe("events of the selected calendars", () => {
     expect(result.current.failure).toBe("rate_limited");
   });
 
-  it("reports no failure when every calendar is read", async () => {
+  it("keeps the event projection on rerender before and after a successful read", async () => {
     events.mockImplementation((id: string) =>
       Promise.resolve({ events: [event(id)], omitted: 0 }),
     );
-    const { result } = renderHook(() => useGoogleEvents(range));
+    const { result, rerender } = renderHook(() => useGoogleEvents(range));
+    const loading = result.current.events;
+    rerender();
+    expect(result.current.events).toBe(loading);
     await waitFor(() => expect(result.current.events).toHaveLength(2));
+    const shown = result.current.events;
+    rerender();
+    expect(result.current.events).toBe(shown);
     expect(result.current.failure).toBeNull();
   });
 

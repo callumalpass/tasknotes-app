@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "./local-test";
 import { openFixture } from "./next-fixture";
 
@@ -315,4 +316,39 @@ test("touch long press selects, tap toggles, and swipes still act outside select
   await title.dispatchEvent("click", { pointerType: "touch" });
   await expect(selectedRows(page)).toHaveCount(1);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("Scratchpad draft checkboxes own their full phone touch target", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("scratchpad/?demo=60");
+  const note = page.locator(".scratchpad-current-document");
+  const box = note
+    .getByRole("checkbox", { name: "Mark task complete" })
+    .first();
+  await expect(box).toBeVisible();
+  const bounds = (await box.boundingBox())!;
+  expect(bounds.width).toBeGreaterThanOrEqual(44);
+  expect(bounds.height).toBeGreaterThanOrEqual(44);
+  await expect
+    .poll(() =>
+      box.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return [1, 43].every((x) =>
+          [1, 43].every(
+            (y) =>
+              document.elementFromPoint(rect.left + x, rect.top + y) === el,
+          ),
+        );
+      }),
+    )
+    .toBe(true);
+  await box.tap({ position: { x: 1, y: 1 } });
+  await expect(
+    note.getByRole("checkbox", { name: "Mark task incomplete" }).first(),
+  ).toBeChecked();
+  await expect(box).not.toBeChecked();
+  await expectNoHorizontalOverflow(page);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
