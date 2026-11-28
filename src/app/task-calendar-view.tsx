@@ -10,7 +10,12 @@ import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
 
 import { TaskCalendar } from "@tasknotes/calendar/react";
-import { formatDay } from "@tasknotes/calendar";
+import {
+  formatDay,
+  parseDay,
+  startOfMonth,
+  startOfWeek,
+} from "@tasknotes/calendar";
 import {
   CalendarPlus,
   Check,
@@ -237,7 +242,7 @@ export function TaskCalendarView({
   const { configuration, materializeOccurrence } = useRepository();
   const { timezone } = calendarContext(configuration);
   const [range, setRange] = useState(() =>
-    initialRange(selected, mode, timezone),
+    initialRange(selected, mode, timezone, preferences.firstDay),
   );
   useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
   useCalendarPreviews(rootRef, (day) => {
@@ -305,6 +310,14 @@ export function TaskCalendarView({
         ...google.items,
       ].map(withRevision),
     [built, execution, pendingMoves, google.items],
+  );
+  const agendaItems = useMemo(
+    () => (agenda ? new Map(items.map((item) => [item.id, item])) : null),
+    [agenda, items],
+  );
+  const eventOrder = useMemo(
+    () => calendarAgendaOrder(execution, agenda),
+    [execution, agenda],
   );
   const agendaRows = useCalendarAgenda({
     root: rootRef,
@@ -971,7 +984,7 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
-              eventOrder={calendarAgendaOrder(execution, agenda)}
+              eventOrder={eventOrder}
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}
               listLeadIncludes={(item) =>
@@ -1099,14 +1112,19 @@ export function TaskCalendarView({
                 // The data range also covers the date strip's later days. Its
                 // earlier days stay out: a task dated inside the range is drawn
                 // on that past day, not carried to today as overdue.
-                setRange({
-                  start: new Date(view.range.start.getTime()),
-                  end: new Date(view.dataRange.end.getTime()),
-                });
+                setRange((current) =>
+                  current.start.getTime() === view.range.start.getTime() &&
+                  current.end.getTime() === view.dataRange.end.getTime()
+                    ? current
+                    : {
+                        start: new Date(view.range.start.getTime()),
+                        end: new Date(view.dataRange.end.getTime()),
+                      },
+                );
               }}
             />
             {[...agendaRows.slots].map(([slot, arg]) => {
-              const item = items.find(({ id }) => id === arg.item.id);
+              const item = agendaItems?.get(arg.item.id);
               if (!item || !agenda) return null;
               const event = item.data?.google;
               if (event)
@@ -1327,10 +1345,15 @@ function repeatsToday(item: TaskCalendarItem): boolean {
 }
 
 function withRevision(item: TaskCalendarItem): TaskCalendarItem {
-  const data = { ...item.data! } as Partial<CalendarEventData>;
-  delete data.metadata;
-  delete data.google;
-  return { ...item, rev: JSON.stringify({ ...item, data }) };
+  const { data, ...placement } = item;
+  const rev = JSON.stringify([
+    placement,
+    data?.marker,
+    data?.details,
+    data?.kind,
+    data?.recurring,
+  ]);
+  return { ...item, rev };
 }
 
 /** A task with no estimate has a start, not an end this list should invent. */
@@ -1579,6 +1602,7 @@ function initialRange(
   selected: string,
   mode: CalendarMode,
   timezone: string,
+  firstDay: number,
 ): { start: Date; end: Date } {
   const date = dateFromStorage(selected) ?? new Date();
   const midnight = (year: number, month: number, day: number) =>
@@ -1591,9 +1615,13 @@ function initialRange(
       end: midnight(date.getFullYear() + 1, 0, 1),
     };
   if (mode === "dayGridMonth") {
+    const first = startOfWeek(
+      startOfMonth(parseDay(todayString(date))!),
+      firstDay,
+    );
     return {
-      start: midnight(date.getFullYear(), date.getMonth(), -7),
-      end: midnight(date.getFullYear(), date.getMonth() + 1, 14),
+      start: new Date(calendarDateToInstant(formatDay(first), timezone)),
+      end: new Date(calendarDateToInstant(formatDay(first + 42), timezone)),
     };
   }
   return {

@@ -1,3 +1,5 @@
+import type { TaskViewExecution } from "../domain/view";
+
 /** Session-only weighted LRU. An oversized value is omitted, never truncated. */
 export class BoundedCache<Value> {
   private readonly entries = new Map<string, { value: Value; bytes: number }>();
@@ -6,7 +8,7 @@ export class BoundedCache<Value> {
   constructor(
     private readonly maxEntries: number,
     private readonly maxBytes: number,
-    private readonly measure: (value: Value) => number,
+    private readonly measure: (value: Value, budget: number) => number,
   ) {}
 
   get(id: string): Value | undefined {
@@ -17,14 +19,15 @@ export class BoundedCache<Value> {
     return entry.value;
   }
 
-  set(id: string, value: Value): void {
+  set(id: string, value: Value): boolean {
     this.delete(id);
-    const bytes = this.measure(value);
-    if (bytes > this.maxBytes) return;
+    const bytes = this.measure(value, this.maxBytes);
+    if (bytes > this.maxBytes) return false;
     this.entries.set(id, { value, bytes });
     this.bytes += bytes;
     while (this.entries.size > this.maxEntries || this.bytes > this.maxBytes)
       this.delete(this.entries.keys().next().value!);
+    return true;
   }
 
   delete(id: string): void {
@@ -42,4 +45,19 @@ export class BoundedCache<Value> {
     this.entries.clear();
     this.bytes = 0;
   }
+}
+
+/** Same UTF-16 JSON weight as a full serialization. Stop once admission
+ * is impossible rather than allocating a giant temporary string. */
+export function viewExecutionBytes(
+  execution: TaskViewExecution,
+  budget: number,
+) {
+  const { rows, ...header } = execution;
+  let bytes = JSON.stringify({ ...header, rows: [] }).length * 2;
+  for (let offset = 0; offset < rows.length && bytes <= budget; offset += 128) {
+    const chunk = JSON.stringify(rows.slice(offset, offset + 128));
+    bytes += 2 * (chunk.length - 2 + Number(offset > 0));
+  }
+  return bytes;
 }

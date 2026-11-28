@@ -135,7 +135,8 @@ export class AppCalendarEntryIndex {
     });
     const ids = execution.rows.map(({ task }) => task.id || task.path);
     const membershipChanged =
-      JSON.stringify(ids) !== JSON.stringify(this.order);
+      ids.length !== this.order.length ||
+      ids.some((id, i) => id !== this.order[i]);
     const rows = new Map(
       execution.rows.map((row) => [row.task.id || row.task.path, row]),
     );
@@ -156,16 +157,27 @@ export class AppCalendarEntryIndex {
         JSON.stringify(previous.task.frontmatter) ===
           JSON.stringify(task.frontmatter)
           ? previous.info
-          : this.model.calendarTaskInfo(task);
+          : task.recurrence
+            ? this.model.calendarTaskInfo(task)
+            : {
+                // Ordinary rows already carry every field the placement model
+                // reads. Series additionally need mapped provider exceptions.
+                id,
+                path: task.path,
+                title: task.title,
+                status: task.status,
+                scheduled: task.scheduled,
+                due: task.due,
+                timeEstimate: task.timeEstimate,
+                timeEntries: task.timeEntries,
+                recurrence_parent: task.recurrenceParent,
+                occurrence_date: task.occurrenceDate,
+              };
       this.tasks.set(id, { task, revision: task.revision, info });
       this.index.upsert(id, info, task.revision);
     }
     if (membershipChanged) {
       this.index.setTasks(ids.map((id) => this.tasks.get(id)!.info));
-      for (const id of ids) {
-        const cached = this.tasks.get(id)!;
-        this.index.upsert(id, cached.info, cached.revision);
-      }
       this.order = ids;
     }
     return groupCalendarEntries(
@@ -229,20 +241,12 @@ function groupCalendarEntries(
   today?: string,
 ): Map<string, CalendarEntry[]> {
   const result = new Map<string, CalendarEntry[]>();
+  const rangeStart = calendarDateToInstant(range.start, timezone);
+  const rangeEnd = calendarDateToInstant(range.end, timezone);
   const inRange =
     today &&
-    today >=
-      calendarInstantToDate(
-        calendarDateToInstant(range.start, timezone),
-        timezone,
-        true,
-      ) &&
-    today <
-      calendarInstantToDate(
-        calendarDateToInstant(range.end, timezone),
-        timezone,
-        true,
-      );
+    today >= calendarInstantToDate(rangeStart, timezone, true) &&
+    today < calendarInstantToDate(rangeEnd, timezone, true);
   for (const modelEntry of [
     ...entries,
     ...(inRange ? missedRepeats(entries, rows, today) : []),
@@ -269,25 +273,19 @@ function groupCalendarEntries(
         : {}),
     };
     const entryStart = calendarDateToInstant(modelEntry.start, timezone);
-    const start = Math.max(
-      entryStart,
-      calendarDateToInstant(range.start, timezone),
-    );
-    const implicitEnd = modelEntry.allDay
-      ? calendarDateToInstant(
-          shiftCalendarDay(
-            modelEntry.start.slice(0, 10),
-            modelEntry.durationMinutes / 1440,
-          ),
-          timezone,
-        )
-      : entryStart + modelEntry.durationMinutes * 60_000;
-    const end = Math.min(
-      modelEntry.end
-        ? calendarDateToInstant(modelEntry.end, timezone)
-        : implicitEnd,
-      calendarDateToInstant(range.end, timezone),
-    );
+    const start = Math.max(entryStart, rangeStart);
+    const entryEnd = modelEntry.end
+      ? calendarDateToInstant(modelEntry.end, timezone)
+      : modelEntry.allDay
+        ? calendarDateToInstant(
+            shiftCalendarDay(
+              modelEntry.start.slice(0, 10),
+              modelEntry.durationMinutes / 1440,
+            ),
+            timezone,
+          )
+        : entryStart + modelEntry.durationMinutes * 60_000;
+    const end = Math.min(entryEnd, rangeEnd);
     const first = calendarInstantToDate(start, timezone, true);
     const last = calendarInstantToDate(
       Math.max(start, end - 1),
@@ -299,6 +297,7 @@ function groupCalendarEntries(
       const values = result.get(day) ?? [];
       values.push(entry);
       result.set(day, values);
+      if (day === last) break;
       day = shiftCalendarDay(day, 1);
     }
   }

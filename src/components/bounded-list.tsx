@@ -90,6 +90,9 @@ export function BoundedList<T>({
       const id = (event as CustomEvent<string>).detail;
       const index = items.findIndex((item) => taskId(item) === id);
       if (index < 0) return;
+      // A task may belong to two project lists in this selection region.
+      // Only the first matching list should scroll and take keyboard focus.
+      event.stopImmediatePropagation();
       virtualizer.scrollToIndex(index, { align: "auto" });
       // Scroll materializes the target; focus it after React measures the window.
       let attempts = 0;

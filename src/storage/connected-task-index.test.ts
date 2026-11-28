@@ -172,3 +172,20 @@ it("maintains Today counters incrementally, with one rebuild at day rollover", (
   index.clear();
   expect(index.todayCounts("2026-09-20")).toEqual({ total: 0, overdue: 0 });
 });
+
+it("refreshes cached project shortcuts when a task is replaced, deleted or cleared", () => {
+  const index = new ConnectedTaskIndex<{ task: Task }>();
+  const first = task("first", { projects: ["[[Alpha]]"] });
+  index.set(first.id, { task: first });
+  const shortcuts = index.projectShortcuts();
+  shortcuts[0]!.label = "outside";
+  expect(index.projectShortcuts()).toEqual([{ label: "Alpha", count: 1 }]);
+  index.set(first.id, { task: { ...first, projects: ["[[Beta]]"] } });
+  expect(index.projectShortcuts()).toEqual([{ label: "Beta", count: 1 }]);
+  index.delete(first.id);
+  expect(index.projectShortcuts()).toEqual([]);
+  index.set(first.id, { task: first });
+  expect(index.projectShortcuts()).toHaveLength(1);
+  index.clear();
+  expect(index.projectShortcuts()).toEqual([]);
+});

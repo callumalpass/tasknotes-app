@@ -1,3 +1,7 @@
+import {
+  projectShortcuts,
+  type ProjectShortcut,
+} from "../domain/project-shortcuts";
 import { todayString } from "../domain/task";
 import {
   todayTaskContribution,
@@ -25,6 +29,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
   private readonly recordIds = new Map<string, string>();
   private readonly rolling = new Map<string, TaskSummary>();
   private ordered?: TaskSummary[];
+  private shortcuts?: ProjectShortcut[];
   private relations?: TaskRowRelations;
   private readonly searchMetadata = new WeakMap<TaskSummary, string>();
   private readonly trackers = new Set<Set<string>>();
@@ -87,6 +92,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
     if (previous?.task !== value.task) {
       this.ordered = undefined;
       this.relations = undefined;
+      this.shortcuts = undefined;
     }
     return super.set(id, value);
   }
@@ -104,6 +110,7 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       for (const records of this.trackers) records.add(previous.recordId);
     this.ordered = undefined;
     this.relations = undefined;
+    this.shortcuts = undefined;
     return super.delete(id);
   }
 
@@ -119,6 +126,13 @@ export class ConnectedTaskIndex<Value extends Entry> extends Map<
       })(this.values()),
     );
     return this.relations;
+  }
+
+  projectShortcuts(): ProjectShortcut[] {
+    this.shortcuts ??= projectShortcuts(
+      Array.from(this.values(), ({ task }) => task),
+    );
+    return this.shortcuts.map((shortcut) => ({ ...shortcut }));
   }
 
   taskIdForRecord(recordId: string): string | undefined {

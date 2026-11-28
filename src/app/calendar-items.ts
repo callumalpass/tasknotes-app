@@ -11,6 +11,7 @@ import { occurrenceTask, type TaskOccurrence } from "../domain/task-occurrence";
 import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskViewExecution } from "../domain/view";
 import {
+  formatPropertyValue,
   relativeDateDetail,
   viewPropertyDetails,
   type ViewPropertyDetail,
@@ -93,6 +94,21 @@ export function calendarItems(
   const { timezone } = calendarContext(configuration);
   const items: TaskCalendarItem[] = [];
   const seen = new Set<string>();
+  // Scope repeated labels to this projection so locale, device time zone,
+  // day rollover and configuration changes always get fresh presentation.
+  const dateLabels = new Map<string, string | null>();
+  const relativeLabels = new Map<
+    string,
+    Pick<ViewPropertyDetail, "value"> & { overdue?: boolean }
+  >();
+  const formatValue: typeof formatPropertyValue = (value, format, zone) => {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(value))
+      return formatPropertyValue(value, format, zone);
+    const key = JSON.stringify([value, format, zone]);
+    if (!dateLabels.has(key))
+      dateLabels.set(key, formatPropertyValue(value, format, zone));
+    return dateLabels.get(key)!;
+  };
   for (const values of entries.values()) {
     for (const entry of values) {
       const neutral = entry.modelEntry;
@@ -110,13 +126,36 @@ export function calendarItems(
         : withPriorityDetail(
             viewPropertyDetails(entry.row, execution.view.properties, {
               identityProperty: titleProperty,
+              formatValue,
               occurrence: entry.occurrence,
             }) ?? [],
             marker,
             configuration,
-          ).map((detail) =>
-            relativeDateDetail(detail, displayed, configuration),
-          );
+          ).map((detail) => {
+            if (
+              typeof detail.rawValue !== "string" ||
+              !/^\d{4}-\d{2}-\d{2}/.test(detail.rawValue)
+            )
+              return relativeDateDetail(detail, displayed, configuration);
+            const key = JSON.stringify([
+              detail.key,
+              detail.rawValue,
+              detail.value,
+              displayed.completed,
+              displayed.timezone,
+            ]);
+            let label = relativeLabels.get(key);
+            if (!label) {
+              const { value, overdue } = relativeDateDetail(
+                detail,
+                displayed,
+                configuration,
+              );
+              label = { value, overdue };
+              relativeLabels.set(key, label);
+            }
+            return { ...detail, ...label };
+          });
       items.push({
         ...calendarItem(neutral, timezone),
         ...(tracked ? { color: "var(--success)" } : {}),

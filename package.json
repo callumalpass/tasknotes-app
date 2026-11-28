@@ -42,7 +42,7 @@
     "test:coverage:domain": "vitest run src/domain --coverage --coverage.include='src/domain/**/*.ts' --coverage.reporter=text-summary --coverage.thresholds.statements=80 --coverage.thresholds.branches=70 --coverage.thresholds.functions=82 --coverage.thresholds.lines=84",
     "test:coverage:layers": "pnpm test:coverage:application && pnpm test:coverage:domain",
     "test:watch": "vitest",
-    "bench:view-formatting": "TASKNOTES_BENCH_FORMATTING=1 vitest run benchmarks/view-formatting.test.ts",
+    "bench:view-formatting": "TASKNOTES_BENCH_FORMATTING=1 vitest run benchmarks/view-formatting.test.ts benchmarks/view-entry.test.ts",
     "bench:collections": "tsc -p benchmarks/tsconfig.json && vitest run --config benchmarks/vitest.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:connect": "playwright test --config playwright.dogfood.config.ts",

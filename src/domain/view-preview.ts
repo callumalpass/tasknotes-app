@@ -43,9 +43,12 @@ export function tasksForViewDraft<Value extends TaskSummary>(
       expression,
     ]),
   );
-  const matching = tasks.filter((task) =>
-    filter.evaluateToBoolean(evaluationContext(task, formulas)),
-  );
+  const matching =
+    draft.filter == null
+      ? tasks
+      : tasks.filter((task) =>
+          filter.evaluateToBoolean(evaluationContext(task, formulas)),
+        );
   return sortTasks(matching, draft);
 }
 
@@ -53,7 +56,8 @@ export function computedViewValues(
   draft: EditableViewDraft,
   task: TaskSummary,
 ): Record<string, unknown> {
-  if (draft.dialect !== "obsidian-bases") return {};
+  if (draft.dialect !== "obsidian-bases" || !draft.computedProperties.length)
+    return {};
   const formulas = Object.fromEntries(
     draft.computedProperties.map(({ name, expression }) => [
       name.trim(),
@@ -90,26 +94,29 @@ function taskProperties(task: TaskSummary): Record<string, unknown> {
 }
 
 function sortTasks<Value extends TaskSummary>(
-  tasks: Value[],
+  tasks: readonly Value[],
   draft: EditableViewDraft,
 ): Value[] {
-  if (!draft.sort.length) return tasks;
-  return [...tasks].sort((left, right) => {
-    const leftValues = {
-      ...taskProperties(left),
-      ...computedViewValues(draft, left),
+  if (!draft.sort.length) return [...tasks];
+  const rules = draft.sort.map((rule) => ({
+    key: propertyKey(rule.property),
+    direction: rule.direction,
+  }));
+  const sorted = tasks.map((task) => {
+    const values = {
+      ...taskProperties(task),
+      ...computedViewValues(draft, task),
     };
-    const rightValues = {
-      ...taskProperties(right),
-      ...computedViewValues(draft, right),
-    };
-    for (const rule of draft.sort) {
-      const key = propertyKey(rule.property);
-      const compared = compare(leftValues[key], rightValues[key]);
+    return { task, keys: rules.map(({ key }) => values[key]) };
+  });
+  sorted.sort((left, right) => {
+    for (const [index, rule] of rules.entries()) {
+      const compared = compare(left.keys[index], right.keys[index]);
       if (compared) return rule.direction === "desc" ? -compared : compared;
     }
     return 0;
   });
+  return sorted.map(({ task }) => task);
 }
 
 function evaluationContext(
@@ -133,14 +140,16 @@ function propertyKey(reference: string): string {
   return reference.startsWith("note.") ? reference.slice(5) : reference;
 }
 
+const collator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
 function compare(left: unknown, right: unknown): number {
   if (left === right) return 0;
   if (left === undefined || left === null || left === "") return 1;
   if (right === undefined || right === null || right === "") return -1;
   if (typeof left === "number" && typeof right === "number")
     return left - right;
-  return String(left).localeCompare(String(right), undefined, {
-    numeric: true,
-    sensitivity: "base",
-  });
+  return collator.compare(String(left), String(right));
 }

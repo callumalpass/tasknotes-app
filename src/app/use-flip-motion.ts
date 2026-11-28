@@ -31,17 +31,18 @@ export function useFlipMotion(
 
   useLayoutEffect(() => {
     const root = container.current;
-    if (!root) return;
+    if (!root || !enabled || prefersReducedMotion()) {
+      positions.current.clear();
+      signature.current = "";
+      return;
+    }
     const items = [...root.querySelectorAll<HTMLElement>(`[${attribute}]`)];
     const origin = root.getBoundingClientRect();
     const nextSignature = items
       .map((item) => item.getAttribute(attribute))
       .join("\n");
     const animate =
-      enabled &&
-      signature.current !== "" &&
-      nextSignature !== signature.current &&
-      !prefersReducedMotion();
+      signature.current !== "" && nextSignature !== signature.current;
     const next = new Map<string, Point>();
     const moves: { item: HTMLElement; dx: number; dy: number }[] = [];
     for (const item of items) {

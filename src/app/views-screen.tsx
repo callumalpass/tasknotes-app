@@ -474,9 +474,13 @@ export function ViewsScreen({
     sourceSort && sourceSort.key === selected?.key
       ? sourceSort.sort
       : (selected?.sort ?? visibleExecution?.view.sort);
-  const manualOrder = manualOrderConfiguration(
-    currentSort,
-    configuration.fieldMapping.sortOrder,
+  const manualOrder = useMemo(
+    () =>
+      manualOrderConfiguration(
+        currentSort,
+        configuration.fieldMapping.sortOrder,
+      ),
+    [currentSort, configuration.fieldMapping.sortOrder],
   );
   const selectedManualOrderOperations = [...manualOrderPending.values()].filter(
     ({ viewKey: pendingViewKey }) => pendingViewKey === selected?.key,
@@ -539,15 +543,17 @@ export function ViewsScreen({
     )
       return null;
     // Open rows the Today section shows, including optimistic moves into it.
-    const todayLane = sectionTaskViewRows(presentedExecution.rows, "day", today)
-      .find(({ key }) => key === "today")
-      ?.rows.map(({ task }) => task.id);
+    const todayLane = new Set(
+      sectionTaskViewRows(presentedExecution.rows, "day", today)
+        .find(({ key }) => key === "today")
+        ?.rows.map(({ task }) => task.id),
+    );
     const open = presentedExecution.rows.filter(({ task }) => {
       if (task.completed) return false;
       const move = listMoves.get(task.id);
       return move?.viewKey === selected?.key
         ? move.laneKey === "section:today"
-        : todayLane?.includes(task.id);
+        : todayLane.has(task.id);
     }).length;
     const done = todaySummary.completedToday;
     return { done, total: done + open };

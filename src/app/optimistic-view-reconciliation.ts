@@ -245,6 +245,7 @@ export function executionWithDepartures(
   execution: TaskViewExecution;
   departing: ReadonlyMap<string, number | null>;
 } {
+  if (!departures.size) return { execution, departing: new Map() };
   const present = new Set(execution.rows.map((row) => row.task.id));
   const held = [...departures.entries()]
     .filter(

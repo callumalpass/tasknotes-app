@@ -9,6 +9,7 @@ import {
   saveSectionCollapsed,
 } from "../../application/section-preferences";
 
+import { BoundedList } from "../../components/bounded-list";
 import { TaskRow } from "../../components/task-row";
 import { TaskNotesSelect } from "../../components/tasknotes-controls";
 import {
@@ -33,6 +34,8 @@ import { projectLabel } from "../../domain/project-shortcuts";
 
 import type { TaskSummary } from "../../domain/task";
 import type { TaskViewExecution } from "../../domain/view";
+
+const taskId = (task: TaskSummary) => task.id;
 
 export function ProjectsView({
   execution,
@@ -82,7 +85,12 @@ export function ProjectsView({
   );
   const groups = new Map<
     string,
-    { label: string; path?: string; value: string; tasks: TaskSummary[] }
+    {
+      label: string;
+      path?: string;
+      value: string;
+      tasks: Map<string, TaskSummary>;
+    }
   >();
 
   for (const task of activeTasks) {
@@ -102,10 +110,9 @@ export function ProjectsView({
             label: record.label,
             path: record.path,
             value: recordCompletion(record, linkWriteFormat).value,
-            tasks: [],
+            tasks: new Map<string, TaskSummary>(),
           };
-          if (!group.tasks.some((candidate) => candidate.id === task.id))
-            group.tasks.push(task);
+          if (!group.tasks.has(task.id)) group.tasks.set(task.id, task);
           groups.set(key, group);
         }
         continue;
@@ -114,20 +121,25 @@ export function ProjectsView({
       const group = groups.get(key) ?? {
         label: linkLabel(value) ?? target.split("/").at(-1) ?? value,
         value,
-        tasks: [],
+        tasks: new Map<string, TaskSummary>(),
       };
-      if (!group.tasks.some((candidate) => candidate.id === task.id))
-        group.tasks.push(task);
+      if (!group.tasks.has(task.id)) group.tasks.set(task.id, task);
       groups.set(key, group);
     }
   }
 
   const ordered = [...groups.entries()]
-    .map(([key, project]) => ({
-      key,
-      ...project,
-      count: project.tasks.filter((task) => !departing.has(task.id)).length,
-    }))
+    .map(([key, project]) => {
+      const tasks = [...project.tasks.values()];
+      return {
+        key,
+        ...project,
+        tasks,
+        count: departing.size
+          ? tasks.filter((task) => !departing.has(task.id)).length
+          : tasks.length,
+      };
+    })
     .sort(
       (left, right) =>
         left.label.localeCompare(right.label) ||
@@ -231,12 +243,21 @@ export function ProjectsView({
             />
           </label>
         )}
-        {shown.map((project) => {
-          const index = ordered.indexOf(project);
+        {shown.map((project, shownIndex) => {
+          const index = focused ? ordered.indexOf(project) : shownIndex;
           const isCollapsed =
             collapsed[project.key] ??
             sectionCollapsed(preferenceKey(project.key));
           const listId = `${id}-${index}-tasks`;
+          const renderTask = (task: TaskSummary) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              contextProperties={{ projects: project.value }}
+              onOpen={onOpen}
+              onToggle={onToggle}
+            />
+          );
           return (
             <section
               id={`${id}-${index}`}
@@ -283,14 +304,15 @@ export function ProjectsView({
               <div id={listId} className="saved-task-list" hidden={isCollapsed}>
                 <TaskDeparturesContext.Provider value={departing}>
                   {!isCollapsed &&
-                    project.tasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        contextProperties={{ projects: project.value }}
-                        onOpen={onOpen}
-                        onToggle={onToggle}
+                    (project.tasks.length > 100 ? (
+                      <BoundedList
+                        items={project.tasks}
+                        getKey={taskId}
+                        taskId={taskId}
+                        renderItem={renderTask}
                       />
+                    ) : (
+                      project.tasks.map(renderTask)
                     ))}
                 </TaskDeparturesContext.Provider>
               </div>

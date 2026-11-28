@@ -9,6 +9,8 @@ import type { TaskCollectionConfiguration } from "../domain/task-configuration";
 import type { TaskSummary } from "../domain/task";
 import type { TaskViewExecution } from "../domain/view";
 
+const noMaterializations: readonly TaskSummary[] = [];
+
 export function useCalendarEntries(
   execution: TaskViewExecution,
   range: { start: Date; end: Date },
@@ -21,6 +23,15 @@ export function useCalendarEntries(
     [configuration],
   );
   useEffect(() => () => index.clear(), [index]);
+  // Loading the identity query commonly replaces an empty array with a
+  // collection containing no occurrence children. Its expansion is identical.
+  const occurrenceIdentities = useMemo(
+    () =>
+      identityTasks.some((task) => task.recurrenceParent && task.occurrenceDate)
+        ? identityTasks
+        : noMaterializations,
+    [identityTasks],
+  );
   return useMemo(() => {
     const context = calendarContext(configuration);
     return index.entries(
@@ -29,12 +40,12 @@ export function useCalendarEntries(
         start: range.start.toISOString(),
         end: range.end.toISOString(),
       },
-      identityTasks,
+      occurrenceIdentities,
       {
         ...context,
         settings: calendarSettings(execution, configuration, display),
       },
       { showMissedRepeats: true },
     );
-  }, [index, execution, range, identityTasks, configuration, display]);
+  }, [index, execution, range, occurrenceIdentities, configuration, display]);
 }

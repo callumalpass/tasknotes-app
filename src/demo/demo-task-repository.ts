@@ -50,7 +50,7 @@ import { summarizeTask, todayString } from "../domain/task";
 import { readViewDraft, type EditableViewDraft } from "../domain/view-document";
 import { computedViewValues, tasksForViewDraft } from "../domain/view-preview";
 import { DemoFileStore } from "./demo-file-store";
-import { BoundedCache } from "../storage/bounded-cache";
+import { BoundedCache, viewExecutionBytes } from "../storage/bounded-cache";
 import { demoTasks } from "./demo-tasks";
 import type { DemoSeed } from "./demo-seed";
 
@@ -131,8 +131,10 @@ export class DemoTaskRepository implements TaskRepository {
   private readonly viewExecutions = new BoundedCache<TaskViewExecution>(
     16,
     8 * 1024 * 1024,
-    (execution) => 2 * JSON.stringify(execution).length,
+    viewExecutionBytes,
   );
+  private shortcuts?: ReturnType<typeof projectShortcuts>;
+  private relations?: ReturnType<typeof taskRowRelations>;
   private readonly sources = new Map<string, TaskViewSourceDocument>();
   private documents: TaskViewDocument[];
   private readonly scratchpads = new Map<string, ScratchpadDocument>();
@@ -313,7 +315,7 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   taskRowRelations() {
-    return taskRowRelations(this.tasks.values());
+    return (this.relations ??= taskRowRelations(this.tasks.values()));
   }
 
   async relationships(id: string): Promise<TaskRelationships> {
@@ -563,7 +565,7 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   projectShortcuts() {
-    return projectShortcuts(this.tasks.values());
+    return clone((this.shortcuts ??= projectShortcuts(this.tasks.values())));
   }
 
   navigationTaskCounts(today: string, hidden?: readonly string[]) {
@@ -601,18 +603,16 @@ export class DemoTaskRepository implements TaskRepository {
       ? AbortSignal.any([this.operationController.signal, options.signal])
       : this.operationController.signal;
     signal.throwIfAborted();
-    const execution = await this.executeView(view);
+    const { tasks, row, groups } = this.prepareView(view);
     let cumulative: TaskViewExecution | null = null;
-    for (
-      let offset = 0;
-      offset < Math.max(1, execution.rows.length);
-      offset += 200
-    ) {
+    for (let offset = 0; offset < Math.max(1, tasks.length); offset += 200) {
       signal.throwIfAborted();
       const page = {
-        ...execution,
-        rows: execution.rows.slice(offset, offset + 200),
-        hasMore: offset + 200 < execution.rows.length,
+        view,
+        groups,
+        totalCount: tasks.length,
+        rows: tasks.slice(offset, offset + 200).map(row),
+        hasMore: offset + 200 < tasks.length,
       };
       cumulative = appendViewPage(cumulative, page);
       this.viewExecutions.set(view.key, cumulative);
@@ -622,29 +622,54 @@ export class DemoTaskRepository implements TaskRepository {
 
   async executeView(view: TaskView): Promise<TaskViewExecution> {
     this.operationController.signal.throwIfAborted();
+    const { tasks, row, groups } = this.prepareView(view);
+    const execution = {
+      view,
+      groups,
+      rows: tasks.map(row),
+      totalCount: tasks.length,
+      hasMore: false,
+    };
+    this.viewExecutions.set(view.key, execution);
+    return clone(execution);
+  }
+
+  private prepareView(view: TaskView) {
     const draft = this.viewDraft(view);
     const tasks = this.tasksForView(view, draft);
-    const rows = tasks.map((task) => ({
+    const row = (task: Task) => ({
       task,
       values: {
         ...taskViewValues(task),
         ...(draft ? computedViewValues(draft, task) : {}),
       },
-    }));
+    });
     const groupProperty =
       view.presentation?.type === "tasknotes.kanban"
         ? (view.presentation.mappings.column ?? "status")
         : view.presentation?.type === "tasknotes.projects"
           ? this.model.configuration().fieldMapping.projects
           : null;
-    const groupValues = groupProperty
-      ? uniqueValues(
-          rows.flatMap((row) => {
-            const value = row.values[groupProperty as keyof typeof row.values];
-            return Array.isArray(value) ? value : [value];
-          }),
-        )
-      : [];
+    const counts = new Map<string, { value: unknown; count: number }>();
+    if (groupProperty) {
+      for (const task of tasks) {
+        // Canonical status is always present in the row projection. Custom
+        // columns and formulas use exactly the same lookup as displayed rows.
+        const value =
+          groupProperty === "status"
+            ? task.status
+            : row(task).values[groupProperty];
+        const seen = new Set<string>();
+        for (const candidate of Array.isArray(value) ? value : [value]) {
+          const key = JSON.stringify(candidate ?? null);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const group = counts.get(key);
+          if (group) group.count++;
+          else counts.set(key, { value: candidate, count: 1 });
+        }
+      }
+    }
     // Configured columns keep their order when a move empties or fills one.
     const { fieldMapping, statuses, priorities } = this.model.configuration();
     const configuredOrder = (
@@ -658,25 +683,14 @@ export class DemoTaskRepository implements TaskRepository {
       const index = configuredOrder.indexOf(value);
       return index < 0 ? configuredOrder.length : index;
     };
-    groupValues.sort((left, right) => position(left) - position(right));
-    const execution: TaskViewExecution = {
-      view,
-      rows: clone(rows),
-      totalCount: rows.length,
-      hasMore: false,
-      groups: groupValues.map((value) => ({
+    const groups = [...counts.values()]
+      .sort((left, right) => position(left.value) - position(right.value))
+      .map(({ value, count }) => ({
         values: { [groupProperty!]: value },
-        count: rows.filter((row) => {
-          const current = row.values[groupProperty as keyof typeof row.values];
-          return Array.isArray(current)
-            ? current.some((candidate) => sameValue(candidate, value))
-            : sameValue(current, value);
-        }).length,
+        count,
         summaries: {},
-      })),
-    };
-    this.viewExecutions.set(view.key, execution);
-    return clone(execution);
+      }));
+    return { tasks, row, groups };
   }
 
   async readViewSource(path: string): Promise<TaskViewSourceDocument> {
@@ -1130,6 +1144,8 @@ export class DemoTaskRepository implements TaskRepository {
   }
 
   private changed(): void {
+    this.shortcuts = undefined;
+    this.relations = undefined;
     this.viewExecutions.clear();
     this.emit({ kind: "data" });
   }
@@ -1326,8 +1342,8 @@ function viewIdentifier(value: string): string {
 
 function taskViewValues(task: Task): Record<string, unknown> {
   const values: Record<string, unknown> = {
-    ...structuredClone(task.frontmatter),
-    ...structuredClone(task.customProperties),
+    ...task.frontmatter,
+    ...task.customProperties,
     title: task.title,
     status: task.status,
     priority: task.priority,
@@ -1341,22 +1357,8 @@ function taskViewValues(task: Task): Record<string, unknown> {
     sortOrder: task.sortOrder ?? null,
   };
   for (const [key, value] of Object.entries(values))
-    values[`note.${key}`] = structuredClone(value);
+    values[`note.${key}`] = value;
   return values;
-}
-
-function uniqueValues(values: unknown[]): unknown[] {
-  const seen = new Set<string>();
-  return values.filter((value) => {
-    const key = JSON.stringify(value ?? null);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function sameValue(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 }
 
 function demoScratchpad(
