@@ -24,6 +24,38 @@ const selectTwo = async (page: Page, candidates = rows(page)) => {
   await expect(page.locator(".bulk-actions")).toContainText("2 selected");
 };
 
+test("a bulk priority option can be clicked while the previous Undo notice is visible", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("views/TaskNotes%2FViews%2Finbox.base%23inbox?demo=1000");
+  await rows(page).first().locator(".task-row-title").focus();
+  await page.keyboard.press("x");
+  await expect(page.locator(".task-completed-notice")).toBeVisible();
+  await page.keyboard.press("Control+z");
+  const notice = page.locator(".workspace-feedback .undo-toast[role=status]");
+  await expect(notice).toBeVisible();
+  await selectTwo(page);
+  await page
+    .getByRole("combobox", { name: "Priority for selected tasks" })
+    .click();
+  const high = page.getByRole("option", { name: "High", exact: true });
+  await expect(high).toBeVisible();
+  await expect(notice).toBeVisible();
+  // A normal Playwright click retries until the ten-second notice expires.
+  // Check the actual hit target while both elements are still on screen.
+  expect(
+    await high.evaluate((option) => {
+      const { left, top, width, height } = option.getBoundingClientRect();
+      return option.contains(
+        document.elementFromPoint(left + width / 2, top + height / 2),
+      );
+    }),
+  ).toBe(true);
+  await high.click();
+  await expect(page.locator(".bulk-update-notice")).toContainText("High");
+});
+
 test("modifier clicks select and range; plain clicks and completion retain their action", async ({
   page,
 }) => {
