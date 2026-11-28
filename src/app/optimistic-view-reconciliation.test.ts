@@ -212,13 +212,27 @@ it("preserves an already ranked execution and reorders rows when the direction c
     ...row,
     task: { ...task, id: String(i), sortOrder },
   }));
-  const original = {
-    view: { sort: [order] },
+  const original: TaskViewExecution = {
+    view: {
+      key: "tasks.base#view",
+      documentId: "tasks.base",
+      documentName: "Tasks",
+      id: "view",
+      name: "Tasks",
+      properties: [],
+      source: {
+        path: "tasks.base",
+        format: "base",
+        revision: "1",
+        writable: true,
+      },
+      sort: [order],
+    },
     rows,
     groups: [],
     hasMore: false,
     totalCount: rows.length,
-  } as TaskViewExecution;
+  };
   expect(
     executionWithManualRanks(original, new Map(), "view", order, "sortOrder"),
   ).toBe(original);
