@@ -7,9 +7,8 @@ it("keeps whole-board group counts and page snapshots while projecting pages on 
     .flatMap((doc) => doc.views)
     .find((view) => view.id === "work-board")!;
   const full = await repository.executeView(view);
-  const iterator = repository
-    .iterateView(view, { cumulative: true })
-    [Symbol.asyncIterator]();
+  const pages = repository.iterateView(view, { cumulative: true });
+  const iterator = pages[Symbol.asyncIterator]();
   const page = await iterator.next();
   if (page.done) throw new Error("Expected the first board page");
   const first = page.value;
