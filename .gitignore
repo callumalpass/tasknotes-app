@@ -18,3 +18,4 @@ ios/App/App/GoogleService-Info.plist
 ios/App/CapApp-SPM/symlinks/
 *.log
 *.tsbuildinfo
+/.spike-tmp/
