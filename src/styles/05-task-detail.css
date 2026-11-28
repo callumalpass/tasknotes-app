@@ -1406,6 +1406,7 @@
 }
 
 .task-notes-editor .cm-content {
+  min-width: 0;
   min-height: 64px;
   padding: 0;
   caret-color: var(--ink);
@@ -1413,6 +1414,12 @@
 
 .task-notes-editor .cm-line {
   padding-inline: 0;
+}
+
+.task-notes-editor .cm-lp-td {
+  overflow-wrap: normal;
+  word-break: normal;
+  max-width: none;
 }
 
 .task-notes-editor .cm-placeholder {
