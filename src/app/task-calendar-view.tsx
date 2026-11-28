@@ -56,6 +56,7 @@ import { TaskActions } from "../components/task-actions";
 import { useCalendarOverflow } from "./use-calendar-overflow";
 import { useCalendarPosition } from "./use-calendar-position";
 import { useCalendarPreviews } from "./use-calendar-previews";
+import { agendaRowWindow } from "./agenda-row-window";
 import { useCalendarAgenda } from "./use-calendar-agenda";
 import { useCalendarMonthLayout } from "./use-calendar-month-layout";
 import { useCalendarTimedLayout } from "./use-calendar-timed-layout";
@@ -984,6 +985,13 @@ export function TaskCalendarView({
                 7,
               )}
               listAgenda={agenda}
+              listRowPool={(container, create) =>
+                agendaRowWindow(
+                  container,
+                  create,
+                  () => calendarRef.current?.store.size ?? items.length,
+                )
+              }
               eventOrder={eventOrder}
               dateStrip={stripped}
               listLeadTitle={agenda ? t`Overdue` : null}

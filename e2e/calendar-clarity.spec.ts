@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./local-test";
 
-const view = (id: string) =>
-  `views/${encodeURIComponent(`TaskNotes/Views/${id}.base#${id}`)}?demo=50`;
+const view = (id: string, size = 50) =>
+  `views/${encodeURIComponent(`TaskNotes/Views/${id}.base#${id}`)}?demo=${size}`;
 
 test("Upcoming has named, counted week days, respects the first day preference and supports keyboard selection", async ({
   page,
@@ -117,10 +117,13 @@ test("desktop agenda tasks drag onto a week-strip day without opening details", 
   );
   // Midweek, so today always has a following day in the strip.
   await page.clock.setFixedTime(new Date("2026-11-04T12:00:00Z"));
-  await page.goto(view("upcoming"));
-  const source = page
-    .locator(".tnc-list-lead")
-    .getByRole("button", { name: "Book the project room", exact: true });
+  await page.goto(view("upcoming", 1000));
+  const lead = page.locator(".tnc-list-lead");
+  await lead.getByRole("heading").scrollIntoViewIfNeeded();
+  const source = lead.getByRole("button", {
+    name: "Book the project room",
+    exact: true,
+  });
   const target = page
     .locator(".tnc-strip-day[aria-current=date]")
     .locator("xpath=following-sibling::button[1]");
@@ -138,92 +141,46 @@ test("desktop agenda tasks drag onto a week-strip day without opening details", 
   });
   await page.mouse.up();
   await expect(source).toHaveCount(0);
+  // The target day can be far below a dense Overdue section.
+  await target.click();
   const section = page.locator(`.tnc-list-section[data-date="${date}"]`);
   await expect(
     section.getByRole("button", { name: "Book the project room", exact: true }),
-  ).toBeAttached();
+  ).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Task details" }),
   ).toHaveCount(0);
 });
 
-test.describe("calendar drops", () => {
-  test.skip(({ isMobile }) => isMobile, "Phone months draw indicator dots");
-
-  test("a dropped task never returns to its old day before settling", async ({
-    page,
-  }) => {
-    await page.goto(view("calendar"));
-    const draggable = page.locator(".tnc-dg .tnc-item.is-draggable");
-    await expect(draggable.filter({ hasText: /\S/ }).first()).toBeVisible();
-    // The demo's dates follow today, so which days are full changes daily.
-    // An empty day in the task's own week always shows the drop; take the
-    // first task that has one. Failing that, take the first task and its
-    // quietest other day, where the drop may land behind "+N more". A full
-    // day renders only what fits, so its overflow button counts as load.
-    const pick = await page.evaluate(() => {
-      const load = (week: Element, day: Element) => {
-        const { left, right } = day.getBoundingClientRect();
-        const hidden = [...week.querySelectorAll(".tnc-more")]
-          .filter((more) => {
-            const { x } = more.getBoundingClientRect();
-            return x >= left && x < right;
-          })
-          .reduce((sum, more) => sum + parseInt(more.textContent!.slice(1)), 0);
-        return (
-          hidden +
-          week.querySelectorAll(
-            `.tnc-item[data-date="${day.getAttribute("data-date")}"]`,
-          ).length
-        );
-      };
-      let fallback: { index: number; to: string; empty: boolean } | null = null;
-      const events = document.querySelectorAll(
-        ".tnc-dg .tnc-item.is-draggable",
-      );
-      for (const [index, event] of [...events].entries()) {
-        if (!/\S/.test(event.textContent ?? "")) continue;
-        const cell = document.querySelector(
-          `.tnc-dg-day[data-date="${event.getAttribute("data-date")}"]`,
-        );
-        const week = cell?.closest(".tnc-dg-week");
-        if (!cell || !week) continue;
-        const [quietest] = [...week.querySelectorAll(".tnc-dg-day")]
-          .filter((day) => day !== cell)
-          .map((day) => ({
-            to: day.getAttribute("data-date")!,
-            load: load(week, day),
-          }))
-          .sort((a, b) => a.load - b.load);
-        if (!quietest) continue;
-        if (quietest.load === 0) return { index, to: quietest.to, empty: true };
-        fallback ??= { index, to: quietest.to, empty: false };
-      }
-      return fallback;
-    });
-    expect(pick).not.toBeNull();
-    const { to, empty } = pick!;
-    const event = draggable.nth(pick!.index);
-    const title = (await event
-      .locator(".full-calendar-event-primary > span")
-      .last()
-      .textContent())!.trim();
-    const from = (await event.getAttribute("data-date"))!;
-    const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
-    // The first draggable task can sit in a week below the fold; the mouse
-    // only reaches what is on screen.
-    await target.scrollIntoViewIfNeeded();
-    await page.evaluate(
-      ({ title }) => {
+for (const [timezoneId, from] of [
+  ["UTC", "2026-11-10"],
+  ["America/Los_Angeles", "2026-11-09"],
+]) {
+  test.describe(`calendar drops in ${timezoneId}`, () => {
+    test.use({ timezoneId });
+    test.skip(({ isMobile }) => isMobile, "Phone months draw indicator dots");
+    test("a dropped task never returns to its old day before settling", async ({
+      page,
+    }) => {
+      // The same instant is Wednesday in UTC and Tuesday in California. The
+      // demo schedules this task yesterday. November 4 is empty in both grids.
+      await page.clock.setFixedTime(new Date("2026-11-11T00:13:00Z"));
+      await page.goto(view("calendar"));
+      const selector = '.tnc-dg .tnc-item[data-id="scheduled-demo-task-3"]';
+      const event = page.locator(selector);
+      const to = "2026-11-04";
+      const target = page.locator(`.tnc-dg-day[data-date="${to}"]`);
+      await expect(event).toHaveAttribute("data-date", from);
+      await expect(
+        page.locator(`.tnc-dg .tnc-item[data-date="${to}"]`),
+      ).toHaveCount(0);
+      await page.evaluate((selector) => {
         const seen: string[] = [];
         (window as unknown as { __calendarDays: string[] }).__calendarDays =
           seen;
         new MutationObserver(() => {
-          for (const node of document.querySelectorAll<HTMLElement>(
-            ".tnc-dg .tnc-item",
-          ))
+          for (const node of document.querySelectorAll<HTMLElement>(selector))
             if (
-              node.textContent?.includes(title) &&
               !node.classList.contains("is-dragging") &&
               getComputedStyle(node).visibility !== "hidden"
             )
@@ -233,40 +190,32 @@ test.describe("calendar drops", () => {
           childList: true,
           attributes: true,
         });
-      },
-      { title },
-    );
-    // The mouse does not scroll, so bring the week on screen first.
-    await event.scrollIntoViewIfNeeded();
-    const start = (await event.boundingBox())!;
-    const end = (await target.boundingBox())!;
-    await page.mouse.move(start.x + 20, start.y + start.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(start.x + 20, start.y + start.height / 2 + 10, {
-      steps: 3,
+      }, selector);
+      // The mouse does not scroll, so bring the week on screen first.
+      await event.scrollIntoViewIfNeeded();
+      const start = (await event.boundingBox())!;
+      const end = (await target.boundingBox())!;
+      await page.mouse.move(start.x + 20, start.y + start.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(start.x + 20, start.y + start.height / 2 + 10, {
+        steps: 3,
+      });
+      await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, {
+        steps: 10,
+      });
+      await page.evaluate(() => {
+        (
+          window as unknown as { __calendarDays: string[] }
+        ).__calendarDays.length = 0;
+      });
+      await page.mouse.up();
+      await expect(event).toHaveAttribute("data-date", to);
+      await page.waitForTimeout(500);
+      const days = await page.evaluate(
+        () =>
+          (window as unknown as { __calendarDays: string[] }).__calendarDays,
+      );
+      expect(days).not.toContain(from);
     });
-    await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, {
-      steps: 10,
-    });
-    await page.evaluate(() => {
-      (
-        window as unknown as { __calendarDays: string[] }
-      ).__calendarDays.length = 0;
-    });
-    await page.mouse.up();
-    // Landed: on screen in its new day, or, where that day was already full,
-    // announced as moved.
-    await expect(
-      empty
-        ? page.locator(`.tnc-dg .tnc-item[data-date="${to}"]`, {
-            hasText: title,
-          })
-        : page.getByRole("status").filter({ hasText: title }),
-    ).toBeVisible();
-    await page.waitForTimeout(500);
-    const days = await page.evaluate(
-      () => (window as unknown as { __calendarDays: string[] }).__calendarDays,
-    );
-    expect(days).not.toContain(from);
   });
-});
+}

@@ -220,9 +220,15 @@ export function useCalendarAgenda({
           if (title) title.after(badge);
           else heading.append(badge);
         }
-        const count = section.querySelectorAll(
-          ".tnc-item--list:not(.is-time-entry):not(.google-calendar-event)",
-        ).length;
+        const logicalCount =
+          section.querySelector<HTMLElement>(".tnc-list-rows")?.dataset
+            .agendaTaskCount;
+        const count =
+          logicalCount !== undefined
+            ? Number(logicalCount)
+            : section.querySelectorAll(
+                ".tnc-item--list:not(.is-time-entry):not(.google-calendar-event)",
+              ).length;
         badge.textContent = count ? String(count) : "";
         badge.hidden = count === 0;
         badge.setAttribute("aria-label", countLabel(count, "task"));

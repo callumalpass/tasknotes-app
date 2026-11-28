@@ -260,6 +260,30 @@ export function focusAdjacentTaskRow(
     return true;
   }
   const next = rows[rows.indexOf(current) + direction];
+  // A focused agenda row stays mounted if the user scrolls far away.
+  // Don't jump across an unmounted group to the new viewport's first task.
+  const agenda = current.closest(".tnc-list--agenda");
+  if (agenda) {
+    const parked = [
+      ...agenda.querySelectorAll<HTMLElement>(
+        '.agenda-row-group[data-agenda-task-rows][tabindex="0"]',
+      ),
+    ];
+    if (direction < 0) parked.reverse();
+    const after =
+      direction > 0
+        ? Node.DOCUMENT_POSITION_FOLLOWING
+        : Node.DOCUMENT_POSITION_PRECEDING;
+    for (const group of parked) {
+      if (!(current.compareDocumentPosition(group) & after)) continue;
+      if (next && !(group.compareDocumentPosition(next) & after)) break;
+      if (!visible(group)) continue;
+      group.dispatchEvent(
+        new CustomEvent("tasknotes:focus-agenda-task", { detail: direction }),
+      );
+      return true;
+    }
+  }
   if (!next) return false;
   focusRow(next);
   return true;
