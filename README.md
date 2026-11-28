@@ -58,6 +58,27 @@ For collections upgraded from the Obsidian plugin's v4 release, see
 [Opening a collection upgraded from TaskNotes v4](docs/migration-v4-to-v5.md)
 for first-connection consent and App-version guidance.
 
+### Reading recurrence dates in Markdown
+
+New timed `scheduled` and `due` values use the collection's local wall clock.
+For a daily task at 3 pm in `Australia/Melbourne`, the frontmatter can contain:
+
+```yaml
+scheduled: "2026-11-21T15:00"
+recurrence: "DTSTART:20261121T150000Z;FREQ=DAILY"
+```
+
+The digits in TaskNotes' timed `DTSTART` represent that same local time. The
+trailing `Z` is a TaskNotes recurrence convention. An exporter should interpret
+those digits in the collection timezone before emitting an iCalendar start,
+for example `DTSTART;TZID=Australia/Melbourne:20261121T150000`. Keeping the
+timezone on a repeating event preserves its local hour across daylight-saving
+changes. An all-day task uses a date alone, such as `DTSTART:20261121`.
+
+Older notes may store `scheduled: "2026-11-21T04:00:00Z"` for this example.
+An explicit offset or `Z` on a **task date field** identifies an instant. In
+Melbourne that instant was 3 pm. Both forms can occur in the same collection.
+
 ## Trying the demo
 
 The [demo](https://app.tasknotes.dev/?demo=30) opens an in-memory collection
