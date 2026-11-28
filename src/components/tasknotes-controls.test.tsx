@@ -179,6 +179,39 @@ it("keeps exact minutes in the TaskNotes time picker", () => {
   expect(document.querySelector('input[type="time"]')).not.toBeInTheDocument();
 });
 
+it.each([
+  ["15:07", "15:07"],
+  ["3pm", "15:00"],
+  ["12:01 AM", "00:01"],
+])(
+  "accepts direct time entry %s after correcting an invalid draft",
+  (text, expected) => {
+    const change = vi.fn();
+    render(
+      <TaskNotesTimePicker
+        ariaLabel="Scheduled time"
+        value="23:59"
+        onChange={change}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Scheduled time" }));
+    const dialog = screen.getByRole("dialog");
+    const input = within(dialog).getByRole("textbox", { name: "Time" });
+    fireEvent.change(input, { target: { value: "24:70" } });
+    expect(within(dialog).getByRole("button", { name: "Done" })).toBeDisabled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(change).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: text } });
+    expect(
+      within(dialog)
+        .getByRole("listbox", { name: "Minute" })
+        .querySelector('[aria-selected="true"]'),
+    ).toHaveTextContent(expected!.slice(-2));
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(change).toHaveBeenCalledWith(expected);
+  },
+);
+
 it.each(["12", "24"] as const)(
   "uses the %s-hour setting in the time heading and wheel",
   (hourFormat) => {
