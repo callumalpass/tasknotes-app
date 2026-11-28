@@ -5,6 +5,7 @@ import { useLingui, Trans } from "@lingui/react/macro";
 import { OverdueScheduleActions } from "../components/overdue-schedule-actions";
 import { TaskListSection } from "../components/task-list-section";
 import { missedDeadlineCount } from "../domain/task-list-sections";
+import { dateFormatter } from "../i18n/date-formatter";
 import { appLocale } from "../i18n/app";
 import { calendarText } from "../i18n/calendar-locale";
 import { countLabel } from "../i18n/default-labels";
@@ -1552,7 +1553,7 @@ function calendarEventLabel(item: TaskCalendarItem, timezone?: string): string {
   const date =
     day === todayString(new Date(), timezone)
       ? t`Today`
-      : new Intl.DateTimeFormat(appLocale(), {
+      : dateFormatter({
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -1560,7 +1561,7 @@ function calendarEventLabel(item: TaskCalendarItem, timezone?: string): string {
         }).format(item.allDay ? new Date(`${day}T00:00:00Z`) : start);
   const time = item.allDay
     ? ""
-    : `, ${new Intl.DateTimeFormat(appLocale(), {
+    : `, ${dateFormatter({
         hour: "numeric",
         minute: "2-digit",
         timeZone: timezone,
@@ -1569,7 +1570,7 @@ function calendarEventLabel(item: TaskCalendarItem, timezone?: string): string {
 }
 
 function listDayLabel(date: Date, timezone: string): string {
-  const label = new Intl.DateTimeFormat(appLocale(), {
+  const label = dateFormatter({
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -1656,7 +1657,7 @@ function initialRange(
 function agendaLabel(value: string): string {
   const date = dateFromStorage(value);
   return date
-    ? new Intl.DateTimeFormat(appLocale(), {
+    ? dateFormatter({
         weekday: "long",
         day: "numeric",
         month: "long",

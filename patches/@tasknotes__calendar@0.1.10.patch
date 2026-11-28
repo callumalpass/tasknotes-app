@@ -34,7 +34,7 @@ index 26a210211cd31a79c1559769ae989031e73e6090..2d1718cf66965e5ba21aff951854c814
      placements.push({
        item: n,
 diff --git a/dist/cjs/index.cjs b/dist/cjs/index.cjs
-index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef6901912144198bb4ea0f 100644
+index 2105bb83c461a809fa3d35d588909be5521b33f6..a476009ca3c34c3cdda954edb52027a9a16a8bff 100644
 --- a/dist/cjs/index.cjs
 +++ b/dist/cjs/index.cjs
 @@ -593,20 +593,21 @@ function layoutRow(items, days, order = defaultOrder) {
@@ -69,7 +69,53 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef690191214419
      for (let c = startCol; c < endCol; c++) countByCol[c]++;
      placements.push({
        item: n,
-@@ -1504,7 +1505,7 @@ var ListView = class {
+@@ -1218,7 +1219,10 @@ var DayGridView = class {
+     this.topPx = this.weeks[0]?.cells[0]?.querySelector(".tnc-dg-top")?.offsetHeight || px(cs, "--tnc-dg-top-h", 24);
+     this.morePx = this.measureMore(cs);
+     this.lastHeights = this.sizeKey();
+-    for (const w of this.weeks) {
++    // Read the week geometry together, before placing bars and overflow links.
++    const limits = this.dotsMode ? [] : this.weeks.map((week) => this.limitFor(week));
++    const compact = this.dotsMode ? [] : this.weeks.map((week) => week.row.clientWidth / week.days.length < 72);
++    for (const [index, w] of this.weeks.entries()) {
+       for (const cell of w.cells) {
+         if (this.dotsMode) cell.tabIndex = 0;
+         else cell.removeAttribute("tabindex");
+@@ -1236,7 +1240,7 @@ var DayGridView = class {
+           cell.pool.begin();
+           cell.pool.end();
+         }
+-        this.renderWeek(w);
++        this.renderWeek(w, limits[index], compact[index]);
+       }
+     }
+   }
+@@ -1285,10 +1289,9 @@ var DayGridView = class {
+     }
+     return out;
+   }
+-  renderWeek(w) {
++  renderWeek(w, limit, compact) {
+     const { ctx } = this;
+     const row = layoutRow(this.itemsFor(w), w.days, ctx.order);
+-    const limit = this.limitFor(w);
+     const visible = (col) => !limit ? Infinity : (row.countByCol[col] ?? 0) > limit.fit ? limit.withMore : limit.fit;
+     const n = w.days.length;
+     const hidden = new Array(n).fill([]).map(() => []);
+@@ -1340,8 +1343,10 @@ var DayGridView = class {
+         w.more.append(link);
+       }
+       existing.delete(key);
+-      link.setAttribute("aria-label", ctx.text.more(items.length));
+-      link.textContent = w.row.clientWidth / n < 72 ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : ctx.text.more(items.length);
++      const label = ctx.text.more(items.length);
++      const text = compact ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : label;
++      link.setAttribute("aria-label", label);
++      if (link.textContent !== text) link.textContent = text;
+       setStyle(link, {
+         left: `calc(${pct(col / n)} + 2px)`,
+         width: `calc(${pct(1 / n)} - 4px)`,
+@@ -1504,7 +1509,7 @@ var ListView = class {
      const inLead = /* @__PURE__ */ new Set();
      const keep = /* @__PURE__ */ new Set();
      let itemCount = 0;
@@ -78,7 +124,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef690191214419
      for (const day of days) {
        let items = this.itemsOn(day);
        if (includes) {
-@@ -1531,13 +1532,13 @@ var ListView = class {
+@@ -1531,13 +1536,13 @@ var ListView = class {
          section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
          if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
          opts.dayHeaderDidMount?.({ ...arg, el: heading });
@@ -94,7 +140,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef690191214419
        if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
          if (prev) prev.after(section);
          else this.body.prepend(section);
-@@ -1568,18 +1569,29 @@ var ListView = class {
+@@ -1568,18 +1573,29 @@ var ListView = class {
        this.loader.observe(this.sentinel);
      }
    }
@@ -129,7 +175,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef690191214419
    }
    renderLead(items) {
      const { ctx } = this;
-@@ -1598,12 +1610,12 @@ var ListView = class {
+@@ -1598,12 +1614,12 @@ var ListView = class {
        const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
        const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
        const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
@@ -145,7 +191,7 @@ index 2105bb83c461a809fa3d35d588909be5521b33f6..9632c47a23126202dbef690191214419
    addRow(day) {
      const { ctx } = this;
 diff --git a/dist/cjs/react.cjs b/dist/cjs/react.cjs
-index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a8befccf1 100644
+index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..39a8ccefd106ad41cebf58908071f355188f99a9 100644
 --- a/dist/cjs/react.cjs
 +++ b/dist/cjs/react.cjs
 @@ -929,20 +929,21 @@ function layoutRow(items, days, order = defaultOrder) {
@@ -180,7 +226,53 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a
      for (let c = startCol; c < endCol; c++) countByCol[c]++;
      placements.push({
        item: n,
-@@ -1412,7 +1413,7 @@ var ListView = class {
+@@ -1126,7 +1127,10 @@ var DayGridView = class {
+     this.topPx = this.weeks[0]?.cells[0]?.querySelector(".tnc-dg-top")?.offsetHeight || px(cs, "--tnc-dg-top-h", 24);
+     this.morePx = this.measureMore(cs);
+     this.lastHeights = this.sizeKey();
+-    for (const w of this.weeks) {
++    // Read the week geometry together, before placing bars and overflow links.
++    const limits = this.dotsMode ? [] : this.weeks.map((week) => this.limitFor(week));
++    const compact = this.dotsMode ? [] : this.weeks.map((week) => week.row.clientWidth / week.days.length < 72);
++    for (const [index, w] of this.weeks.entries()) {
+       for (const cell of w.cells) {
+         if (this.dotsMode) cell.tabIndex = 0;
+         else cell.removeAttribute("tabindex");
+@@ -1144,7 +1148,7 @@ var DayGridView = class {
+           cell.pool.begin();
+           cell.pool.end();
+         }
+-        this.renderWeek(w);
++        this.renderWeek(w, limits[index], compact[index]);
+       }
+     }
+   }
+@@ -1193,10 +1197,9 @@ var DayGridView = class {
+     }
+     return out;
+   }
+-  renderWeek(w) {
++  renderWeek(w, limit, compact) {
+     const { ctx } = this;
+     const row = layoutRow(this.itemsFor(w), w.days, ctx.order);
+-    const limit = this.limitFor(w);
+     const visible = (col) => !limit ? Infinity : (row.countByCol[col] ?? 0) > limit.fit ? limit.withMore : limit.fit;
+     const n = w.days.length;
+     const hidden = new Array(n).fill([]).map(() => []);
+@@ -1248,8 +1251,10 @@ var DayGridView = class {
+         w.more.append(link);
+       }
+       existing.delete(key);
+-      link.setAttribute("aria-label", ctx.text.more(items.length));
+-      link.textContent = w.row.clientWidth / n < 72 ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : ctx.text.more(items.length);
++      const label = ctx.text.more(items.length);
++      const text = compact ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : label;
++      link.setAttribute("aria-label", label);
++      if (link.textContent !== text) link.textContent = text;
+       setStyle(link, {
+         left: `calc(${pct(col / n)} + 2px)`,
+         width: `calc(${pct(1 / n)} - 4px)`,
+@@ -1412,7 +1417,7 @@ var ListView = class {
      const inLead = /* @__PURE__ */ new Set();
      const keep = /* @__PURE__ */ new Set();
      let itemCount = 0;
@@ -189,7 +281,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a
      for (const day of days) {
        let items = this.itemsOn(day);
        if (includes) {
-@@ -1439,13 +1440,13 @@ var ListView = class {
+@@ -1439,13 +1444,13 @@ var ListView = class {
          section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
          if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
          opts.dayHeaderDidMount?.({ ...arg, el: heading });
@@ -205,7 +297,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a
        if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
          if (prev) prev.after(section);
          else this.body.prepend(section);
-@@ -1476,18 +1477,29 @@ var ListView = class {
+@@ -1476,18 +1481,29 @@ var ListView = class {
        this.loader.observe(this.sentinel);
      }
    }
@@ -240,7 +332,7 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a
    }
    renderLead(items) {
      const { ctx } = this;
-@@ -1506,12 +1518,12 @@ var ListView = class {
+@@ -1506,12 +1522,12 @@ var ListView = class {
        const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
        const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
        const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);
@@ -256,10 +348,56 @@ index a5a8509780257de49aa2fe2e4aa006cd5bd005ca..1bfef54ec7e2cd41bf3dd26300c7621a
    addRow(day) {
      const { ctx } = this;
 diff --git a/dist/esm/chunk-5PHSJK36.js b/dist/esm/chunk-5PHSJK36.js
-index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14b302ec0b 100644
+index c2b76d29621fe4cc981794d2d24147b580d35d87..0a81e525692ec40fd1624591921c69833e64eac4 100644
 --- a/dist/esm/chunk-5PHSJK36.js
 +++ b/dist/esm/chunk-5PHSJK36.js
-@@ -789,7 +789,7 @@ var ListView = class {
+@@ -503,7 +503,10 @@ var DayGridView = class {
+     this.topPx = this.weeks[0]?.cells[0]?.querySelector(".tnc-dg-top")?.offsetHeight || px(cs, "--tnc-dg-top-h", 24);
+     this.morePx = this.measureMore(cs);
+     this.lastHeights = this.sizeKey();
+-    for (const w of this.weeks) {
++    // Read the week geometry together, before placing bars and overflow links.
++    const limits = this.dotsMode ? [] : this.weeks.map((week) => this.limitFor(week));
++    const compact = this.dotsMode ? [] : this.weeks.map((week) => week.row.clientWidth / week.days.length < 72);
++    for (const [index, w] of this.weeks.entries()) {
+       for (const cell of w.cells) {
+         if (this.dotsMode) cell.tabIndex = 0;
+         else cell.removeAttribute("tabindex");
+@@ -521,7 +524,7 @@ var DayGridView = class {
+           cell.pool.begin();
+           cell.pool.end();
+         }
+-        this.renderWeek(w);
++        this.renderWeek(w, limits[index], compact[index]);
+       }
+     }
+   }
+@@ -570,10 +573,9 @@ var DayGridView = class {
+     }
+     return out;
+   }
+-  renderWeek(w) {
++  renderWeek(w, limit, compact) {
+     const { ctx } = this;
+     const row = layoutRow(this.itemsFor(w), w.days, ctx.order);
+-    const limit = this.limitFor(w);
+     const visible = (col) => !limit ? Infinity : (row.countByCol[col] ?? 0) > limit.fit ? limit.withMore : limit.fit;
+     const n = w.days.length;
+     const hidden = new Array(n).fill([]).map(() => []);
+@@ -625,8 +627,10 @@ var DayGridView = class {
+         w.more.append(link);
+       }
+       existing.delete(key);
+-      link.setAttribute("aria-label", ctx.text.more(items.length));
+-      link.textContent = w.row.clientWidth / n < 72 ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : ctx.text.more(items.length);
++      const label = ctx.text.more(items.length);
++      const text = compact ? `+${new Intl.NumberFormat(ctx.opts.locale).format(items.length)}` : label;
++      link.setAttribute("aria-label", label);
++      if (link.textContent !== text) link.textContent = text;
+       setStyle(link, {
+         left: `calc(${pct(col / n)} + 2px)`,
+         width: `calc(${pct(1 / n)} - 4px)`,
+@@ -789,7 +793,7 @@ var ListView = class {
      const inLead = /* @__PURE__ */ new Set();
      const keep = /* @__PURE__ */ new Set();
      let itemCount = 0;
@@ -268,7 +406,7 @@ index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14
      for (const day of days) {
        let items = this.itemsOn(day);
        if (includes) {
-@@ -816,13 +816,13 @@ var ListView = class {
+@@ -816,13 +820,13 @@ var ListView = class {
          section = h(doc, "div", "tnc-list-section", { role: "listitem", "aria-label": ctx.fmt.longDate(day), "data-date": arg.dateStr }, heading, rows);
          if (agenda && opts.listAddText !== null) section.append(this.addRow(day));
          opts.dayHeaderDidMount?.({ ...arg, el: heading });
@@ -284,7 +422,7 @@ index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14
        if (prev ? prev.nextSibling !== section : this.body.firstChild !== section) {
          if (prev) prev.after(section);
          else this.body.prepend(section);
-@@ -853,18 +853,29 @@ var ListView = class {
+@@ -853,18 +857,29 @@ var ListView = class {
        this.loader.observe(this.sentinel);
      }
    }
@@ -319,7 +457,7 @@ index c2b76d29621fe4cc981794d2d24147b580d35d87..5d9e7cab85e9731e569632a33ada6c14
    }
    renderLead(items) {
      const { ctx } = this;
-@@ -883,12 +894,12 @@ var ListView = class {
+@@ -883,12 +898,12 @@ var ListView = class {
        const heading = h(doc, "div", "tnc-list-day tnc-list-lead-head", null, h(doc, "span", "tnc-list-lead-title", null, title), slot);
        const rows = h(doc, "div", "tnc-list-rows", { role: "group" });
        const section = h(doc, "div", "tnc-list-section tnc-list-lead", { role: "listitem", "aria-label": title }, heading, rows);

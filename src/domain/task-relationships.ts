@@ -22,21 +22,14 @@ export function taskRelationships(
   current: TaskSummary,
   tasks: readonly TaskSummary[],
 ): TaskRelationships {
-  const taskById = new Map(tasks.map((task) => [task.id, task]));
+  // A drawer only needs forward lookups for its own project and blocker links.
+  const links = new Set([
+    ...(current.projects ?? []),
+    ...(current.blockedBy ?? []).map(({ uid }) => uid),
+  ]);
+  const targets = new Set([...links].map(normalizeLinkTarget));
+  const taskById = new Map<string, TaskSummary>();
   const taskByPath = new Map<string, TaskSummary>();
-  for (const task of tasks) {
-    const normalized = normalizeLinkTarget(task.path);
-    taskByPath.set(normalized, task);
-    const basename = normalized.split("/").at(-1);
-    if (basename && !taskByPath.has(basename)) taskByPath.set(basename, task);
-  }
-  const resolve = (value: string) =>
-    taskById.get(value) ?? taskByPath.get(normalizeLinkTarget(value));
-
-  const blockedBy = (current.blockedBy ?? []).map((dependency) => ({
-    dependency,
-    task: resolve(dependency.uid),
-  }));
   const blocking: TaskSummary[] = [];
   const subtasks: TaskSummary[] = [];
 
@@ -53,6 +46,14 @@ export function taskRelationships(
   }
 
   for (const candidate of tasks) {
+    if (links.has(candidate.id)) taskById.set(candidate.id, candidate);
+    if (targets.size) {
+      const path = normalizeLinkTarget(candidate.path);
+      if (targets.has(path)) taskByPath.set(path, candidate);
+      const name = path.slice(path.lastIndexOf("/") + 1);
+      if (name && targets.has(name) && !taskByPath.has(name))
+        taskByPath.set(name, candidate);
+    }
     if (candidate.id === current.id) continue;
     if (
       (candidate.blockedBy ?? []).some(
@@ -65,8 +66,13 @@ export function taskRelationships(
       subtasks.push(candidate);
   }
 
+  const resolve = (value: string) =>
+    taskById.get(value) ?? taskByPath.get(normalizeLinkTarget(value));
   return {
-    blockedBy,
+    blockedBy: (current.blockedBy ?? []).map((dependency) => ({
+      dependency,
+      task: resolve(dependency.uid),
+    })),
     blocking,
     subtasks,
     projectTasks: (current.projects ?? []).flatMap((project) => {
