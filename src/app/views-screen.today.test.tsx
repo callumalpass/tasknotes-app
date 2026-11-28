@@ -21,6 +21,26 @@ import type { Task, UpdateTaskInput } from "../domain/task";
 import type { TaskView } from "../domain/view";
 import type { TaskRepository } from "../application/ports/task-repository";
 
+it("shows the collection's calendar day across midnight in the browser", async () => {
+  vi.stubEnv("TZ", "Pacific/Honolulu");
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    vi.setSystemTime(new Date("2026-11-28T00:52:00Z"));
+    expect(new Date().getDate()).toBe(27);
+    const repo = repository([]);
+    const configuration = await repo.taskConfiguration();
+    repo.taskConfiguration = async () => ({
+      ...configuration,
+      timezone: "Pacific/Auckland",
+    });
+    renderToday(repo);
+    expect(await screen.findByText("Saturday, November 28")).toBeVisible();
+  } finally {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  }
+});
+
 it("puts Today first and links directly to the expanded overdue section", async () => {
   renderToday(
     repository([
