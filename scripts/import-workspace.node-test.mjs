@@ -35,6 +35,11 @@ test("SDK version, bytes, catalog and model drift fail closed", async () => {
       input.workspace.catalog["@mdbase-dev/sdk"] = "0.1.0-beta.1";
     },
     (input) => {
+      input.lock.importers["apps/import"].dependencies[
+        "@tasknotes/model"
+      ].version = input.workspace.catalog["@tasknotes/model"];
+    },
+    (input) => {
       input.app.dependencies["@mdbase-dev/sdk"] = "latest";
     },
     (input) => {

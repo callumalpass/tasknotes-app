@@ -8,7 +8,7 @@ assert.ok(
   origins.length &&
     origins.every((url) => ["127.0.0.1", "localhost"].includes(url.hostname)),
 );
-const browser = await chromium.launch();
+const browser = await chromium.launch({ chromiumSandbox: true });
 const rounds = Number(process.env.TASKNOTES_BENCH_ROUNDS ?? 7);
 const results = {};
 const focused = process.env.TASKNOTES_BENCH_FOCUS === "calendar-search";

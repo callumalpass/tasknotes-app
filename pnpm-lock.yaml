@@ -17,6 +17,9 @@ patchedDependencies:
   '@tasknotes/calendar@0.1.10':
     hash: ea5b19bba1f57b77ee224b7f30f32dba2c23c05f19a62c6928c45269e2800fbc
     path: patches/@tasknotes__calendar@0.1.10.patch
+  '@tasknotes/model@0.3.2':
+    hash: 06c57a1230d5692a746dd3fee1c62c9236a03361eca37db6fbc6b8cc29d1181a
+    path: patches/@tasknotes__model@0.3.2.patch
 
 importers:
 
@@ -105,7 +108,7 @@ importers:
         version: '@mdbase-dev/sdk@file:vendor/sdk-self-hosted-9df3f92db395da1a1c61744f74846f756b6852511619e696c7c6bb9c32a7308f.tgz'
       '@tasknotes/model':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.3.2(patch_hash=06c57a1230d5692a746dd3fee1c62c9236a03361eca37db6fbc6b8cc29d1181a)
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -262,7 +265,7 @@ importers:
         version: 0.2.62
       '@tasknotes/model':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.3.2(patch_hash=06c57a1230d5692a746dd3fee1c62c9236a03361eca37db6fbc6b8cc29d1181a)
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -6372,7 +6375,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
 
-  '@tasknotes/model@0.3.2':
+  '@tasknotes/model@0.3.2(patch_hash=06c57a1230d5692a746dd3fee1c62c9236a03361eca37db6fbc6b8cc29d1181a)':
     dependencies:
       rrule: 2.8.1
       yaml: 2.9.1
