@@ -18,7 +18,8 @@
 }
 
 .scratchpad-note-text {
-  --scratch-line-pad: 3px;
+  --scratch-line-pad: 2px;
+  --scratch-marker-width: 44px;
 }
 
 .scratchpad-note-text .cm-line {
@@ -100,6 +101,7 @@
 }
 
 .scratchpad-note-text .cm-scratch-item {
+  min-height: 48px;
   --lp-list-indent: calc(
     var(--scratch-depth, 0) * var(--scratch-step) +
       var(--scratch-marker-width, var(--scratch-step))
@@ -320,17 +322,6 @@
 @media (hover: hover) and (pointer: fine) {
   .scratchpad-note-tools {
     display: none;
-  }
-}
-
-@media (pointer: coarse), (max-width: 560px) {
-  .scratchpad-note-text {
-    --scratch-line-pad: 2px;
-    --scratch-marker-width: 44px;
-  }
-
-  .scratchpad-note-text .cm-scratch-item {
-    min-height: 48px;
   }
 }
 
