@@ -311,3 +311,41 @@ it("offers the configured separate static site without carrying managed URL stat
     vi.unstubAllGlobals();
   }
 });
+
+it.each(["open_failed", "collection_setup_namespace_conflict"] as const)(
+  "keeps the workspace and starter writes behind the SDK gate on %s",
+  async (problem) => {
+    starterViews.mockClear();
+    const mdbase = await createTestMdbase({ phase: "opening" });
+    const id = collectionId(mdbase, 0);
+    const before = mdbase.fixture.mdbase.getSnapshot();
+    const workspace = vi.fn(Workspace);
+    render(<TaskNotesApp mdbase={mdbase} Workspace={workspace as never} />);
+    act(() =>
+      mdbase.fixture.controls.publishSnapshot({
+        ...before,
+        status: "blocked",
+        problem,
+        selection: {
+          ...before.selection,
+          lastApproval: { kind: "add", outcome: "added", collectionId: id },
+        },
+      } as never),
+    );
+    expect(
+      await screen.findByRole("heading", { name: /Can't open/ }),
+    ).toBeVisible();
+    expect(workspace).not.toHaveBeenCalled();
+    expect(starterViews).not.toHaveBeenCalled();
+    expect(
+      mdbase.fixture.controls
+        .observedActions()
+        .some(({ action }) => action === "applySetup"),
+    ).toBe(false);
+    // Once the SDK opens this approval's collection, the ordinary first-join
+    // starter check runs once against its ready repository.
+    act(() => mdbase.fixture.set("ready", id));
+    expect(await screen.findByText(`Workspace ${id}`)).toBeVisible();
+    await waitFor(() => expect(starterViews).toHaveBeenCalledOnce());
+  },
+);
