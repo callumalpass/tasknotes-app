@@ -71,22 +71,15 @@ export function useCalendarAgenda({
       setSlots(new Map(mountedSlots.current));
     });
   }
-  const [stripRange, setStripRange] = useState(() => {
-    const start = new Date();
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return { start, end };
-  });
-  // Count the actual days shown in the strip, including past weeks. Widening
-  // the main agenda projection instead would suppress its overdue-on-today
-  // entries. No second expansion is needed while using a grid layout.
-  const stripExecution = useMemo(
-    () => (enabled ? execution : { ...execution, rows: [] }),
-    [enabled, execution],
-  );
+  // The strip owns its week (or expanded month). Its first DOM measurement
+  // supplies the range, including past days omitted from the main agenda.
+  const [stripRange, setStripRange] = useState<{
+    start: Date;
+    end: Date;
+  } | null>(null);
   const entries = useCalendarEntries(
-    stripExecution,
-    stripRange,
+    execution,
+    enabled ? stripRange : null,
     identityTasks,
     configuration,
     display,
@@ -137,7 +130,7 @@ export function useCalendarAgenda({
           ? new Date(calendarDateToInstant(todayString(endDay), zone))
           : endDay;
         setStripRange((current) =>
-          current.start.getTime() === start.getTime() &&
+          current?.start.getTime() === start.getTime() &&
           current.end.getTime() === end.getTime()
             ? current
             : { start, end },
@@ -283,12 +276,15 @@ export function useCalendarAgenda({
     };
   }, [root, calendar, enabled, items, locale, entries, selected, zone]);
 
-  const lastShown = new Date(stripRange.end);
-  lastShown.setDate(lastShown.getDate() - 1);
-  const stripTitle = new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-  }).formatRange(stripRange.start, lastShown);
+  const stripTitle = useMemo(() => {
+    if (!stripRange) return "";
+    const lastShown = new Date(stripRange.end);
+    lastShown.setDate(lastShown.getDate() - 1);
+    return new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+    }).formatRange(stripRange.start, lastShown);
+  }, [stripRange, locale]);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     const host = root.current;

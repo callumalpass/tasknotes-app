@@ -242,8 +242,12 @@ export function TaskCalendarView({
   }, [locale]);
   const { configuration, materializeOccurrence } = useRepository();
   const { timezone } = calendarContext(configuration);
+  const listDayCount = numberOption(
+    execution.view.presentation?.options.listDayCount,
+    7,
+  );
   const [range, setRange] = useState(() =>
-    initialRange(selected, mode, timezone, preferences.firstDay),
+    initialRange(selected, mode, timezone, preferences.firstDay, listDayCount),
   );
   useCalendarPosition(rootRef, mode, phone, selected, range.start.getTime());
   useCalendarPreviews(rootRef, (day) => {
@@ -980,10 +984,7 @@ export function TaskCalendarView({
                 execution.view.presentation?.options.customDayCount,
                 3,
               )}
-              listDayCount={numberOption(
-                execution.view.presentation?.options.listDayCount,
-                7,
-              )}
+              listDayCount={listDayCount}
               listAgenda={agenda}
               listRowPool={(container, create) =>
                 agendaRowWindow(
@@ -1611,6 +1612,7 @@ function initialRange(
   mode: CalendarMode,
   timezone: string,
   firstDay: number,
+  listDayCount: number,
 ): { start: Date; end: Date } {
   const date = dateFromStorage(selected) ?? new Date();
   const midnight = (year: number, month: number, day: number) =>
@@ -1622,6 +1624,19 @@ function initialRange(
       start: midnight(date.getFullYear(), 0, 1),
       end: midnight(date.getFullYear() + 1, 0, 1),
     };
+  if (mode === "listWeek") {
+    // The list starts on its anchor. Include the end of the visible date
+    // strip just as onRangeChange does, including for short custom lists.
+    const first = parseDay(selected)!;
+    const end = Math.max(
+      first + listDayCount,
+      startOfWeek(first, firstDay) + 7,
+    );
+    return {
+      start: new Date(calendarDateToInstant(selected, timezone)),
+      end: new Date(calendarDateToInstant(formatDay(end), timezone)),
+    };
+  }
   if (mode === "dayGridMonth") {
     const first = startOfWeek(
       startOfMonth(parseDay(todayString(date))!),
