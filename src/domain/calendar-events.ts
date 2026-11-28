@@ -241,6 +241,9 @@ function groupCalendarEntries(
   today?: string,
 ): Map<string, CalendarEntry[]> {
   const result = new Map<string, CalendarEntry[]>();
+  // Implicit one-day tasks sharing a start also share their clipped civil
+  // day, including across DST. Reuse the bucket after its first conversion.
+  const singleDayBuckets = new Map<string, CalendarEntry[]>();
   const rangeStart = calendarDateToInstant(range.start, timezone);
   const rangeEnd = calendarDateToInstant(range.end, timezone);
   const inRange =
@@ -272,6 +275,15 @@ function groupCalendarEntries(
         ? { timeEntry: row.task.timeEntries[modelEntry.timeEntryIndex] }
         : {}),
     };
+    const singleDay =
+      modelEntry.allDay &&
+      !modelEntry.end &&
+      modelEntry.durationMinutes === 1440;
+    const bucket = singleDay && singleDayBuckets.get(modelEntry.start);
+    if (bucket) {
+      bucket.push(entry);
+      continue;
+    }
     const entryStart = calendarDateToInstant(modelEntry.start, timezone);
     const start = Math.max(entryStart, rangeStart);
     const entryEnd = modelEntry.end
@@ -297,7 +309,11 @@ function groupCalendarEntries(
       const values = result.get(day) ?? [];
       values.push(entry);
       result.set(day, values);
-      if (day === last) break;
+      if (day === last) {
+        if (singleDay && first === last)
+          singleDayBuckets.set(modelEntry.start, values);
+        break;
+      }
       day = shiftCalendarDay(day, 1);
     }
   }
@@ -320,9 +336,9 @@ function missedRepeats(
       .map(({ taskId }) => taskId),
   );
   return [...rows].flatMap(([taskId, { task }]) => {
+    if (!task.recurrence) return [];
     const instanceDate = taskDatePart(task.scheduled, task.timezone);
-    return task.recurrence &&
-      instanceDate &&
+    return instanceDate &&
       !task.completed &&
       !task.archived &&
       !overdue.has(taskId) &&

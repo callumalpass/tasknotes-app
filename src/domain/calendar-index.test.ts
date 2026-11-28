@@ -110,16 +110,25 @@ it("reuses unchanged task expansions across single-record edits, cloned rows and
   expect(index.entries(view([]), range, [], context).size).toBe(0);
 });
 
-it("groups an implicit all-day entry only on its civil day across spring DST", () => {
+it("groups same-day entries in view order only on their civil day across spring DST", () => {
   const task = model.create(
     { title: "Sunday", scheduled: "2026-03-08" },
     { id: "sunday" },
   );
+  const another = model.create(
+    { title: "Also Sunday", scheduled: "2026-03-08" },
+    { id: "another" },
+  );
+  const tasks = [task, another];
   const result = new AppCalendarEntryIndex(
     model.configuration(),
     context,
-  ).entries(view([task]), range, [task], context);
+  ).entries(view(tasks), range, tasks, context);
   expect([...result.keys()]).toEqual(["2026-03-08"]);
+  expect(result.get("2026-03-08")!.map(({ task }) => task.id)).toEqual([
+    "sunday",
+    "another",
+  ]);
 });
 
 it("keeps persisted false options and completed status values, not IDs", () => {
