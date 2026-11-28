@@ -54,6 +54,23 @@ describe("task relationships", () => {
     expect(project.frontmatter).not.toHaveProperty("blocking");
     expect(project.frontmatter).not.toHaveProperty("subtasks");
   });
+
+  it("prefers an exact ID, then a root path, then the first matching basename", () => {
+    const first = task("one", "A/Shared.md");
+    const second = task("two", "B/Shared.md");
+    const root = task("three", "Shared.md");
+    const byId = task("Shared", "Other.md");
+    const child = task("child", "Child.md", { projects: ["Shared"] });
+    for (const [candidates, expected] of [
+      [[first, second], first],
+      [[first, root, second], root],
+      [[first, root, byId], byId],
+    ] as const) {
+      expect(
+        taskRelationships(child, [child, ...candidates]).projectTasks,
+      ).toEqual([expected]);
+    }
+  });
 });
 
 function task(id: string, path: string, patch: Partial<Task> = {}): Task {

@@ -80,6 +80,35 @@ it("submits a chosen tag immediately and debounces further typing", () => {
   );
 });
 
+it("searches a whole inserted fragment immediately and still coalesces a single character", () => {
+  fixture.query.mockReturnValue({ tasks: [], retry: fixture.retry });
+  render(<SearchScreen onOpen={vi.fn()} />);
+  const input = screen.getByRole("searchbox");
+  fireEvent.input(input, {
+    target: { value: "project meeting" },
+    inputType: "insertFromPaste",
+    data: "project meeting",
+  });
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ search: "project meeting" }),
+  );
+  fireEvent.input(input, {
+    target: { value: "project meetings" },
+    inputType: "insertText",
+    data: "s",
+  });
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ search: "project meeting" }),
+  );
+  fireEvent.input(input, {
+    target: { value: "" },
+    inputType: "deleteContentBackward",
+  });
+  expect(fixture.query).toHaveBeenLastCalledWith(
+    expect.objectContaining({ search: "" }),
+  );
+});
+
 it("keeps browse groups expanded when the display language changes", async () => {
   fixture.query.mockReturnValue({
     tasks: Array.from({ length: 6 }, (_, index) => ({

@@ -15,7 +15,7 @@ import {
 } from "@mdbase-dev/i18n/codemirror";
 import { livePreview } from "@mdbase-dev/ui/live-preview";
 import "@mdbase-dev/ui/live-preview.css";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { taskNotesMarkdown } from "./task-notes-markdown";
 
 const incoming = Annotation.define<boolean>();
@@ -23,6 +23,15 @@ const labelledNotes = EditorView.contentAttributes.of({
   "aria-labelledby": "task-notes-title",
   "aria-multiline": "true",
 });
+
+const notesExtensions = [
+  labelledNotes,
+  EditorView.lineWrapping,
+  history(),
+  keymap.of([...defaultKeymap, ...historyKeymap]),
+  markdown({ base: markdownLanguage }),
+  livePreview(),
+];
 
 export function TaskNotesEditor({
   source,
@@ -45,6 +54,15 @@ export function TaskNotesEditor({
   const loading = t`Loading image…`;
   const missing = t`Image unavailable offline`;
   const failed = t`Image preview unavailable`;
+
+  const contentExtensions = useMemo(
+    () => [
+      placeholder(hint),
+      taskNotesMarkdown(resolveImage, { attached, loading, missing, failed }),
+    ],
+    [resolveImage, hint, attached, loading, missing, failed],
+  );
+  const initialContent = useRef(contentExtensions);
 
   useLayoutEffect(() => {
     latest.current = { source, onChange };
@@ -75,17 +93,12 @@ export function TaskNotesEditor({
   useLayoutEffect(() => {
     if (!host.current) return;
     const view = new EditorView({
-      parent: host.current,
+      root: host.current.getRootNode() as Document | ShadowRoot,
       state: EditorState.create({
         doc: latest.current.source,
         extensions: [
-          labelledNotes,
-          EditorView.lineWrapping,
-          history(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
-          markdown({ base: markdownLanguage }),
-          livePreview(),
-          presentation.current.of([]),
+          notesExtensions,
+          presentation.current.of(initialContent.current),
           language.current.of(EditorState.phrases.of(englishCodeMirrorPhrases)),
           EditorView.updateListener.of((update) => {
             if (
@@ -104,6 +117,8 @@ export function TaskNotesEditor({
         ],
       }),
     });
+    // Install the configured editable subtree in one DOM write.
+    host.current.append(view.dom);
     viewRef.current = view;
     return () => {
       viewRef.current = null;
@@ -112,13 +127,12 @@ export function TaskNotesEditor({
   }, []);
 
   useLayoutEffect(() => {
-    viewRef.current?.dispatch({
-      effects: presentation.current.reconfigure([
-        placeholder(hint),
-        taskNotesMarkdown(resolveImage, { attached, loading, missing, failed }),
-      ]),
-    });
-  }, [resolveImage, hint, attached, loading, missing, failed]);
+    const view = viewRef.current;
+    if (view && presentation.current.get(view.state) !== contentExtensions)
+      view.dispatch({
+        effects: presentation.current.reconfigure(contentExtensions),
+      });
+  }, [contentExtensions]);
 
   useLayoutEffect(() => {
     let active = true;

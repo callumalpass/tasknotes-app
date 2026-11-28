@@ -200,7 +200,20 @@ export function SearchScreen({
               : undefined
           }
           value={query}
-          onChange={(event) => editQuery(event.target.value)}
+          onChange={(event) => {
+            const input = event.nativeEvent as InputEvent;
+            // Paste, dictation and replacement insert a whole fragment at once.
+            // Keep coalescing individual keystrokes and in-progress composition.
+            const committed =
+              !input.isComposing &&
+              (input.inputType === "insertFromPaste" ||
+                input.inputType === "insertReplacementText" ||
+                (input.inputType === "insertText" &&
+                  (input.data?.length ?? 0) > 1));
+            if (committed || !event.target.value)
+              chooseQuery(event.target.value);
+            else editQuery(event.target.value);
+          }}
           onKeyDown={(event) => {
             if (["Enter", "ArrowDown", "ArrowUp", "Tab"].includes(event.key))
               setKeyboardNavigation(true);
