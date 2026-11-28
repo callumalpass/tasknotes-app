@@ -181,18 +181,11 @@ async function sample(origin, size) {
         .locator(".tnc-strip-day[aria-current=date] + button")
         .getAttribute("data-date");
       const target = page.locator(`.tnc-strip-day[data-date="${day}"]`);
-      const from = await source.boundingBox(),
-        to = await target.boundingBox();
       await measure(prefix + "agenda drag", async () => {
-        await page.mouse.move(from.x + 20, from.y + from.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(from.x + 20, from.y + from.height / 2 + 10, {
-          steps: 3,
+        await source.dragTo(target, {
+          sourcePosition: { x: 20, y: 16 },
+          steps: 13,
         });
-        await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
-          steps: 10,
-        });
-        await page.mouse.up();
         await source.waitFor({ state: "hidden" });
         await target.click();
         await page
