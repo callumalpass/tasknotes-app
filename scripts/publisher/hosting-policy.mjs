@@ -8,7 +8,7 @@ import { assertTrustedHeaders } from "../lib/native-publish-hosting.mjs";
 export const headersPolicy =
   "/*\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()\n\n/.well-known/mdbase-app.json\n  Cache-Control: no-store\n\n/oauth/todoist-client.json\n  Cache-Control: no-store\n\n/import/todoist/callback\n  Cache-Control: no-store\n\n/service-worker.js\n  Cache-Control: no-cache\n\n/offline-assets.json\n  Cache-Control: no-cache\n\n/manifest.webmanifest\n  Cache-Control: no-cache\n\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n";
 export const redirectsPolicy =
-  "/auth/mdbase/callback / 200\n/auth/mdbase/callback/ / 200\n/more / 200\n/import / 200\n/import/ / 200\n/import/todoist/callback / 200\n/more/* / 200\n/scratchpad / 200\n/scratchpad/ / 200\n/search / 200\n/search/ / 200\n/task/* / 200\n/views / 200\n/views/* / 200\n";
+  "/index.html / 200\n/404.html /404 200\n/auth/mdbase/callback / 200\n/auth/mdbase/callback/ / 200\n/more / 200\n/import / 200\n/import/ / 200\n/import/todoist/callback / 200\n/more/* / 200\n/scratchpad / 200\n/scratchpad/ / 200\n/search / 200\n/search/ / 200\n/task/* / 200\n/views / 200\n/views/* / 200\n";
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const controlNames = new Set(["_headers", "_redirects", "_routes.json"]);
 const isControl = (path) => controlNames.has(path.split("/").at(-1));
@@ -166,6 +166,8 @@ export async function verifyHosting({
   if (!index || !notFound) throw Error("Missing route originals");
   // Callback is an internal 200 rewrite to exact index, NOT a 302/login redirect.
   for (const [path, status, item] of [
+    ["/index.html", 200, index],
+    ["/404.html", 200, notFound],
     ["/auth/mdbase/callback", 200, index],
     ["/auth/mdbase/callback/", 200, index],
     ["/more", 200, index],

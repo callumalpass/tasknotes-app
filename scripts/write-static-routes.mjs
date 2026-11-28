@@ -57,5 +57,10 @@ function pagesRedirects() {
     "/views",
     "/views/*",
   ];
-  return routes.map((route) => `${route} / 200\n`).join("");
+  // The release-pinned SDK worker fetches these exact HTML filenames with
+  // redirect: "error". Serve the clean Pages URLs by internal rewrite.
+  return (
+    "/index.html / 200\n/404.html /404 200\n" +
+    routes.map((route) => `${route} / 200\n`).join("")
+  );
 }
